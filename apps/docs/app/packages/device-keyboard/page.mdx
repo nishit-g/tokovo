@@ -1,0 +1,211 @@
+# @tokovo/device-keyboard
+
+iOS-style keyboard plugin for Tokovo video rendering with pixel-perfect iOS 17 keyboard, multiple layouts, themes, and keyboard-aware UI components.
+
+## Installation
+
+```bash
+pnpm add @tokovo/device-keyboard
+```
+
+## Quick Start
+
+### 1. Register Plugin
+
+```tsx
+import { registerKeyboardPlugin } from "@tokovo/device-keyboard";
+
+registerKeyboardPlugin(); // Call once at init
+```
+
+### 2. Episode DSL
+
+```typescript
+import { KeyboardTrackBuilder } from "@tokovo/device-keyboard";
+
+episode.track("keyboard", () =>
+  new KeyboardTrackBuilder("main_phone")
+    .show({ at: 30 })
+    .type("Hello world", { at: 60, charDelay: 3 })
+    .hide({ at: 120 }),
+);
+```
+
+### 3. Auto-Typing with `typed: true`
+
+For WhatsApp messages, use the `typed` flag for automatic keyboard events:
+
+```typescript
+// This single line generates: KEYBOARD_SHOW → KEYBOARD_TYPE → MESSAGE_SENT → KEYBOARD_HIDE
+wa.at("3s").send("Hello!", { typed: true, charDelay: 3 });
+```
+
+**Optimized event count**: A 12-character message generates only 5 events instead of 16.
+
+### 4. App Integration
+
+```tsx
+import { KeyboardAwareView } from "@tokovo/react";
+
+const ChatScreen = () => (
+  <KeyboardAwareView>
+    <Header />
+    <MessageList />
+    <InputBar />
+  </KeyboardAwareView>
+);
+```
+
+## Features
+
+### Layouts
+
+| Layout          | Description                         |
+| --------------- | ----------------------------------- |
+| `qwertyLayout`  | Full QWERTY + suggestions (default) |
+| `numericLayout` | 0-9, backspace                      |
+| `phoneLayout`   | 0-9, +, backspace                   |
+| `emailLayout`   | QWERTY + @, . shortcuts             |
+
+```tsx
+import { getLayout, numericLayout } from "@tokovo/device-keyboard";
+
+<Keyboard layout={numericLayout} />;
+```
+
+### Themes
+
+```tsx
+import { getKeyboardColors } from "@tokovo/device-keyboard";
+
+<Keyboard theme="dark" />;
+```
+
+### Design Tokens
+
+```tsx
+import {
+  keyboardColors,
+  keyboardSpacing,
+  keyboardTypography,
+} from "@tokovo/device-keyboard";
+```
+
+## DSL API
+
+### KeyboardTrackBuilder
+
+```typescript
+new KeyboardTrackBuilder(deviceId)
+  .show({ at, keyboardType?, returnKeyType? })
+  .hide({ at })
+  .type(text, { at, charDelay? })
+  .keyPress(key, { at, duration? })
+  .clear({ at })
+  .suggest(suggestions, { at })
+  .tapSuggestion(index, { at })
+  .pressReturn({ at })
+```
+
+## Selectors
+
+```typescript
+import {
+  isKeyboardVisible,
+  getInputText,
+  getCursorPosition,
+  isKeyActive,
+  getKeyboardHeight,
+  getKeyboardSlideProgress,
+  getSuggestions,
+  getTypedTextProgress,
+} from "@tokovo/device-keyboard";
+
+// Get progressive text during typing animation
+const visibleText = getTypedTextProgress(state, currentFrame);
+```
+
+## React Integration
+
+### From `@tokovo/react`
+
+```tsx
+// Hook - get keyboard height
+const height = useKeyboardHeight();
+
+// Hook - get container style
+const { containerStyle, isKeyboardVisible } = useKeyboardAwareContainer();
+
+// Component - auto-adjusting container
+<KeyboardAwareView>{children}</KeyboardAwareView>
+
+// Component - auto-scrolling content (for simple lists)
+<ScrollableContent>{children}</ScrollableContent>
+```
+
+### Usage Pattern
+
+```tsx
+// For screens with existing scroll components (like MessageList)
+<KeyboardAwareView>
+  <Header />
+  <MessageList />  {/* Already scrolls internally */}
+  <InputBar />
+</KeyboardAwareView>
+
+// For screens with simple content
+<KeyboardAwareView>
+  <Header />
+  <ScrollableContent>
+    <SimpleList items={items} />
+  </ScrollableContent>
+  <InputBar />
+</KeyboardAwareView>
+```
+
+## State Shape
+
+```typescript
+interface KeyboardState {
+  visible: boolean;
+  showFrame: number | null;
+  hideFrame: number | null;
+  inputText: string;
+  cursorPosition: number;
+  activeKeyPresses: KeyPressState[];
+  keyboardType: "default" | "numeric" | "email" | "phone" | "url";
+  returnKeyType: "return" | "send" | "done" | "go" | "next" | "search";
+  suggestions: string[];
+  activeSuggestionIndex: number | null;
+  typingAnimation?: TypingAnimation;
+}
+
+interface TypingAnimation {
+  text: string;
+  startFrame: number;
+  charDelay: number;
+}
+```
+
+## Extending
+
+### Custom Layout
+
+```typescript
+const emojiLayout: KeyboardLayout = {
+  id: "emoji",
+  rows: [["😀", "😂", "🥹", "😍", "🤔", "😎", "🥺", "😭"]],
+  specialKeys: { ... },
+  bottomRow: { showSpace: false, ... },
+};
+```
+
+### Custom Theme
+
+```typescript
+const customColors: KeyboardColorTokens = {
+  background: "#1a1a2e",
+  key: { default: "#16213e", ... },
+  text: { primary: "#eaeaea", ... },
+};
+```

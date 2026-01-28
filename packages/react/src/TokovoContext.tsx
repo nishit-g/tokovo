@@ -19,6 +19,7 @@ interface TokovoContextValue {
     left: number;
     right: number;
   };
+  keyboardHeight: number;
 }
 
 const TokovoContext = createContext<TokovoContextValue | null>(null);
@@ -37,6 +38,7 @@ interface TokovoProviderProps {
     left: number;
     right: number;
   };
+  keyboardHeight?: number;
 }
 
 export function TokovoProvider({
@@ -48,6 +50,7 @@ export function TokovoProvider({
   layout,
   platform = "ios",
   safeAreaInsets = { top: 0, bottom: 0, left: 0, right: 0 },
+  keyboardHeight = 0,
 }: TokovoProviderProps) {
   const value = useMemo(
     () => ({
@@ -58,8 +61,18 @@ export function TokovoProvider({
       layout,
       platform,
       safeAreaInsets,
+      keyboardHeight,
     }),
-    [world, deviceId, appId, t, layout, platform, safeAreaInsets],
+    [
+      world,
+      deviceId,
+      appId,
+      t,
+      layout,
+      platform,
+      safeAreaInsets,
+      keyboardHeight,
+    ],
   );
 
   return (
@@ -115,6 +128,10 @@ export function useAppId(): string {
 
 export function useSafeAreaInsets() {
   return useTokovoContext().safeAreaInsets;
+}
+
+export function useKeyboardHeight() {
+  return useTokovoContext().keyboardHeight;
 }
 
 export function useConversation<T extends { id: string } = { id: string }>(

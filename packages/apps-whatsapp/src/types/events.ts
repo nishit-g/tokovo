@@ -29,6 +29,8 @@ export interface MessageSentPayload {
   text: string;
   messageId?: string;
   replyTo?: ReplyToPayload;
+  typed?: boolean;
+  charDelay?: number;
 }
 
 export interface ImageReceivedPayload {

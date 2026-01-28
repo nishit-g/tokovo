@@ -9,6 +9,7 @@
   "dependencies": {
     "@tokovo/core": "workspace:*",
     "@tokovo/device-camera": "workspace:*",
+    "@tokovo/device-keyboard": "workspace:*",
     "@tokovo/devices": "workspace:*",
     "@tokovo/device-notifications": "workspace:*",
     "@tokovo/react": "workspace:*",

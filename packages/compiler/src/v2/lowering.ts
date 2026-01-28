@@ -394,6 +394,69 @@ function lowerDeviceEvent(event: TrackEvent): RuntimeEvent[] {
         } as DeviceRuntimeEvent,
       ];
 
+    case "KEYBOARD_SHOW":
+      return [
+        {
+          ...base,
+          type: "KEYBOARD_SHOW",
+          payload: { returnKeyType: e.returnKeyType },
+        } as DeviceRuntimeEvent,
+      ];
+
+    case "KEYBOARD_HIDE":
+      return [
+        {
+          ...base,
+          type: "KEYBOARD_HIDE",
+          payload: {},
+        } as DeviceRuntimeEvent,
+      ];
+
+    case "KEYBOARD_KEY_PRESS":
+      return [
+        {
+          ...base,
+          type: "KEYBOARD_KEY_PRESS",
+          payload: { key: e.key, duration: e.duration },
+        } as DeviceRuntimeEvent,
+      ];
+
+    case "KEYBOARD_TYPE":
+      return [
+        {
+          ...base,
+          type: "KEYBOARD_TYPE",
+          payload: { text: e.text, speed: e.speed },
+        } as DeviceRuntimeEvent,
+      ];
+
+    case "KEYBOARD_CLEAR":
+      return [
+        {
+          ...base,
+          type: "KEYBOARD_CLEAR",
+          payload: {},
+        } as DeviceRuntimeEvent,
+      ];
+
+    case "KEYBOARD_SET_SUGGESTIONS":
+      return [
+        {
+          ...base,
+          type: "KEYBOARD_SET_SUGGESTIONS",
+          payload: { suggestions: e.suggestions },
+        } as DeviceRuntimeEvent,
+      ];
+
+    case "KEYBOARD_TAP_SUGGESTION":
+      return [
+        {
+          ...base,
+          type: "KEYBOARD_TAP_SUGGESTION",
+          payload: { index: e.index },
+        } as DeviceRuntimeEvent,
+      ];
+
     default:
       log.warn(`Unknown DEVICE event type: ${type}`);
       return [];

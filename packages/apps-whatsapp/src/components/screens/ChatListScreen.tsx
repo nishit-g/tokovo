@@ -1,10 +1,10 @@
-import React from "react";
+import React, { useState } from "react";
 import { WorldState } from "@tokovo/core";
 import { ArchiveIcon, ChevronRightIcon } from "../Icons";
 import { ChatListHeader } from "../ChatListHeader";
 import { TabNavigation } from "../TabNavigation";
 import { ChatListItem } from "../ChatListItem";
-import { whatsappColors, spacing } from "../theme";
+import { whatsappColors, spacing, typography } from "../theme";
 import { WhatsAppConversation, WhatsAppState } from "../../types";
 
 // =============================================================================
@@ -23,6 +23,8 @@ export interface ChatListScreenProps {
   height: number;
 }
 
+type FilterType = "all" | "unread" | "favorites" | "groups";
+
 // =============================================================================
 // ARCHIVED ROW COMPONENT
 // =============================================================================
@@ -31,21 +33,22 @@ const ArchivedRow: React.FC<{ count: number }> = ({ count }) => (
   <div
     style={{
       display: "flex",
-      height: 50,
+      height: spacing.chatListItemHeight,
       alignItems: "center",
       paddingLeft: spacing.avatarMarginLeft,
       paddingRight: spacing.contentMarginRight,
       cursor: "pointer",
       backgroundColor: whatsappColors.bgPrimary,
+      borderBottom: `0.5px solid ${whatsappColors.separator}`,
     }}
   >
     {/* Archive Icon */}
     <div
       style={{
-        width: 28,
+        width: spacing.avatarSize,
         display: "flex",
         justifyContent: "center",
-        marginRight: spacing.contentMarginLeft + 4,
+        marginRight: spacing.contentMarginLeft,
       }}
     >
       <ArchiveIcon color={whatsappColors.textSecondary} size={20} />
@@ -55,17 +58,14 @@ const ArchivedRow: React.FC<{ count: number }> = ({ count }) => (
     <div
       style={{
         flex: 1,
-        height: "100%",
         display: "flex",
         alignItems: "center",
         justifyContent: "space-between",
-        borderBottom: `0.5px solid ${whatsappColors.separator}`,
       }}
     >
       <span
         style={{
-          fontSize: 17,
-          fontWeight: "400",
+          ...typography.headline,
           color: whatsappColors.textPrimary,
         }}
       >
@@ -76,7 +76,7 @@ const ArchivedRow: React.FC<{ count: number }> = ({ count }) => (
         {count > 0 && (
           <span
             style={{
-              fontSize: 15,
+              ...typography.body,
               color: whatsappColors.textSecondary,
             }}
           >
@@ -90,6 +90,76 @@ const ArchivedRow: React.FC<{ count: number }> = ({ count }) => (
 );
 
 // =============================================================================
+// EMPTY STATE COMPONENT
+// =============================================================================
+
+const EmptyState: React.FC<{ filter: FilterType }> = ({ filter }) => {
+  const getMessage = () => {
+    switch (filter) {
+      case "unread":
+        return {
+          emoji: "✅",
+          title: "No unread chats",
+          subtitle: "You're all caught up!",
+        };
+      case "favorites":
+        return {
+          emoji: "⭐",
+          title: "No favorite chats",
+          subtitle: "Pin your important chats to see them here",
+        };
+      case "groups":
+        return {
+          emoji: "👥",
+          title: "No groups",
+          subtitle: "Create or join a group to get started",
+        };
+      default:
+        return {
+          emoji: "💬",
+          title: "No chats yet",
+          subtitle: "Start a conversation!",
+        };
+    }
+  };
+
+  const { emoji, title, subtitle } = getMessage();
+
+  return (
+    <div
+      style={{
+        padding: "80px 40px",
+        textAlign: "center",
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+      }}
+    >
+      <div style={{ fontSize: 64, marginBottom: 20 }}>{emoji}</div>
+      <div
+        style={{
+          ...typography.headline,
+          fontSize: 20,
+          color: whatsappColors.textPrimary,
+          marginBottom: 8,
+        }}
+      >
+        {title}
+      </div>
+      <div
+        style={{
+          ...typography.body,
+          color: whatsappColors.textSecondary,
+        }}
+      >
+        {subtitle}
+      </div>
+    </div>
+  );
+};
+
+// =============================================================================
 // MAIN COMPONENT
 // =============================================================================
 
@@ -99,6 +169,8 @@ export const ChatListScreen: React.FC<ChatListScreenProps> = ({
   width,
   height,
 }) => {
+  const [activeFilter, setActiveFilter] = useState<FilterType>("all");
+
   // Calculate safe areas with sensible defaults
   const designWidth = 393;
   const targetWidth = width || 1179;
@@ -110,23 +182,48 @@ export const ChatListScreen: React.FC<ChatListScreenProps> = ({
   const safeAreaTop = physicalSafeTop / scale;
   const safeAreaBottom = physicalSafeBottom / scale;
 
+  // Extract app state and conversations
   const appState = (world.appState?.["app_whatsapp"] || {}) as WhatsAppState;
-  const conversations = (
+  const allConversations = (
     Object.values(appState.conversations || {}) as WhatsAppConversation[]
   ).sort((a, b) => {
+    // Sort: Pinned first, then by last message time
     if (a.isPinned && !b.isPinned) return -1;
     if (!a.isPinned && b.isPinned) return 1;
-    return 0;
+
+    // Compare timestamps if available
+    const aLastMsg = a.messages?.[a.messages.length - 1];
+    const bLastMsg = b.messages?.[b.messages.length - 1];
+    const aTime = aLastMsg?.timestamp || "";
+    const bTime = bLastMsg?.timestamp || "";
+
+    return bTime.localeCompare(aTime);
+  });
+
+  // Apply filters
+  const filteredConversations = allConversations.filter((conv) => {
+    if (conv.isArchived) return false; // Don't show archived in main list
+
+    switch (activeFilter) {
+      case "unread":
+        return (conv.unreadCount || 0) > 0;
+      case "favorites":
+        return conv.isPinned;
+      case "groups":
+        return conv.type === "group";
+      default:
+        return true;
+    }
   });
 
   // Calculate total unread for tab badge
-  const totalUnread = conversations.reduce(
+  const totalUnread = allConversations.reduce(
     (sum, conv) => sum + (conv.unreadCount || 0),
     0,
   );
 
-  // Count archived (mock - would need archived flag in data)
-  const archivedCount = 0;
+  // Count archived conversations
+  const archivedCount = allConversations.filter((c) => c.isArchived).length;
 
   return (
     <div
@@ -134,31 +231,42 @@ export const ChatListScreen: React.FC<ChatListScreenProps> = ({
         display: "flex",
         flexDirection: "column",
         height: "100%",
+        width: "100%",
         backgroundColor: whatsappColors.bgPrimary,
         position: "relative",
         fontFamily:
-          "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif",
+          "-apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro Display', sans-serif",
+        overflow: "hidden",
       }}
     >
       {/* Header (Sticky) */}
-      <ChatListHeader safeAreaTop={safeAreaTop} />
+      <ChatListHeader
+        safeAreaTop={safeAreaTop}
+        activeFilter={activeFilter}
+        onFilterChange={setActiveFilter}
+        showEditButton={false}
+      />
 
       {/* Scrollable Content */}
       <div
         style={{
           flex: 1,
-          overflow: "hidden",
-          paddingBottom: spacing.tabBarHeight + safeAreaBottom + 10,
+          overflow: "auto",
+          overflowX: "hidden",
           backgroundColor: whatsappColors.bgPrimary,
+          paddingBottom: spacing.tabBarHeight + safeAreaBottom,
+          WebkitOverflowScrolling: "touch",
         }}
       >
-        {/* Archived Row (only show if there are archived chats) */}
-        {archivedCount > 0 && <ArchivedRow count={archivedCount} />}
+        {/* Archived Row (only show if there are archived chats and "all" filter is active) */}
+        {archivedCount > 0 && activeFilter === "all" && (
+          <ArchivedRow count={archivedCount} />
+        )}
 
         {/* Conversations List */}
-        <div>
-          {conversations.length > 0 ? (
-            conversations.map((conv, i) => {
+        {filteredConversations.length > 0 ? (
+          <div>
+            {filteredConversations.map((conv, i) => {
               // Get last message
               const rawMessages = conv.messages || [];
               const lastMsg =
@@ -167,8 +275,14 @@ export const ChatListScreen: React.FC<ChatListScreenProps> = ({
                   : null;
 
               // Determine media type
-              let mediaType: "photo" | "video" | "voice" | "document" | null =
-                null;
+              let mediaType:
+                | "photo"
+                | "video"
+                | "voice"
+                | "document"
+                | "gif"
+                | "sticker"
+                | null = null;
               if (lastMsg?.imageUrl) mediaType = "photo";
               else if (lastMsg?.videoUrl) mediaType = "video";
               else if (lastMsg?.voiceUrl || lastMsg?.audioUrl)
@@ -220,7 +334,7 @@ export const ChatListScreen: React.FC<ChatListScreenProps> = ({
                   status={status}
                   isGroup={conv.type === "group"}
                   isTyping={isTyping}
-                  isLast={i === conversations.length - 1}
+                  isLast={i === filteredConversations.length - 1}
                   isMuted={conv.isMuted}
                   isPinned={conv.isPinned}
                   hasStatus={conv.hasStatus}
@@ -228,26 +342,11 @@ export const ChatListScreen: React.FC<ChatListScreenProps> = ({
                   senderName={senderName}
                 />
               );
-            })
-          ) : (
-            // Empty State
-            <div
-              style={{
-                padding: 60,
-                textAlign: "center",
-                color: whatsappColors.textSecondary,
-              }}
-            >
-              <div style={{ fontSize: 48, marginBottom: 16 }}>💬</div>
-              <div style={{ fontSize: 17, fontWeight: "500" }}>
-                No chats yet
-              </div>
-              <div style={{ fontSize: 14, marginTop: 8 }}>
-                Start a conversation!
-              </div>
-            </div>
-          )}
-        </div>
+            })}
+          </div>
+        ) : (
+          <EmptyState filter={activeFilter} />
+        )}
       </div>
 
       {/* Tab Navigation (Fixed Bottom) */}

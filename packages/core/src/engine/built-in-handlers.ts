@@ -35,19 +35,27 @@ registerBuiltInHandler("DEVICE", (draft, event, index, _ctx) => {
   }
   const devEvent = event as TimelineEvent & { type?: string };
   const devType = devEvent.type;
-  if (
-    devType &&
-    (devType.includes("NOTIFICATION") ||
+  if (devType) {
+    if (
+      devType.includes("NOTIFICATION") ||
       devType.startsWith("SHOW_") ||
       devType.startsWith("DISMISS_") ||
       devType.startsWith("TAP_") ||
       devType.startsWith("SWIPE_") ||
       devType.startsWith("CLEAR_ALL") ||
-      devType.includes("DYNAMIC_ISLAND"))
-  ) {
-    const notifReducer = ReducerRegistry.getFeatureReducer(devType);
-    if (notifReducer) {
-      notifReducer(draft, event, index);
+      devType.includes("DYNAMIC_ISLAND")
+    ) {
+      const notifReducer = ReducerRegistry.getFeatureReducer(devType);
+      if (notifReducer) {
+        notifReducer(draft, event, index);
+      }
+    }
+
+    if (devType.startsWith("KEYBOARD_")) {
+      const kbReducer = ReducerRegistry.getFeatureReducer("KEYBOARD");
+      if (kbReducer) {
+        kbReducer(draft, event, index);
+      }
     }
   }
 });

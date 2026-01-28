@@ -22,8 +22,11 @@ export {
 // Date Separator
 export { DateSeparator } from "./DateSeparator";
 
-// Chats List Screen
-export { ChatsListScreen, type ChatPreview } from "./ChatsListScreen";
+// Chats List Screen (now in screens folder)
+export {
+  ChatListScreen,
+  type ChatListScreenProps,
+} from "./screens/ChatListScreen";
 
 // Bubble Tail (extracted from iOSStatusBar)
 export { BubbleTail } from "./BubbleTail";

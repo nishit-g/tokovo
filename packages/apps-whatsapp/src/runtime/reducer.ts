@@ -250,7 +250,19 @@ export function whatsappReducer(draft: WorldState, event: TimelineEvent): void {
   }
 
   const conversationId = parsed.conversationId;
+
+  // Some events (like NavigateScreen) don't require a conversationId
+  // Handle them with a minimal context
   if (!conversationId) {
+    const ctx: HandlerContext = {
+      draft,
+      event: parsed,
+      conversation: { id: "", messages: [] } as WhatsAppConversation,
+      addMessage: () => {},
+      getMessageById: () => undefined,
+      generateTimestamp: (at) => generateTimestamp(at, draft, parsed.deviceId),
+    };
+    handler(ctx, parsed);
     return;
   }
 

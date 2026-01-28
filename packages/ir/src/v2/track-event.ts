@@ -201,6 +201,22 @@ export type DeviceTrackEvent = TrackEventBase & {
         payload: DevicePayloads["SET_DYNAMIC_ISLAND"];
       }
     | { type: "SET_BADGE"; payload: DevicePayloads["SET_BADGE"] }
+    | { type: "KEYBOARD_SHOW"; payload: DevicePayloads["KEYBOARD_SHOW"] }
+    | { type: "KEYBOARD_HIDE"; payload: DevicePayloads["KEYBOARD_HIDE"] }
+    | {
+        type: "KEYBOARD_KEY_PRESS";
+        payload: DevicePayloads["KEYBOARD_KEY_PRESS"];
+      }
+    | { type: "KEYBOARD_TYPE"; payload: DevicePayloads["KEYBOARD_TYPE"] }
+    | { type: "KEYBOARD_CLEAR"; payload: DevicePayloads["KEYBOARD_CLEAR"] }
+    | {
+        type: "KEYBOARD_SET_SUGGESTIONS";
+        payload: DevicePayloads["KEYBOARD_SET_SUGGESTIONS"];
+      }
+    | {
+        type: "KEYBOARD_TAP_SUGGESTION";
+        payload: DevicePayloads["KEYBOARD_TAP_SUGGESTION"];
+      }
   );
 
 // =============================================================================

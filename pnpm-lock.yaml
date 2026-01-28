@@ -131,19 +131,6 @@ importers:
         specifier: ^5.0.0
         version: 5.9.3
 
-  packages/apps-demo:
-    dependencies:
-      '@tokovo/core':
-        specifier: workspace:*
-        version: link:../core
-      immer:
-        specifier: ^10.0.0
-        version: 10.2.0
-    devDependencies:
-      vitest:
-        specifier: ^1.0.0
-        version: 1.6.1(@types/node@20.19.25)(terser@5.44.1)
-
   packages/apps-whatsapp:
     dependencies:
       '@tokovo/core':
@@ -241,6 +228,31 @@ importers:
         specifier: ^1.0.0
         version: 1.6.1(@types/node@20.19.25)(terser@5.44.1)
 
+  packages/device-keyboard:
+    dependencies:
+      '@tokovo/core':
+        specifier: workspace:*
+        version: link:../core
+      '@tokovo/react':
+        specifier: workspace:*
+        version: link:../react
+      immer:
+        specifier: ^10.0.0
+        version: 10.2.0
+      react:
+        specifier: ^18.0.0
+        version: 18.2.0
+      remotion:
+        specifier: '>=4.0.0'
+        version: 4.0.409(react-dom@18.3.1(react@18.2.0))(react@18.2.0)
+    devDependencies:
+      '@types/react':
+        specifier: ^18.0.0
+        version: 18.2.0
+      typescript:
+        specifier: ^5.0.0
+        version: 5.9.3
+
   packages/device-notifications:
     dependencies:
       '@tokovo/core':
@@ -315,6 +327,9 @@ importers:
       '@tokovo/core':
         specifier: workspace:*
         version: link:../core
+      '@tokovo/device-keyboard':
+        specifier: workspace:*
+        version: link:../device-keyboard
       '@tokovo/device-notifications':
         specifier: workspace:*
         version: link:../device-notifications
@@ -372,6 +387,9 @@ importers:
       '@tokovo/device-camera':
         specifier: workspace:*
         version: link:../device-camera
+      '@tokovo/device-keyboard':
+        specifier: workspace:*
+        version: link:../device-keyboard
       '@tokovo/device-notifications':
         specifier: workspace:*
         version: link:../device-notifications

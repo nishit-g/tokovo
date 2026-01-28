@@ -279,6 +279,24 @@ export interface DevicePayloads {
     appId: string;
     count: number;
   };
+  KEYBOARD_SHOW: {
+    returnKeyType?: "default" | "go" | "search" | "send" | "next" | "done";
+  };
+  KEYBOARD_HIDE: Record<string, never>;
+  KEYBOARD_KEY_PRESS: {
+    key: string;
+  };
+  KEYBOARD_TYPE: {
+    text: string;
+    speed?: "slow" | "natural" | "fast";
+  };
+  KEYBOARD_CLEAR: Record<string, never>;
+  KEYBOARD_SET_SUGGESTIONS: {
+    suggestions: string[];
+  };
+  KEYBOARD_TAP_SUGGESTION: {
+    index: number;
+  };
 }
 
 // =============================================================================

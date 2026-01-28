@@ -26,6 +26,8 @@ export interface ReceiveOptions {
 
 export interface SendOptions {
   silent?: boolean;
+  typed?: boolean;
+  charDelay?: number;
 }
 
 export interface ImageOptions {
@@ -77,7 +79,12 @@ export class WhatsAppPointBuilder {
   }
 
   send(text: string, options: SendOptions = {}): void {
-    this._push("MESSAGE_SENT", { text, silent: options.silent });
+    this._push("MESSAGE_SENT", {
+      text,
+      silent: options.silent,
+      typed: options.typed,
+      charDelay: options.charDelay,
+    });
   }
 
   receiveImage(from: string, url: string, options: ImageOptions = {}): void {
@@ -399,10 +406,25 @@ export class WhatsAppTrackBuilder {
 
   /**
    * Switch to a different conversation at a specific time.
-   * Emits core CONVERSATION_OPENED event (handled by navigation.ts)
+   * Emits NAVIGATE_SCREEN and CONVERSATION_OPENED events (handled by navigation.ts)
    */
   switchTo(conversationId: string, time: string | number = "0s"): void {
     const frame = parseTime(time, this._fps);
+
+    // Navigate to chat screen first
+    this._events.push({
+      at: frame,
+      deviceId: this._deviceId,
+      kind: "APP",
+      appId: "app_whatsapp",
+      type: "NAVIGATE_SCREEN",
+      payload: {
+        screen: "chat",
+      },
+      _declarationOrder: this._getOrder(),
+    });
+
+    // Then set the active conversation
     this._events.push({
       at: frame,
       deviceId: this._deviceId,

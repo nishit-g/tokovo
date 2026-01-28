@@ -169,6 +169,58 @@ function createRuntimeEvent(
   return result as unknown as RuntimeEvent;
 }
 
+function expandTypedMessage(event: WhatsAppTrackEvent): RuntimeEvent[] {
+  const payload = event.payload as { text?: string; charDelay?: number };
+  const text = payload?.text || "";
+  const charDelay = payload?.charDelay || 3;
+  const deviceId = event.deviceId;
+  const messageAt = event.at;
+
+  const typeDuration = text.length * charDelay;
+  const keyboardShowAt = messageAt - typeDuration - 20;
+  const typeStartAt = messageAt - typeDuration - 5;
+  const returnPressAt = messageAt - 3;
+  const keyboardHideAt = messageAt + 15;
+
+  const events: RuntimeEvent[] = [];
+
+  events.push({
+    at: keyboardShowAt,
+    kind: "DEVICE",
+    type: "KEYBOARD_SHOW",
+    deviceId,
+    payload: { keyboardType: "default", returnKeyType: "send" },
+  } as unknown as RuntimeEvent);
+
+  events.push({
+    at: typeStartAt,
+    kind: "DEVICE",
+    type: "KEYBOARD_TYPE",
+    deviceId,
+    payload: { text, charDelay },
+  } as unknown as RuntimeEvent);
+
+  events.push({
+    at: returnPressAt,
+    kind: "DEVICE",
+    type: "KEYBOARD_KEY_PRESS",
+    deviceId,
+    payload: { key: "return", duration: 4 },
+  } as unknown as RuntimeEvent);
+
+  events.push(createRuntimeEvent(event, "MessageSent"));
+
+  events.push({
+    at: keyboardHideAt,
+    kind: "DEVICE",
+    type: "KEYBOARD_HIDE",
+    deviceId,
+    payload: {},
+  } as unknown as RuntimeEvent);
+
+  return events;
+}
+
 export const whatsappV2Lowering: V2LoweringHandler = {
   lower(event: TrackEvent): RuntimeEvent[] {
     if (!isWhatsAppTrackEvent(event)) {
@@ -195,6 +247,10 @@ export const whatsappV2Lowering: V2LoweringHandler = {
         payload: { screen: "chats" },
       };
       return [goBackEvent as unknown as RuntimeEvent];
+    }
+
+    if (eventType === "MESSAGE_SENT" && event.payload?.typed) {
+      return expandTypedMessage(event);
     }
 
     return [createRuntimeEvent(event, kind)];

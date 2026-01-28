@@ -15,21 +15,17 @@ export const TypingIndicator: React.FC = () => {
     const adjustedFrame =
       (cycleFrame - delayFrames + cycleDuration) % cycleDuration;
 
-    const scale = interpolate(
+    // Vertical bounce animation (translateY)
+    // 0%, 60%, 100% = 0 (rest position)
+    // 30% = -10px (bounce up)
+    const translateY = interpolate(
       adjustedFrame,
-      [0, cycleDuration * 0.4, cycleDuration * 0.8, cycleDuration],
-      [0.6, 1.0, 0.6, 0.6],
+      [0, cycleDuration * 0.3, cycleDuration * 0.6, cycleDuration],
+      [0, -10, 0, 0],
       { extrapolateRight: "clamp" },
     );
 
-    const opacity = interpolate(
-      adjustedFrame,
-      [0, cycleDuration * 0.4, cycleDuration * 0.8, cycleDuration],
-      [0.4, 1.0, 0.4, 0.4],
-      { extrapolateRight: "clamp" },
-    );
-
-    return { scale, opacity };
+    return { translateY };
   };
 
   const dot1 = getDotAnimation(0);
@@ -37,8 +33,8 @@ export const TypingIndicator: React.FC = () => {
   const dot3 = getDotAnimation(0.4);
 
   const baseDotStyle = {
-    width: 7,
-    height: 7,
+    width: 8,
+    height: 8,
     borderRadius: "50%",
     backgroundColor: theme.colors.timestamp,
     margin: "0 1.5px",
@@ -64,40 +60,36 @@ export const TypingIndicator: React.FC = () => {
         <div
           style={{
             ...baseDotStyle,
-            transform: `scale(${dot1.scale})`,
-            opacity: dot1.opacity,
+            transform: `translateY(${dot1.translateY}px)`,
           }}
         />
         <div
           style={{
             ...baseDotStyle,
-            transform: `scale(${dot2.scale})`,
-            opacity: dot2.opacity,
+            transform: `translateY(${dot2.translateY}px)`,
           }}
         />
         <div
           style={{
             ...baseDotStyle,
-            transform: `scale(${dot3.scale})`,
-            opacity: dot3.opacity,
+            transform: `translateY(${dot3.translateY}px)`,
           }}
         />
       </div>
-      {/* Tail SVG - Authentic left-side tail */}
+      {/* Tail SVG - Clean WhatsApp-style tail at bottom left */}
       <svg
-        width="12"
-        height="20"
-        viewBox="0 0 12 20"
+        width="8"
+        height="13"
+        viewBox="0 0 8 13"
         style={{
           position: "absolute",
-          left: -6,
+          left: -7,
           bottom: 0,
           fill: theme.colors.receivedBubble,
-          transform: "scaleX(-1)", // Flip for left side
-          zIndex: -1,
+          transform: "scaleX(-1)",
         }}
       >
-        <path d="M0 0 C0 0 5 0 8 5 C11 10 9 15 9 15 L0 15 Z" />
+        <path d="M5.188 0H0v11.193c.498-.098.984-.236 1.453-.424a14.937 14.937 0 0 0 4.243-2.636c.634-.556 1.228-1.2 1.74-2.01.327-.519.613-1.1.684-1.732C8.298 2.66 6.953.404 5.188 0Z" />
       </svg>
     </div>
   );

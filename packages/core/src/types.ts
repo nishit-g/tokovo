@@ -270,7 +270,24 @@ export interface BackgroundAppState {
 }
 
 // =============================================================================
-// CALL STATE
+// KEYBOARD STATE - Re-export from types/device.ts
+// =============================================================================
+
+export {
+  KeyboardLayout,
+  KeyboardType,
+  ReturnKeyType,
+  KeyPressState,
+  KeyboardState,
+  DEFAULT_KEYBOARD_STATE,
+} from "./types/device";
+
+export type { TypingAnimation } from "./types/device";
+
+import type { KeyboardState } from "./types/device";
+
+// =============================================================================
+// DEVICE OS STATE (Clock, Battery, Network, DND)
 // =============================================================================
 
 /** Call display mode - controlled via DSL */
@@ -327,82 +344,6 @@ export interface CallState {
   answeredAt?: number;
   endedAt?: number;
 }
-
-// KEYBOARD STATE
-// =============================================================================
-
-/** Keyboard layout types */
-export type KeyboardLayout = "qwerty" | "numbers" | "symbols" | "emoji";
-
-/**
- * KeyboardState - Virtual keyboard for realistic typing simulation
- *
- * This is DEVICE-level state, shared across all apps.
- * Apps read keyboard.inputText to show what's being typed.
- */
-
-/** Entry in the typing schedule */
-export interface TypingScheduleEntry {
-  key: string;
-  frame: number;
-}
-
-/** Active typing sequence - allows renderer to derive state from frame */
-export interface TypingSchedule {
-  entries: TypingScheduleEntry[];
-  text: string;
-  startFrame: number;
-  endFrame: number;
-}
-
-export interface KeyboardState {
-  /** Whether keyboard is visible */
-  visible: boolean;
-  /** Current keyboard layout */
-  layout: KeyboardLayout;
-  /** Currently pressed key (for highlight) - legacy, derived from schedule in renderer */
-  currentKey: string | null;
-  /** Frame when key was pressed (for pop-up timing) - legacy */
-  keyPressedAt: number | null;
-  /** Frame when visibility last changed (for animations) */
-  visibilityChangedAt: number;
-  /** Current text in input field (character-by-character) */
-  inputText: string;
-  /** Cursor position within inputText */
-  cursorPosition: number;
-  /** Whether cursor should blink */
-  cursorVisible: boolean;
-  /** Selection range */
-  selectionStart: number | null;
-  /** Selection range */
-  selectionEnd: number | null;
-  /** Auto-complete suggestions */
-  suggestions: string[];
-  /** Highlighted suggestion index */
-  highlightedSuggestion: number | null;
-  /** Visual pop-up state */
-  keyPressVisual: { key: string; frame: number } | null;
-  /** Enterprise: Typing schedule for derived animation */
-  typingSchedule: TypingSchedule | null;
-}
-
-/** Default keyboard state */
-export const DEFAULT_KEYBOARD_STATE: KeyboardState = {
-  visible: false,
-  layout: "qwerty",
-  currentKey: null,
-  keyPressedAt: null,
-  visibilityChangedAt: -1,
-  inputText: "",
-  cursorPosition: 0,
-  cursorVisible: true,
-  selectionStart: null,
-  selectionEnd: null,
-  suggestions: [],
-  highlightedSuggestion: null,
-  keyPressVisual: null,
-  typingSchedule: null,
-};
 
 // =============================================================================
 // DEVICE OS STATE (Clock, Battery, Network, DND)

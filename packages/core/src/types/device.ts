@@ -95,27 +95,53 @@ export interface CallState {
 // =============================================================================
 
 export type KeyboardLayout = "qwerty" | "numbers" | "symbols" | "emoji";
+export type KeyboardType = "default" | "numeric" | "email" | "url" | "search";
+export type ReturnKeyType = "return" | "send" | "search" | "done" | "go";
+
+export interface KeyPressState {
+  key: string;
+  startFrame: number;
+  duration: number;
+}
+
+/**
+ * Represents an ongoing typing animation for optimized event handling.
+ * Instead of emitting N KEYBOARD_KEY_PRESS events for N characters,
+ * we emit a single KEYBOARD_TYPE event and selectors compute the active key.
+ */
+export interface TypingAnimation {
+  text: string;
+  startFrame: number;
+  charDelay: number;
+}
 
 export interface KeyboardState {
   visible: boolean;
-  layout: KeyboardLayout;
-  currentKey: string | null;
-  keyPressedAt: number | null;
-  visibilityChangedAt: number;
+  showFrame: number | null;
+  hideFrame: number | null;
   inputText: string;
   cursorPosition: number;
-  cursorVisible: boolean;
+  activeKeyPresses: KeyPressState[];
+  keyboardType: KeyboardType;
+  returnKeyType: ReturnKeyType;
+  suggestions: string[];
+  activeSuggestionIndex: number | null;
+  /** Active typing animation for optimized event count */
+  typingAnimation?: TypingAnimation;
 }
 
 export const DEFAULT_KEYBOARD_STATE: KeyboardState = {
   visible: false,
-  layout: "qwerty",
-  currentKey: null,
-  keyPressedAt: null,
-  visibilityChangedAt: 0,
+  showFrame: null,
+  hideFrame: null,
   inputText: "",
   cursorPosition: 0,
-  cursorVisible: true,
+  activeKeyPresses: [],
+  keyboardType: "default",
+  returnKeyType: "return",
+  suggestions: [],
+  activeSuggestionIndex: null,
+  typingAnimation: undefined,
 };
 
 // =============================================================================

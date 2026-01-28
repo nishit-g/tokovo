@@ -246,11 +246,15 @@ export const IOSKeyboard: React.FC<IOSKeyboardProps> = ({
     return null;
   }
 
-  // Select layout
-  const rows = keyboard.layout === "numbers" ? NUMBERS_ROWS : QWERTY_ROWS;
+  const rows = keyboard.keyboardType === "numeric" ? NUMBERS_ROWS : QWERTY_ROWS;
 
   // Background colors
   const bgColor = variant === "light" ? "#D1D3D9" : "#2C2C2E";
+
+  const currentKey =
+    keyboard.activeKeyPresses.length > 0
+      ? keyboard.activeKeyPresses[keyboard.activeKeyPresses.length - 1].key
+      : null;
 
   return (
     <div
@@ -281,22 +285,13 @@ export const IOSKeyboard: React.FC<IOSKeyboardProps> = ({
           paddingRight: 24,
         }}
       >
-        {["The", "I", "a"].map((word, i) => (
+        {keyboard.suggestions.map((word, i) => (
           <div
             key={i}
             style={{
-              flex: 1,
-              textAlign: "center",
-              fontSize: 48,
-              color: variant === "light" ? "#000" : "#FFF",
-              fontFamily:
-                "-apple-system, BlinkMacSystemFont, 'SF Pro', sans-serif",
-              borderRight:
-                i < 2
-                  ? `1px solid ${variant === "light" ? "#C4C4C6" : "#3D3D41"}`
-                  : "none",
-              paddingTop: 12,
-              paddingBottom: 12,
+              fontSize: 42,
+              color: variant === "light" ? "#000" : "#fff",
+              padding: "8px 16px",
             }}
           >
             {word}
@@ -309,7 +304,7 @@ export const IOSKeyboard: React.FC<IOSKeyboardProps> = ({
         <KeyboardRow
           key={index}
           keys={row}
-          currentKey={keyboard.currentKey}
+          currentKey={currentKey}
           variant={variant}
           rowIndex={index}
         />

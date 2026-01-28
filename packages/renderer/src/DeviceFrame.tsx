@@ -6,6 +6,11 @@ import {
   StatusBar,
 } from "@tokovo/devices";
 import { DeviceState, NotificationInstance } from "@tokovo/core";
+import {
+  Keyboard,
+  KeyboardState,
+  getKeyboardHeight,
+} from "@tokovo/device-keyboard";
 
 interface DeviceFrameProps {
   profileId: string;
@@ -14,6 +19,9 @@ interface DeviceFrameProps {
   children: React.ReactNode;
   variant?: "ios" | "android";
   device?: DeviceState;
+  keyboardState?: KeyboardState;
+  currentFrame?: number;
+  fps?: number;
 }
 
 export const DeviceFrame: React.FC<DeviceFrameProps> = ({
@@ -23,6 +31,9 @@ export const DeviceFrame: React.FC<DeviceFrameProps> = ({
   children,
   variant,
   device,
+  keyboardState,
+  currentFrame = 0,
+  fps = 30,
 }) => {
   // Strategy pattern: Select frame component based on profile ID
   const FrameComponent =
@@ -51,7 +62,20 @@ export const DeviceFrame: React.FC<DeviceFrameProps> = ({
 
   return (
     <FrameComponent {...frameProps} statusBar={statusBar}>
-      {children}
+      <div
+        style={{
+          position: "relative",
+          width: "100%",
+          height: "100%",
+          paddingBottom: keyboardState?.visible ? getKeyboardHeight() : 0,
+          transition: "padding-bottom 0.25s ease-out",
+        }}
+      >
+        {children}
+      </div>
+      {keyboardState && (
+        <Keyboard state={keyboardState} currentFrame={currentFrame} fps={fps} />
+      )}
       {isLocked && (
         <div
           style={{

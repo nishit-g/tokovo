@@ -1,6 +1,6 @@
 import React from "react";
 import { WorldState } from "@tokovo/core";
-import { AppSurface } from "@tokovo/react";
+import { KeyboardAwareView } from "@tokovo/react";
 import { Header as DefaultHeader } from "../Header";
 import { MessageList } from "../MessageList";
 import { InputArea as DefaultInputArea } from "../InputArea";
@@ -39,13 +39,14 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({
     WhatsAppConversation
   >;
   const conversationId =
-    appState?.conversationId || Object.keys(conversations)[0];
+    appState?.currentConversationId ||
+    appState?.conversationId ||
+    Object.keys(conversations)[0];
 
   const conversation = conversations[conversationId] as
     | WhatsAppConversation
     | undefined;
 
-  // 2. Prepare Data
   const contactName = conversation?.name || "Unknown";
   const rawMessages = conversation?.messages || [];
 
@@ -139,31 +140,18 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({
     }
   });
 
-  // 3. Calculate Safe Areas & Scaling (Resolution Independence)
-  // Design Width: 393 (Standard 1x)
   const designWidth = 393;
-  const targetWidth = width || 1179; // Default fallback (iPhone 16)
-
-  // Calculate Scale
+  const targetWidth = width || 1179;
   const scale = targetWidth / designWidth;
 
-  // Safe Areas (Physical -> Logical)
-  // If safeAreaInsets not provided, assume generous safe areas
-  const physicalSafeTop = safeAreaInsets?.top ?? 177; // ~59px * 3
-  const physicalSafeBottom = safeAreaInsets?.bottom ?? 102; // ~34px * 3
+  const physicalSafeTop = safeAreaInsets?.top ?? 177;
+  const physicalSafeBottom = safeAreaInsets?.bottom ?? 102;
 
   const safeAreaTop = physicalSafeTop / scale;
   const safeAreaBottom = physicalSafeBottom / scale;
 
   return (
-    <div
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        height: "100%",
-        position: "relative",
-      }}
-    >
+    <KeyboardAwareView>
       <DefaultHeader
         contactName={contactName}
         avatarUrl={conversation?.avatar}
@@ -186,6 +174,6 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({
         showCursor={false}
         safeAreaBottom={safeAreaBottom}
       />
-    </div>
+    </KeyboardAwareView>
   );
 };

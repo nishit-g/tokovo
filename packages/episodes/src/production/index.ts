@@ -20,3 +20,6 @@ import "./feature-showcase.episode";
 import "./ghibli-showcase.episode";
 import "./cyberpunk-showcase.episode";
 import "./camera-showcase.episode";
+import "./wht-epi.episode";
+import "./keyboard-demo.episode";
+import "./typed-message-demo.episode";

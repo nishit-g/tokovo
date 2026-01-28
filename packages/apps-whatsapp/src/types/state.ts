@@ -12,7 +12,6 @@ import type { WhatsAppConversation } from "./conversation";
 
 export interface WhatsAppState {
   conversationId?: string;
-  screen?: string;
   currentScreen?: "main" | "chat" | "chats" | "profile" | string;
   currentConversationId?: string;
   viewMode?: "CHAT" | "LIST" | "TRANSITION";

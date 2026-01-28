@@ -54,6 +54,8 @@ export interface WhatsAppPayloads {
     conversationId: string;
     text: string;
     silent?: boolean;
+    typed?: boolean;
+    charDelay?: number;
   };
   TYPING_START: {
     conversationId: string;

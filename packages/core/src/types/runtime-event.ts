@@ -103,7 +103,14 @@ export type DeviceEventType =
   | "CALL_ANSWERED"
   | "CALL_ENDED"
   | "START_BACKGROUND_APP"
-  | "STOP_BACKGROUND_APP";
+  | "STOP_BACKGROUND_APP"
+  | "KEYBOARD_SHOW"
+  | "KEYBOARD_HIDE"
+  | "KEYBOARD_KEY_PRESS"
+  | "KEYBOARD_TYPE"
+  | "KEYBOARD_CLEAR"
+  | "KEYBOARD_SET_SUGGESTIONS"
+  | "KEYBOARD_TAP_SUGGESTION";
 
 export interface OpenAppPayload {
   appId: string;
@@ -206,7 +213,17 @@ export type DeviceRuntimeEvent =
   | BaseDeviceRuntimeEvent<"SWIPE_NOTIFICATION">
   | BaseDeviceRuntimeEvent<"REPLY_NOTIFICATION">
   | BaseDeviceRuntimeEvent<"TOGGLE_NOTIFICATION_PANEL">
-  | BaseDeviceRuntimeEvent<"CLEAR_ALL_NOTIFICATIONS">;
+  | BaseDeviceRuntimeEvent<"CLEAR_ALL_NOTIFICATIONS">
+  | BaseDeviceRuntimeEvent<"KEYBOARD_SHOW", { returnKeyType?: string }>
+  | BaseDeviceRuntimeEvent<"KEYBOARD_HIDE">
+  | BaseDeviceRuntimeEvent<"KEYBOARD_KEY_PRESS", { key: string }>
+  | BaseDeviceRuntimeEvent<"KEYBOARD_TYPE", { text: string; speed?: string }>
+  | BaseDeviceRuntimeEvent<"KEYBOARD_CLEAR">
+  | BaseDeviceRuntimeEvent<
+      "KEYBOARD_SET_SUGGESTIONS",
+      { suggestions: string[] }
+    >
+  | BaseDeviceRuntimeEvent<"KEYBOARD_TAP_SUGGESTION", { index: number }>;
 
 // =============================================================================
 // CAMERA EVENT (Flat structure - matches DSL factories and reducers)

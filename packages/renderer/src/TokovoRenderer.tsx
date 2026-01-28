@@ -23,6 +23,14 @@ import {
   HeadsUpNotification,
   NotificationInstance,
 } from "@tokovo/device-notifications";
+import {
+  Keyboard,
+  getKeyboardHeight,
+  getKeyboardSlideProgress,
+  registerKeyboardPlugin,
+} from "@tokovo/device-keyboard";
+
+registerKeyboardPlugin();
 import { FrameRegistry, StatusBar, iPhone16Frame } from "@tokovo/devices";
 import { AppRegistry } from "@tokovo/core";
 import { NotificationOverlay } from "./overlays";
@@ -206,6 +214,11 @@ export const TokovoRenderer: React.FC<TokovoRendererProps> = ({
                           left: 0,
                           right: 0,
                         }}
+                        keyboardHeight={
+                          device.keyboard?.visible
+                            ? getKeyboardHeight(3) / scale
+                            : 0
+                        }
                       >
                         <AppView
                           world={world}
@@ -285,6 +298,18 @@ export const TokovoRenderer: React.FC<TokovoRendererProps> = ({
                 deviceProfile={profile}
                 world={world}
                 t={t}
+              />
+            )}
+
+            {/* Keyboard - Device Level */}
+            {device.keyboard?.visible && (
+              <Keyboard
+                state={
+                  device.keyboard as unknown as import("@tokovo/device-keyboard").KeyboardState
+                }
+                currentFrame={t}
+                fps={30}
+                scale={3}
               />
             )}
           </FrameComponent>
