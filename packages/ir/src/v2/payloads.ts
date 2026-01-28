@@ -243,34 +243,56 @@ export interface DevicePayloads {
   CLOSE_APP: Record<string, never>;
   GO_HOME: Record<string, never>;
   NOTIFICATION_SHOW: {
+    kind?: "show";
     id: string;
     appId: string;
     title: string;
     body: string;
     icon?: string;
     mode?: "headsup" | "lockscreen" | "both";
-    priority?: "HIGH" | "DEFAULT" | "LOW";
+    priority?:
+      | "HIGH"
+      | "DEFAULT"
+      | "LOW"
+      | "high"
+      | "default"
+      | "low"
+      | "critical";
+    duration?: number;
+    groupKey?: string;
+    threadKey?: string;
+    actions?: Array<{ id: string; label: string; destructive?: boolean }>;
+    replyable?: boolean;
+    metadata?: Record<string, unknown>;
   };
   NOTIFICATION_DISMISS: {
+    kind?: "dismiss";
     id: string;
   };
   NOTIFICATION_TAP: {
+    kind?: "tap";
     id: string;
+    actionId?: string;
   };
   NOTIFICATION_SWIPE: {
+    kind?: "swipe";
     id: string;
     direction?: "left" | "right";
   };
   NOTIFICATION_REPLY: {
+    kind?: "reply";
     id: string;
     text: string;
   };
   NOTIFICATION_DYNAMIC_ISLAND: {
+    kind?: "dynamicIsland";
     mode: "idle" | "minimal" | "compact" | "expanded";
   };
   NOTIFICATION_OPEN_PANEL: Record<string, never>;
   NOTIFICATION_CLOSE_PANEL: Record<string, never>;
-  NOTIFICATION_CLEAR_ALL: Record<string, never>;
+  NOTIFICATION_CLEAR_ALL: {
+    kind?: "clearAll";
+  };
   SET_DYNAMIC_ISLAND: {
     visible: boolean;
     mode?: "idle" | "minimal" | "compact" | "expanded";

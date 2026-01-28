@@ -19,10 +19,13 @@ import {
 } from "@tokovo/core";
 import { AppSurface, TokovoProvider } from "@tokovo/react";
 import {
-  NotificationScheduler,
-  HeadsUpNotification,
-  NotificationInstance,
+  registerNotificationPlugin,
+  createSelectors,
+  NotificationBanner,
+  getNotificationTokens,
 } from "@tokovo/device-notifications";
+import type { StackedNotificationInfo } from "@tokovo/device-notifications";
+import type { NotificationInstance } from "@tokovo/core";
 import {
   Keyboard,
   getKeyboardHeight,
@@ -31,6 +34,7 @@ import {
 } from "@tokovo/device-keyboard";
 
 registerKeyboardPlugin();
+registerNotificationPlugin();
 import { FrameRegistry, StatusBar, iPhone16Frame } from "@tokovo/devices";
 import { AppRegistry } from "@tokovo/core";
 import { NotificationOverlay } from "./overlays";
@@ -118,16 +122,28 @@ export const TokovoRenderer: React.FC<TokovoRendererProps> = ({
   // ==========================================================================
   // 3. LOGIC: NOTIFICATION SCHEDULER (Moved to Core)
   // ==========================================================================
-  const notificationState = React.useMemo(() => {
-    return NotificationScheduler.schedule(device, t);
-  }, [device, t]);
+  const notificationTokens = React.useMemo(() => {
+    const platform = profile.platform === "android" ? "android" : "ios";
+    return getNotificationTokens(platform, "light");
+  }, [profile.platform]);
 
-  const activeHeadsUp = notificationState.headsUp;
+  const notificationSelectors = React.useMemo(
+    () => createSelectors(notificationTokens),
+    [notificationTokens],
+  );
+
+  const stackedNotifications = React.useMemo(() => {
+    return notificationSelectors.getStackedBannerNotifications(device, t);
+  }, [device, t, notificationSelectors]);
+
+  const activeHeadsUp =
+    stackedNotifications.length > 0 ? stackedNotifications[0] : null;
 
   if (debug && t % 30 === 0) {
     log.debug(`Frame ${t}`, {
-      totalNotifs: device.os?.notifications?.length,
-      activeHeadsUp: activeHeadsUp ? activeHeadsUp.id : "none",
+      totalNotifs: device.notifications?.length ?? 0,
+      visibleBannerCount: stackedNotifications.length,
+      activeHeadsUp: activeHeadsUp ? activeHeadsUp.notification.id : "none",
       isLocked: device.isLocked,
       appId,
     });
@@ -272,24 +288,35 @@ export const TokovoRenderer: React.FC<TokovoRendererProps> = ({
 
             {/* Lockscreen Notification Overlay */}
             <NotificationOverlay
-              notifications={device.os?.notifications || []}
+              notifications={device.notifications || []}
               variant={variant}
               layout={layout}
             />
 
-            {/* Heads-Up Notification (Toast) */}
-            {/* Note: Dynamic Island notification rendering not implemented yet, 
-                            so we always show HeadsUpNotification when there's an active heads-up */}
-            {activeHeadsUp && !hasActiveCall && (
-              <HeadsUpNotification
-                key={activeHeadsUp.id}
-                notification={activeHeadsUp}
-                currentTime={t}
-                variant={variant}
-                autoDismissAfter={headsUpDuration}
-                deviceWidth={profile.dimensions.width}
-              />
-            )}
+            {/* Heads-Up Notifications (Stacked) */}
+            {!hasActiveCall &&
+              stackedNotifications.length > 0 &&
+              (() => {
+                const bannerScale = profile.dimensions.width / 393;
+                return stackedNotifications.map(
+                  (info: StackedNotificationInfo) => (
+                    <NotificationBanner
+                      key={info.notification.id}
+                      notification={info.notification}
+                      animationState={info.animationState}
+                      animationProgress={info.animationProgress}
+                      tokens={notificationTokens}
+                      scale={bannerScale}
+                      currentFrame={t}
+                      fps={30}
+                      stackIndex={info.stackIndex}
+                      stackOffset={info.stackOffset}
+                      stackIndexChangedAtFrame={info.stackIndexChangedAtFrame}
+                      previousStackOffset={info.previousStackOffset}
+                    />
+                  ),
+                );
+              })()}
 
             {/* Dynamic Island (iOS) - Slot Based */}
             {profile.dynamicIsland && !device.isLocked && !hasActiveCall && (

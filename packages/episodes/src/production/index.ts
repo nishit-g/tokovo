@@ -23,3 +23,4 @@ import "./camera-showcase.episode";
 import "./wht-epi.episode";
 import "./keyboard-demo.episode";
 import "./typed-message-demo.episode";
+import "./notification-demo.episode";

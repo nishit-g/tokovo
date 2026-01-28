@@ -1,130 +1,219 @@
-/**
- * Notification Demo Episode
- * 
- * Showcases the device-notifications package:
- * - NotificationTrackBuilder DSL
- * - WhatsApp notifications with sound
- * - Dynamic Island interactions
- * - Notification dismiss/tap flows
- */
-
 import { defineEpisode } from "../types/episode-definition";
 import { episode } from "@tokovo/dsl";
-import { WhatsAppTrackBuilder } from "@tokovo/apps-whatsapp";
 import { NotificationTrackBuilder } from "@tokovo/device-notifications";
 
-// Declaration order counter
 let orderCounter = 0;
 const getOrder = () => orderCounter++;
 
 export default defineEpisode({
-    meta: {
-        id: "notification-demo",
-        title: "Notification Demo 🔔",
-        description: "WhatsApp notifications with enterprise notification system",
-        category: "production",
-        tags: ["notifications", "whatsapp", "dynamic-island", "enterprise"],
-    },
-    config: {
-        format: "1080x1920",
-        durationInFrames: 600, // 20s * 30fps
-        apps: ["app_whatsapp"],
-    },
-    build: () => episode("notification-demo", {
-        fps: 30,
-        duration: "20s",
-        title: "Notification Demo",
+  meta: {
+    id: "notification-demo",
+    title: "Notification Demo - WhatsApp Integration",
+    description:
+      "Demonstrates how apps like WhatsApp integrate with the notification system. Shows stacking (newest on top), priority levels, grouping, actions, and interactions.",
+    category: "production",
+    tags: [
+      "notification",
+      "banner",
+      "device",
+      "animation",
+      "stacking",
+      "whatsapp",
+      "integration",
+    ],
+  },
+  config: {
+    format: "1080x1920",
+    durationInFrames: 900,
+    apps: [],
+  },
+  build: () =>
+    episode("notification-demo", {
+      fps: 30,
+      duration: "30s",
+      title: "Notification Demo",
     })
-        .device("phone", "iphone16", {
-            app: "app_whatsapp", // Start with WhatsApp open
-            conversations: [
-                {
-                    id: "dm_alex",
-                    name: "Alex 👋",
-                    avatar: "/avatars/avatar-alex.jpg",
-                },
-                {
-                    id: "dm_sarah",
-                    name: "Sarah 💕",
-                    avatar: "/avatars/avatar-sarah.jpg",
-                },
+      .device("phone", "iphone16", {
+        app: "app_whatsapp",
+        os: {
+          time: new Date("2024-12-18T14:30:00"),
+          battery: 92,
+          network: "5G",
+        },
+      })
+
+      .track(
+        "device_notifications",
+        () => new NotificationTrackBuilder(30, "phone", getOrder),
+        (notif) => {
+          // ═══════════════════════════════════════════════════════════════
+          // SECTION 1: Basic Notification Flow
+          // Shows: Single notification → dismiss
+          // ═══════════════════════════════════════════════════════════════
+
+          notif.at("1s").show({
+            id: "wa_alex_1",
+            appId: "app_whatsapp",
+            title: "Alex",
+            body: "Hey! Are you free for lunch today? 🍕",
+            icon: "/apps/whatsapp.png",
+            priority: "default",
+            threadKey: "chat_alex",
+          });
+
+          notif.at("3.5s").dismiss("wa_alex_1");
+
+          // ═══════════════════════════════════════════════════════════════
+          // SECTION 2: Stacking Demo (Newest On Top)
+          // Shows: Multiple notifications stack with newest appearing on top
+          // ═══════════════════════════════════════════════════════════════
+
+          notif.at("5s").show({
+            id: "wa_group_1",
+            appId: "app_whatsapp",
+            title: "Work Group",
+            body: "Mike: The deadline is tomorrow!",
+            icon: "/apps/whatsapp.png",
+            priority: "high",
+            threadKey: "chat_work_group",
+            groupKey: "work_group",
+          });
+
+          notif.at("6s").show({
+            id: "wa_sarah_1",
+            appId: "app_whatsapp",
+            title: "Sarah",
+            body: "Did you see the news? 📰",
+            icon: "/apps/whatsapp.png",
+            priority: "default",
+            threadKey: "chat_sarah",
+          });
+
+          notif.at("7s").show({
+            id: "wa_mom_1",
+            appId: "app_whatsapp",
+            title: "Mom ❤️",
+            body: "Call me when you get a chance",
+            icon: "/apps/whatsapp.png",
+            priority: "high",
+            threadKey: "chat_mom",
+          });
+
+          // ═══════════════════════════════════════════════════════════════
+          // SECTION 3: Tap Interaction
+          // Shows: User taps notification → opens app → clears notification
+          // ═══════════════════════════════════════════════════════════════
+
+          notif.at("9s").tap("wa_mom_1");
+
+          // ═══════════════════════════════════════════════════════════════
+          // SECTION 4: Swipe Dismiss
+          // Shows: User swipes to dismiss notifications
+          // ═══════════════════════════════════════════════════════════════
+
+          notif.at("10.5s").swipe("wa_sarah_1", "right");
+          notif.at("11s").swipe("wa_group_1", "right");
+
+          // ═══════════════════════════════════════════════════════════════
+          // SECTION 5: Priority Levels
+          // Shows: Critical (Uber), High (Calendar), Default (Instagram)
+          // ═══════════════════════════════════════════════════════════════
+
+          notif.at("13s").show({
+            id: "uber_1",
+            appId: "Uber",
+            title: "Your ride is arriving!",
+            body: "Toyota Camry • 2 min away",
+            icon: "/apps/uber.png",
+            priority: "critical",
+          });
+
+          notif.at("14s").show({
+            id: "calendar_1",
+            appId: "Calendar",
+            title: "Meeting in 10 minutes",
+            body: "Team Standup - Zoom",
+            icon: "/apps/calendar.png",
+            priority: "high",
+            actions: [
+              { id: "join", label: "Join" },
+              { id: "snooze", label: "Snooze" },
             ],
-            os: {
-                time: new Date("2024-12-18T14:30:00"),
-                battery: 85,
-                network: "5G",
-            },
-        })
+          });
 
-        // === NOTIFICATIONS TRACK ===
-        .track("notifications", () => {
-            return new NotificationTrackBuilder(30, "phone", getOrder);
-        }, noti => {
-            // First notification: WhatsApp message from Alex
-            noti.at("1s").show({
-                id: "notif_1",
-                appId: "app_whatsapp",
-                title: "Alex 👋",
-                body: "Hey! Are you free tonight?",
-                mode: "headsup",
-                preview: { kind: "text", value: "Hey! Are you free tonight?" },
-            });
+          notif.at("15s").show({
+            id: "instagram_1",
+            appId: "Instagram",
+            title: "New follower",
+            body: "@design_guru started following you",
+            icon: "/apps/instagram.png",
+            priority: "default",
+          });
 
-            // Second notification: Another message
-            noti.at("4s").show({
-                id: "notif_2",
-                appId: "app_whatsapp",
-                title: "Sarah 💕",
-                body: "Check out this photo! 📸",
-                mode: "headsup",
-                preview: { kind: "image", value: "/images/photo-preview.jpg" },
-            });
+          notif.at("18s").dismiss("uber_1");
+          notif.at("18.5s").tap("calendar_1");
+          notif.at("19s").swipe("instagram_1", "right");
 
-            // Dismiss first notification
-            noti.at("6s").dismiss("notif_1");
+          // ═══════════════════════════════════════════════════════════════
+          // SECTION 6: Grouped Notifications (Email)
+          // Shows: Multiple emails grouped under same groupKey
+          // ═══════════════════════════════════════════════════════════════
 
-            // Tap second notification to open app
-            noti.at("8s").tap("notif_2");
+          notif.at("21s").show({
+            id: "mail_1",
+            appId: "Mail",
+            title: "boss@company.com",
+            body: "Q4 Report Review",
+            icon: "/apps/mail.png",
+            groupKey: "inbox",
+          });
 
-            // After app is open, show Dynamic Island
-            noti.at("10s").dynamicIsland({
-                mode: "compact",
-                appId: "app_music",
-            });
+          notif.at("22s").show({
+            id: "mail_2",
+            appId: "Mail",
+            title: "team@company.com",
+            body: "Sprint Planning Notes",
+            icon: "/apps/mail.png",
+            groupKey: "inbox",
+          });
 
-            // Third notification while in app
-            noti.at("12s").show({
-                id: "notif_3",
-                appId: "app_whatsapp",
-                title: "Alex 👋",
-                body: "Hello? 👀",
-                mode: "headsup",
-            });
+          notif.at("23s").show({
+            id: "mail_3",
+            appId: "Mail",
+            title: "hr@company.com",
+            body: "Holiday Schedule Update",
+            icon: "/apps/mail.png",
+            groupKey: "inbox",
+          });
 
-            // Swipe to dismiss
-            noti.at("15s").swipe("notif_3", "left", "dismiss");
+          // ═══════════════════════════════════════════════════════════════
+          // SECTION 7: Reply Action (WhatsApp)
+          // Shows: Notification with reply capability
+          // ═══════════════════════════════════════════════════════════════
 
-            // Clear all at the end
-            noti.at("18s").clearAll();
-        })
+          notif.at("25s").show({
+            id: "wa_alex_2",
+            appId: "app_whatsapp",
+            title: "Alex",
+            body: "So... lunch? 🍕",
+            icon: "/apps/whatsapp.png",
+            priority: "high",
+            threadKey: "chat_alex",
+            replyable: true,
+            actions: [
+              { id: "reply", label: "Reply" },
+              { id: "mark_read", label: "Mark as Read" },
+            ],
+          });
 
-        // === WHATSAPP TRACK (background messages) ===
-        .track("app_whatsapp", () => {
-            return new WhatsAppTrackBuilder(30, "phone", "dm_alex", getOrder);
-        }, wa => {
-            // Messages received match notifications
-            wa.at("1s").receive("Alex", "Hey! Are you free tonight?");
-            wa.at("12s").receive("Alex", "Hello? 👀");
-        })
+          // ═══════════════════════════════════════════════════════════════
+          // SECTION 8: Clear All
+          // Shows: All notifications dismissed at once
+          // ═══════════════════════════════════════════════════════════════
 
-        // Camera movements
-        .camera(cam => {
-            cam.at("0s").set({ scale: 1 });
-            cam.at("1s").animate({ scale: 1.05, duration: "0.3s" }); // Slight zoom on notification
-            cam.at("2s").animate({ scale: 1, duration: "0.5s" }); // Back to normal
-            cam.at("8s").animate({ scale: 1.1, duration: "0.5s" }); // Zoom when opening app
-            cam.at("10s").animate({ scale: 1, duration: "0.5s" }); // Back to normal
-        })
+          notif.at("29s").clearAll();
+        },
+      )
 
-        .build(),
+      .build(),
 });

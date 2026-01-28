@@ -256,8 +256,6 @@ const EpisodeRendererInner: React.FC<EpisodeRendererProps> = ({
           t={frame}
           debug={false}
           eventIndex={eventIndex}
-          directorEnabled={true}
-          directorDebug={false}
         />
       </div>
       {/* DEBUG: Show which episode is actually rendering */}

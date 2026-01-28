@@ -300,6 +300,7 @@ interface ExtendedDeviceEvent {
 
 function lowerDeviceEvent(event: TrackEvent): RuntimeEvent[] {
   const e = event as TrackEvent & Record<string, unknown>;
+  const p = (e.payload ?? {}) as Record<string, unknown>;
   const base = {
     at: e.at as number,
     kind: "DEVICE" as const,
@@ -309,28 +310,34 @@ function lowerDeviceEvent(event: TrackEvent): RuntimeEvent[] {
   const type = e.type as string;
 
   switch (type) {
-    case "NOTIFICATION_SHOW":
+    case "NOTIFICATION_SHOW": {
+      // Map IR uppercase priorities to runtime lowercase
+      const irPriority = (p.priority ?? e.priority) as string | undefined;
+      const priority = irPriority ? irPriority.toLowerCase() : "default";
       return [
         {
           ...base,
           type: "SHOW_NOTIFICATION",
           payload: {
-            id: e.id,
-            appId: e.appId,
-            title: e.title,
-            body: e.body,
-            priority: e.priority,
-            icon: e.icon,
+            kind: "show",
+            id: p.id ?? e.id,
+            appId: p.appId ?? e.appId,
+            title: p.title ?? e.title,
+            body: p.body ?? e.body,
+            priority,
+            icon: p.icon ?? e.icon,
+            mode: (p.mode ?? e.mode ?? "headsup") as string,
           },
         } as DeviceRuntimeEvent,
       ];
+    }
 
     case "NOTIFICATION_DISMISS":
       return [
         {
           ...base,
           type: "DISMISS_NOTIFICATION",
-          payload: { id: e.id },
+          payload: { kind: "dismiss", id: (p.id ?? e.id) as string },
         } as DeviceRuntimeEvent,
       ];
 
@@ -339,7 +346,7 @@ function lowerDeviceEvent(event: TrackEvent): RuntimeEvent[] {
         {
           ...base,
           type: "TAP_NOTIFICATION",
-          payload: { id: e.id },
+          payload: { kind: "tap", id: (p.id ?? e.id) as string },
         } as DeviceRuntimeEvent,
       ];
 
@@ -348,7 +355,11 @@ function lowerDeviceEvent(event: TrackEvent): RuntimeEvent[] {
         {
           ...base,
           type: "SWIPE_NOTIFICATION",
-          payload: { id: e.id },
+          payload: {
+            kind: "swipe",
+            id: (p.id ?? e.id) as string,
+            direction: (p.direction ?? e.direction) as string,
+          },
         } as DeviceRuntimeEvent,
       ];
 
@@ -357,7 +368,11 @@ function lowerDeviceEvent(event: TrackEvent): RuntimeEvent[] {
         {
           ...base,
           type: "SET_DYNAMIC_ISLAND",
-          payload: { visible: true, mode: e.mode },
+          payload: {
+            kind: "dynamicIsland",
+            visible: true,
+            mode: (p.mode ?? e.mode) as string,
+          },
         } as DeviceRuntimeEvent,
       ];
 
@@ -382,6 +397,7 @@ function lowerDeviceEvent(event: TrackEvent): RuntimeEvent[] {
         {
           ...base,
           type: "CLEAR_ALL_NOTIFICATIONS",
+          payload: { kind: "clearAll" },
         } as DeviceRuntimeEvent,
       ];
 
@@ -390,7 +406,11 @@ function lowerDeviceEvent(event: TrackEvent): RuntimeEvent[] {
         {
           ...base,
           type: "REPLY_NOTIFICATION",
-          payload: { id: e.id, text: e.text },
+          payload: {
+            kind: "reply",
+            id: (p.id ?? e.id) as string,
+            text: (p.text ?? e.text) as string,
+          },
         } as DeviceRuntimeEvent,
       ];
 

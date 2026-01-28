@@ -1,125 +1,72 @@
-/**
- * @tokovo/device-notifications
- *
- * Enterprise-grade notification system for Tokovo.
- *
- * @example
- * ```typescript
- * import { NotificationTrackBuilder } from "@tokovo/device-notifications";
- *
- * const noti = new NotificationTrackBuilder(30, "phone", getOrder);
- *
- * noti.at("2s").show({
- *     appId: "app_whatsapp",
- *     title: "Alex",
- *     body: "Hey! How are you?",
- * });
- *
- * noti.at("5s").dismiss("notif_1");
- * ```
- */
-
-// =============================================================================
-// TYPES
-// =============================================================================
-
 export type {
   NotificationIR,
   NotificationInstance,
-  NotificationMode,
+  NotificationState,
   NotificationPriority,
-  DynamicIslandMode,
+  NotificationGroup,
+  NotificationCenterState,
+  NotificationQueueState,
   DynamicIslandState,
-  FormattedNotification,
-  NotificationAdapter,
-} from "./types";
+  DynamicIslandMode,
+  DynamicIslandContent,
+} from "./runtime/state";
+export {
+  IOS_NOTIFICATION_POLICY,
+  ANDROID_NOTIFICATION_POLICY,
+  DEFAULT_NOTIFICATION_CENTER,
+  DEFAULT_DYNAMIC_ISLAND,
+} from "./runtime/state";
 
+export {
+  notificationReducer,
+  applyNotificationEvent,
+  DEFAULT_POLICY,
+} from "./runtime/reducer";
 export type {
-  NotificationPayloads,
-  NotificationEventType,
-  ShowNotificationPayload,
-  DismissNotificationPayload,
-  TapNotificationPayload,
-  SwipeNotificationPayload,
+  NotificationPolicy,
+  ShowPayload,
+  DismissPayload,
+  TapPayload,
+  SwipePayload,
+  ReplyPayload,
   DynamicIslandPayload,
-} from "./types/payloads";
-
-// =============================================================================
-// DSL
-// =============================================================================
-
-export {
-  NotificationTrackBuilder,
-  NotificationPointBuilder,
-} from "./dsl/track-builder";
-
-// =============================================================================
-// IR
-// =============================================================================
-
-export type { NotificationTrackEvent } from "./ir/track-event";
-export { isNotificationEvent } from "./ir/track-event";
-
-// =============================================================================
-// LOWERING
-// =============================================================================
+  ClearAllPayload,
+  NotificationPayload,
+  NotificationEvent,
+  NotificationMode,
+} from "./runtime/reducer";
 
 export {
-  notificationV2Lowering,
-  NOTIFICATION_EVENT_TYPES as LOWERING_EVENT_TYPES,
-} from "./lowering/handler";
+  createSelectors,
+  createNotificationSelector,
+  computeAnimationState,
+  animationConfigFromTokens,
+  getNotifications,
+  getNotificationById,
+  getGroupedNotifications,
+} from "./runtime/selectors";
+export type {
+  AnimationState,
+  NotificationAnimationInfo,
+  StackedNotificationInfo,
+} from "./runtime/selectors";
 
-// =============================================================================
-// REDUCER
-// =============================================================================
+export { NotificationTrackBuilder } from "./dsl/builder";
+export type {
+  ShowOptions,
+  NotificationDSLEvent,
+  NotificationShowEvent,
+  NotificationDismissEvent,
+  NotificationTapEvent,
+  NotificationSwipeEvent,
+  NotificationReplyEvent,
+  NotificationClearAllEvent,
+  DynamicIslandEvent,
+} from "./dsl/builder";
 
-export { notificationReducer, NOTIFICATION_EVENT_TYPES } from "./reducer";
+export * from "./tokens";
+export * from "./strategies";
 
-// =============================================================================
-// ADAPTERS
-// =============================================================================
+export { useNotificationAnimation } from "./hooks/useNotificationAnimation";
 
-export {
-  NotificationAdapterRegistry,
-  DEFAULT_NOTIFICATION_HEIGHT,
-} from "./adapters/registry";
-
-// =============================================================================
-// AUDIO
-// =============================================================================
-
-export {
-  notificationAudioRules,
-  defaultNotificationSounds,
-} from "./assets/audio-rules";
-
-// =============================================================================
-// PLUGIN
-// =============================================================================
-
-export { NotificationPlugin, registerNotificationPlugin } from "./plugin";
-
-// =============================================================================
-// SCHEDULER
-// =============================================================================
-
-export { NotificationScheduler } from "./scheduler";
-
-// =============================================================================
-// VIEWS
-// =============================================================================
-
-export { HeadsUpNotification } from "./views/HeadsUpNotification";
-export { IOSNotificationStrategy } from "./strategies/IOSNotificationStrategy";
-export { AndroidNotificationStrategy } from "./strategies/AndroidNotificationStrategy";
-
-// =============================================================================
-// REGISTRIES
-// =============================================================================
-
-export {
-  NotificationStrategyRegistry,
-  registerDefaultStrategies,
-  type NotificationStrategyProps,
-  type NotificationStrategyComponent,
-} from "./registries";
+export { registerNotificationPlugin } from "./plugin";

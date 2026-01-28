@@ -45,7 +45,7 @@ registerBuiltInHandler("DEVICE", (draft, event, index, _ctx) => {
       devType.startsWith("CLEAR_ALL") ||
       devType.includes("DYNAMIC_ISLAND")
     ) {
-      const notifReducer = ReducerRegistry.getFeatureReducer(devType);
+      const notifReducer = ReducerRegistry.getFeatureReducer("NOTIFICATION");
       if (notifReducer) {
         notifReducer(draft, event, index);
       }

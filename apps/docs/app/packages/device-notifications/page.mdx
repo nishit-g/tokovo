@@ -37,23 +37,18 @@ episode("story", { fps: 30, duration: "10s" })
   })
   .track(
     "notifications",
-    () => {
-      return new NotificationTrackBuilder(30, "phone", getOrder);
-    },
+    () => new NotificationTrackBuilder(30, "phone", getOrder),
     (noti) => {
-      // Show heads-up notification
       noti.at("2s").show({
         id: "notif_1",
         appId: "app_whatsapp",
         title: "Alice",
         body: "Hey! Are you free tonight?",
         mode: "headsup",
+        priority: "high",
       });
 
-      // Tap to open app
       noti.at("5s").tap("notif_1");
-
-      // Dismiss notification
       noti.at("8s").dismiss("notif_1");
     },
   )
@@ -77,11 +72,173 @@ episode("story", { fps: 30, duration: "10s" })
 
 - **Push notifications** - Incoming message/alert display
 - **Banner notifications** - Temporary top-of-screen alerts
+- **Stacking** - Newest notification on top, older ones push down
 - **Notification center** - Persistent notification tray
 - **Notification badges** - App icon number indicators
 - **Notification sounds** - Audio alerts (iOS/Android sounds)
 - **Notification interactions** - Tap, swipe, dismiss actions
 - **Dynamic Island** - iOS 16+ live activity integration
+
+---
+
+## Architecture
+
+### System Overview
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                        EPISODE AUTHORING                            │
+├─────────────────────────────────────────────────────────────────────┤
+│  NotificationTrackBuilder                                           │
+│  └── .at("2s").show({ ... })  →  NotificationDSLEvent              │
+└─────────────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────────────┐
+│                        COMPILER LAYER                               │
+├─────────────────────────────────────────────────────────────────────┤
+│  Lowering                                                           │
+│  └── NotificationDSLEvent  →  DeviceRuntimeEvent                   │
+│  └── Priority mapping: "HIGH" | "high" → "high"                    │
+└─────────────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────────────┐
+│                        RUNTIME LAYER                                │
+├─────────────────────────────────────────────────────────────────────┤
+│  Reducer                                                            │
+│  ├── notificationReducer(state, event)                             │
+│  ├── Creates NotificationInstance                                  │
+│  └── Manages lifecycle: pending → visible → dismissed              │
+│                                                                     │
+│  Selectors (with memoization)                                      │
+│  ├── getBannerNotifications(state, frame)                          │
+│  ├── getLockScreenNotifications(state, frame)                      │
+│  └── getStackedBannerNotifications(state, frame)                   │
+└─────────────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────────────┐
+│                        RENDERING LAYER                              │
+├─────────────────────────────────────────────────────────────────────┤
+│  Token System                                                       │
+│  ├── iOS tokens (spacing, colors, animations)                      │
+│  └── Android tokens (Material Design values)                       │
+│                                                                     │
+│  Unified Components                                                 │
+│  ├── NotificationBanner (iOS + Android)                            │
+│  └── NotificationLockScreen (iOS + Android)                        │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## Token System
+
+The notification system uses platform-specific design tokens for consistent, native-feeling UI.
+
+### Getting Tokens
+
+```typescript
+import {
+  getNotificationTokens,
+  createDeviceAwareTokens,
+} from "@tokovo/device-notifications";
+
+// Basic usage (static margins)
+const tokens = getNotificationTokens("ios", "light");
+
+// Device-aware (dynamic safe area)
+const tokens = createDeviceAwareTokens({
+  platform: "ios",
+  theme: "light",
+  safeArea: deviceProfile.safeArea, // { top: 110, bottom: 102, ... }
+});
+```
+
+### Token Structure
+
+```typescript
+interface NotificationTokens {
+  platform: "ios" | "android";
+  theme: "light" | "dark";
+
+  banner: {
+    background: string;
+    blur: number;
+    borderRadius: number;
+    padding: { top: number; bottom: number; horizontal: number };
+    margin: { top: number; horizontal: number };
+    gap: number;
+    maxWidth: number;
+  };
+
+  text: {
+    title: { color: string; fontSize: number; fontWeight: number };
+    body: { color: string; fontSize: number };
+    timestamp: { color: string; fontSize: number };
+  };
+
+  animation: {
+    enterDuration: number;
+    exitDuration: number;
+    curve: string;
+    enterTranslateY: number;
+    exitTranslateY: number;
+    enterScale: number;
+    stackScaleDecay: number;
+    stackSpacing: number;
+  };
+}
+```
+
+### Platform Differences
+
+| Property                    | iOS | Android   |
+| --------------------------- | --- | --------- |
+| `banner.borderRadius`       | 38  | 24        |
+| `banner.blur`               | 25  | 0 (solid) |
+| `animation.enterTranslateY` | -50 | -40       |
+| `animation.stackSpacing`    | 8   | 6         |
+| `text.title.fontWeight`     | 600 | 500       |
+
+---
+
+## Stacking Behavior
+
+When multiple notifications are active, they stack with **newest on top**:
+
+```
+┌─────────────────────────────────┐  ← Newest (stackIndex: 0)
+│  Mom ❤️                         │
+│  Call me when you get a chance  │
+└─────────────────────────────────┘
+   ┌─────────────────────────────┐  ← Older (stackIndex: 1)
+   │  Sarah                      │     scale: 0.98, offset: 8px
+   │  Did you see the news?      │
+   └─────────────────────────────┘
+      ┌──────────────────────────┐  ← Oldest (stackIndex: 2)
+      │  Work Group              │     scale: 0.96, offset: 16px
+      │  The deadline is tomorrow│
+      └──────────────────────────┘
+```
+
+### Stack Calculation
+
+```typescript
+// For each notification in the stack:
+const stackOffset = stackIndex * tokens.animation.stackSpacing;
+const scale = 1 - stackIndex * tokens.animation.stackScaleDecay;
+const zIndex = 9999 - stackIndex;
+```
+
+### Push-Down Animation
+
+When a new notification arrives:
+
+1. New notification enters at `stackIndex: 0`
+2. Existing notifications increment their `stackIndex`
+3. CSS transitions animate the position change smoothly
 
 ---
 
@@ -102,15 +259,10 @@ noti.at("7s").tap("notif_2");
 ### Time Positioning
 
 ```typescript
-// String time (recommended)
 noti.at("2s").show({ ... });      // 2 seconds
 noti.at("500ms").show({ ... });   // 500 milliseconds
-
-// Frame number
-noti.at(60).show({ ... });        // Frame 60
-
-// Span (notifications use start time)
-noti.span("2s", "5s").show({ ... }); // Shows at 2s
+noti.at("30f").show({ ... });     // 30 frames
+noti.at(60).show({ ... });        // Frame 60 (number)
 ```
 
 ---
@@ -123,35 +275,22 @@ Display a notification.
 
 ```typescript
 noti.at("2s").show({
-  id: "notif_1", // Unique ID (required)
-  appId: "app_whatsapp", // App that sent it (required)
-  title: "Alice", // Notification title (required)
-  body: "Hey there!", // Message text (required)
-  mode: "headsup", // Display mode (optional)
-  priority: "high", // Priority level (optional)
-  icon: "/avatars/alice.jpg", // App icon (optional)
-  preview: {
-    // Rich preview (optional)
-    kind: "image",
-    value: "/previews/photo.jpg",
-    aspectRatio: 16 / 9,
-  },
+  id: "notif_1",
+  appId: "app_whatsapp",
+  title: "Alice",
+  body: "Hey there!",
+  mode: "headsup",
+  priority: "high",
+  icon: "/avatars/alice.jpg",
+  duration: 5000,
+  groupKey: "dm_alice",
+  threadKey: "conv_123",
+  replyable: true,
   actions: [
-    // Quick actions (optional)
-    {
-      id: "reply",
-      label: "Reply",
-      icon: "💬",
-    },
-    {
-      id: "archive",
-      label: "Archive",
-      icon: "📦",
-    },
+    { id: "reply", label: "Reply" },
+    { id: "archive", label: "Archive", destructive: false },
   ],
-  groupKey: "dm_alice", // Stack notifications (optional)
-  threadId: "conv_123", // Conversation thread (optional)
-  replyable: true, // Allow inline reply (optional)
+  metadata: { conversationId: "123" },
 });
 ```
 
@@ -160,13 +299,7 @@ noti.at("2s").show({
 Dismiss a notification.
 
 ```typescript
-// Dismiss specific notification
 noti.at("5s").dismiss("notif_1");
-
-// Dismiss by options
-noti.at("5s").dismiss({
-  id: "notif_1",
-});
 ```
 
 ### .tap(id, actionId?)
@@ -174,26 +307,18 @@ noti.at("5s").dismiss({
 Tap a notification to open the app.
 
 ```typescript
-// Simple tap (opens app)
 noti.at("3s").tap("notif_1");
-
-// Tap action button
-noti.at("3s").tap("notif_1", "reply");
+noti.at("3s").tap("notif_1", "reply"); // Tap action button
 ```
 
-### .swipe(id, direction, action)
+### .swipe(id, direction)
 
-Swipe notification to perform action.
+Swipe notification to dismiss.
 
 ```typescript
-// Swipe left to dismiss
-noti.at("4s").swipe("notif_1", "left", "dismiss");
-
-// Swipe right to archive
-noti.at("4s").swipe("notif_1", "right", "archive");
+noti.at("4s").swipe("notif_1", "left");
+noti.at("4s").swipe("notif_1", "right");
 ```
-
-**Available actions**: `"dismiss"`, `"archive"`, `"snooze"`, `"mark_read"`
 
 ### .dynamicIsland(opts)
 
@@ -201,24 +326,17 @@ Update Dynamic Island state (iOS 16+).
 
 ```typescript
 noti.at("2s").dynamicIsland({
-  mode: "compact", // "compact" | "expanded" | "minimal"
-  appId: "app_music", // App controlling island
+  mode: "compact", // "idle" | "minimal" | "compact" | "expanded"
+  appId: "app_music",
 });
 ```
 
-### .openPanel()
+### .openPanel() / .closePanel()
 
-Open notification shade/panel.
+Open/close notification shade.
 
 ```typescript
 noti.at("5s").openPanel();
-```
-
-### .closePanel()
-
-Close notification shade/panel.
-
-```typescript
 noti.at("8s").closePanel();
 ```
 
@@ -256,12 +374,12 @@ noti.at("6s").reply("notif_1", "Thanks!");
 | Property    | Type                   | Default     | Description                                      |
 | ----------- | ---------------------- | ----------- | ------------------------------------------------ |
 | `mode`      | `NotificationMode`     | `"headsup"` | Display mode (headsup, lockscreen, both, silent) |
-| `priority`  | `NotificationPriority` | `"default"` | Priority level (low, default, high, urgent)      |
+| `priority`  | `NotificationPriority` | `"default"` | Priority level (low, default, high, critical)    |
 | `icon`      | `string`               | App default | App icon URL or emoji                            |
-| `preview`   | `PreviewContent`       | -           | Rich media preview (text, image, video)          |
+| `duration`  | `number`               | 5000        | Auto-dismiss duration in ms                      |
 | `actions`   | `Action[]`             | -           | Quick action buttons                             |
 | `groupKey`  | `string`               | -           | Group notifications together                     |
-| `threadId`  | `string`               | -           | Conversation thread ID                           |
+| `threadKey` | `string`               | -           | Conversation thread ID                           |
 | `replyable` | `boolean`              | `false`     | Allow inline reply                               |
 | `metadata`  | `Record<string, any>`  | -           | App-specific data                                |
 
@@ -282,185 +400,266 @@ type NotificationPriority =
   | "low" // Minimal, no sound
   | "default" // Standard notification
   | "high" // Heads-up, sound
-  | "urgent"; // Full-screen alert
-```
-
-### Preview Content
-
-```typescript
-interface PreviewContent {
-  kind: "text" | "image" | "video";
-  value: string; // Text or URL
-  aspectRatio?: number; // For images/videos
-}
-```
-
-**Examples**:
-
-```typescript
-// Text preview
-preview: {
-  kind: "text",
-  value: "This is a longer message preview...",
-}
-
-// Image preview
-preview: {
-  kind: "image",
-  value: "/images/photo.jpg",
-  aspectRatio: 16/9,
-}
-
-// Video preview
-preview: {
-  kind: "video",
-  value: "/videos/clip.mp4",
-  aspectRatio: 9/16,
-}
+  | "critical"; // Full-screen alert, persistent
 ```
 
 ### Quick Actions
 
 ```typescript
 interface NotificationAction {
-  id: string; // Action identifier
-  label: string; // Button text
-  icon?: string; // Icon or emoji
+  id: string;
+  label: string;
   destructive?: boolean; // Red/danger styling
 }
 ```
 
-**Example**:
-
-```typescript
-actions: [
-  {
-    id: "reply",
-    label: "Reply",
-    icon: "💬",
-  },
-  {
-    id: "delete",
-    label: "Delete",
-    icon: "🗑️",
-    destructive: true,
-  },
-];
-```
-
 ---
 
-## Notification Lifecycle
+## Enterprise Integration
 
-### State Transitions
+### NotificationAdapter Pattern
 
-```
-pending → headsUp → inShade → dismissed
-   ↓                  ↓
-lockscreen ──────────┘
-```
-
-**States**:
-
-- **pending** - Scheduled, not yet shown
-- **headsUp** - Banner visible at top of screen
-- **inShade** - In notification center/tray
-- **dismissed** - Removed from all views
-
-### Timing Properties
-
-Notifications track their lifecycle with frame-based timing:
-
-| Property           | Type     | Description                           |
-| ------------------ | -------- | ------------------------------------- |
-| `createdAtFrame`   | `number` | Frame when notification was created   |
-| `shownAtFrame`     | `number` | Frame when banner appeared            |
-| `dismissedAtFrame` | `number` | Frame when notification was dismissed |
-
----
-
-## Plugin Architecture
-
-### Plugin Registration
-
-The notifications plugin integrates with Tokovo's core plugin system:
+Apps customize their notification appearance and behavior by implementing `NotificationAdapter`:
 
 ```typescript
-import { registerNotificationPlugin } from "@tokovo/device-notifications";
+import type { NotificationAdapter } from "@tokovo/core";
 
-// Register plugin (automatic in video-runner)
-registerNotificationPlugin();
-```
+export const whatsappNotificationAdapter: NotificationAdapter = {
+  appId: "app_whatsapp",
 
-**What gets registered**:
-
-- **Reducer**: Handles all `NOTIFICATION_*` events
-- **Audio Rules**: Auto-plays notification sounds
-- **Sounds**: Default iOS/Android notification tones
-
-### Event Types
-
-The plugin handles these event types:
-
-- `NOTIFICATION_SHOW` - Display notification
-- `NOTIFICATION_DISMISS` - Remove notification
-- `NOTIFICATION_TAP` - User tapped notification
-- `NOTIFICATION_SWIPE` - User swiped notification
-- `NOTIFICATION_DYNAMIC_ISLAND` - Update Dynamic Island
-- `NOTIFICATION_OPEN_PANEL` - Open notification center
-- `NOTIFICATION_CLOSE_PANEL` - Close notification center
-- `NOTIFICATION_CLEAR_ALL` - Clear all notifications
-- `NOTIFICATION_REPLY` - Inline reply sent
-
-### State Management
-
-Notifications are stored in the device state:
-
-```typescript
-interface DeviceState {
-  notifications: {
-    instances: NotificationInstance[]; // Active notifications
-    panel: {
-      isOpen: boolean;
-      scrollOffset: number;
+  format(notification) {
+    return {
+      ...notification,
+      icon: notification.senderAvatar ?? WHATSAPP_ICON,
+      accentColor: "#25D366",
+      actionButtons: [
+        { id: "reply", label: "Reply", style: "primary" },
+        { id: "mark_read", label: "Mark as Read" },
+      ],
     };
-    dynamicIsland: DynamicIslandState;
-  };
+  },
+
+  handleAction(actionId, notification) {
+    switch (actionId) {
+      case "reply":
+        return [
+          { kind: "DEVICE", type: "OPEN_APP", appId: "app_whatsapp" },
+          {
+            kind: "APP",
+            type: "NAVIGATE",
+            route: `/chat/${notification.threadKey}`,
+          },
+        ];
+      case "mark_read":
+        return [
+          {
+            kind: "APP",
+            type: "MARK_READ",
+            conversationId: notification.threadKey,
+          },
+        ];
+      default:
+        return [];
+    }
+  },
+};
+```
+
+### Plugin Contract Integration
+
+Register the adapter in your plugin contract:
+
+```typescript
+import type { TokovoPluginContract } from "@tokovo/core";
+
+export const WhatsAppPlugin: TokovoPluginContract<"app_whatsapp"> = {
+  id: "app_whatsapp",
+  version: "2.0.0",
+  displayName: "WhatsApp",
+
+  reducer: whatsappReducer,
+  views: { AppRoot: WhatsAppApp },
+
+  notificationAdapter: whatsappNotificationAdapter,
+
+  dsl: WhatsAppDSL,
+};
+```
+
+### Reducer-Based Notifications
+
+Apps can emit notifications from their reducer:
+
+```typescript
+case "MESSAGE_RECEIVED": {
+  const { conversationId, from, text } = action.payload;
+
+  draft.conversations[conversationId].messages.push({
+    from,
+    text,
+    at: action.at,
+  });
+
+  if (!draft.isInForeground) {
+    draft._pendingEvents.push({
+      kind: "DEVICE",
+      type: "SHOW_NOTIFICATION",
+      payload: {
+        kind: "show",
+        id: `notif_${Date.now()}`,
+        appId: "app_whatsapp",
+        title: from,
+        body: text,
+        priority: "high",
+        threadKey: conversationId,
+      },
+    });
+  }
+  break;
 }
 ```
 
+### Integration Flow
+
+```
+Episode Event (MESSAGE_RECEIVED)
+        │
+        ▼
+  App Reducer (WhatsApp)
+        │
+        ├── Updates conversation state
+        │
+        └── Emits SHOW_NOTIFICATION (if app not foreground)
+                │
+                ▼
+        Device Notification Reducer
+                │
+                ├── Adds to notifications[]
+                │
+                └── Triggers banner display
+                        │
+                        ▼
+                NotificationAdapter.format()
+                        │
+                        └── Returns app-branded appearance
+                                │
+                                ▼
+                        NotificationBanner renders
+                                │
+                                ▼
+                        User taps → handleAction()
+                                │
+                                └── Returns OPEN_APP + NAVIGATE events
+```
+
 ---
 
-## Registered Anchors
+## Unified Components
 
-The notification plugin registers these camera anchors:
+The notification system uses unified components that adapt to platform tokens:
 
-| Anchor ID            | Description                | Scope                         |
-| -------------------- | -------------------------- | ----------------------------- |
-| `notification`       | Active banner notification | Current heads-up notification |
-| `notificationCenter` | Notification tray/panel    | Full notification center view |
-| `notificationBadge`  | App icon badge             | Badge number on app icon      |
-| `dynamicIsland`      | Dynamic Island (iOS 16+)   | Live activity pill            |
-
-### Camera Integration
-
-Focus on notifications in camera movements:
+### NotificationBanner
 
 ```typescript
-.camera(cam => {
-  // Focus on incoming notification
-  cam.at("2s").focus("notification");
+import { NotificationBanner } from "@tokovo/device-notifications";
 
-  // Focus on notification center
-  cam.at("5s").focus("notificationCenter");
-
-  // Focus on app badge
-  cam.at("8s").focus("notificationBadge");
-
-  // Focus on Dynamic Island
-  cam.at("10s").focus("dynamicIsland");
-})
+<NotificationBanner
+  notification={notification}
+  tokens={tokens}
+  scale={scale}
+  animationState={animationState}
+  animationProgress={animationProgress}
+  stackIndex={stackIndex}
+  stackOffset={stackOffset}
+  onTap={handleTap}
+  onSwipe={handleSwipe}
+/>
 ```
+
+### NotificationLockScreen
+
+```typescript
+import { NotificationLockScreen } from "@tokovo/device-notifications";
+
+<NotificationLockScreen
+  notifications={lockScreenNotifications}
+  tokens={tokens}
+  scale={scale}
+/>
+```
+
+---
+
+## Performance Best Practices
+
+### Selector Usage
+
+Use the factory pattern for optimal memoization:
+
+```typescript
+import { createSelectors } from "@tokovo/device-notifications";
+
+// Create once, reuse
+const selectors = createSelectors(tokens);
+
+// In render
+const bannerNotifications = selectors.getBannerNotifications(
+  device,
+  currentFrame,
+  fps,
+);
+```
+
+### GPU Optimization
+
+The unified components use GPU-accelerated transforms:
+
+```typescript
+// Internal implementation
+transform: `translate3d(0, ${stackOffset}px, 0) scale(${scale})`,
+willChange: 'transform, opacity',
+```
+
+### Memory Management
+
+Notifications are automatically cleaned up after dismissal:
+
+```typescript
+// Cleanup policy (internal)
+const policy = {
+  cleanupDelayFrames: fps * 2, // 2 seconds after dismiss
+};
+```
+
+### Limits
+
+| Limit                       | Recommended | Max |
+| --------------------------- | ----------- | --- |
+| Active banner notifications | 3           | 5   |
+| Notification center items   | 10-15       | 50  |
+| Actions per notification    | 2-3         | 4   |
+
+---
+
+## Platform Differences
+
+### iOS Behavior
+
+- **Heads-up**: Banner slides down from top with blur
+- **Lockscreen**: Shows on lock screen with depth blur
+- **Dynamic Island**: Supported on iPhone 14 Pro+
+- **Notification Center**: Swipe down from top
+- **Sounds**: iOS notification tones
+
+### Android Behavior
+
+- **Heads-up**: Card drops from status bar (Material Design)
+- **Lockscreen**: Shows on ambient display
+- **Dynamic Island**: Not supported (ignored)
+- **Notification Shade**: Swipe down from top
+- **Sounds**: Android notification sounds
+
+The DSL is platform-agnostic; rendering adapts via the token system.
 
 ---
 
@@ -469,243 +668,121 @@ Focus on notifications in camera movements:
 ```typescript
 import { episode } from "@tokovo/dsl";
 import { NotificationTrackBuilder } from "@tokovo/device-notifications";
-import { WhatsAppTrackBuilder } from "@tokovo/apps-whatsapp";
 
 let order = 0;
 const getOrder = () => order++;
 
-episode("notification-story", { fps: 30, duration: "20s" })
+export default episode("notification-demo", { fps: 30, duration: "30s" })
   .device("phone", "iphone16", {
     app: "app_whatsapp",
-    conversations: [
-      {
-        id: "dm_alice",
-        name: "Alice 👋",
-        avatar: "/avatars/alice.jpg",
-      },
-    ],
   })
 
-  // Notification track
   .track(
     "notifications",
-    () => {
-      return new NotificationTrackBuilder(30, "phone", getOrder);
-    },
+    () => new NotificationTrackBuilder(30, "phone", getOrder),
     (noti) => {
-      // First notification: Message from Alice
+      // Basic notification
       noti.at("1s").show({
-        id: "notif_1",
+        id: "wa_alex_1",
         appId: "app_whatsapp",
-        title: "Alice 👋",
-        body: "Hey! Are you free tonight?",
-        mode: "headsup",
+        title: "Alex",
+        body: "Hey! Are you free for lunch? 🍕",
         priority: "high",
-        icon: "/avatars/alice.jpg",
-        preview: {
-          kind: "text",
-          value: "Hey! Are you free tonight?",
-        },
+        threadKey: "chat_alex",
+      });
+
+      noti.at("3.5s").dismiss("wa_alex_1");
+
+      // Stacking demo (newest on top)
+      noti.at("5s").show({
+        id: "wa_group_1",
+        appId: "app_whatsapp",
+        title: "Work Group",
+        body: "Mike: The deadline is tomorrow!",
+        priority: "high",
+        groupKey: "work_group",
+      });
+
+      noti.at("6s").show({
+        id: "wa_sarah_1",
+        appId: "app_whatsapp",
+        title: "Sarah",
+        body: "Did you see the news? 📰",
+      });
+
+      noti.at("7s").show({
+        id: "wa_mom_1",
+        appId: "app_whatsapp",
+        title: "Mom ❤️",
+        body: "Call me when you get a chance",
+        priority: "high",
+      });
+
+      // Interactions
+      noti.at("9s").tap("wa_mom_1");
+      noti.at("10.5s").swipe("wa_sarah_1", "right");
+      noti.at("11s").swipe("wa_group_1", "right");
+
+      // Priority levels
+      noti.at("13s").show({
+        id: "uber_1",
+        appId: "Uber",
+        title: "Your ride is arriving!",
+        body: "Toyota Camry • 2 min away",
+        priority: "critical",
+      });
+
+      noti.at("14s").show({
+        id: "calendar_1",
+        appId: "Calendar",
+        title: "Meeting in 10 minutes",
+        body: "Team Standup - Zoom",
+        priority: "high",
+        actions: [
+          { id: "join", label: "Join" },
+          { id: "snooze", label: "Snooze" },
+        ],
+      });
+
+      // Grouped notifications
+      noti.at("21s").show({
+        id: "mail_1",
+        appId: "Mail",
+        title: "boss@company.com",
+        body: "Q4 Report Review",
+        groupKey: "inbox",
+      });
+
+      noti.at("22s").show({
+        id: "mail_2",
+        appId: "Mail",
+        title: "team@company.com",
+        body: "Sprint Planning Notes",
+        groupKey: "inbox",
+      });
+
+      // Reply action
+      noti.at("25s").show({
+        id: "wa_alex_2",
+        appId: "app_whatsapp",
+        title: "Alex",
+        body: "So... lunch? 🍕",
+        priority: "high",
+        threadKey: "chat_alex",
         replyable: true,
+        actions: [
+          { id: "reply", label: "Reply" },
+          { id: "mark_read", label: "Mark as Read" },
+        ],
       });
 
-      // Second notification: Another message
-      noti.at("4s").show({
-        id: "notif_2",
-        appId: "app_whatsapp",
-        title: "Alice 👋",
-        body: "Check out this photo! 📸",
-        mode: "headsup",
-        preview: {
-          kind: "image",
-          value: "/images/photo.jpg",
-          aspectRatio: 16 / 9,
-        },
-      });
-
-      // Dismiss first notification
-      noti.at("6s").dismiss("notif_1");
-
-      // Tap second notification (opens WhatsApp)
-      noti.at("8s").tap("notif_2");
-
-      // Show Dynamic Island after app opens
-      noti.at("10s").dynamicIsland({
-        mode: "compact",
-        appId: "app_music",
-      });
-
-      // Third notification while in app
-      noti.at("12s").show({
-        id: "notif_3",
-        appId: "app_whatsapp",
-        title: "Alice 👋",
-        body: "Hello? 👀",
-        mode: "headsup",
-      });
-
-      // Swipe to dismiss
-      noti.at("15s").swipe("notif_3", "left", "dismiss");
-
-      // Clear all at end
-      noti.at("18s").clearAll();
+      // Clear all
+      noti.at("29s").clearAll();
     },
   )
-
-  // WhatsApp messages (match notifications)
-  .track(
-    "app_whatsapp",
-    () => {
-      return new WhatsAppTrackBuilder(30, "phone", "dm_alice", getOrder);
-    },
-    (wa) => {
-      wa.at("1s").receive("Alice", "Hey! Are you free tonight?");
-      wa.at("4s").receive("Alice", "Check out this photo! 📸");
-      wa.at("12s").receive("Alice", "Hello? 👀");
-    },
-  )
-
-  // Camera movements
-  .camera((cam) => {
-    cam.at("1s").focus("notification"); // Focus on banner
-    cam.at("3s").animate({ scale: 1, duration: "0.5s" });
-    cam.at("8s").animate({ scale: 1.1, duration: "0.5s" }); // Zoom on tap
-  })
 
   .build();
 ```
-
----
-
-## Advanced Features
-
-### Notification Grouping
-
-Stack related notifications using `groupKey`:
-
-```typescript
-noti.at("1s").show({
-  id: "notif_1",
-  appId: "app_whatsapp",
-  title: "Alice",
-  body: "Message 1",
-  groupKey: "dm_alice", // Group notifications
-});
-
-noti.at("2s").show({
-  id: "notif_2",
-  appId: "app_whatsapp",
-  title: "Alice",
-  body: "Message 2",
-  groupKey: "dm_alice", // Same group
-});
-
-// Shows as stacked notification: "Alice (2 messages)"
-```
-
-### Thread-Based Notifications
-
-Use `threadId` for conversation threading:
-
-```typescript
-noti.at("1s").show({
-  id: "notif_1",
-  appId: "app_whatsapp",
-  title: "Group Chat",
-  body: "Alice: Hey everyone!",
-  threadId: "conv_group_123",
-});
-
-noti.at("3s").show({
-  id: "notif_2",
-  appId: "app_whatsapp",
-  title: "Group Chat",
-  body: "Bob: Hi Alice!",
-  threadId: "conv_group_123", // Same thread
-});
-```
-
-### Notification Sounds
-
-Notifications automatically trigger sounds via the audio system:
-
-```typescript
-noti.at("2s").show({
-  appId: "app_whatsapp",
-  title: "Alice",
-  body: "Hey!",
-  priority: "high", // Plays default notification sound
-});
-```
-
-Sound is determined by:
-
-- **Priority level** (urgent = longer sound)
-- **App ID** (custom app sounds if registered)
-- **Device profile** (iOS vs Android tones)
-
----
-
-## Platform Differences
-
-### iOS Behavior
-
-- **Heads-up**: Banner slides down from top
-- **Lockscreen**: Shows on lock screen with blur
-- **Dynamic Island**: Supported on iPhone 14 Pro+
-- **Notification Center**: Swipe down from top
-- **Sounds**: iOS notification tones
-
-### Android Behavior
-
-- **Heads-up**: Card drops from status bar
-- **Lockscreen**: Shows on ambient display
-- **Dynamic Island**: Not supported
-- **Notification Shade**: Swipe down from top
-- **Sounds**: Android notification sounds
-
-The DSL is platform-agnostic; rendering adapts to device profile.
-
----
-
-## Links
-
-### Related Packages
-
-- [@tokovo/core](/packages/core) - Plugin system and device state
-- [@tokovo/devices](/packages/devices) - Device profiles and integration
-- [@tokovo/dsl](/packages/dsl) - Episode DSL and track builders
-
-### Related Concepts
-
-- [Plugins](/concepts/plugins) - Plugin architecture overview
-- [Anchors](/concepts/anchors) - Camera anchor system
-- [Tracks](/concepts/tracks) - Track-based episode authoring
-- [Device State](/concepts/device-state) - Device state management
-
----
-
-## Best Practices
-
-### Timing
-
-- **Stagger notifications**: Wait 2-3s between notifications
-- **Auto-dismiss**: Heads-up banners dismiss after 3-5s naturally
-- **Tap timing**: Allow 1-2s after banner appears before tap
-- **Sound overlap**: Avoid multiple notifications at exact same frame
-
-### UX
-
-- **Match app events**: Sync notification content with app messages
-- **Use previews**: Rich previews make notifications more engaging
-- **Group smartly**: Group related notifications, don't spam
-- **Respect priority**: Use `urgent` sparingly for critical alerts
-
-### Performance
-
-- **Limit active notifications**: 10-15 max in notification center
-- **Clear old notifications**: Use `clearAll()` to reset state
-- **Optimize images**: Compress preview images for performance
 
 ---
 
@@ -715,20 +792,23 @@ The DSL is platform-agnostic; rendering adapts to device profile.
 
 - **Check mode**: `mode: "silent"` won't show banner
 - **Check timing**: Ensure frame timing is correct
-- **Check device state**: Device must be in correct state (locked/unlocked)
-- **Check plugin registration**: Ensure `registerNotificationPlugin()` was called
+- **Check priority**: Lowercase values (`"high"` not `"HIGH"`)
+
+### Notification positioned incorrectly
+
+- **Use device-aware tokens**: `createDeviceAwareTokens({ safeArea: ... })`
+- **Check device profile**: Ensure correct `safeArea.top` value
+
+### Stacking not working
+
+- **Check sort direction**: Banner uses `sortDirection: "desc"` (newest first)
+- **Verify IDs are unique**: Each notification needs a unique `id`
 
 ### Notification stuck on screen
 
-- **Auto-dismiss**: Heads-up notifications auto-dismiss after duration
+- **Auto-dismiss**: Set `duration` for auto-dismissal
 - **Manual dismiss**: Call `.dismiss(id)` to remove
 - **Clear all**: Use `.clearAll()` to reset
-
-### Sound not playing
-
-- **Check priority**: `priority: "low"` may not trigger sound
-- **Check audio registry**: Ensure notification sounds are registered
-- **Check device profile**: Some devices may have custom sound rules
 
 ---
 
@@ -736,43 +816,41 @@ The DSL is platform-agnostic; rendering adapts to device profile.
 
 ```typescript
 // Main exports
-export { NotificationTrackBuilder, NotificationPointBuilder };
+export {
+  NotificationTrackBuilder,
+  createSelectors,
+  getNotificationTokens,
+  createDeviceAwareTokens,
+  NotificationBanner,
+  NotificationLockScreen,
+};
 
 // Types
 export type {
-  NotificationIR,
+  NotificationTokens,
+  NotificationTheme,
   NotificationInstance,
   NotificationMode,
   NotificationPriority,
-  DynamicIslandMode,
-  DynamicIslandState,
+  NotificationAction,
+  SafeAreaInsets,
+  DeviceAwareTokensOptions,
 };
 
-// Payloads
+// Selectors
 export type {
-  ShowNotificationPayload,
-  DismissNotificationPayload,
-  TapNotificationPayload,
-  SwipeNotificationPayload,
-  DynamicIslandPayload,
+  NotificationSelectors,
+  NotificationAnimationInfo,
+  StackedNotificationInfo,
 };
-
-// Plugin
-export { NotificationPlugin, registerNotificationPlugin };
 ```
 
 ---
 
-## Summary
+## Related
 
-`@tokovo/device-notifications` provides:
-
-✅ **Fluent notification DSL** - `NotificationTrackBuilder` with time-based API  
-✅ **Complete notification types** - Heads-up, lockscreen, silent, badge  
-✅ **Rich interactions** - Tap, swipe, dismiss, inline reply  
-✅ **Dynamic Island** - iOS 16+ live activity support  
-✅ **Platform-agnostic** - Works with iOS and Android device profiles  
-✅ **Plugin architecture** - Integrates with core reducer/audio/anchor systems  
-✅ **Camera integration** - Focus on notifications in camera movements
-
-Perfect for creating cinematic phone simulations with realistic OS-level notifications.
+- [@tokovo/core](/packages/core) - Plugin system and device state
+- [@tokovo/devices](/packages/devices) - Device profiles with safe areas
+- [@tokovo/dsl](/packages/dsl) - Episode DSL and track builders
+- [Anchors](/concepts/anchors) - Camera anchor system
+- [Plugins](/concepts/plugins) - Plugin architecture overview
