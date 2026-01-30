@@ -1,6 +1,7 @@
 import { defineEpisode } from "../types/episode-definition";
 import { episode } from "@tokovo/dsl";
 import { WhatsAppTrackBuilder } from "@tokovo/apps-whatsapp/src/dsl/track-builder";
+import { AudioDirectorPlugin, OSDirectorPlugin, KeyboardPlugin } from "@tokovo/compiler";
 
 let orderCounter = 0;
 const getOrder = () => orderCounter++;
@@ -92,16 +93,15 @@ export default defineEpisode({
         cam.at("29s").animate({ scale: 1, duration: "1s", easing: "easeOut" });
       })
 
-      .audio((audio) => {
-        audio
-          .span("0s", "30s")
-          .bgm("synth_dark", { volume: 0.2, fadeIn: "2s", fadeOut: "2s" });
-      })
-
-      .os((os) => {
-        os.at("15s").time(new Date("2077-11-21T23:46:00"));
-        os.at("30s").time(new Date("2077-11-21T23:47:00"));
-      })
+      .use(new AudioDirectorPlugin({ mood: "dark", volume: 0.2 }))
+      .use(
+        new OSDirectorPlugin({
+          startTime: new Date("2077-11-21T23:46:00"),
+          startBattery: 92,
+          batteryDrainRate: 0.3,
+          updateInterval: "15s",
+        }),
+      )
 
       .mark("intro", "1s")
       .mark("briefing", "3s")
@@ -113,7 +113,14 @@ export default defineEpisode({
       .section("intro", "0s", "3s")
       .section("briefing", "3s", "16s")
       .section("prep", "16s", "23s")
-      .section("outro", "23s", "30s")
+      .section("outro", "23s", "30s").use(
+        new KeyboardPlugin({
+          onlyForSentMessages: true,
+          defaultCharDelay: 3,
+          excludeShortMessages: 3,
+        }),
+      )
+
 
       .build(),
 });

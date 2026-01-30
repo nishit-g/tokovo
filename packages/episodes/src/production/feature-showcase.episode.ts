@@ -1,6 +1,7 @@
 import { defineEpisode } from "../types/episode-definition";
 import { episode } from "@tokovo/dsl";
 import { WhatsAppTrackBuilder } from "@tokovo/apps-whatsapp/src/dsl/track-builder";
+import { KeyboardPlugin } from "@tokovo/compiler";
 
 let orderCounter = 0;
 const getOrder = () => orderCounter++;
@@ -188,7 +189,14 @@ export default defineEpisode({
       .section("media_messages", "7s", "23s")
       .section("rich_content", "23s", "43s")
       .section("message_actions", "43s", "58s")
-      .section("outro", "58s", "60s")
+      .section("outro", "58s", "60s").use(
+        new KeyboardPlugin({
+          onlyForSentMessages: true,
+          defaultCharDelay: 3,
+          excludeShortMessages: 3,
+        }),
+      )
+
 
       .build(),
 });

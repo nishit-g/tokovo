@@ -1,6 +1,7 @@
 import { defineEpisode } from "../types/episode-definition";
 import { episode } from "@tokovo/dsl";
 import { WhatsAppTrackBuilder } from "@tokovo/apps-whatsapp/src/dsl/track-builder";
+import { KeyboardPlugin } from "@tokovo/compiler";
 
 let orderCounter = 0;
 const getOrder = () => orderCounter++;
@@ -149,7 +150,14 @@ export default defineEpisode({
       .section("spring_physics", "3s", "15s")
       .section("shake", "15s", "20s")
       .section("impact_effects", "20s", "31s")
-      .section("outro", "31s", "40s")
+      .section("outro", "31s", "40s").use(
+        new KeyboardPlugin({
+          onlyForSentMessages: true,
+          defaultCharDelay: 3,
+          excludeShortMessages: 3,
+        }),
+      )
+
 
       .build(),
 });

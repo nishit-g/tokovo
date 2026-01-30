@@ -10,6 +10,9 @@
 import { defineEpisode } from "../types/episode-definition";
 import { episode } from "@tokovo/dsl";
 import { WhatsAppTrackBuilder } from "@tokovo/apps-whatsapp/src/dsl/track-builder";
+import { CameraDirectorPlugin,
+  AudioDirectorPlugin,
+  OSDirectorPlugin, KeyboardPlugin } from "@tokovo/compiler";
 
 let orderCounter = 0;
 const getOrder = () => orderCounter++;
@@ -165,92 +168,16 @@ export default defineEpisode({
         },
       )
 
-      .camera((cam) => {
-        cam.at("0s").set({ scale: 1 });
-        cam
-          .at("1s")
-          .animate({ scale: 1.1, duration: "0.3s", easing: "easeOut" });
-        cam
-          .at("2.5s")
-          .shake({
-            intensityX: 8,
-            intensityY: 6,
-            frequency: 25,
-            decay: 0.9,
-            duration: "0.4s",
-          });
-        cam.at("9s").focus("lastMessage", { scale: 1.15, duration: "0.5s" });
-        cam
-          .at("12s")
-          .animate({ scale: 1.2, duration: "0.5s", easing: "cinematic" });
-        cam
-          .at("20s")
-          .shake({
-            intensityX: 4,
-            intensityY: 3,
-            frequency: 15,
-            decay: 0.8,
-            duration: "0.3s",
-          });
-        cam
-          .at("22s")
-          .animate({ scale: 1.3, duration: "0.4s", easing: "easeOut" });
-        cam
-          .at("40s")
-          .animate({
-            scale: 1.25,
-            y: -30,
-            duration: "0.6s",
-            easing: "cinematic",
-          });
-        cam.at("45s").focus("lastMessage", { scale: 1.2, duration: "0.5s" });
-        cam.at("50s").animate({ scale: 1.15, duration: "0.4s" });
-        cam
-          .at("55s")
-          .shake({
-            intensityX: 12,
-            intensityY: 10,
-            frequency: 30,
-            decay: 0.85,
-            duration: "0.5s",
-          });
-        cam.at("58s").animate({ scale: 1.1, duration: "0.3s" });
-        cam.at("67s").focus("lastMessage", { scale: 1.2, duration: "0.5s" });
-        cam
-          .at("77s")
-          .animate({ scale: 1.15, duration: "0.3s", easing: "easeOut" });
-        cam
-          .at("83s")
-          .shake({
-            intensityX: 6,
-            intensityY: 5,
-            frequency: 20,
-            decay: 0.8,
-            duration: "0.4s",
-          });
-        cam
-          .at("88s")
-          .animate({ scale: 1.05, y: 0, duration: "1s", easing: "easeOut" });
-      })
-
-      .audio((audio) => {
-        audio
-          .span("0s", "90s")
-          .bgm("lofi_chill", { volume: 0.15, fadeIn: "2s", fadeOut: "3s" });
-      })
-
-      .os((os) => {
-        os.at("15s").time(new Date("2024-12-17T23:32:00"));
-        os.at("30s").time(new Date("2024-12-17T23:34:00"));
-        os.at("45s").time(new Date("2024-12-17T23:36:00"));
-        os.at("60s").time(new Date("2024-12-17T23:38:00"));
-        os.at("75s").time(new Date("2024-12-17T23:40:00"));
-        os.at("90s").time(new Date("2024-12-17T23:42:00"));
-        os.at("20s").battery(21);
-        os.at("40s").battery(19);
-        os.at("60s").battery(17);
-        os.at("80s").battery(15);
-      })
+      .use(new CameraDirectorPlugin())
+      .use(new AudioDirectorPlugin({ mood: "chill", volume: 0.15 }))
+      .use(
+        new OSDirectorPlugin({
+          startTime: new Date("2024-12-17T23:30:00"),
+          startBattery: 23,
+          batteryDrainRate: 0.5,
+          updateInterval: "15s",
+        }),
+      )
 
       .mark("spam", "1s")
       .mark("plan_reveal", "9s")
@@ -273,7 +200,14 @@ export default defineEpisode({
       .section("the_pitch", "5s", "29s")
       .section("club_twist", "29s", "56s")
       .section("media_showcase", "56s", "75s")
-      .section("giving_in", "75s", "90s")
+      .section("giving_in", "75s", "90s").use(
+        new KeyboardPlugin({
+          onlyForSentMessages: true,
+          defaultCharDelay: 3,
+          excludeShortMessages: 3,
+        }),
+      )
+
 
       .build(),
 });

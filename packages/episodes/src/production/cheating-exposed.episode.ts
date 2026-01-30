@@ -1,6 +1,7 @@
 import { defineEpisode } from "../types/episode-definition";
 import { episode } from "@tokovo/dsl";
 import { WhatsAppTrackBuilder } from "@tokovo/apps-whatsapp/src/dsl/track-builder";
+import { AudioDirectorPlugin, OSDirectorPlugin, KeyboardPlugin } from "@tokovo/compiler";
 
 let orderCounter = 0;
 const getOrder = () => orderCounter++;
@@ -184,70 +185,61 @@ export default defineEpisode({
         cam
           .at("43s")
           .animate({ scale: 1.15, duration: "0.8s", easing: "cinematic" });
-        cam
-          .at("55s")
-          .shake({
-            intensityX: 6,
-            intensityY: 4,
-            frequency: 20,
-            decay: 0.85,
-            duration: "0.4s",
-          });
-        cam
-          .at("60s")
-          .shake({
-            intensityX: 8,
-            intensityY: 6,
-            frequency: 25,
-            decay: 0.85,
-            duration: "0.5s",
-          });
+        cam.at("55s").shake({
+          intensityX: 6,
+          intensityY: 4,
+          frequency: 20,
+          decay: 0.85,
+          duration: "0.4s",
+        });
+        cam.at("60s").shake({
+          intensityX: 8,
+          intensityY: 6,
+          frequency: 25,
+          decay: 0.85,
+          duration: "0.5s",
+        });
         cam
           .at("79s")
           .animate({ scale: 1.25, duration: "0.6s", easing: "cinematic" });
-        cam
-          .at("90s")
-          .shake({
-            intensityX: 10,
-            intensityY: 8,
-            frequency: 30,
-            decay: 0.8,
-            duration: "0.6s",
-          });
+        cam.at("90s").shake({
+          intensityX: 10,
+          intensityY: 8,
+          frequency: 30,
+          decay: 0.8,
+          duration: "0.6s",
+        });
         cam
           .at("137s")
           .animate({ scale: 1.2, duration: "0.5s", easing: "easeOut" });
-        cam
-          .at("149s")
-          .shake({
-            intensityX: 12,
-            intensityY: 10,
-            frequency: 35,
-            decay: 0.85,
-            duration: "0.5s",
-          });
+        cam.at("149s").shake({
+          intensityX: 12,
+          intensityY: 10,
+          frequency: 35,
+          decay: 0.85,
+          duration: "0.5s",
+        });
         cam
           .at("175s")
           .animate({ scale: 1.05, duration: "2s", easing: "easeOut" });
       })
 
-      .audio((audio) => {
-        audio
-          .span("0s", "140s")
-          .bgm("tension_ambient", {
-            volume: 0.12,
-            fadeIn: "3s",
-            fadeOut: "5s",
-          });
-      })
+      .use(new AudioDirectorPlugin({ mood: "tension", volume: 0.12 }))
+      .use(
+        new OSDirectorPlugin({
+          startTime: new Date("2024-12-18T09:15:00"),
+          startBattery: 85,
+          batteryDrainRate: 0.5,
+          updateInterval: "30s",
+        }),
+      ).use(
+        new KeyboardPlugin({
+          onlyForSentMessages: true,
+          defaultCharDelay: 3,
+          excludeShortMessages: 3,
+        }),
+      )
 
-      .os((os) => {
-        os.at("0s").time(new Date("2024-12-18T09:15:00"));
-        os.at("30s").time(new Date("2024-12-18T09:18:00"));
-        os.at("60s").time(new Date("2024-12-18T09:22:00"));
-        os.at("90s").time(new Date("2024-12-18T09:25:00"));
-        os.at("120s").time(new Date("2024-12-18T09:28:00"));
-      })
 
       .build(),
 });

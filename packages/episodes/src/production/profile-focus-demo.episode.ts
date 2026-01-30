@@ -8,6 +8,7 @@
 import { defineEpisode } from "../types/episode-definition";
 import { episode } from "@tokovo/dsl";
 import { WhatsAppTrackBuilder } from "@tokovo/apps-whatsapp";
+import { KeyboardPlugin } from "@tokovo/compiler";
 
 // Declaration order counter
 let orderCounter = 0;
@@ -70,6 +71,13 @@ export default defineEpisode({
             cam.at("5s").reset({
                 duration: "0.8s",  // Smooth ease back: 5s → 5.8s
             });
-        })
+        }).use(
+        new KeyboardPlugin({
+          onlyForSentMessages: true,
+          defaultCharDelay: 3,
+          excludeShortMessages: 3,
+        }),
+      )
+
         .build(),
 });

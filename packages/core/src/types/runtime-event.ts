@@ -20,6 +20,7 @@ export type RuntimeEventKind =
   | "DEVICE"
   | "CAMERA"
   | "AUDIO"
+  | "VOICE"
   | "KEYBOARD"
   | "OS"
   | "CALL"
@@ -375,6 +376,7 @@ export interface AudioPlayEvent extends BaseAudioRuntimeEvent {
   volume?: number;
   fadeIn?: number;
   loop?: boolean;
+  bus?: string;
 }
 
 export interface AudioStopEvent extends BaseAudioRuntimeEvent {
@@ -550,6 +552,37 @@ export interface MarkerRuntimeEvent extends BaseRuntimeEvent {
 }
 
 // =============================================================================
+// VOICE EVENT
+// =============================================================================
+
+export type VoiceEventType = "PLAY_SEGMENT" | "STOP_VOICE";
+
+interface BaseVoiceRuntimeEvent extends BaseRuntimeEvent {
+  kind: "VOICE";
+  type: VoiceEventType;
+}
+
+export interface VoicePlaySegmentEvent extends BaseVoiceRuntimeEvent {
+  type: "PLAY_SEGMENT";
+  segmentId: string;
+  audioPath: string;
+  startMs: number;
+  endMs: number;
+  volume?: number;
+  speed?: number;
+  speaker?: string;
+  text?: string;
+}
+
+export interface VoiceStopEvent extends BaseVoiceRuntimeEvent {
+  type: "STOP_VOICE";
+  targetSegmentId?: string;
+  deviceId?: string;
+}
+
+export type VoiceRuntimeEvent = VoicePlaySegmentEvent | VoiceStopEvent;
+
+// =============================================================================
 // V2 NATIVE OPS (from @tokovo/ir)
 // =============================================================================
 
@@ -566,6 +599,7 @@ export type RuntimeEvent =
   | DeviceRuntimeEvent
   | CameraRuntimeEvent
   | AudioRuntimeEvent
+  | VoiceRuntimeEvent
   | KeyboardRuntimeEvent
   | OSRuntimeEvent
   | CallRuntimeEvent
@@ -671,4 +705,10 @@ export function isRuntimeKeyboardEvent(
   event: RuntimeEvent,
 ): event is KeyboardRuntimeEvent {
   return event.kind === "KEYBOARD";
+}
+
+export function isRuntimeVoiceEvent(
+  event: RuntimeEvent,
+): event is VoiceRuntimeEvent {
+  return event.kind === "VOICE";
 }

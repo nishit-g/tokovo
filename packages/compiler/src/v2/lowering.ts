@@ -16,6 +16,7 @@ import type {
   MarkerTrackEvent,
   CallTrackEvent,
   DeviceTrackEvent,
+  VoiceTrackEvent,
 } from "@tokovo/ir";
 import {
   isCameraEvent,
@@ -24,6 +25,7 @@ import {
   isMarkerEvent,
   isCallEvent,
   isDeviceEvent,
+  isVoiceEvent,
 } from "@tokovo/ir";
 import type {
   AudioCrossfadeEvent,
@@ -37,6 +39,9 @@ import type {
   OSRuntimeEvent,
   RuntimeEvent,
   TokovoPlugin,
+  VoiceRuntimeEvent,
+  VoicePlaySegmentEvent,
+  VoiceStopEvent,
 } from "@tokovo/core";
 import { createScopedLogger } from "@tokovo/core";
 import { cameraV2Lowering } from "@tokovo/device-camera";
@@ -80,6 +85,9 @@ export function lowerTrackEvent(
   }
   if (isAudioEvent(event)) {
     return lowerAudioEvent(event);
+  }
+  if (isVoiceEvent(event)) {
+    return lowerVoiceEvent(event, ctx);
   }
   if (isOSEvent(event)) {
     return lowerOSEvent(event);
@@ -137,6 +145,7 @@ function lowerAudioEvent(event: AudioTrackEvent): AudioRuntimeEvent[] {
           volume: event.payload.volume,
           fadeIn: event.payload.fadeIn,
           loop: true,
+          bus: "music",
         } satisfies AudioPlayEvent,
       ];
 
@@ -191,6 +200,57 @@ function lowerAudioEvent(event: AudioTrackEvent): AudioRuntimeEvent[] {
 
     case "STOP_ALL":
       return [{ ...base, type: "STOP_ALL" } satisfies AudioStopAllEvent];
+
+    default:
+      return [];
+  }
+}
+
+function lowerVoiceEvent(
+  event: VoiceTrackEvent,
+  ctx: LoweringContext,
+): VoiceRuntimeEvent[] {
+  const base = {
+    at: event.at,
+    kind: "VOICE" as const,
+    deviceId: event.deviceId,
+  };
+
+  switch (event.type) {
+    case "PLAY_SEGMENT": {
+      const events: VoiceRuntimeEvent[] = [
+        {
+          ...base,
+          type: "PLAY_SEGMENT",
+          segmentId: event.payload.segmentId,
+          audioPath: event.payload.audioPath,
+          startMs: event.payload.startMs,
+          endMs: event.payload.endMs,
+          volume: event.payload.volume,
+          speed: event.payload.speed,
+          speaker: event.payload.speaker,
+          text: event.payload.text,
+        } satisfies VoicePlaySegmentEvent,
+      ];
+
+      const durationMs = event.payload.endMs - event.payload.startMs;
+      if (durationMs > 0) {
+        const durationFrames = Math.ceil((durationMs / 1000) * ctx.fps);
+        const stopFrame = event.at + durationFrames;
+        events.push({
+          at: stopFrame,
+          kind: "VOICE" as const,
+          deviceId: event.deviceId,
+          type: "STOP_VOICE",
+          targetSegmentId: event.payload.segmentId,
+        } satisfies VoiceStopEvent);
+      }
+
+      return events;
+    }
+
+    case "STOP_VOICE":
+      return [{ ...base, type: "STOP_VOICE" } satisfies VoiceStopEvent];
 
     default:
       return [];
@@ -479,7 +539,6 @@ function lowerDeviceEvent(event: TrackEvent): RuntimeEvent[] {
 
     default:
       log.warn(`Unknown DEVICE event type: ${type}`);
-      return [];
       return [];
   }
 }
