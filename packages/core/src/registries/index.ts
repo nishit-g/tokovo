@@ -47,6 +47,17 @@ export {
   type TokovoRuntimeContext,
 } from "./context";
 
+// DI Container (enterprise-grade dependency injection)
+export {
+  getContainer,
+  createScopedContainer,
+  setGlobalContainer,
+  resetGlobalContainer,
+  type TokovoContainer,
+  type RegistryContainer,
+  type ReducerContainer,
+} from "./container";
+
 // Unified Plugin Registry Facade
 export {
   UnifiedPluginRegistry,

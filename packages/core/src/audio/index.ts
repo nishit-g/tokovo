@@ -1,6 +1,6 @@
 /**
  * Audio System - Production-grade audio mixing for Tokovo
- * 
+ *
  * Exports all audio-related modules:
  * - Mixer: Bus routing, ducking, envelopes
  * - Policies: Spam gate, concurrency, priority
@@ -10,51 +10,51 @@
 
 // Mixer
 export {
-    computeSoundVolume,
-    computeBusStates,
-    computeBusDuckMultiplier,
-    applyEnvelope,
-    createSoundCue,
-    createUISoundCue,
-    createVoiceSoundCue,
-    type BusState,
-    type MixerContext,
+  computeSoundVolume,
+  computeBusStates,
+  computeBusDuckMultiplier,
+  applyEnvelope,
+  createSoundCue,
+  createUISoundCue,
+  createVoiceSoundCue,
+  type BusState,
+  type MixerContext,
 } from "./mixer";
 
 // Policies
 export {
-    SpamGate,
-    enforceBusConcurrency,
-    getDefaultPriority,
-    sortByPriority,
-    shouldInterrupt,
-    checkAllPolicies,
-    DEFAULT_POLICY_CONFIG,
-    PRIORITY_LEVELS,
-    type PolicyConfig,
-    type PolicyResult,
+  SpamGate,
+  enforceBusConcurrency,
+  getDefaultPriority,
+  sortByPriority,
+  shouldInterrupt,
+  checkAllPolicies,
+  DEFAULT_POLICY_CONFIG,
+  PRIORITY_LEVELS,
+  type PolicyConfig,
+  type PolicyResult,
 } from "./policies";
 
 // Auto-Sound
 export {
-    AutoSoundRegistry,
-    deriveAudioInstructions,
-    type AutoSoundRule,
-    type AutoSoundAction,
-    type AudioInstruction,
+  AutoSoundRegistry,
+  deriveAudioInstructions,
+  type AutoSoundRule,
+  type AutoSoundAction,
+  type AudioInstruction,
 } from "./auto-sound";
 
 // Music Bed
 export {
-    computeCrossfade,
-    createMusicBed,
-    createTenseMusicBed,
-    createDramaticMusicBed,
-    createCalmMusicBed,
-    getMusicByMood,
-    suggestMood,
-    type CrossfadeState,
-    type MoodTag,
+  computeCrossfade,
+  createMusicBed,
+  createTenseMusicBed,
+  createDramaticMusicBed,
+  createCalmMusicBed,
+  getMusicByMood,
+  suggestMood,
+  type CrossfadeState,
+  type CrossfadeResult,
 } from "./music-bed";
 
 // Sound paths

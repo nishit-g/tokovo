@@ -7,7 +7,8 @@
  * - Priority-based sound selection
  */
 
-import { SoundCue, AudioBus, ActiveSound } from "../types";
+import { SoundCue, AudioBus } from "../types";
+import { AudioLogger } from "../engine/logger";
 
 // =============================================================================
 // TYPES
@@ -60,9 +61,8 @@ export function checkSpamPure(
   const updatedRecentSounds = new Map(recentSounds);
   const lastFrame = recentSounds.get(soundId);
 
-  updatedRecentSounds.set(soundId, frame);
-
   if (lastFrame === undefined) {
+    updatedRecentSounds.set(soundId, frame);
     return { shouldPlay: true, updatedRecentSounds };
   }
 
@@ -71,10 +71,11 @@ export function checkSpamPure(
     return {
       shouldPlay: false,
       alternateSound: softId,
-      updatedRecentSounds,
+      updatedRecentSounds: recentSounds,
     };
   }
 
+  updatedRecentSounds.set(soundId, frame);
   return { shouldPlay: true, updatedRecentSounds };
 }
 
@@ -114,9 +115,8 @@ export class SpamGate {
   ): { shouldPlay: boolean; alternateSound?: string } {
     const lastFrame = this.recentSounds.get(soundId);
 
-    this.recentSounds.set(soundId, frame);
-
     if (lastFrame === undefined) {
+      this.recentSounds.set(soundId, frame);
       return { shouldPlay: true };
     }
 
@@ -128,6 +128,7 @@ export class SpamGate {
       };
     }
 
+    this.recentSounds.set(soundId, frame);
     return { shouldPlay: true };
   }
 
@@ -148,26 +149,12 @@ export class SpamGate {
 // CONCURRENCY LIMIT
 // =============================================================================
 
-/**
- * Check if a sound cue is a SoundCue (not legacy ActiveSound)
- */
-function isSoundCue(sound: SoundCue | ActiveSound): sound is SoundCue {
-  return "bus" in sound;
-}
-
-/**
- * Enforce concurrency limit per bus
- * Returns the sounds that should continue playing (drops lowest priority)
- */
 export function enforceBusConcurrency(
   newCue: SoundCue,
-  activeCues: (SoundCue | ActiveSound)[],
+  activeCues: SoundCue[],
   maxConcurrent: number,
 ): { shouldAdd: boolean; toRemove: string[] } {
-  // Get active cues on same bus
-  const sameBusCues = activeCues.filter((cue): cue is SoundCue => {
-    return isSoundCue(cue) && cue.bus === newCue.bus;
-  });
+  const sameBusCues = activeCues.filter((cue) => cue.bus === newCue.bus);
 
   // If under limit, allow
   if (sameBusCues.length < maxConcurrent) {
@@ -233,26 +220,86 @@ export function shouldInterrupt(
 
 export interface PolicyResult {
   shouldPlay: boolean;
-  soundId: string; // May be altered (soft variant)
-  toRemove: string[]; // Sounds to stop
-  reason?: string; // For debugging
+  soundId: string;
+  toRemove: string[];
+  reason?: string;
+  updatedRecentSounds?: Map<string, number>;
+}
+
+export function checkAllPoliciesPure(
+  cue: SoundCue,
+  frame: number,
+  activeCues: SoundCue[],
+  recentSounds: Map<string, number>,
+  config: PolicyConfig = DEFAULT_POLICY_CONFIG,
+): PolicyResult {
+  const spamResult = checkSpamPure(cue.soundId, frame, recentSounds, config);
+
+  if (!spamResult.shouldPlay) {
+    if (spamResult.alternateSound) {
+      return {
+        shouldPlay: true,
+        soundId: spamResult.alternateSound,
+        toRemove: [],
+        reason: "spam_softened",
+        updatedRecentSounds: spamResult.updatedRecentSounds,
+      };
+    }
+    return {
+      shouldPlay: false,
+      soundId: cue.soundId,
+      toRemove: [],
+      reason: "spam_dropped",
+      updatedRecentSounds: spamResult.updatedRecentSounds,
+    };
+  }
+
+  const maxConcurrent = config.maxConcurrentPerBus[cue.bus] ?? 10;
+  const concurrencyResult = enforceBusConcurrency(
+    cue,
+    activeCues,
+    maxConcurrent,
+  );
+
+  if (!concurrencyResult.shouldAdd) {
+    return {
+      shouldPlay: false,
+      soundId: cue.soundId,
+      toRemove: [],
+      reason: "concurrency_limit",
+      updatedRecentSounds: spamResult.updatedRecentSounds,
+    };
+  }
+
+  return {
+    shouldPlay: true,
+    soundId: cue.soundId,
+    toRemove: concurrencyResult.toRemove,
+    updatedRecentSounds: spamResult.updatedRecentSounds,
+  };
 }
 
 /**
- * Run all policies on a sound before playing
+ * @deprecated Use checkAllPoliciesPure() for deterministic rendering.
+ * This function uses the mutable SpamGate class which breaks replay.
  */
 export function checkAllPolicies(
   cue: SoundCue,
   frame: number,
-  activeCues: (SoundCue | ActiveSound)[],
+  activeCues: SoundCue[],
   spamGate: SpamGate,
   config: PolicyConfig = DEFAULT_POLICY_CONFIG,
 ): PolicyResult {
-  // 1. Spam gate
   const spamResult = spamGate.checkSpam(cue.soundId, frame);
   if (!spamResult.shouldPlay) {
     if (spamResult.alternateSound) {
-      // Try soft variant
+      AudioLogger.policyDrop({
+        soundId: cue.soundId,
+        bus: cue.bus,
+        frame,
+        reason: "spam_softened",
+        alternateSound: spamResult.alternateSound,
+      });
       return {
         shouldPlay: true,
         soundId: spamResult.alternateSound,
@@ -260,6 +307,12 @@ export function checkAllPolicies(
         reason: "spam_softened",
       };
     }
+    AudioLogger.policyDrop({
+      soundId: cue.soundId,
+      bus: cue.bus,
+      frame,
+      reason: "spam_gate",
+    });
     return {
       shouldPlay: false,
       soundId: cue.soundId,
@@ -268,7 +321,6 @@ export function checkAllPolicies(
     };
   }
 
-  // 2. Concurrency limit
   const maxConcurrent = config.maxConcurrentPerBus[cue.bus] ?? 10;
   const concurrencyResult = enforceBusConcurrency(
     cue,
@@ -276,12 +328,30 @@ export function checkAllPolicies(
     maxConcurrent,
   );
   if (!concurrencyResult.shouldAdd) {
+    AudioLogger.policyDrop({
+      soundId: cue.soundId,
+      bus: cue.bus,
+      frame,
+      reason: "concurrency_limit",
+    });
     return {
       shouldPlay: false,
       soundId: cue.soundId,
       toRemove: [],
       reason: "concurrency_limit",
     };
+  }
+
+  if (concurrencyResult.toRemove.length > 0) {
+    for (const removed of concurrencyResult.toRemove) {
+      AudioLogger.policyDrop({
+        soundId: removed,
+        bus: cue.bus,
+        frame,
+        reason: "priority_too_low",
+        replacedBy: cue.soundId,
+      });
+    }
   }
 
   return {

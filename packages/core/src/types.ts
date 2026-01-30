@@ -1,11 +1,17 @@
 // NOTE: DeviceId, AppId, ConversationId, Platform are now in ./types/device.ts
 // Import for local use and re-export for backward compatibility
 import type { DeviceId as _DeviceId, AppId as _AppId } from "./types/device";
+import type {
+  AudioState as _AudioState,
+  VideoConfig as _VideoConfig,
+} from "./types/audio";
 export type { DeviceId, AppId, ConversationId, Platform } from "./types/device";
 
 // Local aliases for use in this file
 type DeviceId = _DeviceId;
 type AppId = _AppId;
+type AudioState = _AudioState;
+type VideoConfig = _VideoConfig;
 
 // =============================================================================
 // NOTIFICATION IR (Intermediate Representation)
@@ -273,14 +279,15 @@ export interface BackgroundAppState {
 // KEYBOARD STATE - Re-export from types/device.ts
 // =============================================================================
 
-export {
+export type {
   KeyboardLayout,
   KeyboardType,
   ReturnKeyType,
   KeyPressState,
   KeyboardState,
-  DEFAULT_KEYBOARD_STATE,
 } from "./types/device";
+
+export { DEFAULT_KEYBOARD_STATE } from "./types/device";
 
 export type { TypingAnimation } from "./types/device";
 
@@ -593,166 +600,29 @@ type BaseCameraState = _BaseCameraState;
 // =============================================================================
 // AUDIO SYSTEM TYPES (Production-Grade)
 // =============================================================================
-
-// Audio bus types - routes audio through mixer
-export type AudioBus = "music" | "ui" | "sfx" | "voice" | "master";
-
-// Sound origin - where the sound comes from
-export type SoundOrigin = "device" | "app" | "world";
-
-// Bus configuration
-export interface AudioBusConfig {
-  baseGain: number; // 0-1, default volume for this bus
-  maxConcurrent: number; // Max simultaneous sounds on this bus
-}
-
-// Envelope for attack/release (avoid clicks, add cinema feel)
-export interface AudioEnvelope {
-  attack: number; // Frames to fade in
-  release: number; // Frames to fade out
-  curve?: "linear" | "easeOut" | "easeIn";
-}
-
-// Ducking rule - temporarily lower another bus
-export interface DuckRule {
-  targetBus: AudioBus; // Bus to duck (usually "music")
-  amount: number; // 0-1 multiplier (0.25 = duck to 25%)
-  attack: number; // Frames to duck down
-  release: number; // Frames to recover
-}
-
-// =============================================================================
-// LAYOUT PRIMITIVES
-// =============================================================================
-// Note: LayoutRect moved to ./types/layout.ts (re-exported at bottom of file)
-
-// Sound cue - enhanced active sound with mixing metadata
-export interface SoundCue {
-  // Core fields (from ActiveSound)
-  soundId: string;
-  startFrame: number;
-  volume: number;
-  loop?: boolean;
-  deviceId?: string;
-  duration?: number;
-
-  // Mixing fields
-  bus: AudioBus;
-  priority: number; // Higher = more important (voice=100, music=10)
-  origin?: SoundOrigin;
-  envelope?: AudioEnvelope;
-  duck?: DuckRule; // If this sound should duck others
-
-  // Fade tracking (set by engine)
-  fadeTarget?: number;
-  fadeDuration?: number;
-  fadeStartFrame?: number;
-}
-
-// Legacy ActiveSound (backward compatible)
-export interface ActiveSound {
-  soundId: string;
-  startFrame: number;
-  volume: number;
-  loop?: boolean;
-  deviceId?: string;
-  duration?: number;
-}
-
-// Music bed - persistent background music with mood
-export interface MusicBed {
-  id: string;
-  soundId: string;
-  startFrame: number;
-  loop: boolean;
-  baseGain: number;
-  moodTag?: "tense" | "romantic" | "chaotic" | "calm" | "dramatic";
-  crossfadeFrames?: number; // Frames to crossfade when changing
-}
-
-// Full audio state with bus system
-export interface AudioState {
-  // Active sounds (key = unique instance ID)
-  activeSounds: Record<string, SoundCue | ActiveSound>;
-
-  // Bus configuration
-  buses: {
-    music: AudioBusConfig;
-    ui: AudioBusConfig;
-    sfx: AudioBusConfig;
-    voice: AudioBusConfig;
-  };
-
-  // Music bed (special handling for background music)
-  musicBed?: MusicBed;
-
-  // Legacy background music (backward compatible)
-  backgroundMusic?: {
-    soundId: string;
-    volume: number;
-    loop: boolean;
-    startFrame: number;
-  };
-}
-
-// Default bus configuration
-export const DEFAULT_BUS_CONFIG: AudioState["buses"] = {
-  music: { baseGain: 0.35, maxConcurrent: 1 },
-  ui: { baseGain: 0.9, maxConcurrent: 3 },
-  sfx: { baseGain: 0.8, maxConcurrent: 4 },
-  voice: { baseGain: 1.0, maxConcurrent: 1 },
-};
-
-// Default audio state
-export const DEFAULT_AUDIO_STATE: AudioState = {
-  activeSounds: {},
-  buses: DEFAULT_BUS_CONFIG,
-};
-
-// =============================================================================
-// VIDEO CONFIGURATION
+// AUDIO TYPES (re-exported from ./types/audio.ts)
 // =============================================================================
 
-// Global video configuration (applies to entire composition)
-export interface VideoConfig {
-  // Canvas
-  backgroundColor?: string; // Video background (default: #0a0a1a)
-  width?: number; // Composition width (default: 1080)
-  height?: number; // Composition height (default: 1920)
-  fps?: number; // Frames per second (default: 30)
+export type {
+  AudioBus,
+  SoundOrigin,
+  AudioBusConfig,
+  AudioEnvelope,
+  DuckRule,
+  SoundCue,
+  SoundCueMetadata,
+  MusicBed,
+  MoodTag,
+  CrossfadeCurve,
+  AudioState,
+  VideoConfig,
+} from "./types/audio";
 
-  // Multi-device layout theming
-  layout?: {
-    splitLineColor?: string; // Divider color in split views
-    splitLineWidth?: number; // Divider thickness
-    pipBorderColor?: string; // PIP overlay border
-    pipBorderWidth?: number; // PIP border thickness
-    pipShadow?: string; // PIP drop shadow
-  };
-
-  // Watermark (optional)
-  watermark?: {
-    text?: string;
-    image?: string;
-    position?: "top-left" | "top-right" | "bottom-left" | "bottom-right";
-    opacity?: number;
-  };
-}
-
-// Default video config
-export const DEFAULT_VIDEO_CONFIG: VideoConfig = {
-  backgroundColor: "#0a0a1a",
-  width: 1080,
-  height: 1920,
-  fps: 30,
-  layout: {
-    splitLineColor: "#333333",
-    splitLineWidth: 2,
-    pipBorderColor: "#333333",
-    pipBorderWidth: 2,
-    pipShadow: "0 10px 40px rgba(0,0,0,0.5)",
-  },
-};
+export {
+  DEFAULT_BUS_CONFIG,
+  DEFAULT_AUDIO_STATE,
+  DEFAULT_VIDEO_CONFIG,
+} from "./types/audio";
 
 // =============================================================================
 // TOUCH STATE (for gesture visualization)
@@ -902,6 +772,12 @@ export type {
   IncomingCallPayload,
   BackgroundAppPayload,
   NotificationPayload as RuntimeNotificationPayload,
+  // Voice runtime event types
+  VoiceEventType,
+  VoicePlaySegmentEvent,
+  VoiceStopEvent,
+  VoiceRuntimeEvent,
+  isRuntimeVoiceEvent,
 } from "./types/runtime-event";
 
 export type { SemanticAnchorId } from "./types/anchor";

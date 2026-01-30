@@ -5,6 +5,7 @@ import {
   processAudioEvent,
   processOSEvent,
   processCallEvent,
+  processVoiceEvent,
   HandlerContext,
 } from "./handlers";
 
@@ -89,4 +90,12 @@ registerBuiltInHandler("OS", (draft, event, _index, ctx) => {
 
 registerBuiltInHandler("CALL", (draft, event, _index, ctx) => {
   processCallEvent(draft, event as Parameters<typeof processCallEvent>[1], ctx);
+});
+
+registerBuiltInHandler("VOICE", (draft, event, _index, _ctx) => {
+  const result = processVoiceEvent(
+    event as Parameters<typeof processVoiceEvent>[0],
+    draft,
+  );
+  draft.audio = result.audio;
 });

@@ -8,7 +8,41 @@
  * - Per-frame volume computation
  */
 
-import { SoundCue, AudioBus, AudioState, ActiveSound } from "../types";
+import { SoundCue, AudioBus, AudioState } from "../types";
+
+// =============================================================================
+// CONSTANTS
+// =============================================================================
+
+const VOLUME_THRESHOLD = 0.001;
+
+// =============================================================================
+// VALIDATION HELPERS
+// =============================================================================
+
+function validateVolume(volume: number, context: string): number {
+  if (typeof volume !== "number" || isNaN(volume) || volume < 0 || volume > 1) {
+    console.warn(
+      `[Audio] Invalid volume (${volume}) in ${context}, clamping to [0,1]`,
+    );
+    return Math.max(0, Math.min(1, volume || 0));
+  }
+  return volume;
+}
+
+function validateDuration(
+  duration: number | undefined,
+  context: string,
+): number | undefined {
+  if (duration === undefined) return undefined;
+  if (typeof duration !== "number" || isNaN(duration) || duration < 0) {
+    console.warn(
+      `[Audio] Invalid duration (${duration}) in ${context}, using undefined`,
+    );
+    return undefined;
+  }
+  return duration;
+}
 
 // =============================================================================
 // TYPES
@@ -16,13 +50,13 @@ import { SoundCue, AudioBus, AudioState, ActiveSound } from "../types";
 
 export interface BusState {
   baseGain: number;
-  duckMultiplier: number; // 0-1, computed from active duckers
+  duckMultiplier: number;
 }
 
 export interface MixerContext {
   frame: number;
   buses: Record<AudioBus, BusState>;
-  allCues: (SoundCue | ActiveSound)[];
+  allCues: SoundCue[];
 }
 
 // =============================================================================
@@ -81,25 +115,69 @@ function applyCurve(
 // DUCKING FUNCTIONS
 // =============================================================================
 
-/**
- * Check if a sound cue is a SoundCue with ducking info (not legacy ActiveSound)
- */
-function isSoundCue(sound: SoundCue | ActiveSound): sound is SoundCue {
-  return "bus" in sound;
+interface ActiveDucker {
+  targetBus: AudioBus;
+  duckAmount: number;
 }
 
-/**
- * Compute duck multiplier for a bus based on active duckers
- */
+function extractActiveDuckers(
+  frame: number,
+  allCues: SoundCue[],
+): ActiveDucker[] {
+  const duckers: ActiveDucker[] = [];
+
+  for (const cue of allCues) {
+    if (!cue.duck) continue;
+
+    const cueStart = cue.startFrame;
+    const cueEnd = cue.duration ? cue.startFrame + cue.duration : Infinity;
+
+    if (frame < cueStart || frame > cueEnd + cue.duck.release) {
+      continue;
+    }
+
+    let duckAmount = cue.duck.amount;
+
+    if (frame < cueStart + cue.duck.attack && cue.duck.attack > 0) {
+      const progress = (frame - cueStart) / cue.duck.attack;
+      duckAmount = 1.0 - (1.0 - cue.duck.amount) * progress;
+    }
+
+    if (frame > cueEnd && cue.duck.release > 0) {
+      const releaseProgress = (frame - cueEnd) / cue.duck.release;
+      duckAmount =
+        cue.duck.amount +
+        (1.0 - cue.duck.amount) * Math.min(1, releaseProgress);
+    }
+
+    duckers.push({ targetBus: cue.duck.targetBus, duckAmount });
+  }
+
+  return duckers;
+}
+
+function computeDuckMultiplierFromDuckers(
+  targetBus: AudioBus,
+  duckers: ActiveDucker[],
+): number {
+  let minMultiplier = 1.0;
+  for (const d of duckers) {
+    if (d.targetBus === targetBus) {
+      minMultiplier = Math.min(minMultiplier, d.duckAmount);
+    }
+  }
+  return minMultiplier;
+}
+
 export function computeBusDuckMultiplier(
   targetBus: AudioBus,
   frame: number,
-  allCues: (SoundCue | ActiveSound)[],
+  allCues: SoundCue[],
 ): number {
   let minMultiplier = 1.0;
 
   for (const cue of allCues) {
-    if (!isSoundCue(cue) || !cue.duck) continue;
+    if (!cue.duck) continue;
     if (cue.duck.targetBus !== targetBus) continue;
 
     // Check if this ducker is active
@@ -114,15 +192,17 @@ export function computeBusDuckMultiplier(
     let duckAmount = cue.duck.amount;
 
     // Attack: ramp down to duck amount
-    if (frame < cueStart + cue.duck.attack) {
+    if (frame < cueStart + cue.duck.attack && cue.duck.attack > 0) {
       const progress = (frame - cueStart) / cue.duck.attack;
       duckAmount = 1.0 - (1.0 - cue.duck.amount) * progress;
     }
 
     // Release: ramp back up after cue ends
-    if (frame > cueEnd) {
+    if (frame > cueEnd && cue.duck.release > 0) {
       const releaseProgress = (frame - cueEnd) / cue.duck.release;
-      duckAmount = cue.duck.amount + (1.0 - cue.duck.amount) * releaseProgress;
+      duckAmount =
+        cue.duck.amount +
+        (1.0 - cue.duck.amount) * Math.min(1, releaseProgress);
     }
 
     minMultiplier = Math.min(minMultiplier, duckAmount);
@@ -143,23 +223,24 @@ export function computeBusStates(
   frame: number,
 ): Record<AudioBus, BusState> {
   const allCues = Object.values(audioState.activeSounds);
+  const activeDuckers = extractActiveDuckers(frame, allCues);
 
   const busStates: Record<AudioBus, BusState> = {
     music: {
       baseGain: audioState.buses.music.baseGain,
-      duckMultiplier: computeBusDuckMultiplier("music", frame, allCues),
+      duckMultiplier: computeDuckMultiplierFromDuckers("music", activeDuckers),
     },
     ui: {
       baseGain: audioState.buses.ui.baseGain,
-      duckMultiplier: computeBusDuckMultiplier("ui", frame, allCues),
+      duckMultiplier: computeDuckMultiplierFromDuckers("ui", activeDuckers),
     },
     sfx: {
       baseGain: audioState.buses.sfx.baseGain,
-      duckMultiplier: computeBusDuckMultiplier("sfx", frame, allCues),
+      duckMultiplier: computeDuckMultiplierFromDuckers("sfx", activeDuckers),
     },
     voice: {
       baseGain: audioState.buses.voice.baseGain,
-      duckMultiplier: computeBusDuckMultiplier("voice", frame, allCues),
+      duckMultiplier: computeDuckMultiplierFromDuckers("voice", activeDuckers),
     },
     master: {
       baseGain: 1.0,
@@ -176,39 +257,14 @@ export function computeBusStates(
  * Formula: finalVolume = cueGain * busBase * duckMultiplier * envelope
  */
 export function computeSoundVolume(
-  sound: SoundCue | ActiveSound,
+  sound: SoundCue,
   frame: number,
   busStates: Record<AudioBus, BusState>,
 ): number {
   const cueVolume = sound.volume;
-
-  // If it's a legacy ActiveSound, just return clamped volume
-  if (!isSoundCue(sound)) {
-    interface LegacyFadeSound {
-      fadeTarget?: number;
-      fadeStartFrame?: number;
-      fadeDuration?: number;
-    }
-    let volume = cueVolume;
-    const fadeSound = sound as LegacyFadeSound;
-    if (
-      fadeSound.fadeTarget !== undefined &&
-      fadeSound.fadeStartFrame !== undefined
-    ) {
-      const fadeProgress = Math.min(
-        1,
-        (frame - fadeSound.fadeStartFrame) / (fadeSound.fadeDuration ?? 30),
-      );
-      volume = cueVolume + (fadeSound.fadeTarget - cueVolume) * fadeProgress;
-    }
-    return clamp01(volume);
-  }
-
-  // Full SoundCue processing
-  const busState = busStates[sound.bus] || busStates.master;
+  const busState = busStates[sound.bus] ?? busStates.master;
   const envelopeMult = applyEnvelope(sound, frame);
 
-  // Handle fade if present
   let baseVolume = cueVolume;
   if (
     sound.fadeTarget !== undefined &&
@@ -250,11 +306,11 @@ export function createSoundCue(
   return {
     soundId,
     startFrame,
-    volume: options.volume ?? 1.0,
+    volume: validateVolume(options.volume ?? 1.0, `createSoundCue(${soundId})`),
     bus: options.bus ?? "sfx",
     priority: options.priority ?? 50,
     loop: options.loop,
-    duration: options.duration,
+    duration: validateDuration(options.duration, `createSoundCue(${soundId})`),
     deviceId: options.deviceId,
     origin: options.origin,
     envelope: options.envelope,
@@ -274,6 +330,10 @@ export function createUISoundCue(
     ...options,
     bus: "ui",
     priority: 30,
+    volume: validateVolume(
+      options.volume ?? 1.0,
+      `createUISoundCue(${soundId})`,
+    ),
     duck: options.duck ?? {
       targetBus: "music",
       amount: 0.25,
@@ -295,6 +355,10 @@ export function createVoiceSoundCue(
     ...options,
     bus: "voice",
     priority: 100,
+    volume: validateVolume(
+      options.volume ?? 1.0,
+      `createVoiceSoundCue(${soundId})`,
+    ),
     duck: options.duck ?? {
       targetBus: "music",
       amount: 0.15,
