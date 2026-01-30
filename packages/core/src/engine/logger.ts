@@ -10,32 +10,21 @@
 
 import { EngineConfig } from "./config";
 import type { TimelineEvent } from "../types";
+import type { AudioBus } from "../types";
 
-/**
- * Engine logger with runtime-toggleable output.
- */
 export const EngineLogger = {
-  /**
-   * Log an event being processed.
-   */
   event: (kind: string, type: string, frame: number): void => {
     if (EngineConfig.logEvents) {
       console.log(`[Engine:${frame}] ${kind}:${type}`);
     }
   },
 
-  /**
-   * Log performance timing.
-   */
   perf: (label: string, ms: number): void => {
     if (EngineConfig.logPerformance) {
       console.log(`[Perf] ${label}: ${ms.toFixed(2)}ms`);
     }
   },
 
-  /**
-   * Log an error (always shown).
-   */
   error: (msg: string, event?: TimelineEvent): void => {
     const eventType =
       event && "type" in event ? (event as { type?: string }).type : undefined;
@@ -47,12 +36,90 @@ export const EngineLogger = {
     );
   },
 
-  /**
-   * Log a warning (dev mode only).
-   */
   warn: (msg: string): void => {
     if (EngineConfig.devMode) {
       console.warn(`[Engine] ${msg}`);
+    }
+  },
+};
+
+export type PolicyDropReason =
+  | "spam_gate"
+  | "spam_softened"
+  | "concurrency_limit"
+  | "priority_too_low";
+
+export interface PolicyDropEvent {
+  soundId: string;
+  bus: AudioBus;
+  frame: number;
+  reason: PolicyDropReason;
+  alternateSound?: string;
+  replacedBy?: string;
+}
+
+export const AudioLogger = {
+  policyDrop: (event: PolicyDropEvent): void => {
+    if (EngineConfig.logAudio) {
+      const details = [
+        `sound=${event.soundId}`,
+        `bus=${event.bus}`,
+        `frame=${event.frame}`,
+        `reason=${event.reason}`,
+      ];
+      if (event.alternateSound) {
+        details.push(`alternate=${event.alternateSound}`);
+      }
+      if (event.replacedBy) {
+        details.push(`replacedBy=${event.replacedBy}`);
+      }
+      console.log(`[Audio:PolicyDrop] ${details.join(" ")}`);
+    }
+  },
+
+  soundPathFallback: (soundId: string, resolvedPath: string): void => {
+    if (EngineConfig.devMode) {
+      console.warn(
+        `[Audio:SoundPath] Unregistered sound "${soundId}" → fallback: ${resolvedPath}`,
+      );
+    }
+  },
+
+  play: (soundId: string, bus: AudioBus, frame: number): void => {
+    if (EngineConfig.logAudio) {
+      console.log(`[Audio:Play] ${soundId} on ${bus} at frame ${frame}`);
+    }
+  },
+
+  stop: (soundId: string, frame: number): void => {
+    if (EngineConfig.logAudio) {
+      console.log(`[Audio:Stop] ${soundId} at frame ${frame}`);
+    }
+  },
+
+  crossfade: (
+    from: string,
+    to: string,
+    durationFrames: number,
+    frame: number,
+  ): void => {
+    if (EngineConfig.logAudio) {
+      console.log(
+        `[Audio:Crossfade] ${from} → ${to} over ${durationFrames} frames at ${frame}`,
+      );
+    }
+  },
+
+  ducking: (
+    targetBus: AudioBus,
+    duckAmount: number,
+    sourceBus: AudioBus,
+    frame: number,
+  ): void => {
+    if (EngineConfig.logAudio) {
+      console.log(
+        `[Audio:Duck] ${targetBus} ducked to ${(duckAmount * 100).toFixed(0)}% by ${sourceBus} at frame ${frame}`,
+      );
     }
   },
 };

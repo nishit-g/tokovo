@@ -1,6 +1,5 @@
 import type { AudioRuntimeEvent } from "@tokovo/core";
 
-
 export interface PlayOptions {
   loop?: boolean;
   duration?: number;
@@ -86,19 +85,5 @@ export const audio = {
     instanceId,
     toVolume,
     duration,
-  }),
-
-  backgroundMusic: (
-    at: number,
-    soundId: string,
-    volume = 0.5,
-    loop = true,
-  ): BackgroundMusicEvent => ({
-    at,
-    kind: "AUDIO",
-    type: "BACKGROUND_MUSIC",
-    soundId,
-    volume,
-    loop,
   }),
 };

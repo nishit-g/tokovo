@@ -24,6 +24,7 @@ import type {
   MarkerPayloads,
   CallPayloads,
   DevicePayloads,
+  VoicePayloads,
 } from "./payloads";
 
 // =============================================================================
@@ -219,6 +220,13 @@ export type DeviceTrackEvent = TrackEventBase & {
       }
   );
 
+export type VoiceTrackEvent = TrackEventBase & {
+  kind: "VOICE";
+} & (
+    | { type: "PLAY_SEGMENT"; payload: VoicePayloads["PLAY_SEGMENT"] }
+    | { type: "STOP_VOICE"; payload: VoicePayloads["STOP_VOICE"] }
+  );
+
 // =============================================================================
 // SYSTEM TRACK EVENT UNION
 // =============================================================================
@@ -232,7 +240,8 @@ export type SystemTrackEvent =
   | OSTrackEvent
   | MarkerTrackEvent
   | CallTrackEvent
-  | DeviceTrackEvent;
+  | DeviceTrackEvent
+  | VoiceTrackEvent;
 
 // =============================================================================
 // FULL TRACK EVENT UNION
@@ -280,4 +289,8 @@ export function isCallEvent(e: TrackEvent): e is CallTrackEvent {
 
 export function isDeviceEvent(e: TrackEvent): e is DeviceTrackEvent {
   return e.kind === "DEVICE";
+}
+
+export function isVoiceEvent(e: TrackEvent): e is VoiceTrackEvent {
+  return e.kind === "VOICE";
 }

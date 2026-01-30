@@ -213,7 +213,235 @@ WidgetRegistry.register({
 
 ---
 
-### 3. Plugin System — Self-Contained Apps
+### 3. Audio System — Enterprise-Grade Sound
+
+`@tokovo/core` includes a complete audio subsystem for deterministic sound playback, mixing, and automation.
+
+#### Audio Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                       AUDIO SYSTEM                               │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  ┌────────────┐  ┌────────────┐  ┌────────────┐  ┌───────────┐ │
+│  │   Buses    │  │  Policies  │  │   Mixer    │  │  Handlers │ │
+│  │            │  │            │  │            │  │           │ │
+│  │ music/ui/  │  │ spam gate  │  │ gain calc  │  │ PLAY/STOP │ │
+│  │ sfx/voice  │  │ concurrency│  │ ducking    │  │ CROSSFADE │ │
+│  └────────────┘  └────────────┘  └────────────┘  └───────────┘ │
+│                                                                  │
+│  ┌────────────────────────────────────────────────────────────┐ │
+│  │                        AudioState                          │ │
+│  │  activeSounds: Record<string, SoundCue>                    │ │
+│  │  musicBed?: MusicBed                                       │ │
+│  │  outgoingMusicBed?: MusicBed  (for crossfade)             │ │
+│  │  buses: { music, ui, sfx, voice }                         │ │
+│  └────────────────────────────────────────────────────────────┘ │
+│                                                                  │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+#### Audio Buses
+
+Sounds are routed through specialized buses with independent gain and concurrency limits:
+
+| Bus     | Purpose                           | Max Concurrent | Default Gain |
+| ------- | --------------------------------- | -------------- | ------------ |
+| `music` | Background music, BGM tracks      | 1              | 0.35         |
+| `ui`    | UI feedback sounds (taps, swipes) | 3              | 0.9          |
+| `sfx`   | Sound effects                     | 4              | 0.8          |
+| `voice` | Voice-over narration              | 1              | 1.0          |
+
+```typescript
+import type { AudioBus, AudioBusConfig } from "@tokovo/core";
+
+const busConfig: AudioBusConfig = {
+  baseGain: 0.35,
+  maxConcurrent: 1,
+};
+```
+
+#### SoundCue — Active Sound Instance
+
+Every playing sound is represented as a `SoundCue`:
+
+```typescript
+import type { SoundCue } from "@tokovo/core";
+
+const cue: SoundCue = {
+  soundId: "notification-chime",
+  startFrame: 30,
+  volume: 0.8,
+  bus: "ui",
+  priority: 50,
+  loop: false,
+  duration: 45,
+  envelope: { attack: 3, release: 5 },
+  duck: { targetBus: "music", amount: 0.5, attack: 5, release: 15 },
+};
+```
+
+| Property     | Type            | Description                          |
+| ------------ | --------------- | ------------------------------------ |
+| `soundId`    | `string`        | ID registered in SoundRegistry       |
+| `startFrame` | `number`        | Frame when sound started             |
+| `volume`     | `number`        | Base volume (0-1)                    |
+| `bus`        | `AudioBus`      | Target bus (music/ui/sfx/voice)      |
+| `priority`   | `number`        | Higher = survives concurrency limits |
+| `loop`       | `boolean`       | Loop continuously                    |
+| `duration`   | `number`        | Length in frames (optional)          |
+| `duck`       | `DuckRule`      | Auto-duck other buses                |
+| `envelope`   | `AudioEnvelope` | Attack/release fade                  |
+
+#### MusicBed — Background Music
+
+Long-running background tracks use `MusicBed`:
+
+```typescript
+import type { MusicBed } from "@tokovo/core";
+
+const bed: MusicBed = {
+  id: "main-bgm",
+  soundId: "upbeat-track",
+  startFrame: 0,
+  loop: true,
+  baseGain: 0.35,
+  moodTag: "romantic",
+  crossfadeFrames: 60,
+};
+```
+
+#### Crossfade Transitions
+
+Smooth transitions between music tracks use `outgoingMusicBed`:
+
+```typescript
+// During crossfade, both beds exist:
+audio: {
+  musicBed: { soundId: "new-track", startFrame: 100, ... },
+  outgoingMusicBed: { soundId: "old-track", fadeOutStart: 100, fadeOutDuration: 60 },
+}
+```
+
+#### Policies — Deterministic Audio Rules
+
+The policy system enforces consistent audio behavior:
+
+```typescript
+import { checkSpamPure, selectSoundsByPriority } from "@tokovo/core";
+
+// Spam gate: prevent same sound repeated too fast
+const result = checkSpamPure("click", frame, recentSounds, {
+  spamGateFrames: 8,
+  softVariant: "_soft",
+});
+
+// Concurrency: select highest-priority sounds per bus
+const selected = selectSoundsByPriority(sounds, {
+  maxConcurrentPerBus: { music: 1, ui: 3, sfx: 4, voice: 1 },
+});
+```
+
+**Policy Rules:**
+
+| Rule              | Default  | Description                   |
+| ----------------- | -------- | ----------------------------- |
+| Spam Gate         | 8 frames | Min frames between same sound |
+| Soft Variant      | `_soft`  | Suffix for quieter repeat     |
+| Music Concurrency | 1        | Only one music track          |
+| Voice Concurrency | 1        | Only one voice-over           |
+| UI Concurrency    | 3        | Max UI sounds                 |
+| SFX Concurrency   | 4        | Max sound effects             |
+
+#### Ducking — Automatic Level Management
+
+When a sound with a `duck` rule plays, target buses are automatically attenuated:
+
+```typescript
+const voiceCue: SoundCue = {
+  soundId: "narration",
+  bus: "voice",
+  duck: {
+    targetBus: "music",
+    amount: 0.7, // Duck music to 30%
+    attack: 5, // 5-frame fade down
+    release: 15, // 15-frame fade up after voice ends
+  },
+};
+```
+
+#### AudioLogger — Debug Audio Events
+
+Enable runtime audio logging for debugging:
+
+```typescript
+import { AudioLogger } from "@tokovo/core";
+
+// In browser console:
+window.__TOKOVO_LOG_AUDIO = true;
+
+// Logged events:
+AudioLogger.play("notification", "ui", 30);
+AudioLogger.stop("notification", 75);
+AudioLogger.policyDrop({
+  soundId: "click",
+  bus: "ui",
+  frame: 45,
+  reason: "spam_gate",
+  alternateSound: "click_soft",
+});
+AudioLogger.crossfade("old-track", "new-track", 60, 100);
+```
+
+#### Audio Event Handlers
+
+The engine processes these audio runtime events:
+
+| Event Type         | Handler             | Effect                                 |
+| ------------------ | ------------------- | -------------------------------------- |
+| `PLAY`             | `handlePlay()`      | Add SoundCue to activeSounds           |
+| `STOP`             | `handleStop()`      | Remove by instanceId or soundId        |
+| `STOP_ALL`         | `handleStopAll()`   | Clear bus or all sounds                |
+| `FADE_OUT`         | `handleFadeOut()`   | Set fade target on sound               |
+| `CROSSFADE`        | `handleCrossfade()` | Transition musicBed → outgoingMusicBed |
+| `BACKGROUND_MUSIC` | `handleBGM()`       | Legacy BGM support                     |
+
+---
+
+### 4. Dependency Injection — TokovoContainer
+
+For testing and customization, `@tokovo/core` provides a DI container:
+
+```typescript
+import { TokovoContainer } from "@tokovo/core";
+
+// Get container instance
+const container = TokovoContainer.getInstance();
+
+// Register custom implementations
+container.register("soundRegistry", mySoundRegistry);
+container.register("audioLogger", myLogger);
+
+// Resolve dependencies
+const registry = container.resolve("soundRegistry");
+
+// Reset for testing
+TokovoContainer.reset();
+```
+
+**Registered Services:**
+
+| Service          | Default          | Purpose              |
+| ---------------- | ---------------- | -------------------- |
+| `soundRegistry`  | `SoundRegistry`  | Sound asset lookup   |
+| `appRegistry`    | `AppRegistry`    | App component lookup |
+| `anchorRegistry` | `AnchorRegistry` | Anchor resolution    |
+| `audioLogger`    | `AudioLogger`    | Audio debug logging  |
+
+---
+
+### 5. Plugin System — Self-Contained Apps
 
 Plugins are **batteries-included app modules** that bundle everything an app needs:
 
@@ -314,7 +542,7 @@ const myPlugin = composePlugin(
 
 ---
 
-### 4. Type System — 250+ Exports
+### 6. Type System — 250+ Exports
 
 `@tokovo/core` exports **14 domain categories** of types:
 

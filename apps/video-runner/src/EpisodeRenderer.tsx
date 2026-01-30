@@ -19,6 +19,7 @@ import {
   useVideoConfig,
   delayRender,
   continueRender,
+  staticFile,
 } from "remotion";
 import { runEpisode, createEventIndex, PluginManager } from "@tokovo/core";
 import {
@@ -26,6 +27,14 @@ import {
   type PreparedTrackEpisode,
 } from "@tokovo/compiler";
 import { TokovoRenderer, AudioLayer } from "@tokovo/renderer";
+import {
+  SimpleVoiceLayer,
+  VoiceLayer,
+  type VoiceManifest,
+  type VoicePlayEvent,
+  voiceScheduleToSoundCues,
+} from "@tokovo/voice";
+import type { VoiceConfig, VoiceScriptSegment } from "@tokovo/ir";
 import { iPhone16Profile } from "@tokovo/devices";
 import {
   episodeRegistry,
@@ -119,46 +128,104 @@ const EpisodeRendererInner: React.FC<EpisodeRendererProps> = ({
   episodeId,
 }) => {
   const frame = useCurrentFrame();
+  const { fps } = useVideoConfig();
   const [handle] = useState(() => delayRender(`Loading episode: ${episodeId}`));
   const [prepared, setPrepared] = useState<PreparedTrackEpisode | null>(null);
   const [episode, setEpisode] = useState<EpisodeDefinition | null>(null);
+  const [voiceManifest, setVoiceManifest] = useState<VoiceManifest | null>(
+    null,
+  );
+  const [voiceConfig, setVoiceConfig] = useState<VoiceConfig | null>(null);
   const [error, setError] = useState<Error | null>(null);
 
   // === PREPARE EPISODE (runs once on mount) ===
   useEffect(() => {
     console.log(`[EpisodeRenderer] 🎬 MOUNTING: ${episodeId}`);
-    try {
-      const ep = episodeRegistry.get(episodeId);
-      console.log(`[EpisodeRenderer] 📦 Got from registry:`, {
-        episodeId,
-        found: !!ep,
-        foundId: ep?.meta?.id,
-        title: ep?.meta?.title,
-      });
-      if (!ep) {
-        throw new Error(`Episode not found: ${episodeId}`);
+    async function prepare() {
+      try {
+        const ep = episodeRegistry.get(episodeId);
+        console.log(`[EpisodeRenderer] 📦 Got from registry:`, {
+          episodeId,
+          found: !!ep,
+          foundId: ep?.meta?.id,
+          title: ep?.meta?.title,
+        });
+        if (!ep) {
+          throw new Error(`Episode not found: ${episodeId}`);
+        }
+        setEpisode(ep);
+
+        console.log(`[EpisodeRenderer] Building episode: ${episodeId}`);
+        const ir = ep.build();
+
+        if (ir.voice) {
+          setVoiceConfig(ir.voice);
+
+          if (ir.voice.segments && ir.voice.segments.length > 0) {
+            const embeddedManifest: VoiceManifest = {
+              scriptId: episodeId,
+              audioFile: ir.voice.audioPath,
+              durationMs: ir.voice.durationMs || 0,
+              generatedAt: new Date().toISOString(),
+              provider: "embedded",
+              model: "embedded",
+              contentHash: "embedded",
+              segments: ir.voice.segments.map((seg, index) => ({
+                index,
+                id: seg.id,
+                speaker: seg.speaker,
+                text: seg.text || "",
+                startMs: seg.startMs,
+                endMs: seg.endMs,
+                durationMs: seg.durationMs ?? seg.endMs - seg.startMs,
+              })),
+            };
+            setVoiceManifest(embeddedManifest);
+            console.log(`[EpisodeRenderer] 🎤 Voice manifest embedded:`, {
+              segments: embeddedManifest.segments.length,
+              duration: embeddedManifest.durationMs,
+            });
+          } else if (ir.voice.manifestPath) {
+            const manifestUrl = ir.voice.manifestPath.startsWith("/")
+              ? staticFile(ir.voice.manifestPath)
+              : ir.voice.manifestPath;
+            const manifestResponse = await fetch(manifestUrl);
+            if (!manifestResponse.ok) {
+              throw new Error(
+                `Voice manifest failed to load: ${ir.voice.manifestPath} (HTTP ${manifestResponse.status})`,
+              );
+            }
+            const manifest = await manifestResponse.json();
+            setVoiceManifest(manifest);
+            console.log(`[EpisodeRenderer] 🎤 Voice manifest fetched:`, {
+              segments: manifest.segments?.length,
+              duration: manifest.totalDurationMs,
+            });
+          } else {
+            throw new Error(
+              `Voice config invalid: must have either embedded segments or manifestPath`,
+            );
+          }
+        }
+
+        console.log(`[EpisodeRenderer] Preparing episode: ${episodeId}`);
+        const plugins = resolvePlugins(ep.config.apps);
+        const result = prepareTrackEpisode(ir, plugins);
+
+        console.log(`[EpisodeRenderer] Episode ready: ${episodeId}`, {
+          events: result.events.length,
+          devices: Object.keys(result.initialWorld?.devices || {}).length,
+        });
+
+        setPrepared(result);
+        continueRender(handle);
+      } catch (e) {
+        console.error(`[EpisodeRenderer] Failed to prepare: ${episodeId}`, e);
+        setError(e as Error);
+        continueRender(handle);
       }
-      setEpisode(ep);
-
-      console.log(`[EpisodeRenderer] Building episode: ${episodeId}`);
-      const ir = ep.build();
-
-      console.log(`[EpisodeRenderer] Preparing episode: ${episodeId}`);
-      const plugins = resolvePlugins(ep.config.apps);
-      const result = prepareTrackEpisode(ir, plugins);
-
-      console.log(`[EpisodeRenderer] Episode ready: ${episodeId}`, {
-        events: result.events.length,
-        devices: Object.keys(result.initialWorld?.devices || {}).length,
-      });
-
-      setPrepared(result);
-      continueRender(handle);
-    } catch (e) {
-      console.error(`[EpisodeRenderer] Failed to prepare: ${episodeId}`, e);
-      setError(e as Error);
-      continueRender(handle);
     }
+    prepare();
   }, [episodeId, handle]);
 
   // === ALL HOOKS MUST BE CALLED BEFORE CONDITIONAL RETURNS ===
@@ -175,6 +242,51 @@ const EpisodeRendererInner: React.FC<EpisodeRendererProps> = ({
     if (!prepared) return null;
     return createEventIndex(prepared.events as any);
   }, [prepared]);
+
+  // === BUILD VOICE EVENTS FOR PER-SEGMENT CONTROL ===
+  const voiceEvents = useMemo((): VoicePlayEvent[] => {
+    if (!voiceConfig?.usePerSegmentControl) return [];
+    const schedule = voiceConfig.segmentSchedule;
+    if (!schedule) return [];
+
+    return schedule.map((s) => ({
+      kind: "voice" as const,
+      type: "play" as const,
+      at: s.at,
+      payload: {
+        segmentId: s.segmentId,
+        volume: s.volume,
+        speed: s.speed,
+      },
+    }));
+  }, [voiceConfig]);
+
+  const voiceSoundCues = useMemo(() => {
+    if (!voiceConfig?.segmentSchedule || !voiceConfig.segments) {
+      return [];
+    }
+    return voiceScheduleToSoundCues(
+      voiceConfig.segmentSchedule,
+      voiceConfig.segments,
+      { fps, audioPath: voiceConfig.audioPath },
+    );
+  }, [voiceConfig, fps]);
+
+  const worldWithVoice = useMemo(() => {
+    if (!world) return null;
+    if (voiceSoundCues.length === 0) return world;
+    const voiceCueRecord: Record<string, (typeof voiceSoundCues)[number]> = {};
+    voiceSoundCues.forEach((cue, i) => {
+      voiceCueRecord[`voice-${i}`] = cue;
+    });
+    return {
+      ...world,
+      audio: {
+        ...world.audio,
+        activeSounds: { ...world.audio.activeSounds, ...voiceCueRecord },
+      },
+    };
+  }, [world, voiceSoundCues]);
 
   // === CALCULATE FORMAT AND SCALE ===
   const { format, scale } = useMemo(() => {
@@ -223,7 +335,7 @@ const EpisodeRendererInner: React.FC<EpisodeRendererProps> = ({
   }
 
   // === LOADING STATE ===
-  if (!prepared || !episode || !world || !eventIndex) {
+  if (!prepared || !episode || !worldWithVoice || !eventIndex) {
     const opacity = 0.5 + 0.5 * Math.sin((frame * Math.PI) / 30);
     return (
       <AbsoluteFill style={loadingStyle}>
@@ -235,6 +347,7 @@ const EpisodeRendererInner: React.FC<EpisodeRendererProps> = ({
     );
   }
 
+  // Log which audio path is being used (only on first few frames to avoid spam)
   // === RENDER ===
   return (
     <AbsoluteFill
@@ -244,7 +357,25 @@ const EpisodeRendererInner: React.FC<EpisodeRendererProps> = ({
         alignItems: "center",
       }}
     >
-      <AudioLayer world={world} t={frame} />
+      <AudioLayer world={worldWithVoice} t={frame} />
+      {voiceManifest &&
+        voiceConfig?.audioPath &&
+        voiceSoundCues.length === 0 &&
+        (voiceConfig.usePerSegmentControl && voiceEvents.length > 0 ? (
+          <VoiceLayer
+            manifest={voiceManifest}
+            audioUrl={voiceConfig.audioPath}
+            events={voiceEvents}
+            volume={voiceConfig.volume ?? 1}
+          />
+        ) : (
+          <SimpleVoiceLayer
+            manifest={voiceManifest}
+            audioUrl={voiceConfig.audioPath}
+            startFrame={voiceConfig.startFrame ?? 0}
+            volume={voiceConfig.volume ?? 1}
+          />
+        ))}
       <div
         style={{
           transform: `scale(${scale})`,
@@ -252,28 +383,11 @@ const EpisodeRendererInner: React.FC<EpisodeRendererProps> = ({
         }}
       >
         <TokovoRenderer
-          world={world}
+          world={worldWithVoice}
           t={frame}
           debug={false}
           eventIndex={eventIndex}
         />
-      </div>
-      {/* DEBUG: Show which episode is actually rendering */}
-      <div
-        style={{
-          position: "absolute",
-          top: 10,
-          left: 10,
-          background: "rgba(0,0,0,0.7)",
-          color: "#00ff00",
-          padding: "4px 8px",
-          borderRadius: 4,
-          fontSize: 12,
-          fontFamily: "monospace",
-          zIndex: 9999,
-        }}
-      >
-        📺 {episode?.meta?.id} | {episode?.meta?.title}
       </div>
     </AbsoluteFill>
   );

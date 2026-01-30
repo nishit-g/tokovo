@@ -148,6 +148,7 @@ Every event in IR follows the **TrackEvent** schema:
 | `DEVICE` | Device-level operations      | LOCK, UNLOCK, OPEN_APP         |
 | `CAMERA` | Camera movements             | ZOOM, FOCUS, SHAKE             |
 | `AUDIO`  | Sound effects                | BGM_START, PLAY, CROSSFADE     |
+| `VOICE`  | Voice-over segments          | PLAY_SEGMENT, STOP_VOICE       |
 | `OS`     | Operating system state       | SET_BATTERY, SET_TIME          |
 | `CALL`   | Phone call events            | INCOMING, ANSWER, END          |
 | `MARKER` | Debugging/navigation markers | MARK, SECTION_START            |
@@ -195,6 +196,39 @@ Every event in IR follows the **TrackEvent** schema:
   "deviceId": "phone",
   "type": "UNLOCK",
   "payload": {}
+}
+```
+
+**Voice Event (play segment):**
+
+```json
+{
+  "at": 0,
+  "kind": "VOICE",
+  "type": "PLAY_SEGMENT",
+  "payload": {
+    "segmentId": "intro_narration",
+    "audioPath": "/audio/narration.mp3",
+    "startMs": 0,
+    "endMs": 3500,
+    "speaker": "narrator",
+    "text": "Welcome to the story..."
+  }
+}
+```
+
+**Audio Event (crossfade music):**
+
+```json
+{
+  "at": 180,
+  "kind": "AUDIO",
+  "type": "CROSSFADE",
+  "payload": {
+    "fromSoundId": "track-calm",
+    "toSoundId": "track-intense",
+    "durationFrames": 60
+  }
 }
 ```
 

@@ -8,6 +8,7 @@
   },
   "dependencies": {
     "@tokovo/core": "workspace:*",
+    "@tokovo/compiler": "workspace:*",
     "@tokovo/device-camera": "workspace:*",
     "@tokovo/device-keyboard": "workspace:*",
     "@tokovo/devices": "workspace:*",

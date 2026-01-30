@@ -102,6 +102,9 @@ importers:
       '@tokovo/renderer':
         specifier: workspace:*
         version: link:../../packages/renderer
+      '@tokovo/voice':
+        specifier: workspace:*
+        version: link:../../packages/voice
       react:
         specifier: 18.2.0
         version: 18.2.0
@@ -308,6 +311,9 @@ importers:
 
   packages/dsl:
     dependencies:
+      '@tokovo/compiler':
+        specifier: workspace:*
+        version: link:../compiler
       '@tokovo/core':
         specifier: workspace:*
         version: link:../core
@@ -330,9 +336,15 @@ importers:
       '@tokovo/apps-whatsapp':
         specifier: workspace:*
         version: link:../apps-whatsapp
+      '@tokovo/compiler':
+        specifier: workspace:*
+        version: link:../compiler
       '@tokovo/core':
         specifier: workspace:*
         version: link:../core
+      '@tokovo/device-camera':
+        specifier: workspace:*
+        version: link:../device-camera
       '@tokovo/device-keyboard':
         specifier: workspace:*
         version: link:../device-keyboard
@@ -345,6 +357,9 @@ importers:
       '@tokovo/ir':
         specifier: workspace:*
         version: link:../ir
+      '@tokovo/voice':
+        specifier: workspace:*
+        version: link:../voice
       zod:
         specifier: ^3.0.0
         version: 3.25.76
@@ -368,9 +383,15 @@ importers:
         specifier: ^4.2.1
         version: 4.2.1
     devDependencies:
+      '@types/node':
+        specifier: ^20.0.0
+        version: 20.19.25
       typescript:
         specifier: ^5.0.0
         version: 5.9.3
+      vitest:
+        specifier: ^1.0.0
+        version: 1.6.1(@types/node@20.19.25)(terser@5.44.1)
 
   packages/react:
     dependencies:
@@ -387,6 +408,9 @@ importers:
 
   packages/renderer:
     dependencies:
+      '@tokovo/compiler':
+        specifier: workspace:*
+        version: link:../compiler
       '@tokovo/core':
         specifier: workspace:*
         version: link:../core
@@ -485,6 +509,34 @@ importers:
       vite:
         specifier: ^5.0.0
         version: 5.4.21(@types/node@20.19.25)(terser@5.44.1)
+
+  packages/voice:
+    dependencies:
+      '@tokovo/core':
+        specifier: workspace:*
+        version: link:../core
+      '@tokovo/ir':
+        specifier: workspace:*
+        version: link:../ir
+      react:
+        specifier: ^18.0.0
+        version: 18.2.0
+      remotion:
+        specifier: ^4.0.0
+        version: 4.0.409(react-dom@18.3.1(react@18.2.0))(react@18.2.0)
+    devDependencies:
+      '@types/node':
+        specifier: ^20.0.0
+        version: 20.19.25
+      '@types/react':
+        specifier: 18.2.0
+        version: 18.2.0
+      tsx:
+        specifier: ^4.0.0
+        version: 4.21.0
+      typescript:
+        specifier: ^5.0.0
+        version: 5.9.3
 
 packages:
 

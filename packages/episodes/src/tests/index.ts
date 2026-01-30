@@ -9,9 +9,6 @@
  *   2. Add import below
  */
 
-// Add test imports here as you create them:
-// import "./keyboard-test.episode";
-// import "./camera-test.episode";
-
 import "./test.episode";
-import "./chat-list-test";
+import "./keyboard-plugin-demo.episode";
+import "./typing-plugin-demo.episode";

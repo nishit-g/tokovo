@@ -1,5 +1,344 @@
-# Packages
+export const metadata = {
+  title: "Package Structure",
+  description: "Monorepo organization and package dependencies in Tokovo",
+};
 
-> Placeholder content - to be written
+# Package Structure
 
-This page will document the package structure of Tokovo.
+Tokovo is organized as a pnpm monorepo with clearly separated concerns. This document maps every package, its role, and its dependencies.
+
+## Repository Layout
+
+```
+tokovo/
+├── apps/
+│   ├── docs/                    # Documentation site (Next.js + Fumadocs)
+│   └── video-runner/            # Dev environment for testing episodes
+│
+├── packages/
+│   ├── core/                    # Engine, handlers, types, audio system
+│   ├── ir/                      # Intermediate Representation types
+│   ├── compiler/                # IR → RuntimeEvent lowering
+│   ├── dsl/                     # Fluent episode builder API
+│   ├── renderer/                # React/Remotion rendering
+│   ├── voice/                   # Voice-over pipeline
+│   ├── devices/                 # Device frame components
+│   ├── apps-whatsapp/           # WhatsApp app simulation
+│   ├── device-camera/           # Camera simulation
+│   ├── device-keyboard/         # Keyboard simulation
+│   ├── device-notifications/    # Notification system
+│   ├── episodes/                # Episode definitions
+│   ├── react/                   # React utilities
+│   └── studio/                  # Studio UI components
+│
+├── pnpm-workspace.yaml
+└── turbo.json
+```
+
+## Package Dependency Graph
+
+```
+                              ┌─────────────┐
+                              │   @tokovo   │
+                              │     /ir     │
+                              └──────┬──────┘
+                                     │
+           ┌─────────────────────────┼─────────────────────────┐
+           │                         │                         │
+           ▼                         ▼                         ▼
+    ┌─────────────┐          ┌─────────────┐          ┌─────────────┐
+    │   @tokovo   │          │   @tokovo   │          │   @tokovo   │
+    │   /core     │◀─────────│  /compiler  │          │    /dsl     │
+    └──────┬──────┘          └─────────────┘          └──────┬──────┘
+           │                                                  │
+           │                   ┌──────────────────────────────┘
+           │                   │
+           ▼                   ▼
+    ┌─────────────┐    ┌─────────────┐
+    │   @tokovo   │    │   @tokovo   │
+    │  /renderer  │◀───│   /voice    │
+    └──────┬──────┘    └─────────────┘
+           │
+    ┌──────┴──────────────────────────────────────┐
+    │                                             │
+    ▼                                             ▼
+┌─────────────┐                          ┌─────────────┐
+│   @tokovo   │                          │   @tokovo   │
+│   /devices  │                          │apps-whatsapp│
+└─────────────┘                          └─────────────┘
+```
+
+## Core Packages
+
+### @tokovo/ir
+
+**Role**: Defines the Intermediate Representation - the contract between DSL and Compiler.
+
+| Export           | Description                   |
+| ---------------- | ----------------------------- |
+| `TrackEvent`     | Union of all IR event types   |
+| `AudioPayloads`  | Audio event payload shapes    |
+| `VoicePayloads`  | Voice event payload shapes    |
+| `ChatPayloads`   | Chat message payload shapes   |
+| `DevicePayloads` | Device control payload shapes |
+| `isAudioEvent()` | Type guard for audio events   |
+| `isVoiceEvent()` | Type guard for voice events   |
+
+```typescript
+import type { TrackEvent, VoiceTrackEvent } from "@tokovo/ir";
+import { isVoiceEvent } from "@tokovo/ir";
+```
+
+**Dependencies**: None (leaf package)
+
+---
+
+### @tokovo/core
+
+**Role**: The engine heart. Contains handlers, types, registries, and audio system.
+
+| Module        | Purpose                                          |
+| ------------- | ------------------------------------------------ |
+| `engine/`     | Event handlers, world state computation          |
+| `audio/`      | Mixer, policies, auto-sound, SoundCue management |
+| `registries/` | App, Sound, Anchor, Layout, Widget registries    |
+| `types/`      | All shared type definitions (250+ exports)       |
+
+**Key Exports**:
+
+```typescript
+// Engine
+import { computeWorldState, registerHandler } from "@tokovo/core";
+
+// Types
+import type {
+  WorldState,
+  AudioState,
+  SoundCue,
+  MusicBed,
+  RuntimeEvent,
+  VoiceRuntimeEvent,
+} from "@tokovo/core";
+
+// Registries
+import { AppRegistry, SoundRegistry, AnchorRegistry } from "@tokovo/core";
+
+// Audio utilities
+import { isSoundCue, computeMixedVolume } from "@tokovo/core";
+
+// Logging
+import { AudioLogger } from "@tokovo/core";
+
+// DI Container
+import { TokovoContainer } from "@tokovo/core";
+```
+
+**Dependencies**: `@tokovo/ir`
+
+---
+
+### @tokovo/compiler
+
+**Role**: Transforms IR TrackEvents into RuntimeEvents through "lowering".
+
+| Function            | Input             | Output              |
+| ------------------- | ----------------- | ------------------- |
+| `compile()`         | `EpisodeDef`      | `CompiledEpisode`   |
+| `lowerTrackEvent()` | `TrackEvent`      | `RuntimeEvent[]`    |
+| `lowerAudioEvent()` | `AudioTrackEvent` | `AudioRuntimeEvent` |
+| `lowerVoiceEvent()` | `VoiceTrackEvent` | `VoiceRuntimeEvent` |
+
+```typescript
+import { compile, lowerTrackEvent } from "@tokovo/compiler";
+
+const compiled = compile(episodeDef);
+// compiled.events: RuntimeEvent[]
+// compiled.duration: number
+```
+
+**Dependencies**: `@tokovo/ir`, `@tokovo/core`
+
+---
+
+### @tokovo/dsl
+
+**Role**: Fluent builder API for authoring episodes.
+
+```typescript
+import { episode, device } from "@tokovo/dsl";
+
+const myEpisode = episode("my-episode")
+  .device(device("iphone-14", "phone1"))
+  .at(0)
+  .openApp("whatsapp")
+  .at(30)
+  .send("Hello!")
+  .at(60)
+  .bgm("upbeat")
+  .play()
+  .build();
+```
+
+**Dependencies**: `@tokovo/ir`, `@tokovo/core`
+
+---
+
+### @tokovo/voice
+
+**Role**: Voice-over pipeline - synthesis, timing, and segment management.
+
+| Component       | Purpose                               |
+| --------------- | ------------------------------------- |
+| `VoiceSegment`  | Single spoken segment with timing     |
+| `VoicePipeline` | Coordinates synthesis and scheduling  |
+| `VoiceTrack`    | Collection of segments for an episode |
+
+```typescript
+import { VoiceSegment, VoicePipeline } from "@tokovo/voice";
+
+const segment = new VoiceSegment({
+  id: "intro",
+  text: "Welcome to the video",
+  speaker: "narrator",
+  startMs: 0,
+});
+```
+
+**Dependencies**: `@tokovo/ir`, `@tokovo/core`, `@tokovo/dsl`
+
+---
+
+### @tokovo/renderer
+
+**Role**: React/Remotion rendering layer. Consumes WorldState, produces video frames.
+
+| Component         | Purpose                                      |
+| ----------------- | -------------------------------------------- |
+| `EpisodeRenderer` | Main composition component                   |
+| `AudioLayer`      | Renders active sounds via Remotion `<Audio>` |
+| `CameraLayer`     | Applies camera transforms                    |
+| `DeviceLayer`     | Renders device frames                        |
+
+```typescript
+import { EpisodeRenderer, AudioLayer } from "@tokovo/renderer";
+```
+
+**Dependencies**: `@tokovo/core`, `remotion`
+
+---
+
+## Device Packages
+
+### @tokovo/devices
+
+**Role**: Device frame components (iPhone, Android, etc.)
+
+```typescript
+import { IPhoneFrame, AndroidFrame } from "@tokovo/devices";
+```
+
+### @tokovo/apps-whatsapp
+
+**Role**: WhatsApp UI simulation (chats, messages, typing indicators)
+
+```typescript
+import { WhatsAppChat, WhatsAppMessage } from "@tokovo/apps-whatsapp";
+```
+
+### @tokovo/device-camera
+
+**Role**: Camera app simulation for selfie/photo scenes
+
+### @tokovo/device-keyboard
+
+**Role**: Keyboard rendering and animation
+
+### @tokovo/device-notifications
+
+**Role**: iOS/Android notification banners and lock screen notifications
+
+---
+
+## Application Packages
+
+### apps/video-runner
+
+**Role**: Development environment for testing episodes with hot reload.
+
+```bash
+pnpm turbo dev --filter=video-runner
+```
+
+### apps/docs
+
+**Role**: Documentation site built with Next.js and Fumadocs.
+
+```bash
+pnpm turbo dev --filter=docs
+```
+
+---
+
+## Package Scripts
+
+Each package supports standard scripts:
+
+| Script      | Purpose                     |
+| ----------- | --------------------------- |
+| `build`     | Compile TypeScript to dist/ |
+| `dev`       | Watch mode compilation      |
+| `typecheck` | Run tsc --noEmit            |
+| `lint`      | ESLint check                |
+| `test`      | Run tests (if present)      |
+
+Run across all packages with Turbo:
+
+```bash
+pnpm turbo build              # Build everything
+pnpm turbo build --filter=@tokovo/core  # Build single package
+pnpm turbo dev --filter=video-runner    # Dev mode for runner
+```
+
+---
+
+## Adding a New Package
+
+1. Create directory under `packages/`:
+
+   ```bash
+   mkdir packages/my-package
+   cd packages/my-package
+   pnpm init
+   ```
+
+2. Configure `package.json`:
+
+   ```json
+   {
+     "name": "@tokovo/my-package",
+     "version": "0.0.1",
+     "main": "./src/index.ts",
+     "types": "./src/index.ts",
+     "scripts": {
+       "build": "tsup src/index.ts --format esm --dts",
+       "dev": "tsup src/index.ts --format esm --dts --watch"
+     }
+   }
+   ```
+
+3. Add to workspace dependencies:
+
+   ```bash
+   pnpm add @tokovo/core --filter=@tokovo/my-package
+   ```
+
+4. Register in `turbo.json` if needed for custom pipeline ordering.
+
+---
+
+## See Also
+
+- [Architecture Overview](/architecture/overview) - High-level system design
+- [Data Flow](/architecture/data-flow) - How data moves through packages
+- [@tokovo/core](/packages/core) - Engine documentation
+- [@tokovo/ir](/packages/ir) - IR type definitions

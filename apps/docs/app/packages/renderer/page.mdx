@@ -483,16 +483,66 @@ Applies cinematic transforms.
 
 ### Audio Engine (`useAudioEngine`)
 
-Schedules audio playback (voices, sounds, music).
+Computes deterministic audio state for frame-perfect playback.
 
 **Input:**
 
-- `world: WorldState`
-- `t: number`
+- `world: WorldState` (contains `audio.activeSounds`, `audio.musicBed`)
+- `frame: number`
 
 **Output:**
 
-- `tracks: AudioTrack[]` (active audio at frame t)
+```typescript
+interface AudioEngineOutput {
+  busStates: Record<AudioBus, BusState>; // Computed gains per bus
+  activeSounds: Array<[string, SoundCue]>; // Active sound instances
+  musicCrossfade?: {
+    // Current crossfade state
+    incoming: MusicBed;
+    outgoing: MusicBed;
+    progress: number;
+  };
+}
+```
+
+### AudioLayer Component
+
+Renders all active sounds via Remotion's `<Audio>` component:
+
+```tsx
+import { AudioLayer } from "@tokovo/renderer";
+
+<AudioLayer audio={world.audio} frame={frame} fps={30} />;
+```
+
+**Features:**
+
+- **Bus-based routing**: Sounds routed through `music`, `ui`, `sfx`, `voice` buses
+- **Automatic ducking**: Voice/UI automatically duck music volume
+- **Crossfade support**: Smooth transitions between music tracks
+- **Deterministic**: Same frame always produces same audio state
+
+**How it works:**
+
+1. `AudioLayer` reads `world.audio.activeSounds` and `world.audio.musicBed`
+2. For each active sound, computes effective volume via `computeMixedVolume()`
+3. Applies bus gains, ducking, and envelope (attack/release)
+4. Renders Remotion `<Sequence>` + `<Audio>` for each sound
+
+```tsx
+// Simplified internal structure
+{
+  activeSounds.map(([id, cue]) => (
+    <Sequence key={id} from={cue.startFrame} durationInFrames={cue.duration}>
+      <Audio
+        src={getSoundPath(cue.soundId)}
+        volume={computeMixedVolume(cue, busStates, frame)}
+        loop={cue.loop}
+      />
+    </Sequence>
+  ));
+}
+```
 
 ---
 

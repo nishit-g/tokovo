@@ -206,10 +206,22 @@ type WorldState = {
   devices: Record<DeviceId, DeviceState>; // Phone states
   conversations: Record<ConvoId, ConvoState>; // Chat messages
   camera: CameraViewConfig; // Camera position/zoom
+  audio: AudioState; // Active sounds, music, voice
 };
 ```
 
 **Key principle**: WorldState is **never mutated**. It's always derived from events.
+
+#### Audio System
+
+The engine includes a complete audio subsystem:
+
+- **Buses**: Route sounds through `music`, `ui`, `sfx`, `voice` channels
+- **Policies**: Spam gate, concurrency limits, priority-based selection
+- **Ducking**: Automatic volume reduction when voice-over plays
+- **Crossfade**: Smooth transitions between background music tracks
+
+See [@tokovo/core Audio System](/packages/core#3-audio-system--enterprise-grade-sound) for details.
 
 ---
 

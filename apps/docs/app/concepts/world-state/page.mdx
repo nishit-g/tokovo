@@ -71,8 +71,10 @@ Every frame of your video is rendered from a fresh WorldState computed by the `r
 │  ┌─────────────────────────────────────────────────────┐    │
 │  │  audio: AudioState                                   │    │
 │  │  ┌───────────────────────────────────────────────┐  │    │
-│  │  │  activeSounds: ["notification_ping"],           │  │    │
-│  │  │  volume: 0.8                                    │  │    │
+│  │  │  activeSounds: { "notif_001": SoundCue },      │  │    │
+│  │  │  buses: { music, ui, sfx, voice },             │  │    │
+│  │  │  musicBed: { soundId: "bgm", ... },            │  │    │
+│  │  │  outgoingMusicBed: { ... }  // crossfade       │  │    │
 │  │  └───────────────────────────────────────────────┘  │    │
 │  └─────────────────────────────────────────────────────┘    │
 │                                                              │
@@ -141,11 +143,40 @@ Camera view configuration including:
 
 #### `audio`
 
-Audio system state:
+Complete audio system state including:
 
-- Active sounds and their playback state
-- Volume levels
-- Crossfade timings
+- **activeSounds**: Record of `SoundCue` objects keyed by instance ID
+- **buses**: Configuration for each audio bus (music, ui, sfx, voice)
+- **musicBed**: Current background music track
+- **outgoingMusicBed**: Previous track during crossfade transitions
+
+```typescript
+interface AudioState {
+  activeSounds: Record<string, SoundCue | ActiveSound>;
+  buses: {
+    music: AudioBusConfig; // { baseGain: 0.35, maxConcurrent: 1 }
+    ui: AudioBusConfig; // { baseGain: 0.9, maxConcurrent: 3 }
+    sfx: AudioBusConfig; // { baseGain: 0.8, maxConcurrent: 4 }
+    voice: AudioBusConfig; // { baseGain: 1.0, maxConcurrent: 1 }
+  };
+  musicBed?: MusicBed;
+  outgoingMusicBed?: MusicBed;
+}
+
+interface SoundCue {
+  soundId: string;
+  startFrame: number;
+  volume: number;
+  bus: "music" | "ui" | "sfx" | "voice";
+  priority: number;
+  loop?: boolean;
+  duration?: number;
+  duck?: DuckRule;
+  envelope?: AudioEnvelope;
+}
+```
+
+**See also**: [@tokovo/core Audio System](/packages/core#3-audio-system--enterprise-grade-sound)
 
 ---
 

@@ -11,6 +11,7 @@ export type {
   TrackMessageRef,
   CameraPayloads,
   AudioPayloads,
+  VoicePayloads,
   OSPayloads,
   MarkerPayloads,
   CallPayloads,
@@ -29,6 +30,7 @@ export type {
   AppTrackEventRegistry,
   CameraTrackEvent,
   AudioTrackEvent,
+  VoiceTrackEvent,
   OSTrackEvent,
   MarkerTrackEvent,
   CallTrackEvent,
@@ -40,6 +42,7 @@ export type {
 export {
   isCameraEvent,
   isAudioEvent,
+  isVoiceEvent,
   isOSEvent,
   isMarkerEvent,
   isAppEvent,
@@ -57,12 +60,19 @@ export type {
   DirectorStyle,
   TrackEpisodeIR,
   TrackEpisodeConfig,
+  VoiceConfig,
+  VoiceSegmentSchedule,
+  VoiceScriptSegment,
+  VoiceScriptDefinition,
+  VoiceScheduleItem,
 } from "./episode-ir";
 
 export {
   TrackEpisodeIRSchema,
   DeviceConfigSchema,
   TrackEventSchema,
+  VoiceConfigSchema,
+  VoiceSegmentScheduleSchema,
   validateTrackEpisodeIR,
   safeValidateTrackEpisodeIR,
 } from "./schemas";

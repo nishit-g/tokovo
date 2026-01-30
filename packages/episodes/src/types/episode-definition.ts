@@ -73,18 +73,27 @@ export interface EpisodeMeta {
 // EPISODE CONFIG
 // =============================================================================
 
-/**
- * Episode configuration - video dimensions and requirements.
- */
+export interface SegmentSchedule {
+  segmentId: string;
+  at: number;
+  volume?: number;
+  speed?: number;
+}
+
+export interface VoiceConfig {
+  manifestPath: string;
+  audioPath: string;
+  startFrame?: number;
+  volume?: number;
+  usePerSegmentControl?: boolean;
+  segmentSchedule?: SegmentSchedule[];
+}
+
 export interface EpisodeConfig {
-  /** Video format template or custom dimensions */
   format: FormatId | CustomFormat;
-
-  /** Total duration in frames */
   durationInFrames: number;
-
-  /** Required app plugins (e.g., ["app_whatsapp"]) */
   apps: string[];
+  voice?: VoiceConfig;
 }
 
 // =============================================================================
@@ -120,6 +129,22 @@ export const EpisodeMetaSchema = z.object({
   createdAt: z.string().optional(),
 });
 
+const SegmentScheduleSchema = z.object({
+  segmentId: z.string(),
+  at: z.number(),
+  volume: z.number().min(0).max(1).optional(),
+  speed: z.number().positive().optional(),
+});
+
+const VoiceConfigSchema = z.object({
+  manifestPath: z.string(),
+  audioPath: z.string(),
+  startFrame: z.number().optional(),
+  volume: z.number().min(0).max(1).optional(),
+  usePerSegmentControl: z.boolean().optional(),
+  segmentSchedule: z.array(SegmentScheduleSchema).optional(),
+});
+
 export const EpisodeConfigSchema = z.object({
   format: z.union([
     z.enum([
@@ -140,6 +165,7 @@ export const EpisodeConfigSchema = z.object({
   ]),
   durationInFrames: z.number().positive(),
   apps: z.array(z.string()),
+  voice: VoiceConfigSchema.optional(),
 });
 
 export const EpisodeDefinitionSchema = z.object({

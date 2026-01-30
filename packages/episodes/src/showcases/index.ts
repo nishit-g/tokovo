@@ -9,6 +9,10 @@
  *   2. Add import below
  */
 
-// Add showcase imports here as you create them:
-// import "./camera-demo.episode";
-// import "./audio-demo.episode";
+import "./camera-director-full.episode";
+import "./mega-camera-director.episode";
+import "./mega-camera-showcase.episode";
+import "./tennis-casual.episode";
+import "./tennis-dramatic.episode";
+import "./tennis-energetic.episode";
+import "./tennis-fluid-demo.episode";

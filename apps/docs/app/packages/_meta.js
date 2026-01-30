@@ -3,6 +3,7 @@ export default {
   ir: "@tokovo/ir",
   compiler: "@tokovo/compiler",
   dsl: "@tokovo/dsl",
+  voice: "@tokovo/voice",
   devices: "@tokovo/devices",
   "device-camera": "@tokovo/device-camera",
   "device-notifications": "@tokovo/device-notifications",

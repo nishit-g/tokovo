@@ -1,0 +1,29 @@
+{
+  "id": "drama-example",
+  "voices": {
+    "narrator": "JBFqnCBsd6RMkjVDRZzb",
+    "sarah": "EXAVITQu4vr4xnSDxMaL"
+  },
+  "lines": [
+    {
+      "speaker": "narrator",
+      "text": "[calm] What you're about to see will shock you."
+    },
+    {
+      "speaker": "sarah",
+      "text": "[excited] Oh my god, I can't believe this is happening!"
+    },
+    {
+      "speaker": "narrator",
+      "text": "[dramatic] But wait... there's more."
+    },
+    {
+      "speaker": "sarah",
+      "text": "[whispers] I never should have opened that message."
+    }
+  ],
+  "meta": {
+    "title": "Drama Example",
+    "description": "Example script for testing voice generation"
+  }
+}

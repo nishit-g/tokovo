@@ -1,0 +1,437 @@
+# @tokovo/voice
+
+> **Priority: P1** — AI voice generation and frame-perfect audio synchronization for Tokovo.
+
+`@tokovo/voice` provides the infrastructure for integrating AI-generated narration (ElevenLabs, etc.) into Tokovo episodes with frame-perfect timing and type-safe segment control.
+
+## Installation
+
+```bash
+pnpm add @tokovo/voice
+```
+
+## What is @tokovo/voice?
+
+`@tokovo/voice` handles the complete voice pipeline:
+
+- **Script Generation** — Convert text scripts to voice with timing manifests
+- **Type-Safe Segments** — Generated TypeScript with full autocomplete for segment IDs
+- **Frame-Perfect Sync** — Audio segments scheduled with Remotion's timing system
+- **Build-Time Embedding** — Segment data baked into IR (no runtime fetching)
+
+---
+
+## Architecture Overview
+
+<ASCIIDiagram>
+  {`
+┌─────────────────────────────────────────────────────────────────────────┐
+│                          VOICE PIPELINE                                  │
+├─────────────────────────────────────────────────────────────────────────┤
+│                                                                          │
+│  1. AUTHOR                                                               │
+│     scripts/drama.json ──────────────────────────────────────────────►  │
+│     { segments: [{ id, text, speaker }] }                                │
+│                                                                          │
+│  2. GENERATE                                                             │
+│     pnpm voice:generate scripts/drama.json ──────────────────────────►  │
+│     └── Calls ElevenLabs API                                             │
+│     └── Produces: drama.mp3 + drama-manifest.json                        │
+│                                                                          │
+│  3. SYNC                                                                 │
+│     pnpm voice:sync ─────────────────────────────────────────────────►  │
+│     └── Generates: src/scripts/drama.ts (type-safe definition)          │
+│                                                                          │
+│  4. USE IN EPISODE                                                       │
+│     import { drama } from "@tokovo/voice";                               │
+│     .voice(drama, v => v.at("0s").play("seg_0")) ────────────────────►  │
+│                                                                          │
+│  5. RENDER                                                               │
+│     VoiceLayer renders <Audio> with delayRender sync ────────────────►  │
+│                                                                          │
+└─────────────────────────────────────────────────────────────────────────┘
+`}
+</ASCIIDiagram>
+
+---
+
+## Quick Start
+
+### 1. Create a Script
+
+```json
+// scripts/my-narration.json
+{
+  "id": "my_narration",
+  "segments": [
+    { "id": "intro", "text": "Welcome to the story.", "speaker": "narrator" },
+    { "id": "scene1", "text": "It was a dark night...", "speaker": "narrator" },
+    { "id": "dialog1", "text": "Who's there?", "speaker": "sarah" }
+  ]
+}
+```
+
+### 2. Generate Voice
+
+```bash
+# Generate audio + manifest
+pnpm voice:generate scripts/my-narration.json
+
+# Generate TypeScript definitions
+pnpm voice:sync
+```
+
+### 3. Use in Episode
+
+```typescript
+import { episode } from "@tokovo/dsl";
+import { my_narration } from "@tokovo/voice";
+
+export default episode("narrated-video", { fps: 30, duration: "30s" })
+  .voice(my_narration, (v) => {
+    v.at("0s").play("intro"); // Full autocomplete!
+    v.at("3s").play("scene1");
+    v.at("8s").play("dialog1");
+  })
+  .device("phone", "iphone16", { app: "app_whatsapp" })
+  // ... rest of episode
+  .build();
+```
+
+---
+
+## Generated Script Definition
+
+After `pnpm voice:sync`, you get a type-safe script:
+
+```typescript
+// src/scripts/my-narration.ts (auto-generated)
+
+export type my_narration_SegmentId = "intro" | "scene1" | "dialog1";
+
+export const my_narration_segments = {
+  intro: { id: "intro", startMs: 0, endMs: 1840, speaker: "narrator" },
+  scene1: { id: "scene1", startMs: 1840, endMs: 4200, speaker: "narrator" },
+  dialog1: { id: "dialog1", startMs: 4200, endMs: 5100, speaker: "sarah" },
+} as const;
+
+export const my_narration: VoiceScriptDefinition<my_narration_SegmentId> = {
+  id: "my_narration",
+  manifestPath: "/voice/my-narration-manifest.json",
+  audioPath: "/voice/my-narration.mp3",
+  durationMs: 5100,
+  segments: my_narration_segments,
+
+  start(segmentId, fps = 30) {
+    return Math.round((this.segments[segmentId].startMs / 1000) * fps);
+  },
+  end(segmentId, fps = 30) {
+    return Math.round((this.segments[segmentId].endMs / 1000) * fps);
+  },
+  duration(segmentId, fps = 30) {
+    const seg = this.segments[segmentId];
+    return Math.round(((seg.endMs - seg.startMs) / 1000) * fps);
+  },
+};
+```
+
+---
+
+## API Reference
+
+### VoiceScriptDefinition
+
+The main type for voice scripts:
+
+```typescript
+interface VoiceScriptDefinition<T extends string = string> {
+  id: string;
+  manifestPath: string;
+  audioPath: string;
+  durationMs: number;
+  segments: Record<T, VoiceScriptSegment>;
+
+  start(segmentId: T, fps?: number): number;
+  end(segmentId: T, fps?: number): number;
+  duration(segmentId: T, fps?: number): number;
+}
+```
+
+### VoiceScriptSegment
+
+Individual segment data:
+
+```typescript
+interface VoiceScriptSegment {
+  id: string;
+  startMs: number;
+  endMs: number;
+  durationMs?: number; // Computed from endMs - startMs if not provided
+  speaker: string;
+  text?: string;
+}
+```
+
+### Timing Helpers
+
+Use these to coordinate voice with other tracks:
+
+```typescript
+import { my_narration } from "@tokovo/voice";
+
+// Get frame numbers at 30fps
+my_narration.start("intro", 30);    // First frame of segment
+my_narration.end("intro", 30);      // Last frame of segment
+my_narration.duration("intro", 30); // Duration in frames
+
+// Coordinate camera with voice
+.camera((cam) => {
+  cam.at(my_narration.start("dialog1")).focus("speaker");
+  cam.at(my_narration.end("dialog1")).reset();
+})
+```
+
+---
+
+## Render Components
+
+### VoiceLayer
+
+For per-segment control (default when using `.voice()` DSL):
+
+```tsx
+import { VoiceLayer } from "@tokovo/voice";
+
+<VoiceLayer
+  manifest={voiceManifest}
+  audioUrl="/voice/my-narration.mp3"
+  events={voiceEvents}
+  volume={1}
+/>;
+```
+
+### SimpleVoiceLayer
+
+For playing entire audio without segment control:
+
+```tsx
+import { SimpleVoiceLayer } from "@tokovo/voice";
+
+<SimpleVoiceLayer
+  manifest={voiceManifest}
+  audioUrl="/voice/my-narration.mp3"
+  startFrame={0}
+  volume={1}
+  speed={1}
+/>;
+```
+
+---
+
+## Enterprise Features
+
+### Audio Bus Integration
+
+When using schedule-based voice (`.voice(script, v => v.at(...).play(...))`), voice audio is automatically routed through Tokovo's audio mixer:
+
+<ASCIIDiagram>
+  {`
+┌─────────────────────────────────────────────────────┐
+│                    AUDIO MIXER                       │
+│  Music Bus ──┬── [Ducking] ──► Master ──► Output    │
+│              │       ↑                               │
+│              │       │ (sidechain from voice)        │
+│  SFX Bus ────┤       │                               │
+│              │       │                               │
+│  Voice Bus ──┴───────┘                               │
+└─────────────────────────────────────────────────────┘
+`}
+</ASCIIDiagram>
+
+**Key features:**
+
+- **Automatic Ducking** — Music volume reduces to 15% when voice plays
+- **Unified Mixer** — Voice, music, and SFX share the same audio bus system
+- **Priority System** — Voice has highest priority (100) for resource management
+- **Smooth Transitions** — Configurable attack/release for volume changes
+
+```typescript
+// Voice cues are automatically created with ducking rules:
+{
+  bus: "voice",
+  priority: 100,
+  duck: {
+    targetBus: "music",
+    amount: 0.15,    // Duck music to 15% volume
+    attack: 5,       // 5 frames to ramp down
+    release: 40,     // 40 frames to ramp back up
+  }
+}
+```
+
+### Build-Time Embedding
+
+Segment data is embedded in the IR at build time:
+
+```typescript
+// No runtime manifest fetching required
+const ir = episode.build();
+// ir.voice.segments contains all timing data
+```
+
+### Error Handling
+
+Voice system fails fast on errors:
+
+- Missing manifest: Hard error (not silent failure)
+- Invalid segment ID: TypeScript compile error
+- Audio buffer issues: `delayRender` blocks until ready
+
+### Audio Buffering
+
+VoiceLayer uses Remotion's `delayRender` to ensure audio is buffered before render:
+
+```typescript
+// Internal behavior
+const [handle] = useState(() => delayRender("Waiting for audio"));
+
+<Audio onCanPlayThrough={() => continueRender(handle)} />
+```
+
+---
+
+## Voice Runtime Events
+
+Voice segments are processed through the engine as `VoiceRuntimeEvent`s, fully integrated with the audio system.
+
+### Event Types
+
+| Event Type     | Description                   | When Generated                                  |
+| -------------- | ----------------------------- | ----------------------------------------------- |
+| `PLAY_SEGMENT` | Start playing a voice segment | `.voice(script, v => v.at(...).play("seg_id"))` |
+| `STOP_VOICE`   | Stop current voice playback   | `.voice(script, v => v.at(...).stop())`         |
+
+### VoicePlaySegmentEvent
+
+```typescript
+interface VoicePlaySegmentEvent {
+  kind: "VOICE";
+  type: "PLAY_SEGMENT";
+  at: number; // Frame number
+  segmentId: string; // Segment identifier
+  audioPath: string; // Path to audio file
+  startMs: number; // Start position in audio (ms)
+  endMs: number; // End position in audio (ms)
+  volume?: number; // Override volume (0-1)
+  speed?: number; // Playback speed multiplier
+  speaker?: string; // Speaker identifier
+  text?: string; // Transcript text
+}
+```
+
+### Engine Handler
+
+Voice events are processed by `processVoiceEvent()` in `@tokovo/core`:
+
+```typescript
+import { processVoiceEvent } from "@tokovo/core";
+
+// Voice handler creates a SoundCue on the voice bus
+// with automatic music ducking
+const result = processVoiceEvent(event, worldState);
+// result.audio.activeSounds now includes the voice cue
+```
+
+### Integration with Audio System
+
+Voice segments become `SoundCue` objects routed to the `voice` bus:
+
+```typescript
+// Generated SoundCue for voice segment
+{
+  soundId: "voice_seg_intro",
+  bus: "voice",
+  startFrame: 0,
+  volume: 1.0,
+  priority: 100,  // Highest priority
+  duck: {
+    targetBus: "music",
+    amount: 0.15,
+    attack: 5,
+    release: 40,
+  },
+  audioStartFrom: 0,      // startMs in seconds
+  duration: 55,           // (endMs - startMs) in frames
+}
+```
+
+---
+
+## File Structure
+
+```
+packages/voice/
+├── src/
+│   ├── index.ts              # Package exports
+│   ├── types/
+│   │   ├── manifest.ts       # VoiceManifest, VoiceSegment
+│   │   └── script-definition.ts  # Re-exports from @tokovo/ir
+│   ├── dsl/
+│   │   └── voice-track.ts    # VoicePlayEvent types
+│   ├── render/
+│   │   ├── VoiceLayer.tsx    # Per-segment audio rendering
+│   │   └── integration.ts    # Audio bus integration, ducking
+│   └── scripts/
+│       ├── index.ts          # Barrel export for generated scripts
+│       └── *.ts              # Generated voice scripts
+└── package.json
+```
+
+---
+
+## Best Practices
+
+### 1. Generate Once, Use Everywhere
+
+Voice generation is expensive (API calls). Generate once, commit the results:
+
+```bash
+# Generate
+pnpm voice:generate scripts/episode1.json
+pnpm voice:sync
+
+# Commit generated files
+git add packages/voice/src/scripts/
+git add apps/video-runner/public/voice/
+```
+
+### 2. Use Segment Helpers for Coordination
+
+Don't hardcode timings — use the script helpers:
+
+```typescript
+// Bad: Hardcoded timing
+cam.at("3.5s").focus("reaction");
+
+// Good: Derived from voice
+cam.at(drama.end("line1")).focus("reaction");
+```
+
+### 3. Validate Segment Order
+
+Ensure segments don't overlap:
+
+```typescript
+v.at("0s").play("seg_0"); // 0-2s
+v.at("1s").play("seg_1"); // ERROR: starts during seg_0
+v.at("3s").play("seg_1"); // OK: starts after seg_0 ends
+```
+
+### 4. Handle Multiple Speakers
+
+Use speaker field for styling/ducking:
+
+```typescript
+const segments = Object.values(drama.segments);
+const sarahSegments = segments.filter((s) => s.speaker === "sarah");
+```

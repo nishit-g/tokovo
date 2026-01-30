@@ -266,10 +266,10 @@ Add a device to the episode.
 
 **Available profiles:**
 
-- `'iphone16'` — iPhone 16 Pro
-- `'iphone15'` — iPhone 15
-- `'pixel8'` — Google Pixel 8
-- More coming soon
+- `'iphone16'` — iPhone 16 Pro / Pro Max
+- `'iphone15'` — iPhone 15 / 15 Pro
+- `'pixel8'` — Google Pixel 8 / 8 Pro
+- `'pixel7'` — Google Pixel 7 Pro
 
 ### `.camera(fn)`
 
@@ -601,6 +601,90 @@ audio.span("0s", "30s").bgm("theme", {
 
 ---
 
+## Voice Track API
+
+The `.voice()` method integrates AI-generated narration with frame-perfect timing. It uses pre-generated voice scripts with segment-level control.
+
+### Setup
+
+Voice requires a generated script from `@tokovo/voice`:
+
+```typescript
+import { drama_example } from "@tokovo/voice";
+// or your own generated script
+```
+
+### Basic Usage
+
+```typescript
+episode("narrated-story", { fps: 30, duration: "30s" })
+  .voice(drama_example, (v) => {
+    v.at("0s").play("seg_0"); // Full autocomplete on segment IDs
+    v.at("5s").play("seg_1");
+    v.at("12s").play("seg_2");
+  })
+  .build();
+```
+
+### Point Operations (`.at(time)`)
+
+#### `.play(segmentId, options)`
+
+Schedule a voice segment to play at a specific time.
+
+```typescript
+v.at('2s').play('intro', {
+  volume?: number,  // 0-1, default 1
+  speed?: number    // Playback rate, default 1
+})
+```
+
+**Example:**
+
+```typescript
+v.at("0s").play("seg_0");
+v.at("5s").play("seg_1", { volume: 0.8 });
+v.at("10s").play("seg_2", { speed: 1.1 });
+```
+
+### Type-Safe Segment IDs
+
+The script definition provides full autocomplete for segment IDs:
+
+```typescript
+import { drama_example, type drama_example_SegmentId } from "@tokovo/voice";
+
+// TypeScript knows valid segments: "seg_0" | "seg_1" | "seg_2" | "seg_3"
+v.at("0s").play("seg_0"); // ✅ Valid
+v.at("0s").play("seg_99"); // ❌ Type error
+```
+
+### Using Script Helpers
+
+Generated scripts include timing helpers:
+
+```typescript
+import { drama_example } from "@tokovo/voice";
+
+// Get segment timing in frames
+const introEnd = drama_example.end("seg_0", 30);  // end frame @ 30fps
+const dialogStart = drama_example.start("seg_1", 30);
+
+// Coordinate camera with voice
+.camera((cam) => {
+  cam.at(drama_example.start("seg_1")).focus("reaction");
+  cam.at(drama_example.end("seg_2")).reset();
+})
+```
+
+### How It Works
+
+1. **Build time**: DSL embeds segment data into IR (no runtime fetching)
+2. **Render time**: VoiceLayer schedules `<Audio>` components with precise frame timing
+3. **Audio sync**: `delayRender` blocks until audio buffers, ensuring perfect sync
+
+---
+
 ## OS Track API
 
 ### Point Operations (`.at(time)`)
@@ -750,6 +834,7 @@ export const MyComposition = () => runEpisode(prepared);
 ```typescript
 import { episode } from "@tokovo/dsl";
 import { WhatsAppTrackBuilder } from "@tokovo/apps-whatsapp";
+import { breakup_narration } from "@tokovo/voice";
 
 let order = 0;
 const getOrder = () => order++;
@@ -808,6 +893,13 @@ const ir = episode("breakup-scene", {
     audio.span("0s", "45s").bgm("tension", { volume: 0.15, fadeOut: "5s" });
     audio.at("12s").play("heartbeat", { volume: 0.3 });
     audio.at("25s").crossfade("somber", { duration: "3s", volume: 0.2 });
+  })
+
+  // Voice narration
+  .voice(breakup_narration, (v) => {
+    v.at("0s").play("intro");
+    v.at(breakup_narration.end("intro")).play("tension_builds");
+    v.at("25s").play("climax", { volume: 0.9 });
   })
 
   // OS state changes

@@ -14,6 +14,7 @@
 interface TokovoGlobals {
   __TOKOVO_LOG_EVENTS?: boolean;
   __TOKOVO_LOG_PERF?: boolean;
+  __TOKOVO_LOG_AUDIO?: boolean;
 }
 
 const tokovoGlobals = globalThis as typeof globalThis & TokovoGlobals;
@@ -28,5 +29,9 @@ export const EngineConfig = {
 
   get logPerformance(): boolean {
     return tokovoGlobals.__TOKOVO_LOG_PERF === true;
+  },
+
+  get logAudio(): boolean {
+    return tokovoGlobals.__TOKOVO_LOG_AUDIO === true;
   },
 };

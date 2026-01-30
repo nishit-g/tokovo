@@ -33,7 +33,10 @@ registerCameraPlugin();
 // EPISODE IMPORTS (side-effect: auto-registers with registry)
 // =============================================================================
 
+// Auto-load all production episodes
 import "@tokovo/episodes/production";
+
+// Auto-load all showcase episodes
 import "@tokovo/episodes/showcases";
 
 // =============================================================================

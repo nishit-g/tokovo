@@ -47,6 +47,20 @@ export const DirectorStyleSchema = z.enum([
   "Documentary",
 ]);
 
+export const VoiceSegmentScheduleSchema = z.object({
+  segmentId: z.string(),
+  at: z.number().nonnegative(),
+  volume: z.number().min(0).max(1).optional(),
+  speed: z.number().positive().optional(),
+});
+
+export const VoiceConfigSchema = z.object({
+  manifestPath: z.string(),
+  audioPath: z.string(),
+  usePerSegmentControl: z.boolean().optional(),
+  segmentSchedule: z.array(VoiceSegmentScheduleSchema).optional(),
+});
+
 export const TrackEventBaseSchema = z.object({
   at: z.number().int().nonnegative(),
   duration: z.number().int().nonnegative().optional(),
@@ -71,6 +85,7 @@ export const TrackEpisodeIRSchema = z.object({
   markers: z.array(MarkerSchema),
   sections: z.array(SectionSchema),
   director: DirectorStyleSchema.optional(),
+  voice: VoiceConfigSchema.optional(),
 });
 
 export type ValidatedTrackEpisodeIR = z.infer<typeof TrackEpisodeIRSchema>;

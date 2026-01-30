@@ -1,23 +1,24 @@
 {
-    "name": "@tokovo/dsl",
-    "version": "0.0.1",
-    "description": "Tokovo Author DSL - fluent API for writing cinematic chat stories",
-    "main": "dist/index.js",
-    "types": "dist/index.d.ts",
-    "files": [
-        "dist"
-    ],
-    "scripts": {
-        "build": "tsc",
-        "dev": "tsc --watch"
-    },
-    "dependencies": {
-        "@tokovo/core": "workspace:*",
-        "@tokovo/ir": "workspace:*",
-        "source-map-support": "^0.5.21"
-    },
-    "devDependencies": {
-        "@types/source-map-support": "^0.5.10",
-        "typescript": "^5.0.0"
-    }
+  "name": "@tokovo/dsl",
+  "version": "0.0.1",
+  "description": "Tokovo Author DSL - fluent API for writing cinematic chat stories",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch"
+  },
+  "dependencies": {
+    "@tokovo/core": "workspace:*",
+    "@tokovo/ir": "workspace:*",
+    "@tokovo/compiler": "workspace:*",
+    "source-map-support": "^0.5.21"
+  },
+  "devDependencies": {
+    "@types/source-map-support": "^0.5.10",
+    "typescript": "^5.0.0"
+  }
 }

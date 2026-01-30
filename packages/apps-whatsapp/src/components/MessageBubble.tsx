@@ -1,4 +1,4 @@
-import React, { memo } from "react";
+import { memo } from "react";
 import { Check, CheckCheck } from "lucide-react";
 import { MessageContent } from "./MessageContent";
 import { MessageData } from "../types";
@@ -13,6 +13,7 @@ export interface MessageBubbleProps {
   senderName?: string;
   senderColor?: string;
   showSenderName?: boolean;
+  messageOrder?: number;
 }
 
 export const MessageBubble = memo(function MessageBubble({
@@ -24,6 +25,7 @@ export const MessageBubble = memo(function MessageBubble({
   senderName,
   senderColor,
   showSenderName = false,
+  messageOrder,
 }: MessageBubbleProps) {
   const theme = useTheme();
 
@@ -51,6 +53,7 @@ export const MessageBubble = memo(function MessageBubble({
       <div
         data-anchor="message"
         data-message-id={message.id}
+        data-order={messageOrder}
         style={{
           alignSelf: isMe ? "flex-end" : "flex-start",
           maxWidth: "75%",
@@ -184,13 +187,11 @@ export const MessageBubble = memo(function MessageBubble({
     <div
       data-anchor="message"
       data-message-id={message.id}
+      data-order={messageOrder}
       style={{
         alignSelf: isMe ? "flex-end" : "flex-start",
-        maxWidth: "75%", // Standard width constraint
+        maxWidth: "75%",
         position: "relative",
-        // Visual Run Spacing:
-        // If isLast (of group), we rely on parent margin.
-        // Inside group, we use small margin.
         marginBottom: 2,
         display: "flex",
         flexDirection: "column",

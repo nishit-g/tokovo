@@ -162,6 +162,24 @@ export interface AudioPayloads {
 }
 
 // =============================================================================
+// VOICE PAYLOADS
+// =============================================================================
+
+export interface VoicePayloads {
+  PLAY_SEGMENT: {
+    segmentId: string;
+    audioPath: string;
+    startMs: number;
+    endMs: number;
+    volume?: number;
+    speed?: number;
+    speaker?: string;
+    text?: string;
+  };
+  STOP_VOICE: Record<string, never>;
+}
+
+// =============================================================================
 // OS PAYLOADS
 // =============================================================================
 

@@ -65,8 +65,11 @@ export const MessageList: React.FC<MessageListProps> = ({
         />
       )}
 
-      {groups.map((group) => {
+      {groups.map((group, groupIdx) => {
         const isSystem = group.senderId === "system";
+        const messageStartIndex = groups
+          .slice(0, groupIdx)
+          .reduce((sum, g) => sum + g.messages.length, 0);
 
         return (
           <div
@@ -90,6 +93,7 @@ export const MessageList: React.FC<MessageListProps> = ({
                 isGroupChat={isGroupChat}
                 senderName={item.data.from}
                 showSenderName={isGroupChat && !group.isMe && item.isFirst}
+                messageOrder={messageStartIndex + idx}
               />
             ))}
           </div>
