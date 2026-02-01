@@ -11,9 +11,7 @@ import { episode } from "@tokovo/dsl";
 import { WhatsAppTrackBuilder } from "@tokovo/apps-whatsapp/src/dsl/track-builder";
 import { KeyboardPlugin } from "@tokovo/compiler";
 
-// Declaration order counter
-let orderCounter = 0;
-const getOrder = () => orderCounter++;
+
 
 // =============================================================================
 // EPISODE DEFINITION (auto-registers via defineEpisode)
@@ -52,9 +50,7 @@ export default defineEpisode({
         })
 
         // === WHATSAPP TRACK ===
-        .track("app_whatsapp", () => {
-            return new WhatsAppTrackBuilder(30, "phone", "dm_sarah", getOrder);
-        }, wa => {
+        .track("app_whatsapp", (getOrder) => new WhatsAppTrackBuilder(30, "phone", "dm_sarah", getOrder), wa => {
             // Opening message
             wa.at("1s").receive("Sarah", "Hey baby! Are you free tonight? 💕");
 
@@ -134,12 +130,12 @@ export default defineEpisode({
         .section("suspense", "10s", "20s")
         .section("celebration", "20s", "36s")
         .section("resolution", "36s", "45s").use(
-        new KeyboardPlugin({
-          onlyForSentMessages: true,
-          defaultCharDelay: 3,
-          excludeShortMessages: 3,
-        }),
-      )
+            new KeyboardPlugin({
+                onlyForSentMessages: true,
+                defaultCharDelay: 3,
+                excludeShortMessages: 3,
+            }),
+        )
 
 
         .build(),

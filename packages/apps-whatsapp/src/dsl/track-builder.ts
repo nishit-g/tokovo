@@ -365,24 +365,30 @@ function parseTime(time: string | number, fps: number): number {
 
 export class WhatsAppTrackBuilder {
   _events: WhatsAppTrackEvent[] = [];
+  private _currentTime: number = 0;
+  private _currentConversation: string | null = null;
 
   constructor(
     private _fps: number,
     private _deviceId: string,
-    private _conversationId: string,
+    private _conversationId: string = "",
     private _getOrder: GetDeclarationOrder,
-  ) {}
+  ) {
+    this._currentConversation = _conversationId || null;
+  }
 
   /**
    * Create a point (instant) operation at a specific time.
    */
   at(time: string | number): WhatsAppPointBuilder {
     const frame = parseTime(time, this._fps);
+    this._currentTime = frame;
+    const conversationId = this._currentConversation || this._conversationId;
     return new WhatsAppPointBuilder(
       frame,
       this._fps,
       this._deviceId,
-      this._conversationId,
+      conversationId,
       this._events,
       this._getOrder,
     );
@@ -394,11 +400,12 @@ export class WhatsAppTrackBuilder {
   span(start: string | number, end: string | number): WhatsAppSpanBuilder {
     const startFrame = parseTime(start, this._fps);
     const endFrame = parseTime(end, this._fps);
+    const conversationId = this._currentConversation || this._conversationId;
     return new WhatsAppSpanBuilder(
       startFrame,
       endFrame,
-      this._deviceId, // FIXED: was passing _fps by mistake!
-      this._conversationId,
+      this._deviceId,
+      conversationId,
       this._events,
       this._getOrder,
     );
@@ -460,11 +467,12 @@ export class WhatsAppTrackBuilder {
   }
 
   /**
-   * Go back to previous screen at a specific time.
+   * Go back to previous screen. Uses currentTime if no time specified.
    * Emits core GO_BACK event (handled by navigation.ts)
    */
-  goBack(time: string | number = "0s"): void {
-    const frame = parseTime(time, this._fps);
+  goBack(time?: string | number): this {
+    const frame =
+      time !== undefined ? parseTime(time, this._fps) : this._currentTime;
     this._events.push({
       at: frame,
       deviceId: this._deviceId,
@@ -474,6 +482,10 @@ export class WhatsAppTrackBuilder {
       payload: {},
       _declarationOrder: this._getOrder(),
     });
+    if (time === undefined) {
+      this._currentTime = frame + 0.3 * this._fps;
+    }
+    return this;
   }
 
   /**
@@ -512,6 +524,199 @@ export class WhatsAppTrackBuilder {
       },
       _declarationOrder: this._getOrder(),
     });
+  }
+
+  private framesToTime(frames: number): number {
+    return frames / this._fps;
+  }
+
+  receive(from: string, text: string): this {
+    const conversationId = this._currentConversation || this._conversationId;
+    this._events.push({
+      at: this._currentTime,
+      deviceId: this._deviceId,
+      kind: "APP",
+      appId: "app_whatsapp",
+      type: "MESSAGE_RECEIVED",
+      conversationId,
+      payload: { conversationId, from, text },
+      _declarationOrder: this._getOrder(),
+    });
+    this._currentTime += 0.5 * this._fps;
+    return this;
+  }
+
+  send(text: string): this {
+    const conversationId = this._currentConversation || this._conversationId;
+    this._events.push({
+      at: this._currentTime,
+      deviceId: this._deviceId,
+      kind: "APP",
+      appId: "app_whatsapp",
+      type: "MESSAGE_SENT",
+      conversationId,
+      payload: { conversationId, text },
+      _declarationOrder: this._getOrder(),
+    });
+    this._currentTime += 0.5 * this._fps;
+    return this;
+  }
+
+  receiveImage(
+    from: string,
+    url: string,
+    options?: { caption?: string },
+  ): this {
+    const conversationId = this._currentConversation || this._conversationId;
+    this._events.push({
+      at: this._currentTime,
+      deviceId: this._deviceId,
+      kind: "APP",
+      appId: "app_whatsapp",
+      type: "IMAGE_RECEIVED",
+      conversationId,
+      payload: { conversationId, from, url, caption: options?.caption },
+      _declarationOrder: this._getOrder(),
+    });
+    this._currentTime += 0.5 * this._fps;
+    return this;
+  }
+
+  sendImage(url: string, options?: { caption?: string }): this {
+    const conversationId = this._currentConversation || this._conversationId;
+    this._events.push({
+      at: this._currentTime,
+      deviceId: this._deviceId,
+      kind: "APP",
+      appId: "app_whatsapp",
+      type: "IMAGE_SENT",
+      conversationId,
+      payload: { conversationId, url, caption: options?.caption },
+      _declarationOrder: this._getOrder(),
+    });
+    this._currentTime += 0.5 * this._fps;
+    return this;
+  }
+
+  typing(actor: "me" | "them", duration: number = 2): this {
+    const conversationId = this._currentConversation || this._conversationId;
+    const startFrame = this._currentTime;
+    const endFrame = startFrame + duration * this._fps;
+
+    this._events.push({
+      at: startFrame,
+      deviceId: this._deviceId,
+      kind: "APP",
+      appId: "app_whatsapp",
+      type: "TYPING_START",
+      conversationId,
+      payload: { conversationId, actor },
+      _declarationOrder: this._getOrder(),
+    });
+
+    this._events.push({
+      at: endFrame,
+      deviceId: this._deviceId,
+      kind: "APP",
+      appId: "app_whatsapp",
+      type: "TYPING_END",
+      conversationId,
+      payload: { conversationId, actor },
+      _declarationOrder: this._getOrder(),
+    });
+
+    this._currentTime = endFrame;
+    return this;
+  }
+
+  openChat(conversationId: string): this {
+    this._conversationId = conversationId;
+    this._currentConversation = conversationId;
+
+    this._events.push({
+      at: this._currentTime,
+      deviceId: this._deviceId,
+      kind: "APP",
+      appId: "app_whatsapp",
+      type: "NAVIGATE_SCREEN",
+      payload: { screen: "chat" },
+      _declarationOrder: this._getOrder(),
+    });
+
+    this._events.push({
+      at: this._currentTime,
+      deviceId: this._deviceId,
+      kind: "APP",
+      appId: "app_whatsapp",
+      type: "CONVERSATION_OPENED",
+      conversationId,
+      payload: { conversationId },
+      _declarationOrder: this._getOrder(),
+    });
+
+    this._currentTime += 0.3 * this._fps;
+    return this;
+  }
+
+  pause(seconds: number): this {
+    this._currentTime += seconds * this._fps;
+    return this;
+  }
+
+  now(): this {
+    return this;
+  }
+
+  reply(text: string, typingDuration: number = 2): this {
+    const typingStart = this._currentTime;
+    const typingEnd = typingStart + typingDuration * this._fps;
+
+    this._events.push({
+      at: typingStart,
+      deviceId: this._deviceId,
+      kind: "APP",
+      appId: "app_whatsapp",
+      type: "TYPING_START",
+      conversationId: this._conversationId,
+      payload: {
+        conversationId: this._conversationId,
+        actor: "me",
+      },
+      _declarationOrder: this._getOrder(),
+    });
+
+    this._events.push({
+      at: typingEnd,
+      deviceId: this._deviceId,
+      kind: "APP",
+      appId: "app_whatsapp",
+      type: "TYPING_END",
+      conversationId: this._conversationId,
+      payload: {
+        conversationId: this._conversationId,
+        actor: "me",
+      },
+      _declarationOrder: this._getOrder(),
+    });
+
+    this._currentTime = typingEnd;
+
+    this._events.push({
+      at: this._currentTime,
+      deviceId: this._deviceId,
+      kind: "APP",
+      appId: "app_whatsapp",
+      type: "MESSAGE_SENT",
+      conversationId: this._conversationId,
+      payload: {
+        conversationId: this._conversationId,
+        text,
+      },
+      _declarationOrder: this._getOrder(),
+    });
+
+    this._currentTime += 0.5 * this._fps;
+    return this;
   }
 }
 

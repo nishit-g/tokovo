@@ -3,8 +3,7 @@ import { episode } from "@tokovo/dsl";
 import { WhatsAppTrackBuilder } from "@tokovo/apps-whatsapp/src/dsl/track-builder";
 import { AudioDirectorPlugin, OSDirectorPlugin, KeyboardPlugin } from "@tokovo/compiler";
 
-let orderCounter = 0;
-const getOrder = () => orderCounter++;
+
 
 export default defineEpisode({
   meta: {
@@ -41,9 +40,7 @@ export default defineEpisode({
 
       .track(
         "app_whatsapp",
-        () => {
-          return new WhatsAppTrackBuilder(30, "phone", "dm_jake", getOrder);
-        },
+        (getOrder) => new WhatsAppTrackBuilder(30, "phone", "dm_jake", getOrder),
         (wa) => {
           wa.at("1s").receive("Jake", "good morning beautiful 😘");
           wa.span("3s", "4s").typing("me");
@@ -57,9 +54,7 @@ export default defineEpisode({
 
       .track(
         "app_whatsapp",
-        () => {
-          return new WhatsAppTrackBuilder(30, "phone", "dm_sarah", getOrder);
-        },
+        (getOrder) => new WhatsAppTrackBuilder(30, "phone", "dm_sarah", getOrder),
         (wa) => {
           wa.at("12s").receive("Sarah", "hey");
           wa.at("13s").receive("Sarah", "are you free rn?");
@@ -127,9 +122,7 @@ export default defineEpisode({
 
       .track(
         "app_whatsapp",
-        () => {
-          return new WhatsAppTrackBuilder(30, "phone", "dm_jake", getOrder);
-        },
+        (getOrder) => new WhatsAppTrackBuilder(30, "phone", "dm_jake", getOrder),
         (wa) => {
           wa.at("107s").send("Jake we need to talk");
           wa.span("109s", "110.5s").typing("them");

@@ -12,12 +12,23 @@ import type { TrackEvent } from "./track-event";
 // DEVICE CONFIG
 // =============================================================================
 
+export interface Message {
+  from: string;
+  text?: string;
+  image?: string;
+  video?: string;
+  voice?: string;
+  timestamp?: number; // Negative = before episode start
+}
+
 export interface ConversationConfig {
   id: string;
   name: string;
   avatar?: string;
   type?: "dm" | "group";
   participants?: string[];
+  /** Pre-existing messages in the conversation (chat history) */
+  initialMessages?: Message[];
   unreadCount?: number;
   isMuted?: boolean;
   isPinned?: boolean;

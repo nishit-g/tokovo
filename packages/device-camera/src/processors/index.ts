@@ -425,6 +425,12 @@ export function registerCameraProcessor(processor: EffectProcessor): void {
  *
  * This is a PURE function - same inputs always produce same outputs.
  * Compatible with Remotion's frame-by-frame rendering.
+ * 
+ * TWO-PHASE PROCESSING:
+ * 1. Completed PERSISTENT effects (zoom, focus, pan, dolly, ken-burns) - held at final state
+ * 2. Active effects - animated by progress
+ * 
+ * Transient effects (shake, punch-zoom, flash, whip-pan) disappear after ending.
  */
 export function processActiveEffects(
   t: number,
@@ -435,12 +441,42 @@ export function processActiveEffects(
 ): CameraTransform {
   let transform = { ...initialTransform };
 
-  // Filter to active effects only
-  const activeEffects = effects.filter(
-    (e) => t >= e.startFrame && t < e.endFrame,
-  );
+  // Effects that set camera state and should persist their final values
+  const PERSISTENT_EFFECT_TYPES = new Set([
+    'zoom', 'focus', 'pan', 'dolly', 'ken-burns', 'track'
+  ]);
 
-  // Process each effect through its registered processor
+  // Split effects into active (animating) and completed (holding final state)
+  const activeEffects: CameraEffect[] = [];
+  const completedEffects: CameraEffect[] = [];
+
+  for (const e of effects) {
+    if (t >= e.startFrame && t < e.endFrame) {
+      activeEffects.push(e);
+    } else if (t >= e.endFrame && PERSISTENT_EFFECT_TYPES.has(e.type)) {
+      completedEffects.push(e);
+    }
+  }
+
+  // Sort completed effects by endFrame so later effects override earlier ones
+  completedEffects.sort((a, b) => a.endFrame - b.endFrame);
+
+  // Process completed effects FIRST (they set baseline state at 100% progress)
+  for (const effect of completedEffects) {
+    const processor = processorRegistry.get(effect.type);
+    if (processor) {
+      // Process at endFrame-1 which gives 100% progress
+      transform = processor.process({
+        t: effect.endFrame - 0.001, // Just before end = 100% progress
+        effect,
+        transform,
+        anchorSnapshot,
+        viewport,
+      });
+    }
+  }
+
+  // Process active effects (animating based on current frame)
   for (const effect of activeEffects) {
     const processor = processorRegistry.get(effect.type);
     if (processor) {

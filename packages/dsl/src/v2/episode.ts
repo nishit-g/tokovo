@@ -150,13 +150,24 @@ export class EpisodeBuilder {
   /**
    * Add a generic track by ID.
    * Used for plugin tracks (e.g., "app_whatsapp").
+   * 
+   * @param trackId - Track identifier (e.g., "app_whatsapp")
+   * @param factory - Factory function that creates the track builder.
+   *                  Can be either:
+   *                  - `() => T` (legacy, uses external order counter)
+   *                  - `(getOrder: () => number) => T` (recommended, uses central counter)
+   * @param fn - Function that configures the track
    */
   track<T extends TrackBuilder>(
     trackId: string,
-    factory: () => T,
+    factory: (() => T) | ((getOrder: () => number) => T),
     fn: TrackFn<T>,
   ): this {
-    const builder = factory();
+    const getOrder = () => this._declarationOrder++;
+    // Check if factory expects a getOrder parameter
+    const builder = factory.length === 1
+      ? (factory as (getOrder: () => number) => T)(getOrder)
+      : (factory as () => T)();
     fn(builder);
     this._events.push(...(builder._events as TrackEvent[]));
     return this;

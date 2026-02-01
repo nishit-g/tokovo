@@ -151,7 +151,7 @@ function buildInitialWorld(ir: TrackEpisodeIR): WorldState {
           avatar: conv.avatar || "",
           type: conv.type || "dm",
           participants: conv.participants || [],
-          messages: [],
+          messages: conv.initialMessages || [],
           typing: null,
           unreadCount: conv.unreadCount ?? 0,
           isMuted: conv.isMuted ?? false,

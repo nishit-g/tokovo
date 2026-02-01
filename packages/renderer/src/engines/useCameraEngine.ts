@@ -13,7 +13,7 @@
  * @module device-camera
  */
 
-import { useMemo, useRef } from "react";
+import { useMemo } from "react";
 import type { CSSProperties } from "react";
 
 // Import everything from device-camera
@@ -27,9 +27,6 @@ import {
   // Anchors
   AnchorSnapshot,
   getAnchorsForApp,
-
-  // Utils
-  lerp,
 } from "@tokovo/device-camera";
 
 // Core imports for world/layout types
@@ -85,9 +82,6 @@ export interface CameraEngineOutput {
 export function useCameraEngine(input: CameraEngineInput): CameraEngineOutput {
   const { world, t, layoutOutput, eventIndex } = input;
 
-  // Tracking state for smooth transitions
-  const prevTransformRef = useRef<CameraTransform>(DEFAULT_TRANSFORM);
-
   return useMemo(() => {
     const { appId, profile, layout, deviceId } = layoutOutput;
 
@@ -110,7 +104,7 @@ export function useCameraEngine(input: CameraEngineInput): CameraEngineOutput {
     // Note: world.camera is BaseCameraState in core, but may be extended with activeEffects by device-camera
     const effects: CameraEffect[] =
       "activeEffects" in world.camera &&
-      Array.isArray(world.camera.activeEffects)
+        Array.isArray(world.camera.activeEffects)
         ? (world.camera as any).activeEffects
         : [];
 
@@ -121,39 +115,22 @@ export function useCameraEngine(input: CameraEngineInput): CameraEngineOutput {
 
     // =====================================================================
     // 3. PROCESS EFFECTS THROUGH REGISTRY
-    // Use previous frame's transform as base so reset/transitions have state to lerp FROM
+    // CRITICAL: Use DEFAULT_TRANSFORM as base, not previous frame state
+    // Remotion renders frames in parallel, so useRef-based state is invalid
     // =====================================================================
     let transform = processActiveEffects(
       t,
       effects,
-      prevTransformRef.current, // CRITICAL: Use previous transform, not DEFAULT
+      DEFAULT_TRANSFORM, // CRITICAL: Pure computation, no inter-frame state
       anchorSnapshot,
       viewport,
     );
 
     let directorSkipped: string | undefined;
 
-    // =====================================================================
-    // 4. SMOOTH DECAY TO NEUTRAL (when no effects)
-    // =====================================================================
-    const hasActiveEffect = activeManualEffects.length > 0;
-
-    if (!hasActiveEffect) {
-      // Smoothly return to neutral
-      const decayRate = 0.05;
-      const prev = prevTransformRef.current;
-      if (prev.scale !== 1 || prev.originX !== 0.5 || prev.originY !== 0.5) {
-        transform = {
-          ...transform,
-          scale: lerp(prev.scale, 1, decayRate),
-          originX: lerp(prev.originX, 0.5, decayRate),
-          originY: lerp(prev.originY, 0.5, decayRate),
-        };
-      }
-    }
-
-    // Store for next frame
-    prevTransformRef.current = transform;
+    // NOTE: Decay smoothing removed - incompatible with Remotion parallel rendering
+    // Camera snaps to neutral when no effects are active
+    // For smooth decay, add a DECAY_TO_NEUTRAL effect with startFrame/endFrame
 
     // =====================================================================
     // 6. BUILD CSS STYLES

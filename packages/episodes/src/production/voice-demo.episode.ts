@@ -4,8 +4,7 @@ import { WhatsAppTrackBuilder } from "@tokovo/apps-whatsapp/src/dsl/track-builde
 import { drama_example } from "@tokovo/voice";
 import { KeyboardPlugin } from "@tokovo/compiler";
 
-let orderCounter = 0;
-const getOrder = () => orderCounter++;
+
 
 export default defineEpisode({
   meta: {
@@ -49,9 +48,7 @@ export default defineEpisode({
 
       .track(
         "app_whatsapp",
-        () => {
-          return new WhatsAppTrackBuilder(30, "phone", "dm_sarah", getOrder);
-        },
+        (getOrder) => new WhatsAppTrackBuilder(30, "phone", "dm_sarah", getOrder),
         (wa) => {
           wa.span("4s", "5s").typing("them");
           wa.at("5s").receive(
@@ -111,6 +108,16 @@ export default defineEpisode({
           title: "Sarah",
           body: "I never should have opened that...",
           icon: "/avatars/sarah.png",
+        });
+      })
+
+      // === AUDIO/BGM TRACK ===
+      .audio((audio) => {
+        // Background music for the entire episode
+        audio.span("0s", "20s").bgm("/music/cinematic-ambient.mp3", {
+          volume: 0.4,
+          fadeIn: "2s",
+          fadeOut: "3s",
         });
       })
 

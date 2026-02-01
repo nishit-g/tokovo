@@ -130,9 +130,9 @@ export class EpisodeBuilder {
   private _declarationOrder = 0;
   private _voiceConfig:
     | {
-        script: VoiceScriptDefinition<string>;
-        schedule: VoiceScheduleItem<string>[];
-      }
+      script: VoiceScriptDefinition<string>;
+      schedule: VoiceScheduleItem<string>[];
+    }
     | undefined;
 
   constructor(id: string, config: TrackEpisodeConfig) {
@@ -216,14 +216,25 @@ export class EpisodeBuilder {
   /**
    * Add a generic track by ID.
    * Used for plugin tracks (e.g., app_whatsapp).
+   * 
+   * @param trackId - Track identifier (e.g., "app_whatsapp")
+   * @param factory - Factory function that creates the track builder.
+   *                  Can be either:
+   *                  - `() => T` (legacy, uses external order counter)
+   *                  - `(getOrder: () => number) => T` (recommended, uses central counter)
+   * @param fn - Function that configures the track
    */
   track<T extends TrackBuilder>(
     trackId: string,
-    factory: () => T,
+    factory: (() => T) | ((getOrder: () => number) => T),
     fn: TrackFn<T>,
   ): this {
     void trackId;
-    const builder = factory();
+    const getOrder = (): number => this._declarationOrder++;
+    // Check if factory expects a getOrder parameter
+    const builder = factory.length === 1
+      ? (factory as (getOrder: () => number) => T)(getOrder)
+      : (factory as () => T)();
     fn(builder);
     this._events.push(...(builder._events as unknown as TrackEvent[]));
     return this;
@@ -335,21 +346,21 @@ export class EpisodeBuilder {
       director: this._director,
       voice: this._voiceConfig
         ? {
-            manifestPath: this._voiceConfig.script.manifestPath,
-            audioPath: this._voiceConfig.script.audioPath,
-            usePerSegmentControl: true,
-            segmentSchedule: this._voiceConfig.schedule,
-            durationMs: this._voiceConfig.script.durationMs,
-            segments: Object.values(this._voiceConfig.script.segments).map(
-              (seg) => ({
-                id: seg.id,
-                startMs: seg.startMs,
-                endMs: seg.endMs,
-                durationMs: seg.endMs - seg.startMs,
-                speaker: seg.speaker,
-              }),
-            ),
-          }
+          manifestPath: this._voiceConfig.script.manifestPath,
+          audioPath: this._voiceConfig.script.audioPath,
+          usePerSegmentControl: true,
+          segmentSchedule: this._voiceConfig.schedule,
+          durationMs: this._voiceConfig.script.durationMs,
+          segments: Object.values(this._voiceConfig.script.segments).map(
+            (seg) => ({
+              id: seg.id,
+              startMs: seg.startMs,
+              endMs: seg.endMs,
+              durationMs: seg.endMs - seg.startMs,
+              speaker: seg.speaker,
+            }),
+          ),
+        }
         : undefined,
     };
   }
