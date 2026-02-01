@@ -4,9 +4,6 @@ import { WhatsAppTrackBuilder } from "@tokovo/apps-whatsapp/src/dsl/track-builde
 import { NotificationTrackBuilder } from "@tokovo/device-notifications";
 import { CameraDirectorPlugin } from "@tokovo/compiler";
 
-let orderCounter = 0;
-const getOrder = () => orderCounter++;
-
 export default defineEpisode({
   meta: {
     id: "mega-camera-director",
@@ -42,7 +39,7 @@ export default defineEpisode({
 
       .track(
         "app_whatsapp",
-        () => new WhatsAppTrackBuilder(30, "phone", "dm_sarah", getOrder),
+        (getOrder) => new WhatsAppTrackBuilder(30, "phone", "dm_sarah", getOrder),
         (wa) => {
           wa.at("1s").receive("Sarah", "OMG");
           wa.at("1.5s").receive("Sarah", "You won't believe this");
@@ -90,7 +87,7 @@ export default defineEpisode({
 
       .track(
         "notifications",
-        () => new NotificationTrackBuilder(30, "phone", getOrder),
+        (getOrder) => new NotificationTrackBuilder(30, "phone", getOrder),
         (notif) => {
           notif.at("11.5s").show({
             id: "mom-dinner",
