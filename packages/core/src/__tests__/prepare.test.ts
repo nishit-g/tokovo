@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import type { TokovoPluginContract } from "../types/plugin-contract";
 import type { CompiledEpisode } from "../types/compiled-episode";
+import { prepareTestUtils } from "../testing";
 
 const baseInput = {
   episodeId: "ep1",
@@ -109,13 +110,13 @@ describe("prepare episode", () => {
     const emptyWorld = mod.deriveInitialWorld({ id: "empty" } as any, registry);
     expect(emptyWorld.devices).toEqual({});
 
-    const sorted = mod.__test__.sortEvents([
+    const sorted = prepareTestUtils.sortEvents([
       { at: 0, kind: "UNKNOWN" },
       { at: 0, kind: "DEVICE" },
     ] as any);
     expect(sorted[0].kind).toBe("DEVICE");
 
-    const sortedReverse = mod.__test__.sortEvents([
+    const sortedReverse = prepareTestUtils.sortEvents([
       { at: 0, kind: "DEVICE" },
       { at: 0, kind: "UNKNOWN" },
     ] as any);
@@ -124,7 +125,6 @@ describe("prepare episode", () => {
 
   it("validates assets via helper defaults", async () => {
     vi.resetModules();
-    const mod = await import("../prepare/prepare");
 
     const assetsWithMissing = {
       sounds: { ding: undefined },
@@ -132,7 +132,7 @@ describe("prepare episode", () => {
       images: { hero: undefined },
     } as any;
 
-    const result = mod.__test__.validateAssets(assetsWithMissing, {
+    const result = prepareTestUtils.validateAssets(assetsWithMissing, {
       mode: "preview",
       strict: false,
     });
@@ -140,7 +140,7 @@ describe("prepare episode", () => {
       expect.arrayContaining(["sound", "icon", "image"]),
     );
 
-    const resultFallback = mod.__test__.validateAssets({} as any, {
+    const resultFallback = prepareTestUtils.validateAssets({} as any, {
       mode: "preview",
       strict: false,
     });

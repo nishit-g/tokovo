@@ -53,6 +53,47 @@ export interface CameraShakeOptions {
 export interface CameraResetOptions {
     duration?: string | number;
     easing?: EasingType;
+    spring?: string;
+}
+
+export interface CameraZoomOptions {
+    scale: number;
+    duration?: string | number;
+    easing?: EasingType;
+    originX?: number;
+    originY?: number;
+}
+
+export interface CameraPanOptions {
+    x: number;
+    y: number;
+    duration?: string | number;
+    easing?: EasingType;
+}
+
+export interface CameraPunchZoomOptions {
+    intensity?: number;
+    direction?: "in" | "out";
+    duration?: string | number;
+    spring?: string;
+}
+
+export interface CameraDutchTiltOptions {
+    angle: number;
+    duration?: string | number;
+    spring?: string;
+}
+
+export interface CameraFlashOptions {
+    color?: string;
+    intensity?: number;
+    duration?: string | number;
+}
+
+export interface CameraWhipPanOptions {
+    direction: "left" | "right" | "up" | "down";
+    blur?: number;
+    duration?: string | number;
 }
 
 // =============================================================================
@@ -85,6 +126,82 @@ export class CameraPointBuilder {
             },
             _declarationOrder: this._getOrder(),
         });
+    }
+
+    /**
+     * Convenience zoom helper.
+     * - zoom(1.2)
+     * - zoom(1.2, "0.5s", "easeOut")
+     * - zoom({ scale: 1.2, duration: "0.5s", easing: "easeOut" })
+     */
+    zoom(
+        scaleOrOptions: number | CameraZoomOptions,
+        duration?: string | number,
+        easing?: EasingType,
+    ): void {
+        if (typeof scaleOrOptions === "number") {
+            if (duration !== undefined) {
+                this.animate({
+                    scale: scaleOrOptions,
+                    duration,
+                    easing,
+                });
+                return;
+            }
+            this.set({ scale: scaleOrOptions });
+            return;
+        }
+
+        const { duration: zoomDuration, easing: zoomEasing, ...rest } = scaleOrOptions;
+        if (zoomDuration !== undefined) {
+            this.animate({
+                ...rest,
+                duration: zoomDuration,
+                easing: zoomEasing,
+            });
+            return;
+        }
+        this.set(rest);
+    }
+
+    /**
+     * Convenience pan helper.
+     * - pan({ x, y })
+     * - pan({ x, y, duration: "0.5s", easing: "easeOut" })
+     * - pan(x, y, "0.5s", "easeOut")
+     */
+    pan(
+        xOrOptions: number | CameraPanOptions,
+        y?: number,
+        duration?: string | number,
+        easing?: EasingType,
+    ): void {
+        if (typeof xOrOptions === "number") {
+            const x = xOrOptions;
+            const yVal = y ?? 0;
+            if (duration !== undefined) {
+                this.animate({
+                    x,
+                    y: yVal,
+                    duration,
+                    easing,
+                });
+                return;
+            }
+            this.set({ x, y: yVal });
+            return;
+        }
+
+        const { duration: panDuration, easing: panEasing, ...rest } = xOrOptions;
+        if (panDuration !== undefined) {
+            this.animate({
+                ...rest,
+                duration: panDuration,
+                easing: panEasing,
+            });
+            return;
+        }
+        this.set(rest);
     }
 
     /**
@@ -146,13 +263,27 @@ export class CameraPointBuilder {
     /**
      * Apply screen shake effect.
      */
-    shake(options: CameraShakeOptions): void {
-        const duration = parseDurationToFrames(options.duration, this._fps);
+    shake(options: CameraShakeOptions): void;
+    shake(intensity: number, duration?: string | number): void;
+    shake(
+        optionsOrIntensity: CameraShakeOptions | number,
+        duration?: string | number,
+    ): void {
+        const options: CameraShakeOptions =
+            typeof optionsOrIntensity === "number"
+                ? {
+                    intensityX: optionsOrIntensity,
+                    intensityY: optionsOrIntensity,
+                    duration: duration ?? "0.3s",
+                }
+                : optionsOrIntensity;
+
+        const durationFrames = parseDurationToFrames(options.duration, this._fps);
 
         this._events.push(
             {
                 at: this._frame,
-                duration,
+                duration: durationFrames,
                 kind: "CAMERA",
                 type: "SHAKE_START",
                 payload: {
@@ -164,7 +295,7 @@ export class CameraPointBuilder {
                 _declarationOrder: this._getOrder(),
             },
             {
-                at: this._frame + duration,
+                at: this._frame + durationFrames,
                 kind: "CAMERA",
                 type: "SHAKE_END",
                 payload: {},
@@ -188,6 +319,92 @@ export class CameraPointBuilder {
             type: "RESET",
             payload: {
                 easing: options.easing ?? "easeOut",
+                spring: options.spring,
+            },
+            _declarationOrder: this._getOrder(),
+        });
+    }
+
+    /**
+     * Punch zoom effect (quick impact zoom with spring bounce).
+     */
+    punchZoom(options: CameraPunchZoomOptions): void {
+        const duration = options.duration
+            ? parseDurationToFrames(options.duration, this._fps)
+            : undefined;
+
+        this._events.push({
+            at: this._frame,
+            duration,
+            kind: "CAMERA",
+            type: "PUNCH_ZOOM",
+            payload: {
+                intensity: options.intensity ?? 0.15,
+                direction: options.direction ?? "in",
+                spring: options.spring,
+            },
+            _declarationOrder: this._getOrder(),
+        });
+    }
+
+    /**
+     * Dutch tilt effect (tilt for tension).
+     */
+    dutchTilt(options: CameraDutchTiltOptions): void {
+        const duration = options.duration
+            ? parseDurationToFrames(options.duration, this._fps)
+            : undefined;
+
+        this._events.push({
+            at: this._frame,
+            duration,
+            kind: "CAMERA",
+            type: "DUTCH_TILT",
+            payload: {
+                angle: options.angle,
+                spring: options.spring,
+            },
+            _declarationOrder: this._getOrder(),
+        });
+    }
+
+    /**
+     * Flash effect (screen flash overlay).
+     */
+    flash(options: CameraFlashOptions = {}): void {
+        const duration = options.duration
+            ? parseDurationToFrames(options.duration, this._fps)
+            : undefined;
+
+        this._events.push({
+            at: this._frame,
+            duration,
+            kind: "CAMERA",
+            type: "FLASH",
+            payload: {
+                color: options.color,
+                intensity: options.intensity,
+            },
+            _declarationOrder: this._getOrder(),
+        });
+    }
+
+    /**
+     * Whip-pan effect (fast motion blur pan).
+     */
+    whipPan(options: CameraWhipPanOptions): void {
+        const duration = options.duration
+            ? parseDurationToFrames(options.duration, this._fps)
+            : undefined;
+
+        this._events.push({
+            at: this._frame,
+            duration,
+            kind: "CAMERA",
+            type: "WHIP_PAN",
+            payload: {
+                direction: options.direction,
+                blur: options.blur,
             },
             _declarationOrder: this._getOrder(),
         });

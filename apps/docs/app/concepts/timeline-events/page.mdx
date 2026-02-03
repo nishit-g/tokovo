@@ -423,15 +423,25 @@ The DSL's track builders generate Timeline Events under the hood:
 
 ```typescript
 // DSL code
-episode("my-story", { fps: 30, duration: 10 })
-  .track("app_whatsapp", (t) =>
-    t
-      .at("2s")
-      .receive("Alice", "Hey!")
-      .at("3s")
-      .typing("Alice")
-      .at("5s")
-      .receive("Alice", "What's up?"),
+import { episode } from "@tokovo/dsl";
+import { WhatsAppTrackBuilder } from "@tokovo/apps-whatsapp";
+
+let order = 0;
+const getOrder = () => order++;
+
+episode("my-story", { fps: 30, duration: "10s" })
+  .device("phone", "iphone16", {
+    app: "app_whatsapp",
+    conversations: [{ id: "default", name: "Alice" }],
+  })
+  .track(
+    "app_whatsapp",
+    () => new WhatsAppTrackBuilder(30, "phone", "default", getOrder),
+    (wa) => {
+      wa.at("2s").receive("Alice", "Hey!");
+      wa.at("3s").typing("Alice");
+      wa.at("5s").receive("Alice", "What's up?");
+    },
   )
   .build();
 
@@ -474,10 +484,10 @@ episode("my-story", { fps: 30, duration: 10 })
 │  EPISODE (DSL)                                               │
 │  ┌────────────────────────────────────────────────────┐     │
 │  │ episode("story", ...)                              │     │
-│  │   .track("app_whatsapp", t =>                      │     │
-│  │     t.at("1s").receive("Alice", "Hey!")            │     │
-│  │      .at("3s").typing("Alice")                     │     │
-│  │      .at("5s").receive("Alice", "What's up?")      │     │
+│  │   .track("app_whatsapp", factory, wa =>            │     │
+│  │     wa.at("1s").receive("Alice", "Hey!")           │     │
+│  │     wa.at("3s").typing("Alice")                    │     │
+│  │     wa.at("5s").receive("Alice", "What's up?")     │     │
 │  │   )                                                │     │
 │  │   .build()                                         │     │
 │  └──────────────────┬─────────────────────────────────┘     │

@@ -7,6 +7,7 @@ export interface MiddlewareContext {
   frame: number;
   mode: "preview" | "render";
   eventIndex: number;
+  gracefulDegradation?: boolean;
 }
 
 export type NextFunction = () => void;
@@ -72,6 +73,9 @@ class MiddlewareRegistryClass {
           current.middleware(event, draft, ctx, executeNext);
         } catch (error) {
           log.error(`Middleware ${current.name} failed`, error);
+          if (ctx.mode === "render" && !ctx.gracefulDegradation) {
+            throw error;
+          }
           executeNext();
         }
       } else {
@@ -141,6 +145,9 @@ export const builtInMiddlewares = {
           kind: event.kind,
           frame: ctx.frame,
         });
+        if (ctx.mode === "render" && !ctx.gracefulDegradation) {
+          throw error;
+        }
       }
     },
     { order: -50 },

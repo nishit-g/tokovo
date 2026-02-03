@@ -330,14 +330,18 @@ Event timestamp exceeds episode duration
 **Fix:**
 
 ```typescript
-// Episode is 10s (300 frames at 30fps)
-episode("story", { duration: "10s" }).device("phone", "iphone16", (d) => {
-  // ❌ at: 400 frames > 300 frames
-  d.at(400).unlock();
+import { episode } from "@tokovo/dsl";
 
-  // ✅ at: 90 frames < 300 frames
-  d.at(90).unlock();
-});
+// Episode is 10s (300 frames at 30fps)
+episode("story", { duration: "10s", fps: 30 })
+  .device("phone", "iphone16", { app: "app_whatsapp" })
+  .camera((cam) => {
+    // ❌ at: 400 frames > 300 frames
+    cam.at(400).focus("deviceScreen");
+
+    // ✅ at: 90 frames < 300 frames
+    cam.at(90).focus("deviceScreen");
+  });
 ```
 
 ### Device Reference Missing
@@ -352,17 +356,17 @@ Event references device 'phone_2' but no such device is configured
 
 ```typescript
 // ❌ Device not defined
-episode('story', { duration: '10s' })
+episode("story", { duration: "10s", fps: 30 })
   .camera((cam) => {
-    cam.at(0).focus('phone_2'); // ← 'phone_2' doesn't exist
-  })
+    cam.at(0).focus("phone_2:lastMessage"); // ← 'phone_2' doesn't exist
+  });
 
 // ✅ Define device first
-episode('story', { duration: '10s' })
-  .device('phone_2', 'pixel8', (d) => { ... })
+episode("story", { duration: "10s", fps: 30 })
+  .device("phone_2", "pixel8", { app: "app_whatsapp" })
   .camera((cam) => {
-    cam.at(0).focus('phone_2'); // ← Now valid
-  })
+    cam.at(0).focus("phone_2:lastMessage"); // ← Now valid
+  });
 ```
 
 ### Invalid App Plugin

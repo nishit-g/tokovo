@@ -127,7 +127,26 @@ export * from "./tokens";
 // =============================================================================
 // EPISODE PREPARATION
 // =============================================================================
-export * from "./prepare";
+export {
+  setCompiler,
+  deriveInitialWorld,
+  prepareEpisode,
+  runEpisode,
+} from "./prepare";
+export type { EpisodeDefinition, RunOptions } from "./prepare";
+export type {
+  CompiledEpisode,
+  PrepareOptions,
+  AssetManifest,
+} from "./prepare";
+export type {
+  RuntimeEvent,
+  AppRuntimeEvent,
+  DeviceRuntimeEvent,
+  CameraRuntimeEvent,
+  AudioRuntimeEvent,
+  KeyboardRuntimeEvent,
+} from "./prepare";
 
 // =============================================================================
 // CONTAINER - Dependency Injection for testability

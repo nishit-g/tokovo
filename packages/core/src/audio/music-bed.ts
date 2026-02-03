@@ -85,6 +85,10 @@ export function computeCrossfade(
     return { outVolume: outgoing.baseGain, inVolume: 0 };
   }
 
+  if (!outgoing || !incoming) {
+    return { outVolume: 0, inVolume: 0 };
+  }
+
   const crossfadeFrames = incoming.crossfadeFrames || DEFAULT_CROSSFADE_FRAMES;
   const elapsed = frame - incoming.startFrame;
   const rawProgress = Math.min(1, Math.max(0, elapsed / crossfadeFrames));

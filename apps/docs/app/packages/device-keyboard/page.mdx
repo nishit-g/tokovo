@@ -21,14 +21,24 @@ registerKeyboardPlugin(); // Call once at init
 ### 2. Episode DSL
 
 ```typescript
+import { episode } from "@tokovo/dsl";
 import { KeyboardTrackBuilder } from "@tokovo/device-keyboard";
 
-episode.track("keyboard", () =>
-  new KeyboardTrackBuilder("main_phone")
-    .show({ at: 30 })
-    .type("Hello world", { at: 60, charDelay: 3 })
-    .hide({ at: 120 }),
-);
+let order = 0;
+const getOrder = () => order++;
+
+episode("keyboard-demo", { fps: 30, duration: "5s" })
+  .device("main_phone", "iphone16", { app: "app_whatsapp" })
+  .track(
+    "keyboard",
+    () => new KeyboardTrackBuilder(30, "main_phone", getOrder),
+    (keyboard) => {
+      keyboard
+        .show("1s")
+        .type("Hello world", "2s", { speed: "natural" })
+        .hide("4s");
+    },
+  );
 ```
 
 ### 3. Auto-Typing with `typed: true`

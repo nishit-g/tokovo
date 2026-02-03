@@ -115,18 +115,25 @@ Raw episode definitions containing:
 A TypeScript-first authoring experience with autocomplete and type safety:
 
 ```ts
-episode("my-story", { fps: 30, duration: 20 })
-  .device("phone", "iphone16", (d) =>
-    d.app("app_whatsapp", { conversationId: "chat_alice" }),
-  )
-  .track("app_whatsapp", (t) =>
-    t
-      .at("1s")
-      .receive("Alice", "Hey!")
-      .at("3s")
-      .typing("Alice")
-      .at("4s")
-      .receive("Alice", "What's up?"),
+import { episode } from "@tokovo/dsl";
+import { WhatsAppTrackBuilder } from "@tokovo/apps-whatsapp";
+
+let order = 0;
+const getOrder = () => order++;
+
+episode("my-story", { fps: 30, duration: "20s" })
+  .device("phone", "iphone16", {
+    app: "app_whatsapp",
+    conversations: [{ id: "chat_alice", name: "Alice" }],
+  })
+  .track(
+    "app_whatsapp",
+    () => new WhatsAppTrackBuilder(30, "phone", "chat_alice", getOrder),
+    (wa) => {
+      wa.at("1s").receive("Alice", "Hey!");
+      wa.at("3s").typing("Alice");
+      wa.at("4s").receive("Alice", "What's up?");
+    },
   )
   .camera((c) => c.at("0s").focus("lastMessage"));
 ```
@@ -268,7 +275,8 @@ Anchors are **named positions** in the UI that the camera can reference:
 Camera movements reference anchors, not hardcoded coordinates:
 
 ```ts
-camera.at("2s").focus("lastMessage").zoom(1.5);
+camera.at("2s").focus("lastMessage");
+camera.at("2s").zoom(1.5);
 ```
 
 This makes episodes **resolution-independent** and **device-agnostic**.

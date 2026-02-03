@@ -240,7 +240,7 @@ type CameraEventType =
   | "SHAKE_START"
   | "WHIP_PAN";  // ← NEW
 
-// 2. Add to manual builder (packages/dsl/src/core/tracks/camera.ts)
+// 2. Add to manual builder (packages/dsl/src/v2/camera-track.ts)
 whipPan(direction: "up" | "down" | "left" | "right") {
   this.emit({ kind: "CAMERA", type: "WHIP_PAN", payload: { direction } });
 }

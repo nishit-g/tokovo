@@ -78,24 +78,47 @@ Each device profile includes:
 
 ```typescript
 import { episode } from "@tokovo/dsl";
+import { DeviceTrackBuilder } from "@tokovo/devices";
 
-episode("demo", { duration: 10 }).device("phone", "iphone16", (device) => {
-  // Device profile automatically applied
-  device.at("1s").unlock();
-  device.at("2s").openApp("app_whatsapp");
-});
+let order = 0;
+const getOrder = () => order++;
+
+episode("demo", { fps: 30, duration: "10s" })
+  .device("phone", "iphone16", { app: "app_whatsapp" })
+  .track(
+    "devices",
+    () => new DeviceTrackBuilder(30, "phone", getOrder),
+    (device) => {
+      // Device profile automatically applied
+      device.at("1s").unlock();
+      device.at("2s").openApp("app_whatsapp");
+    },
+  );
 ```
 
 ### Multiple Devices
 
 ```typescript
-episode("multi-device", { duration: 15 })
-  .device("alice", "iphone16", (device) => {
-    device.at("1s").unlock();
-  })
-  .device("bob", "pixel", (device) => {
-    device.at("2s").unlock();
-  });
+let order = 0;
+const getOrder = () => order++;
+
+episode("multi-device", { fps: 30, duration: "15s" })
+  .device("alice", "iphone16", { app: "app_whatsapp" })
+  .device("bob", "pixel", { app: "app_whatsapp" })
+  .track(
+    "devices",
+    () => new DeviceTrackBuilder(30, "alice", getOrder),
+    (device) => {
+      device.at("1s").unlock();
+    },
+  )
+  .track(
+    "devices",
+    () => new DeviceTrackBuilder(30, "bob", getOrder),
+    (device) => {
+      device.at("2s").unlock();
+    },
+  );
 ```
 
 ## Device Registry API
@@ -376,9 +399,20 @@ DeviceRegistry.register("myphone", MyPhoneProfile);
 ### 3. Use in Episodes
 
 ```typescript
-episode("demo", { duration: 10 }).device("phone", "myphone", (device) => {
-  device.at("1s").unlock();
-});
+import { DeviceTrackBuilder } from "@tokovo/devices";
+
+let order = 0;
+const getOrder = () => order++;
+
+episode("demo", { fps: 30, duration: "10s" })
+  .device("phone", "myphone", { app: "app_whatsapp" })
+  .track(
+    "devices",
+    () => new DeviceTrackBuilder(30, "phone", getOrder),
+    (device) => {
+      device.at("1s").unlock();
+    },
+  );
 ```
 
 ## Platform Strategies
@@ -458,35 +492,41 @@ import type {
 
 ```typescript
 import { episode } from "@tokovo/dsl";
+import { DeviceTrackBuilder } from "@tokovo/devices";
 
-episode("phone-demo", { duration: 30 }).device(
-  "phone",
-  "iphone16",
-  (device) => {
-    // Initial state
-    device.at("0s").setBattery(85, true);
-    device.at("0s").setNetwork("5g", 4);
+let order = 0;
+const getOrder = () => order++;
 
-    // Unlock and open app
-    device.at("2s").unlock();
-    device.at("3s").openApp("app_whatsapp");
+episode("phone-demo", { fps: 30, duration: "30s" })
+  .device("phone", "iphone16", { app: "app_whatsapp" })
+  .track(
+    "devices",
+    () => new DeviceTrackBuilder(30, "phone", getOrder),
+    (device) => {
+      // Initial state
+      device.at("0s").setBattery(85, true);
+      device.at("0s").setNetwork("5g", 4);
 
-    // Background music
-    device.at("5s").startBackgroundApp({
-      appId: "app_music",
-      indicator: "music",
-      label: "Summer Vibes",
-    });
+      // Unlock and open app
+      device.at("2s").unlock();
+      device.at("3s").openApp("app_whatsapp");
 
-    // Incoming call
-    device.at("15s").incomingCall({
-      callerId: "555-0123",
-      callerName: "Alice",
-    });
-    device.at("18s").answerCall();
-    device.at("28s").endCall();
-  },
-);
+      // Background music
+      device.at("5s").startBackgroundApp({
+        appId: "app_music",
+        indicator: "music",
+        label: "Summer Vibes",
+      });
+
+      // Incoming call
+      device.at("15s").incomingCall({
+        callerId: "555-0123",
+        callerName: "Alice",
+      });
+      device.at("18s").answerCall();
+      device.at("28s").endCall();
+    },
+  );
 ```
 
 ---

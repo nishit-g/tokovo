@@ -264,9 +264,21 @@ This technique enables split-perspective storytelling (sender vs. receiver viewp
 A 30-second cinematic sequence combining all techniques.
 
 ```typescript
-episode("breakup", { duration: 30 })
-  .device("phone", "iphone16", (d) => {
-    d.app("app_whatsapp", (wa) => {
+import { episode } from "@tokovo/dsl";
+import { WhatsAppTrackBuilder } from "@tokovo/apps-whatsapp";
+
+let order = 0;
+const getOrder = () => order++;
+
+episode("breakup", { duration: "30s", fps: 30 })
+  .device("phone", "iphone16", {
+    app: "app_whatsapp",
+    conversations: [{ id: "dm_sarah", name: "Sarah" }],
+  })
+  .track(
+    "app_whatsapp",
+    () => new WhatsAppTrackBuilder(30, "phone", "dm_sarah", getOrder),
+    (wa) => {
       wa.at("1s").receive("Sarah", "We need to talk...");
       wa.at("5s").typing("Sarah");
       wa.at("8s").receive("Sarah", "I think we should break up.");
@@ -275,8 +287,8 @@ episode("breakup", { duration: 30 })
       wa.at("18s").typing("Sarah");
       wa.at("22s").receive("Sarah", "I'm sorry. It's not working.");
       wa.at("26s").typing("You");
-    });
-  })
+    },
+  )
   .camera((cam) => {
     // Opening: Wide, ominous
     cam.at("0s").zoom(0.9);
@@ -543,16 +555,28 @@ Apply what you've learned by creating a 20-second scene with:
 **Starter Template:**
 
 ```typescript
-episode("practice", { duration: 20 })
-  .device("phone", "iphone16", (d) => {
-    d.app("app_whatsapp", (wa) => {
+import { episode } from "@tokovo/dsl";
+import { WhatsAppTrackBuilder } from "@tokovo/apps-whatsapp";
+
+let order = 0;
+const getOrder = () => order++;
+
+episode("practice", { duration: "20s", fps: 30 })
+  .device("phone", "iphone16", {
+    app: "app_whatsapp",
+    conversations: [{ id: "dm_friend", name: "Friend" }],
+  })
+  .track(
+    "app_whatsapp",
+    () => new WhatsAppTrackBuilder(30, "phone", "dm_friend", getOrder),
+    (wa) => {
       // Add your messages here
       wa.at("2s").receive("Friend", "...");
       wa.at("5s").typing("Friend");
       wa.at("8s").receive("Friend", "...");
       // etc.
-    });
-  })
+    },
+  )
   .camera((cam) => {
     // Add your camera choreography here
     cam.at("0s").zoom(0.8);

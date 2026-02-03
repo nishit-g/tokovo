@@ -244,7 +244,10 @@ export class PluginManagerClass {
 
       if (plugin.layouts && plugin.layouts.length > 0) {
         import("../registries/layout").then(({ LayoutRegistry }) => {
-          const layouts = plugin.layouts;
+          const layouts = plugin.layouts ?? [];
+          if (layouts.length === 0) {
+            return;
+          }
           for (const layout of layouts) {
             LayoutRegistry.register({
               appId: plugin.id,

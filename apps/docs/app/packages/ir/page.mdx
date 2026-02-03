@@ -242,16 +242,24 @@ The **DSL** (Domain-Specific Language) is how you _author_ episodes. The **IR** 
 
 ```typescript
 import { episode } from "@tokovo/dsl";
+import { WhatsAppTrackBuilder } from "@tokovo/apps-whatsapp";
 
-episode("breakup-01", { duration: "10s" })
-  .device("phone", "iphone16", (d) => {
-    d.app("app_whatsapp", (wa) => {
-      wa.conversation("conv_alice", "Alice", (c) => {
-        c.at("1s").receive("Alice", "We need to talk.");
-        c.at("3s").receive("Alice", "This isn't working.");
-      });
-    });
+let order = 0;
+const getOrder = () => order++;
+
+episode("breakup-01", { duration: "10s", fps: 30 })
+  .device("phone", "iphone16", {
+    app: "app_whatsapp",
+    conversations: [{ id: "conv_alice", name: "Alice" }],
   })
+  .track(
+    "app_whatsapp",
+    () => new WhatsAppTrackBuilder(30, "phone", "conv_alice", getOrder),
+    (wa) => {
+      wa.at("1s").receive("Alice", "We need to talk.");
+      wa.at("3s").receive("Alice", "This isn't working.");
+    },
+  )
   .camera((cam) => {
     cam.at("3s").zoom(1.2, "1s", "cinematic");
   })

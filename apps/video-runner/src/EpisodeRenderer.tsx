@@ -34,12 +34,13 @@ import {
   type VoicePlayEvent,
   voiceScheduleToSoundCues,
 } from "@tokovo/voice";
-import type { VoiceConfig, VoiceScriptSegment } from "@tokovo/ir";
+import type { VoiceConfig } from "@tokovo/ir";
 import { iPhone16Profile } from "@tokovo/devices";
 import {
   episodeRegistry,
   getFormat,
   type EpisodeDefinition,
+  type FormatId,
 } from "@tokovo/episodes";
 import { ErrorBoundary } from "./ErrorBoundary";
 
@@ -74,7 +75,7 @@ export async function calculateEpisodeMetadata({
 
   const format =
     typeof episode.config.format === "string"
-      ? getFormat(episode.config.format as any)
+      ? getFormat(episode.config.format as FormatId)
       : episode.config.format;
 
   return {
@@ -106,7 +107,7 @@ export const EpisodeRenderer: React.FC<EpisodeRendererProps> = ({
   episodeId,
 }) => {
   const videoConfig = useVideoConfig();
-  const activeCompositionId = (videoConfig as any).id;
+  const activeCompositionId = (videoConfig as { id?: string }).id;
 
   if (activeCompositionId && activeCompositionId !== episodeId) {
     return null;
@@ -208,7 +209,7 @@ const EpisodeRendererInner: React.FC<EpisodeRendererProps> = ({
   // === CREATE EVENT INDEX ===
   const eventIndex = useMemo(() => {
     if (!prepared) return null;
-    return createEventIndex(prepared.events as any);
+    return createEventIndex(prepared.events);
   }, [prepared]);
 
   // === RUN EPISODE AT CURRENT FRAME ===
@@ -269,19 +270,19 @@ const EpisodeRendererInner: React.FC<EpisodeRendererProps> = ({
   }, [world, voiceSoundCues]);
 
   // === CALCULATE FORMAT AND SCALE ===
-  const { format, scale } = useMemo(() => {
+  const { scale } = useMemo(() => {
     if (!episode) {
-      return { format: null, scale: 1 };
+      return { scale: 1 };
     }
     const fmt =
       typeof episode.config.format === "string"
-        ? getFormat(episode.config.format as any)
+        ? getFormat(episode.config.format as FormatId)
         : episode.config.format;
     const s = Math.min(
       fmt.width / iPhone16Profile.dimensions.width,
       fmt.height / iPhone16Profile.dimensions.height,
     );
-    return { format: fmt, scale: s };
+    return { scale: s };
   }, [episode]);
 
   // === ERROR STATE ===

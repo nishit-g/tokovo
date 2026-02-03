@@ -15,7 +15,7 @@ Every Tokovo episode follows a structured pattern. Here's the complete anatomy:
 │                                                         │
 │  episode("my-story", options)                          │
 │    │                                                    │
-│    ├── .device("phone", "iphone16", callback)          │
+│    ├── .device("phone", "iphone16", options)           │
 │    │     │                                              │
 │    │     ├── Device configuration                       │
 │    │     └── App setup                                  │
@@ -26,7 +26,7 @@ Every Tokovo episode follows a structured pattern. Here's the complete anatomy:
 │    │         .at("2s").focus("lastMessage")            │
 │    │         .at("5s").zoom(1.5)                        │
 │    │                                                    │
-│    └── .track("app_whatsapp", callback)                │
+│    └── .track("app_whatsapp", factory, callback)       │
 │          │                                              │
 │          └── App events                                 │
 │              .at("1s").receive("Alice", "Hey!")        │
@@ -92,7 +92,7 @@ Every episode needs:
 
 ## 2. Understanding DSL Structure
 
-### Device Callbacks
+### Device Configuration
 
 The `.device()` method configures your phone:
 

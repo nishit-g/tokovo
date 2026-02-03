@@ -165,17 +165,24 @@ const compiled = compile(episodeDef);
 **Role**: Fluent builder API for authoring episodes.
 
 ```typescript
-import { episode, device } from "@tokovo/dsl";
+import { episode } from "@tokovo/dsl";
+import { WhatsAppTrackBuilder } from "@tokovo/apps-whatsapp";
 
-const myEpisode = episode("my-episode")
-  .device(device("iphone-14", "phone1"))
-  .at(0)
-  .openApp("whatsapp")
-  .at(30)
-  .send("Hello!")
-  .at(60)
-  .bgm("upbeat")
-  .play()
+let order = 0;
+const getOrder = () => order++;
+
+const myEpisode = episode("my-episode", { fps: 30, duration: "10s" })
+  .device("phone1", "iphone-14", {
+    app: "app_whatsapp",
+    conversations: [{ id: "dm_hello", name: "Alice" }],
+  })
+  .track(
+    "app_whatsapp",
+    () => new WhatsAppTrackBuilder(30, "phone1", "dm_hello", getOrder),
+    (wa) => {
+      wa.at("1s").send("Hello!");
+    },
+  )
   .build();
 ```
 

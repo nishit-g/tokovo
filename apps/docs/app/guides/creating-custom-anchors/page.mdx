@@ -631,20 +631,30 @@ export function Notification({ message, sender, visible }: NotificationProps) {
 
 ```typescript
 import { episode } from "@tokovo/dsl";
+import { WhatsAppTrackBuilder } from "@tokovo/apps-whatsapp";
+
+let order = 0;
+const getOrder = () => order++;
 
 const notificationEpisode = episode("notification-demo", {
-  duration: 15,
+  duration: "15s",
   fps: 30,
 })
-  .device("phone", "iphone16", (d) => {
-    d.app("app_whatsapp", (wa) => {
+  .device("phone", "iphone16", {
+    app: "app_whatsapp",
+    conversations: [{ id: "dm_alice", name: "Alice" }],
+  })
+  .track(
+    "app_whatsapp",
+    () => new WhatsAppTrackBuilder(30, "phone", "dm_alice", getOrder),
+    (wa) => {
       // Trigger notification
       wa.at("2s").receive("Alice", "Hey! Check this out!");
 
       // Hide notification
       wa.at("7s").dismissNotification();
-    });
-  })
+    },
+  )
   .camera((cam) => {
     // Start with device overview
     cam.at("0s").focus("deviceScreen");

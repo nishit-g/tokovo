@@ -31,7 +31,10 @@ import {
   Section,
   DirectorStyle,
   TrackEvent,
+  VoiceScriptDefinition,
+  VoiceScheduleItem,
 } from "@tokovo/ir";
+import type { CompilerContext, CompilerPlugin } from "@tokovo/compiler";
 import { parseTimeToFrames } from "./utils/time";
 import { CameraTrackBuilder } from "./camera-track";
 import { AudioTrackBuilder } from "./audio-track";
@@ -45,6 +48,8 @@ export interface DeviceOptions {
   app: string;
   conversations?: ConversationConfig[];
   os?: OSConfig;
+  /** UI theme/strategy to use (e.g., "whatsapp-ghibli") */
+  theme?: string;
 }
 
 export interface TrackBuilder {
@@ -57,6 +62,50 @@ export interface TrackBuilder {
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type TrackFactory<T> = () => T;
 export type TrackFn<T> = (track: T) => void;
+
+class VoicePointBuilder<T extends string> {
+  private readonly _addItem: (item: VoiceScheduleItem<T>) => void;
+  private readonly _frame: number;
+
+  constructor(addItem: (item: VoiceScheduleItem<T>) => void, frame: number) {
+    this._addItem = addItem;
+    this._frame = frame;
+  }
+
+  play(segmentId: T, options?: { volume?: number; speed?: number }): void {
+    this._addItem({
+      segmentId,
+      at: this._frame,
+      volume: options?.volume,
+      speed: options?.speed,
+    });
+  }
+}
+
+class VoiceTrackBuilderInternal<T extends string> {
+  private readonly _fps: number;
+  private readonly _script: VoiceScriptDefinition<T>;
+  private readonly _schedule: VoiceScheduleItem<T>[] = [];
+
+  constructor(fps: number, script: VoiceScriptDefinition<T>) {
+    this._fps = fps;
+    this._script = script;
+  }
+
+  at(time: string | number): VoicePointBuilder<T> {
+    const frame =
+      typeof time === "number" ? time : parseTimeToFrames(time, this._fps);
+    return new VoicePointBuilder((item) => this._schedule.push(item), frame);
+  }
+
+  get schedule(): VoiceScheduleItem<T>[] {
+    return this._schedule;
+  }
+
+  get script(): VoiceScriptDefinition<T> {
+    return this._script;
+  }
+}
 
 // =============================================================================
 // EPISODE BUILDER
@@ -77,6 +126,13 @@ export class EpisodeBuilder {
   private _sections: Section[] = [];
   private _director?: DirectorStyle;
   private _declarationOrder = 0;
+  private _plugins: CompilerPlugin[] = [];
+  private _voiceConfig:
+    | {
+        script: VoiceScriptDefinition<string>;
+        schedule: VoiceScheduleItem<string>[];
+      }
+    | undefined;
 
   constructor(id: string, config: TrackEpisodeConfig) {
     this._id = id;
@@ -84,6 +140,19 @@ export class EpisodeBuilder {
     this._durationInFrames = parseTimeToFrames(config.duration, config.fps);
     this._title = config.title;
     this._description = config.description;
+  }
+
+  voice<T extends string>(
+    script: VoiceScriptDefinition<T>,
+    fn: (track: VoiceTrackBuilderInternal<T>) => void,
+  ): this {
+    const builder = new VoiceTrackBuilderInternal(this._fps, script);
+    fn(builder);
+    this._voiceConfig = {
+      script: script as VoiceScriptDefinition<string>,
+      schedule: builder.schedule as VoiceScheduleItem<string>[],
+    };
+    return this;
   }
 
   /**
@@ -96,6 +165,7 @@ export class EpisodeBuilder {
       app: options.app,
       conversations: options.conversations,
       os: options.os,
+      theme: options.theme,
     });
     return this;
   }
@@ -216,11 +286,39 @@ export class EpisodeBuilder {
   }
 
   /**
+   * Register a compiler plugin.
+   * Plugins run during the build() phase to generate additional events.
+   */
+  use(plugin: CompilerPlugin): this {
+    this._plugins.push(plugin);
+    return this;
+  }
+
+  /**
    * Build the TrackEpisodeIR.
    */
   build(): TrackEpisodeIR {
+    let allEvents = [...this._events];
+
+    if (this._plugins.length > 0) {
+      const context = this._buildCompilerContext();
+      const orderedPlugins = this._orderPluginsByDependencies(this._plugins);
+
+      for (const plugin of orderedPlugins) {
+        const generatedEvents = plugin.process(allEvents, context);
+
+        for (const event of generatedEvents) {
+          if (!event._declarationOrder) {
+            event._declarationOrder = this._declarationOrder++;
+          }
+        }
+
+        allEvents = [...allEvents, ...generatedEvents];
+      }
+    }
+
     // Sort events by frame, then by declaration order
-    const sortedEvents = [...this._events].sort((a, b) => {
+    const sortedEvents = [...allEvents].sort((a, b) => {
       if (a.at !== b.at) return a.at - b.at;
       return (a._declarationOrder ?? 0) - (b._declarationOrder ?? 0);
     });
@@ -236,7 +334,78 @@ export class EpisodeBuilder {
       markers: this._markers,
       sections: this._sections,
       director: this._director,
+      voice: this._voiceConfig
+        ? {
+            manifestPath: this._voiceConfig.script.manifestPath,
+            audioPath: this._voiceConfig.script.audioPath,
+            usePerSegmentControl: true,
+            segmentSchedule: this._voiceConfig.schedule,
+            durationMs: this._voiceConfig.script.durationMs,
+            segments: Object.values(this._voiceConfig.script.segments).map(
+              (seg) => ({
+                id: seg.id,
+                startMs: seg.startMs,
+                endMs: seg.endMs,
+                durationMs: seg.endMs - seg.startMs,
+                speaker: seg.speaker,
+              }),
+            ),
+          }
+        : undefined,
     };
+  }
+
+  private _buildCompilerContext(): CompilerContext {
+    return {
+      fps: this._fps,
+      durationInFrames: this._durationInFrames,
+      devices: this._devices,
+      anchors: {
+        list: () => [],
+        has: () => false,
+        get: () => undefined,
+        filter: () => [],
+      },
+    };
+  }
+
+  private _orderPluginsByDependencies(
+    plugins: CompilerPlugin[],
+  ): CompilerPlugin[] {
+    const ordered: CompilerPlugin[] = [];
+    const visited = new Set<string>();
+    const visiting = new Set<string>();
+
+    const visit = (plugin: CompilerPlugin): void => {
+      if (visited.has(plugin.name)) return;
+      if (visiting.has(plugin.name)) {
+        throw new Error(`Circular dependency detected: ${plugin.name}`);
+      }
+
+      visiting.add(plugin.name);
+
+      if (plugin.dependsOn) {
+        for (const depName of plugin.dependsOn) {
+          const dep = plugins.find((p) => p.name === depName);
+          if (!dep) {
+            throw new Error(
+              `Plugin "${plugin.name}" depends on "${depName}" which is not registered`,
+            );
+          }
+          visit(dep);
+        }
+      }
+
+      visiting.delete(plugin.name);
+      visited.add(plugin.name);
+      ordered.push(plugin);
+    };
+
+    for (const plugin of plugins) {
+      visit(plugin);
+    }
+
+    return ordered;
   }
 }
 

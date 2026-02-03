@@ -74,7 +74,7 @@ export function createEventIndex(events: TimelineEvent[]): EventIndex {
 
 function getDeclarationOrder(event: TimelineEvent, fallback: number): number {
   const order = (event as { _declarationOrder?: number })._declarationOrder;
-  return Number.isFinite(order) ? order : fallback;
+  return typeof order === "number" && Number.isFinite(order) ? order : fallback;
 }
 
 export function createKeyframedEventIndex(

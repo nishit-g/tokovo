@@ -272,8 +272,11 @@ function getZodSuggestion(issue: z.ZodIssue): string | undefined {
   return undefined;
 }
 
-function formatZodPath(path: Array<string | number>): string {
-  return path.length > 0 ? path.join(".") : "root";
+function formatZodPath(path: Array<string | number | symbol>): string {
+  if (path.length === 0) return "root";
+  return path
+    .map((part) => (typeof part === "symbol" ? part.toString() : String(part)))
+    .join(".");
 }
 
 export const __test__ = {

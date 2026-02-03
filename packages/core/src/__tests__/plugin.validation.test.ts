@@ -4,8 +4,8 @@ import {
   validatePluginDetailed,
   validatePlugin,
   assertPluginValid,
-  __test__,
 } from "../utils/validation";
+import { validationTestUtils } from "../testing";
 import { z } from "zod";
 
 describe("plugin validation utilities", () => {
@@ -108,7 +108,9 @@ describe("plugin validation utilities", () => {
       message: "Invalid type",
     } as z.ZodIssue;
 
-    expect(__test__.getZodSuggestion(issue)).toBe("Expected string, got number");
+    expect(validationTestUtils.getZodSuggestion(issue)).toBe(
+      "Expected string, got number",
+    );
   });
 
   it("returns undefined for zod issues without suggestions", () => {
@@ -118,12 +120,12 @@ describe("plugin validation utilities", () => {
       message: "no suggestion",
     } as z.ZodIssue;
 
-    expect(__test__.getZodSuggestion(issue)).toBeUndefined();
+    expect(validationTestUtils.getZodSuggestion(issue)).toBeUndefined();
   });
 
   it("formats zod paths with root fallback", () => {
-    expect(__test__.formatZodPath(["id"])).toBe("id");
-    expect(__test__.formatZodPath([])).toBe("root");
+    expect(validationTestUtils.formatZodPath(["id"])).toBe("id");
+    expect(validationTestUtils.formatZodPath([])).toBe("root");
   });
 
   it("captures zod schema issues for invalid fields", () => {

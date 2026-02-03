@@ -72,16 +72,25 @@ Every Tokovo episode follows this structure:
 
 ```typescript
 import { episode } from "@tokovo/dsl";
+import { WhatsAppTrackBuilder } from "@tokovo/apps-whatsapp";
 
-const myEpisode = episode("story-name", { duration: 30, fps: 30 })
-  .device("phone", "iphone16", (device) => {
-    // Configure device (apps, state)
-    device.app("app_whatsapp", (wa) => {
+let order = 0;
+const getOrder = () => order++;
+
+const myEpisode = episode("story-name", { duration: "30s", fps: 30 })
+  .device("phone", "iphone16", {
+    app: "app_whatsapp",
+    conversations: [{ id: "dm_alice", name: "Alice" }],
+  })
+  .track(
+    "app_whatsapp",
+    () => new WhatsAppTrackBuilder(30, "phone", "dm_alice", getOrder),
+    (wa) => {
       // Schedule app events
       wa.at("1s").receive("Alice", "Hello!");
       wa.at("3s").send("You", "Hi!");
-    });
-  })
+    },
+  )
   .camera((cam) => {
     // Choreograph camera movements
     cam.at("0s").focus("deviceScreen");
@@ -93,9 +102,9 @@ const myEpisode = episode("story-name", { duration: 30, fps: 30 })
 **Key Components:**
 
 1. **Episode metadata** — `episode('name', { duration, fps })`
-2. **Device configuration** — `.device(id, profile, builder)`
-3. **App track** — `.app(appId, builder)` schedules app events
-4. **Camera track** — `.camera(builder)` choreographs focus/zoom/shake
+2. **Device configuration** — `.device(id, profile, options)`
+3. **App track** — `.track(appId, factory, builder)` schedules app events
+4. **Camera track** — `.camera(builder)` choreographs focus/animate/shake
 5. **Build step** — `.build()` compiles to IR
 
 Now let's explore advanced patterns for complex episodes.
@@ -122,7 +131,7 @@ episodes/
 **`conversations.ts`** — Reusable message patterns:
 
 ```typescript
-import type { WhatsAppTrackBuilder } from '@tokovo/dsl'
+import type { WhatsAppTrackBuilder } from "@tokovo/apps-whatsapp";
 
 export const openingExchange = (wa: WhatsAppTrackBuilder) => {
   wa.at('1s').receive('Sarah', 'We need to talk...')
@@ -144,11 +153,11 @@ export const desperateResponse = (wa: WhatsAppTrackBuilder) => {
 import type { CameraTrackBuilder } from "@tokovo/dsl";
 
 export const breakupCameraWork = (cam: CameraTrackBuilder) => {
-  cam.at("0s").zoom(0.9);
+  cam.at("0s").set({ scale: 0.9 });
   cam.at("0s").focus("deviceScreen");
   cam.at("1s").focus("lastMessage");
-  cam.at("8s").shake(1.2);
-  cam.at("8.5s").zoom(1.4);
+  cam.at("8s").shake({ intensityX: 1.2, intensityY: 1.2, duration: "0.4s" });
+  cam.at("8.5s").animate({ scale: 1.4, duration: "0.5s" });
   // ... more choreography
 };
 ```
@@ -157,16 +166,26 @@ export const breakupCameraWork = (cam: CameraTrackBuilder) => {
 
 ```typescript
 import { episode } from "@tokovo/dsl";
+import { WhatsAppTrackBuilder } from "@tokovo/apps-whatsapp";
 import { openingExchange, desperateResponse } from "./conversations";
 import { breakupCameraWork } from "./camera";
 
-export const breakupEpisode = episode("breakup", { duration: 30, fps: 30 })
-  .device("phone", "iphone16", (d) => {
-    d.app("app_whatsapp", (wa) => {
+let order = 0;
+const getOrder = () => order++;
+
+export const breakupEpisode = episode("breakup", { duration: "30s", fps: 30 })
+  .device("phone", "iphone16", {
+    app: "app_whatsapp",
+    conversations: [{ id: "dm_sarah", name: "Sarah" }],
+  })
+  .track(
+    "app_whatsapp",
+    () => new WhatsAppTrackBuilder(30, "phone", "dm_sarah", getOrder),
+    (wa) => {
       openingExchange(wa);
       desperateResponse(wa);
-    });
-  })
+    },
+  )
   .camera(breakupCameraWork)
   .build();
 ```
@@ -207,11 +226,15 @@ const receiveTypingSend = (
 **Usage:**
 
 ```typescript
-d.app("app_whatsapp", (wa) => {
-  receiveTypingSend(wa, "Alice", "Want coffee?", "Sure!", 1);
-  receiveTypingSend(wa, "Alice", "When?", "Now?", 7);
-  receiveTypingSend(wa, "Alice", "See you in 10!", "Perfect!", 13);
-});
+.track(
+  "app_whatsapp",
+  () => new WhatsAppTrackBuilder(30, "phone", "dm_alice", getOrder),
+  (wa) => {
+    receiveTypingSend(wa, "Alice", "Want coffee?", "Sure!", 1);
+    receiveTypingSend(wa, "Alice", "When?", "Now?", 7);
+    receiveTypingSend(wa, "Alice", "See you in 10!", "Perfect!", 13);
+  },
+);
 ```
 
 **Benefits:**
@@ -411,7 +434,11 @@ wa.at(`${TIMELINE.plot_twist}s`).receive(
   "Alice",
   "I need to tell you something...",
 );
-cam.at(`${TIMELINE.plot_twist}s`).shake(1.2);
+cam.at(`${TIMELINE.plot_twist}s`).shake({
+  intensityX: 1.2,
+  intensityY: 1.2,
+  duration: "0.3s",
+});
 ```
 
 **Why this works:**
@@ -427,7 +454,8 @@ cam.at(`${TIMELINE.plot_twist}s`).shake(1.2);
 ### Always Type Your Builders
 
 ```typescript
-import type { WhatsAppTrackBuilder, CameraTrackBuilder } from "@tokovo/dsl";
+import type { CameraTrackBuilder } from "@tokovo/dsl";
+import type { WhatsAppTrackBuilder } from "@tokovo/apps-whatsapp";
 
 // ✅ Good — TypeScript will catch errors
 const myConversation = (wa: WhatsAppTrackBuilder) => {
@@ -498,16 +526,26 @@ const scheduleMessage = (
 import { describe, it, expect } from "vitest";
 import { compile } from "@tokovo/compiler";
 import { episode } from "@tokovo/dsl";
+import { WhatsAppTrackBuilder } from "@tokovo/apps-whatsapp";
 import { receiveTypingSend } from "./patterns";
 
 describe("receiveTypingSend pattern", () => {
   it("generates correct event sequence", () => {
-    const ep = episode("test", { duration: 10, fps: 30 })
-      .device("phone", "iphone16", (d) => {
-        d.app("app_whatsapp", (wa) => {
-          receiveTypingSend(wa, "Alice", "Hi", "Hello", 1, 2, 2);
-        });
+    let order = 0;
+    const getOrder = () => order++;
+
+    const ep = episode("test", { duration: "10s", fps: 30 })
+      .device("phone", "iphone16", {
+        app: "app_whatsapp",
+        conversations: [{ id: "dm_alice", name: "Alice" }],
       })
+      .track(
+        "app_whatsapp",
+        () => new WhatsAppTrackBuilder(30, "phone", "dm_alice", getOrder),
+        (wa) => {
+          receiveTypingSend(wa, "Alice", "Hi", "Hello", 1, 2, 2);
+        },
+      )
       .build();
 
     const ir = compile(ep);
@@ -665,9 +703,13 @@ wa.at(`${t}s`).receive("Alice", "Message 4");
 
 ```typescript
 // ❌ Bad — 500-line builder function
-d.app("app_whatsapp", (wa) => {
-  // ... 500 lines of messages, typing, reactions ...
-});
+.track(
+  "app_whatsapp",
+  () => new WhatsAppTrackBuilder(30, "phone", "dm_story", getOrder),
+  (wa) => {
+    // ... 500 lines of messages, typing, reactions ...
+  },
+);
 ```
 
 **✅ Fix: Separate into acts/scenes**
@@ -683,11 +725,15 @@ const act3 = (wa) => {
   /* ... */
 };
 
-d.app("app_whatsapp", (wa) => {
-  act1(wa);
-  act2(wa);
-  act3(wa);
-});
+.track(
+  "app_whatsapp",
+  () => new WhatsAppTrackBuilder(30, "phone", "dm_story", getOrder),
+  (wa) => {
+    act1(wa);
+    act2(wa);
+    act3(wa);
+  },
+);
 ```
 
 ### ❌ The Untyped Mystery
@@ -721,50 +767,67 @@ Combine multiple patterns into higher-level builders:
 
 ```typescript
 const dramaticReveal = (
-  wa: WhatsAppTrackBuilder,
-  cam: CameraTrackBuilder,
   from: string,
   buildup: string[],
   reveal: string,
-  startTime: number
+  startTime: number,
 ) => {
-  let t = startTime
+  const app = (wa: WhatsAppTrackBuilder) => {
+    let t = startTime;
 
-  // Buildup messages
-  buildup.forEach((msg) => {
-    wa.at(`${t}s`).receive(from, msg)
-    cam.at(`${t}s`).focus('lastMessage')
-    t += 2
-  })
+    // Buildup messages
+    buildup.forEach((msg) => {
+      wa.at(`${t}s`).receive(from, msg);
+      t += 2;
+    });
 
-  // Typing suspense
-  wa.at(`${t}s`).typing(from)
-  cam.at(`${t}s`).focus('typingIndicator')
-  cam.at(`${t}s`).zoom(1.2)
-  t += 3
+    // Typing suspense
+    wa.at(`${t}s`).typing(from);
+    t += 3;
 
-  // The reveal
-  wa.at(`${t}s`).receive(from, reveal)
-  cam.at(`${t}s`).focus('lastMessage')
-  cam.at(`${t}s`).shake(1.5)
-  cam.at(`${t + 0.2}s`).zoom(1.5)
-}
+    // The reveal
+    wa.at(`${t}s`).receive(from, reveal);
+  };
+
+  const camera = (cam: CameraTrackBuilder) => {
+    let t = startTime;
+
+    buildup.forEach(() => {
+      cam.at(`${t}s`).focus("lastMessage");
+      t += 2;
+    });
+
+    cam.at(`${t}s`).focus("typingIndicator");
+    cam.at(`${t}s`).animate({ scale: 1.2, duration: "0.3s" });
+    t += 3;
+
+    cam.at(`${t}s`).focus("lastMessage");
+    cam.at(`${t}s`).shake({ intensityX: 1.5, intensityY: 1.5, duration: "0.3s" });
+    cam.at(`${t + 0.2}s`).animate({ scale: 1.5, duration: "0.3s" });
+  };
+
+  return { app, camera };
+};
 
 // Usage
-episode('mystery', { duration: 20, fps: 30 })
-  .device('phone', 'iphone16', (d) => {
-    d.app('app_whatsapp', (wa) => {})
+const reveal = dramaticReveal(
+  "Detective",
+  ["I've been investigating...", "And I found something."],
+  "You're the killer.",
+  5,
+);
+
+episode("mystery", { duration: "20s", fps: 30 })
+  .device("phone", "iphone16", {
+    app: "app_whatsapp",
+    conversations: [{ id: "dm_detective", name: "Detective" }],
   })
-  .camera((cam) => {
-    dramaticReveal(
-      wa,
-      cam,
-      'Detective',
-      ['I've been investigating...', 'And I found something.'],
-      'You're the killer.',
-      5
-    )
-  })
+  .track(
+    "app_whatsapp",
+    () => new WhatsAppTrackBuilder(30, "phone", "dm_detective", getOrder),
+    reveal.app,
+  )
+  .camera(reveal.camera);
 ```
 
 **Note:** This requires passing multiple builders. Alternative: return event data to be applied later.

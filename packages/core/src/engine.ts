@@ -67,11 +67,6 @@ import {
 const log = createScopedLogger("engine");
 const sortedEventCache = new WeakMap<TimelineEvent[], TimelineEvent[]>();
 
-interface LegacyCameraConfig {
-  type?: string;
-  appId?: string;
-}
-
 export { ReducerRegistry } from "./engine/registry";
 export type {
   DeviceReducer,
@@ -185,20 +180,11 @@ export function replay(
   }
 
   // Ensure initial state has proper camera and audio state
-  // Handle legacy camera format { type, appId } vs new CameraState
-  const legacyCamera = initial.camera as LegacyCameraConfig | undefined;
   const initialWithCamera: WorldState = {
     ...initial,
-    camera:
-      initial.camera && "activeEffects" in initial.camera
-        ? initial.camera
-        : {
-            ...DEFAULT_BASE_CAMERA_STATE,
-            baseView: (legacyCamera?.type || "APP_VIEW") as
-              | "APP_VIEW"
-              | "TRANSITION",
-            appId: legacyCamera?.appId,
-          },
+    camera: initial.camera
+      ? { ...DEFAULT_BASE_CAMERA_STATE, ...initial.camera }
+      : { ...DEFAULT_BASE_CAMERA_STATE },
     audio: initial.audio || { ...DEFAULT_AUDIO_STATE },
   };
 
@@ -225,6 +211,7 @@ export function replay(
       frame: t,
       eventIndex: 0,
       mode: ctx.mode,
+      gracefulDegradation: ctx.gracefulDegradation,
     };
 
     // Process all events
@@ -437,20 +424,11 @@ function ensureInitialState(initial: WorldState): WorldState {
     };
   }
 
-  const legacyCamera = initial.camera as LegacyCameraConfig | undefined;
-
   return {
     ...initial,
-    camera:
-      initial.camera && "activeEffects" in initial.camera
-        ? initial.camera
-        : {
-            ...DEFAULT_BASE_CAMERA_STATE,
-            baseView: (legacyCamera?.type || "APP_VIEW") as
-              | "APP_VIEW"
-              | "TRANSITION",
-            appId: legacyCamera?.appId,
-          },
+    camera: initial.camera
+      ? { ...DEFAULT_BASE_CAMERA_STATE, ...initial.camera }
+      : { ...DEFAULT_BASE_CAMERA_STATE },
     audio: initial.audio || { ...DEFAULT_AUDIO_STATE },
   };
 }
@@ -506,7 +484,7 @@ function isSortedByFrame(events: TimelineEvent[]): boolean {
 
 function getDeclarationOrder(event: TimelineEvent, fallback: number): number {
   const order = (event as { _declarationOrder?: number })._declarationOrder;
-  return Number.isFinite(order) ? order : fallback;
+  return typeof order === "number" && Number.isFinite(order) ? order : fallback;
 }
 
 function handleEventError(

@@ -54,21 +54,21 @@ describe("engine replay", () => {
     expect(result.camera.baseView).toBe("APP_VIEW");
   });
 
-  it("normalizes legacy camera state when events are empty", () => {
-    const legacyWorld = {
+  it("preserves camera baseView and appId when events are empty", () => {
+    const world = {
       devices: {},
       appState: {},
-      camera: { type: "TRANSITION", appId: "app_legacy" } as any,
+      camera: { baseView: "TRANSITION", appId: "app_legacy" } as any,
       audio: undefined,
     } as WorldState;
 
-    const result = replay(legacyWorld, [], 0);
+    const result = replay(world, [], 0);
     expect(result.camera.baseView).toBe("TRANSITION");
     expect(result.camera.appId).toBe("app_legacy");
     expect(result.audio).toBeDefined();
   });
 
-  it("defaults legacy camera baseView when type is missing", () => {
+  it("defaults camera baseView when missing", () => {
     const world = {
       devices: {},
       appState: {},
@@ -81,11 +81,11 @@ describe("engine replay", () => {
     expect(result.audio).toBeDefined();
   });
 
-  it("normalizes legacy camera and audio when events exist", () => {
+  it("preserves camera baseView and appId when events exist", () => {
     const world = {
       devices: { phone: { id: "phone" } },
       appState: {},
-      camera: { type: "TRANSITION", appId: "app_legacy" } as any,
+      camera: { baseView: "TRANSITION", appId: "app_legacy" } as any,
       audio: undefined,
     } as WorldState;
 
@@ -95,7 +95,7 @@ describe("engine replay", () => {
     expect(result.audio).toBeDefined();
   });
 
-  it("defaults legacy baseView during replay when type is missing", () => {
+  it("defaults baseView during replay when missing", () => {
     const world = {
       devices: { phone: { id: "phone" } },
       appState: {},

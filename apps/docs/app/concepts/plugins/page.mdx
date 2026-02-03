@@ -171,7 +171,7 @@ export const CameraPlugin = definePlugin({
 │                                                              │
 │  EPISODE                                                     │
 │  ┌────────────────────────────────────────────────────┐     │
-│  │ .device(...).app('app_whatsapp', ...)              │     │
+│  │ .device(...).track('app_whatsapp', ...)            │     │
 │  │                        │                           │     │
 │  │                        ▼                           │     │
 │  │              Plugin ID: "app_whatsapp"            │     │
@@ -244,12 +244,25 @@ This design ensures **clean separation**: each subsystem owns its registry, plug
 Episodes reference plugins using their string ID:
 
 ```typescript
-const episode = createEpisode((b) => {
-  b.device("main_phone").unlock().openApp("app_whatsapp"); // ← Plugin ID
+import { episode } from "@tokovo/dsl";
+import { WhatsAppTrackBuilder } from "@tokovo/apps-whatsapp";
 
-  b.use("app_whatsapp") // ← Plugin DSL
-    .receive("Alice", "Hey there!");
-});
+let order = 0;
+const getOrder = () => order++;
+
+const ep = episode("demo", { duration: "5s", fps: 30 })
+  .device("main_phone", "iphone16", {
+    app: "app_whatsapp",
+    conversations: [{ id: "dm_alice", name: "Alice" }],
+  })
+  .track(
+    "app_whatsapp", // ← Plugin ID
+    () => new WhatsAppTrackBuilder(30, "main_phone", "dm_alice", getOrder),
+    (wa) => {
+      wa.at("1s").receive("Alice", "Hey there!");
+    },
+  )
+  .build();
 ```
 
 ### 2. Engine Looks Up Plugin in Registry
@@ -517,14 +530,31 @@ Tokovo ships with core plugins:
 import { PluginManager } from "@tokovo/core/plugin";
 import { WhatsAppPlugin } from "@tokovo/apps-whatsapp";
 import { CameraPlugin } from "@tokovo/device-camera";
+import { episode } from "@tokovo/dsl";
+import { WhatsAppTrackBuilder } from "@tokovo/apps-whatsapp";
 
 PluginManager.register(WhatsAppPlugin);
 PluginManager.register(CameraPlugin);
 
-const episode = createEpisode((b) => {
-  b.use("app_whatsapp").receive("Sarah", "Check this out!");
-  b.use("device_camera").open().shutter();
-});
+let order = 0;
+const getOrder = () => order++;
+
+const ep = episode("plugin-demo", { duration: "6s", fps: 30 })
+  .device("phone", "iphone16", {
+    app: "app_whatsapp",
+    conversations: [{ id: "dm_sarah", name: "Sarah" }],
+  })
+  .track(
+    "app_whatsapp",
+    () => new WhatsAppTrackBuilder(30, "phone", "dm_sarah", getOrder),
+    (wa) => {
+      wa.at("1s").receive("Sarah", "Check this out!");
+    },
+  )
+  .camera((cam) => {
+    cam.at("2s").focus("lastMessage");
+  })
+  .build();
 ```
 
 ---

@@ -17,7 +17,12 @@ import { registerDevicesPlugin } from "@tokovo/devices";
 import { registerNotificationPlugin } from "@tokovo/device-notifications";
 import { registerCameraPlugin } from "@tokovo/device-camera";
 import { registerKeyboardPlugin } from "@tokovo/device-keyboard";
-import { episodeRegistry, getFormat } from "@tokovo/episodes";
+import {
+  episodeRegistry,
+  getFormat,
+  type EpisodeDefinition,
+  type FormatId,
+} from "@tokovo/episodes";
 import { EpisodeRenderer } from "./EpisodeRenderer";
 
 // =============================================================================
@@ -49,7 +54,7 @@ export const RemotionRoot: React.FC = () => {
   const showcases = episodeRegistry.filter({ category: "showcase" });
   const tests = episodeRegistry.filter({ category: "test" });
 
-  console.log("[Video-Runner] Episodes loaded:", {
+  console.warn("[Video-Runner] Episodes loaded:", {
     production: production.length,
     showcases: showcases.length,
     tests: tests.length,
@@ -74,10 +79,10 @@ export const RemotionRoot: React.FC = () => {
 // HELPER
 // =============================================================================
 
-function renderEpisode(ep: any) {
+function renderEpisode(ep: EpisodeDefinition) {
   const format =
     typeof ep.config.format === "string"
-      ? getFormat(ep.config.format as any)
+      ? getFormat(ep.config.format as FormatId)
       : ep.config.format;
 
   return (
