@@ -6,8 +6,9 @@
  * 
  * @example
  * ```typescript
- * FrameRegistry.register("iphone16", iPhone16Frame);
- * const Frame = FrameRegistry.get("iphone16");
+ * const registry = createFrameRegistry();
+ * registry.register("iphone16", iPhone16Frame);
+ * const Frame = registry.get("iphone16");
  * ```
  */
 
@@ -33,7 +34,7 @@ export type FrameComponent = React.ComponentType<FrameProps>;
 // REGISTRY IMPLEMENTATION
 // =============================================================================
 
-class FrameRegistryImpl {
+export class FrameRegistryClass {
     private frames = new Map<string, FrameComponent>();
 
     /**
@@ -84,4 +85,6 @@ class FrameRegistryImpl {
     }
 }
 
-export const FrameRegistry = new FrameRegistryImpl();
+export function createFrameRegistry(): FrameRegistryClass {
+    return new FrameRegistryClass();
+}

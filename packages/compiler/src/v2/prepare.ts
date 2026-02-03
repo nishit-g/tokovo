@@ -17,6 +17,12 @@ import type {
   DeviceState,
 } from "@tokovo/core";
 import { DEFAULT_CAMERA_STATE, DEFAULT_AUDIO_STATE } from "@tokovo/core";
+import {
+  compareEvents,
+  createEventIndex,
+  createKeyframedEventIndex,
+  getConfig,
+} from "@tokovo/core";
 import { lowerEpisode } from "./lowering";
 
 // =============================================================================
@@ -28,6 +34,8 @@ export interface PreparedTrackEpisode {
   fps: number;
   durationInFrames: number;
   events: RuntimeEvent[];
+  eventIndex?: ReturnType<typeof createEventIndex>;
+  keyframedEventIndex?: ReturnType<typeof createKeyframedEventIndex>;
   initialWorld: WorldState;
   plugins: TokovoPlugin[];
   metadata: {
@@ -63,6 +71,10 @@ export function prepareTrackEpisode(
   }
 
   const runtimeEvents = lowerEpisode(ir, plugins) as RuntimeEvent[];
+  const sortedEvents = runtimeEvents
+    .map((event, index) => ({ event, index }))
+    .sort((a, b) => compareEvents(a.event, b.event, a.index, b.index))
+    .map((entry) => entry.event);
 
   // Build initial world state from device configs
   const initialWorld = buildInitialWorld(ir);
@@ -91,7 +103,12 @@ export function prepareTrackEpisode(
     id: ir.id,
     fps: ir.fps,
     durationInFrames: ir.durationInFrames,
-    events: runtimeEvents,
+    events: sortedEvents,
+    eventIndex: createEventIndex(sortedEvents),
+    keyframedEventIndex: createKeyframedEventIndex(
+      sortedEvents,
+      getConfig().rendering.cacheKeyframeInterval,
+    ),
     initialWorld,
     plugins,
     metadata,

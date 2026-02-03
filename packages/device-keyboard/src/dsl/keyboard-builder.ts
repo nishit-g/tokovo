@@ -1,8 +1,11 @@
+import { createSeededRng } from "@tokovo/core";
+
 export type TimeInput = string | number;
 
 export interface TypeOptions {
   speed?: "slow" | "natural" | "fast";
   showKeyPresses?: boolean;
+  seed?: number | string;
 }
 
 export interface KeyboardTrackEvent {
@@ -84,9 +87,12 @@ export class KeyboardTrackBuilder {
     const varianceMs = speed === "slow" ? 80 : speed === "fast" ? 20 : 50;
 
     let currentFrame = this._parseTime(startTime);
+    const seedInput =
+      options?.seed ?? `${text}|${startTime}|${speed}|${this._deviceId}`;
+    const rng = createSeededRng(seedInput);
 
     for (const char of text) {
-      const delayMs = baseDelayMs + (Math.random() - 0.5) * varianceMs;
+      const delayMs = baseDelayMs + (rng.next() - 0.5) * varianceMs;
       const delayFrames = Math.round((delayMs / 1000) * this._fps);
 
       if (showKeyPresses) {

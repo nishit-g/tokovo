@@ -157,7 +157,7 @@ Finally, `<TokovoRenderer>` paints the computed layout:
   t={t}
   debug={false}
   pluginManager={pluginManager}
-  registries={registries.plugins}
+  registries={rendererRegistries}
 />
 ```
 
@@ -206,7 +206,7 @@ function MyVideo() {
       world={world}
       t={frame}
       pluginManager={pluginManager}
-      registries={registries.plugins}
+      registries={rendererRegistries}
     />
   );
 }
@@ -459,7 +459,7 @@ export const CustomVideo = ({ episode }) => {
         eventIndex={eventIndex}
         debug={false}
         pluginManager={pluginManager}
-        registries={registries.plugins}
+        registries={rendererRegistries}
       />
     </AbsoluteFill>
   );
@@ -477,6 +477,8 @@ import { MultiDeviceRenderer } from "@tokovo/renderer";
   world={world}
   t={t}
   layout="side-by-side" // or "picture-in-picture"
+  pluginManager={pluginManager}
+  registries={rendererRegistries}
 />;
 ```
 
@@ -554,7 +556,7 @@ Renders all active sounds via Remotion's `<Audio>` component:
 ```tsx
 import { AudioLayer, RendererRegistryProvider } from "@tokovo/renderer";
 
-<RendererRegistryProvider registries={registries.plugins}>
+<RendererRegistryProvider registries={rendererRegistries}>
   <AudioLayer world={world} t={frame} />
 </RendererRegistryProvider>;
 ```
@@ -602,7 +604,7 @@ Enable during development:
   t={t}
   debug={true}
   pluginManager={pluginManager}
-  registries={registries.plugins}
+  registries={rendererRegistries}
 />
 ```
 
@@ -637,7 +639,7 @@ import { NotificationOverlay, TouchOverlay } from "@tokovo/renderer";
   world={world}
   t={t}
   pluginManager={pluginManager}
-  registries={registries.plugins}
+  registries={rendererRegistries}
 >
   {/* ... */}
   <TouchOverlay touches={world.touches} />
@@ -788,7 +790,7 @@ Enable debug mode to inspect layout calculations:
   t={t}
   debug={true}
   pluginManager={pluginManager}
-  registries={registries.plugins}
+  registries={rendererRegistries}
 />
 ```
 
@@ -857,7 +859,7 @@ const world = runEpisode(episode, frame, {
   world={world}
   t={frame}
   pluginManager={pluginManager}
-  registries={registries.plugins}
+  registries={rendererRegistries}
   config={{
     chat: {
       lockToBottom: false,

@@ -2,6 +2,8 @@ import { describe, expect, it, vi } from "vitest";
 import type { TokovoPluginContract } from "../types/plugin-contract";
 import type { CompiledEpisode } from "../types/compiled-episode";
 import { prepareTestUtils } from "../testing";
+import { createEngineRegistries } from "../engine/registries";
+import { getConfig } from "../config";
 
 const baseInput = {
   episodeId: "ep1",
@@ -189,7 +191,11 @@ describe("prepare episode", () => {
     mod.setCompiler(() => ({ timeline: { ops: [] } }));
 
     const compiled = mod.prepareEpisode(baseInput as any) as CompiledEpisode;
-    const state = mod.runEpisode(compiled, 0, { mode: "preview" });
+    const state = mod.runEpisode(compiled, 0, {
+      mode: "preview",
+      registries: createEngineRegistries(),
+      config: getConfig(),
+    });
     expect(state).toEqual(compiled.initialWorld);
   });
 

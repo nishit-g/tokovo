@@ -50,7 +50,11 @@ export * from "./layout";
 export { NowPlayingBar } from "./NowPlayingBar";
 export { VisualDebugger } from "./VisualDebugger";
 export { UnlockTransition } from "./AppTransition";
-export { RendererRegistryProvider, useRendererRegistries } from "./RegistryContext";
+export {
+  RendererRegistryProvider,
+  useRendererRegistries,
+  type RendererRegistries,
+} from "./RegistryContext";
 
 // ===========================================================================
 // ENGINES

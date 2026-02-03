@@ -5,6 +5,8 @@
  * Uses a simple Mulberry32 algorithm.
  */
 
+export type SeedInput = number | string;
+
 export class SeededRNG {
   private state: number;
 
@@ -57,4 +59,21 @@ export function hashBasedId(
 
 export function resetIdCounter(): void {
   globalIdCounter = 0;
+}
+
+export function seedFromString(value: string): number {
+  let hash = 0;
+  for (let i = 0; i < value.length; i++) {
+    hash = (hash << 5) - hash + value.charCodeAt(i);
+    hash |= 0;
+  }
+  return hash;
+}
+
+export function normalizeSeed(seed: SeedInput): number {
+  return typeof seed === "number" ? seed | 0 : seedFromString(seed);
+}
+
+export function createSeededRng(seed: SeedInput): SeededRNG {
+  return new SeededRNG(normalizeSeed(seed));
 }

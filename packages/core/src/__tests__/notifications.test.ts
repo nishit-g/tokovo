@@ -50,6 +50,7 @@ describe("notification adapters", () => {
     const actionEvents = adapterRegistry.handleAction(
       baseNotification,
       "open",
+      { frame: 42 },
     );
     expect(actionEvents[0].kind).toBe("APP");
 
@@ -58,9 +59,12 @@ describe("notification adapters", () => {
 
   it("falls back to default open action", () => {
     const adapterRegistry = createNotificationAdapterRegistry();
-    const events = adapterRegistry.handleAction(baseNotification);
+    const events = adapterRegistry.handleAction(baseNotification, "open", {
+      frame: 12,
+    });
     expect(events[0].kind).toBe("DEVICE");
     expect((events[0] as any).type).toBe("OPEN_APP");
+    expect(events[0].at).toBe(12);
   });
 
   it("exposes default height", () => {

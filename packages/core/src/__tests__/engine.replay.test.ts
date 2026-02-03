@@ -5,7 +5,6 @@ import {
   replay,
   replayIncremental,
   createInitialWorld,
-  invalidateConfigCache,
   createEventIndex,
   createKeyframedEventIndex,
   createStateCache,
@@ -15,6 +14,7 @@ import {
 import { createEngineRegistries, type EngineRegistries } from "../engine/registries";
 import * as handlerModule from "../engine/handlers";
 import { logger } from "../logger";
+import { getConfig } from "../config";
 
 const baseWorld = (): WorldState => ({
   devices: { phone: { id: "phone" } },
@@ -24,8 +24,16 @@ const baseWorld = (): WorldState => ({
 } as WorldState);
 
 let registries: EngineRegistries;
-const previewCtx = () => ({ mode: "preview" as const, registries });
-const renderCtx = () => ({ mode: "render" as const, registries });
+const previewCtx = () => ({
+  mode: "preview" as const,
+  registries,
+  config: getConfig(),
+});
+const renderCtx = () => ({
+  mode: "render" as const,
+  registries,
+  config: getConfig(),
+});
 
 beforeEach(() => {
   registries = createEngineRegistries();
@@ -224,10 +232,9 @@ describe("engine replay", () => {
     expect(result.camera.deviceTransforms).toBeDefined();
   });
 
-  it("creates initial worlds and invalidates config cache", () => {
+  it("creates initial worlds", () => {
     const initial = createInitialWorld({ appState: { ok: true } as any });
     expect(initial.appState).toBeDefined();
-    invalidateConfigCache();
   });
 
   it("handles missing built-in handlers gracefully", async () => {

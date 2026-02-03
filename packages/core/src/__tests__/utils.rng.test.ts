@@ -1,9 +1,11 @@
 import { describe, expect, it } from "vitest";
 import {
   SeededRNG,
+  createSeededRng,
   deterministicId,
   hashBasedId,
   resetIdCounter,
+  seedFromString,
 } from "../utils/rng";
 
 describe("rng utilities", () => {
@@ -28,5 +30,12 @@ describe("rng utilities", () => {
     const hash1 = hashBasedId("item", 1, "a");
     const hash2 = hashBasedId("item", 1, "a");
     expect(hash1).toBe(hash2);
+  });
+
+  it("normalizes string seeds deterministically", () => {
+    const seed = seedFromString("alpha");
+    const rng1 = createSeededRng(seed);
+    const rng2 = createSeededRng("alpha");
+    expect(rng1.next()).toBeCloseTo(rng2.next(), 8);
   });
 });

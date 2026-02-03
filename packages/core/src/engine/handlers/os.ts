@@ -5,6 +5,7 @@
  */
 
 import type { WorldState, NetworkType } from "../../types";
+import { DEFAULT_OS_STATE } from "../../types";
 import type { OSEvent, HandlerContext } from "./types";
 
 interface OSEventPayload {
@@ -32,20 +33,6 @@ function normalizeNetworkType(network: string | undefined): NetworkType {
   return "wifi";
 }
 
-const DEFAULT_OS_STATE = {
-  clock: Date.now(),
-  battery: 85,
-  charging: false,
-  network: "wifi" as const,
-  wifiStrength: 3,
-  cellStrength: 4,
-  dnd: false,
-  lowPowerMode: false,
-  airplaneMode: false,
-  notifications: [],
-  notificationHistory: [],
-};
-
 export function processOSEvent(
   draft: WorldState,
   event: OSEvent,
@@ -62,7 +49,7 @@ export function processOSEvent(
 
   switch (event.type) {
     case "SET_TIME":
-      device.os.clock = payload.time ?? Date.now();
+      device.os.clock = payload.time ?? device.os.clock ?? 0;
       break;
 
     case "SET_BATTERY":

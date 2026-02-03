@@ -1,8 +1,13 @@
 import { useMemo } from "react";
-import { replay, createEventIndex } from "@tokovo/core";
+import {
+  replayIncremental,
+  createKeyframedEventIndex,
+  createStateCache,
+  getConfig,
+} from "@tokovo/core";
 import { TokovoRenderer } from "@tokovo/renderer";
 import type { PreparedTrackEpisode } from "@tokovo/compiler";
-import { pluginManager, tokovoRegistries } from "./runtime";
+import { pluginManager, rendererRegistries, tokovoRegistries } from "./runtime";
 
 interface EpisodeRendererProps {
   episodeIR: PreparedTrackEpisode;
@@ -13,21 +18,38 @@ export function EpisodeRenderer({
   episodeIR,
   frame = 0,
 }: EpisodeRendererProps) {
-  const eventIndex = useMemo(() => {
+  const config = useMemo(() => getConfig(), []);
+  const keyframedEventIndex = useMemo(() => {
     if (!episodeIR) return null;
-    return createEventIndex(episodeIR.events as any);
-  }, [episodeIR]);
+    return (
+      episodeIR.keyframedEventIndex ??
+      createKeyframedEventIndex(
+        episodeIR.events as any,
+        config.rendering.cacheKeyframeInterval,
+      )
+    );
+  }, [episodeIR, config.rendering.cacheKeyframeInterval]);
+  const stateCache = useMemo(() => {
+    if (!episodeIR) return null;
+    return createStateCache(config.rendering.cacheKeyframeInterval);
+  }, [episodeIR, config.rendering.cacheKeyframeInterval]);
 
   const world = useMemo(() => {
-    if (!episodeIR || !eventIndex) return null;
-    return replay(
+    if (!episodeIR || !keyframedEventIndex || !stateCache) return null;
+    return replayIncremental(
       episodeIR.initialWorld,
       episodeIR.events,
       frame,
-      { mode: "preview", fps: episodeIR.fps, registries: tokovoRegistries.engine },
-      eventIndex,
+      {
+        mode: "preview",
+        fps: episodeIR.fps,
+        registries: tokovoRegistries.engine,
+        config,
+      },
+      keyframedEventIndex,
+      stateCache,
     );
-  }, [episodeIR, eventIndex, frame]);
+  }, [episodeIR, keyframedEventIndex, stateCache, frame, config]);
 
   if (!world) {
     return (
@@ -63,8 +85,9 @@ export function EpisodeRenderer({
         t={frame}
         fps={episodeIR.fps}
         debug={false}
+        eventIndex={keyframedEventIndex ?? undefined}
         pluginManager={pluginManager}
-        registries={tokovoRegistries.plugins}
+        registries={rendererRegistries}
       />
     </div>
   );

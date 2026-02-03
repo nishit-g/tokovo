@@ -82,6 +82,9 @@ export interface CompiledEpisode {
   /** Pre-computed event index for O(1) frame lookups */
   eventIndex?: import("../utils/event-utils").EventIndex;
 
+  /** Pre-computed keyframed index for incremental replay */
+  keyframedEventIndex?: import("../utils/event-utils").KeyframedEventIndex;
+
   // === Assets ===
   /** Validated at compile time */
   assets: AssetManifest;

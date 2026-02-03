@@ -5,10 +5,11 @@
  *
  * @example
  * ```typescript
- * import { DeviceRegistry, DeviceTrackBuilder, StatusBar } from "@tokovo/devices";
+ * import { createDeviceRegistries, DeviceTrackBuilder, StatusBar } from "@tokovo/devices";
  *
  * // Use registered profile
- * const profile = DeviceRegistry.get("iphone16");
+ * const registries = createDeviceRegistries();
+ * const profile = registries.devices.get("iphone16");
  *
  * // Use DSL for OS events
  * const device = new DeviceTrackBuilder(30, "phone", getOrder);
@@ -36,10 +37,25 @@ export type { DeviceTrackEvent, DeviceEventType } from "./ir";
 // =============================================================================
 
 export {
-  DeviceRegistry,
-  FrameRegistry,
-  StatusBarStrategyRegistry,
+  createDeviceRegistries,
+  createDeviceRegistry,
+  createFrameRegistry,
+  createStatusBarStrategyRegistry,
+  DeviceRegistryClass,
+  FrameRegistryClass,
+  StatusBarStrategyRegistryClass,
+  type DeviceRegistries,
 } from "./registries";
+
+export {
+  DeviceRegistryProvider,
+  useDeviceRegistries,
+} from "./DeviceRegistryContext";
+
+export {
+  createDeviceShellRegistry,
+  DeviceShellRegistryClass,
+} from "./registry";
 
 // =============================================================================
 // DSL
@@ -108,15 +124,19 @@ export {
 // DYNAMIC LOOKUP HELPER
 // =============================================================================
 
-import { DeviceRegistry } from "./registries";
+import type { DeviceRegistries } from "./registries";
 import { iPhone16Profile } from "./iphone16/profile";
 import type { DeviceProfile } from "./types";
 
 /**
  * Get device profile by ID
+ * @param registries - Scoped device registries
  * @param profileId - Device profile ID (e.g., "iphone16", "pixel")
  * @returns DeviceProfile or default iPhone16Profile if not found
  */
-export function getDeviceProfile(profileId: string): DeviceProfile {
-  return DeviceRegistry.getOrDefault(profileId, "iphone16") || iPhone16Profile;
+export function getDeviceProfile(
+  registries: DeviceRegistries,
+  profileId: string,
+): DeviceProfile {
+  return registries.devices.getOrDefault(profileId, "iphone16") || iPhone16Profile;
 }

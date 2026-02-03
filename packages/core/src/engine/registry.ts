@@ -75,14 +75,14 @@ export class ReducerRegistryClass {
   registerScopedAppReducer<TAppState>(
     appId: string,
     reducer: ScopedAppReducer<TAppState>,
-    initialState: TAppState,
+    initialStateFactory: () => TAppState,
   ): void {
     const wrappedReducer: AppReducer = (draft, event) => {
       if (!draft.appState) {
         draft.appState = {};
       }
       if (draft.appState[appId] === undefined) {
-        draft.appState[appId] = initialState;
+        draft.appState[appId] = initialStateFactory();
       }
       reducer(draft.appState[appId] as TAppState, event);
     };

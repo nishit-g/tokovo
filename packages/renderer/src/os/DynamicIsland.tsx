@@ -65,7 +65,7 @@ export const DynamicIsland: React.FC<DynamicIslandProps> = ({
   const activeAppIds = device.backgroundApps?.map((a) => a.appId) || [];
 
   // Resolve which widget should render
-  const resolved = registries.widgets.resolve(
+  const resolved = registries.plugins.widgets.resolve(
     "dynamicIsland",
     platform,
     activeAppIds,

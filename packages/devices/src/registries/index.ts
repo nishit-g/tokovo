@@ -2,11 +2,22 @@
  * Registries - Public exports
  */
 
-export { DeviceRegistry } from "./device-registry";
-export { FrameRegistry, type FrameProps, type FrameComponent } from "./frame-registry";
 export {
-    StatusBarStrategyRegistry,
-    type StatusBarStrategyProps,
-    type StatusBarStrategyComponent,
-    type StatusBarNotificationIcon,
+  DeviceRegistryClass,
+  createDeviceRegistry,
+} from "./device-registry";
+export type { DeviceRegistries } from "./bundle";
+export { createDeviceRegistries } from "./bundle";
+export {
+  FrameRegistryClass,
+  createFrameRegistry,
+  type FrameProps,
+  type FrameComponent,
+} from "./frame-registry";
+export {
+  StatusBarStrategyRegistryClass,
+  createStatusBarStrategyRegistry,
+  type StatusBarStrategyProps,
+  type StatusBarStrategyComponent,
+  type StatusBarNotificationIcon,
 } from "./statusbar-registry";

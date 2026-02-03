@@ -21,7 +21,12 @@ import {
   continueRender,
   staticFile,
 } from "remotion";
-import { replay, createEventIndex } from "@tokovo/core";
+import {
+  replayIncremental,
+  createKeyframedEventIndex,
+  createStateCache,
+  getConfig,
+} from "@tokovo/core";
 import {
   prepareTrackEpisode,
   type PreparedTrackEpisode,
@@ -47,7 +52,7 @@ import {
   type FormatId,
 } from "@tokovo/episodes";
 import { ErrorBoundary } from "./ErrorBoundary";
-import { pluginManager, tokovoRegistries } from "./runtime";
+import { pluginManager, rendererRegistries, tokovoRegistries } from "./runtime";
 
 // =============================================================================
 // TYPES
@@ -211,23 +216,42 @@ const EpisodeRendererInner: React.FC<EpisodeRendererProps> = ({
   // === ALL HOOKS MUST BE CALLED BEFORE CONDITIONAL RETURNS ===
   // (React rules of hooks - hooks must be called unconditionally)
 
-  // === CREATE EVENT INDEX ===
-  const eventIndex = useMemo(() => {
+  const config = useMemo(() => getConfig(), []);
+
+  // === CREATE EVENT INDEX + STATE CACHE ===
+  const keyframedEventIndex = useMemo(() => {
     if (!prepared) return null;
-    return createEventIndex(prepared.events);
-  }, [prepared]);
+    return (
+      prepared.keyframedEventIndex ??
+      createKeyframedEventIndex(
+        prepared.events,
+        config.rendering.cacheKeyframeInterval,
+      )
+    );
+  }, [prepared, config.rendering.cacheKeyframeInterval]);
+
+  const stateCache = useMemo(() => {
+    if (!prepared) return null;
+    return createStateCache(config.rendering.cacheKeyframeInterval);
+  }, [prepared, config.rendering.cacheKeyframeInterval]);
 
   // === RUN EPISODE AT CURRENT FRAME ===
   const world = useMemo(() => {
-    if (!prepared || !eventIndex) return null;
-    return replay(
+    if (!prepared || !keyframedEventIndex || !stateCache) return null;
+    return replayIncremental(
       prepared.initialWorld,
       prepared.events,
       frame,
-      { mode: "preview", fps, registries: tokovoRegistries.engine },
-      eventIndex,
+      {
+        mode: "preview",
+        fps,
+        registries: tokovoRegistries.engine,
+        config,
+      },
+      keyframedEventIndex,
+      stateCache,
     );
-  }, [prepared, eventIndex, frame, fps]);
+  }, [prepared, keyframedEventIndex, stateCache, frame, fps, config]);
 
   // === BUILD VOICE EVENTS FOR PER-SEGMENT CONTROL ===
   const voiceEvents = useMemo((): VoicePlayEvent[] => {
@@ -321,7 +345,7 @@ const EpisodeRendererInner: React.FC<EpisodeRendererProps> = ({
   }
 
   // === LOADING STATE ===
-  if (!prepared || !episode || !worldWithVoice || !eventIndex) {
+  if (!prepared || !episode || !worldWithVoice || !keyframedEventIndex) {
     const opacity = 0.5 + 0.5 * Math.sin((frame * Math.PI) / 30);
     return (
       <AbsoluteFill style={loadingStyle}>
@@ -343,7 +367,7 @@ const EpisodeRendererInner: React.FC<EpisodeRendererProps> = ({
         alignItems: "center",
       }}
     >
-      <RendererRegistryProvider registries={tokovoRegistries.plugins}>
+      <RendererRegistryProvider registries={rendererRegistries}>
         <AudioLayer world={worldWithVoice} t={frame} />
         {voiceManifest &&
           voiceConfig?.audioPath &&
@@ -374,9 +398,9 @@ const EpisodeRendererInner: React.FC<EpisodeRendererProps> = ({
             t={frame}
             fps={fps}
             debug={false}
-            eventIndex={eventIndex}
+            eventIndex={keyframedEventIndex}
             pluginManager={pluginManager}
-            registries={tokovoRegistries.plugins}
+            registries={rendererRegistries}
           />
         </div>
       </RendererRegistryProvider>

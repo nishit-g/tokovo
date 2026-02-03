@@ -126,13 +126,15 @@ episode("multi-device", { fps: 30, duration: "15s" })
 ### Registering Devices
 
 ```typescript
-import { DeviceRegistry, iPhone16Profile } from "@tokovo/devices";
+import { createDeviceRegistries, iPhone16Profile } from "@tokovo/devices";
+
+const registries = createDeviceRegistries();
 
 // Register a device profile
-DeviceRegistry.register("iphone16", iPhone16Profile);
+registries.devices.register("iphone16", iPhone16Profile);
 
 // Get a registered profile
-const profile = DeviceRegistry.get("iphone16");
+const profile = registries.devices.get("iphone16");
 // {
 //   id: "iphone16",
 //   name: "iPhone 16 Pro Max",
@@ -148,13 +150,15 @@ const profile = DeviceRegistry.get("iphone16");
 ### Profile Lookup
 
 ```typescript
-import { getDeviceProfile } from "@tokovo/devices";
+import { createDeviceRegistries, getDeviceProfile } from "@tokovo/devices";
+
+const registries = createDeviceRegistries();
 
 // Get profile by ID (with fallback to default)
-const profile = getDeviceProfile("iphone16");
+const profile = getDeviceProfile(registries, "iphone16");
 
 // List all registered devices
-const devices = DeviceRegistry.list();
+const devices = registries.devices.list();
 // ["iphone16", "pixel"]
 ```
 
@@ -286,9 +290,10 @@ import { iPhone16Frame, PixelFrame } from '@tokovo/devices'
 </iPhone16Frame>
 
 // Or use registry
-import { FrameRegistry } from '@tokovo/devices'
+import { createDeviceRegistries } from '@tokovo/devices'
 
-const Frame = FrameRegistry.get('iphone16')
+const registries = createDeviceRegistries()
+const Frame = registries.frames.get('iphone16')
 <Frame>
   <AppContent />
 </Frame>
@@ -390,10 +395,11 @@ export const MyPhoneProfile: DeviceProfile = {
 ### 2. Register the Profile
 
 ```typescript
-import { DeviceRegistry } from "@tokovo/devices";
+import { createDeviceRegistries } from "@tokovo/devices";
 import { MyPhoneProfile } from "./my-phone-profile";
 
-DeviceRegistry.register("myphone", MyPhoneProfile);
+const registries = createDeviceRegistries();
+registries.devices.register("myphone", MyPhoneProfile);
 ```
 
 ### 3. Use in Episodes
@@ -446,10 +452,11 @@ import { IOSStatusBarStrategy, AndroidStatusBarStrategy } from '@tokovo/devices'
 Render device-specific frames:
 
 ```typescript
-import { FrameRegistry } from '@tokovo/devices'
+import { createDeviceRegistries } from '@tokovo/devices'
 
 // Get frame component for device
-const Frame = FrameRegistry.get('iphone16')
+const registries = createDeviceRegistries()
+const Frame = registries.frames.get('iphone16')
 
 // Render with children
 <Frame>
@@ -463,7 +470,7 @@ Contributors can expand device support:
 
 1. **Create Device Profile**: Define specifications in `packages/devices/src/[model]/profile.ts`
 2. **Create Frame Component**: Build React frame in `packages/devices/src/[model]/Frame.tsx`
-3. **Register Profile**: Add to `DeviceRegistry` in plugin initialization
+3. **Register Profile**: Add to your scoped device registries during plugin initialization
 4. **Add Shell Component** (optional): Create shell UI if needed
 5. **Test Episode**: Verify device works in a test episode
 

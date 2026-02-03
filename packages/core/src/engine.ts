@@ -18,23 +18,11 @@ import {
   DEFAULT_AUDIO_STATE,
 } from "./types";
 import type { CameraTransform } from "./types/camera";
-import { getConfig, TokovoConfigType, getNotificationsConfig } from "./config";
-
-let cachedConfig: TokovoConfigType | null = null;
-
-function getCachedConfig(): TokovoConfigType {
-  if (!cachedConfig) {
-    cachedConfig = getConfig();
-  }
-  return cachedConfig;
-}
-
-export function invalidateConfigCache(): void {
-  cachedConfig = null;
-}
+import { TokovoConfigType } from "./config";
 import {
   EventIndex,
   KeyframedEventIndex,
+  compareEvents,
   getEventsUpTo,
   getEventsUpToKeyframed,
   getEventsInRange,
@@ -98,6 +86,7 @@ export interface ReplayContext {
   gracefulDegradation?: boolean;
   fps?: number;
   registries: EngineRegistries;
+  config: TokovoConfigType;
   errors?: Array<{
     event: TimelineEvent;
     error: Error;
@@ -200,7 +189,7 @@ export function replay(
       mode: ctx.mode,
       fps: ctx.fps ?? 30,
     };
-  const registryCtx: EventHandlerContext = {
+    const registryCtx: EventHandlerContext = {
       frame: t,
       eventIndex: 0,
       mode: ctx.mode,
@@ -259,7 +248,7 @@ export function replay(
     }
 
     // Finalize state inline (merged from separate produce call)
-    const config = getCachedConfig();
+    const config = ctx.config;
     // Only filter activeEffects if it exists (extended CameraState from device-camera)
     const cameraWithEffects = draft.camera as {
       activeEffects?: Array<{ endFrame: number }>;
@@ -363,7 +352,7 @@ export function replayIncremental(
   }
 
   if (eventsToApply.length === 0 && cached) {
-    const result = finalizeState(cached.state, t);
+    const result = finalizeState(cached.state, t, ctx.config);
     registries.lifecycle.notifyAfterReplay(result, lifecycleCtx);
     return result;
   }
@@ -409,7 +398,7 @@ export function replayIncremental(
     }
   });
 
-  const finalState = finalizeState(stateAfterEvents, t);
+  const finalState = finalizeState(stateAfterEvents, t, ctx.config);
   cacheStateAtKeyframe(stateCache, t, finalState);
 
   registries.lifecycle.notifyAfterReplay(finalState, lifecycleCtx);
@@ -447,17 +436,9 @@ function getSortedEvents(events: TimelineEvent[]): TimelineEvent[] {
   }
 
   const withIndex = events.map((event, index) => ({ event, index }));
-  withIndex.sort((a, b) => {
-    if (a.event.at !== b.event.at) {
-      return a.event.at - b.event.at;
-    }
-    const orderA = getDeclarationOrder(a.event, a.index);
-    const orderB = getDeclarationOrder(b.event, b.index);
-    if (orderA !== orderB) {
-      return orderA - orderB;
-    }
-    return a.index - b.index;
-  });
+  withIndex.sort((a, b) =>
+    compareEvents(a.event, b.event, a.index, b.index),
+  );
 
   const sorted = withIndex.map((entry) => entry.event);
   sortedEventCache.set(events, sorted);
@@ -465,31 +446,20 @@ function getSortedEvents(events: TimelineEvent[]): TimelineEvent[] {
 }
 
 function isSortedByFrame(events: TimelineEvent[]): boolean {
-  let lastAt = -Infinity;
-  let lastOrder = -Infinity;
+  if (events.length <= 1) return true;
+  let lastEvent = events[0];
+  let lastIndex = 0;
 
-  for (let i = 0; i < events.length; i++) {
+  for (let i = 1; i < events.length; i++) {
     const event = events[i];
-    const order = getDeclarationOrder(event, i);
-    if (event.at < lastAt) {
+    if (compareEvents(lastEvent, event, lastIndex, i) > 0) {
       return false;
     }
-    if (event.at === lastAt && order < lastOrder) {
-      return false;
-    }
-    lastAt = event.at;
-    lastOrder = order;
+    lastEvent = event;
+    lastIndex = i;
   }
 
   return true;
-}
-
-function getDeclarationOrder(event: TimelineEvent, fallback: number): number {
-  const order = (event as { _declarationOrder?: number })._declarationOrder;
-  if (typeof order === "number" && Number.isFinite(order)) {
-    return order;
-  }
-  return fallback;
 }
 
 function handleEventError(
@@ -634,9 +604,12 @@ function processEventWithMiddleware(
   });
 }
 
-function finalizeState(state: WorldState, t: number): WorldState {
+function finalizeState(
+  state: WorldState,
+  t: number,
+  config: TokovoConfigType,
+): WorldState {
   return produce(state, (draft) => {
-    const config = getCachedConfig();
     // Only filter activeEffects if it exists (extended CameraState from device-camera)
     const cameraWithEffects = draft.camera as {
       activeEffects?: Array<{ endFrame: number }>;
@@ -648,7 +621,11 @@ function finalizeState(state: WorldState, t: number): WorldState {
     }
 
     cleanupExpiredSounds(draft, t);
-    cleanupExpiredNotifications(draft, t, getNotificationsConfig().cleanupDelayFrames);
+    cleanupExpiredNotifications(
+      draft,
+      t,
+      config.notifications.cleanupDelayFrames,
+    );
 
     if (!draft.camera.deviceTransforms) {
       draft.camera.deviceTransforms = {};

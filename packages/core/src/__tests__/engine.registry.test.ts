@@ -38,7 +38,7 @@ describe("ReducerRegistry", () => {
           state.count += 1;
         }
       },
-      { count: 0 },
+      () => ({ count: 0 }),
     );
 
     const reducer = registry.getAppReducer("scoped");

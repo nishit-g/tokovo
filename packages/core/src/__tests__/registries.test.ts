@@ -18,6 +18,7 @@ import {
 } from "../registries/widget";
 import { createInitialWorld, replay } from "../engine";
 import { createEngineRegistries } from "../engine/registries";
+import { getConfig } from "../config";
 import {
   createPluginRegistries,
   PluginManagerClass,
@@ -243,6 +244,7 @@ describe("engine registries", () => {
     const result = replay(initial, events, 0, {
       mode: "render",
       registries,
+      config: getConfig(),
     });
 
     expect(result.appState?.custom).toBe(1);

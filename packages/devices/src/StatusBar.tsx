@@ -1,12 +1,12 @@
 /**
  * StatusBar - Unified status bar using strategy registry
  * 
- * Uses StatusBarStrategyRegistry to render iOS, Android, or custom themes.
+ * Uses the scoped StatusBar strategy registry to render iOS, Android, or custom themes.
  * 
  * @example
  * ```typescript
  * // Register custom strategy
- * StatusBarStrategyRegistry.register("ghibli", GhibliStatusBarStrategy);
+ * registries.statusBars.register("ghibli", GhibliStatusBarStrategy);
  * 
  * // Use it
  * <StatusBar variant="ghibli" os={device.os} />
@@ -15,7 +15,8 @@
 
 import React from "react";
 import type { DeviceOSState, ResolvedStatusBarTheme } from "@tokovo/core";
-import { StatusBarStrategyRegistry, type StatusBarNotificationIcon } from "./registries";
+import { type StatusBarNotificationIcon } from "./registries";
+import { useDeviceRegistries } from "./DeviceRegistryContext";
 import { IOSStatusBarStrategy } from "./strategies/IOSStatusBarStrategy";
 
 // =============================================================================
@@ -29,7 +30,7 @@ interface StatusBarProps {
     time?: string;
     /** Fallback: manual battery percentage */
     batteryPercentage?: number;
-    /** Theme variant - looks up from StatusBarStrategyRegistry */
+    /** Theme variant - looks up from the StatusBar strategy registry */
     variant?: string;
     /** Theme */
     theme?: "light" | "dark" | ResolvedStatusBarTheme;
@@ -46,7 +47,7 @@ interface StatusBarProps {
  * 
  * Supports custom themes via registration:
  * ```typescript
- * StatusBarStrategyRegistry.register("ghibli", GhibliStatusBarStrategy);
+ * registries.statusBars.register("ghibli", GhibliStatusBarStrategy);
  * ```
  */
 export const StatusBar: React.FC<StatusBarProps> = ({
@@ -54,7 +55,8 @@ export const StatusBar: React.FC<StatusBarProps> = ({
     ...rest
 }) => {
     // ★ REGISTRY LOOKUP - Get strategy from registry with iOS fallback
-    const Strategy = StatusBarStrategyRegistry.get(variant) || IOSStatusBarStrategy;
+    const { statusBars } = useDeviceRegistries();
+    const Strategy = statusBars.get(variant) || IOSStatusBarStrategy;
     return <Strategy {...rest} />;
 };
 

@@ -23,7 +23,7 @@ const NotificationCard: React.FC<{
   platform: "ios" | "android";
 }> = ({ notification, platform }) => {
   const registries = useRendererRegistries();
-  const formatted = registries.notifications.format(notification);
+  const formatted = registries.plugins.notifications.format(notification);
   const isIOS = platform === "ios";
 
   return (
@@ -101,7 +101,7 @@ const GroupedNotifications: React.FC<{
   const isIOS = platform === "ios";
   const latestNotif = group.notifications[0];
   const registries = useRendererRegistries();
-  const formatted = registries.notifications.format(latestNotif);
+  const formatted = registries.plugins.notifications.format(latestNotif);
 
   return (
     <div

@@ -80,7 +80,7 @@ const GroupCard: React.FC<GroupCardProps> = ({
   const isAndroid = variant === "android";
   const registries = useRendererRegistries();
   // Use Registry for branding
-  const branding = registries.metadata.get(group.appId);
+  const branding = registries.plugins.metadata.get(group.appId);
 
   const latestNotif = group.notifications[group.notifications.length - 1];
   const ir = latestNotif.ir;

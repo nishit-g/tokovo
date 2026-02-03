@@ -33,33 +33,77 @@ export interface KeyframedEventIndex extends EventIndex {
   keyframes: Map<number, TimelineEvent[]>;
 }
 
+export const EVENT_KIND_PRIORITY: Record<string, number> = {
+  DEVICE: 1,
+  APP: 2,
+  CAMERA: 3,
+  AUDIO: 4,
+  KEYBOARD: 5,
+};
+
+export function getEventKindPriority(kind: string): number {
+  return EVENT_KIND_PRIORITY[kind] ?? 10;
+}
+
+export function getDeclarationOrder(
+  event: TimelineEvent,
+  fallback: number,
+): number {
+  const order = (event as { _declarationOrder?: number })._declarationOrder;
+  if (typeof order === "number" && Number.isFinite(order)) {
+    return order;
+  }
+  return fallback;
+}
+
+export function compareEvents(
+  a: TimelineEvent,
+  b: TimelineEvent,
+  aIndex: number,
+  bIndex: number,
+): number {
+  if (a.at !== b.at) {
+    return a.at - b.at;
+  }
+  const priorityA = getEventKindPriority(a.kind as string);
+  const priorityB = getEventKindPriority(b.kind as string);
+  if (priorityA !== priorityB) {
+    return priorityA - priorityB;
+  }
+  const orderA = getDeclarationOrder(a, aIndex);
+  const orderB = getDeclarationOrder(b, bIndex);
+  if (orderA !== orderB) {
+    return orderA - orderB;
+  }
+  return aIndex - bIndex;
+}
+
 export function createEventIndex(events: TimelineEvent[]): EventIndex {
-  const byFrame = new Map<number, TimelineEvent[]>();
+  const byFrameEntries = new Map<
+    number,
+    Array<{ event: TimelineEvent; index: number }>
+  >();
   let maxFrame = 0;
 
-  for (const event of events) {
-    const frameEvents = byFrame.get(event.at) || [];
-    frameEvents.push(event);
-    byFrame.set(event.at, frameEvents);
+  for (let i = 0; i < events.length; i++) {
+    const event = events[i];
+    const frameEvents = byFrameEntries.get(event.at) || [];
+    frameEvents.push({ event, index: i });
+    byFrameEntries.set(event.at, frameEvents);
     maxFrame = Math.max(maxFrame, event.at);
   }
 
-  for (const frameEvents of byFrame.values()) {
-    if (frameEvents.length <= 1) continue;
-    if (!frameEvents.some((e) => "_declarationOrder" in (e as object))) {
-      continue;
+  const byFrame = new Map<number, TimelineEvent[]>();
+  for (const [frame, frameEvents] of byFrameEntries) {
+    if (frameEvents.length > 1) {
+      frameEvents.sort((a, b) =>
+        compareEvents(a.event, b.event, a.index, b.index),
+      );
     }
-    const withIndex = frameEvents.map((event, index) => ({ event, index }));
-    withIndex.sort((a, b) => {
-      const orderA = getDeclarationOrder(a.event, a.index);
-      const orderB = getDeclarationOrder(b.event, b.index);
-      if (orderA !== orderB) {
-        return orderA - orderB;
-      }
-      return a.index - b.index;
-    });
-    frameEvents.length = 0;
-    frameEvents.push(...withIndex.map((entry) => entry.event));
+    byFrame.set(
+      frame,
+      frameEvents.map((entry) => entry.event),
+    );
   }
 
   const frames = Array.from(byFrame.keys()).sort((a, b) => a - b);
@@ -70,14 +114,6 @@ export function createEventIndex(events: TimelineEvent[]): EventIndex {
     totalEvents: events.length,
     frames,
   };
-}
-
-function getDeclarationOrder(event: TimelineEvent, fallback: number): number {
-  const order = (event as { _declarationOrder?: number })._declarationOrder;
-  if (typeof order === "number" && Number.isFinite(order)) {
-    return order;
-  }
-  return fallback;
 }
 
 export function createKeyframedEventIndex(

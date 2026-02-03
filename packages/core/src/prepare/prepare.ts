@@ -14,14 +14,22 @@ import {
 } from "../types/compiled-episode";
 import { RuntimeEvent } from "../types/runtime-event";
 import { TokovoPluginContract } from "../types/plugin-contract";
-import { createEventIndex } from "../utils/event-utils";
+import {
+  compareEvents,
+  createEventIndex,
+  createKeyframedEventIndex,
+} from "../utils/event-utils";
+import { getConfig } from "../config";
 import {
   WorldState,
   DEFAULT_BASE_CAMERA_STATE as DEFAULT_BASE_CAMERA_STATE,
   DEFAULT_AUDIO_STATE,
   DEFAULT_OS_STATE,
 } from "../types";
-import { replay } from "../engine";
+import { replay, replayIncremental } from "../engine";
+import type { EventIndex, KeyframedEventIndex } from "../utils/event-utils";
+import type { StateCache } from "../utils/state-cache";
+import type { TokovoConfigType } from "../config";
 
 // Type for compile function (optional peer dependency)
 interface CompileResult {
@@ -168,24 +176,12 @@ export function deriveInitialWorld(
 // SORT EVENTS
 // =============================================================================
 
-const EVENT_KIND_PRIORITY: Record<string, number> = {
-  DEVICE: 1,
-  APP: 2,
-  CAMERA: 3,
-  AUDIO: 4,
-  KEYBOARD: 5,
-};
-
 function sortEvents(events: RuntimeEvent[]): RuntimeEvent[] {
-  return [...events].sort((a, b) => {
-    // 1. Sort by frame
-    if (a.at !== b.at) return a.at - b.at;
-
-    // 2. Sort by kind priority
-    const priorityA = EVENT_KIND_PRIORITY[a.kind] || 10;
-    const priorityB = EVENT_KIND_PRIORITY[b.kind] || 10;
-    return priorityA - priorityB;
-  });
+  const withIndex = events.map((event, index) => ({ event, index }));
+  withIndex.sort((a, b) =>
+    compareEvents(a.event, b.event, a.index, b.index),
+  );
+  return withIndex.map((entry) => entry.event);
 }
 
 // =============================================================================
@@ -448,6 +444,10 @@ export function prepareEpisode(
     initialWorld,
     events: sortedEvents,
     eventIndex: createEventIndex(sortedEvents),
+    keyframedEventIndex: createKeyframedEventIndex(
+      sortedEvents,
+      getConfig().rendering.cacheKeyframeInterval,
+    ),
     assets,
   };
 
@@ -469,6 +469,10 @@ export function prepareEpisode(
 export interface RunOptions {
   mode: "preview" | "render";
   registries: import("../engine/registries").EngineRegistries;
+  config: TokovoConfigType;
+  eventIndex?: EventIndex;
+  keyframedEventIndex?: KeyframedEventIndex;
+  stateCache?: StateCache;
   onError?: (error: Error, event: RuntimeEvent) => void;
 }
 
@@ -485,14 +489,40 @@ export function runEpisode(
   frame: number,
   options: RunOptions,
 ): WorldState {
-  // Run replay with events - let replay() handle the filtering
-  // RuntimeEvent is compatible with TimelineEvent by design
+  const ctx = {
+    mode: options.mode,
+    registries: options.registries,
+    config: options.config,
+  };
+
+  const keyframedIndex =
+    options.keyframedEventIndex ??
+    episode.keyframedEventIndex ??
+    (options.stateCache
+      ? createKeyframedEventIndex(
+          episode.events,
+          options.config.rendering.cacheKeyframeInterval,
+        )
+      : undefined);
+
+  if (options.stateCache && keyframedIndex) {
+    return replayIncremental(
+      episode.initialWorld,
+      episode.events,
+      frame,
+      ctx,
+      keyframedIndex,
+      options.stateCache,
+    );
+  }
+
+  const eventIndex = options.eventIndex ?? episode.eventIndex;
   return replay(
     episode.initialWorld,
     episode.events,
     frame,
-    { mode: options.mode, registries: options.registries },
-    episode.eventIndex,
+    ctx,
+    eventIndex as EventIndex | undefined,
   );
 }
 

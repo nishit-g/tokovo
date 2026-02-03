@@ -46,7 +46,11 @@ export interface NotificationAdapter {
    * Handle action (tap, button press) - returns events to emit
    * actionId: "open" (default tap), or button id
    */
-  handleAction?(actionId: string, notification: Notification): TimelineEvent[];
+  handleAction?(
+    actionId: string,
+    notification: Notification,
+    context: { frame: number },
+  ): TimelineEvent[];
 
   /** Measure height for deterministic layout */
   measureHeight?(
@@ -93,15 +97,16 @@ export class NotificationAdapterRegistryClass {
   handleAction(
     notification: Notification,
     actionId: string = "open",
+    context: { frame: number },
   ): TimelineEvent[] {
     const adapter = this.adapters.get(notification.ir.appId);
     if (adapter?.handleAction) {
-      return adapter.handleAction(actionId, notification);
+      return adapter.handleAction(actionId, notification, context);
     }
     // Default: just open the app
     return [
       {
-        at: Date.now(), // This timestamp is placeholder, replaced by engine
+        at: context.frame,
         kind: "DEVICE",
         deviceId: notification.deviceId || "phone",
         type: "OPEN_APP",

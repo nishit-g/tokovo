@@ -1,23 +1,32 @@
 import React from "react";
 import type { PluginRegistries } from "@tokovo/core";
+import type { DeviceRegistries } from "@tokovo/devices";
+import { DeviceRegistryProvider } from "@tokovo/devices";
 
-const RegistryContext = React.createContext<PluginRegistries | null>(null);
+export interface RendererRegistries {
+  plugins: PluginRegistries;
+  devices: DeviceRegistries;
+}
+
+const RegistryContext = React.createContext<RendererRegistries | null>(null);
 
 export function RendererRegistryProvider({
   registries,
   children,
 }: {
-  registries: PluginRegistries;
+  registries: RendererRegistries;
   children: React.ReactNode;
 }): JSX.Element {
   return (
     <RegistryContext.Provider value={registries}>
-      {children}
+      <DeviceRegistryProvider registries={registries.devices}>
+        {children}
+      </DeviceRegistryProvider>
     </RegistryContext.Provider>
   );
 }
 
-export function useRendererRegistries(): PluginRegistries {
+export function useRendererRegistries(): RendererRegistries {
   const registries = React.useContext(RegistryContext);
   if (!registries) {
     throw new Error(

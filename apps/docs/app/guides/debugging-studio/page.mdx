@@ -542,9 +542,10 @@ For now, manually document debugging findings:
 - Verify all plugins registered:
   ```typescript
   const registries = createTokovoRegistries();
+  const deviceRegistries = createDeviceRegistries();
   const pluginManager = new PluginManagerClass(registries.plugins);
 
-  registerDevicesPlugin(registries);
+  registerDevicesPlugin(registries, deviceRegistries);
   registerWhatsAppPlugin(pluginManager);
   registerNotificationPlugin(registries.engine);
   registerCameraPlugin(pluginManager, registries.engine);

@@ -11,7 +11,17 @@ import { deviceReducer } from "./reducer";
 import type { TokovoRegistries } from "@tokovo/core";
 
 // Registries
-import { DeviceRegistry, FrameRegistry, StatusBarStrategyRegistry } from "./registries";
+import type { DeviceRegistries } from "./registries/bundle";
+import {
+    createDeviceRegistries,
+    createDeviceRegistry,
+    createFrameRegistry,
+    createStatusBarStrategyRegistry,
+    DeviceRegistryClass,
+    FrameRegistryClass,
+    StatusBarStrategyRegistryClass,
+} from "./registries";
+import { createDeviceShellRegistry, DeviceShellRegistryClass } from "./registry";
 
 // Views
 import { StatusBar } from "./StatusBar";
@@ -44,9 +54,15 @@ export interface DevicesPluginContract {
     reducer: typeof deviceReducer;
 
     // Registries
-    DeviceRegistry: typeof DeviceRegistry;
-    FrameRegistry: typeof FrameRegistry;
-    StatusBarStrategyRegistry: typeof StatusBarStrategyRegistry;
+    createDeviceRegistries: typeof createDeviceRegistries;
+    createDeviceRegistry: typeof createDeviceRegistry;
+    createFrameRegistry: typeof createFrameRegistry;
+    createStatusBarStrategyRegistry: typeof createStatusBarStrategyRegistry;
+    createDeviceShellRegistry: typeof createDeviceShellRegistry;
+    DeviceRegistryClass: typeof DeviceRegistryClass;
+    FrameRegistryClass: typeof FrameRegistryClass;
+    StatusBarStrategyRegistryClass: typeof StatusBarStrategyRegistryClass;
+    DeviceShellRegistryClass: typeof DeviceShellRegistryClass;
 
     // Views
     StatusBar: typeof StatusBar;
@@ -72,9 +88,15 @@ export const DevicesPlugin: DevicesPluginContract = {
     reducer: deviceReducer,
 
     // Registries
-    DeviceRegistry,
-    FrameRegistry,
-    StatusBarStrategyRegistry,
+    createDeviceRegistries,
+    createDeviceRegistry,
+    createFrameRegistry,
+    createStatusBarStrategyRegistry,
+    createDeviceShellRegistry,
+    DeviceRegistryClass,
+    FrameRegistryClass,
+    StatusBarStrategyRegistryClass,
+    DeviceShellRegistryClass,
 
     // Views
     StatusBar,
@@ -95,38 +117,54 @@ export const DevicesPlugin: DevicesPluginContract = {
 // =============================================================================
 
 const registeredEngines = new WeakSet<TokovoRegistries["engine"]>();
+const registeredDeviceRegistries = new WeakSet<DeviceRegistries>();
 
-export function registerDevicesPlugin(registries: TokovoRegistries): void {
-    if (registeredEngines.has(registries.engine)) return;
-    registeredEngines.add(registries.engine);
+export function registerDevicesPlugin(
+    tokovoRegistries: TokovoRegistries,
+    deviceRegistries: DeviceRegistries,
+): void {
+    if (!registeredEngines.has(tokovoRegistries.engine)) {
+        registeredEngines.add(tokovoRegistries.engine);
+        tokovoRegistries.engine.reducers.registerDeviceReducer(deviceReducer);
+    }
 
-    registries.engine.reducers.registerDeviceReducer(deviceReducer);
+    if (registeredDeviceRegistries.has(deviceRegistries)) return;
+    registeredDeviceRegistries.add(deviceRegistries);
 
     // Register default device profiles
-    if (!DeviceRegistry.has("iphone16")) {
-        DeviceRegistry.register("iphone16", iPhone16Profile, {
-            soundRegistry: registries.plugins.sounds,
+    if (!deviceRegistries.devices.has("iphone16")) {
+        deviceRegistries.devices.register("iphone16", iPhone16Profile, {
+            soundRegistry: tokovoRegistries.plugins.sounds,
         });
     }
-    if (!DeviceRegistry.has("pixel")) {
-        DeviceRegistry.register("pixel", PixelProfile, {
-            soundRegistry: registries.plugins.sounds,
+    if (!deviceRegistries.devices.has("pixel")) {
+        deviceRegistries.devices.register("pixel", PixelProfile, {
+            soundRegistry: tokovoRegistries.plugins.sounds,
         });
     }
-    if (!DeviceRegistry.has("pixel9")) {
-        DeviceRegistry.register("pixel9", PixelProfile, {
-            soundRegistry: registries.plugins.sounds,
+    if (!deviceRegistries.devices.has("pixel9")) {
+        deviceRegistries.devices.register("pixel9", PixelProfile, {
+            soundRegistry: tokovoRegistries.plugins.sounds,
         });
     }
 
     // Register default frames
-    FrameRegistry.register("iphone16", iPhone16Frame);
-    FrameRegistry.register("pixel", PixelFrame);
-    FrameRegistry.register("pixel9", PixelFrame);
+    deviceRegistries.frames.register("iphone16", iPhone16Frame);
+    deviceRegistries.frames.register("pixel", PixelFrame);
+    deviceRegistries.frames.register("pixel9", PixelFrame);
 
     // Register default StatusBar strategies
-    StatusBarStrategyRegistry.register("ios", IOSStatusBarStrategy);
-    StatusBarStrategyRegistry.register("android", AndroidStatusBarStrategy);
+    deviceRegistries.statusBars.register("ios", IOSStatusBarStrategy);
+    deviceRegistries.statusBars.register("android", AndroidStatusBarStrategy);
+
+    // Register default shell
+    deviceRegistries.shells.register({
+        id: "iphone16",
+        FrameComponent: iPhone16Frame,
+        StatusBarComponent: StatusBar,
+        cornerRadius: iPhone16Profile.screen.cornerRadius,
+        hasDynamicIsland: true,
+    });
 
     console.warn("[DevicesPlugin] Registered");
 }

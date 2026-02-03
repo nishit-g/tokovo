@@ -92,7 +92,7 @@ export function useCameraEngine(input: CameraEngineInput): CameraEngineOutput {
     let anchorSnapshot: AnchorSnapshot | undefined;
     if (appId) {
       anchorSnapshot = getAnchorsForApp(
-        registries.anchors,
+        registries.plugins.anchors,
         appId,
         world,
         layout,
@@ -124,7 +124,7 @@ export function useCameraEngine(input: CameraEngineInput): CameraEngineOutput {
       DEFAULT_TRANSFORM, // CRITICAL: Pure computation, no inter-frame state
       anchorSnapshot,
       viewport,
-      registries.anchors,
+      registries.plugins.anchors,
     );
 
     let directorSkipped: string | undefined;

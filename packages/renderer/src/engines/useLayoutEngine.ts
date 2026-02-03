@@ -131,7 +131,7 @@ export function useLayoutEngine(input: LayoutEngineInput): LayoutEngineOutput {
     if (device.isLocked) {
       viewKind = "LOCKSCREEN";
     } else if (appId) {
-      const meta = registries.metadata.get(appId);
+      const meta = registries.plugins.metadata.get(appId);
       viewKind = meta.viewStrategy || "TRANSITION";
 
       // 2. Check Dynamic App State for overrides via STANDARD CONTRACT
@@ -206,7 +206,7 @@ export function useLayoutEngine(input: LayoutEngineInput): LayoutEngineOutput {
       safeAreaInsets: profile.safeArea,
     };
 
-    const layout = computeLayout(layoutContext, registries.layouts);
+    const layout = computeLayout(layoutContext, registries.plugins.layouts);
 
     return {
       deviceId,

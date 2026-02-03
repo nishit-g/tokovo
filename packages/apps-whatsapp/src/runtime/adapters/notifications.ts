@@ -35,13 +35,17 @@ const whatsappAdapter: NotificationAdapter = {
     };
   },
 
-  handleAction(actionId: string, notification: Notification): TimelineEvent[] {
+  handleAction(
+    actionId: string,
+    notification: Notification,
+    context: { frame: number },
+  ): TimelineEvent[] {
     const baseEvents: TimelineEvent[] = [];
     const threadId = notification.ir.threadKey;
 
     if (actionId === "open" || actionId === "reply") {
       baseEvents.push({
-        at: Date.now(),
+        at: context.frame,
         kind: "DEVICE",
         deviceId: notification.deviceId || "phone",
         type: "OPEN_APP",
@@ -50,7 +54,7 @@ const whatsappAdapter: NotificationAdapter = {
 
       if (threadId) {
         baseEvents.push({
-          at: Date.now(),
+          at: context.frame,
           kind: "APP",
           appId: "app_whatsapp",
           deviceId: notification.deviceId || "phone",

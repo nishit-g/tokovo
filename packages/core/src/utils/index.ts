@@ -17,7 +17,14 @@ export {
 } from "./validation";
 export type { ValidationError, ValidationResult } from "./validation";
 
-export { SeededRNG, deterministicId, hashBasedId, resetIdCounter } from "./rng";
+export {
+  SeededRNG,
+  deterministicId,
+  hashBasedId,
+  resetIdCounter,
+  createSeededRng,
+  normalizeSeed,
+} from "./rng";
 
 export * from "./state-cache";
 

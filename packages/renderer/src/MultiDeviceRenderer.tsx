@@ -4,12 +4,14 @@ import {
   VideoConfig,
   DEFAULT_VIDEO_CONFIG,
   PluginManagerClass,
-  type PluginRegistries,
 } from "@tokovo/core";
 import { TokovoRenderer } from "./TokovoRenderer";
 import { AudioLayer } from "./AudioLayer";
 import { getDeviceProfile } from "@tokovo/devices";
-import { RendererRegistryProvider } from "./RegistryContext";
+import {
+  RendererRegistryProvider,
+  type RendererRegistries,
+} from "./RegistryContext";
 
 // Helper to get video config with defaults
 const getVideoConfig = (world: WorldState): VideoConfig => ({
@@ -35,7 +37,7 @@ export const MultiDeviceRenderer: React.FC<{
     compositionWidth?: number;
     compositionHeight?: number;
     pluginManager: PluginManagerClass;
-    registries: PluginRegistries;
+    registries: RendererRegistries;
 }> = ({
     world,
     t,
@@ -180,7 +182,7 @@ interface LayoutProps {
     width: number;
     height: number;
     pluginManager: PluginManagerClass;
-    registries: PluginRegistries;
+    registries: RendererRegistries;
 }
 
 /**
@@ -202,7 +204,7 @@ const SingleDeviceLayout: React.FC<LayoutProps & { deviceId: string }> = ({
         return <div style={{ width, height, background: "#1a1a2e" }} />;
     }
 
-    const profile = getDeviceProfile(device.profileId);
+    const profile = getDeviceProfile(registries.devices, device.profileId);
     const scaleX = width / profile.dimensions.width;
     const scaleY = height / profile.dimensions.height;
     const scale = Math.min(scaleX, scaleY);
@@ -499,7 +501,7 @@ const DevicePane: React.FC<{
     paneWidth: number;
     paneHeight: number;
     pluginManager: PluginManagerClass;
-    registries: PluginRegistries;
+    registries: RendererRegistries;
 }> = ({
     world,
     t,
@@ -530,7 +532,7 @@ const DevicePane: React.FC<{
         );
     }
 
-    const profile = getDeviceProfile(device.profileId);
+    const profile = getDeviceProfile(registries.devices, device.profileId);
     const scaleX = paneWidth / profile.dimensions.width;
     const scaleY = paneHeight / profile.dimensions.height;
     const scale = Math.min(scaleX, scaleY) * 0.9; // 90% to add some padding
@@ -585,7 +587,7 @@ const DevicePaneFit: React.FC<{
     paneWidth: number;
     paneHeight: number;
     pluginManager: PluginManagerClass;
-    registries: PluginRegistries;
+    registries: RendererRegistries;
 }> = ({
     world,
     t,
@@ -602,7 +604,7 @@ const DevicePaneFit: React.FC<{
         return <div style={{ width: paneWidth, height: paneHeight, background: "#1a1a2e" }} />;
     }
 
-    const profile = getDeviceProfile(device.profileId);
+    const profile = getDeviceProfile(registries.devices, device.profileId);
     const scaleX = paneWidth / profile.dimensions.width;
     const scaleY = paneHeight / profile.dimensions.height;
     const scale = Math.min(scaleX, scaleY);

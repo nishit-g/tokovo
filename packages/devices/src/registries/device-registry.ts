@@ -6,8 +6,9 @@
  * 
  * @example
  * ```typescript
- * DeviceRegistry.register("iphone16", iPhone16Profile);
- * const profile = DeviceRegistry.get("iphone16");
+ * const registry = createDeviceRegistry();
+ * registry.register("iphone16", iPhone16Profile);
+ * const profile = registry.get("iphone16");
  * ```
  */
 
@@ -18,7 +19,7 @@ import type { DeviceProfile } from "../types";
 // REGISTRY IMPLEMENTATION
 // =============================================================================
 
-class DeviceRegistryImpl {
+export class DeviceRegistryClass {
     private profiles = new Map<string, DeviceProfile>();
 
     /**
@@ -82,4 +83,6 @@ class DeviceRegistryImpl {
     }
 }
 
-export const DeviceRegistry = new DeviceRegistryImpl();
+export function createDeviceRegistry(): DeviceRegistryClass {
+    return new DeviceRegistryClass();
+}

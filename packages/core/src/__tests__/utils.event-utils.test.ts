@@ -59,4 +59,18 @@ describe("event utils", () => {
     const tabletFiltered = filterEventsForDevice(events, "tablet");
     expect(tabletFiltered).toHaveLength(3);
   });
+
+  it("orders same-frame events using kind priority and declaration order", () => {
+    const sameFrame: TimelineEvent[] = [
+      { at: 0, kind: "AUDIO", type: "PLAY", _declarationOrder: 2 } as any,
+      { at: 0, kind: "DEVICE", type: "LOCK", _declarationOrder: 3 } as any,
+      { at: 0, kind: "APP", appId: "app", type: "OPEN", _declarationOrder: 1 } as any,
+    ];
+
+    const index = createEventIndex(sameFrame);
+    const ordered = getEventsAt(index, 0);
+    expect(ordered[0].kind).toBe("DEVICE");
+    expect(ordered[1].kind).toBe("APP");
+    expect(ordered[2].kind).toBe("AUDIO");
+  });
 });

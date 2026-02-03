@@ -15,7 +15,6 @@ import {
   EventIndex,
   PluginManagerClass,
   createScopedLogger,
-  type PluginRegistries,
 } from "@tokovo/core";
 import { AppSurface, TokovoProvider } from "@tokovo/react";
 import {
@@ -29,7 +28,7 @@ import {
   getKeyboardHeight,
 } from "@tokovo/device-keyboard";
 
-import { FrameRegistry, StatusBar, iPhone16Frame } from "@tokovo/devices";
+import { StatusBar, iPhone16Frame } from "@tokovo/devices";
 import { NotificationOverlay } from "./overlays";
 import { LockscreenView, HomeScreenView } from "./screens";
 import { VisualDebugger } from "./VisualDebugger";
@@ -37,7 +36,8 @@ import { DynamicIsland } from "./os";
 import { useLayoutEngine } from "./engines/useLayoutEngine";
 import { useCameraEngine } from "./engines/useCameraEngine";
 import { AppErrorBoundary } from "./ErrorBoundary";
-import { RendererRegistryProvider } from "./RegistryContext";
+import { RendererRegistryProvider, type RendererRegistries } from "./RegistryContext";
+import { useDeviceRegistries } from "@tokovo/devices";
 
 const log = createScopedLogger("renderer");
 
@@ -59,7 +59,7 @@ interface TokovoRendererProps {
   focusDeviceId?: string;
   eventIndex?: EventIndex;
   pluginManager: PluginManagerClass;
-  registries: PluginRegistries;
+  registries: RendererRegistries;
 }
 
 // =============================================================================
@@ -77,6 +77,7 @@ const TokovoRendererInner: React.FC<TokovoRendererProps> = ({
   pluginManager,
 }) => {
   const pm = pluginManager;
+  const deviceRegistries = useDeviceRegistries();
 
   void notificationConfig;
 
@@ -161,7 +162,10 @@ const TokovoRendererInner: React.FC<TokovoRendererProps> = ({
   // ==========================================================================
 
   // Resolve Device Frame from registry (with fallback to iPhone16)
-  const FrameComponent = FrameRegistry.get(device.profileId) || iPhone16Frame;
+  const FrameComponent =
+    deviceRegistries.frames.get(device.profileId) ||
+    deviceRegistries.frames.get("iphone16") ||
+    iPhone16Frame;
 
   return (
     <div

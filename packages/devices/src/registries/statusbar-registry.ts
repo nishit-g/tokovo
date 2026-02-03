@@ -5,8 +5,9 @@
  * 
  * @example
  * ```typescript
- * StatusBarStrategyRegistry.register("ghibli", GhibliStatusBarStrategy);
- * const Strategy = StatusBarStrategyRegistry.get("ghibli");
+ * const registry = createStatusBarStrategyRegistry();
+ * registry.register("ghibli", GhibliStatusBarStrategy);
+ * const Strategy = registry.get("ghibli");
  * ```
  */
 
@@ -50,7 +51,7 @@ export type StatusBarStrategyComponent = React.FC<StatusBarStrategyProps>;
 // REGISTRY IMPLEMENTATION
 // =============================================================================
 
-class StatusBarStrategyRegistryImpl {
+export class StatusBarStrategyRegistryClass {
     private strategies = new Map<string, StatusBarStrategyComponent>();
 
     /**
@@ -101,4 +102,6 @@ class StatusBarStrategyRegistryImpl {
     }
 }
 
-export const StatusBarStrategyRegistry = new StatusBarStrategyRegistryImpl();
+export function createStatusBarStrategyRegistry(): StatusBarStrategyRegistryClass {
+    return new StatusBarStrategyRegistryClass();
+}

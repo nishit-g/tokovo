@@ -172,7 +172,7 @@ export interface DeviceOSState {
 }
 
 export const DEFAULT_OS_STATE: DeviceOSState = {
-  clock: Date.now(),
+  clock: 0,
   battery: 85,
   charging: false,
   network: "wifi",

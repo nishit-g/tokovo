@@ -73,7 +73,9 @@ const SoundInstance: React.FC<SoundInstanceProps> = React.memo(
         premountFor={PREMOUNT_FRAMES}
       >
         <Audio
-          src={staticFile(getSoundPath(sound.soundId, registries.sounds))}
+          src={staticFile(
+            getSoundPath(sound.soundId, registries.plugins.sounds),
+          )}
           volume={volumeCallback}
           loop={sound.loop}
           startFrom={sound.audioStartFrom}
@@ -118,7 +120,9 @@ const MusicBedInstance: React.FC<MusicBedInstanceProps> = React.memo(
         {outgoingBed && (
           <Sequence from={outgoingBed.startFrame} premountFor={PREMOUNT_FRAMES}>
             <Audio
-              src={staticFile(getSoundPath(outgoingBed.soundId, registries.sounds))}
+              src={staticFile(
+                getSoundPath(outgoingBed.soundId, registries.plugins.sounds),
+              )}
               volume={outgoingFinalVolume}
               loop={outgoingBed.loop}
               muted={isOutgoingMuted}
@@ -128,7 +132,9 @@ const MusicBedInstance: React.FC<MusicBedInstanceProps> = React.memo(
 
         <Sequence from={musicBed.startFrame} premountFor={PREMOUNT_FRAMES}>
           <Audio
-            src={staticFile(getSoundPath(musicBed.soundId, registries.sounds))}
+            src={staticFile(
+              getSoundPath(musicBed.soundId, registries.plugins.sounds),
+            )}
             volume={incomingFinalVolume}
             loop={musicBed.loop}
             muted={isIncomingMuted}
