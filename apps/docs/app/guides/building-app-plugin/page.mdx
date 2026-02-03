@@ -375,7 +375,7 @@ export function MyAppUI({ state, deviceId }: MyAppUIProps) {
     const lastMsg = state.messages[state.messages.length - 1];
     if (lastMsg) {
       // Register anchor for camera framing
-      // (Simplified - in real plugin, use AnchorRegistry from @tokovo/core)
+      // (Simplified - in real plugin, use registries.plugins.anchors)
       window.registerAnchor?.(`${deviceId}:lastMessage`, {
         x: 0.5, // Centered horizontally
         y: 0.6, // Slightly below center
@@ -408,16 +408,28 @@ export function MyAppUI({ state, deviceId }: MyAppUIProps) {
 - **Layout-driven** - Register in `useLayoutEffect` before paint
 - **Common anchors** - `lastMessage`, `typing`, `header`, `device`
 
-In production, you'd use Tokovo's `AnchorRegistry` API:
+In production, you'd use a scoped anchor registry:
 
 ```typescript
-import { AnchorRegistry } from "@tokovo/core/anchors";
+import { createTokovoRegistries } from "@tokovo/core";
 
-AnchorRegistry.register(`${deviceId}:lastMessage`, {
-  x: 0.5,
-  y: 0.6,
-  width: 0.7,
-  height: 0.15,
+const registries = createTokovoRegistries();
+
+registries.plugins.anchors.register({
+  appId: "app_myapp",
+  framing: {},
+  getAnchors: (_world, _layout, deviceId) => ({
+    anchors: {
+      [`${deviceId}:lastMessage`]: {
+        x: 0.5,
+        y: 0.6,
+        width: 0.7,
+        height: 0.15,
+      },
+    },
+    deviceId,
+    appId: "app_myapp",
+  }),
 });
 ```
 
@@ -598,10 +610,13 @@ Now you can use your plugin in episodes!
 
 ```typescript
 // In your episode file or app entrypoint
-import { PluginManager } from "@tokovo/core/plugin";
+import { createTokovoRegistries, PluginManagerClass } from "@tokovo/core";
 import { MyAppPlugin } from "@tokovo/apps-myapp";
 
-PluginManager.register(MyAppPlugin);
+const registries = createTokovoRegistries();
+const pluginManager = new PluginManagerClass(registries.plugins);
+
+pluginManager.register(MyAppPlugin);
 ```
 
 **Use it in an episode:**
@@ -680,21 +695,33 @@ state.messages.push(newMessage); // NEVER mutate directly!
 - **Normalized coordinates** - 0-1 range for x, y, width, height
 
 ```typescript
-// ✅ Good
-AnchorRegistry.register(`${deviceId}:lastMessage`, {
-  x: 0.5, // 50% from left
-  y: 0.6, // 60% from top
-  width: 0.7, // 70% of screen width
-  height: 0.15, // 15% of screen height
-});
+// ✅ Good (inside your AnchorProvider.getAnchors)
+return {
+  anchors: {
+    [`${deviceId}:lastMessage`]: {
+      x: 0.5, // 50% from left
+      y: 0.6, // 60% from top
+      width: 0.7, // 70% of screen width
+      height: 0.15, // 15% of screen height
+    },
+  },
+  deviceId,
+  appId: "app_myapp",
+};
 
 // ❌ Bad - pixel coordinates (non-responsive)
-AnchorRegistry.register("lastMessage", {
-  x: 540, // Breaks on different screen sizes
-  y: 1200,
-  width: 700,
-  height: 150,
-});
+return {
+  anchors: {
+    lastMessage: {
+      x: 540, // Breaks on different screen sizes
+      y: 1200,
+      width: 700,
+      height: 150,
+    },
+  },
+  deviceId,
+  appId: "app_myapp",
+};
 ```
 
 ### Event Type Naming Conventions
@@ -822,10 +849,14 @@ function reducer(state, event) {
 
 ```typescript
 // ❌ Bad - breaks multi-device support
-AnchorRegistry.register("lastMessage", { ... });
+return { anchors: { lastMessage: { /* ... */ } }, deviceId, appId: "app_myapp" };
 
 // ✅ Good - device-scoped
-AnchorRegistry.register(`${deviceId}:lastMessage`, { ... });
+return {
+  anchors: { [`${deviceId}:lastMessage`]: { /* ... */ } },
+  deviceId,
+  appId: "app_myapp",
+};
 ```
 
 ### ❌ Missing Event Ordering

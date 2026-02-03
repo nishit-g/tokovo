@@ -1,4 +1,4 @@
-export default {
+const meta = {
   core: "@tokovo/core",
   ir: "@tokovo/ir",
   compiler: "@tokovo/compiler",
@@ -13,3 +13,5 @@ export default {
   episodes: "@tokovo/episodes",
   studio: "@tokovo/studio",
 };
+
+export default meta;

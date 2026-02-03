@@ -6,12 +6,8 @@
  */
 
 import React from "react";
-import {
-  WorldState,
-  DeviceState,
-  WidgetRegistry,
-  WidgetProps,
-} from "@tokovo/core";
+import { WorldState, DeviceState, WidgetProps } from "@tokovo/core";
+import { useRendererRegistries } from "../RegistryContext";
 import { DeviceProfile, DynamicIslandConfig } from "@tokovo/devices";
 
 interface DynamicIslandProps {
@@ -50,6 +46,7 @@ export const DynamicIsland: React.FC<DynamicIslandProps> = ({
   world,
   t,
 }) => {
+  const registries = useRendererRegistries();
   // No Dynamic Island on this device?
   if (!deviceProfile.dynamicIsland) {
     return null;
@@ -68,7 +65,7 @@ export const DynamicIsland: React.FC<DynamicIslandProps> = ({
   const activeAppIds = device.backgroundApps?.map((a) => a.appId) || [];
 
   // Resolve which widget should render
-  const resolved = WidgetRegistry.resolve(
+  const resolved = registries.widgets.resolve(
     "dynamicIsland",
     platform,
     activeAppIds,

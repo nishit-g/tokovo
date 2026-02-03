@@ -1,21 +1,26 @@
-import { describe, expect, it, vi, afterEach } from "vitest";
+import { describe, expect, it, vi, afterEach, beforeEach } from "vitest";
 import { createPluginBuilder, definePlugin } from "../plugin/builder";
 import { PluginManagerClass } from "../plugin/plugin";
-import { LifecycleManager } from "../engine/lifecycle";
-import { EventHandlerRegistry } from "../engine/event-handlers";
-import { MiddlewareRegistry } from "../engine/middleware";
+import { createTokovoRegistries } from "../registries/runtime";
+
+let tokovoRegistries: ReturnType<typeof createTokovoRegistries>;
+let pluginManager: PluginManagerClass;
 
 const pluginId = "app_builder";
 
+beforeEach(() => {
+  tokovoRegistries = createTokovoRegistries();
+  pluginManager = new PluginManagerClass(tokovoRegistries.plugins);
+});
+
 afterEach(() => {
-  LifecycleManager.destroyAll();
-  EventHandlerRegistry.clear();
-  MiddlewareRegistry.clear();
+  tokovoRegistries.engine.lifecycle.destroyAll();
+  tokovoRegistries.engine.eventHandlers.clear();
+  tokovoRegistries.engine.middleware.clear();
 });
 
 describe("plugin builder", () => {
   it("builds plugin contracts and registers lifecycle/middleware", () => {
-    const pm = new PluginManagerClass();
     const handler = vi.fn();
     const middleware = vi.fn((_e, _d, _c, next) => next());
 
@@ -34,16 +39,20 @@ describe("plugin builder", () => {
     expect(built.contract.id).toBe(pluginId);
     expect(built.contract.displayName).toBe("Builder");
 
-    const unregister = builder.register(pm);
-    expect(LifecycleManager.hasPlugin(pluginId)).toBe(true);
-    expect(EventHandlerRegistry.hasHandler("EVENT")).toBe(true);
-    expect(MiddlewareRegistry.getMiddlewares().length).toBeGreaterThan(0);
+    const unregister = builder.register(pluginManager, tokovoRegistries.engine);
+    expect(tokovoRegistries.engine.lifecycle.hasPlugin(pluginId)).toBe(true);
+    expect(tokovoRegistries.engine.eventHandlers.hasHandler("EVENT")).toBe(true);
+    expect(
+      tokovoRegistries.engine.middleware.getMiddlewares().length,
+    ).toBeGreaterThan(0);
 
     unregister();
-    expect(EventHandlerRegistry.hasHandler("EVENT")).toBe(false);
-    expect(MiddlewareRegistry.getMiddlewares().length).toBe(0);
+    expect(tokovoRegistries.engine.eventHandlers.hasHandler("EVENT")).toBe(
+      false,
+    );
+    expect(tokovoRegistries.engine.middleware.getMiddlewares().length).toBe(0);
 
-    pm.unregister(pluginId);
+    pluginManager.unregister(pluginId);
   });
 
   it("exports definePlugin alias", () => {

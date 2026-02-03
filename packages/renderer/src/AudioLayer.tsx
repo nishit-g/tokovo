@@ -10,6 +10,7 @@ import {
 import { getSoundPath } from "@tokovo/core";
 import { computeSoundVolume, computeBusStates, BusState } from "@tokovo/core";
 import { computeCrossfade } from "@tokovo/core";
+import { useRendererRegistries } from "./RegistryContext";
 
 const VOLUME_THRESHOLD = 0.001;
 const PREMOUNT_FRAMES = 30;
@@ -36,6 +37,7 @@ interface SoundInstanceProps {
 
 const SoundInstance: React.FC<SoundInstanceProps> = React.memo(
   ({ sound, compositionFrame, busStates }) => {
+    const registries = useRendererRegistries();
     const busStatesRef = useRef(busStates);
     busStatesRef.current = busStates;
 
@@ -71,7 +73,7 @@ const SoundInstance: React.FC<SoundInstanceProps> = React.memo(
         premountFor={PREMOUNT_FRAMES}
       >
         <Audio
-          src={staticFile(getSoundPath(sound.soundId))}
+          src={staticFile(getSoundPath(sound.soundId, registries.sounds))}
           volume={volumeCallback}
           loop={sound.loop}
           startFrom={sound.audioStartFrom}
@@ -94,6 +96,7 @@ interface MusicBedInstanceProps {
 
 const MusicBedInstance: React.FC<MusicBedInstanceProps> = React.memo(
   ({ musicBed, outgoingBed, compositionFrame, busStates }) => {
+    const registries = useRendererRegistries();
     const busStatesRef = useRef(busStates);
     busStatesRef.current = busStates;
 
@@ -115,7 +118,7 @@ const MusicBedInstance: React.FC<MusicBedInstanceProps> = React.memo(
         {outgoingBed && (
           <Sequence from={outgoingBed.startFrame} premountFor={PREMOUNT_FRAMES}>
             <Audio
-              src={staticFile(getSoundPath(outgoingBed.soundId))}
+              src={staticFile(getSoundPath(outgoingBed.soundId, registries.sounds))}
               volume={outgoingFinalVolume}
               loop={outgoingBed.loop}
               muted={isOutgoingMuted}
@@ -125,7 +128,7 @@ const MusicBedInstance: React.FC<MusicBedInstanceProps> = React.memo(
 
         <Sequence from={musicBed.startFrame} premountFor={PREMOUNT_FRAMES}>
           <Audio
-            src={staticFile(getSoundPath(musicBed.soundId))}
+            src={staticFile(getSoundPath(musicBed.soundId, registries.sounds))}
             volume={incomingFinalVolume}
             loop={musicBed.loop}
             muted={isIncomingMuted}

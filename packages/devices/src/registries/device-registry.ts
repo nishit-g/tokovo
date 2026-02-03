@@ -11,7 +11,7 @@
  * ```
  */
 
-import { SoundRegistry } from "@tokovo/core";
+import type { SoundRegistryAPI } from "@tokovo/core";
 import type { DeviceProfile } from "../types";
 
 // =============================================================================
@@ -26,19 +26,19 @@ class DeviceRegistryImpl {
      * @param id Profile identifier (e.g., "iphone16", "pixel")
      * @param profile The device profile
      */
-    register(id: string, profile: DeviceProfile): void {
+    register(
+        id: string,
+        profile: DeviceProfile,
+        options: { soundRegistry?: SoundRegistryAPI } = {},
+    ): void {
         if (this.profiles.has(id)) {
             console.warn(`[DeviceRegistry] Overwriting profile: ${id}`);
         }
         this.profiles.set(id, profile);
 
         // Auto-register device sounds if provided
-        if (profile.sounds) {
-            try {
-                SoundRegistry.registerMany(profile.sounds);
-            } catch {
-                // SoundRegistry might not be available in all contexts
-            }
+        if (profile.sounds && options.soundRegistry) {
+            options.soundRegistry.registerMany(profile.sounds);
         }
     }
 

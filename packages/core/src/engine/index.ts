@@ -3,46 +3,49 @@ export { EngineConfig } from "./config";
 export { EngineLogger } from "./logger";
 
 // Registry
-export { ReducerRegistry } from "./registry";
-export type { DeviceReducer, AppReducer, FeatureReducer } from "./registry";
+export { createReducerRegistry } from "./registry";
+export type {
+  DeviceReducer,
+  AppReducer,
+  FeatureReducer,
+  ReducerRegistryClass,
+} from "./registry";
 
 // Event Handler Registry
-export {
-  EventHandlerRegistry,
-  registerEventHandler,
-  defineEventHandler,
-} from "./event-handlers";
+export { registerEventHandler, defineEventHandler, createEventHandlerRegistry } from "./event-handlers";
 export type {
   EventHandler,
   EventHandlerContext,
   EventHandlerDefinition,
+  EventHandlerRegistryClass,
 } from "./event-handlers";
 
 // Middleware
-export {
-  MiddlewareRegistry,
-  useMiddleware,
-  defineMiddleware,
-  builtInMiddlewares,
-} from "./middleware";
+export { useMiddleware, defineMiddleware, builtInMiddlewares, createMiddlewareRegistry } from "./middleware";
 export type {
   Middleware,
   MiddlewareContext,
   MiddlewareDefinition,
   NextFunction,
+  MiddlewareRegistryClass,
 } from "./middleware";
 
 // Lifecycle
-export { LifecycleManager, defineLifecycle } from "./lifecycle";
-export type { PluginLifecycleHooks, LifecycleContext } from "./lifecycle";
+export { defineLifecycle, createLifecycleManager } from "./lifecycle";
+export type {
+  PluginLifecycleHooks,
+  LifecycleContext,
+  LifecycleManagerClass,
+} from "./lifecycle";
+
+export { createEngineRegistries, type EngineRegistries } from "./registries";
 
 // Handlers
 export * from "./handlers";
 
 // Engine Facade - unified API for engine initialization and control
-import { EventHandlerRegistry } from "./event-handlers";
-import { MiddlewareRegistry, builtInMiddlewares } from "./middleware";
-import { LifecycleManager } from "./lifecycle";
+import { builtInMiddlewares } from "./middleware";
+import type { EngineRegistries } from "./registries";
 import { configureEngine, resetConfig, TokovoConfig } from "../config";
 
 export interface EngineInitOptions {
@@ -55,6 +58,8 @@ class TokovoEngineFacade {
   private initialized = false;
   private initializing = false;
 
+  constructor(private registries: EngineRegistries) {}
+
   async init(options: EngineInitOptions = {}): Promise<void> {
     if (this.initialized || this.initializing) return;
     this.initializing = true;
@@ -65,13 +70,13 @@ class TokovoEngineFacade {
       }
 
       if (options.enableBuiltInMiddlewares !== false) {
-        MiddlewareRegistry.use(builtInMiddlewares.errorRecovery);
+        this.registries.middleware.use(builtInMiddlewares.errorRecovery);
         if (options.debug) {
-          MiddlewareRegistry.use(builtInMiddlewares.logging);
+          this.registries.middleware.use(builtInMiddlewares.logging);
         }
       }
 
-      await LifecycleManager.initializeAll();
+      await this.registries.lifecycle.initializeAll();
       this.initialized = true;
     } finally {
       this.initializing = false;
@@ -81,9 +86,9 @@ class TokovoEngineFacade {
   destroy(): void {
     if (!this.initialized) return;
 
-    LifecycleManager.destroyAll();
-    EventHandlerRegistry.clear();
-    MiddlewareRegistry.clear();
+    this.registries.lifecycle.destroyAll();
+    this.registries.eventHandlers.clear();
+    this.registries.middleware.clear();
     resetConfig();
     this.initialized = false;
   }
@@ -92,17 +97,19 @@ class TokovoEngineFacade {
     return this.initialized;
   }
 
-  get eventHandlers(): typeof EventHandlerRegistry {
-    return EventHandlerRegistry;
+  get eventHandlers(): EngineRegistries["eventHandlers"] {
+    return this.registries.eventHandlers;
   }
 
-  get middleware(): typeof MiddlewareRegistry {
-    return MiddlewareRegistry;
+  get middleware(): EngineRegistries["middleware"] {
+    return this.registries.middleware;
   }
 
-  get lifecycle(): typeof LifecycleManager {
-    return LifecycleManager;
+  get lifecycle(): EngineRegistries["lifecycle"] {
+    return this.registries.lifecycle;
   }
 }
 
-export const Engine = new TokovoEngineFacade();
+export function createEngine(registries: EngineRegistries): TokovoEngineFacade {
+  return new TokovoEngineFacade(registries);
+}

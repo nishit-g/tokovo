@@ -1,19 +1,18 @@
-import { ReducerRegistry } from "../engine/registry";
-import { SoundRegistry } from "../registries/sound";
-import { resolveAnchor, type Rect } from "../anchors/registry";
-import { PluginManager } from "./plugin";
+import { type Rect } from "../anchors/registry";
+import { PluginManagerClass } from "./plugin";
 import type {
   TokovoPluginContract,
   PluginLayoutConstants,
 } from "../types/plugin-contract";
 import type { WorldState } from "../types";
+import type { PluginRegistries } from "./registries";
 
 export interface PluginAccessor {
   readonly id: string;
   readonly displayName: string;
   readonly version: string;
 
-  getReducer(): ReturnType<typeof ReducerRegistry.getAppReducer>;
+  getReducer(): ReturnType<PluginRegistries["reducers"]["getAppReducer"]>;
   getEventKinds(): string[];
   getSound(key: string): string | undefined;
   getAnchor(anchorId: string, world: WorldState, deviceId: string): Rect | null;
@@ -21,15 +20,25 @@ export interface PluginAccessor {
   getInitialState(): unknown;
 }
 
-class PluginRouterClass {
+export class PluginRouterClass {
   private accessorCache = new Map<string, PluginAccessor>();
+  private pluginManager: PluginManagerClass;
+  private registries: PluginRegistries;
+
+  constructor(
+    pluginManager: PluginManagerClass,
+    registries: PluginRegistries,
+  ) {
+    this.pluginManager = pluginManager;
+    this.registries = registries;
+  }
 
   get(appId: string): PluginAccessor | undefined {
     if (this.accessorCache.has(appId)) {
       return this.accessorCache.get(appId);
     }
 
-    const plugin = PluginManager.get(appId);
+    const plugin = this.pluginManager.get(appId);
     if (!plugin) return undefined;
 
     const accessor = this.createAccessor(appId, plugin);
@@ -46,34 +55,40 @@ class PluginRouterClass {
       displayName: plugin.displayName,
       version: plugin.version,
 
-      getReducer: () => ReducerRegistry.getAppReducer(appId),
+      getReducer: () => this.registries.reducers.getAppReducer(appId),
 
-      getEventKinds: () => ReducerRegistry.getEventKindsForApp(appId),
+      getEventKinds: () =>
+        this.registries.reducers.getEventKindsForApp(appId),
 
-      getSound: (key: string) => SoundRegistry.getNamespaced(appId, key),
+      getSound: (key: string) =>
+        this.registries.sounds.getNamespaced(appId, key),
 
       getAnchor: (anchorId: string, world: WorldState, deviceId: string) => {
-        return resolveAnchor(anchorId, world, deviceId);
+        return this.registries.anchors.resolveAnchor(
+          anchorId,
+          world,
+          deviceId,
+        );
       },
 
       getLayoutConstants: () => plugin.layoutConstants,
 
       getInitialState: () => {
-        const creator = PluginManager.getInitialStateCreator(appId);
+        const creator = this.pluginManager.getInitialStateCreator(appId);
         return creator?.();
       },
     };
   }
 
   getAll(): PluginAccessor[] {
-    const appIds = ReducerRegistry.getRegisteredApps();
+    const appIds = this.registries.reducers.getRegisteredApps();
     return appIds
       .map((id) => this.get(id))
       .filter((p): p is PluginAccessor => p !== undefined);
   }
 
   has(appId: string): boolean {
-    return PluginManager.has(appId);
+    return this.pluginManager.has(appId);
   }
 
   clearCache(): void {
@@ -81,4 +96,9 @@ class PluginRouterClass {
   }
 }
 
-export const PluginRouter = new PluginRouterClass();
+export function createPluginRouter(
+  pluginManager: PluginManagerClass,
+  registries: PluginRegistries,
+): PluginRouterClass {
+  return new PluginRouterClass(pluginManager, registries);
+}

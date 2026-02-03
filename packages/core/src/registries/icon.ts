@@ -18,37 +18,51 @@ const DEFAULT_ICON: IconMetadata = {
   default: "📱",
 };
 
-const _registry = createRegistry<string, IconMetadata>("Icon");
+export interface IconRegistryAPI {
+  register(appId: string, metadata: IconMetadata): void;
+  get(appId: string, variant?: IconVariant): React.ReactNode | string;
+  getMetadata(appId: string): IconMetadata;
+  has(appId: string): boolean;
+  keys(): string[];
+  entries(): Record<string, IconMetadata>;
+  clear(): void;
+  readonly size: number;
+}
 
-export const IconRegistry = {
-  register: _registry.register,
+export function createIconRegistry(): IconRegistryAPI {
+  const registry = createRegistry<string, IconMetadata>("Icon");
 
-  get(
-    appId: string,
-    variant: IconVariant = "default",
-  ): React.ReactNode | string {
-    const meta = _registry.get(appId);
-    if (!meta) return DEFAULT_ICON.default;
-    return meta[variant] ?? meta.default;
-  },
+  return {
+    register: registry.register,
 
-  getMetadata(appId: string): IconMetadata {
-    return _registry.get(appId) ?? DEFAULT_ICON;
-  },
+    get(
+      appId: string,
+      variant: IconVariant = "default",
+    ): React.ReactNode | string {
+      const meta = registry.get(appId);
+      if (!meta) return DEFAULT_ICON.default;
+      return meta[variant] ?? meta.default;
+    },
 
-  has: _registry.has,
-  keys: _registry.keys,
-  entries: _registry.entries,
-  clear: _registry.clear,
-  get size() {
-    return _registry.size;
-  },
-};
+    getMetadata(appId: string): IconMetadata {
+      return registry.get(appId) ?? DEFAULT_ICON;
+    },
+
+    has: registry.has,
+    keys: registry.keys,
+    entries: registry.entries,
+    clear: registry.clear,
+    get size() {
+      return registry.size;
+    },
+  };
+}
 
 export function getAppIcon(
+  registry: IconRegistryAPI,
   appId: string,
   options: { variant?: IconVariant; size?: IconSize } = {},
 ): React.ReactNode | string {
   const { variant = "default" } = options;
-  return IconRegistry.get(appId, variant);
+  return registry.get(appId, variant);
 }

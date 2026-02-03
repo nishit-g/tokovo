@@ -6,12 +6,8 @@
  */
 
 import React from "react";
-import {
-  NotificationCenterState,
-  NotificationGroup,
-  NotificationAdapterRegistry,
-  Notification,
-} from "@tokovo/core";
+import { NotificationCenterState, NotificationGroup, Notification } from "@tokovo/core";
+import { useRendererRegistries } from "../RegistryContext";
 
 interface NotificationShadeProps {
   notificationCenter: NotificationCenterState;
@@ -26,7 +22,8 @@ const NotificationCard: React.FC<{
   notification: Notification;
   platform: "ios" | "android";
 }> = ({ notification, platform }) => {
-  const formatted = NotificationAdapterRegistry.format(notification);
+  const registries = useRendererRegistries();
+  const formatted = registries.notifications.format(notification);
   const isIOS = platform === "ios";
 
   return (
@@ -103,7 +100,8 @@ const GroupedNotifications: React.FC<{
 }> = ({ group, platform }) => {
   const isIOS = platform === "ios";
   const latestNotif = group.notifications[0];
-  const formatted = NotificationAdapterRegistry.format(latestNotif);
+  const registries = useRendererRegistries();
+  const formatted = registries.notifications.format(latestNotif);
 
   return (
     <div

@@ -1,9 +1,6 @@
 import React from "react";
-import {
-  NotificationInstance,
-  NotificationGroup,
-  AppMetadataRegistry,
-} from "@tokovo/core";
+import { NotificationInstance, NotificationGroup } from "@tokovo/core";
+import { useRendererRegistries } from "../RegistryContext";
 import type {
   LockscreenLayoutState,
   NotificationLayout,
@@ -81,8 +78,9 @@ const GroupCard: React.FC<GroupCardProps> = ({
   variant,
 }) => {
   const isAndroid = variant === "android";
+  const registries = useRendererRegistries();
   // Use Registry for branding
-  const branding = AppMetadataRegistry.get(group.appId);
+  const branding = registries.metadata.get(group.appId);
 
   const latestNotif = group.notifications[group.notifications.length - 1];
   const ir = latestNotif.ir;

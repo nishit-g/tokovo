@@ -12,11 +12,7 @@
 import React from "react";
 import { Composition, Folder } from "remotion";
 import { z } from "zod";
-import { registerWhatsAppPlugin } from "@tokovo/apps-whatsapp";
-import { registerDevicesPlugin } from "@tokovo/devices";
-import { registerNotificationPlugin } from "@tokovo/device-notifications";
-import { registerCameraPlugin } from "@tokovo/device-camera";
-import { registerKeyboardPlugin } from "@tokovo/device-keyboard";
+import "./runtime";
 import {
   episodeRegistry,
   getFormat,
@@ -24,16 +20,6 @@ import {
   type FormatId,
 } from "@tokovo/episodes";
 import { EpisodeRenderer } from "./EpisodeRenderer";
-
-// =============================================================================
-// INITIALIZATION (explicit registration - no side effects)
-// =============================================================================
-
-registerDevicesPlugin();
-registerWhatsAppPlugin();
-registerNotificationPlugin();
-registerCameraPlugin();
-registerKeyboardPlugin();
 
 // =============================================================================
 // EPISODE IMPORTS (side-effect: auto-registers with registry)

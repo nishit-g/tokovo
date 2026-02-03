@@ -59,7 +59,7 @@ export interface NotificationAdapter {
 // ADAPTER REGISTRY
 // =============================================================================
 
-class NotificationAdapterRegistryClass {
+export class NotificationAdapterRegistryClass {
   private adapters = new Map<string, NotificationAdapter>();
 
   register(adapter: NotificationAdapter): void {
@@ -111,8 +111,9 @@ class NotificationAdapterRegistryClass {
   }
 }
 
-export const NotificationAdapterRegistry =
-  new NotificationAdapterRegistryClass();
+export function createNotificationAdapterRegistry(): NotificationAdapterRegistryClass {
+  return new NotificationAdapterRegistryClass();
+}
 
 // =============================================================================
 // MEASUREMENT CONTRACT

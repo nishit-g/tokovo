@@ -152,7 +152,13 @@ Returns CSS transforms for:
 Finally, `<TokovoRenderer>` paints the computed layout:
 
 ```tsx
-<TokovoRenderer world={world} t={t} debug={false} />
+<TokovoRenderer
+  world={world}
+  t={t}
+  debug={false}
+  pluginManager={pluginManager}
+  registries={registries.plugins}
+/>
 ```
 
 This renders:
@@ -174,6 +180,8 @@ The main orchestrator component.
 
 - `world: WorldState` — The current world state
 - `t: number` — Current frame
+- `pluginManager: PluginManagerClass` — Registered plugins and views
+- `registries: PluginRegistries` — Scoped plugin registries
 - `debug?: boolean` — Enable visual debugger
 - `focusDeviceId?: string` — Which device to render (multi-device support)
 - `eventIndex?: EventIndex` — Event index for camera transitions
@@ -182,13 +190,25 @@ The main orchestrator component.
 
 ```tsx
 import { TokovoRenderer } from "@tokovo/renderer";
-import { runEpisode } from "@tokovo/core";
+import { runEpisode, createTokovoRegistries, PluginManagerClass } from "@tokovo/core";
 
 function MyVideo() {
+  const registries = createTokovoRegistries();
+  const pluginManager = new PluginManagerClass(registries.plugins);
   const frame = useCurrentFrame();
-  const world = runEpisode(episode, frame);
+  const world = runEpisode(episode, frame, {
+    mode: "preview",
+    registries: registries.engine,
+  });
 
-  return <TokovoRenderer world={world} t={frame} />;
+  return (
+    <TokovoRenderer
+      world={world}
+      t={frame}
+      pluginManager={pluginManager}
+      registries={registries.plugins}
+    />
+  );
 }
 ```
 
@@ -214,12 +234,15 @@ Automatically selected based on `device.profileId`:
 Apps register their UI components via the plugin system:
 
 ```typescript
-import { PluginManager } from "@tokovo/core";
+import { createTokovoRegistries, PluginManagerClass } from "@tokovo/core";
 
-PluginManager.register({
-  appId: "app_whatsapp",
-  view: WhatsAppView,
-  // ... runtime, reducers, etc.
+const registries = createTokovoRegistries();
+const pluginManager = new PluginManagerClass(registries.plugins);
+
+pluginManager.register({
+  id: "app_whatsapp",
+  views: { AppRoot: WhatsAppView },
+  // ... reducers, layouts, assets, etc.
 });
 ```
 
@@ -398,14 +421,31 @@ If you need more control:
 
 ```tsx
 import { TokovoRenderer } from "@tokovo/renderer";
-import { runEpisode, createEventIndex } from "@tokovo/core";
+import {
+  runEpisode,
+  createEventIndex,
+  createTokovoRegistries,
+  PluginManagerClass,
+} from "@tokovo/core";
 import { AbsoluteFill, useCurrentFrame } from "remotion";
 
 export const CustomVideo = ({ episode }) => {
   const frame = useCurrentFrame();
+  const registries = useMemo(() => createTokovoRegistries(), []);
+  const pluginManager = useMemo(
+    () => new PluginManagerClass(registries.plugins),
+    [registries],
+  );
 
   // 1. Compute world state
-  const world = useMemo(() => runEpisode(episode, frame), [episode, frame]);
+  const world = useMemo(
+    () =>
+      runEpisode(episode, frame, {
+        mode: "preview",
+        registries: registries.engine,
+      }),
+    [episode, frame, registries],
+  );
 
   // 2. Create event index (for camera)
   const eventIndex = useMemo(() => createEventIndex(episode.events), [episode]);
@@ -418,6 +458,8 @@ export const CustomVideo = ({ episode }) => {
         t={frame}
         eventIndex={eventIndex}
         debug={false}
+        pluginManager={pluginManager}
+        registries={registries.plugins}
       />
     </AbsoluteFill>
   );
@@ -510,9 +552,11 @@ interface AudioEngineOutput {
 Renders all active sounds via Remotion's `<Audio>` component:
 
 ```tsx
-import { AudioLayer } from "@tokovo/renderer";
+import { AudioLayer, RendererRegistryProvider } from "@tokovo/renderer";
 
-<AudioLayer audio={world.audio} frame={frame} fps={30} />;
+<RendererRegistryProvider registries={registries.plugins}>
+  <AudioLayer world={world} t={frame} />
+</RendererRegistryProvider>;
 ```
 
 **Features:**
@@ -553,7 +597,13 @@ import { AudioLayer } from "@tokovo/renderer";
 Enable during development:
 
 ```tsx
-<TokovoRenderer world={world} t={t} debug={true} />
+<TokovoRenderer
+  world={world}
+  t={t}
+  debug={true}
+  pluginManager={pluginManager}
+  registries={registries.plugins}
+/>
 ```
 
 Shows:
@@ -583,7 +633,12 @@ Add system overlays:
 ```tsx
 import { NotificationOverlay, TouchOverlay } from "@tokovo/renderer";
 
-<TokovoRenderer>
+<TokovoRenderer
+  world={world}
+  t={t}
+  pluginManager={pluginManager}
+  registries={registries.plugins}
+>
   {/* ... */}
   <TouchOverlay touches={world.touches} />
 </TokovoRenderer>;
@@ -684,7 +739,7 @@ const layout = useMemo(
 App views are only loaded when needed:
 
 ```typescript
-const AppView = appId ? PluginManager.getView(appId) : null;
+const AppView = appId ? pluginManager.getView(appId) : null;
 ```
 
 ### Efficient Diffing
@@ -728,7 +783,13 @@ Check that:
 Enable debug mode to inspect layout calculations:
 
 ```tsx
-<TokovoRenderer debug={true} />
+<TokovoRenderer
+  world={world}
+  t={t}
+  debug={true}
+  pluginManager={pluginManager}
+  registries={registries.plugins}
+/>
 ```
 
 ### Non-deterministic rendering
@@ -785,11 +846,18 @@ export const simpleChat = defineEpisode({
 ### Custom Layout Config
 
 ```tsx
-const world = runEpisode(episode, frame);
+const registries = createTokovoRegistries();
+const pluginManager = new PluginManagerClass(registries.plugins);
+const world = runEpisode(episode, frame, {
+  mode: "preview",
+  registries: registries.engine,
+});
 
 <TokovoRenderer
   world={world}
   t={frame}
+  pluginManager={pluginManager}
+  registries={registries.plugins}
   config={{
     chat: {
       lockToBottom: false,

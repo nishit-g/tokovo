@@ -1,26 +1,27 @@
 import { describe, expect, it } from "vitest";
 import type { TimelineEvent, WorldState } from "../types";
 import {
-  EventHandlerRegistry,
+  createEventHandlerRegistry,
   registerEventHandler,
   defineEventHandler,
 } from "../engine/event-handlers";
 
 describe("EventHandlerRegistry", () => {
   it("registers handlers with priority order", () => {
+    const registry = createEventHandlerRegistry();
     const calls: string[] = [];
-    const unsubHigh = EventHandlerRegistry.register({
+    const unsubHigh = registry.register({
       kind: "TEST",
       priority: 10,
       handler: () => calls.push("high"),
     });
-    const unsubLow = EventHandlerRegistry.register({
+    const unsubLow = registry.register({
       kind: "TEST",
       priority: 1,
       handler: () => calls.push("low"),
     });
 
-    const handled = EventHandlerRegistry.handle(
+    const handled = registry.handle(
       {} as WorldState,
       { kind: "TEST" } as TimelineEvent,
       { frame: 0, eventIndex: 0, mode: "preview" },
@@ -31,24 +32,25 @@ describe("EventHandlerRegistry", () => {
 
     unsubHigh();
     unsubLow();
-    EventHandlerRegistry.clear();
+    registry.clear();
   });
 
   it("propagates handler errors and supports unregister", () => {
+    const registry = createEventHandlerRegistry();
     const calls: string[] = [];
-    const unsub = EventHandlerRegistry.register({
+    const unsub = registry.register({
       kind: "ERR",
       handler: () => {
         throw new Error("boom");
       },
     });
-    EventHandlerRegistry.register({
+    registry.register({
       kind: "ERR",
       handler: () => calls.push("after"),
     });
 
     expect(() =>
-      EventHandlerRegistry.handle(
+      registry.handle(
         {} as WorldState,
         { kind: "ERR" } as TimelineEvent,
         { frame: 0, eventIndex: 0, mode: "preview" },
@@ -57,32 +59,34 @@ describe("EventHandlerRegistry", () => {
 
     expect(calls).toEqual([]);
     unsub();
-    EventHandlerRegistry.clear();
+    registry.clear();
   });
 
   it("exposes handler metadata", () => {
-    EventHandlerRegistry.register({
+    const registry = createEventHandlerRegistry();
+    registry.register({
       kind: "META",
       handler: () => undefined,
     });
 
-    expect(EventHandlerRegistry.hasHandler("META")).toBe(true);
-    expect(EventHandlerRegistry.getRegisteredKinds()).toContain("META");
+    expect(registry.hasHandler("META")).toBe(true);
+    expect(registry.getRegisteredKinds()).toContain("META");
 
-    EventHandlerRegistry.clear();
-    expect(EventHandlerRegistry.hasHandler("META")).toBe(false);
+    registry.clear();
+    expect(registry.hasHandler("META")).toBe(false);
   });
 
   it("supports registerMany and helpers", () => {
+    const registry = createEventHandlerRegistry();
     const calls: string[] = [];
-    const unsubscribe = EventHandlerRegistry.registerMany([
+    const unsubscribe = registry.registerMany([
       defineEventHandler("MANY", () => calls.push("one")),
       defineEventHandler("MANY", () => calls.push("two"), { priority: 1 }),
     ]);
 
-    registerEventHandler("MANY", () => calls.push("three"), 2);
+    registerEventHandler(registry, "MANY", () => calls.push("three"), 2);
 
-    EventHandlerRegistry.handle(
+    registry.handle(
       {} as WorldState,
       { kind: "MANY" } as TimelineEvent,
       { frame: 0, eventIndex: 0, mode: "preview" },
@@ -91,12 +95,13 @@ describe("EventHandlerRegistry", () => {
     expect(calls).toEqual(["three", "two", "one"]);
 
     unsubscribe();
-    EventHandlerRegistry.clear();
+    registry.clear();
   });
 
   it("returns false when no handlers are registered", () => {
-    EventHandlerRegistry.clear();
-    const handled = EventHandlerRegistry.handle(
+    const registry = createEventHandlerRegistry();
+    registry.clear();
+    const handled = registry.handle(
       {} as any,
       { kind: "MISSING" } as any,
       { frame: 0, eventIndex: 0, mode: "preview" },

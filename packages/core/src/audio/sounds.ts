@@ -1,7 +1,7 @@
-import { SoundRegistry } from "../registries/sound";
+import type { SoundRegistryAPI } from "../registries/sound";
 import { AudioLogger } from "../engine/logger";
 
-SoundRegistry.registerMany({
+const BUILT_IN_SOUNDS = {
   notification: "notification.mp3",
   notification_soft: "notification-soft.mp3",
 
@@ -17,9 +17,16 @@ SoundRegistry.registerMany({
 
   suspense: "suspense.mp3",
   dramatic: "dramatic.mp3",
-});
+};
 
-export function getSoundPath(soundId: string): string {
+export function registerBuiltInSounds(registry: SoundRegistryAPI): void {
+  registry.registerMany(BUILT_IN_SOUNDS);
+}
+
+export function getSoundPath(
+  soundId: string,
+  registry: SoundRegistryAPI,
+): string {
   if (soundId.startsWith("/")) {
     return soundId.substring(1);
   }
@@ -28,7 +35,7 @@ export function getSoundPath(soundId: string): string {
     return soundId;
   }
 
-  const path = SoundRegistry.getPath(soundId);
+  const path = registry.getPath(soundId);
   if (!path) {
     const fallbackPath = `sounds/${soundId}.mp3`;
     AudioLogger.soundPathFallback(soundId, fallbackPath);
@@ -36,5 +43,3 @@ export function getSoundPath(soundId: string): string {
   }
   return `sounds/${path}`;
 }
-
-export { SoundRegistry };

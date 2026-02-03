@@ -6,7 +6,7 @@ Core engine for Tokovo - deterministic phone simulator for video production.
 
 - **Engine**: Frame-perfect event replay with deterministic state management
 - **Types**: Comprehensive TypeScript types for WorldState, TimelineEvent, Device, etc.
-- **Registry**: Plugin system via ReducerRegistry for extensibility
+- **Registry**: Scoped registries via `createTokovoRegistries` for extensibility
 - **Audio**: Enterprise-grade audio engine with buses, ducking, crossfade, and policies
 
 ## Installation

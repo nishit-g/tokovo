@@ -7,52 +7,68 @@
 
 import { createRegistry } from "./factory";
 
-const _registry = createRegistry<string, string>("Sound");
+export interface SoundRegistryAPI {
+  register(key: string, path: string): void;
+  registerMany(sounds: Record<string, string>): void;
+  registerNamespaced(appId: string, sounds: Record<string, string>): void;
+  unregisterNamespaced(appId: string): void;
+  getPath(key: string): string | undefined;
+  getNamespaced(appId: string, soundId: string): string | undefined;
+  has(key: string): boolean;
+  getAll(): Record<string, string>;
+  keys(): string[];
+  clear(): void;
+  readonly size: number;
+}
 
-export const SoundRegistry = {
-  register: _registry.register,
+export function createSoundRegistry(): SoundRegistryAPI {
+  const registry = createRegistry<string, string>("Sound");
 
-  registerMany(sounds: Record<string, string>): void {
-    Object.entries(sounds).forEach(([id, path]) =>
-      _registry.register(id, path),
-    );
-  },
+  return {
+    register: registry.register,
 
-  registerNamespaced(appId: string, sounds: Record<string, string>): void {
-    Object.entries(sounds).forEach(([id, path]) => {
-      const namespacedId = `${appId}:${id}`;
-      _registry.register(namespacedId, path);
-    });
-  },
+    registerMany(sounds: Record<string, string>): void {
+      Object.entries(sounds).forEach(([id, path]) =>
+        registry.register(id, path),
+      );
+    },
 
-  unregisterNamespaced(appId: string): void {
-    const keysToRemove: string[] = [];
-    const prefix = `${appId}:`;
-    for (const key of _registry.keys()) {
-      if (key.startsWith(prefix)) {
-        keysToRemove.push(key);
+    registerNamespaced(appId: string, sounds: Record<string, string>): void {
+      Object.entries(sounds).forEach(([id, path]) => {
+        const namespacedId = `${appId}:${id}`;
+        registry.register(namespacedId, path);
+      });
+    },
+
+    unregisterNamespaced(appId: string): void {
+      const keysToRemove: string[] = [];
+      const prefix = `${appId}:`;
+      for (const key of registry.keys()) {
+        if (key.startsWith(prefix)) {
+          keysToRemove.push(key);
+        }
       }
-    }
-    for (const key of keysToRemove) {
-      _registry.delete(key);
-    }
-  },
+      for (const key of keysToRemove) {
+        registry.delete(key);
+      }
+    },
 
-  getPath: _registry.get,
+    getPath: registry.get,
 
-  getNamespaced(appId: string, soundId: string): string | undefined {
-    return _registry.get(`${appId}:${soundId}`);
-  },
+    getNamespaced(appId: string, soundId: string): string | undefined {
+      return registry.get(`${appId}:${soundId}`);
+    },
 
-  has: _registry.has,
+    has: registry.has,
 
-  getAll: _registry.entries,
+    getAll: registry.entries,
 
-  keys: _registry.keys,
+    keys: registry.keys,
 
-  clear: _registry.clear,
+    clear: registry.clear,
 
-  get size() {
-    return _registry.size;
-  },
-};
+    get size() {
+      return registry.size;
+    },
+  };
+}

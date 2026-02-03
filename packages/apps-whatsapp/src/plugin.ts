@@ -9,7 +9,7 @@
  * @see docs/ARCHITECTURE.md
  */
 
-import { PluginManager, type PluginReducer } from "@tokovo/core";
+import type { PluginReducer, PluginManagerClass } from "@tokovo/core";
 import { WHATSAPP_APP_ID } from "./constants";
 import type {
   TokovoPluginContract,
@@ -186,13 +186,15 @@ export { WhatsAppPluginV2 as WhatsAppPlugin };
 
 import { WhatsAppAnchors } from "./runtime/adapters/anchors";
 
-let _registered = false;
+const registeredManagers = new WeakSet<PluginManagerClass>();
 
-export function registerWhatsAppPlugin(): void {
-  if (_registered) return;
-  _registered = true;
+export function registerWhatsAppPlugin(
+  pluginManager: PluginManagerClass,
+): void {
+  if (registeredManagers.has(pluginManager)) return;
+  registeredManagers.add(pluginManager);
 
-  PluginManager.register(WhatsAppPluginV2);
+  pluginManager.register(WhatsAppPluginV2);
 }
 
 export type { WhatsAppDslApi };

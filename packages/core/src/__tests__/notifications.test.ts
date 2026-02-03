@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
 import type { Notification, DeviceState } from "../types";
 import {
-  NotificationAdapterRegistry,
   DEFAULT_NOTIFICATION_HEIGHT,
+  createNotificationAdapterRegistry,
 } from "../notifications/adapter";
-import { NotificationViewRegistry } from "../notifications/registry";
+import { createNotificationViewRegistry } from "../notifications/registry";
 import {
   showNotification,
   updateNotification,
@@ -31,7 +31,8 @@ const baseNotification: Notification = {
 
 describe("notification adapters", () => {
   it("formats using adapter or falls back", () => {
-    const formatted = NotificationAdapterRegistry.format(baseNotification);
+    const adapterRegistry = createNotificationAdapterRegistry();
+    const formatted = adapterRegistry.format(baseNotification);
     expect(formatted.title).toBe("Title");
     expect(formatted.body).toBe("Body");
 
@@ -40,23 +41,24 @@ describe("notification adapters", () => {
       format: () => ({ title: "Custom", body: "Custom body" }),
       handleAction: () => [{ at: 1, kind: "APP", type: "OPEN" } as any],
     };
-    NotificationAdapterRegistry.register(adapter);
-    const custom = NotificationAdapterRegistry.format(baseNotification);
+    adapterRegistry.register(adapter);
+    const custom = adapterRegistry.format(baseNotification);
     expect(custom.title).toBe("Custom");
     expect(custom.body).toBe("Custom body");
-    expect(NotificationAdapterRegistry.get("app")).toBe(adapter);
+    expect(adapterRegistry.get("app")).toBe(adapter);
 
-    const actionEvents = NotificationAdapterRegistry.handleAction(
+    const actionEvents = adapterRegistry.handleAction(
       baseNotification,
       "open",
     );
     expect(actionEvents[0].kind).toBe("APP");
 
-    NotificationAdapterRegistry.unregister("app");
+    adapterRegistry.unregister("app");
   });
 
   it("falls back to default open action", () => {
-    const events = NotificationAdapterRegistry.handleAction(baseNotification);
+    const adapterRegistry = createNotificationAdapterRegistry();
+    const events = adapterRegistry.handleAction(baseNotification);
     expect(events[0].kind).toBe("DEVICE");
     expect((events[0] as any).type).toBe("OPEN_APP");
   });
@@ -68,9 +70,10 @@ describe("notification adapters", () => {
 
 describe("notification registry and dsl", () => {
   it("registers view components", () => {
+    const viewRegistry = createNotificationViewRegistry();
     const Component = () => null;
-    NotificationViewRegistry.register("app", Component);
-    expect(NotificationViewRegistry.get("app")).toBe(Component);
+    viewRegistry.register("app", Component);
+    expect(viewRegistry.get("app")).toBe(Component);
   });
 
   it("creates timeline events via DSL helpers", () => {

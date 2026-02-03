@@ -50,7 +50,7 @@ export * from "./layout";
 export { NowPlayingBar } from "./NowPlayingBar";
 export { VisualDebugger } from "./VisualDebugger";
 export { UnlockTransition } from "./AppTransition";
-export { AppRegistry } from "@tokovo/core";
+export { RendererRegistryProvider, useRendererRegistries } from "./RegistryContext";
 
 // ===========================================================================
 // ENGINES

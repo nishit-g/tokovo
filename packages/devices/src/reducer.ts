@@ -11,7 +11,7 @@ import {
   StartBackgroundAppEvent,
   StopBackgroundAppEvent,
 } from "@tokovo/core";
-import { ReducerRegistry } from "@tokovo/core";
+import type { EngineRegistries } from "@tokovo/core";
 
 // =============================================================================
 // DEVICE REDUCER
@@ -180,5 +180,6 @@ export function deviceReducer(
   });
 }
 
-// Register itself with the core engine
-ReducerRegistry.registerDeviceReducer(deviceReducer);
+export function registerDeviceReducer(registries: EngineRegistries): void {
+  registries.reducers.registerDeviceReducer(deviceReducer);
+}

@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 import type { TimelineEvent } from "../types";
-import { deriveAudioInstructions, AutoSoundRule, AutoSoundRegistry } from "../audio/auto-sound";
+import {
+  deriveAudioInstructions,
+  AutoSoundRule,
+  createAutoSoundRegistry,
+} from "../audio/auto-sound";
 
 const baseEvent: TimelineEvent = {
   at: 10,
@@ -251,7 +255,7 @@ describe("deriveAudioInstructions", () => {
   });
 
   it("exposes registry accessors", () => {
-    AutoSoundRegistry.clear();
+    const registry = createAutoSoundRegistry();
     const rules: AutoSoundRule[] = [
       {
         match: { kind: "APP", appId: "app" },
@@ -260,14 +264,14 @@ describe("deriveAudioInstructions", () => {
       },
     ];
 
-    AutoSoundRegistry.unregisterByAppId("missing");
-    AutoSoundRegistry.register(rules);
-    expect(AutoSoundRegistry.getRulesForKind("APP")).toHaveLength(1);
-    expect(AutoSoundRegistry.getRulesForKind("UNKNOWN")).toHaveLength(0);
-    expect(AutoSoundRegistry.getAll()).toHaveLength(1);
-    AutoSoundRegistry.unregisterByAppId("missing");
-    AutoSoundRegistry.unregisterByAppId("app");
-    expect(AutoSoundRegistry.getAll()).toHaveLength(0);
-    AutoSoundRegistry.clear();
+    registry.unregisterByAppId("missing");
+    registry.register(rules);
+    expect(registry.getRulesForKind("APP")).toHaveLength(1);
+    expect(registry.getRulesForKind("UNKNOWN")).toHaveLength(0);
+    expect(registry.getAll()).toHaveLength(1);
+    registry.unregisterByAppId("missing");
+    registry.unregisterByAppId("app");
+    expect(registry.getAll()).toHaveLength(0);
+    registry.clear();
   });
 });

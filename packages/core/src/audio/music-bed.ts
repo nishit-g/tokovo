@@ -89,27 +89,31 @@ export function computeCrossfade(
     return { outVolume: 0, inVolume: 0 };
   }
 
-  const crossfadeFrames = incoming.crossfadeFrames || DEFAULT_CROSSFADE_FRAMES;
-  const elapsed = frame - incoming.startFrame;
-  const rawProgress = Math.min(1, Math.max(0, elapsed / crossfadeFrames));
-  const smoothProgress = applyEasing(rawProgress, incoming.crossfadeCurve);
+  const outgoingBed = outgoing;
+  const incomingBed = incoming;
 
-  let outVol = outgoing.baseGain * (1 - smoothProgress);
+  const crossfadeFrames =
+    incomingBed.crossfadeFrames || DEFAULT_CROSSFADE_FRAMES;
+  const elapsed = frame - incomingBed.startFrame;
+  const rawProgress = Math.min(1, Math.max(0, elapsed / crossfadeFrames));
+  const smoothProgress = applyEasing(rawProgress, incomingBed.crossfadeCurve);
+
+  let outVol = outgoingBed.baseGain * (1 - smoothProgress);
   if (
-    outgoing.fadeOutStart !== undefined &&
-    outgoing.fadeOutDuration !== undefined
+    outgoingBed.fadeOutStart !== undefined &&
+    outgoingBed.fadeOutDuration !== undefined
   ) {
-    const fadeElapsed = frame - outgoing.fadeOutStart;
+    const fadeElapsed = frame - outgoingBed.fadeOutStart;
     const fadeProgress = Math.min(
       1,
-      Math.max(0, fadeElapsed / outgoing.fadeOutDuration),
+      Math.max(0, fadeElapsed / outgoingBed.fadeOutDuration),
     );
     outVol *= 1 - fadeProgress;
   }
 
   return {
     outVolume: outVol,
-    inVolume: incoming.baseGain * smoothProgress,
+    inVolume: incomingBed.baseGain * smoothProgress,
   };
 }
 

@@ -103,7 +103,7 @@ export interface AutoSoundRule {
 // REGISTRY
 // =============================================================================
 
-class AutoSoundRegistryClass {
+export class AutoSoundRegistryClass {
   private rulesByKind = new Map<string, AutoSoundRule[]>();
   private rulesByAppId = new Map<string, AutoSoundRule[]>();
   private allRules: AutoSoundRule[] = [];
@@ -159,7 +159,9 @@ class AutoSoundRegistryClass {
   }
 }
 
-export const AutoSoundRegistry = new AutoSoundRegistryClass();
+export function createAutoSoundRegistry(): AutoSoundRegistryClass {
+  return new AutoSoundRegistryClass();
+}
 
 // =============================================================================
 // HELPER FUNCTIONS
@@ -234,7 +236,7 @@ export interface AudioInstruction {
  */
 export function deriveAudioInstructions(
   event: TimelineEvent,
-  rules: AutoSoundRule[] = AutoSoundRegistry.getAll(),
+  rules: AutoSoundRule[] = [],
 ): AudioInstruction[] {
   const instructions: AudioInstruction[] = [];
 

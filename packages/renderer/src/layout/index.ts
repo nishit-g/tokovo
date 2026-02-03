@@ -5,7 +5,7 @@
  * Provides fallbacks for common view kinds when no plugin is registered.
  */
 
-import { LayoutRegistry } from "@tokovo/core";
+import type { LayoutRegistryClass } from "@tokovo/core";
 import { LayoutContext, LayoutState } from "./types";
 import { defaultLayoutConfig } from "./config";
 import { computeFeedLayout } from "./strategies/feed";
@@ -24,7 +24,10 @@ export * from "./config";
  * 2. Generic viewKind layout from LayoutRegistry
  * 3. Built-in fallback layouts
  */
-export function computeLayout(ctx: LayoutContext): LayoutState {
+export function computeLayout(
+    ctx: LayoutContext,
+    registry: LayoutRegistryClass,
+): LayoutState {
     // Deep merge provided config with defaults
     const config = {
         ...defaultLayoutConfig,
@@ -38,13 +41,13 @@ export function computeLayout(ctx: LayoutContext): LayoutState {
     const fullCtx = { ...ctx, config };
 
     // 1. Try app-specific layout from registry
-    const appStrategy = LayoutRegistry.get(ctx.activeAppId, ctx.viewKind);
+    const appStrategy = registry.get(ctx.activeAppId, ctx.viewKind);
     if (appStrategy) {
         return appStrategy.computeLayout(fullCtx);
     }
 
     // 2. Try generic viewKind layout from registry
-    const viewStrategy = LayoutRegistry.getByViewKind(ctx.viewKind);
+    const viewStrategy = registry.getByViewKind(ctx.viewKind);
     if (viewStrategy) {
         return viewStrategy.computeLayout(fullCtx);
     }

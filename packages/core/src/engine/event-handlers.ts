@@ -27,7 +27,7 @@ interface RegisteredHandler {
   priority: number;
 }
 
-class EventHandlerRegistryClass {
+export class EventHandlerRegistryClass {
   private handlers = new Map<string, RegisteredHandler[]>();
 
   register(definition: EventHandlerDefinition): () => void {
@@ -91,14 +91,17 @@ class EventHandlerRegistryClass {
   }
 }
 
-export const EventHandlerRegistry = new EventHandlerRegistryClass();
+export function createEventHandlerRegistry(): EventHandlerRegistryClass {
+  return new EventHandlerRegistryClass();
+}
 
 export function registerEventHandler(
+  registry: EventHandlerRegistryClass,
   kind: string,
   handler: EventHandler,
   priority?: number,
 ): () => void {
-  return EventHandlerRegistry.register({ kind, handler, priority });
+  return registry.register({ kind, handler, priority });
 }
 
 export function defineEventHandler(

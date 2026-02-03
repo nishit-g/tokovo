@@ -282,7 +282,7 @@ export function replay(
   initial: WorldState,
   events: TimelineEvent[],
   t: number,
-  ctx: ReplayContext = { mode: "preview" },
+  ctx: ReplayContext,
 ): WorldState {
   // Deterministic filter
   const relevantEvents = events.filter((e) => e.at <= t);
@@ -291,7 +291,7 @@ export function replay(
   return relevantEvents.reduce((state, event) => {
     return produce(state, (draft) => {
       // All handlers are pure
-      EventHandlerRegistry.handle(draft, event, { frame: t });
+      ctx.registries.eventHandlers.handle(draft, event, { frame: t });
     });
   }, initial);
 }

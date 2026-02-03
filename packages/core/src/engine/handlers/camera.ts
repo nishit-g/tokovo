@@ -11,7 +11,7 @@ import {
   DEFAULT_BASE_CAMERA_STATE as DEFAULT_BASE_CAMERA_STATE,
   DEFAULT_CAMERA_TRANSFORM,
 } from "../../types";
-import { PluginManager } from "../../plugin/plugin";
+import type { ReducerRegistryClass } from "../registry";
 
 interface CameraEventPayload {
   view?: { type: string; appId?: string };
@@ -43,6 +43,7 @@ export function processCameraEvent(
   draft: WorldState,
   event: CameraEvent,
   _ctx: HandlerContext,
+  reducers: ReducerRegistryClass,
 ): void {
   if (!draft.camera || !draft.camera.activeEffects) {
     draft.camera = { ...DEFAULT_BASE_CAMERA_STATE };
@@ -97,17 +98,13 @@ export function processCameraEvent(
       break;
 
     default: {
-      const cameraPlugin = PluginManager.get("camera");
-      if (!cameraPlugin) {
+      const reducer = reducers.getFeatureReducer("CAMERA");
+      if (!reducer) {
         throw new Error(
-          "Camera plugin not registered. Ensure DeviceCameraPlugin is registered before engine initialization.",
+          "Camera reducer not registered. Ensure DeviceCameraPlugin is registered before engine initialization.",
         );
       }
-      const reducer = cameraPlugin.reducer as unknown as (
-        draft: WorldState,
-        event: CameraEvent,
-      ) => void;
-      reducer(draft as WorldState, event as CameraEvent);
+      reducer(draft as WorldState, event as CameraEvent, undefined, _ctx);
       break;
     }
   }

@@ -1,6 +1,6 @@
 import { describe, expect, it, vi, afterEach } from "vitest";
 import type { WorldState, TimelineEvent } from "../types";
-import { LifecycleManager, defineLifecycle } from "../engine/lifecycle";
+import { createLifecycleManager, defineLifecycle } from "../engine/lifecycle";
 
 const world = {
   devices: {},
@@ -9,8 +9,11 @@ const world = {
   audio: { activeSounds: {}, buses: {}, policyState: { recentSounds: {}, nextId: 0 }, autoSoundRules: [] },
 } as WorldState;
 
+let lifecycle = createLifecycleManager();
+
 afterEach(() => {
-  LifecycleManager.destroyAll();
+  lifecycle.destroyAll();
+  lifecycle = createLifecycleManager();
 });
 
 describe("lifecycle manager", () => {
@@ -24,7 +27,7 @@ describe("lifecycle manager", () => {
     const onEventProcessed = vi.fn();
     const onError = vi.fn();
 
-    const unregister = LifecycleManager.register("app", {
+    const unregister = lifecycle.register("app", {
       onInit,
       onDestroy,
       onMount,
@@ -35,37 +38,37 @@ describe("lifecycle manager", () => {
       onError,
     });
 
-    expect(LifecycleManager.hasPlugin("app")).toBe(true);
+    expect(lifecycle.hasPlugin("app")).toBe(true);
 
-    await LifecycleManager.initializeAll();
+    await lifecycle.initializeAll();
     expect(onInit).toHaveBeenCalled();
 
-    LifecycleManager.notifyMount("phone", "app");
+    lifecycle.notifyMount("phone", "app");
     expect(onMount).toHaveBeenCalled();
 
-    LifecycleManager.notifyUnmount("phone", "app");
+    lifecycle.notifyUnmount("phone", "app");
     expect(onUnmount).toHaveBeenCalled();
 
-    LifecycleManager.notifyBeforeReplay({ frame: 1, mode: "preview" });
+    lifecycle.notifyBeforeReplay({ frame: 1, mode: "preview" });
     expect(onBeforeReplay).toHaveBeenCalled();
 
-    LifecycleManager.notifyAfterReplay(world, { frame: 1, mode: "preview" });
+    lifecycle.notifyAfterReplay(world, { frame: 1, mode: "preview" });
     expect(onAfterReplay).toHaveBeenCalled();
 
-    LifecycleManager.notifyEventProcessed({ kind: "APP", at: 0 } as TimelineEvent, world);
+    lifecycle.notifyEventProcessed({ kind: "APP", at: 0 } as TimelineEvent, world);
     expect(onEventProcessed).toHaveBeenCalled();
 
-    LifecycleManager.notifyError(new Error("boom"));
+    lifecycle.notifyError(new Error("boom"));
     expect(onError).toHaveBeenCalled();
 
     unregister();
-    expect(LifecycleManager.hasPlugin("app")).toBe(false);
+    expect(lifecycle.hasPlugin("app")).toBe(false);
   });
 
   it("handles errors in hooks without crashing", async () => {
     const errorSpy = vi.spyOn(console, "error").mockImplementation(() => undefined);
 
-    LifecycleManager.register("bad", {
+    lifecycle.register("bad", {
       onInit: () => {
         throw new Error("init");
       },
@@ -86,12 +89,12 @@ describe("lifecycle manager", () => {
       },
     });
 
-    await LifecycleManager.initializeAll();
-    LifecycleManager.notifyBeforeReplay({ frame: 0, mode: "preview" });
-    LifecycleManager.notifyAfterReplay(world, { frame: 0, mode: "preview" });
-    LifecycleManager.notifyEventProcessed({ kind: "APP", at: 0 } as TimelineEvent, world);
-    LifecycleManager.notifyError(new Error("boom"));
-    LifecycleManager.destroyAll();
+    await lifecycle.initializeAll();
+    lifecycle.notifyBeforeReplay({ frame: 0, mode: "preview" });
+    lifecycle.notifyAfterReplay(world, { frame: 0, mode: "preview" });
+    lifecycle.notifyEventProcessed({ kind: "APP", at: 0 } as TimelineEvent, world);
+    lifecycle.notifyError(new Error("boom"));
+    lifecycle.destroyAll();
 
     expect(errorSpy).toHaveBeenCalled();
     errorSpy.mockRestore();
@@ -100,7 +103,7 @@ describe("lifecycle manager", () => {
   it("handles errors in mount and unmount hooks", () => {
     const errorSpy = vi.spyOn(console, "error").mockImplementation(() => undefined);
 
-    LifecycleManager.register("mount-bad", {
+    lifecycle.register("mount-bad", {
       onMount: () => {
         throw new Error("mount");
       },
@@ -109,8 +112,8 @@ describe("lifecycle manager", () => {
       },
     });
 
-    LifecycleManager.notifyMount("phone", "mount-bad");
-    LifecycleManager.notifyUnmount("phone", "mount-bad");
+    lifecycle.notifyMount("phone", "mount-bad");
+    lifecycle.notifyUnmount("phone", "mount-bad");
 
     expect(errorSpy).toHaveBeenCalled();
     errorSpy.mockRestore();
@@ -122,18 +125,18 @@ describe("lifecycle manager", () => {
   });
 
   it("skips missing hooks and lists registered plugins", () => {
-    LifecycleManager.register("no-after", { onBeforeReplay: () => undefined });
-    LifecycleManager.notifyAfterReplay(world, { frame: 0, mode: "preview" });
-    expect(LifecycleManager.getRegisteredPlugins()).toContain("no-after");
+    lifecycle.register("no-after", { onBeforeReplay: () => undefined });
+    lifecycle.notifyAfterReplay(world, { frame: 0, mode: "preview" });
+    expect(lifecycle.getRegisteredPlugins()).toContain("no-after");
   });
 
   it("continues when hooks are removed after registration", () => {
-    LifecycleManager.register("mutated", {
+    lifecycle.register("mutated", {
       onBeforeReplay: () => undefined,
       onAfterReplay: () => undefined,
     });
 
-    const manager = LifecycleManager as unknown as {
+    const manager = lifecycle as unknown as {
       beforeReplayHooks: Array<{ hooks: { onBeforeReplay?: () => void } }>;
       afterReplayHooks: Array<{ hooks: { onAfterReplay?: () => void } }>;
     };
@@ -141,7 +144,7 @@ describe("lifecycle manager", () => {
     manager.beforeReplayHooks[0].hooks.onBeforeReplay = undefined;
     manager.afterReplayHooks[0].hooks.onAfterReplay = undefined;
 
-    LifecycleManager.notifyBeforeReplay({ frame: 0, mode: "preview" });
-    LifecycleManager.notifyAfterReplay(world, { frame: 0, mode: "preview" });
+    lifecycle.notifyBeforeReplay({ frame: 0, mode: "preview" });
+    lifecycle.notifyAfterReplay(world, { frame: 0, mode: "preview" });
   });
 });

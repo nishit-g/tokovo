@@ -25,7 +25,7 @@ export interface MiddlewareDefinition {
   order?: number;
 }
 
-class MiddlewareRegistryClass {
+export class MiddlewareRegistryClass {
   private middlewares: MiddlewareDefinition[] = [];
   private needsSort = false;
 
@@ -97,14 +97,17 @@ class MiddlewareRegistryClass {
   }
 }
 
-export const MiddlewareRegistry = new MiddlewareRegistryClass();
+export function createMiddlewareRegistry(): MiddlewareRegistryClass {
+  return new MiddlewareRegistryClass();
+}
 
 export function useMiddleware(
+  registry: MiddlewareRegistryClass,
   name: string,
   middleware: Middleware,
   order?: number,
 ): () => void {
-  return MiddlewareRegistry.use({ name, middleware, order });
+  return registry.use({ name, middleware, order });
 }
 
 export function defineMiddleware(

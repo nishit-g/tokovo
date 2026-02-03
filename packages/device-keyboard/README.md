@@ -14,9 +14,12 @@ pnpm add @tokovo/device-keyboard
 
 ```tsx
 import { registerKeyboardPlugin } from "@tokovo/device-keyboard";
+import { createTokovoRegistries } from "@tokovo/core";
+
+const registries = createTokovoRegistries();
 
 // Call once at app initialization
-registerKeyboardPlugin();
+registerKeyboardPlugin(registries.engine);
 ```
 
 ### 2. Use in Episodes (DSL)

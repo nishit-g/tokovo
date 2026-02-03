@@ -9,60 +9,40 @@ export { createRegistry } from "./factory";
 export type { Registry } from "./factory";
 
 // App Registry
-export { AppRegistry } from "./app";
-export type { AppViewProps, AppViewComponent } from "./app";
+export { createAppRegistry } from "./app";
+export type { AppViewProps, AppViewComponent, AppRegistryAPI } from "./app";
 
 // Sound Registry
-export { SoundRegistry } from "./sound";
+export { createSoundRegistry } from "./sound";
+export type { SoundRegistryAPI } from "./sound";
 
 // Widget Registry
-export {
-  WidgetRegistry,
-  getDynamicIslandWidget,
-  getNotificationWidgets,
-} from "./widget";
+export { createWidgetRegistry, getDynamicIslandWidget, getNotificationWidgets } from "./widget";
+export type { WidgetRegistryClass } from "./widget";
 
 // Behavior Registry
-export { BehaviorRegistry } from "./behavior";
-export type { CameraIntent, AppBehavior } from "./behavior";
+export { createBehaviorRegistry } from "./behavior";
+export type { CameraIntent, AppBehavior, BehaviorRegistryAPI } from "./behavior";
 
 // App Metadata Registry
-export { AppMetadataRegistry } from "./metadata";
-export type { AppMetadata } from "./metadata";
+export { createAppMetadataRegistry } from "./metadata";
+export type { AppMetadata, AppMetadataRegistryAPI } from "./metadata";
 
 // Icon Registry
-export { IconRegistry, getAppIcon } from "./icon";
-export type { IconMetadata, IconVariant, IconSize } from "./icon";
+export { createIconRegistry, getAppIcon } from "./icon";
+export type {
+  IconMetadata,
+  IconVariant,
+  IconSize,
+  IconRegistryAPI,
+} from "./icon";
 
 // Layout Registry
-export { LayoutRegistry } from "./layout";
-export type { LayoutStrategy } from "./layout";
+export { createLayoutRegistry } from "./layout";
+export type { LayoutStrategy, LayoutRegistryClass } from "./layout";
 // Note: LayoutContext, LayoutState are exported from ../types/layout (not re-exported here)
 
-// Runtime Context (for DI and testing)
-export {
-  createRuntimeContext,
-  getDefaultContext,
-  resetDefaultContext,
-  type TokovoRuntimeContext,
-} from "./context";
-
-// DI Container (enterprise-grade dependency injection)
-export {
-  getContainer,
-  createScopedContainer,
-  setGlobalContainer,
-  resetGlobalContainer,
-  type TokovoContainer,
-  type RegistryContainer,
-  type ReducerContainer,
-} from "./container";
-
-// Unified Plugin Registry Facade
-export {
-  UnifiedPluginRegistry,
-  createIsolatedPluginRegistry,
-  type UnifiedRegistryState,
-} from "./unified";
+// Note: Legacy container/context/unified registries were removed in favor of
+// engine + plugin scoped registries.
 
 // Note: AnchorRegistry is exported from ../anchors (not duplicated here)

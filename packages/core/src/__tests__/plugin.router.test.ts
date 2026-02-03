@@ -1,24 +1,18 @@
-import { describe, expect, it, afterEach } from "vitest";
+import { describe, expect, it } from "vitest";
 import type { WorldState } from "../types";
-import { PluginManager } from "../plugin/plugin";
-import { PluginRouter } from "../plugin/router";
-import { ReducerRegistry } from "../engine/registry";
-import { SoundRegistry } from "../registries/sound";
-import { registerAnchorProvider, clearAnchors } from "../anchors/registry";
+import { PluginManagerClass } from "../plugin/plugin";
+import { createPluginRouter } from "../plugin/router";
+import { createPluginRegistries } from "../plugin/registries";
 
 const pluginId = "app_router";
 
-afterEach(() => {
-  PluginManager.unregister(pluginId);
-  ReducerRegistry.reset();
-  SoundRegistry.clear();
-  clearAnchors();
-  PluginRouter.clearCache();
-});
-
 describe("plugin router", () => {
   it("provides accessors with cached instances", () => {
-    PluginManager.register({
+    const registries = createPluginRegistries();
+    const pluginManager = new PluginManagerClass(registries);
+    const pluginRouter = createPluginRouter(pluginManager, registries);
+
+    pluginManager.register({
       id: pluginId,
       displayName: "Router",
       version: "1.0.0",
@@ -29,9 +23,9 @@ describe("plugin router", () => {
       layoutConstants: { designWidth: 400 } as any,
     });
 
-    SoundRegistry.registerNamespaced(pluginId, { ping: "ping.mp3" });
+    registries.sounds.registerNamespaced(pluginId, { ping: "ping.mp3" });
 
-    registerAnchorProvider({
+    registries.anchors.register({
       appId: pluginId,
       framing: {},
       getAnchors: (_world, _layout, _deviceId) => ({
@@ -41,7 +35,7 @@ describe("plugin router", () => {
       }),
     });
 
-    const accessor = PluginRouter.get(pluginId);
+    const accessor = pluginRouter.get(pluginId);
     expect(accessor?.id).toBe(pluginId);
     expect(accessor?.getReducer()).toBeDefined();
     expect(accessor?.getEventKinds()).toContain("ROUTER_EVENT");
@@ -58,12 +52,12 @@ describe("plugin router", () => {
     expect(accessor?.getLayoutConstants()?.designWidth).toBe(400);
     expect(accessor?.getInitialState()).toEqual({ ready: true });
 
-    const accessorAgain = PluginRouter.get(pluginId);
+    const accessorAgain = pluginRouter.get(pluginId);
     expect(accessorAgain).toBe(accessor);
 
-    expect(PluginRouter.has(pluginId)).toBe(true);
-    expect(PluginRouter.getAll().length).toBeGreaterThan(0);
+    expect(pluginRouter.has(pluginId)).toBe(true);
+    expect(pluginRouter.getAll().length).toBeGreaterThan(0);
 
-    expect(PluginRouter.get("missing")).toBeUndefined();
+    expect(pluginRouter.get("missing")).toBeUndefined();
   });
 });

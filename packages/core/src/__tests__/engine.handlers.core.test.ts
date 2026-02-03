@@ -10,9 +10,8 @@ import { processOSEvent } from "../engine/handlers/os";
 import { processCameraEvent } from "../engine/handlers/camera";
 import { processVoiceEvent } from "../engine/handlers/voice";
 import { navigationReducer } from "../engine/handlers/navigation";
-import { PluginManager } from "../plugin/plugin";
-import { AutoSoundRegistry } from "../audio/auto-sound";
 import * as autoSound from "../audio/auto-sound";
+import { createReducerRegistry, type ReducerRegistryClass } from "../engine/registry";
 
 const baseWorld = (): WorldState => ({
   devices: {
@@ -23,13 +22,14 @@ const baseWorld = (): WorldState => ({
   audio: { activeSounds: {}, buses: {}, policyState: { recentSounds: {}, nextId: 0 }, autoSoundRules: [] },
 } as WorldState);
 
+let reducerRegistry: ReducerRegistryClass;
+
 beforeEach(() => {
-  AutoSoundRegistry.clear();
+  reducerRegistry = createReducerRegistry();
 });
 
 afterEach(() => {
-  AutoSoundRegistry.clear();
-  PluginManager.unregister("camera");
+  reducerRegistry.reset();
 });
 
 describe("engine handlers", () => {
@@ -750,107 +750,156 @@ describe("engine handlers", () => {
   it("processes camera events and falls back to plugin reducer", () => {
     const world = baseWorld();
 
-    processCameraEvent(world, { kind: "CAMERA", type: "SET_VIEW", view: { type: "TRANSITION", appId: "app" } } as any, {
-      frame: 0,
-      eventIndex: 0,
-      mode: "preview",
-      fps: 30,
-    });
+    processCameraEvent(
+      world,
+      { kind: "CAMERA", type: "SET_VIEW", view: { type: "TRANSITION", appId: "app" } } as any,
+      {
+        frame: 0,
+        eventIndex: 0,
+        mode: "preview",
+        fps: 30,
+      },
+      reducerRegistry,
+    );
     expect(world.camera.baseView).toBe("TRANSITION");
 
-    processCameraEvent(world, { kind: "CAMERA", type: "CUT", toDeviceId: "phone", toView: "app" } as any, {
-      frame: 0,
-      eventIndex: 0,
-      mode: "preview",
-      fps: 30,
-    });
+    processCameraEvent(
+      world,
+      { kind: "CAMERA", type: "CUT", toDeviceId: "phone", toView: "app" } as any,
+      {
+        frame: 0,
+        eventIndex: 0,
+        mode: "preview",
+        fps: 30,
+      },
+      reducerRegistry,
+    );
     expect(world.camera.activeDeviceId).toBe("phone");
 
-    processCameraEvent(world, { kind: "CAMERA", type: "CUT", toView: "transition" } as any, {
-      frame: 0,
-      eventIndex: 0,
-      mode: "preview",
-      fps: 30,
-    });
+    processCameraEvent(
+      world,
+      { kind: "CAMERA", type: "CUT", toView: "transition" } as any,
+      {
+        frame: 0,
+        eventIndex: 0,
+        mode: "preview",
+        fps: 30,
+      },
+      reducerRegistry,
+    );
     expect(world.camera.baseView).toBe("TRANSITION");
 
-    processCameraEvent(world, { kind: "CAMERA", type: "LAYOUT", mode: "split", primaryDeviceId: "phone" } as any, {
-      frame: 0,
-      eventIndex: 0,
-      mode: "preview",
-      fps: 30,
-    });
+    processCameraEvent(
+      world,
+      { kind: "CAMERA", type: "LAYOUT", mode: "split", primaryDeviceId: "phone" } as any,
+      {
+        frame: 0,
+        eventIndex: 0,
+        mode: "preview",
+        fps: 30,
+      },
+      reducerRegistry,
+    );
     expect(world.camera.layout?.mode).toBe("SPLIT_HORIZONTAL");
 
-    processCameraEvent(world, { kind: "CAMERA", type: "LAYOUT", mode: undefined } as any, {
-      frame: 0,
-      eventIndex: 0,
-      mode: "preview",
-      fps: 30,
-    });
+    processCameraEvent(
+      world,
+      { kind: "CAMERA", type: "LAYOUT", mode: undefined } as any,
+      {
+        frame: 0,
+        eventIndex: 0,
+        mode: "preview",
+        fps: 30,
+      },
+      reducerRegistry,
+    );
     expect(world.camera.layout?.mode).toBe("SINGLE");
 
-    processCameraEvent(world, { kind: "CAMERA", type: "LAYOUT", mode: "pip" } as any, {
-      frame: 0,
-      eventIndex: 0,
-      mode: "preview",
-      fps: 30,
-    });
+    processCameraEvent(
+      world,
+      { kind: "CAMERA", type: "LAYOUT", mode: "pip" } as any,
+      {
+        frame: 0,
+        eventIndex: 0,
+        mode: "preview",
+        fps: 30,
+      },
+      reducerRegistry,
+    );
     expect(world.camera.layout?.primaryDeviceId).toBe("phone");
 
-    processCameraEvent(world, { kind: "CAMERA", type: "LAYOUT", mode: "pip", primaryDeviceId: "phone" } as any, {
-      frame: 0,
-      eventIndex: 0,
-      mode: "preview",
-      fps: 30,
-    });
+    processCameraEvent(
+      world,
+      { kind: "CAMERA", type: "LAYOUT", mode: "pip", primaryDeviceId: "phone" } as any,
+      {
+        frame: 0,
+        eventIndex: 0,
+        mode: "preview",
+        fps: 30,
+      },
+      reducerRegistry,
+    );
     expect(world.camera.layout?.mode).toBe("PIP");
 
     const layoutWorld = {
       ...baseWorld(),
       camera: { baseView: "APP_VIEW", activeEffects: [] } as any,
     } as WorldState;
-    processCameraEvent(layoutWorld, { kind: "CAMERA", type: "SET_VIEW", view: { type: "APP_VIEW" } } as any, {
-      frame: 0,
-      eventIndex: 0,
-      mode: "preview",
-      fps: 30,
-    });
-    expect(layoutWorld.camera.layout?.mode).toBe("SINGLE");
-
-    processCameraEvent(world, { kind: "CAMERA", type: "LAYOUT", mode: "unknown", primaryDeviceId: "phone" } as any, {
-      frame: 0,
-      eventIndex: 0,
-      mode: "preview",
-      fps: 30,
-    });
-    expect(world.camera.layout?.mode).toBe("SINGLE");
-
-    expect(() =>
-      processCameraEvent(world, { kind: "CAMERA", type: "ZOOM" } as any, {
+    processCameraEvent(
+      layoutWorld,
+      { kind: "CAMERA", type: "SET_VIEW", view: { type: "APP_VIEW" } } as any,
+      {
         frame: 0,
         eventIndex: 0,
         mode: "preview",
         fps: 30,
-      }),
-    ).toThrow(/Camera plugin not registered/);
-
-    PluginManager.register({
-      id: "camera",
-      displayName: "Camera",
-      version: "1.0.0",
-      views: { AppRoot: () => null },
-      reducer: (draft) => {
-        (draft.camera as any).handled = true;
       },
+      reducerRegistry,
+    );
+    expect(layoutWorld.camera.layout?.mode).toBe("SINGLE");
+
+    processCameraEvent(
+      world,
+      { kind: "CAMERA", type: "LAYOUT", mode: "unknown", primaryDeviceId: "phone" } as any,
+      {
+        frame: 0,
+        eventIndex: 0,
+        mode: "preview",
+        fps: 30,
+      },
+      reducerRegistry,
+    );
+    expect(world.camera.layout?.mode).toBe("SINGLE");
+
+    expect(() =>
+      processCameraEvent(
+        world,
+        { kind: "CAMERA", type: "ZOOM" } as any,
+        {
+          frame: 0,
+          eventIndex: 0,
+          mode: "preview",
+          fps: 30,
+        },
+        reducerRegistry,
+      ),
+    ).toThrow(/Camera reducer not registered/);
+
+    reducerRegistry.registerFeatureReducer("CAMERA", (draft) => {
+      (draft.camera as any).handled = true;
     });
 
-    processCameraEvent(world, { kind: "CAMERA", type: "ZOOM" } as any, {
-      frame: 0,
-      eventIndex: 0,
-      mode: "preview",
-      fps: 30,
-    });
+    processCameraEvent(
+      world,
+      { kind: "CAMERA", type: "ZOOM" } as any,
+      {
+        frame: 0,
+        eventIndex: 0,
+        mode: "preview",
+        fps: 30,
+      },
+      reducerRegistry,
+    );
     expect((world.camera as any).handled).toBe(true);
   });
 
@@ -862,12 +911,17 @@ describe("engine handlers", () => {
       audio: { activeSounds: {}, buses: {}, policyState: { recentSounds: {}, nextId: 0 }, autoSoundRules: [] },
     } as WorldState;
 
-    processCameraEvent(world, { kind: "CAMERA", type: "CUT" } as any, {
-      frame: 0,
-      eventIndex: 0,
-      mode: "preview",
-      fps: 30,
-    });
+    processCameraEvent(
+      world,
+      { kind: "CAMERA", type: "CUT" } as any,
+      {
+        frame: 0,
+        eventIndex: 0,
+        mode: "preview",
+        fps: 30,
+      },
+      reducerRegistry,
+    );
 
     expect(world.camera.layout?.primaryDeviceId).toBe("main_phone");
   });

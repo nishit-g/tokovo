@@ -290,7 +290,7 @@ If Studio doesn't meet your needs, you can build custom editors using `@tokovo/r
 ```typescript
 import { useState } from "react";
 import { TokovoProvider, useDevice, useWorld } from "@tokovo/react";
-import { runEpisode } from "@tokovo/core";
+import { runEpisode, createTokovoRegistries, PluginManagerClass } from "@tokovo/core";
 import type { PreparedTrackEpisode } from "@tokovo/compiler";
 
 function CustomStudio({ episode }: { episode: PreparedTrackEpisode }) {
@@ -368,16 +368,31 @@ import type { PreparedTrackEpisode } from "@tokovo/compiler";
 function MinimalStudio({ episode }: { episode: PreparedTrackEpisode }) {
   const [frame, setFrame] = useState(0);
   const [playing, setPlaying] = useState(false);
+  const registries = useMemo(() => createTokovoRegistries(), []);
+  const pluginManager = useMemo(
+    () => new PluginManagerClass(registries.plugins),
+    [registries],
+  );
 
   const world = useMemo(
-    () => runEpisode(episode, frame, { mode: "preview" }),
-    [episode, frame]
+    () =>
+      runEpisode(episode, frame, {
+        mode: "preview",
+        registries: registries.engine,
+      }),
+    [episode, frame, registries]
   );
 
   return (
     <div className="studio">
       <div className="preview">
-        <TokovoRenderer world={world} t={frame} debug={false} />
+        <TokovoRenderer
+          world={world}
+          t={frame}
+          debug={false}
+          pluginManager={pluginManager}
+          registries={registries.plugins}
+        />
       </div>
 
       <div className="controls">

@@ -1,18 +1,11 @@
-import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
+import { describe, expect, it, vi, beforeEach } from "vitest";
 import type { WorldState } from "../types";
 import {
-  PluginManager,
+  PluginManagerClass,
   definePlugin,
   registerPlugins,
 } from "../plugin/plugin";
-import { ReducerRegistry } from "../engine/registry";
-import { AppRegistry } from "../registries/app";
-import { AppMetadataRegistry } from "../registries/metadata";
-import { SoundRegistry } from "../registries/sound";
-import { LayoutRegistry } from "../registries/layout";
-import { AutoSoundRegistry } from "../audio/auto-sound";
-import { NotificationAdapterRegistry } from "../notifications/adapter";
-import { resolveAnchor, clearAnchors } from "../anchors/registry";
+import { createPluginRegistries } from "../plugin/registries";
 import * as validation from "../utils/validation";
 
 const baseWorld = {
@@ -24,37 +17,19 @@ const baseWorld = {
   audio: { activeSounds: {}, buses: {}, policyState: { recentSounds: {}, nextId: 0 }, autoSoundRules: [] },
 } as WorldState;
 
-beforeEach(() => {
-  for (const id of PluginManager.getAppIds()) {
-    PluginManager.unregister(id);
-  }
-  ReducerRegistry.reset();
-  AppRegistry.clear();
-  AppMetadataRegistry.clear();
-  SoundRegistry.clear();
-  LayoutRegistry.clear();
-  AutoSoundRegistry.clear();
-  clearAnchors();
-});
+let registries: ReturnType<typeof createPluginRegistries>;
+let pluginManager: PluginManagerClass;
 
-afterEach(() => {
-  for (const id of PluginManager.getAppIds()) {
-    PluginManager.unregister(id);
-  }
-  ReducerRegistry.reset();
-  AppRegistry.clear();
-  AppMetadataRegistry.clear();
-  SoundRegistry.clear();
-  LayoutRegistry.clear();
-  AutoSoundRegistry.clear();
-  clearAnchors();
+beforeEach(() => {
+  registries = createPluginRegistries();
+  pluginManager = new PluginManagerClass(registries);
 });
 
 describe("plugin manager", () => {
   it("registers plugins and wires registries", async () => {
     const pluginId = "app_chat";
 
-    const unregister = PluginManager.register({
+    const unregister = pluginManager.register({
       id: pluginId,
       displayName: "Chat",
       version: "1.0.0",
@@ -85,18 +60,24 @@ describe("plugin manager", () => {
       },
     });
 
-    expect(PluginManager.has(pluginId)).toBe(true);
-    expect(PluginManager.getView(pluginId)).toBeDefined();
-    expect(PluginManager.getSound(pluginId, "ding")).toBe("/sounds/ding.mp3");
-    expect(PluginManager.getMetadata(pluginId)?.name).toBe("Chat");
-    expect(PluginManager.getMetadata(pluginId)?.icon).toBe("/icons/app.png");
-    expect(PluginManager.getInitialStateCreator(pluginId)?.()).toEqual({ ready: true });
-    expect(PluginManager.createInitialAppState()).toEqual({ [pluginId]: { ready: true } });
+    expect(pluginManager.has(pluginId)).toBe(true);
+    expect(pluginManager.getView(pluginId)).toBeDefined();
+    expect(pluginManager.getSound(pluginId, "ding")).toBe("/sounds/ding.mp3");
+    expect(pluginManager.getMetadata(pluginId)?.name).toBe("Chat");
+    expect(pluginManager.getMetadata(pluginId)?.icon).toBe("/icons/app.png");
+    expect(pluginManager.getInitialStateCreator(pluginId)?.()).toEqual({ ready: true });
+    expect(pluginManager.createInitialAppState()).toEqual({ [pluginId]: { ready: true } });
 
-    expect(ReducerRegistry.hasAppReducer(pluginId)).toBe(true);
-    expect(ReducerRegistry.getEventKindsForApp(pluginId)).toContain("CHAT_EVENT");
+    expect(registries.reducers.hasAppReducer(pluginId)).toBe(true);
+    expect(registries.reducers.getEventKindsForApp(pluginId)).toContain(
+      "CHAT_EVENT",
+    );
 
-    const anchor = resolveAnchor(`${pluginId}:avatar`, baseWorld, "phone");
+    const anchor = registries.anchors.resolveAnchor(
+      `${pluginId}:avatar`,
+      baseWorld,
+      "phone",
+    );
     expect(anchor?.x).toBe(10);
     expect(anchor?.height).toBe(80);
 
@@ -106,13 +87,17 @@ describe("plugin manager", () => {
       camera: { baseView: "APP_VIEW" },
       audio: { activeSounds: {}, buses: {}, policyState: { recentSounds: {}, nextId: 0 }, autoSoundRules: [] },
     } as WorldState;
-    const defaultAnchor = resolveAnchor(`${pluginId}:avatar`, worldNoDims, "phone");
+    const defaultAnchor = registries.anchors.resolveAnchor(
+      `${pluginId}:avatar`,
+      worldNoDims,
+      "phone",
+    );
     expect(defaultAnchor?.x).toBeCloseTo(43, 4);
 
     await new Promise((resolve) => setTimeout(resolve, 0));
-    expect(LayoutRegistry.has(pluginId, "CHAT")).toBe(true);
+    expect(registries.layouts.has(pluginId, "CHAT")).toBe(true);
 
-    const formatted = NotificationAdapterRegistry.format({
+    const formatted = registries.notifications.format({
       id: "n1",
       ir: { id: "n1", appId: pluginId, title: "t", body: "b" },
       appId: pluginId,
@@ -125,21 +110,21 @@ describe("plugin manager", () => {
 
     unregister();
     await new Promise((resolve) => setTimeout(resolve, 0));
-    expect(PluginManager.has(pluginId)).toBe(false);
-    expect(PluginManager.getAll()).toEqual([]);
+    expect(pluginManager.has(pluginId)).toBe(false);
+    expect(pluginManager.getAll()).toEqual([]);
   });
 
   it("continues when validation fails", () => {
     const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => undefined);
 
-    PluginManager.register({
+    pluginManager.register({
       id: "app_bad",
       displayName: "Bad",
       version: "1.0.0",
       views: {},
     } as any);
 
-    expect(PluginManager.has("app_bad")).toBe(true);
+    expect(pluginManager.has("app_bad")).toBe(true);
     warnSpy.mockRestore();
   });
 
@@ -150,20 +135,20 @@ describe("plugin manager", () => {
         throw "not-an-error";
       });
 
-    PluginManager.register({
+    pluginManager.register({
       id: "app_string_error",
       displayName: "String Error",
       version: "1.0.0",
       views: { AppRoot: () => null },
     });
 
-    expect(PluginManager.has("app_string_error")).toBe(true);
+    expect(pluginManager.has("app_string_error")).toBe(true);
     spy.mockRestore();
   });
 
   it("fills audio rule appIds when missing", () => {
     const pluginId = "app_rules";
-    PluginManager.register({
+    pluginManager.register({
       id: pluginId,
       displayName: "Rules",
       version: "1.0.0",
@@ -177,39 +162,39 @@ describe("plugin manager", () => {
       ],
     });
 
-    const rules = AutoSoundRegistry.getRulesForKind("APP");
+    const rules = registries.autoSounds.getRulesForKind("APP");
     expect(rules[0]?.match.appId).toBe(pluginId);
 
-    PluginManager.unregister(pluginId);
+    pluginManager.unregister(pluginId);
   });
 
   it("overwrites existing plugin registrations", () => {
     const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => undefined);
 
-    PluginManager.register({
+    pluginManager.register({
       id: "app_overwrite",
       displayName: "First",
       version: "1.0.0",
       views: { AppRoot: () => null },
     });
 
-    PluginManager.register({
+    pluginManager.register({
       id: "app_overwrite",
       displayName: "Second",
       version: "1.0.0",
       views: { AppRoot: () => null },
     });
 
-    expect(PluginManager.getMetadata("app_overwrite")?.name).toBe("Second");
-    PluginManager.unregister("app_overwrite");
-    expect(PluginManager.getMetadata("missing")).toBeUndefined();
+    expect(pluginManager.getMetadata("app_overwrite")?.name).toBe("Second");
+    pluginManager.unregister("app_overwrite");
+    expect(pluginManager.getMetadata("missing")).toBeUndefined();
     warnSpy.mockRestore();
   });
 
   it("returns null when anchor provider yields no bounds", () => {
     const pluginId = "app_null_anchor";
 
-    PluginManager.register({
+    pluginManager.register({
       id: pluginId,
       displayName: "Null Anchor",
       version: "1.0.0",
@@ -221,21 +206,25 @@ describe("plugin manager", () => {
       },
     });
 
-    const anchor = resolveAnchor(`${pluginId}:avatar`, baseWorld, "phone");
+    const anchor = registries.anchors.resolveAnchor(
+      `${pluginId}:avatar`,
+      baseWorld,
+      "phone",
+    );
     expect(anchor).toBeNull();
 
-    PluginManager.unregister(pluginId);
+    pluginManager.unregister(pluginId);
   });
 
   it("rolls back on registration errors", () => {
     const spy = vi
-      .spyOn(ReducerRegistry, "registerAppReducer")
+      .spyOn(registries.reducers, "registerAppReducer")
       .mockImplementation(() => {
         throw "boom";
       });
 
     expect(() =>
-      PluginManager.register({
+      pluginManager.register({
         id: "app_throw",
         displayName: "Throw",
         version: "1.0.0",
@@ -244,24 +233,24 @@ describe("plugin manager", () => {
       }),
     ).toThrow("boom");
 
-    expect(PluginManager.has("app_throw")).toBe(false);
+    expect(pluginManager.has("app_throw")).toBe(false);
     spy.mockRestore();
   });
 
   it("logs rollback cleanup errors during registration", () => {
     const unregisterSpy = vi
-      .spyOn(ReducerRegistry, "unregisterAppReducer")
+      .spyOn(registries.reducers, "unregisterAppReducer")
       .mockImplementation(() => {
         throw new Error("cleanup failed");
       });
     const registerSpy = vi
-      .spyOn(AppRegistry, "register")
+      .spyOn(registries.apps, "register")
       .mockImplementation(() => {
         throw new Error("boom");
       });
 
     expect(() =>
-      PluginManager.register({
+      pluginManager.register({
         id: "app_rollback",
         displayName: "Rollback",
         version: "1.0.0",
@@ -270,14 +259,14 @@ describe("plugin manager", () => {
       }),
     ).toThrow("boom");
 
-    expect(PluginManager.has("app_rollback")).toBe(false);
+    expect(pluginManager.has("app_rollback")).toBe(false);
 
     registerSpy.mockRestore();
     unregisterSpy.mockRestore();
   });
 
   it("handles cleanup errors on unregister", () => {
-    PluginManager.register({
+    pluginManager.register({
       id: "app_cleanup",
       displayName: "Cleanup",
       version: "1.0.0",
@@ -285,19 +274,19 @@ describe("plugin manager", () => {
     });
 
     const spy = vi
-      .spyOn(AppRegistry, "unregister")
+      .spyOn(registries.apps, "unregister")
       .mockImplementation(() => {
         throw "cleanup failed";
       });
 
-    expect(() => PluginManager.unregister("app_cleanup")).not.toThrow();
-    expect(PluginManager.has("app_cleanup")).toBe(false);
+    expect(() => pluginManager.unregister("app_cleanup")).not.toThrow();
+    expect(pluginManager.has("app_cleanup")).toBe(false);
 
     spy.mockRestore();
   });
 
   it("handles cleanup errors on unregister with Error instances", () => {
-    PluginManager.register({
+    pluginManager.register({
       id: "app_cleanup_error",
       displayName: "Cleanup Error",
       version: "1.0.0",
@@ -305,13 +294,13 @@ describe("plugin manager", () => {
     });
 
     const spy = vi
-      .spyOn(AppRegistry, "unregister")
+      .spyOn(registries.apps, "unregister")
       .mockImplementation(() => {
         throw new Error("cleanup failed");
       });
 
-    expect(() => PluginManager.unregister("app_cleanup_error")).not.toThrow();
-    expect(PluginManager.has("app_cleanup_error")).toBe(false);
+    expect(() => pluginManager.unregister("app_cleanup_error")).not.toThrow();
+    expect(pluginManager.has("app_cleanup_error")).toBe(false);
 
     spy.mockRestore();
   });
@@ -324,7 +313,7 @@ describe("plugin manager", () => {
       views: { AppRoot: () => null },
     });
 
-    registerPlugins([plugin]);
-    expect(PluginManager.getAppIds()).toContain("app_define");
+    registerPlugins(pluginManager, [plugin]);
+    expect(pluginManager.getAppIds()).toContain("app_define");
   });
 });

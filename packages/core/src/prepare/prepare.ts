@@ -468,6 +468,7 @@ export function prepareEpisode(
 
 export interface RunOptions {
   mode: "preview" | "render";
+  registries: import("../engine/registries").EngineRegistries;
   onError?: (error: Error, event: RuntimeEvent) => void;
 }
 
@@ -482,7 +483,7 @@ export interface RunOptions {
 export function runEpisode(
   episode: CompiledEpisode,
   frame: number,
-  options: RunOptions = { mode: "preview" },
+  options: RunOptions,
 ): WorldState {
   // Run replay with events - let replay() handle the filtering
   // RuntimeEvent is compatible with TimelineEvent by design
@@ -490,7 +491,7 @@ export function runEpisode(
     episode.initialWorld,
     episode.events,
     frame,
-    { mode: options.mode },
+    { mode: options.mode, registries: options.registries },
     episode.eventIndex,
   );
 }

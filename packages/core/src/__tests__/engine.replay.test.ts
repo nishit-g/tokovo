@@ -12,9 +12,7 @@ import {
   cacheStateAtKeyframe,
   PluginError,
 } from "../engine";
-import { EventHandlerRegistry } from "../engine/event-handlers";
-import { ReducerRegistry } from "../engine/registry";
-import { MiddlewareRegistry } from "../engine/middleware";
+import { createEngineRegistries, type EngineRegistries } from "../engine/registries";
 import * as handlerModule from "../engine/handlers";
 import { logger } from "../logger";
 
@@ -25,31 +23,39 @@ const baseWorld = (): WorldState => ({
   audio: { activeSounds: {}, buses: {}, policyState: { recentSounds: {}, nextId: 0 }, autoSoundRules: [] },
 } as WorldState);
 
+let registries: EngineRegistries;
+const previewCtx = () => ({ mode: "preview" as const, registries });
+const renderCtx = () => ({ mode: "render" as const, registries });
+
 beforeEach(() => {
-  EventHandlerRegistry.clear();
-  ReducerRegistry.reset();
-  MiddlewareRegistry.clear();
+  registries = createEngineRegistries();
   logger.configure({ consoleOutput: false, minLevel: "debug", components: [] });
 });
 
 afterEach(() => {
-  EventHandlerRegistry.clear();
-  ReducerRegistry.reset();
-  MiddlewareRegistry.clear();
+  registries.eventHandlers.clear();
+  registries.reducers.reset();
+  registries.middleware.clear();
+  registries.lifecycle.destroyAll();
 });
 
 describe("engine replay", () => {
   it("handles negative time, empty events, and missing initial state", () => {
     const world = baseWorld();
-    const result = replay(world, [], -5);
+    const result = replay(world, [], -5, previewCtx());
     expect(result.audio).toBeDefined();
 
-    const empty = replay(undefined as any, [{ at: 0, kind: "APP" } as any], 0);
+    const empty = replay(
+      undefined as any,
+      [{ at: 0, kind: "APP" } as any],
+      0,
+      previewCtx(),
+    );
     expect(empty.devices).toEqual({});
   });
 
   it("creates defaults when initial state is missing and no events are provided", () => {
-    const result = replay(undefined as any, [], 0);
+    const result = replay(undefined as any, [], 0, previewCtx());
     expect(result.devices).toEqual({});
     expect(result.camera.baseView).toBe("APP_VIEW");
   });
@@ -62,7 +68,7 @@ describe("engine replay", () => {
       audio: undefined,
     } as WorldState;
 
-    const result = replay(world, [], 0);
+    const result = replay(world, [], 0, previewCtx());
     expect(result.camera.baseView).toBe("TRANSITION");
     expect(result.camera.appId).toBe("app_legacy");
     expect(result.audio).toBeDefined();
@@ -76,7 +82,7 @@ describe("engine replay", () => {
       audio: undefined,
     } as WorldState;
 
-    const result = replay(world, [], 0);
+    const result = replay(world, [], 0, previewCtx());
     expect(result.camera.baseView).toBe("APP_VIEW");
     expect(result.audio).toBeDefined();
   });
@@ -89,7 +95,12 @@ describe("engine replay", () => {
       audio: undefined,
     } as WorldState;
 
-    const result = replay(world, [{ at: 0, kind: "UNKNOWN" } as any], 0);
+    const result = replay(
+      world,
+      [{ at: 0, kind: "UNKNOWN" } as any],
+      0,
+      previewCtx(),
+    );
     expect(result.camera.baseView).toBe("TRANSITION");
     expect(result.camera.appId).toBe("app_legacy");
     expect(result.audio).toBeDefined();
@@ -103,26 +114,31 @@ describe("engine replay", () => {
       audio: undefined,
     } as WorldState;
 
-    const result = replay(world, [{ at: 0, kind: "UNKNOWN" } as any], 0);
+    const result = replay(
+      world,
+      [{ at: 0, kind: "UNKNOWN" } as any],
+      0,
+      previewCtx(),
+    );
     expect(result.camera.baseView).toBe("APP_VIEW");
   });
 
   it("processes handlers, reducers, and built-in events", () => {
     const world = baseWorld();
 
-    EventHandlerRegistry.register({
+    registries.eventHandlers.register({
       kind: "CUSTOM",
       handler: (draft) => {
         (draft.appState as any).custom = true;
       },
     });
 
-    ReducerRegistry.registerAppReducer("app", (draft) => {
+    registries.reducers.registerAppReducer("app", (draft) => {
       (draft.appState as any).app = { handled: true };
     });
-    ReducerRegistry.registerEventKinds("app", ["APP_EVENT"]);
+    registries.reducers.registerEventKinds("app", ["APP_EVENT"]);
 
-    ReducerRegistry.registerDeviceReducer((devices) => ({
+    registries.reducers.registerDeviceReducer((devices) => ({
       ...devices,
       phone: { ...devices.phone, touched: true },
     }) as any);
@@ -143,7 +159,13 @@ describe("engine replay", () => {
       { at: 6, kind: "UNKNOWN" },
     ] as any[];
 
-    const result = replay(world, events, 10, { mode: "preview" }, createEventIndex(events as any));
+    const result = replay(
+      world,
+      events,
+      10,
+      previewCtx(),
+      createEventIndex(events as any),
+    );
 
     expect((result.appState as any).custom).toBe(true);
     expect((result.appState as any).app).toEqual({ handled: true });
@@ -154,15 +176,13 @@ describe("engine replay", () => {
   });
 
   it("wraps non-error throws and uses kind when appId is missing", () => {
-    ReducerRegistry.registerAppReducer("app", () => {
+    registries.reducers.registerAppReducer("app", () => {
       throw "boom";
     });
-    ReducerRegistry.registerEventKinds("app", ["CUSTOM"]);
+    registries.reducers.registerEventKinds("app", ["CUSTOM"]);
 
     try {
-      replay(baseWorld(), [{ at: 0, kind: "CUSTOM" } as any], 0, {
-        mode: "render",
-      });
+      replay(baseWorld(), [{ at: 0, kind: "CUSTOM" } as any], 0, renderCtx());
       throw new Error("expected replay to throw");
     } catch (err) {
       expect(err).toBeInstanceOf(PluginError);
@@ -170,27 +190,25 @@ describe("engine replay", () => {
     }
 
     const errors: any[] = [];
-    replay(
-      baseWorld(),
-      [{ at: 0, kind: "CUSTOM" } as any],
-      0,
-      { mode: "preview", errors },
-    );
+    replay(baseWorld(), [{ at: 0, kind: "CUSTOM" } as any], 0, {
+      ...previewCtx(),
+      errors,
+    });
     expect(errors[0].error).toBeInstanceOf(Error);
     expect(errors[0].error.message).toBe("boom");
   });
 
   it("wraps errors as PluginError in render mode", () => {
-    ReducerRegistry.registerAppReducer("app", () => {
+    registries.reducers.registerAppReducer("app", () => {
       throw new Error("boom");
     });
 
     const events = [{ at: 0, kind: "APP", appId: "app" } as any];
-    expect(() => replay(baseWorld(), events, 0, { mode: "render" })).toThrow(PluginError);
+    expect(() => replay(baseWorld(), events, 0, renderCtx())).toThrow(PluginError);
   });
 
   it("captures errors in preview mode", () => {
-    ReducerRegistry.registerAppReducer("app", () => {
+    registries.reducers.registerAppReducer("app", () => {
       throw new Error("boom");
     });
 
@@ -199,7 +217,7 @@ describe("engine replay", () => {
       baseWorld(),
       [{ at: 0, kind: "APP", appId: "app" } as any],
       0,
-      { mode: "preview", errors },
+      { ...previewCtx(), errors },
     );
 
     expect(errors).toHaveLength(1);
@@ -225,7 +243,7 @@ describe("engine replay", () => {
       baseWorld(),
       [{ at: 0, kind: "DEVICE" } as any],
       0,
-      { mode: "preview" },
+      previewCtx(),
     );
     expect(result).toBeDefined();
 
@@ -241,7 +259,12 @@ describe("engine replay", () => {
       audio: { activeSounds: {}, buses: {}, policyState: { recentSounds: {}, nextId: 0 }, autoSoundRules: [] },
     } as WorldState;
 
-    const result = replay(world, [{ at: 0, kind: "UNKNOWN" } as any], 0, { mode: "preview" });
+    const result = replay(
+      world,
+      [{ at: 0, kind: "UNKNOWN" } as any],
+      0,
+      previewCtx(),
+    );
     expect(result.camera.transform).toEqual(DEFAULT_CAMERA_TRANSFORM);
   });
 
@@ -253,21 +276,26 @@ describe("engine replay", () => {
       audio: { activeSounds: {}, buses: {}, policyState: { recentSounds: {}, nextId: 0 }, autoSoundRules: [] },
     } as WorldState;
 
-    const result = replay(world, [{ at: 0, kind: "UNKNOWN" } as any], 0, { mode: "preview" });
+    const result = replay(
+      world,
+      [{ at: 0, kind: "UNKNOWN" } as any],
+      0,
+      previewCtx(),
+    );
     expect(result.camera.transform).toEqual(DEFAULT_CAMERA_TRANSFORM);
   });
 });
 
 describe("engine replay incremental", () => {
   it("handles empty events", () => {
-    const result = replayIncremental(baseWorld(), [], 0, { mode: "preview" });
+    const result = replayIncremental(baseWorld(), [], 0, previewCtx());
     expect(result.camera).toBeDefined();
   });
 
   it("falls back to full replay when missing index or cache", () => {
     const events = [{ at: 0, kind: "APP" } as any];
-    const full = replay(baseWorld(), events, 0, { mode: "preview" });
-    const incremental = replayIncremental(baseWorld(), events, 0, { mode: "preview" });
+    const full = replay(baseWorld(), events, 0, previewCtx());
+    const incremental = replayIncremental(baseWorld(), events, 0, previewCtx());
 
     expect(incremental).toEqual(full);
   });
@@ -282,7 +310,7 @@ describe("engine replay incremental", () => {
       baseWorld(),
       [{ at: 2, kind: "APP", appId: "app" } as any],
       2,
-      { mode: "preview" },
+      previewCtx(),
       createKeyframedEventIndex([{ at: 2, kind: "APP", appId: "app" } as any], 2),
       cache,
     );
@@ -301,7 +329,7 @@ describe("engine replay incremental", () => {
       baseWorld(),
       events,
       1,
-      { mode: "preview" },
+      previewCtx(),
       index,
       cache,
     );
@@ -313,28 +341,35 @@ describe("engine replay incremental", () => {
     const events = [{ at: 0, kind: "APP" } as any];
     const index = createKeyframedEventIndex(events, 2);
     const cache = createStateCache(2);
-    const result = replayIncremental(baseWorld(), events, -1, { mode: "preview" }, index, cache);
+    const result = replayIncremental(
+      baseWorld(),
+      events,
+      -1,
+      previewCtx(),
+      index,
+      cache,
+    );
     expect(result.camera).toBeDefined();
   });
 
   it("wraps non-error throws during incremental replay", () => {
-    ReducerRegistry.registerAppReducer("app", () => {
+    registries.reducers.registerAppReducer("app", () => {
       throw "boom";
     });
-    ReducerRegistry.registerEventKinds("app", ["CUSTOM"]);
+    registries.reducers.registerEventKinds("app", ["CUSTOM"]);
 
     const events = [{ at: 0, kind: "CUSTOM" } as any];
     const index = createKeyframedEventIndex(events, 2);
     const errors: any[] = [];
 
     const previewCache = createStateCache(2);
-    replayIncremental(baseWorld(), events, 0, { mode: "preview", errors }, index, previewCache);
+    replayIncremental(baseWorld(), events, 0, { ...previewCtx(), errors }, index, previewCache);
     expect(errors[0].error).toBeInstanceOf(Error);
     expect(errors[0].error.message).toBe("boom");
 
     try {
       const renderCache = createStateCache(2);
-      replayIncremental(baseWorld(), events, 0, { mode: "render" }, index, renderCache);
+      replayIncremental(baseWorld(), events, 0, renderCtx(), index, renderCache);
       throw new Error("expected replayIncremental to throw");
     } catch (err) {
       expect(err).toBeInstanceOf(PluginError);
@@ -356,7 +391,7 @@ describe("engine replay incremental", () => {
       worldNoDevices,
       events,
       0,
-      { mode: "preview" },
+      previewCtx(),
       index,
       createStateCache(2),
     );
@@ -372,7 +407,7 @@ describe("engine replay incremental", () => {
       worldGhost,
       events,
       0,
-      { mode: "preview" },
+      previewCtx(),
       index,
       createStateCache(2),
     );
@@ -380,14 +415,18 @@ describe("engine replay incremental", () => {
   });
 
   it("tracks skipped events on errors", () => {
-    ReducerRegistry.registerAppReducer("app", () => {
+    registries.reducers.registerAppReducer("app", () => {
       throw new Error("boom");
     });
 
     const events = [{ at: 0, kind: "APP", appId: "app" } as any];
     const index = createKeyframedEventIndex(events, 2);
     const cache = createStateCache(2);
-    const ctx = { mode: "preview" as const, errors: [], stats: { totalEvents: 1, processedEvents: 0, skippedEvents: 0 } };
+    const ctx = {
+      ...previewCtx(),
+      errors: [],
+      stats: { totalEvents: 1, processedEvents: 0, skippedEvents: 0 },
+    };
 
     replayIncremental(baseWorld(), events, 0, ctx, index, cache);
     expect(ctx.errors).toHaveLength(1);
@@ -395,7 +434,7 @@ describe("engine replay incremental", () => {
   });
 
   it("throws plugin errors in render mode", () => {
-    ReducerRegistry.registerAppReducer("app", () => {
+    registries.reducers.registerAppReducer("app", () => {
       throw new Error("boom");
     });
 
@@ -403,7 +442,7 @@ describe("engine replay incremental", () => {
     const index = createKeyframedEventIndex(events, 2);
     const cache = createStateCache(2);
     expect(() =>
-      replayIncremental(baseWorld(), events, 0, { mode: "render" }, index, cache),
+      replayIncremental(baseWorld(), events, 0, renderCtx(), index, cache),
     ).toThrow(PluginError);
   });
 });

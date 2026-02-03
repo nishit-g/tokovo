@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import { replay, createEventIndex } from "@tokovo/core";
 import { TokovoRenderer } from "@tokovo/renderer";
 import type { PreparedTrackEpisode } from "@tokovo/compiler";
+import { pluginManager, tokovoRegistries } from "./runtime";
 
 interface EpisodeRendererProps {
   episodeIR: PreparedTrackEpisode;
@@ -23,7 +24,7 @@ export function EpisodeRenderer({
       episodeIR.initialWorld,
       episodeIR.events,
       frame,
-      { mode: "preview", fps: episodeIR.fps },
+      { mode: "preview", fps: episodeIR.fps, registries: tokovoRegistries.engine },
       eventIndex,
     );
   }, [episodeIR, eventIndex, frame]);
@@ -62,6 +63,8 @@ export function EpisodeRenderer({
         t={frame}
         fps={episodeIR.fps}
         debug={false}
+        pluginManager={pluginManager}
+        registries={tokovoRegistries.plugins}
       />
     </div>
   );

@@ -49,42 +49,46 @@ const DEFAULT_METADATA: AppMetadata = {
 // REGISTRY
 // =============================================================================
 
-// Create the registry using factory
-const _registry = createRegistry<string, AppMetadata>("AppMetadata");
+export interface AppMetadataRegistryAPI {
+  register(appId: string, metadata: AppMetadata): void;
+  unregister(appId: string): void;
+  get(appId: string): AppMetadata;
+  has(appId: string): boolean;
+  keys(): string[];
+  entries(): Record<string, AppMetadata>;
+  clear(): void;
+  readonly size: number;
+}
 
-/**
- * AppMetadataRegistry - Maps app IDs to their metadata
- */
-export const AppMetadataRegistry = {
-  register: _registry.register,
+export function createAppMetadataRegistry(): AppMetadataRegistryAPI {
+  const registry = createRegistry<string, AppMetadata>("AppMetadata");
 
-  unregister(appId: string): void {
-    _registry.delete(appId);
-  },
+  return {
+    register: registry.register,
 
-  get(appId: string): AppMetadata {
-    return (
-      _registry.get(appId) || {
-        ...DEFAULT_METADATA,
-        displayName: appId,
-      }
-    );
-  },
+    unregister(appId: string): void {
+      registry.delete(appId);
+    },
 
-  has: _registry.has,
+    get(appId: string): AppMetadata {
+      return (
+        registry.get(appId) || {
+          ...DEFAULT_METADATA,
+          displayName: appId,
+        }
+      );
+    },
 
-  keys: _registry.keys,
+    has: registry.has,
 
-  entries: _registry.entries,
+    keys: registry.keys,
 
-  clear: _registry.clear,
+    entries: registry.entries,
 
-  get size() {
-    return _registry.size;
-  },
-};
+    clear: registry.clear,
 
-// =============================================================================
-// NOTE: Apps should register themselves via side effects when imported.
-// DO NOT add app-specific registrations here!
-// =============================================================================
+    get size() {
+      return registry.size;
+    },
+  };
+}

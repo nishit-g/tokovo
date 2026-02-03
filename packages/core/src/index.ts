@@ -23,21 +23,7 @@ export * from "./engine";
 // =============================================================================
 // ANCHOR REGISTRY - Anchor registration and resolution
 // =============================================================================
-export {
-  registerAnchorProvider,
-  unregisterAnchorProvider,
-  getAnchorProvider,
-  hasAnchorProvider,
-  getAnchorsForApp,
-  getAnchorFraming,
-  getRegisteredAppIds,
-  getProviderCount,
-  clearAnchorProviders,
-  clearAnchors,
-  resolveAnchor,
-  hasAnchor,
-  AnchorRegistry,
-} from "./anchors/registry";
+export { AnchorRegistryClass, createAnchorRegistry } from "./anchors/registry";
 
 export type {
   AnchorProvider,
@@ -57,23 +43,35 @@ export * from "./audio";
 // =============================================================================
 export {
   createRegistry,
-  AppRegistry,
-  SoundRegistry,
-  WidgetRegistry,
+  createAppRegistry,
+  createSoundRegistry,
+  createWidgetRegistry,
   getDynamicIslandWidget,
   getNotificationWidgets,
-  BehaviorRegistry,
-  AppMetadataRegistry,
-  LayoutRegistry,
+  createBehaviorRegistry,
+  createAppMetadataRegistry,
+  createLayoutRegistry,
+  createIconRegistry,
+  getAppIcon,
 } from "./registries";
 export type {
   Registry,
   AppViewProps,
   AppViewComponent,
+  AppRegistryAPI,
   AppMetadata,
+  AppMetadataRegistryAPI,
   LayoutStrategy,
+  LayoutRegistryClass,
+  SoundRegistryAPI,
   CameraIntent,
   AppBehavior,
+  BehaviorRegistryAPI,
+  WidgetRegistryClass,
+  IconMetadata,
+  IconVariant,
+  IconSize,
+  IconRegistryAPI,
 } from "./registries";
 
 // =============================================================================
@@ -86,10 +84,10 @@ export * from "./notifications";
 // Named exports to avoid conflicts with ./registries
 // =============================================================================
 export {
-  PluginManager,
   PluginManagerClass,
   definePlugin,
   registerPlugins,
+  createPluginRegistries,
 } from "./plugin";
 export type {
   TokovoPluginContract,
@@ -105,6 +103,7 @@ export type {
   ScreenComponent,
   WidgetProps,
   WidgetComponent,
+  PluginRegistries,
 } from "./plugin";
 
 // =============================================================================
@@ -148,19 +147,7 @@ export type {
   KeyboardRuntimeEvent,
 } from "./prepare";
 
-// =============================================================================
-// CONTAINER - Dependency Injection for testability
-// =============================================================================
-export {
-  createContainer,
-  globalContainer,
-  resetGlobalContainer,
-} from "./container";
-export type {
-  TokovoContainer,
-  SoundRegistryInterface,
-  LayoutRegistryInterface,
-} from "./container";
+// Note: Legacy container removed in favor of engine + plugin scoped registries.
 
 // =============================================================================
 // COMPOSABLES - Micro-plugin pattern for composable plugin capabilities
@@ -263,4 +250,14 @@ export type { PluginBuilder, PluginBuilderConfig } from "./plugin/builder";
 // =============================================================================
 // ENGINE FACADE - Unified engine initialization and control
 // =============================================================================
-export { Engine } from "./engine/index";
+export { createEngine, createEngineRegistries } from "./engine/index";
+export type { EngineRegistries } from "./engine/index";
+
+// =============================================================================
+// RUNTIME REGISTRIES - Bundled registry creation
+// =============================================================================
+export {
+  createTokovoRegistries,
+  type TokovoRegistries,
+  type TokovoRegistriesOverrides,
+} from "./registries/runtime";

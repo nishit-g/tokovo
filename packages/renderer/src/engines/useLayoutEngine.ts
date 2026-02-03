@@ -27,7 +27,7 @@ import {
 } from "@tokovo/core";
 import { computeLayout } from "../layout";
 import { iPhone16Profile, PixelProfile, DeviceProfile } from "@tokovo/devices";
-import { AppMetadataRegistry } from "@tokovo/core";
+import { useRendererRegistries } from "../RegistryContext";
 
 // =============================================================================
 // INPUT / OUTPUT TYPES
@@ -103,6 +103,7 @@ export const NULL_LAYOUT_OUTPUT: LayoutEngineOutput = {
 
 export function useLayoutEngine(input: LayoutEngineInput): LayoutEngineOutput {
   const { world, t, focusDeviceId } = input;
+  const registries = useRendererRegistries();
 
   return useMemo(() => {
     // 1. Determine active device
@@ -130,7 +131,7 @@ export function useLayoutEngine(input: LayoutEngineInput): LayoutEngineOutput {
     if (device.isLocked) {
       viewKind = "LOCKSCREEN";
     } else if (appId) {
-      const meta = AppMetadataRegistry.get(appId);
+      const meta = registries.metadata.get(appId);
       viewKind = meta.viewStrategy || "TRANSITION";
 
       // 2. Check Dynamic App State for overrides via STANDARD CONTRACT
@@ -205,7 +206,7 @@ export function useLayoutEngine(input: LayoutEngineInput): LayoutEngineOutput {
       safeAreaInsets: profile.safeArea,
     };
 
-    const layout = computeLayout(layoutContext);
+    const layout = computeLayout(layoutContext, registries.layouts);
 
     return {
       deviceId,
@@ -220,5 +221,5 @@ export function useLayoutEngine(input: LayoutEngineInput): LayoutEngineOutput {
       effectiveViewportHeight,
       isError: false,
     };
-  }, [world, t, focusDeviceId]);
+  }, [world, t, focusDeviceId, registries]);
 }

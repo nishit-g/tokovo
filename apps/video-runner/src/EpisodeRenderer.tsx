@@ -21,12 +21,16 @@ import {
   continueRender,
   staticFile,
 } from "remotion";
-import { replay, createEventIndex, PluginManager } from "@tokovo/core";
+import { replay, createEventIndex } from "@tokovo/core";
 import {
   prepareTrackEpisode,
   type PreparedTrackEpisode,
 } from "@tokovo/compiler";
-import { TokovoRenderer, AudioLayer } from "@tokovo/renderer";
+import {
+  TokovoRenderer,
+  AudioLayer,
+  RendererRegistryProvider,
+} from "@tokovo/renderer";
 import {
   SimpleVoiceLayer,
   VoiceLayer,
@@ -43,6 +47,7 @@ import {
   type FormatId,
 } from "@tokovo/episodes";
 import { ErrorBoundary } from "./ErrorBoundary";
+import { pluginManager, tokovoRegistries } from "./runtime";
 
 // =============================================================================
 // TYPES
@@ -92,7 +97,7 @@ export async function calculateEpisodeMetadata({
 
 function resolvePlugins(appIds: string[]) {
   return appIds
-    .map((appId) => PluginManager.get(appId))
+    .map((appId) => pluginManager.get(appId))
     .filter(
       (plugin): plugin is NonNullable<typeof plugin> => plugin !== undefined,
     );
@@ -219,7 +224,7 @@ const EpisodeRendererInner: React.FC<EpisodeRendererProps> = ({
       prepared.initialWorld,
       prepared.events,
       frame,
-      { mode: "preview", fps },
+      { mode: "preview", fps, registries: tokovoRegistries.engine },
       eventIndex,
     );
   }, [prepared, eventIndex, frame, fps]);
@@ -338,39 +343,43 @@ const EpisodeRendererInner: React.FC<EpisodeRendererProps> = ({
         alignItems: "center",
       }}
     >
-      <AudioLayer world={worldWithVoice} t={frame} />
-      {voiceManifest &&
-        voiceConfig?.audioPath &&
-        voiceSoundCues.length === 0 &&
-        (voiceConfig.usePerSegmentControl && voiceEvents.length > 0 ? (
-          <VoiceLayer
-            manifest={voiceManifest}
-            audioUrl={voiceConfig.audioPath}
-            events={voiceEvents}
-            volume={voiceConfig.volume ?? 1}
+      <RendererRegistryProvider registries={tokovoRegistries.plugins}>
+        <AudioLayer world={worldWithVoice} t={frame} />
+        {voiceManifest &&
+          voiceConfig?.audioPath &&
+          voiceSoundCues.length === 0 &&
+          (voiceConfig.usePerSegmentControl && voiceEvents.length > 0 ? (
+            <VoiceLayer
+              manifest={voiceManifest}
+              audioUrl={voiceConfig.audioPath}
+              events={voiceEvents}
+              volume={voiceConfig.volume ?? 1}
+            />
+          ) : (
+            <SimpleVoiceLayer
+              manifest={voiceManifest}
+              audioUrl={voiceConfig.audioPath}
+              startFrame={voiceConfig.startFrame ?? 0}
+              volume={voiceConfig.volume ?? 1}
+            />
+          ))}
+        <div
+          style={{
+            transform: `scale(${scale})`,
+            transformOrigin: "center center",
+          }}
+        >
+          <TokovoRenderer
+            world={worldWithVoice}
+            t={frame}
+            fps={fps}
+            debug={false}
+            eventIndex={eventIndex}
+            pluginManager={pluginManager}
+            registries={tokovoRegistries.plugins}
           />
-        ) : (
-          <SimpleVoiceLayer
-            manifest={voiceManifest}
-            audioUrl={voiceConfig.audioPath}
-            startFrame={voiceConfig.startFrame ?? 0}
-            volume={voiceConfig.volume ?? 1}
-          />
-        ))}
-      <div
-        style={{
-          transform: `scale(${scale})`,
-          transformOrigin: "center center",
-        }}
-      >
-        <TokovoRenderer
-          world={worldWithVoice}
-          t={frame}
-          fps={fps}
-          debug={false}
-          eventIndex={eventIndex}
-        />
-      </div>
+        </div>
+      </RendererRegistryProvider>
     </AbsoluteFill>
   );
 };

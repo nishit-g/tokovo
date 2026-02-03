@@ -37,11 +37,12 @@ export {
 
 // Auto-Sound
 export {
-  AutoSoundRegistry,
+  createAutoSoundRegistry,
   deriveAudioInstructions,
   type AutoSoundRule,
   type AutoSoundAction,
   type AudioInstruction,
+  type AutoSoundRegistryClass,
 } from "./auto-sound";
 
 // Music Bed
@@ -58,4 +59,4 @@ export {
 } from "./music-bed";
 
 // Sound paths
-export { getSoundPath } from "./sounds";
+export { getSoundPath, registerBuiltInSounds } from "./sounds";

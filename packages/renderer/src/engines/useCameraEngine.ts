@@ -31,6 +31,7 @@ import type { WorldState, EventIndex, CameraTransform } from "@tokovo/core";
 import { DEFAULT_TRANSFORM } from "@tokovo/core";
 
 import { LayoutEngineOutput } from "./useLayoutEngine";
+import { useRendererRegistries } from "../RegistryContext";
 
 // =============================================================================
 // INPUT / OUTPUT TYPES
@@ -75,6 +76,7 @@ type CameraEffect = Parameters<typeof processActiveEffects>[1][number];
 
 export function useCameraEngine(input: CameraEngineInput): CameraEngineOutput {
   const { world, t, layoutOutput, eventIndex } = input;
+  const registries = useRendererRegistries();
 
   return useMemo(() => {
     const { appId, profile, layout, deviceId } = layoutOutput;
@@ -89,7 +91,13 @@ export function useCameraEngine(input: CameraEngineInput): CameraEngineOutput {
     // =====================================================================
     let anchorSnapshot: AnchorSnapshot | undefined;
     if (appId) {
-      anchorSnapshot = getAnchorsForApp(appId, world, layout, deviceId);
+      anchorSnapshot = getAnchorsForApp(
+        registries.anchors,
+        appId,
+        world,
+        layout,
+        deviceId,
+      );
     }
 
     // =====================================================================
@@ -116,6 +124,7 @@ export function useCameraEngine(input: CameraEngineInput): CameraEngineOutput {
       DEFAULT_TRANSFORM, // CRITICAL: Pure computation, no inter-frame state
       anchorSnapshot,
       viewport,
+      registries.anchors,
     );
 
     let directorSkipped: string | undefined;
@@ -137,7 +146,7 @@ export function useCameraEngine(input: CameraEngineInput): CameraEngineOutput {
       directorSkipped,
       anchorSnapshot,
     };
-  }, [world, t, layoutOutput, eventIndex]);
+  }, [world, t, layoutOutput, eventIndex, registries]);
 }
 
 // =============================================================================

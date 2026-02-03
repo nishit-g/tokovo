@@ -45,7 +45,7 @@ export type FeatureReducer = (
  * Apps self-register their event handlers via this registry.
  * The engine dispatches events to the appropriate registered reducers.
  */
-class ReducerRegistryClass {
+export class ReducerRegistryClass {
   private _deviceReducer: DeviceReducer | null = null;
   private _appReducers = new Map<string, AppReducer>();
   private _featureReducers = new Map<string, FeatureReducer>();
@@ -214,10 +214,6 @@ class ReducerRegistryClass {
   }
 }
 
-export const ReducerRegistry = new ReducerRegistryClass();
-
 export function createReducerRegistry(): ReducerRegistryClass {
   return new ReducerRegistryClass();
 }
-
-export { ReducerRegistryClass };

@@ -45,7 +45,6 @@ import {
   cacheStateAtKeyframe,
 } from "./utils/state-cache";
 
-import { ReducerRegistry } from "./engine/registry";
 import { createScopedLogger } from "./logger";
 import {
   processCameraEvent,
@@ -53,26 +52,24 @@ import {
   cleanupExpiredSounds,
   HandlerContext,
 } from "./engine/handlers";
-import {
-  EventHandlerRegistry,
-  EventHandlerContext,
-} from "./engine/event-handlers";
-import { MiddlewareRegistry, MiddlewareContext } from "./engine/middleware";
-import { LifecycleManager, LifecycleContext } from "./engine/lifecycle";
+import type { EventHandlerContext } from "./engine/event-handlers";
+import type { MiddlewareContext } from "./engine/middleware";
+import type { LifecycleContext } from "./engine/lifecycle";
 import {
   hasBuiltInHandler,
   getBuiltInHandler,
 } from "./engine/built-in-handlers";
+import type { EngineRegistries } from "./engine/registries";
 
 const log = createScopedLogger("engine");
 const sortedEventCache = new WeakMap<TimelineEvent[], TimelineEvent[]>();
 
-export { ReducerRegistry } from "./engine/registry";
 export type {
   DeviceReducer,
   AppReducer,
   FeatureReducer,
 } from "./engine/registry";
+export { createReducerRegistry } from "./engine/registry";
 export { EngineConfig } from "./engine/config";
 export { EngineLogger } from "./engine/logger";
 export {
@@ -100,6 +97,7 @@ export interface ReplayContext {
   mode: "preview" | "render";
   gracefulDegradation?: boolean;
   fps?: number;
+  registries: EngineRegistries;
   errors?: Array<{
     event: TimelineEvent;
     error: Error;
@@ -129,8 +127,6 @@ export class PluginError extends Error {
   }
 }
 
-const DEFAULT_REPLAY_CONTEXT: ReplayContext = { mode: "preview" };
-
 // =============================================================================
 // REPLAY FUNCTION
 // =============================================================================
@@ -152,7 +148,7 @@ export function replay(
   initial: WorldState,
   events: TimelineEvent[],
   t: number,
-  ctx: ReplayContext = DEFAULT_REPLAY_CONTEXT,
+  ctx: ReplayContext,
   eventIndex?: EventIndex,
 ): WorldState {
   if (t < 0) {
@@ -160,12 +156,14 @@ export function replay(
     t = 0;
   }
 
+  const registries = ctx.registries;
+
   if (!events || events.length === 0) {
     return ensureInitialState(initial);
   }
 
   const lifecycleCtx: LifecycleContext = { frame: t, mode: ctx.mode };
-  LifecycleManager.notifyBeforeReplay(lifecycleCtx);
+  registries.lifecycle.notifyBeforeReplay(lifecycleCtx);
 
   if (!initial) {
     log.warn("Replay called with undefined initial state");
@@ -175,7 +173,7 @@ export function replay(
       camera: { ...DEFAULT_BASE_CAMERA_STATE },
       audio: { ...DEFAULT_AUDIO_STATE },
     };
-    LifecycleManager.notifyAfterReplay(emptyState, lifecycleCtx);
+    registries.lifecycle.notifyAfterReplay(emptyState, lifecycleCtx);
     return emptyState;
   }
 
@@ -202,7 +200,7 @@ export function replay(
       mode: ctx.mode,
       fps: ctx.fps ?? 30,
     };
-    const registryCtx: EventHandlerContext = {
+  const registryCtx: EventHandlerContext = {
       frame: t,
       eventIndex: 0,
       mode: ctx.mode,
@@ -228,6 +226,7 @@ export function replay(
           event,
           t,
           ctx,
+          registries,
           handlerCtx,
           registryCtx,
           middlewareCtx,
@@ -292,7 +291,7 @@ export function replay(
       : DEFAULT_CAMERA_TRANSFORM;
   });
 
-  LifecycleManager.notifyAfterReplay(finalState, lifecycleCtx);
+  registries.lifecycle.notifyAfterReplay(finalState, lifecycleCtx);
   return finalState;
 }
 
@@ -321,7 +320,7 @@ export function replayIncremental(
   initial: WorldState,
   events: TimelineEvent[],
   t: number,
-  ctx: ReplayContext = DEFAULT_REPLAY_CONTEXT,
+  ctx: ReplayContext,
   eventIndex?: KeyframedEventIndex,
   stateCache?: StateCache,
 ): WorldState {
@@ -329,6 +328,8 @@ export function replayIncremental(
     log.warn(`replayIncremental called with negative t: ${t}, using t=0`);
     t = 0;
   }
+
+  const registries = ctx.registries;
 
   if (!events || events.length === 0) {
     return ensureInitialState(initial);
@@ -339,11 +340,11 @@ export function replayIncremental(
   }
 
   const lifecycleCtx: LifecycleContext = { frame: t, mode: ctx.mode };
-  LifecycleManager.notifyBeforeReplay(lifecycleCtx);
+  registries.lifecycle.notifyBeforeReplay(lifecycleCtx);
 
   const cached = getCachedStateForFrame(stateCache, t);
   if (cached && cached.fromFrame === t) {
-    LifecycleManager.notifyAfterReplay(cached.state, lifecycleCtx);
+    registries.lifecycle.notifyAfterReplay(cached.state, lifecycleCtx);
     return cached.state;
   }
 
@@ -363,7 +364,7 @@ export function replayIncremental(
 
   if (eventsToApply.length === 0 && cached) {
     const result = finalizeState(cached.state, t);
-    LifecycleManager.notifyAfterReplay(result, lifecycleCtx);
+    registries.lifecycle.notifyAfterReplay(result, lifecycleCtx);
     return result;
   }
 
@@ -397,6 +398,7 @@ export function replayIncremental(
           event,
           t,
           ctx,
+          registries,
           handlerCtx,
           registryCtx,
           middlewareCtx,
@@ -410,7 +412,7 @@ export function replayIncremental(
   const finalState = finalizeState(stateAfterEvents, t);
   cacheStateAtKeyframe(stateCache, t, finalState);
 
-  LifecycleManager.notifyAfterReplay(finalState, lifecycleCtx);
+  registries.lifecycle.notifyAfterReplay(finalState, lifecycleCtx);
   return finalState;
 }
 
@@ -484,7 +486,10 @@ function isSortedByFrame(events: TimelineEvent[]): boolean {
 
 function getDeclarationOrder(event: TimelineEvent, fallback: number): number {
   const order = (event as { _declarationOrder?: number })._declarationOrder;
-  return typeof order === "number" && Number.isFinite(order) ? order : fallback;
+  if (typeof order === "number" && Number.isFinite(order)) {
+    return order;
+  }
+  return fallback;
 }
 
 function handleEventError(
@@ -527,11 +532,12 @@ function processEventCore(
   index: number,
   t: number,
   ctx: ReplayContext,
+  registries: EngineRegistries,
   handlerCtx: HandlerContext,
   registryCtx: EventHandlerContext,
 ): void {
-  if (EventHandlerRegistry.hasHandler(event.kind as string)) {
-    EventHandlerRegistry.handle(draft, event, registryCtx);
+  if (registries.eventHandlers.hasHandler(event.kind as string)) {
+    registries.eventHandlers.handle(draft, event, registryCtx);
     handleAutoSounds(draft, event, handlerCtx);
     return;
   }
@@ -540,7 +546,7 @@ function processEventCore(
     const eventWithAppId = event as TimelineEvent & { appId?: string };
     const appId = eventWithAppId.appId;
     if (appId) {
-      const reducer = ReducerRegistry.getAppReducer(appId);
+      const reducer = registries.reducers.getAppReducer(appId);
       reducer?.(draft, event);
     } else {
       log.warn("APP event missing appId", { event, frame: t, eventIndex: index });
@@ -549,11 +555,11 @@ function processEventCore(
     return;
   }
 
-  const appIdForKind = ReducerRegistry.getAppIdForEventKind(
+  const appIdForKind = registries.reducers.getAppIdForEventKind(
     event.kind as string,
   );
   if (appIdForKind) {
-    const reducer = ReducerRegistry.getAppReducer(appIdForKind);
+    const reducer = registries.reducers.getAppReducer(appIdForKind);
     reducer?.(draft, event);
     handleAutoSounds(draft, event, handlerCtx);
     return;
@@ -580,13 +586,14 @@ function processEventCore(
       draft,
       cameraEvent as Parameters<typeof processCameraEvent>[1],
       handlerCtx,
+      registries.reducers,
     );
     handleAutoSounds(draft, event, handlerCtx);
     return;
   }
 
-  if (hasBuiltInHandler(event.kind as string)) {
-    const handler = getBuiltInHandler(event.kind as string);
+  if (hasBuiltInHandler(event.kind as string, registries.reducers)) {
+    const handler = getBuiltInHandler(event.kind as string, registries.reducers);
     if (!handler) {
       handleAutoSounds(draft, event, handlerCtx);
       return;
@@ -608,17 +615,19 @@ function processEventWithMiddleware(
   event: TimelineEvent,
   t: number,
   ctx: ReplayContext,
+  registries: EngineRegistries,
   handlerCtx: HandlerContext,
   registryCtx: EventHandlerContext,
   middlewareCtx: MiddlewareContext,
 ): void {
-  MiddlewareRegistry.execute(event, draft, middlewareCtx, () => {
+  registries.middleware.execute(event, draft, middlewareCtx, () => {
     processEventCore(
       draft,
       event,
       handlerCtx.eventIndex,
       t,
       ctx,
+      registries,
       handlerCtx,
       registryCtx,
     );

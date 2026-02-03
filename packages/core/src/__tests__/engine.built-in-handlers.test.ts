@@ -4,7 +4,7 @@ import {
   hasBuiltInHandler,
   getBuiltInHandler,
 } from "../engine/built-in-handlers";
-import { ReducerRegistry } from "../engine/registry";
+import { createReducerRegistry } from "../engine/registry";
 import * as handlers from "../engine/handlers";
 
 const baseWorld = (): WorldState => ({
@@ -14,24 +14,27 @@ const baseWorld = (): WorldState => ({
   audio: { activeSounds: {}, buses: {}, policyState: { recentSounds: {}, nextId: 0 }, autoSoundRules: [] },
 } as WorldState);
 
+let reducerRegistry = createReducerRegistry();
+
 afterEach(() => {
-  ReducerRegistry.reset();
+  reducerRegistry.reset();
+  reducerRegistry = createReducerRegistry();
 });
 
 describe("built-in handlers", () => {
   it("registers device and feature reducers", () => {
     const world = baseWorld();
-    ReducerRegistry.registerDeviceReducer((devices) => {
+    reducerRegistry.registerDeviceReducer((devices) => {
       return { ...devices, phone: { ...devices.phone, touched: true } } as any;
     });
-    ReducerRegistry.registerFeatureReducer("NOTIFICATION", (draft) => {
+    reducerRegistry.registerFeatureReducer("NOTIFICATION", (draft) => {
       (draft as any).notifHandled = true;
     });
-    ReducerRegistry.registerFeatureReducer("KEYBOARD", (draft) => {
+    reducerRegistry.registerFeatureReducer("KEYBOARD", (draft) => {
       (draft as any).keyboardHandled = true;
     });
 
-    const handler = getBuiltInHandler("DEVICE");
+    const handler = getBuiltInHandler("DEVICE", reducerRegistry);
     expect(handler).toBeDefined();
     handler?.(world, { kind: "DEVICE", type: "SHOW_NOTIFICATION" } as any, 0, {
       frame: 0,
@@ -71,7 +74,7 @@ describe("built-in handlers", () => {
       .spyOn(handlers, "processVoiceEvent")
       .mockReturnValue({ audio: world.audio });
 
-    getBuiltInHandler("CAMERA")?.(world, { kind: "CAMERA", type: "CUT" } as any, 0, {
+    getBuiltInHandler("CAMERA", reducerRegistry)?.(world, { kind: "CAMERA", type: "CUT" } as any, 0, {
       frame: 0,
       eventIndex: 0,
       mode: "preview",
@@ -79,7 +82,7 @@ describe("built-in handlers", () => {
     });
     expect(cameraSpy).toHaveBeenCalled();
 
-    getBuiltInHandler("AUDIO")?.(world, { kind: "AUDIO", type: "PLAY" } as any, 0, {
+    getBuiltInHandler("AUDIO", reducerRegistry)?.(world, { kind: "AUDIO", type: "PLAY" } as any, 0, {
       frame: 0,
       eventIndex: 0,
       mode: "preview",
@@ -87,7 +90,7 @@ describe("built-in handlers", () => {
     });
     expect(audioSpy).toHaveBeenCalled();
 
-    getBuiltInHandler("OS")?.(world, { kind: "OS", type: "SET_TIME" } as any, 0, {
+    getBuiltInHandler("OS", reducerRegistry)?.(world, { kind: "OS", type: "SET_TIME" } as any, 0, {
       frame: 0,
       eventIndex: 0,
       mode: "preview",
@@ -95,7 +98,7 @@ describe("built-in handlers", () => {
     });
     expect(osSpy).toHaveBeenCalled();
 
-    getBuiltInHandler("CALL")?.(world, { kind: "CALL", type: "INCOMING" } as any, 0, {
+    getBuiltInHandler("CALL", reducerRegistry)?.(world, { kind: "CALL", type: "INCOMING" } as any, 0, {
       frame: 0,
       eventIndex: 0,
       mode: "preview",
@@ -103,7 +106,7 @@ describe("built-in handlers", () => {
     });
     expect(callSpy).toHaveBeenCalled();
 
-    getBuiltInHandler("VOICE")?.(world, { kind: "VOICE", type: "STOP_VOICE" } as any, 0, {
+    getBuiltInHandler("VOICE", reducerRegistry)?.(world, { kind: "VOICE", type: "STOP_VOICE" } as any, 0, {
       frame: 0,
       eventIndex: 0,
       mode: "preview",
@@ -111,10 +114,10 @@ describe("built-in handlers", () => {
     });
     expect(voiceSpy).toHaveBeenCalled();
 
-    ReducerRegistry.registerFeatureReducer("KEYBOARD", (draft) => {
+    reducerRegistry.registerFeatureReducer("KEYBOARD", (draft) => {
       (draft as any).keyboard = true;
     });
-    getBuiltInHandler("KEYBOARD")?.(world, { kind: "KEYBOARD", type: "OPEN" } as any, 0, {
+    getBuiltInHandler("KEYBOARD", reducerRegistry)?.(world, { kind: "KEYBOARD", type: "OPEN" } as any, 0, {
       frame: 0,
       eventIndex: 0,
       mode: "preview",
@@ -130,7 +133,7 @@ describe("built-in handlers", () => {
   });
 
   it("exposes handler presence", () => {
-    expect(hasBuiltInHandler("DEVICE")).toBe(true);
-    expect(hasBuiltInHandler("UNKNOWN")).toBe(false);
+    expect(hasBuiltInHandler("DEVICE", reducerRegistry)).toBe(true);
+    expect(hasBuiltInHandler("UNKNOWN", reducerRegistry)).toBe(false);
   });
 });

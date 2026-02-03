@@ -206,31 +206,36 @@ export const CameraPlugin = definePlugin({
 
 ### Registration with Core Registries
 
-When a plugin registers, the PluginManager distributes its pieces to specialized registries:
+When a plugin registers, the `PluginManagerClass` distributes its pieces to specialized registries:
 
 ```typescript
-// Internally, PluginManager.register() does this:
+import { createTokovoRegistries, PluginManagerClass } from "@tokovo/core";
+
+const registries = createTokovoRegistries();
+const pluginManager = new PluginManagerClass(registries.plugins);
+
+// Internally, pluginManager.register() does this:
 
 // 1. Register reducer for event handling
-ReducerRegistry.registerAppReducer(plugin.id, plugin.reducer);
+registries.plugins.reducers.registerAppReducer(plugin.id, plugin.reducer);
 
 // 2. Register event kinds for routing
-ReducerRegistry.registerEventKinds(plugin.id, plugin.eventKinds);
+registries.plugins.reducers.registerEventKinds(plugin.id, plugin.eventKinds);
 
 // 3. Register views for rendering
-AppRegistry.register(plugin.id, plugin.views.AppRoot);
+registries.plugins.apps.register(plugin.id, plugin.views.AppRoot);
 
 // 4. Register sounds by namespace
-SoundRegistry.registerNamespaced(plugin.id, plugin.assets.sounds);
+registries.plugins.sounds.registerNamespaced(plugin.id, plugin.assets.sounds);
 
 // 5. Register audio rules for auto-playback
-AutoSoundRegistry.register(plugin.audioRules);
+registries.plugins.autoSounds.register(plugin.audioRules);
 
 // 6. Register notification adapter
-NotificationAdapterRegistry.register(plugin.notificationAdapter);
+registries.plugins.notifications.register(plugin.notificationAdapter);
 
 // 7. Register layout strategies
-LayoutRegistry.register(plugin.layouts);
+registries.plugins.layouts.register(plugin.layouts);
 ```
 
 This design ensures **clean separation**: each subsystem owns its registry, plugins just provide the data.
@@ -280,7 +285,7 @@ const event = {
 };
 
 // Engine retrieves plugin reducer
-const reducer = ReducerRegistry.getAppReducer("app_whatsapp");
+const reducer = registries.plugins.reducers.getAppReducer("app_whatsapp");
 
 // Apply event to state
 const nextWorld = produce(currentWorld, (draft) => {
@@ -341,7 +346,7 @@ When rendering a frame, the renderer queries the plugin for its UI:
 ```typescript
 // renderer/AppView.tsx
 function AppView({ world, appId }: Props) {
-  const AppComponent = AppRegistry.get(appId);
+  const AppComponent = pluginManager.getView(appId);
 
   if (!AppComponent) return null;
 
@@ -443,19 +448,25 @@ export const MyPlugin = definePlugin({
 Register your plugin in the episode entrypoint:
 
 ```typescript
-import { PluginManager } from "@tokovo/core/plugin";
+import { createTokovoRegistries, PluginManagerClass } from "@tokovo/core";
 import { MyPlugin } from "./plugins/my-plugin";
 
+const registries = createTokovoRegistries();
+const pluginManager = new PluginManagerClass(registries.plugins);
+
 // Register before creating episodes
-PluginManager.register(MyPlugin);
+pluginManager.register(MyPlugin);
 ```
 
 Or use the helper:
 
 ```typescript
-import { registerPlugins } from "@tokovo/core/plugin";
+import { createTokovoRegistries, PluginManagerClass, registerPlugins } from "@tokovo/core";
 
-registerPlugins([MyPlugin, WhatsAppPlugin, CameraPlugin]);
+const registries = createTokovoRegistries();
+const pluginManager = new PluginManagerClass(registries.plugins);
+
+registerPlugins(pluginManager, [MyPlugin, WhatsAppPlugin, CameraPlugin]);
 ```
 
 ### Full Example
@@ -527,14 +538,17 @@ Tokovo ships with core plugins:
 ### Using Built-in Plugins
 
 ```typescript
-import { PluginManager } from "@tokovo/core/plugin";
+import { createTokovoRegistries, PluginManagerClass } from "@tokovo/core";
 import { WhatsAppPlugin } from "@tokovo/apps-whatsapp";
 import { CameraPlugin } from "@tokovo/device-camera";
 import { episode } from "@tokovo/dsl";
 import { WhatsAppTrackBuilder } from "@tokovo/apps-whatsapp";
 
-PluginManager.register(WhatsAppPlugin);
-PluginManager.register(CameraPlugin);
+const registries = createTokovoRegistries();
+const pluginManager = new PluginManagerClass(registries.plugins);
+
+pluginManager.register(WhatsAppPlugin);
+pluginManager.register(CameraPlugin);
 
 let order = 0;
 const getOrder = () => order++;
@@ -681,12 +695,17 @@ const event: AppEvent<"app_whatsapp"> = {
 Plugins are registered once at startup, not per-frame:
 
 ```typescript
+import { createTokovoRegistries, PluginManagerClass } from "@tokovo/core";
+
+const registries = createTokovoRegistries();
+const pluginManager = new PluginManagerClass(registries.plugins);
+
 // ✅ Register once
-PluginManager.register(MyPlugin);
+pluginManager.register(MyPlugin);
 
 // ❌ Don't register per-frame
 function render() {
-  PluginManager.register(MyPlugin); // SLOW!
+  pluginManager.register(MyPlugin); // SLOW!
 }
 ```
 

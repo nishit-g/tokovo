@@ -1,8 +1,15 @@
 import React from "react";
-import { WorldState, VideoConfig, DEFAULT_VIDEO_CONFIG } from "@tokovo/core";
+import {
+  WorldState,
+  VideoConfig,
+  DEFAULT_VIDEO_CONFIG,
+  PluginManagerClass,
+  type PluginRegistries,
+} from "@tokovo/core";
 import { TokovoRenderer } from "./TokovoRenderer";
 import { AudioLayer } from "./AudioLayer";
 import { getDeviceProfile } from "@tokovo/devices";
+import { RendererRegistryProvider } from "./RegistryContext";
 
 // Helper to get video config with defaults
 const getVideoConfig = (world: WorldState): VideoConfig => ({
@@ -27,6 +34,8 @@ export const MultiDeviceRenderer: React.FC<{
     fps?: number;
     compositionWidth?: number;
     compositionHeight?: number;
+    pluginManager: PluginManagerClass;
+    registries: PluginRegistries;
 }> = ({
     world,
     t,
@@ -34,113 +43,129 @@ export const MultiDeviceRenderer: React.FC<{
     fps,
     compositionWidth = 1080,
     compositionHeight = 1920,
+    pluginManager,
+    registries,
 }) => {
     const layout = world.camera?.layout;
 
-    if (!layout) {
-        // Fallback to single device if no layout
-        return (
-            <>
-                <AudioLayer world={world} t={t} />
-                    <SingleDeviceLayout
-                        world={world}
-                        t={t}
-                        fps={fps}
-                        debug={debug}
-                        deviceId={Object.keys(world.devices)[0]}
-                        width={compositionWidth}
-                        height={compositionHeight}
-                    />
-            </>
-        );
-    }
+    const content = !layout ? (
+        <>
+            <AudioLayer world={world} t={t} />
+            <SingleDeviceLayout
+                world={world}
+                t={t}
+                fps={fps}
+                debug={debug}
+                deviceId={Object.keys(world.devices)[0]}
+                width={compositionWidth}
+                height={compositionHeight}
+                pluginManager={pluginManager}
+                registries={registries}
+            />
+        </>
+    ) : (() => {
+        switch (layout.mode) {
+            case "SINGLE":
+                return (
+                    <>
+                        <AudioLayer world={world} t={t} />
+                        <SingleDeviceLayout
+                            world={world}
+                            t={t}
+                            fps={fps}
+                            debug={debug}
+                            deviceId={layout.primaryDeviceId}
+                            width={compositionWidth}
+                            height={compositionHeight}
+                            pluginManager={pluginManager}
+                            registries={registries}
+                        />
+                    </>
+                );
 
-    switch (layout.mode) {
-        case "SINGLE":
-            return (
-                <>
-                    <AudioLayer world={world} t={t} />
-                    <SingleDeviceLayout
-                        world={world}
-                        t={t}
-                        fps={fps}
-                        debug={debug}
-                        deviceId={layout.primaryDeviceId}
-                        width={compositionWidth}
-                        height={compositionHeight}
-                    />
-                </>
-            );
+            case "SPLIT_HORIZONTAL":
+                return (
+                    <>
+                        <AudioLayer world={world} t={t} />
+                        <SplitHorizontalLayout
+                            world={world}
+                            t={t}
+                            fps={fps}
+                            debug={debug}
+                            primaryDeviceId={layout.primaryDeviceId}
+                            secondaryDeviceId={layout.secondaryDeviceId}
+                            width={compositionWidth}
+                            height={compositionHeight}
+                            pluginManager={pluginManager}
+                            registries={registries}
+                        />
+                    </>
+                );
 
-        case "SPLIT_HORIZONTAL":
-            return (
-                <>
-                    <AudioLayer world={world} t={t} />
-                    <SplitHorizontalLayout
-                        world={world}
-                        t={t}
-                        fps={fps}
-                        debug={debug}
-                        primaryDeviceId={layout.primaryDeviceId}
-                        secondaryDeviceId={layout.secondaryDeviceId}
-                        width={compositionWidth}
-                        height={compositionHeight}
-                    />
-                </>
-            );
+            case "SPLIT_VERTICAL":
+                return (
+                    <>
+                        <AudioLayer world={world} t={t} />
+                        <SplitVerticalLayout
+                            world={world}
+                            t={t}
+                            fps={fps}
+                            debug={debug}
+                            primaryDeviceId={layout.primaryDeviceId}
+                            secondaryDeviceId={layout.secondaryDeviceId}
+                            width={compositionWidth}
+                            height={compositionHeight}
+                            pluginManager={pluginManager}
+                            registries={registries}
+                        />
+                    </>
+                );
 
-        case "SPLIT_VERTICAL":
-            return (
-                <>
-                    <AudioLayer world={world} t={t} />
-                    <SplitVerticalLayout
-                        world={world}
-                        t={t}
-                        fps={fps}
-                        debug={debug}
-                        primaryDeviceId={layout.primaryDeviceId}
-                        secondaryDeviceId={layout.secondaryDeviceId}
-                        width={compositionWidth}
-                        height={compositionHeight}
-                    />
-                </>
-            );
+            case "PIP":
+                return (
+                    <>
+                        <AudioLayer world={world} t={t} />
+                        <PIPLayout
+                            world={world}
+                            t={t}
+                            fps={fps}
+                            debug={debug}
+                            primaryDeviceId={layout.primaryDeviceId}
+                            secondaryDeviceId={layout.secondaryDeviceId}
+                            pipPosition={layout.pipPosition || "bottom-right"}
+                            pipScale={layout.pipScale || 0.3}
+                            width={compositionWidth}
+                            height={compositionHeight}
+                            pluginManager={pluginManager}
+                            registries={registries}
+                        />
+                    </>
+                );
 
-        case "PIP":
-            return (
-                <>
-                    <AudioLayer world={world} t={t} />
-                    <PIPLayout
-                        world={world}
-                        t={t}
-                        fps={fps}
-                        debug={debug}
-                        primaryDeviceId={layout.primaryDeviceId}
-                        secondaryDeviceId={layout.secondaryDeviceId}
-                        pipPosition={layout.pipPosition || "bottom-right"}
-                        pipScale={layout.pipScale || 0.3}
-                        width={compositionWidth}
-                        height={compositionHeight}
-                    />
-                </>
-            );
-
-        default:
-            return (
-                <>
-                    <AudioLayer world={world} t={t} />
-                    <SingleDeviceLayout
-                        world={world}
-                        t={t}
-                        fps={fps}
-                        debug={debug}
-                        deviceId={layout.primaryDeviceId}
-                        width={compositionWidth}
-                        height={compositionHeight}
-                    />
-                </>
-            );
-    }
+            default:
+                return (
+                    <>
+                        <AudioLayer world={world} t={t} />
+                        <SingleDeviceLayout
+                            world={world}
+                            t={t}
+                            fps={fps}
+                            debug={debug}
+                            deviceId={layout.primaryDeviceId}
+                            width={compositionWidth}
+                            height={compositionHeight}
+                            pluginManager={pluginManager}
+                            registries={registries}
+                        />
+                    </>
+                );
+        }
+    })();
+    return (
+        <RendererRegistryProvider registries={registries}>
+            {content}
+        </RendererRegistryProvider>
+    );
 };
 
 // =============================================================================
@@ -154,6 +179,8 @@ interface LayoutProps {
     fps?: number;
     width: number;
     height: number;
+    pluginManager: PluginManagerClass;
+    registries: PluginRegistries;
 }
 
 /**
@@ -167,6 +194,8 @@ const SingleDeviceLayout: React.FC<LayoutProps & { deviceId: string }> = ({
     deviceId,
     width,
     height,
+    pluginManager,
+    registries,
 }) => {
     const device = world.devices[deviceId];
     if (!device) {
@@ -191,7 +220,15 @@ const SingleDeviceLayout: React.FC<LayoutProps & { deviceId: string }> = ({
             }}
         >
             <div style={{ transform: `scale(${scale})`, transformOrigin: "center center" }}>
-                <TokovoRenderer world={world} t={t} fps={fps} debug={debug} focusDeviceId={deviceId} />
+                <TokovoRenderer
+                    world={world}
+                    t={t}
+                    fps={fps}
+                    debug={debug}
+                    focusDeviceId={deviceId}
+                    pluginManager={pluginManager}
+                    registries={registries}
+                />
             </div>
         </div>
     );
@@ -206,7 +243,18 @@ const SingleDeviceLayout: React.FC<LayoutProps & { deviceId: string }> = ({
  */
 const SplitHorizontalLayout: React.FC<
     LayoutProps & { primaryDeviceId: string; secondaryDeviceId?: string }
-> = ({ world, t, fps, debug, primaryDeviceId, secondaryDeviceId, width, height }) => {
+> = ({
+    world,
+    t,
+    fps,
+    debug,
+    primaryDeviceId,
+    secondaryDeviceId,
+    width,
+    height,
+    pluginManager,
+    registries,
+}) => {
     const halfWidth = width / 2;
 
     return (
@@ -229,6 +277,8 @@ const SplitHorizontalLayout: React.FC<
                 deviceId={primaryDeviceId}
                 paneWidth={halfWidth}
                 paneHeight={height}
+                pluginManager={pluginManager}
+                registries={registries}
             />
 
             {/* Divider */}
@@ -244,6 +294,8 @@ const SplitHorizontalLayout: React.FC<
                     deviceId={secondaryDeviceId}
                     paneWidth={halfWidth - 2}
                     paneHeight={height}
+                    pluginManager={pluginManager}
+                    registries={registries}
                 />
             )}
         </div>
@@ -262,7 +314,18 @@ const SplitHorizontalLayout: React.FC<
  */
 const SplitVerticalLayout: React.FC<
     LayoutProps & { primaryDeviceId: string; secondaryDeviceId?: string }
-> = ({ world, t, fps, debug, primaryDeviceId, secondaryDeviceId, width, height }) => {
+> = ({
+    world,
+    t,
+    fps,
+    debug,
+    primaryDeviceId,
+    secondaryDeviceId,
+    width,
+    height,
+    pluginManager,
+    registries,
+}) => {
     const halfHeight = height / 2;
 
     return (
@@ -285,6 +348,8 @@ const SplitVerticalLayout: React.FC<
                 deviceId={primaryDeviceId}
                 paneWidth={width}
                 paneHeight={halfHeight}
+                pluginManager={pluginManager}
+                registries={registries}
             />
 
             {/* Divider */}
@@ -300,6 +365,8 @@ const SplitVerticalLayout: React.FC<
                     deviceId={secondaryDeviceId}
                     paneWidth={width}
                     paneHeight={halfHeight - 2}
+                    pluginManager={pluginManager}
+                    registries={registries}
                 />
             )}
         </div>
@@ -322,7 +389,20 @@ const PIPLayout: React.FC<
         pipPosition: "top-left" | "top-right" | "bottom-left" | "bottom-right";
         pipScale: number;
     }
-> = ({ world, t, fps, debug, primaryDeviceId, secondaryDeviceId, pipPosition, pipScale, width, height }) => {
+> = ({
+    world,
+    t,
+    fps,
+    debug,
+    primaryDeviceId,
+    secondaryDeviceId,
+    pipPosition,
+    pipScale,
+    width,
+    height,
+    pluginManager,
+    registries,
+}) => {
     // PIP window size
     const pipWidth = width * pipScale;
     const pipHeight = height * pipScale;
@@ -378,6 +458,8 @@ const PIPLayout: React.FC<
                 deviceId={primaryDeviceId}
                 width={width}
                 height={height}
+                pluginManager={pluginManager}
+                registries={registries}
             />
 
             {/* PIP overlay */}
@@ -391,6 +473,8 @@ const PIPLayout: React.FC<
                         deviceId={secondaryDeviceId}
                         paneWidth={pipWidth}
                         paneHeight={pipHeight}
+                        pluginManager={pluginManager}
+                        registries={registries}
                     />
                 </div>
             )}
@@ -414,7 +498,19 @@ const DevicePane: React.FC<{
     deviceId: string;
     paneWidth: number;
     paneHeight: number;
-}> = ({ world, t, fps, debug, deviceId, paneWidth, paneHeight }) => {
+    pluginManager: PluginManagerClass;
+    registries: PluginRegistries;
+}> = ({
+    world,
+    t,
+    fps,
+    debug,
+    deviceId,
+    paneWidth,
+    paneHeight,
+    pluginManager,
+    registries,
+}) => {
     const device = world.devices[deviceId];
     if (!device) {
         return (
@@ -462,7 +558,15 @@ const DevicePane: React.FC<{
             }}
         >
             <div style={{ transform: `scale(${scale})`, transformOrigin: "center center" }}>
-                <TokovoRenderer world={deviceWorld} t={t} fps={fps} debug={debug} focusDeviceId={deviceId} />
+                <TokovoRenderer
+                    world={deviceWorld}
+                    t={t}
+                    fps={fps}
+                    debug={debug}
+                    focusDeviceId={deviceId}
+                    pluginManager={pluginManager}
+                    registries={registries}
+                />
             </div>
         </div>
     );
@@ -480,7 +584,19 @@ const DevicePaneFit: React.FC<{
     deviceId: string;
     paneWidth: number;
     paneHeight: number;
-}> = ({ world, t, fps, debug, deviceId, paneWidth, paneHeight }) => {
+    pluginManager: PluginManagerClass;
+    registries: PluginRegistries;
+}> = ({
+    world,
+    t,
+    fps,
+    debug,
+    deviceId,
+    paneWidth,
+    paneHeight,
+    pluginManager,
+    registries,
+}) => {
     const device = world.devices[deviceId];
     if (!device) {
         return <div style={{ width: paneWidth, height: paneHeight, background: "#1a1a2e" }} />;
@@ -514,7 +630,15 @@ const DevicePaneFit: React.FC<{
             }}
         >
             <div style={{ transform: `scale(${scale})`, transformOrigin: "center center" }}>
-                <TokovoRenderer world={deviceWorld} t={t} fps={fps} debug={debug} focusDeviceId={deviceId} />
+                <TokovoRenderer
+                    world={deviceWorld}
+                    t={t}
+                    fps={fps}
+                    debug={debug}
+                    focusDeviceId={deviceId}
+                    pluginManager={pluginManager}
+                    registries={registries}
+                />
             </div>
         </div>
     );

@@ -541,9 +541,14 @@ For now, manually document debugging findings:
 - Check browser console for errors
 - Verify all plugins registered:
   ```typescript
-  registerDevicesPlugin();
-  registerWhatsAppPlugin();
-  registerNotificationPlugin();
+  const registries = createTokovoRegistries();
+  const pluginManager = new PluginManagerClass(registries.plugins);
+
+  registerDevicesPlugin(registries);
+  registerWhatsAppPlugin(pluginManager);
+  registerNotificationPlugin(registries.engine);
+  registerCameraPlugin(pluginManager, registries.engine);
+  registerKeyboardPlugin(registries.engine);
   ```
 - Verify episode compiles without errors
 

@@ -74,7 +74,10 @@ export function createEventIndex(events: TimelineEvent[]): EventIndex {
 
 function getDeclarationOrder(event: TimelineEvent, fallback: number): number {
   const order = (event as { _declarationOrder?: number })._declarationOrder;
-  return typeof order === "number" && Number.isFinite(order) ? order : fallback;
+  if (typeof order === "number" && Number.isFinite(order)) {
+    return order;
+  }
+  return fallback;
 }
 
 export function createKeyframedEventIndex(
@@ -151,9 +154,11 @@ export function getEventsUpToKeyframed(
   }
 
   const additional: TimelineEvent[] = [];
-  for (const frame of index.frames) {
-    if (frame <= nearestKeyframe) continue;
-    if (frame > t) break;
+  const startIdx = binarySearchUpperBound(index.frames, nearestKeyframe);
+  const endIdx = binarySearchUpperBound(index.frames, t);
+
+  for (let i = startIdx; i < endIdx; i++) {
+    const frame = index.frames[i];
     const events = index.byFrame.get(frame);
     if (events) {
       additional.push(...events);

@@ -1,5 +1,5 @@
-import type { TokovoPluginContract } from "@tokovo/core";
-import { PluginManager } from "@tokovo/core";
+import type { TokovoPluginContract, EngineRegistries } from "@tokovo/core";
+import type { PluginManagerClass } from "@tokovo/core";
 import { cameraReducer } from "./reducer";
 import { cameraV2Lowering, CAMERA_EVENT_TYPES } from "./lowering";
 
@@ -25,10 +25,25 @@ export const DeviceCameraPlugin: TokovoPluginContract<"camera"> = {
 
 export { DeviceCameraPlugin as default };
 
-let _registered = false;
+const registeredManagers = new WeakSet<PluginManagerClass>();
+const registeredEngines = new WeakSet<EngineRegistries>();
 
-export function registerCameraPlugin(): void {
-  if (_registered) return;
-  _registered = true;
-  PluginManager.register(DeviceCameraPlugin);
+export function registerCameraPlugin(
+  pluginManager: PluginManagerClass,
+  registries: EngineRegistries,
+): void {
+  if (!registeredManagers.has(pluginManager)) {
+    registeredManagers.add(pluginManager);
+    pluginManager.register(DeviceCameraPlugin);
+  }
+
+  if (!registeredEngines.has(registries)) {
+    registeredEngines.add(registries);
+    registries.reducers.registerFeatureReducer(
+      "CAMERA",
+      cameraReducer as unknown as Parameters<
+        EngineRegistries["reducers"]["registerFeatureReducer"]
+      >[1],
+    );
+  }
 }

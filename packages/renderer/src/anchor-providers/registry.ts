@@ -5,15 +5,17 @@
  * Providers self-register at module load time.
  */
 
-import { AnchorSnapshot, AnchorRegistry } from "@tokovo/core";
+import type { AnchorSnapshot, AnchorRegistryClass } from "@tokovo/core";
 import type { WorldState } from "@tokovo/core";
 
 import { NotificationAnchorProvider } from "./notification";
 
-export function registerBuiltInAnchorProviders(): void {
+export function registerBuiltInAnchorProviders(
+    registry: AnchorRegistryClass,
+): void {
     // Apps self-register when imported
     // Only Notification provider is left here (for now)
-    AnchorRegistry.register(NotificationAnchorProvider);
+    registry.register(NotificationAnchorProvider);
 }
 
 // =============================================================================
@@ -30,12 +32,13 @@ export function registerBuiltInAnchorProviders(): void {
  * @returns Anchor snapshot or null if no provider registered
  */
 export function getAnchorsForApp(
+    registry: AnchorRegistryClass,
     appId: string,
     world: WorldState,
     layout: unknown,
     deviceId: string
 ): AnchorSnapshot | null {
-    const provider = AnchorRegistry.get(appId);
+    const provider = registry.get(appId);
     if (!provider) return null;
     return provider.getAnchors(world, layout, deviceId);
 }
@@ -45,14 +48,15 @@ export function getAnchorsForApp(
  * Useful for multi-app scenarios.
  */
 export function getAllAnchors(
+    registry: AnchorRegistryClass,
     world: WorldState,
     layout: unknown,
     deviceId: string
 ): Map<string, AnchorSnapshot> {
     const results = new Map<string, AnchorSnapshot>();
 
-    for (const appId of AnchorRegistry.getRegisteredApps()) {
-        const provider = AnchorRegistry.get(appId);
+    for (const appId of registry.getRegisteredApps()) {
+        const provider = registry.get(appId);
         if (provider) {
             results.set(appId, provider.getAnchors(world, layout, deviceId));
         }

@@ -478,9 +478,13 @@ export const WhatsAppPlugin: TokovoPluginContract<"app_whatsapp"> = {
 
 ```typescript
 import { registerWhatsAppPlugin } from "@tokovo/apps-whatsapp";
+import { createTokovoRegistries, PluginManagerClass } from "@tokovo/core";
+
+const registries = createTokovoRegistries();
+const pluginManager = new PluginManagerClass(registries.plugins);
 
 // Register plugin with Tokovo
-registerWhatsAppPlugin();
+registerWhatsAppPlugin(pluginManager);
 ```
 
 ---

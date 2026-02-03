@@ -48,7 +48,7 @@ export interface LayoutStrategy {
 // LAYOUT REGISTRY
 // =============================================================================
 
-class LayoutRegistryClass {
+export class LayoutRegistryClass {
   private strategies = new Map<string, LayoutStrategy>();
 
   /**
@@ -154,4 +154,6 @@ class LayoutRegistryClass {
   }
 }
 
-export const LayoutRegistry = new LayoutRegistryClass();
+export function createLayoutRegistry(): LayoutRegistryClass {
+  return new LayoutRegistryClass();
+}

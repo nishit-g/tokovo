@@ -245,10 +245,17 @@ Every single WhatsApp message type and action in one comprehensive demo.
 
 ```typescript
 import { trackDemoV2, bakchodiBros, cameraShowcase } from '@tokovo/episodes/production'
-import { replay } from '@tokovo/core'
+import { replay, createTokovoRegistries, PluginManagerClass } from '@tokovo/core'
 
 // Get state at specific time
-const worldAt15s = replay(bakchodiBros, 15)
+const registries = createTokovoRegistries()
+const pluginManager = new PluginManagerClass(registries.plugins)
+
+const worldAt15s = replay(bakchodiBros, 15, {
+  mode: "preview",
+  fps: 30,
+  registries: registries.engine,
+})
 
 // Render in Remotion
 import { TokovoRenderer } from '@tokovo/renderer'
@@ -258,9 +265,20 @@ function MyComposition() {
   const fps = useVideoConfig().fps
   const t = frame / fps
 
-  const worldState = replay(bakchodiBros, t)
+  const worldState = replay(bakchodiBros, t, {
+    mode: "preview",
+    fps,
+    registries: registries.engine,
+  })
 
-  return <TokovoRenderer worldState={worldState} />
+  return (
+    <TokovoRenderer
+      world={worldState}
+      t={frame}
+      pluginManager={pluginManager}
+      registries={registries.plugins}
+    />
+  )
 }
 ```
 

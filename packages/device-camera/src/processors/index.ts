@@ -7,7 +7,7 @@
  * @module device-camera/processors
  */
 
-import type { CameraTransform } from "@tokovo/core";
+import type { CameraTransform, AnchorRegistryClass } from "@tokovo/core";
 import { DEFAULT_CAMERA_TRANSFORM as DEFAULT_TRANSFORM } from "@tokovo/core";
 import {
   CameraEffect,
@@ -59,6 +59,9 @@ export interface EffectProcessorContext {
 
   /** Viewport dimensions */
   viewport?: { width: number; height: number };
+
+  /** Registry for anchor framing lookup */
+  anchorRegistry?: AnchorRegistryClass;
 }
 
 export interface EffectProcessor {
@@ -178,6 +181,7 @@ const focusProcessor: EffectProcessor = {
         ctx.anchorSnapshot,
         ctx.anchorSnapshot.appId,
         ctx.viewport,
+        ctx.anchorRegistry,
       );
       originX = resolved.originX;
       originY = resolved.originY;
@@ -216,6 +220,7 @@ const trackProcessor: EffectProcessor = {
         ctx.anchorSnapshot,
         ctx.anchorSnapshot.appId,
         ctx.viewport,
+        ctx.anchorRegistry,
       );
       originX = lerp(ctx.transform.originX, resolved.originX, smoothing);
       originY = lerp(ctx.transform.originY, resolved.originY, smoothing);
@@ -429,6 +434,7 @@ export function processActiveEffects(
   initialTransform: CameraTransform = DEFAULT_TRANSFORM,
   anchorSnapshot?: AnchorSnapshot,
   viewport?: { width: number; height: number },
+  anchorRegistry?: AnchorRegistryClass,
 ): CameraTransform {
   let transform = { ...initialTransform };
 
@@ -463,6 +469,7 @@ export function processActiveEffects(
         transform,
         anchorSnapshot,
         viewport,
+        anchorRegistry,
       });
     }
   }
@@ -477,6 +484,7 @@ export function processActiveEffects(
         transform,
         anchorSnapshot,
         viewport,
+        anchorRegistry,
       });
     }
   }

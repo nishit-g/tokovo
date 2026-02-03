@@ -6,14 +6,12 @@
  */
 
 // Adapter system
-export {
-    NotificationAdapterRegistry,
-    DEFAULT_NOTIFICATION_HEIGHT,
-} from "./adapter";
+export { createNotificationAdapterRegistry, DEFAULT_NOTIFICATION_HEIGHT } from "./adapter";
 export type {
     FormattedNotification,
     NotificationAdapter,
     NotificationMeasurable,
+    NotificationAdapterRegistryClass,
 } from "./adapter";
 
 // DSL helpers
@@ -32,7 +30,7 @@ export {
 export type { NotificationOptions } from "./dsl";
 
 // View registry
-export { NotificationViewRegistry } from "./registry";
+export { createNotificationViewRegistry, NotificationViewRegistryClass } from "./registry";
 export type { NotificationViewProps, NotificationViewComponent } from "./registry";
 
 // Scheduler

@@ -1,9 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { replay, createInitialWorld, ReducerRegistry } from "../engine";
+import { replay, createInitialWorld } from "../engine";
+import { createEngineRegistries } from "../engine/registries";
 
 describe("replay APP event routing", () => {
   it("routes APP events by appId to the registered reducer", () => {
-    ReducerRegistry.registerAppReducer("app_test", (draft, event) => {
+    const registries = createEngineRegistries();
+    registries.reducers.registerAppReducer("app_test", (draft, event) => {
       if (event.kind !== "APP") return;
       if (event.appId !== "app_test") return;
 
@@ -33,10 +35,11 @@ describe("replay APP event routing", () => {
       },
     ];
 
-    const state = replay(initial, events, 10, { mode: "preview" });
+    const state = replay(initial, events, 10, {
+      mode: "preview",
+      registries,
+    });
     expect((state.appState as { app_test?: { value: number } }).app_test?.value)
       .toBe(2);
-
-    ReducerRegistry.unregisterAppReducer("app_test");
   });
 });

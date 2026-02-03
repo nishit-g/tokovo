@@ -30,52 +30,60 @@ export interface AppBehavior {
 // REGISTRY
 // =============================================================================
 
-// Create the registry using factory
-const _registry = createRegistry<string, AppBehavior>("Behavior");
+export interface BehaviorRegistryAPI {
+    register(behavior: AppBehavior): void;
+    get(appId: string): AppBehavior | undefined;
+    has(appId: string): boolean;
+    getIntent(appId: string, eventType: string): CameraIntent | undefined;
+    getRegisteredApps(): string[];
+    clear(): void;
+    readonly size: number;
+}
 
-/**
- * BehaviorRegistry - Maps app IDs to camera behaviors
- */
-export const BehaviorRegistry = {
-    /**
-     * Register an app behavior
-     */
-    register(behavior: AppBehavior): void {
-        _registry.register(behavior.appId, behavior);
-    },
+export function createBehaviorRegistry(): BehaviorRegistryAPI {
+    const registry = createRegistry<string, AppBehavior>("Behavior");
 
-    /**
-     * Get behavior for an app
-     */
-    get: _registry.get,
+    return {
+        /**
+         * Register an app behavior
+         */
+        register(behavior: AppBehavior): void {
+            registry.register(behavior.appId, behavior);
+        },
 
-    /**
-     * Check if behavior exists
-     */
-    has: _registry.has,
+        /**
+         * Get behavior for an app
+         */
+        get: registry.get,
 
-    /**
-     * Get intent for an app event
-     */
-    getIntent(appId: string, eventType: string): CameraIntent | undefined {
-        const behavior = _registry.get(appId);
-        return behavior?.eventMappings[eventType];
-    },
+        /**
+         * Check if behavior exists
+         */
+        has: registry.has,
 
-    /**
-     * Get all registered app IDs
-     */
-    getRegisteredApps: _registry.keys,
+        /**
+         * Get intent for an app event
+         */
+        getIntent(appId: string, eventType: string): CameraIntent | undefined {
+            const behavior = registry.get(appId);
+            return behavior?.eventMappings[eventType];
+        },
 
-    /**
-     * Clear all registrations (for testing)
-     */
-    clear: _registry.clear,
+        /**
+         * Get all registered app IDs
+         */
+        getRegisteredApps: registry.keys,
 
-    /**
-     * Get count
-     */
-    get size() {
-        return _registry.size;
-    },
-};
+        /**
+         * Clear all registrations (for testing)
+         */
+        clear: registry.clear,
+
+        /**
+         * Get count
+         */
+        get size() {
+            return registry.size;
+        },
+    };
+}

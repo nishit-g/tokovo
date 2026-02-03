@@ -12,7 +12,7 @@ import type { Platform } from "../tokens";
 // WIDGET REGISTRY
 // =============================================================================
 
-class WidgetRegistryClass {
+export class WidgetRegistryClass {
     private slots = new Map<string, WidgetSlot[]>();
 
     /**
@@ -112,7 +112,9 @@ class WidgetRegistryClass {
     }
 }
 
-export const WidgetRegistry = new WidgetRegistryClass();
+export function createWidgetRegistry(): WidgetRegistryClass {
+    return new WidgetRegistryClass();
+}
 
 // =============================================================================
 // HELPERS
@@ -122,10 +124,11 @@ export const WidgetRegistry = new WidgetRegistryClass();
  * Get the Dynamic Island widget for the current context
  */
 export function getDynamicIslandWidget(
+    registry: WidgetRegistryClass,
     platform: Platform,
     backgroundAppIds: string[]
 ): { appId: string; component: WidgetComponent } | null {
-    const result = WidgetRegistry.resolve("dynamicIsland", platform, backgroundAppIds);
+    const result = registry.resolve("dynamicIsland", platform, backgroundAppIds);
     if (!result) return null;
     return { appId: result.appId, component: result.widget.component };
 }
@@ -134,10 +137,11 @@ export function getDynamicIslandWidget(
  * Get notification widgets for display
  */
 export function getNotificationWidgets(
+    registry: WidgetRegistryClass,
     platform: Platform,
     appIds: string[]
 ): Array<{ appId: string; component: WidgetComponent }> {
-    return WidgetRegistry.getAll("notification", platform, appIds).map(r => ({
+    return registry.getAll("notification", platform, appIds).map(r => ({
         appId: r.appId,
         component: r.widget.component,
     }));

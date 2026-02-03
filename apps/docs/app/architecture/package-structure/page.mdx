@@ -121,7 +121,10 @@ import type {
 } from "@tokovo/core";
 
 // Registries
-import { AppRegistry, SoundRegistry, AnchorRegistry } from "@tokovo/core";
+import { createTokovoRegistries } from "@tokovo/core";
+
+const registries = createTokovoRegistries();
+const { apps, sounds, anchors } = registries.plugins;
 
 // Audio utilities
 import { isSoundCue, computeMixedVolume } from "@tokovo/core";
@@ -129,8 +132,6 @@ import { isSoundCue, computeMixedVolume } from "@tokovo/core";
 // Logging
 import { AudioLogger } from "@tokovo/core";
 
-// DI Container
-import { TokovoContainer } from "@tokovo/core";
 ```
 
 **Dependencies**: `@tokovo/ir`

@@ -36,4 +36,9 @@ export {
 } from "./schemas";
 
 export * from "./plugin";
-export { PluginRouter, type PluginAccessor } from "./router";
+export {
+  PluginRouterClass,
+  createPluginRouter,
+  type PluginAccessor,
+} from "./router";
+export { createPluginRegistries, type PluginRegistries } from "./registries";

@@ -13,9 +13,9 @@ import React from "react";
 import {
   WorldState,
   EventIndex,
-  PluginManager,
   PluginManagerClass,
   createScopedLogger,
+  type PluginRegistries,
 } from "@tokovo/core";
 import { AppSurface, TokovoProvider } from "@tokovo/react";
 import {
@@ -37,6 +37,7 @@ import { DynamicIsland } from "./os";
 import { useLayoutEngine } from "./engines/useLayoutEngine";
 import { useCameraEngine } from "./engines/useCameraEngine";
 import { AppErrorBoundary } from "./ErrorBoundary";
+import { RendererRegistryProvider } from "./RegistryContext";
 
 const log = createScopedLogger("renderer");
 
@@ -57,14 +58,15 @@ interface TokovoRendererProps {
   notificationConfig?: NotificationConfig;
   focusDeviceId?: string;
   eventIndex?: EventIndex;
-  pluginManager?: PluginManagerClass;
+  pluginManager: PluginManagerClass;
+  registries: PluginRegistries;
 }
 
 // =============================================================================
 // TOKOVO RENDERER
 // =============================================================================
 
-export const TokovoRenderer: React.FC<TokovoRendererProps> = ({
+const TokovoRendererInner: React.FC<TokovoRendererProps> = ({
   world,
   t,
   fps = 30,
@@ -74,8 +76,7 @@ export const TokovoRenderer: React.FC<TokovoRendererProps> = ({
   eventIndex,
   pluginManager,
 }) => {
-  // Resolve Plugin Manager (Injectable > Global Fallback)
-  const pm = pluginManager || PluginManager;
+  const pm = pluginManager;
 
   void notificationConfig;
 
@@ -342,5 +343,13 @@ export const TokovoRenderer: React.FC<TokovoRendererProps> = ({
 
       {debug && <VisualDebugger world={world} t={t} />}
     </div>
+  );
+};
+
+export const TokovoRenderer: React.FC<TokovoRendererProps> = (props) => {
+  return (
+    <RendererRegistryProvider registries={props.registries}>
+      <TokovoRendererInner {...props} />
+    </RendererRegistryProvider>
   );
 };

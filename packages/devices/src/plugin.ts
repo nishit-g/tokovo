@@ -8,6 +8,7 @@
 
 // Runtime Layer
 import { deviceReducer } from "./reducer";
+import type { TokovoRegistries } from "@tokovo/core";
 
 // Registries
 import { DeviceRegistry, FrameRegistry, StatusBarStrategyRegistry } from "./registries";
@@ -93,16 +94,30 @@ export const DevicesPlugin: DevicesPluginContract = {
 // AUTO-REGISTRATION
 // =============================================================================
 
-let registered = false;
+const registeredEngines = new WeakSet<TokovoRegistries["engine"]>();
 
-export function registerDevicesPlugin(): void {
-    if (registered) return;
-    registered = true;
+export function registerDevicesPlugin(registries: TokovoRegistries): void {
+    if (registeredEngines.has(registries.engine)) return;
+    registeredEngines.add(registries.engine);
+
+    registries.engine.reducers.registerDeviceReducer(deviceReducer);
 
     // Register default device profiles
-    DeviceRegistry.register("iphone16", iPhone16Profile);
-    DeviceRegistry.register("pixel", PixelProfile);
-    DeviceRegistry.register("pixel9", PixelProfile);
+    if (!DeviceRegistry.has("iphone16")) {
+        DeviceRegistry.register("iphone16", iPhone16Profile, {
+            soundRegistry: registries.plugins.sounds,
+        });
+    }
+    if (!DeviceRegistry.has("pixel")) {
+        DeviceRegistry.register("pixel", PixelProfile, {
+            soundRegistry: registries.plugins.sounds,
+        });
+    }
+    if (!DeviceRegistry.has("pixel9")) {
+        DeviceRegistry.register("pixel9", PixelProfile, {
+            soundRegistry: registries.plugins.sounds,
+        });
+    }
 
     // Register default frames
     FrameRegistry.register("iphone16", iPhone16Frame);

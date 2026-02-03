@@ -1,15 +1,16 @@
 import { describe, expect, it, vi } from "vitest";
 import type { TimelineEvent, WorldState } from "../types";
 import {
-  MiddlewareRegistry,
+  createMiddlewareRegistry,
   builtInMiddlewares,
   useMiddleware,
 } from "../engine/middleware";
 
 describe("MiddlewareRegistry", () => {
   it("executes middleware in order and calls core handler", () => {
+    const registry = createMiddlewareRegistry();
     const calls: string[] = [];
-    const unsubFirst = MiddlewareRegistry.use({
+    const unsubFirst = registry.use({
       name: "first",
       order: -10,
       middleware: (_event, _draft, _ctx, next) => {
@@ -17,7 +18,7 @@ describe("MiddlewareRegistry", () => {
         next();
       },
     });
-    const unsubSecond = MiddlewareRegistry.use({
+    const unsubSecond = registry.use({
       name: "second",
       order: 10,
       middleware: (_event, _draft, _ctx, next) => {
@@ -28,7 +29,7 @@ describe("MiddlewareRegistry", () => {
 
     const coreHandler = () => calls.push("core");
 
-    MiddlewareRegistry.execute(
+    registry.execute(
       { kind: "TEST" } as TimelineEvent,
       {} as WorldState,
       { frame: 1, mode: "preview", eventIndex: 0 },
@@ -36,21 +37,22 @@ describe("MiddlewareRegistry", () => {
     );
 
     expect(calls).toEqual(["first", "second", "core"]);
-    expect(MiddlewareRegistry.getMiddlewares().length).toBe(2);
+    expect(registry.getMiddlewares().length).toBe(2);
     unsubFirst();
     unsubSecond();
-    MiddlewareRegistry.clear();
+    registry.clear();
   });
 
   it("continues after middleware errors", () => {
+    const registry = createMiddlewareRegistry();
     const calls: string[] = [];
-    MiddlewareRegistry.use({
+    registry.use({
       name: "boom",
       middleware: () => {
         throw new Error("boom");
       },
     });
-    MiddlewareRegistry.use({
+    registry.use({
       name: "after",
       middleware: (_event, _draft, _ctx, next) => {
         calls.push("after");
@@ -58,7 +60,7 @@ describe("MiddlewareRegistry", () => {
       },
     });
 
-    MiddlewareRegistry.execute(
+    registry.execute(
       { kind: "TEST" } as TimelineEvent,
       {} as WorldState,
       { frame: 1, mode: "preview", eventIndex: 0 },
@@ -66,12 +68,13 @@ describe("MiddlewareRegistry", () => {
     );
 
     expect(calls).toEqual(["after", "core"]);
-    MiddlewareRegistry.clear();
+    registry.clear();
   });
 
   it("executes core handler when no middleware registered", () => {
+    const registry = createMiddlewareRegistry();
     const core = vi.fn();
-    MiddlewareRegistry.execute(
+    registry.execute(
       { kind: "TEST" } as TimelineEvent,
       {} as WorldState,
       { frame: 1, mode: "preview", eventIndex: 0 },
@@ -81,10 +84,11 @@ describe("MiddlewareRegistry", () => {
   });
 
   it("registers middleware via helper", () => {
-    const unsub = useMiddleware("helper", (_event, _draft, _ctx, next) => next());
-    expect(MiddlewareRegistry.getMiddlewares().length).toBeGreaterThan(0);
+    const registry = createMiddlewareRegistry();
+    const unsub = useMiddleware(registry, "helper", (_event, _draft, _ctx, next) => next());
+    expect(registry.getMiddlewares().length).toBeGreaterThan(0);
     unsub();
-    MiddlewareRegistry.clear();
+    registry.clear();
   });
 
   it("runs built-in logging middleware", () => {

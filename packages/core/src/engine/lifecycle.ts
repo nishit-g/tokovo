@@ -24,7 +24,7 @@ interface RegisteredPlugin {
   hooks: PluginLifecycleHooks;
 }
 
-class LifecycleManagerClass {
+export class LifecycleManagerClass {
   private plugins = new Map<string, RegisteredPlugin>();
   private initialized = new Set<string>();
   private beforeReplayHooks: RegisteredPlugin[] = [];
@@ -169,7 +169,9 @@ class LifecycleManagerClass {
   }
 }
 
-export const LifecycleManager = new LifecycleManagerClass();
+export function createLifecycleManager(): LifecycleManagerClass {
+  return new LifecycleManagerClass();
+}
 
 export function defineLifecycle(
   hooks: PluginLifecycleHooks,

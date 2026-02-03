@@ -12,7 +12,7 @@
  */
 
 import { WorldState, BackgroundAppState, Notification } from "../types";
-import { AppReducer, ReducerRegistry } from "../engine";
+import { AppReducer } from "../engine";
 import { Platform } from "../tokens";
 import type { NotificationAdapter } from "../notifications/adapter";
 import type {
@@ -22,14 +22,10 @@ import type {
   PluginViews,
   PluginReducer,
 } from "../types/plugin-contract";
-import { registerAnchorProvider, unregisterAnchorProvider } from "../anchors";
-import { AppMetadata, AppMetadataRegistry } from "../registries/metadata";
-import { AppRegistry } from "../registries/app";
-import { SoundRegistry } from "../registries/sound";
-import { NotificationAdapterRegistry } from "../notifications/adapter";
-import { AutoSoundRegistry } from "../audio/auto-sound";
+import { AppMetadata } from "../registries/metadata";
 import { validatePlugin } from "../utils/validation";
 import { createScopedLogger } from "../logger";
+import type { PluginRegistries } from "./registries";
 
 const log = createScopedLogger("plugin");
 
@@ -121,6 +117,11 @@ export class PluginManagerClass {
   private viewRegistry = new Map<string, AppViewComponent>();
   private initialStateCreators = new Map<string, () => unknown>();
   private cleanupFunctions = new Map<string, Array<() => void>>();
+  private registries: PluginRegistries;
+
+  constructor(registries: PluginRegistries) {
+    this.registries = registries;
+  }
 
   register<AppId extends string>(
     plugin: TokovoPluginContract<AppId>,
@@ -159,16 +160,23 @@ export class PluginManagerClass {
       this.plugins.set(plugin.id, storedPlugin);
 
       if (plugin.reducer) {
-        ReducerRegistry.registerAppReducer(
+        this.registries.reducers.registerAppReducer(
           plugin.id,
           plugin.reducer as AppReducer,
         );
-        cleanups.push(() => ReducerRegistry.unregisterAppReducer(plugin.id));
+        cleanups.push(() =>
+          this.registries.reducers.unregisterAppReducer(plugin.id),
+        );
       }
 
       if (plugin.eventKinds && plugin.eventKinds.length > 0) {
-        ReducerRegistry.registerEventKinds(plugin.id, plugin.eventKinds);
-        cleanups.push(() => ReducerRegistry.unregisterEventKinds(plugin.id));
+        this.registries.reducers.registerEventKinds(
+          plugin.id,
+          plugin.eventKinds,
+        );
+        cleanups.push(() =>
+          this.registries.reducers.unregisterEventKinds(plugin.id),
+        );
       }
 
       if (plugin.createInitialState) {
@@ -182,10 +190,10 @@ export class PluginManagerClass {
       if (plugin.views?.AppRoot) {
         const appView = plugin.views.AppRoot as unknown as AppViewComponent;
         this.viewRegistry.set(plugin.id, appView);
-        AppRegistry.register(plugin.id, appView);
+        this.registries.apps.register(plugin.id, appView);
         cleanups.push(() => {
           this.viewRegistry.delete(plugin.id);
-          AppRegistry.unregister(plugin.id);
+          this.registries.apps.unregister(plugin.id);
         });
       }
 
@@ -194,15 +202,15 @@ export class PluginManagerClass {
         themeColor: "#000000",
         icon: "📱",
       };
-      AppMetadataRegistry.register(plugin.id, meta);
-      cleanups.push(() => AppMetadataRegistry.unregister(plugin.id));
+      this.registries.metadata.register(plugin.id, meta);
+      cleanups.push(() => this.registries.metadata.unregister(plugin.id));
 
       if (plugin.anchors && "providers" in plugin.anchors) {
         const anchorRegistry = plugin.anchors as PluginAnchorRegistry;
         for (const [anchorName, provider] of Object.entries(
           anchorRegistry.providers,
         )) {
-          registerAnchorProvider({
+          this.registries.anchors.register({
             appId: plugin.id,
             framing: {
               [anchorName]: {
@@ -239,36 +247,34 @@ export class PluginManagerClass {
             },
           });
         }
-        cleanups.push(() => unregisterAnchorProvider(plugin.id));
+        cleanups.push(() => this.registries.anchors.unregister(plugin.id));
       }
 
-      if (plugin.layouts && plugin.layouts.length > 0) {
-        import("../registries/layout").then(({ LayoutRegistry }) => {
-          const layouts = plugin.layouts ?? [];
-          if (layouts.length === 0) {
-            return;
-          }
-          for (const layout of layouts) {
-            LayoutRegistry.register({
-              appId: plugin.id,
-              viewKind: layout.viewKind,
-              platforms: layout.platforms ?? [],
-              computeLayout: layout.computeLayout as (
-                ctx: import("../types/layout").LayoutContext,
-              ) => import("../types/layout").LayoutState,
-            });
-          }
-        });
-        cleanups.push(() => {
-          import("../registries/layout").then(({ LayoutRegistry }) => {
-            LayoutRegistry.unregisterApp(plugin.id);
+      const layouts = plugin.layouts ?? [];
+      if (layouts.length > 0) {
+        for (const layout of layouts) {
+          this.registries.layouts.register({
+            appId: plugin.id,
+            viewKind: layout.viewKind,
+            platforms: layout.platforms ?? [],
+            computeLayout: layout.computeLayout as (
+              ctx: import("../types/layout").LayoutContext,
+            ) => import("../types/layout").LayoutState,
           });
+        }
+        cleanups.push(() => {
+          this.registries.layouts.unregisterApp(plugin.id);
         });
       }
 
       if (plugin.assets?.sounds) {
-        SoundRegistry.registerNamespaced(plugin.id, plugin.assets.sounds);
-        cleanups.push(() => SoundRegistry.unregisterNamespaced(plugin.id));
+        this.registries.sounds.registerNamespaced(
+          plugin.id,
+          plugin.assets.sounds,
+        );
+        cleanups.push(() =>
+          this.registries.sounds.unregisterNamespaced(plugin.id),
+        );
       }
 
       if (plugin.audioRules) {
@@ -276,14 +282,16 @@ export class PluginManagerClass {
           ...rule,
           match: { ...rule.match, appId: rule.match.appId ?? plugin.id },
         }));
-        AutoSoundRegistry.register(rulesWithAppId);
-        cleanups.push(() => AutoSoundRegistry.unregisterByAppId(plugin.id));
+        this.registries.autoSounds.register(rulesWithAppId);
+        cleanups.push(() =>
+          this.registries.autoSounds.unregisterByAppId(plugin.id),
+        );
       }
 
       if (plugin.notificationAdapter) {
         const pluginAdapter =
           plugin.notificationAdapter as PluginNotificationAdapter;
-        NotificationAdapterRegistry.register({
+        this.registries.notifications.register({
           appId: plugin.id,
           format: (notification: Notification) => {
             const formatted = pluginAdapter.format(notification);
@@ -295,7 +303,9 @@ export class PluginManagerClass {
             };
           },
         });
-        cleanups.push(() => NotificationAdapterRegistry.unregister(plugin.id));
+        cleanups.push(() =>
+          this.registries.notifications.unregister(plugin.id),
+        );
       }
 
       this.cleanupFunctions.set(plugin.id, cleanups);
@@ -388,8 +398,6 @@ export class PluginManagerClass {
   }
 }
 
-export const PluginManager = new PluginManagerClass();
-
 // =============================================================================
 // PLUGIN HELPERS
 // =============================================================================
@@ -400,6 +408,9 @@ export function definePlugin<AppId extends string>(
   return config;
 }
 
-export function registerPlugins(plugins: TokovoPluginContract<string>[]): void {
-  plugins.forEach((plugin) => PluginManager.register(plugin));
+export function registerPlugins(
+  pluginManager: PluginManagerClass,
+  plugins: TokovoPluginContract<string>[],
+): void {
+  plugins.forEach((plugin) => pluginManager.register(plugin));
 }

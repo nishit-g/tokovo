@@ -105,7 +105,7 @@ function replay(
 **Example:**
 
 ```typescript
-import { replay, createInitialWorld } from "@tokovo/core";
+import { replay, createInitialWorld, createTokovoRegistries } from "@tokovo/core";
 
 const initialWorld = createInitialWorld({
   devices: {
@@ -118,13 +118,21 @@ const initialWorld = createInitialWorld({
   },
 });
 
+const registries = createTokovoRegistries();
+
+const registries = createTokovoRegistries();
+
 const events = [
   { at: 0, kind: "OS", type: "UNLOCK" },
   { at: 30, kind: "OS", type: "OPEN_APP", payload: { appId: "app_whatsapp" } },
 ];
 
 // Get state at frame 45
-const worldAt45 = replay(initialWorld, events, 45);
+const worldAt45 = replay(initialWorld, events, 45, {
+  mode: "preview",
+  fps: 30,
+  registries: registries.engine,
+});
 // worldAt45.devices.main_phone.isLocked === false
 // worldAt45.devices.main_phone.foregroundAppId === 'app_whatsapp'
 ```
@@ -140,10 +148,11 @@ const worldAt45 = replay(initialWorld, events, 45);
 Maps `appId` → React view component
 
 ```typescript
-import { AppRegistry } from "@tokovo/core";
+import { createTokovoRegistries } from "@tokovo/core";
 
-AppRegistry.register("app_whatsapp", WhatsAppView);
-const view = AppRegistry.get("app_whatsapp");
+const registries = createTokovoRegistries();
+registries.plugins.apps.register("app_whatsapp", WhatsAppView);
+const view = registries.plugins.apps.get("app_whatsapp");
 ```
 
 #### **Sound Registry**
@@ -151,14 +160,15 @@ const view = AppRegistry.get("app_whatsapp");
 Manages sound asset URLs with namespacing
 
 ```typescript
-import { SoundRegistry } from "@tokovo/core";
+import { createTokovoRegistries } from "@tokovo/core";
 
-SoundRegistry.registerNamespaced("app_whatsapp", {
+const registries = createTokovoRegistries();
+registries.plugins.sounds.registerNamespaced("app_whatsapp", {
   notification: "/sounds/whatsapp-notification.mp3",
   sent: "/sounds/whatsapp-sent.mp3",
 });
 
-const url = SoundRegistry.get("app_whatsapp:notification");
+const url = registries.plugins.sounds.get("app_whatsapp:notification");
 ```
 
 #### **Anchor Registry**
@@ -166,13 +176,12 @@ const url = SoundRegistry.get("app_whatsapp:notification");
 Resolves semantic positions (e.g., "message bubble", "send button")
 
 ```typescript
-import { resolveAnchor } from "@tokovo/core";
+import { createTokovoRegistries } from "@tokovo/core";
 
-const bounds = resolveAnchor(
+const registries = createTokovoRegistries();
+const bounds = registries.plugins.anchors.resolveAnchor(
+  "app_whatsapp:send_button",
   worldState,
-  layout,
-  "app_whatsapp",
-  "send_button",
   "main_phone",
 );
 // Returns { x, y, width, height } in screen coordinates
@@ -183,9 +192,10 @@ const bounds = resolveAnchor(
 Platform-specific layout computation strategies
 
 ```typescript
-import { LayoutRegistry } from "@tokovo/core";
+import { createTokovoRegistries } from "@tokovo/core";
 
-LayoutRegistry.register({
+const registries = createTokovoRegistries();
+registries.plugins.layouts.register({
   appId: "app_whatsapp",
   viewKind: "CHAT",
   platforms: ["ios", "android"],
@@ -201,9 +211,10 @@ LayoutRegistry.register({
 Dynamic Island, status bar, and lockscreen widgets
 
 ```typescript
-import { WidgetRegistry } from "@tokovo/core";
+import { createTokovoRegistries } from "@tokovo/core";
 
-WidgetRegistry.register({
+const registries = createTokovoRegistries();
+registries.plugins.widgets.register({
   appId: "app_music",
   mode: "dynamicIsland",
   platforms: ["ios"],
@@ -284,7 +295,7 @@ const cue: SoundCue = {
 
 | Property     | Type            | Description                          |
 | ------------ | --------------- | ------------------------------------ |
-| `soundId`    | `string`        | ID registered in SoundRegistry       |
+| `soundId`    | `string`        | ID registered in `registries.plugins.sounds` |
 | `startFrame` | `number`        | Frame when sound started             |
 | `volume`     | `number`        | Base volume (0-1)                    |
 | `bus`        | `AudioBus`      | Target bus (music/ui/sfx/voice)      |
@@ -409,35 +420,22 @@ The engine processes these audio runtime events:
 
 ---
 
-### 4. Dependency Injection — TokovoContainer
+### 4. Dependency Injection — Scoped Registries
 
-For testing and customization, `@tokovo/core` provides a DI container:
+Tokovo uses **scoped registries** per runtime. Create them once and pass them to
+engine/replay/rendering calls:
 
 ```typescript
-import { TokovoContainer } from "@tokovo/core";
+import { createTokovoRegistries } from "@tokovo/core";
 
-// Get container instance
-const container = TokovoContainer.getInstance();
+const registries = createTokovoRegistries();
 
-// Register custom implementations
-container.register("soundRegistry", mySoundRegistry);
-container.register("audioLogger", myLogger);
+// Engine registries (reducers, middleware, lifecycle)
+registries.engine;
 
-// Resolve dependencies
-const registry = container.resolve("soundRegistry");
-
-// Reset for testing
-TokovoContainer.reset();
+// Plugin registries (apps, sounds, anchors, layouts, etc.)
+registries.plugins;
 ```
-
-**Registered Services:**
-
-| Service          | Default          | Purpose              |
-| ---------------- | ---------------- | -------------------- |
-| `soundRegistry`  | `SoundRegistry`  | Sound asset lookup   |
-| `appRegistry`    | `AppRegistry`    | App component lookup |
-| `anchorRegistry` | `AnchorRegistry` | Anchor resolution    |
-| `audioLogger`    | `AudioLogger`    | Audio debug logging  |
 
 ---
 
@@ -519,9 +517,12 @@ export const whatsappPlugin = definePlugin({
 **Registering plugins:**
 
 ```typescript
-import { PluginManager } from "@tokovo/core";
+import { createTokovoRegistries, PluginManagerClass } from "@tokovo/core";
 
-PluginManager.register(whatsappPlugin);
+const registries = createTokovoRegistries();
+const pluginManager = new PluginManagerClass(registries.plugins);
+
+pluginManager.register(whatsappPlugin);
 ```
 
 **Composing plugins:**
@@ -561,7 +562,7 @@ const myPlugin = composePlugin(
 | **Logger**        | `LogEntry`, `LogLevel`, `LogCollector`              | Structured logging        |
 | **Config**        | `TokovoConfig`, `TimingConfig`                      | Engine configuration      |
 | **Registry**      | `Registry`, `AppMetadata`, `LayoutStrategy`         | Registry interfaces       |
-| **Container**     | `TokovoContainer`, `DependencyInjection`            | Testability               |
+| **Runtime**       | `TokovoRegistries`, `createTokovoRegistries`        | Scoped registries         |
 
 **Example: WorldState**
 
@@ -606,9 +607,15 @@ const world: WorldState = {
 ### `replay()` — Compute World State
 
 ```typescript
-import { replay } from "@tokovo/core";
+import { replay, createTokovoRegistries } from "@tokovo/core";
 
-const worldState = replay(initialWorld, events, currentFrame);
+const registries = createTokovoRegistries();
+
+const worldState = replay(initialWorld, events, currentFrame, {
+  mode: "preview",
+  fps: 30,
+  registries: registries.engine,
+});
 ```
 
 ### `definePlugin()` — Create Plugin
@@ -626,12 +633,15 @@ export const myPlugin = definePlugin({
 });
 ```
 
-### `PluginManager.register()` — Register Plugin
+### `PluginManagerClass.register()` — Register Plugin
 
 ```typescript
-import { PluginManager } from "@tokovo/core";
+import { createTokovoRegistries, PluginManagerClass } from "@tokovo/core";
 
-PluginManager.register(myPlugin);
+const registries = createTokovoRegistries();
+const pluginManager = new PluginManagerClass(registries.plugins);
+
+pluginManager.register(myPlugin);
 ```
 
 ### `prepareEpisode()` — Validate and Prepare
@@ -646,13 +656,12 @@ const prepared = prepareEpisode(episodeJSON);
 ### `resolveAnchor()` — Get Semantic Position
 
 ```typescript
-import { resolveAnchor } from "@tokovo/core";
+import { createTokovoRegistries } from "@tokovo/core";
 
-const bounds = resolveAnchor(
+const registries = createTokovoRegistries();
+const bounds = registries.plugins.anchors.resolveAnchor(
+  "app_whatsapp:send_button",
   world,
-  layout,
-  "app_whatsapp",
-  "send_button",
   "main_phone",
 );
 // Returns: { x: 365, y: 850, width: 43, height: 43 }

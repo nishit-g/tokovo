@@ -1,5 +1,5 @@
 import { WHATSAPP_APP_ID } from "../constants";
-import { TimelineEvent, WorldState, ReducerRegistry } from "@tokovo/core";
+import { TimelineEvent, WorldState } from "@tokovo/core";
 import {
   WhatsAppMessage,
   WhatsAppConversation,
@@ -356,5 +356,3 @@ export function whatsappReducer(draft: WorldState, event: TimelineEvent): void {
 
   handler(ctx, parsed);
 }
-
-ReducerRegistry.registerAppReducer(WHATSAPP_APP_ID, whatsappReducer);

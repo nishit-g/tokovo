@@ -6,9 +6,7 @@ import type {
 import type { PluginLifecycleHooks } from "../engine/lifecycle";
 import type { EventHandlerDefinition } from "../engine/event-handlers";
 import type { MiddlewareDefinition } from "../engine/middleware";
-import { LifecycleManager } from "../engine/lifecycle";
-import { EventHandlerRegistry } from "../engine/event-handlers";
-import { MiddlewareRegistry } from "../engine/middleware";
+import type { EngineRegistries } from "../engine/registries";
 import { PluginManagerClass } from "./plugin";
 import { createScopedLogger } from "../logger";
 
@@ -42,7 +40,7 @@ export interface PluginBuilder {
     designWidth?: number;
   }): PluginBuilder;
   build(): BuiltPlugin;
-  register(pm: PluginManagerClass): () => void;
+  register(pm: PluginManagerClass, registries: EngineRegistries): () => void;
 }
 
 export function createPluginBuilder(
@@ -109,7 +107,7 @@ export function createPluginBuilder(
       };
     },
 
-    register(pm): () => void {
+    register(pm, registries): () => void {
       const built = builder.build();
       const unsubscribers: Array<() => void> = [];
 
@@ -117,18 +115,18 @@ export function createPluginBuilder(
 
       if (built.lifecycle) {
         unsubscribers.push(
-          LifecycleManager.register(config.id, built.lifecycle),
+          registries.lifecycle.register(config.id, built.lifecycle),
         );
       }
 
       if (built.eventHandlers.length > 0) {
         unsubscribers.push(
-          EventHandlerRegistry.registerMany(built.eventHandlers),
+          registries.eventHandlers.registerMany(built.eventHandlers),
         );
       }
 
       for (const mw of built.middlewares) {
-        unsubscribers.push(MiddlewareRegistry.use(mw));
+        unsubscribers.push(registries.middleware.use(mw));
       }
 
       log.info(`Plugin registered: ${config.displayName} (${config.id})`);

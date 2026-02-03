@@ -1,16 +1,16 @@
 import { keyboardReducer } from "./runtime/reducer";
 import type { KeyboardState } from "@tokovo/core";
-import { ReducerRegistry } from "@tokovo/core";
+import type { EngineRegistries } from "@tokovo/core";
 
 const DEBUG = process.env.NODE_ENV === "development";
 
-let registered = false;
+const registeredEngines = new WeakSet<EngineRegistries>();
 
-export function registerKeyboardPlugin(): void {
-  if (registered) return;
-  registered = true;
+export function registerKeyboardPlugin(registries: EngineRegistries): void {
+  if (registeredEngines.has(registries)) return;
+  registeredEngines.add(registries);
 
-  ReducerRegistry.registerFeatureReducer(
+  registries.reducers.registerFeatureReducer(
     "KEYBOARD",
     (draft, event, _index, ctx) => {
       const deviceId = (event as { deviceId?: string }).deviceId;
