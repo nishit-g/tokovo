@@ -96,14 +96,19 @@ export function processCameraEvent(
       }
       break;
 
-    default:
+    default: {
       const cameraPlugin = PluginManager.get("camera");
       if (!cameraPlugin) {
         throw new Error(
           "Camera plugin not registered. Ensure DeviceCameraPlugin is registered before engine initialization.",
         );
       }
-      cameraPlugin.reducer(draft as any, event as any);
+      const reducer = cameraPlugin.reducer as unknown as (
+        draft: WorldState,
+        event: CameraEvent,
+      ) => void;
+      reducer(draft as WorldState, event as CameraEvent);
       break;
+    }
   }
 }

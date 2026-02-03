@@ -12,8 +12,7 @@ export interface MessageGroup {
     }[];
 }
 
-const GROUP_TIME_THRESHOLD = 60 * 1000; // 60 seconds (approx, assuming timestamps are parseable or frames)
-// Since 'at' is frames (30fps), 60s = 1800 frames.
+const GROUP_TIME_THRESHOLD_SECONDS = 60;
 
 export const useMessageGrouping = (messages: MessageData[], ownerName: string = "me"): MessageGroup[] => {
     return useMemo(() => {
@@ -21,7 +20,7 @@ export const useMessageGrouping = (messages: MessageData[], ownerName: string = 
 
         let currentGroup: MessageGroup | null = null;
 
-        messages.forEach((msg, index) => {
+        messages.forEach((msg) => {
             const isSystem = msg.type === "system";
             const isMe = msg.from === ownerName;
 
@@ -49,7 +48,7 @@ export const useMessageGrouping = (messages: MessageData[], ownerName: string = 
                     const diffFrames = msg.at - lastMsg.at;
                     // standard 30fps
                     const diffSeconds = diffFrames / 30;
-                    if (diffSeconds < 60) {
+                    if (diffSeconds < GROUP_TIME_THRESHOLD_SECONDS) {
                         shouldGroup = true;
                     }
                 } else {

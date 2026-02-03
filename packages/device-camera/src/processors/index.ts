@@ -21,21 +21,13 @@ import {
   KenBurnsEffect,
   PunchZoomEffect,
   DutchTiltEffect,
-  FlashEffect,
   WhipPanEffect,
   SpringConfig,
   SPRING_PRESETS,
 } from "../types";
 import { AnchorSnapshot } from "../anchors/types";
 import { resolveAnchorFully } from "../anchors/resolver";
-import {
-  applyEasing,
-  lerp,
-  springValue,
-  fbm,
-  clamp,
-  seededRandom,
-} from "../utils";
+import { applyEasing, lerp, springValue, fbm } from "../utils";
 
 function resolveSpring(
   spring: SpringConfig | string | undefined,
@@ -134,7 +126,6 @@ const shakeProcessor: EffectProcessor = {
   type: "shake",
   process(ctx): CameraTransform {
     const e = ctx.effect as ShakeEffect;
-    const progress = getProgress(ctx.t, e.startFrame, e.endFrame);
     const elapsed = ctx.t - e.startFrame;
     const frequency = e.frequency ?? 12;
 

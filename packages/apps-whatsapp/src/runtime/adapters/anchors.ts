@@ -1,11 +1,8 @@
 import { PluginAnchorRegistry, WorldState } from "@tokovo/core";
 
-import { WHATSAPP_APP_ID } from "../../constants";
-const APP_ID = WHATSAPP_APP_ID;
-
 export const WhatsAppAnchors: PluginAnchorRegistry = {
   providers: {
-    default: (world: WorldState, deviceId: string) => {
+    default: (_world: WorldState, _deviceId: string) => {
       return null;
     },
   },

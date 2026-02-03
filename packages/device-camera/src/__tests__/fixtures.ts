@@ -1,5 +1,4 @@
 import type { CameraState, ZoomEffect } from "../types";
-import type { CameraTransform } from "@tokovo/core";
 
 export function createDefaultCameraState(): CameraState {
   return {

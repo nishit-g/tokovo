@@ -18,6 +18,11 @@ Tokovo **is not** a SaaS. It is a compact engine + a video pipeline that creator
 
 ---
 
+# ✅ V1 Stability
+
+See `docs/V1_STABILITY.md` for the release checklist and invariants.
+
+# 🧠 Core Concept
 # 🧠 Core Concept
 
 Tokovo’s architecture is intentionally **layered**, now with added support for:

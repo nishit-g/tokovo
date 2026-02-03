@@ -274,14 +274,12 @@ export function replay(
     // Finalize state inline (merged from separate produce call)
     const config = getCachedConfig();
     // Only filter activeEffects if it exists (extended CameraState from device-camera)
-    if (
-      "activeEffects" in draft.camera &&
-      Array.isArray(draft.camera.activeEffects)
-    ) {
-      (draft.camera as any).activeEffects = (
-        draft.camera as any
-      ).activeEffects.filter(
-        (ae: any) => t <= ae.endFrame + config.timing.effectCleanupBuffer,
+    const cameraWithEffects = draft.camera as {
+      activeEffects?: Array<{ endFrame: number }>;
+    };
+    if (Array.isArray(cameraWithEffects.activeEffects)) {
+      cameraWithEffects.activeEffects = cameraWithEffects.activeEffects.filter(
+        (effect) => t <= effect.endFrame + config.timing.effectCleanupBuffer,
       );
     }
 
@@ -505,6 +503,19 @@ function processEventCore(
     return;
   }
 
+  if (event.kind === "APP") {
+    const eventWithAppId = event as TimelineEvent & { appId?: string };
+    const appId = eventWithAppId.appId;
+    if (appId) {
+      const reducer = ReducerRegistry.getAppReducer(appId);
+      reducer?.(draft, event);
+    } else {
+      log.warn("APP event missing appId", { event, frame: t, eventIndex: index });
+    }
+    handleAutoSounds(draft, event, handlerCtx);
+    return;
+  }
+
   const appIdForKind = ReducerRegistry.getAppIdForEventKind(
     event.kind as string,
   );
@@ -542,7 +553,11 @@ function processEventCore(
   }
 
   if (hasBuiltInHandler(event.kind as string)) {
-    const handler = getBuiltInHandler(event.kind as string)!;
+    const handler = getBuiltInHandler(event.kind as string);
+    if (!handler) {
+      handleAutoSounds(draft, event, handlerCtx);
+      return;
+    }
     handler(draft, event, index, handlerCtx);
     handleAutoSounds(draft, event, handlerCtx);
     return;
@@ -581,14 +596,12 @@ function finalizeState(state: WorldState, t: number): WorldState {
   return produce(state, (draft) => {
     const config = getCachedConfig();
     // Only filter activeEffects if it exists (extended CameraState from device-camera)
-    if (
-      "activeEffects" in draft.camera &&
-      Array.isArray(draft.camera.activeEffects)
-    ) {
-      (draft.camera as any).activeEffects = (
-        draft.camera as any
-      ).activeEffects.filter(
-        (ae: any) => t <= ae.endFrame + config.timing.effectCleanupBuffer,
+    const cameraWithEffects = draft.camera as {
+      activeEffects?: Array<{ endFrame: number }>;
+    };
+    if (Array.isArray(cameraWithEffects.activeEffects)) {
+      cameraWithEffects.activeEffects = cameraWithEffects.activeEffects.filter(
+        (effect) => t <= effect.endFrame + config.timing.effectCleanupBuffer,
       );
     }
 
@@ -608,8 +621,9 @@ function finalizeState(state: WorldState, t: number): WorldState {
     }
 
     const activeDeviceId = draft.camera.activeDeviceId || firstDeviceId;
-    draft.camera.transform =
-      draft.camera.deviceTransforms[activeDeviceId!] ||
-      DEFAULT_CAMERA_TRANSFORM;
+    draft.camera.transform = activeDeviceId
+      ? draft.camera.deviceTransforms[activeDeviceId] ||
+        DEFAULT_CAMERA_TRANSFORM
+      : DEFAULT_CAMERA_TRANSFORM;
   });
 }

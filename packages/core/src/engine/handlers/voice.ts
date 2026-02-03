@@ -108,7 +108,7 @@ function createVoiceSegmentCue(
     bus: "voice",
     priority: 100,
     audioStartFrom: audioStartFromFrames,
-    duration: durationFrames > 0 ? durationFrames : undefined,
+    duration: durationFrames,
     origin: "world",
     duck: DEFAULT_VOICE_DUCK,
     playbackRate: clamp(event.speed ?? 1.0, 0.25, 4.0),

@@ -33,11 +33,11 @@ class EventHandlerRegistryClass {
   register(definition: EventHandlerDefinition): () => void {
     const { kind, handler, priority = 0 } = definition;
 
-    if (!this.handlers.has(kind)) {
-      this.handlers.set(kind, []);
+    let handlers = this.handlers.get(kind);
+    if (!handlers) {
+      handlers = [];
+      this.handlers.set(kind, handlers);
     }
-
-    const handlers = this.handlers.get(kind)!;
     const registered: RegisteredHandler = { handler, priority };
     handlers.push(registered);
 

@@ -7,7 +7,7 @@
  */
 
 import { z } from "zod";
-import { episodeRegistry } from "../registry/episode-registry";
+import { episodeRegistry } from "../registry/episode-registry.js";
 import type { TrackEpisodeIR } from "@tokovo/ir";
 
 // =============================================================================

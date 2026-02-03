@@ -49,7 +49,7 @@ export const IOSLockScreen: React.FC<NotificationLockScreenProps> = ({
       }}
     >
       {visibleNotifications.map(
-        ({ notification, animationState, animationProgress }, index) => {
+        ({ notification, animationState, animationProgress }) => {
           const { ir } = notification;
 
           return (

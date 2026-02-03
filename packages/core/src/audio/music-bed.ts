@@ -85,27 +85,27 @@ export function computeCrossfade(
     return { outVolume: outgoing.baseGain, inVolume: 0 };
   }
 
-  const crossfadeFrames = incoming!.crossfadeFrames || DEFAULT_CROSSFADE_FRAMES;
-  const elapsed = frame - incoming!.startFrame;
+  const crossfadeFrames = incoming.crossfadeFrames || DEFAULT_CROSSFADE_FRAMES;
+  const elapsed = frame - incoming.startFrame;
   const rawProgress = Math.min(1, Math.max(0, elapsed / crossfadeFrames));
-  const smoothProgress = applyEasing(rawProgress, incoming!.crossfadeCurve);
+  const smoothProgress = applyEasing(rawProgress, incoming.crossfadeCurve);
 
-  let outVol = outgoing!.baseGain * (1 - smoothProgress);
+  let outVol = outgoing.baseGain * (1 - smoothProgress);
   if (
-    outgoing!.fadeOutStart !== undefined &&
-    outgoing!.fadeOutDuration !== undefined
+    outgoing.fadeOutStart !== undefined &&
+    outgoing.fadeOutDuration !== undefined
   ) {
-    const fadeElapsed = frame - outgoing!.fadeOutStart;
+    const fadeElapsed = frame - outgoing.fadeOutStart;
     const fadeProgress = Math.min(
       1,
-      Math.max(0, fadeElapsed / outgoing!.fadeOutDuration),
+      Math.max(0, fadeElapsed / outgoing.fadeOutDuration),
     );
     outVol *= 1 - fadeProgress;
   }
 
   return {
     outVolume: outVol,
-    inVolume: incoming!.baseGain * smoothProgress,
+    inVolume: incoming.baseGain * smoothProgress,
   };
 }
 

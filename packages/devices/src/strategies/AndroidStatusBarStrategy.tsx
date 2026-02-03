@@ -5,7 +5,7 @@
  */
 
 import React from "react";
-import type { StatusBarStrategyProps, StatusBarNotificationIcon } from "../registries";
+import type { StatusBarStrategyProps } from "../registries";
 import {
     SignalBarsIcon,
     WifiIcon,

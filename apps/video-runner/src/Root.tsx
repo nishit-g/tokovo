@@ -12,11 +12,11 @@
 import React from "react";
 import { Composition, Folder } from "remotion";
 import { z } from "zod";
-import { PluginManager } from "@tokovo/core";
 import { registerWhatsAppPlugin } from "@tokovo/apps-whatsapp";
 import { registerDevicesPlugin } from "@tokovo/devices";
 import { registerNotificationPlugin } from "@tokovo/device-notifications";
 import { registerCameraPlugin } from "@tokovo/device-camera";
+import { registerKeyboardPlugin } from "@tokovo/device-keyboard";
 import { episodeRegistry, getFormat } from "@tokovo/episodes";
 import { EpisodeRenderer } from "./EpisodeRenderer";
 
@@ -28,6 +28,7 @@ registerDevicesPlugin();
 registerWhatsAppPlugin();
 registerNotificationPlugin();
 registerCameraPlugin();
+registerKeyboardPlugin();
 
 // =============================================================================
 // EPISODE IMPORTS (side-effect: auto-registers with registry)

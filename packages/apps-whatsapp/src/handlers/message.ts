@@ -1,4 +1,4 @@
-import { registerHandler, type HandlerContext } from "./registry";
+import { registerHandler } from "./registry";
 import type {
   MessageReceivedEvent,
   MessageSentEvent,

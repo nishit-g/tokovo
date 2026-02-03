@@ -167,7 +167,7 @@ export const ChatListScreen: React.FC<ChatListScreenProps> = ({
   world,
   safeAreaInsets,
   width,
-  height,
+  height: _height,
 }) => {
   const [activeFilter, setActiveFilter] = useState<FilterType>("all");
 

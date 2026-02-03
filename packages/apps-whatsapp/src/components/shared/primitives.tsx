@@ -1,6 +1,5 @@
 import React from "react";
 import { useTheme } from "../../theme/ThemeContext";
-import type { WhatsAppTheme } from "../../theme";
 
 interface MessageBubbleProps {
   isMe: boolean;

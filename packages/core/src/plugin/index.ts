@@ -14,6 +14,7 @@ export type {
   PluginAnchorRegistry,
   PluginNotificationAdapter,
   PluginTier,
+  PluginLayoutStrategy,
   PluginLayoutConstants,
   AppEventKindRegistry,
   AppInitialStateRegistry,

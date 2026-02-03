@@ -2,8 +2,8 @@
   "name": "@tokovo/device-camera",
   "version": "0.1.0",
   "description": "Enterprise-grade cinematic camera system for Tokovo",
-  "main": "./src/index.ts",
-  "types": "./src/index.ts",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch",
@@ -22,8 +22,7 @@
     "react": "^18.0.0"
   },
   "files": [
-    "dist",
-    "src"
+    "dist"
   ],
   "keywords": [
     "tokovo",

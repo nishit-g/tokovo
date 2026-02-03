@@ -96,7 +96,7 @@ export interface MusicBed {
 // =============================================================================
 
 export interface AudioPolicyState {
-  recentSounds: Map<string, number>; // For spam prevention
+  recentSounds: Record<string, number>; // For spam prevention
   nextId: number; // For deterministic ID generation
 }
 
@@ -115,24 +115,6 @@ export interface AudioState {
   autoSoundRules: unknown[]; // AutoSoundRule[] - using unknown to avoid circular dependency
 }
 
-// =============================================================================
-// AUDIO STATE
-// =============================================================================
-
-export interface AudioState {
-  activeSounds: Record<string, SoundCue>;
-  buses: {
-    music: AudioBusConfig;
-    ui: AudioBusConfig;
-    sfx: AudioBusConfig;
-    voice: AudioBusConfig;
-    master?: AudioBusConfig;
-  };
-  musicBed?: MusicBed;
-  outgoingMusicBed?: MusicBed;
-  policyState: AudioPolicyState;
-}
-
 export const DEFAULT_BUS_CONFIG: AudioState["buses"] = {
   music: { baseGain: 0.35, maxConcurrent: 1 },
   ui: { baseGain: 0.9, maxConcurrent: 3 },
@@ -144,7 +126,7 @@ export const DEFAULT_AUDIO_STATE: AudioState = {
   activeSounds: {},
   buses: DEFAULT_BUS_CONFIG,
   policyState: {
-    recentSounds: new Map(),
+    recentSounds: {},
     nextId: 0,
   },
   autoSoundRules: [],

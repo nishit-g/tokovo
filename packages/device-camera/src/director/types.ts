@@ -250,5 +250,5 @@ export interface CameraDirectorResult {
 }
 
 export interface OverrideFunction {
-  (): CameraEffect | CameraEffect[] | void;
+  (): CameraEffect | CameraEffect[] | null;
 }

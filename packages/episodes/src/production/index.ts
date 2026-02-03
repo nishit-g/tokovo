@@ -5,7 +5,7 @@
  *
  * @example
  * // In Root.tsx:
- * import "@tokovo/episodes/src/production";
+ * import "@tokovo/episodes/production";
  *
  * @see docs-v2/EPISODE-ARCH.md
  */

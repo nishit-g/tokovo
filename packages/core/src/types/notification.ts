@@ -87,6 +87,12 @@ export interface NotificationInstance {
   id: string;
   ir: NotificationIR;
 
+  // Flattened fields for convenience
+  appId: string;
+  title: string;
+  body: string;
+  icon?: string;
+
   // Lifecycle
   state: NotificationState;
 
@@ -103,6 +109,7 @@ export interface NotificationInstance {
   // Computed Priority / Mode
   importance?: "low" | "default" | "high" | "critical";
   mode?: "lockscreen" | "headsup" | "both" | "silent";
+  priority?: "low" | "default" | "high" | "urgent";
 }
 
 // Backward Compatibility

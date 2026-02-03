@@ -8,7 +8,6 @@ import {
   keyboardSpacing,
   getKeyboardColors,
   createKeyboardShadows,
-  type KeyboardTheme,
 } from "./tokens";
 import { getLayout, type KeyboardLayout } from "./layouts";
 

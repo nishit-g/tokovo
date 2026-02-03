@@ -21,11 +21,11 @@ export const NotificationBanner: React.FC<NotificationBannerProps> = ({
   renderActions,
   renderCustomContent,
   onTap,
-  onSwipe,
-  onDismiss,
+  onSwipe: _onSwipe,
+  onDismiss: _onDismiss,
 }) => {
   const { ir } = notification;
-  const { banner, icon, text, typography, animation, platform } = tokens;
+  const { banner, icon, text, typography, platform } = tokens;
 
   const baseTop = banner.margin.top * scale;
 

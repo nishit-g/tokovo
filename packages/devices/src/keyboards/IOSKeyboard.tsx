@@ -10,7 +10,7 @@
 
 import React from "react";
 import { useCurrentFrame, interpolate, Easing } from "remotion";
-import { KeyboardState, KeyboardLayout } from "@tokovo/core";
+import { KeyboardState } from "@tokovo/core";
 
 // =============================================================================
 // KEYBOARD LAYOUTS
@@ -37,7 +37,6 @@ const NUMBERS_ROWS = [
 interface IOSKeyboardProps {
   keyboard: KeyboardState;
   variant?: "light" | "dark";
-  t: number;
 }
 
 interface KeyProps {
@@ -59,8 +58,6 @@ const Key: React.FC<KeyProps> = ({
   isSpecial = false,
   variant,
 }) => {
-  const frame = useCurrentFrame();
-
   // Colors based on variant
   const colors =
     variant === "light"
@@ -169,8 +166,7 @@ const KeyboardRow: React.FC<{
   keys: string[];
   currentKey: string | null;
   variant: "light" | "dark";
-  rowIndex: number;
-}> = ({ keys, currentKey, variant, rowIndex }) => {
+}> = ({ keys, currentKey, variant }) => {
   return (
     <div
       style={{
@@ -224,7 +220,6 @@ const KeyboardRow: React.FC<{
 export const IOSKeyboard: React.FC<IOSKeyboardProps> = ({
   keyboard,
   variant = "light",
-  t,
 }) => {
   const frame = useCurrentFrame();
 
@@ -306,7 +301,6 @@ export const IOSKeyboard: React.FC<IOSKeyboardProps> = ({
           keys={row}
           currentKey={currentKey}
           variant={variant}
-          rowIndex={index}
         />
       ))}
     </div>

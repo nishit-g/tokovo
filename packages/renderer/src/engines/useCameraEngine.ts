@@ -18,9 +18,6 @@ import type { CSSProperties } from "react";
 
 // Import everything from device-camera
 import {
-  // Types
-  CameraEffect,
-
   // Processors
   processActiveEffects,
 
@@ -30,13 +27,8 @@ import {
 } from "@tokovo/device-camera";
 
 // Core imports for world/layout types
-import type {
-  WorldState,
-  EventIndex,
-  CameraState,
-  CameraTransform,
-} from "@tokovo/core";
-import { getEventsInRange, DEFAULT_TRANSFORM } from "@tokovo/core";
+import type { WorldState, EventIndex, CameraTransform } from "@tokovo/core";
+import { DEFAULT_TRANSFORM } from "@tokovo/core";
 
 import { LayoutEngineOutput } from "./useLayoutEngine";
 
@@ -79,6 +71,8 @@ export interface CameraEngineOutput {
 // MAIN HOOK
 // =============================================================================
 
+type CameraEffect = Parameters<typeof processActiveEffects>[1][number];
+
 export function useCameraEngine(input: CameraEngineInput): CameraEngineOutput {
   const { world, t, layoutOutput, eventIndex } = input;
 
@@ -102,23 +96,21 @@ export function useCameraEngine(input: CameraEngineInput): CameraEngineOutput {
     // 2. GET EFFECTS FROM STATE (flat CameraEffect[] - no wrapper)
     // =====================================================================
     // Note: world.camera is BaseCameraState in core, but may be extended with activeEffects by device-camera
-    const effects: CameraEffect[] =
-      "activeEffects" in world.camera &&
-        Array.isArray(world.camera.activeEffects)
-        ? (world.camera as any).activeEffects
-        : [];
-
-    // Filter to active manual effects
-    const activeManualEffects = effects.filter(
-      (e) => t >= e.startFrame && t < e.endFrame,
-    );
+    const cameraWithEffects = world.camera as unknown as {
+      activeEffects?: CameraEffect[];
+    };
+    const effects: CameraEffect[] = Array.isArray(
+      cameraWithEffects.activeEffects,
+    )
+      ? cameraWithEffects.activeEffects
+      : [];
 
     // =====================================================================
     // 3. PROCESS EFFECTS THROUGH REGISTRY
     // CRITICAL: Use DEFAULT_TRANSFORM as base, not previous frame state
     // Remotion renders frames in parallel, so useRef-based state is invalid
     // =====================================================================
-    let transform = processActiveEffects(
+    const transform = processActiveEffects(
       t,
       effects,
       DEFAULT_TRANSFORM, // CRITICAL: Pure computation, no inter-frame state

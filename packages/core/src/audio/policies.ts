@@ -16,7 +16,7 @@ import { AudioLogger } from "../engine/logger";
 
 export interface PolicyConfig {
   spamGateFrames: number; // Min frames between same sound
-  softVariant?: string; // Alternative sound for spam
+  softVariant?: string | null; // Alternative sound for spam (null disables softening)
   maxConcurrentPerBus: Record<AudioBus, number>;
 }
 
@@ -49,45 +49,49 @@ export const PRIORITY_LEVELS: Record<AudioBus, number> = {
 export interface SpamCheckResult {
   shouldPlay: boolean;
   alternateSound?: string;
-  updatedRecentSounds: Map<string, number>;
+  updatedRecentSounds: Record<string, number>;
 }
 
 export function checkSpamPure(
   soundId: string,
   frame: number,
-  recentSounds: Map<string, number>,
+  recentSounds: Record<string, number>,
   config: PolicyConfig = DEFAULT_POLICY_CONFIG,
 ): SpamCheckResult {
-  const updatedRecentSounds = new Map(recentSounds);
-  const lastFrame = recentSounds.get(soundId);
+  const updatedRecentSounds = { ...recentSounds };
+  const lastFrame = recentSounds[soundId];
 
   if (lastFrame === undefined) {
-    updatedRecentSounds.set(soundId, frame);
+    updatedRecentSounds[soundId] = frame;
     return { shouldPlay: true, updatedRecentSounds };
   }
 
   if (frame - lastFrame < config.spamGateFrames) {
-    const softId = soundId + (config.softVariant || "_soft");
+    const softSuffix =
+      config.softVariant === null ? null : config.softVariant || "_soft";
+    if (!softSuffix) {
+      return { shouldPlay: false, updatedRecentSounds: recentSounds };
+    }
     return {
       shouldPlay: false,
-      alternateSound: softId,
+      alternateSound: soundId + softSuffix,
       updatedRecentSounds: recentSounds,
     };
   }
 
-  updatedRecentSounds.set(soundId, frame);
+  updatedRecentSounds[soundId] = frame;
   return { shouldPlay: true, updatedRecentSounds };
 }
 
 export function cleanupRecentSounds(
-  recentSounds: Map<string, number>,
+  recentSounds: Record<string, number>,
   currentFrame: number,
   maxAge: number = 300,
-): Map<string, number> {
-  const cleaned = new Map<string, number>();
-  for (const [soundId, frame] of recentSounds.entries()) {
+): Record<string, number> {
+  const cleaned: Record<string, number> = {};
+  for (const [soundId, frame] of Object.entries(recentSounds)) {
     if (currentFrame - frame <= maxAge) {
-      cleaned.set(soundId, frame);
+      cleaned[soundId] = frame;
     }
   }
   return cleaned;
@@ -121,10 +125,14 @@ export class SpamGate {
     }
 
     if (frame - lastFrame < this.config.spamGateFrames) {
-      const softId = soundId + (this.config.softVariant || "_soft");
+      const softSuffix =
+        this.config.softVariant === null ? null : this.config.softVariant || "_soft";
+      if (!softSuffix) {
+        return { shouldPlay: false };
+      }
       return {
         shouldPlay: false,
-        alternateSound: softId,
+        alternateSound: soundId + softSuffix,
       };
     }
 
@@ -223,14 +231,14 @@ export interface PolicyResult {
   soundId: string;
   toRemove: string[];
   reason?: string;
-  updatedRecentSounds?: Map<string, number>;
+  updatedRecentSounds?: Record<string, number>;
 }
 
 export function checkAllPoliciesPure(
   cue: SoundCue,
   frame: number,
   activeCues: SoundCue[],
-  recentSounds: Map<string, number>,
+  recentSounds: Record<string, number>,
   config: PolicyConfig = DEFAULT_POLICY_CONFIG,
 ): PolicyResult {
   const spamResult = checkSpamPure(cue.soundId, frame, recentSounds, config);

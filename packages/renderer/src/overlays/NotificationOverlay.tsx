@@ -37,18 +37,19 @@ function groupNotifications(
     const key =
       ir.groupKey || (ir.threadKey ? `${ir.appId}_${ir.threadKey}` : ir.appId);
 
-    if (!groups.has(key)) {
-      groups.set(key, {
+    let group = groups.get(key);
+    if (!group) {
+      group = {
         key,
         appId: ir.appId,
         notifications: [],
         collapsed: true,
         count: 0,
         latestAt: 0,
-      });
+      };
+      groups.set(key, group);
     }
 
-    const group = groups.get(key)!;
     group.notifications.push(notif);
     group.count++;
     // Use shownAtFrame for sorting, fallback to createdAtFrame

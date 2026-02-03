@@ -111,16 +111,20 @@ class AutoSoundRegistryClass {
   register(newRules: AutoSoundRule[]) {
     for (const rule of newRules) {
       const kind = rule.match.kind;
-      if (!this.rulesByKind.has(kind)) {
-        this.rulesByKind.set(kind, []);
+      let kindRules = this.rulesByKind.get(kind);
+      if (!kindRules) {
+        kindRules = [];
+        this.rulesByKind.set(kind, kindRules);
       }
-      this.rulesByKind.get(kind)!.push(rule);
+      kindRules.push(rule);
 
       if (rule.match.appId) {
-        if (!this.rulesByAppId.has(rule.match.appId)) {
-          this.rulesByAppId.set(rule.match.appId, []);
+        let appRules = this.rulesByAppId.get(rule.match.appId);
+        if (!appRules) {
+          appRules = [];
+          this.rulesByAppId.set(rule.match.appId, appRules);
         }
-        this.rulesByAppId.get(rule.match.appId)!.push(rule);
+        appRules.push(rule);
       }
     }
     this.allRules.push(...newRules);

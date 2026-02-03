@@ -11,7 +11,7 @@ import {
   LayoutRect,
   SemanticAnchorId,
 } from "@tokovo/core";
-import type { WorldState, Notification } from "@tokovo/core";
+import type { WorldState } from "@tokovo/core";
 
 const APP_ID = "app_notification";
 

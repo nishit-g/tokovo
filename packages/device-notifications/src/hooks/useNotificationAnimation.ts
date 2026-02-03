@@ -22,7 +22,7 @@ export function useNotificationAnimation(
   tokens: NotificationTokens,
   options?: AnimationOptions,
 ): AnimationValues {
-  const { stackIndex = 0, stackOffset = 0, fps = 30, frame } = options ?? {};
+  const { stackIndex = 0, fps = 30, frame } = options ?? {};
   const { animation } = tokens;
 
   return useMemo(() => {

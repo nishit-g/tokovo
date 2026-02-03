@@ -178,7 +178,7 @@ export const GroupInfoScreen: React.FC<GroupInfoScreenProps> = ({
   conversationId,
   safeAreaInsets,
   width,
-  height,
+  height: _height,
 }) => {
   const designWidth = 393;
   const targetWidth = width || 1179;

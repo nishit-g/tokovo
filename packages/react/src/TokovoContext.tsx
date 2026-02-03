@@ -137,8 +137,13 @@ export function useKeyboardHeight() {
 export function useConversation<T extends { id: string } = { id: string }>(
   conversationId: string,
 ): T | undefined {
-  const appState = useAppState<{ conversations?: T[] }>();
-  return appState?.conversations?.find((c) => c.id === conversationId);
+  const appState = useAppState<{ conversations?: T[] | Record<string, T> }>();
+  const conversations = appState?.conversations;
+  if (!conversations) return undefined;
+  if (Array.isArray(conversations)) {
+    return conversations.find((c) => c.id === conversationId);
+  }
+  return (conversations as Record<string, T>)[conversationId];
 }
 
 export function useActiveConversation<
@@ -146,12 +151,22 @@ export function useActiveConversation<
 >(): T | undefined {
   const appState = useAppState<{
     activeConversationId?: string;
-    conversations?: T[];
+    conversationId?: string;
+    currentConversationId?: string;
+    conversations?: T[] | Record<string, T>;
   }>();
-  if (!appState?.activeConversationId) return undefined;
-  return appState.conversations?.find(
-    (c) => c.id === appState.activeConversationId,
-  );
+  const activeId =
+    appState?.activeConversationId ||
+    appState?.conversationId ||
+    appState?.currentConversationId;
+  if (!activeId) return undefined;
+
+  const conversations = appState.conversations;
+  if (!conversations) return undefined;
+  if (Array.isArray(conversations)) {
+    return conversations.find((c) => c.id === activeId);
+  }
+  return (conversations as Record<string, T>)[activeId];
 }
 
 export { TokovoContext };

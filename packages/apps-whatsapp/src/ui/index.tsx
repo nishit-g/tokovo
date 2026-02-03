@@ -1,6 +1,5 @@
 import React from "react";
 import { WorldState } from "@tokovo/core";
-import { AppSurface } from "@tokovo/react";
 import { injectWhatsAppStyles } from "../styles";
 import { WhatsAppThemeProvider } from "../theme/context";
 
@@ -27,7 +26,7 @@ export interface WhatsappChatViewProps {
 
 export const WhatsappChatView: React.FC<WhatsappChatViewProps> = ({
   world,
-  t,
+  t: _t,
   deviceId,
   platform = "ios",
   width,

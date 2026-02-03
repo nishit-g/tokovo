@@ -28,7 +28,7 @@ export const strategyRegistry: StrategyRegistry = new Map<
 ]);
 
 export function getNotificationStrategy(
-  platform: "ios" | "android",
+  _platform: "ios" | "android",
 ): NotificationStrategy {
   return defaultStrategy;
 }

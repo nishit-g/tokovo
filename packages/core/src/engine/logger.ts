@@ -7,6 +7,7 @@
  *   window.__TOKOVO_LOG_EVENTS = true;  // See all events
  *   window.__TOKOVO_LOG_PERF = true;    // See timing
  */
+/* eslint-disable no-console */
 
 import { EngineConfig } from "./config";
 import type { TimelineEvent } from "../types";

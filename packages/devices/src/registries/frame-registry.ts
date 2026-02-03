@@ -46,7 +46,6 @@ class FrameRegistryImpl {
             console.warn(`[FrameRegistry] Overwriting frame: ${profileId}`);
         }
         this.frames.set(profileId, component);
-        console.log(`[FrameRegistry] Registered: ${profileId}`);
     }
 
     /**

@@ -16,7 +16,6 @@ import type { HandlerContext, AudioEvent } from "./types";
 import {
   DEFAULT_BUS_CONFIG,
   SoundCue,
-  MusicBed,
   AudioBus,
 } from "../../types/audio";
 import { deriveAudioInstructions, AutoSoundRule } from "../../audio/auto-sound";
@@ -31,9 +30,6 @@ import {
 
 const DEFAULT_FADE_DURATION = 30;
 const MAX_LOOP_FRAMES = 3600;
-const SPAM_GATE_FRAMES = 8;
-const VOLUME_THRESHOLD = 0.001;
-const DEFAULT_CROSSFADE_FRAMES = 30;
 
 // =============================================================================
 // TYPES
@@ -64,7 +60,7 @@ function createDefaultAudioState(): AudioState {
     activeSounds: {},
     buses: { ...DEFAULT_BUS_CONFIG },
     policyState: {
-      recentSounds: new Map(),
+      recentSounds: {},
       nextId: 0,
     },
     autoSoundRules: [],
@@ -85,7 +81,7 @@ export function ensureAudioState(
   }
   if (!draft.audio.policyState) {
     draft.audio.policyState = {
-      recentSounds: new Map(),
+      recentSounds: {},
       nextId: 0,
     };
   }
@@ -96,7 +92,7 @@ function deleteActiveSound(
   instanceId: string,
 ): void {
   if (instanceId in activeSounds) {
-    delete activeSounds[instanceId];
+    Reflect.deleteProperty(activeSounds, instanceId);
   }
 }
 
@@ -130,7 +126,7 @@ function findInstancesByBus(
  * Determines if a sound should be routed to musicBed.
  * Only uses explicit bus assignment - loop is irrelevant.
  */
-function isMusic(bus?: string, loop?: boolean): boolean {
+function isMusic(bus?: string, _loop?: boolean): boolean {
   return bus === "music";
 }
 
@@ -142,12 +138,14 @@ function handlePlay(
   draft: WorldState,
   event: AudioEvent,
   payload: AudioEventPayload,
-  ctx: HandlerContext,
+  _ctx: HandlerContext,
 ): void {
-  const instanceId = `sound_${draft.audio!.policyState.nextId++}`;
+  const audio = draft.audio!;
+
+  const instanceId = `sound_${audio.policyState.nextId++}`;
 
   if (isMusic(payload.bus, payload.loop)) {
-    draft.audio!.musicBed = {
+    audio.musicBed = {
       soundId: payload.soundId || "",
       baseGain: payload.volume ?? 0.35,
       loop: payload.loop ?? true,
@@ -170,8 +168,8 @@ function handlePlay(
     const policyResult = checkAllPoliciesPure(
       tempCue,
       event.at,
-      Object.values(draft.audio!.activeSounds),
-      draft.audio!.policyState.recentSounds,
+      Object.values(audio.activeSounds),
+      audio.policyState.recentSounds,
     );
 
     if (!policyResult.shouldPlay) {
@@ -179,55 +177,59 @@ function handlePlay(
     }
 
     for (const id of policyResult.toRemove) {
-      deleteActiveSound(draft.audio!.activeSounds, id);
+      deleteActiveSound(audio.activeSounds, id);
     }
 
     if (policyResult.updatedRecentSounds) {
-      draft.audio!.policyState.recentSounds = policyResult.updatedRecentSounds;
+      audio.policyState.recentSounds = policyResult.updatedRecentSounds;
     }
 
     const finalCue: SoundCue = {
       ...tempCue,
       soundId: policyResult.soundId,
     };
-    draft.audio!.activeSounds[instanceId] = finalCue;
+    audio.activeSounds[instanceId] = finalCue;
   }
 }
 
 function handleStop(draft: WorldState, payload: AudioEventPayload): void {
+  const audio = draft.audio!;
+
   if (payload.instanceId) {
-    deleteActiveSound(draft.audio!.activeSounds, payload.instanceId);
+    deleteActiveSound(audio.activeSounds, payload.instanceId);
   } else if (payload.soundId) {
     const instances = findInstancesBySound(
-      draft.audio!.activeSounds,
+      audio.activeSounds,
       payload.soundId,
     );
     for (const instanceId of instances) {
-      deleteActiveSound(draft.audio!.activeSounds, instanceId);
+      deleteActiveSound(audio.activeSounds, instanceId);
     }
-    if (draft.audio!.musicBed?.soundId === payload.soundId) {
-      draft.audio!.musicBed = undefined;
+    if (audio.musicBed?.soundId === payload.soundId) {
+      audio.musicBed = undefined;
     }
   }
 }
 
 function handleStopAll(draft: WorldState, payload: AudioEventPayload): void {
+  const audio = draft.audio!;
+
   if (payload.bus) {
     const instances = findInstancesByBus(
-      draft.audio!.activeSounds,
+      audio.activeSounds,
       payload.bus,
     );
     for (const instanceId of instances) {
-      deleteActiveSound(draft.audio!.activeSounds, instanceId);
+      deleteActiveSound(audio.activeSounds, instanceId);
     }
     if (payload.bus === "music") {
-      draft.audio!.musicBed = undefined;
-      draft.audio!.outgoingMusicBed = undefined;
+      audio.musicBed = undefined;
+      audio.outgoingMusicBed = undefined;
     }
   } else {
-    draft.audio!.activeSounds = {};
-    draft.audio!.musicBed = undefined;
-    draft.audio!.outgoingMusicBed = undefined;
+    audio.activeSounds = {};
+    audio.musicBed = undefined;
+    audio.outgoingMusicBed = undefined;
   }
 }
 
@@ -236,11 +238,13 @@ function handleFade(
   event: AudioEvent,
   payload: AudioEventPayload,
 ): void {
+  const audio = draft.audio!;
+
   let duration = payload.duration ?? DEFAULT_FADE_DURATION;
   const toVolume = payload.toVolume ?? 0;
 
   if (payload.instanceId) {
-    const sound = draft.audio!.activeSounds[payload.instanceId];
+    const sound = audio.activeSounds[payload.instanceId];
     if (sound) {
       if (sound.duration) {
         const remaining = sound.duration - (event.at - sound.startFrame);
@@ -252,11 +256,11 @@ function handleFade(
     }
   } else if (payload.soundId) {
     const instances = findInstancesBySound(
-      draft.audio!.activeSounds,
+      audio.activeSounds,
       payload.soundId,
     );
     for (const instanceId of instances) {
-      const sound = draft.audio!.activeSounds[instanceId];
+      const sound = audio.activeSounds[instanceId];
       if (sound && "bus" in sound) {
         let soundDuration = duration;
         if (sound.duration) {
@@ -270,13 +274,13 @@ function handleFade(
     }
   }
 
-  if (draft.audio!.musicBed) {
+  if (audio.musicBed) {
     if (!payload.instanceId && !payload.soundId) {
-      draft.audio!.musicBed.fadeOutStart = event.at;
-      draft.audio!.musicBed.fadeOutDuration = duration;
-    } else if (payload.soundId === draft.audio!.musicBed.soundId) {
-      draft.audio!.musicBed.fadeOutStart = event.at;
-      draft.audio!.musicBed.fadeOutDuration = duration;
+      audio.musicBed.fadeOutStart = event.at;
+      audio.musicBed.fadeOutDuration = duration;
+    } else if (payload.soundId === audio.musicBed.soundId) {
+      audio.musicBed.fadeOutStart = event.at;
+      audio.musicBed.fadeOutDuration = duration;
     }
   }
 }
@@ -286,11 +290,13 @@ function handleCrossfade(
   event: AudioEvent,
   payload: AudioEventPayload,
 ): void {
+  const audio = draft.audio!;
+
   const duration = payload.crossfadeDuration ?? payload.duration ?? 60;
 
-  if (draft.audio!.musicBed) {
-    draft.audio!.outgoingMusicBed = {
-      ...draft.audio!.musicBed,
+  if (audio.musicBed) {
+    audio.outgoingMusicBed = {
+      ...audio.musicBed,
       fadeOutStart: event.at,
       fadeOutDuration: duration,
     };
@@ -298,7 +304,7 @@ function handleCrossfade(
 
   const targetSoundId = payload.toSoundId || payload.soundId;
   if (targetSoundId) {
-    draft.audio!.musicBed = {
+    audio.musicBed = {
       soundId: targetSoundId,
       baseGain: payload.volume ?? 0.35,
       loop: true,
@@ -347,7 +353,6 @@ export function processAudioEvent(
 
     default: {
       // Silently ignore - may be auto-sound trigger events
-      const unhandled = event.type as string;
       break;
     }
   }
@@ -361,11 +366,12 @@ export function cleanupExpiredSounds(
   draft: WorldState,
   currentFrame: number,
 ): void {
-  if (!draft.audio?.activeSounds) return;
+  const audio = draft.audio;
+  if (!audio?.activeSounds) return;
 
   const toDelete: string[] = [];
 
-  for (const [instanceId, sound] of Object.entries(draft.audio.activeSounds)) {
+  for (const [instanceId, sound] of Object.entries(audio.activeSounds)) {
     if (sound.loop) {
       const elapsed = currentFrame - sound.startFrame;
       if (elapsed > MAX_LOOP_FRAMES) {
@@ -392,21 +398,21 @@ export function cleanupExpiredSounds(
   }
 
   for (const instanceId of toDelete) {
-    deleteActiveSound(draft.audio.activeSounds, instanceId);
+    deleteActiveSound(audio.activeSounds, instanceId);
   }
 
-  if (draft.audio.outgoingMusicBed) {
-    const ob = draft.audio.outgoingMusicBed;
+  if (audio.outgoingMusicBed) {
+    const ob = audio.outgoingMusicBed;
     if (ob.fadeOutStart !== undefined && ob.fadeOutDuration !== undefined) {
       const fadeEnd = ob.fadeOutStart + ob.fadeOutDuration;
       if (currentFrame >= fadeEnd) {
-        draft.audio.outgoingMusicBed = undefined;
+        audio.outgoingMusicBed = undefined;
       }
     }
   }
 
-  draft.audio.policyState.recentSounds = cleanupRecentSounds(
-    draft.audio.policyState.recentSounds,
+  audio.policyState.recentSounds = cleanupRecentSounds(
+    audio.policyState.recentSounds,
     currentFrame,
   );
 }
@@ -418,17 +424,18 @@ export function cleanupExpiredSounds(
 export function handleAutoSounds(
   draft: WorldState,
   event: TimelineEvent,
-  ctx: HandlerContext,
+  _ctx: HandlerContext,
 ): void {
   ensureAudioState(draft);
+  const audio = draft.audio!;
 
   const instructions = deriveAudioInstructions(
     event,
-    draft.audio.autoSoundRules as AutoSoundRule[],
+    audio.autoSoundRules as AutoSoundRule[],
   );
 
   for (const instruction of instructions) {
-    const instanceId = `sound_${draft.audio!.policyState.nextId++}`;
+    const instanceId = `sound_${audio.policyState.nextId++}`;
 
     if (
       instruction.action === "PLAY_ONE_SHOT" ||
@@ -445,18 +452,18 @@ export function handleAutoSounds(
           bus: instruction.cue.bus,
           priority: instruction.cue.priority ?? 50,
         };
-        draft.audio!.activeSounds[instanceId] = sound;
+        audio.activeSounds[instanceId] = sound;
       }
     } else if (instruction.action === "STOP_SOUND") {
       if (instruction.instanceId) {
-        deleteActiveSound(draft.audio!.activeSounds, instruction.instanceId);
+        deleteActiveSound(audio.activeSounds, instruction.instanceId);
       } else if (instruction.soundId) {
         const instances = findInstancesBySound(
-          draft.audio!.activeSounds,
+          audio.activeSounds,
           instruction.soundId,
         );
         for (const id of instances) {
-          deleteActiveSound(draft.audio!.activeSounds, id);
+          deleteActiveSound(audio.activeSounds, id);
         }
       }
     }

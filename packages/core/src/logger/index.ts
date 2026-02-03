@@ -22,6 +22,7 @@
  *   // ... render ...
  *   const logs = collector.flush();
  */
+/* eslint-disable no-console */
 
 // =============================================================================
 // TYPES

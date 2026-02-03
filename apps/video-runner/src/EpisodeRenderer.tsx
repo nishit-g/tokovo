@@ -21,7 +21,7 @@ import {
   continueRender,
   staticFile,
 } from "remotion";
-import { runEpisode, createEventIndex, PluginManager } from "@tokovo/core";
+import { replay, createEventIndex, PluginManager } from "@tokovo/core";
 import {
   prepareTrackEpisode,
   type PreparedTrackEpisode,
@@ -108,10 +108,6 @@ export const EpisodeRenderer: React.FC<EpisodeRendererProps> = ({
   const videoConfig = useVideoConfig();
   const activeCompositionId = (videoConfig as any).id;
 
-  console.log(
-    `[EpisodeRenderer WRAPPER] episodeId="${episodeId}", activeComposition="${activeCompositionId}"`,
-  );
-
   if (activeCompositionId && activeCompositionId !== episodeId) {
     return null;
   }
@@ -140,22 +136,14 @@ const EpisodeRendererInner: React.FC<EpisodeRendererProps> = ({
 
   // === PREPARE EPISODE (runs once on mount) ===
   useEffect(() => {
-    console.log(`[EpisodeRenderer] 🎬 MOUNTING: ${episodeId}`);
     async function prepare() {
       try {
         const ep = episodeRegistry.get(episodeId);
-        console.log(`[EpisodeRenderer] 📦 Got from registry:`, {
-          episodeId,
-          found: !!ep,
-          foundId: ep?.meta?.id,
-          title: ep?.meta?.title,
-        });
         if (!ep) {
           throw new Error(`Episode not found: ${episodeId}`);
         }
         setEpisode(ep);
 
-        console.log(`[EpisodeRenderer] Building episode: ${episodeId}`);
         const ir = ep.build();
 
         if (ir.voice) {
@@ -181,10 +169,6 @@ const EpisodeRendererInner: React.FC<EpisodeRendererProps> = ({
               })),
             };
             setVoiceManifest(embeddedManifest);
-            console.log(`[EpisodeRenderer] 🎤 Voice manifest embedded:`, {
-              segments: embeddedManifest.segments.length,
-              duration: embeddedManifest.durationMs,
-            });
           } else if (ir.voice.manifestPath) {
             const manifestUrl = ir.voice.manifestPath.startsWith("/")
               ? staticFile(ir.voice.manifestPath)
@@ -197,10 +181,6 @@ const EpisodeRendererInner: React.FC<EpisodeRendererProps> = ({
             }
             const manifest = await manifestResponse.json();
             setVoiceManifest(manifest);
-            console.log(`[EpisodeRenderer] 🎤 Voice manifest fetched:`, {
-              segments: manifest.segments?.length,
-              duration: manifest.totalDurationMs,
-            });
           } else {
             throw new Error(
               `Voice config invalid: must have either embedded segments or manifestPath`,
@@ -208,14 +188,8 @@ const EpisodeRendererInner: React.FC<EpisodeRendererProps> = ({
           }
         }
 
-        console.log(`[EpisodeRenderer] Preparing episode: ${episodeId}`);
         const plugins = resolvePlugins(ep.config.apps);
         const result = prepareTrackEpisode(ir, plugins);
-
-        console.log(`[EpisodeRenderer] Episode ready: ${episodeId}`, {
-          events: result.events.length,
-          devices: Object.keys(result.initialWorld?.devices || {}).length,
-        });
 
         setPrepared(result);
         continueRender(handle);
@@ -231,17 +205,23 @@ const EpisodeRendererInner: React.FC<EpisodeRendererProps> = ({
   // === ALL HOOKS MUST BE CALLED BEFORE CONDITIONAL RETURNS ===
   // (React rules of hooks - hooks must be called unconditionally)
 
-  // === RUN EPISODE AT CURRENT FRAME ===
-  const world = useMemo(() => {
-    if (!prepared) return null;
-    return runEpisode(prepared as any, frame, { mode: "preview" });
-  }, [prepared, frame]);
-
   // === CREATE EVENT INDEX ===
   const eventIndex = useMemo(() => {
     if (!prepared) return null;
     return createEventIndex(prepared.events as any);
   }, [prepared]);
+
+  // === RUN EPISODE AT CURRENT FRAME ===
+  const world = useMemo(() => {
+    if (!prepared || !eventIndex) return null;
+    return replay(
+      prepared.initialWorld,
+      prepared.events,
+      frame,
+      { mode: "preview", fps },
+      eventIndex,
+    );
+  }, [prepared, eventIndex, frame, fps]);
 
   // === BUILD VOICE EVENTS FOR PER-SEGMENT CONTROL ===
   const voiceEvents = useMemo((): VoicePlayEvent[] => {
@@ -385,6 +365,7 @@ const EpisodeRendererInner: React.FC<EpisodeRendererProps> = ({
         <TokovoRenderer
           world={worldWithVoice}
           t={frame}
+          fps={fps}
           debug={false}
           eventIndex={eventIndex}
         />

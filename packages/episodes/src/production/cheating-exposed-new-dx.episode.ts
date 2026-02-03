@@ -1,11 +1,6 @@
-import { defineEpisode } from "../types/episode-definition";
+import { defineEpisode } from "../types/episode-definition.js";
 import { episode } from "@tokovo/dsl";
-import { WhatsAppTrackBuilder } from "@tokovo/apps-whatsapp/src/dsl/track-builder";
-import {
-  AudioDirectorPlugin,
-  OSDirectorPlugin,
-  KeyboardPlugin,
-} from "@tokovo/compiler";
+import { WhatsAppTrackBuilder } from "@tokovo/apps-whatsapp";
 
 let orderCounter = 0;
 const getOrder = () => orderCounter++;

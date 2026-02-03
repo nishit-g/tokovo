@@ -10,8 +10,6 @@ import {
   WorldState,
   DeviceState,
   WidgetRegistry,
-  NotificationAdapterRegistry,
-  Notification,
   WidgetProps,
 } from "@tokovo/core";
 import { DeviceProfile, DynamicIslandConfig } from "@tokovo/devices";
@@ -42,96 +40,6 @@ const IdleDynamicIsland: React.FC<{ config: DynamicIslandConfig }> = ({
     }}
   />
 );
-
-/**
- * Notification in Dynamic Island - expanded state
- */
-const NotificationDynamicIsland: React.FC<{
-  config: DynamicIslandConfig;
-  notification: Notification;
-}> = ({ config, notification }) => {
-  const formatted = NotificationAdapterRegistry.format(notification);
-
-  return (
-    <div
-      style={{
-        position: "absolute",
-        top: config.topY - 20,
-        left: "50%",
-        transform: "translateX(-50%)",
-        width: config.expandedWidth,
-        background: "#000000",
-        borderRadius: config.cornerRadius,
-        zIndex: 1001,
-        padding: "24px 30px",
-        display: "flex",
-        alignItems: "center",
-        gap: "24px",
-        boxShadow: "0 8px 32px rgba(0,0,0,0.6)",
-      }}
-    >
-      {/* App Icon */}
-      <div
-        style={{
-          width: 80,
-          height: 80,
-          borderRadius: 20,
-          background: formatted.iconBackground || "#333",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          fontSize: 40,
-          flexShrink: 0,
-        }}
-      >
-        {formatted.icon || "📱"}
-      </div>
-
-      {/* Content */}
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div
-          style={{
-            color: "#fff",
-            fontSize: 28,
-            fontWeight: 600,
-            marginBottom: 8,
-            whiteSpace: "nowrap",
-            overflow: "hidden",
-            textOverflow: "ellipsis",
-          }}
-        >
-          {formatted.title}
-        </div>
-        <div
-          style={{
-            color: "rgba(255,255,255,0.7)",
-            fontSize: 24,
-            whiteSpace: "nowrap",
-            overflow: "hidden",
-            textOverflow: "ellipsis",
-          }}
-        >
-          {formatted.body}
-        </div>
-      </div>
-
-      {/* Preview image if present */}
-      {formatted.preview?.kind === "image" && (
-        <div
-          style={{
-            width: 80,
-            height: 80,
-            borderRadius: 12,
-            background: "#333",
-            backgroundImage: `url(${formatted.preview.value})`,
-            backgroundSize: "cover",
-            flexShrink: 0,
-          }}
-        />
-      )}
-    </div>
-  );
-};
 
 /**
  * DynamicIsland Container Component

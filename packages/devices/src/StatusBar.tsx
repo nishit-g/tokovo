@@ -14,7 +14,7 @@
  */
 
 import React from "react";
-import type { DeviceOSState } from "@tokovo/core";
+import type { DeviceOSState, ResolvedStatusBarTheme } from "@tokovo/core";
 import { StatusBarStrategyRegistry, type StatusBarNotificationIcon } from "./registries";
 import { IOSStatusBarStrategy } from "./strategies/IOSStatusBarStrategy";
 
@@ -32,7 +32,7 @@ interface StatusBarProps {
     /** Theme variant - looks up from StatusBarStrategyRegistry */
     variant?: string;
     /** Theme */
-    theme?: "light" | "dark";
+    theme?: "light" | "dark" | ResolvedStatusBarTheme;
     /** Notification icons (Android left side) */
     notificationIcons?: StatusBarNotificationIcon[];
 }

@@ -16,7 +16,7 @@ npm install @tokovo/apps-whatsapp
 
 ```typescript
 import { episode } from "@tokovo/dsl";
-import { WhatsAppTrackBuilder } from "@tokovo/apps-whatsapp/src/dsl/track-builder";
+import { WhatsAppTrackBuilder } from "@tokovo/apps-whatsapp";
 
 let orderCounter = 0;
 const getOrder = () => orderCounter++;
@@ -529,7 +529,7 @@ episode("chat", { fps: 30, duration: "30s" }).camera((cam) => {
 ```typescript
 import { defineEpisode } from "@tokovo/episodes";
 import { episode } from "@tokovo/dsl";
-import { WhatsAppTrackBuilder } from "@tokovo/apps-whatsapp/src/dsl/track-builder";
+import { WhatsAppTrackBuilder } from "@tokovo/apps-whatsapp";
 
 let orderCounter = 0;
 const getOrder = () => orderCounter++;

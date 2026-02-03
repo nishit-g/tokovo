@@ -16,6 +16,6 @@ export function registerNotificationPlugin(): void {
   );
 
   if (DEBUG) {
-    console.log("[NotificationPlugin] Registered");
+    console.warn("[NotificationPlugin] Registered");
   }
 }

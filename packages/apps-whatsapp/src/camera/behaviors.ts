@@ -6,7 +6,6 @@
  */
 
 import type { AppBehavior, CameraIntent } from "@tokovo/core";
-import type { ShotPresetId } from "@tokovo/device-camera";
 
 const APP_ID = "app_whatsapp";
 
@@ -65,7 +64,7 @@ export const WHATSAPP_INTENT_MAPPINGS: Record<string, CameraIntent> = {
  * Example: WhatsApp wants slightly more zoom on snaps.
  */
 export const WHATSAPP_PRESET_OVERRIDES: Partial<
-  Record<ShotPresetId, Partial<{ scale: number; shake: number }>>
+  Record<string, Partial<{ scale: number; shake: number }>>
 > = {
   // WhatsApp uses slightly less dramatic zoom on messages
   dramatic: { scale: 1.25 }, // Global is 1.3

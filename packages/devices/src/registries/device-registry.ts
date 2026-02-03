@@ -36,12 +36,10 @@ class DeviceRegistryImpl {
         if (profile.sounds) {
             try {
                 SoundRegistry.registerMany(profile.sounds);
-            } catch (e) {
+            } catch {
                 // SoundRegistry might not be available in all contexts
             }
         }
-
-        console.log(`[DeviceRegistry] Registered: ${id}`);
     }
 
     /**
@@ -55,7 +53,11 @@ class DeviceRegistryImpl {
      * Get a profile with fallback to default
      */
     getOrDefault(id: string, fallbackId: string = "iphone16"): DeviceProfile {
-        return this.profiles.get(id) || this.profiles.get(fallbackId)!;
+        const profile = this.profiles.get(id) ?? this.profiles.get(fallbackId);
+        if (!profile) {
+            throw new Error(`Device profile not found: ${id}`);
+        }
+        return profile;
     }
 
     /**

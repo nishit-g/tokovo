@@ -21,7 +21,7 @@ export function deviceV2Lowering(
   event: DeviceTrackEvent,
   _ctx: { fps: number },
 ): TimelineOp[] {
-  const { at, kind, deviceId, type, ...rest } = event;
+  const { at, deviceId, type, kind: _kind, ...rest } = event;
   return [
     {
       at,

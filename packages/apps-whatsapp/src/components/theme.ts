@@ -167,7 +167,7 @@ export const iOSTokens = {
 
 export type Theme = typeof iOSTokens;
 
-export function getTheme(platform: "ios" | "android"): Theme {
+export function getTheme(_platform: "ios" | "android"): Theme {
   return iOSTokens;
 }
 

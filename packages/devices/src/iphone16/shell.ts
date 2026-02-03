@@ -12,4 +12,9 @@ DeviceRegistry.register({
     hasDynamicIsland: true
 });
 
-export const iPhone16Shell = DeviceRegistry.get("iphone16")!;
+const shell = DeviceRegistry.get("iphone16");
+if (!shell) {
+    throw new Error("iPhone16 shell is not registered.");
+}
+
+export const iPhone16Shell = shell;

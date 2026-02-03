@@ -1,4 +1,4 @@
-import { defineEpisode } from "../types/episode-definition";
+import { defineEpisode } from "../types/episode-definition.js";
 import { episode } from "@tokovo/dsl";
 import { KeyboardTrackBuilder } from "@tokovo/device-keyboard";
 
@@ -54,7 +54,7 @@ export default defineEpisode({
         },
       )
 
-      .camera((cam) => {
+      .camera((_cam) => {
         // cam.at("0s").set({ scale: 1 });
         // cam.at("1s").animate({ scale: 1.1, y: 200, duration: "0.5s" });
         // cam.at("13s").animate({ scale: 1, y: 0, duration: "0.5s" });

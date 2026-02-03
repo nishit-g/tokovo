@@ -1,13 +1,5 @@
 import React from "react";
-import {
-    WorldState,
-    ViewLayoutMode,
-    CameraTransform,
-    DEFAULT_CAMERA_TRANSFORM,
-    DeviceId,
-    VideoConfig,
-    DEFAULT_VIDEO_CONFIG,
-} from "@tokovo/core";
+import { WorldState, VideoConfig, DEFAULT_VIDEO_CONFIG } from "@tokovo/core";
 import { TokovoRenderer } from "./TokovoRenderer";
 import { AudioLayer } from "./AudioLayer";
 import { getDeviceProfile } from "@tokovo/devices";
@@ -32,9 +24,17 @@ export const MultiDeviceRenderer: React.FC<{
     world: WorldState;
     t: number;
     debug?: boolean;
+    fps?: number;
     compositionWidth?: number;
     compositionHeight?: number;
-}> = ({ world, t, debug = false, compositionWidth = 1080, compositionHeight = 1920 }) => {
+}> = ({
+    world,
+    t,
+    debug = false,
+    fps,
+    compositionWidth = 1080,
+    compositionHeight = 1920,
+}) => {
     const layout = world.camera?.layout;
 
     if (!layout) {
@@ -42,14 +42,15 @@ export const MultiDeviceRenderer: React.FC<{
         return (
             <>
                 <AudioLayer world={world} t={t} />
-                <SingleDeviceLayout
-                    world={world}
-                    t={t}
-                    debug={debug}
-                    deviceId={Object.keys(world.devices)[0]}
-                    width={compositionWidth}
-                    height={compositionHeight}
-                />
+                    <SingleDeviceLayout
+                        world={world}
+                        t={t}
+                        fps={fps}
+                        debug={debug}
+                        deviceId={Object.keys(world.devices)[0]}
+                        width={compositionWidth}
+                        height={compositionHeight}
+                    />
             </>
         );
     }
@@ -62,6 +63,7 @@ export const MultiDeviceRenderer: React.FC<{
                     <SingleDeviceLayout
                         world={world}
                         t={t}
+                        fps={fps}
                         debug={debug}
                         deviceId={layout.primaryDeviceId}
                         width={compositionWidth}
@@ -77,6 +79,7 @@ export const MultiDeviceRenderer: React.FC<{
                     <SplitHorizontalLayout
                         world={world}
                         t={t}
+                        fps={fps}
                         debug={debug}
                         primaryDeviceId={layout.primaryDeviceId}
                         secondaryDeviceId={layout.secondaryDeviceId}
@@ -93,6 +96,7 @@ export const MultiDeviceRenderer: React.FC<{
                     <SplitVerticalLayout
                         world={world}
                         t={t}
+                        fps={fps}
                         debug={debug}
                         primaryDeviceId={layout.primaryDeviceId}
                         secondaryDeviceId={layout.secondaryDeviceId}
@@ -109,6 +113,7 @@ export const MultiDeviceRenderer: React.FC<{
                     <PIPLayout
                         world={world}
                         t={t}
+                        fps={fps}
                         debug={debug}
                         primaryDeviceId={layout.primaryDeviceId}
                         secondaryDeviceId={layout.secondaryDeviceId}
@@ -127,6 +132,7 @@ export const MultiDeviceRenderer: React.FC<{
                     <SingleDeviceLayout
                         world={world}
                         t={t}
+                        fps={fps}
                         debug={debug}
                         deviceId={layout.primaryDeviceId}
                         width={compositionWidth}
@@ -145,6 +151,7 @@ interface LayoutProps {
     world: WorldState;
     t: number;
     debug?: boolean;
+    fps?: number;
     width: number;
     height: number;
 }
@@ -155,6 +162,7 @@ interface LayoutProps {
 const SingleDeviceLayout: React.FC<LayoutProps & { deviceId: string }> = ({
     world,
     t,
+    fps,
     debug,
     deviceId,
     width,
@@ -183,7 +191,7 @@ const SingleDeviceLayout: React.FC<LayoutProps & { deviceId: string }> = ({
             }}
         >
             <div style={{ transform: `scale(${scale})`, transformOrigin: "center center" }}>
-                <TokovoRenderer world={world} t={t} debug={debug} focusDeviceId={deviceId} />
+                <TokovoRenderer world={world} t={t} fps={fps} debug={debug} focusDeviceId={deviceId} />
             </div>
         </div>
     );
@@ -198,7 +206,7 @@ const SingleDeviceLayout: React.FC<LayoutProps & { deviceId: string }> = ({
  */
 const SplitHorizontalLayout: React.FC<
     LayoutProps & { primaryDeviceId: string; secondaryDeviceId?: string }
-> = ({ world, t, debug, primaryDeviceId, secondaryDeviceId, width, height }) => {
+> = ({ world, t, fps, debug, primaryDeviceId, secondaryDeviceId, width, height }) => {
     const halfWidth = width / 2;
 
     return (
@@ -216,6 +224,7 @@ const SplitHorizontalLayout: React.FC<
             <DevicePane
                 world={world}
                 t={t}
+                fps={fps}
                 debug={debug}
                 deviceId={primaryDeviceId}
                 paneWidth={halfWidth}
@@ -230,6 +239,7 @@ const SplitHorizontalLayout: React.FC<
                 <DevicePane
                     world={world}
                     t={t}
+                    fps={fps}
                     debug={debug}
                     deviceId={secondaryDeviceId}
                     paneWidth={halfWidth - 2}
@@ -252,7 +262,7 @@ const SplitHorizontalLayout: React.FC<
  */
 const SplitVerticalLayout: React.FC<
     LayoutProps & { primaryDeviceId: string; secondaryDeviceId?: string }
-> = ({ world, t, debug, primaryDeviceId, secondaryDeviceId, width, height }) => {
+> = ({ world, t, fps, debug, primaryDeviceId, secondaryDeviceId, width, height }) => {
     const halfHeight = height / 2;
 
     return (
@@ -270,6 +280,7 @@ const SplitVerticalLayout: React.FC<
             <DevicePane
                 world={world}
                 t={t}
+                fps={fps}
                 debug={debug}
                 deviceId={primaryDeviceId}
                 paneWidth={width}
@@ -284,6 +295,7 @@ const SplitVerticalLayout: React.FC<
                 <DevicePane
                     world={world}
                     t={t}
+                    fps={fps}
                     debug={debug}
                     deviceId={secondaryDeviceId}
                     paneWidth={width}
@@ -310,7 +322,7 @@ const PIPLayout: React.FC<
         pipPosition: "top-left" | "top-right" | "bottom-left" | "bottom-right";
         pipScale: number;
     }
-> = ({ world, t, debug, primaryDeviceId, secondaryDeviceId, pipPosition, pipScale, width, height }) => {
+> = ({ world, t, fps, debug, primaryDeviceId, secondaryDeviceId, pipPosition, pipScale, width, height }) => {
     // PIP window size
     const pipWidth = width * pipScale;
     const pipHeight = height * pipScale;
@@ -361,6 +373,7 @@ const PIPLayout: React.FC<
             <SingleDeviceLayout
                 world={world}
                 t={t}
+                fps={fps}
                 debug={debug}
                 deviceId={primaryDeviceId}
                 width={width}
@@ -373,6 +386,7 @@ const PIPLayout: React.FC<
                     <DevicePaneFit
                         world={world}
                         t={t}
+                        fps={fps}
                         debug={false} // No debug overlay on PIP
                         deviceId={secondaryDeviceId}
                         paneWidth={pipWidth}
@@ -395,11 +409,12 @@ const PIPLayout: React.FC<
 const DevicePane: React.FC<{
     world: WorldState;
     t: number;
+    fps?: number;
     debug?: boolean;
     deviceId: string;
     paneWidth: number;
     paneHeight: number;
-}> = ({ world, t, debug, deviceId, paneWidth, paneHeight }) => {
+}> = ({ world, t, fps, debug, deviceId, paneWidth, paneHeight }) => {
     const device = world.devices[deviceId];
     if (!device) {
         return (
@@ -447,7 +462,7 @@ const DevicePane: React.FC<{
             }}
         >
             <div style={{ transform: `scale(${scale})`, transformOrigin: "center center" }}>
-                <TokovoRenderer world={deviceWorld} t={t} debug={debug} focusDeviceId={deviceId} />
+                <TokovoRenderer world={deviceWorld} t={t} fps={fps} debug={debug} focusDeviceId={deviceId} />
             </div>
         </div>
     );
@@ -460,11 +475,12 @@ const DevicePane: React.FC<{
 const DevicePaneFit: React.FC<{
     world: WorldState;
     t: number;
+    fps?: number;
     debug?: boolean;
     deviceId: string;
     paneWidth: number;
     paneHeight: number;
-}> = ({ world, t, debug, deviceId, paneWidth, paneHeight }) => {
+}> = ({ world, t, fps, debug, deviceId, paneWidth, paneHeight }) => {
     const device = world.devices[deviceId];
     if (!device) {
         return <div style={{ width: paneWidth, height: paneHeight, background: "#1a1a2e" }} />;
@@ -498,7 +514,7 @@ const DevicePaneFit: React.FC<{
             }}
         >
             <div style={{ transform: `scale(${scale})`, transformOrigin: "center center" }}>
-                <TokovoRenderer world={deviceWorld} t={t} debug={debug} focusDeviceId={deviceId} />
+                <TokovoRenderer world={deviceWorld} t={t} fps={fps} debug={debug} focusDeviceId={deviceId} />
             </div>
         </div>
     );

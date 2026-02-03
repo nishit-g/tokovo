@@ -50,4 +50,27 @@ export interface WorldState {
   camera: BaseCameraState;
   audio: AudioState;
   config?: VideoConfig;
+
+  /** Active touch points for visualization */
+  touches?: TouchState[];
+}
+
+// =============================================================================
+// TOUCH STATE (for gesture visualization)
+// =============================================================================
+
+export interface TouchState {
+  /** Unique touch identifier */
+  id: string;
+  /** X coordinate */
+  x: number;
+  /** Y coordinate */
+  y: number;
+  /** Frame when touch started */
+  startedAt: number;
+  /** Touch type */
+  type: "tap" | "long_press" | "drag";
+  /** For drag: end coordinates */
+  endX?: number;
+  endY?: number;
 }

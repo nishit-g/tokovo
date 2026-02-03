@@ -2,12 +2,8 @@ import { produce } from "immer";
 import {
   TimelineEvent,
   DeviceState,
-  Notification,
-  NotificationCenterState,
   DEFAULT_NOTIFICATION_CENTER,
   DEFAULT_DYNAMIC_ISLAND,
-  IOS_NOTIFICATION_POLICY,
-  DeviceRuntimeEvent,
   OpenAppEvent,
   SetBadgeEvent,
   SetDynamicIslandEvent,
@@ -16,38 +12,6 @@ import {
   StopBackgroundAppEvent,
 } from "@tokovo/core";
 import { ReducerRegistry } from "@tokovo/core";
-
-// =============================================================================
-// HELPER FUNCTIONS
-// =============================================================================
-
-function generateNotificationId(event: TimelineEvent): string {
-  const appId = (event as { appId?: string }).appId || "unknown";
-  return `notif_${event.at}_${appId}_${event.at.toString(16)}`;
-}
-
-function computeGroups(
-  items: Notification[],
-): NotificationCenterState["groups"] {
-  const groupMap = new Map<string, Notification[]>();
-
-  items
-    .filter((n) => n.state !== "dismissed")
-    .forEach((n) => {
-      const key = n.ir.groupKey || n.ir.appId;
-      if (!groupMap.has(key)) groupMap.set(key, []);
-      groupMap.get(key)!.push(n);
-    });
-
-  return Array.from(groupMap.entries()).map(([key, notifs]) => ({
-    key,
-    appId: notifs[0].ir.appId,
-    notifications: notifs,
-    collapsed: notifs.length >= IOS_NOTIFICATION_POLICY.groupCollapseThreshold,
-    count: notifs.length,
-    latestAt: Math.max(...notifs.map((n) => n.createdAtFrame)),
-  }));
-}
 
 // =============================================================================
 // DEVICE REDUCER

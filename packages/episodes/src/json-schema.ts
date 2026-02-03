@@ -1,6 +1,5 @@
 import { zodToJsonSchema } from "zod-to-json-schema";
 import {
-  EpisodeSchema,
   EpisodeSchemaV1,
   TimelineEventSchema,
   MessageSchema,
@@ -10,7 +9,7 @@ import {
   MessageMetadataSchema,
   CustomEventPayloadSchema,
   AppStateSchema,
-} from "./schema";
+} from "./schema.js";
 
 export interface SchemaExport {
   $schema: string;

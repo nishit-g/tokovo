@@ -12,7 +12,17 @@ interface FeedAppState {
 
 export function computeFeedLayout(ctx: LayoutContext): FeedLayoutState {
   const { world, t, activeAppId, config, viewportHeight } = ctx;
-  const feedConfig = config!.feed!;
+  const feedConfig = config?.feed;
+  if (!feedConfig) {
+    return {
+      kind: "FEED",
+      scrollY: 0,
+      contentHeight: 0,
+      isAtBottom: true,
+      itemLayouts: {},
+      meta: {},
+    };
+  }
 
   const appState = world.appState?.[activeAppId] as
     | { feed?: FeedAppState }

@@ -4,7 +4,7 @@
  */
 
 import React from "react";
-import { iOSTokens, androidTokens, Platform, sharedStyles } from "@tokovo/core";
+import { iOSTokens, androidTokens, Platform } from "@tokovo/core";
 
 function getTypography(platform: Platform) {
   if (platform === "ios") {
@@ -23,12 +23,6 @@ function getTypography(platform: Platform) {
     headline: androidTokens.typography.headlineSmall,
     caption1: androidTokens.typography.labelMedium,
   };
-}
-
-function getShadow(platform: Platform) {
-  return platform === "ios"
-    ? iOSTokens.shadows.sm
-    : "0 1px 2px rgba(0,0,0,0.1)";
 }
 
 // =============================================================================

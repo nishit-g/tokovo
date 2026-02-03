@@ -20,7 +20,7 @@ export const MessageBubble = memo(function MessageBubble({
   message,
   isMe,
   isFirst,
-  isLast,
+  isLast: _isLast,
   isGroupChat = false,
   senderName,
   senderColor,

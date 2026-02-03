@@ -22,14 +22,14 @@ import type { DeviceTrackEvent, DeviceEventType } from "../ir/device-event";
 
 type GetOrder = () => number;
 
-interface IncomingCallPayload {
+interface IncomingCallPayload extends Record<string, unknown> {
     callerId: string;
     callerName: string;
     callerAvatar?: string;
     isVideo?: boolean;
 }
 
-interface BackgroundAppPayload {
+interface BackgroundAppPayload extends Record<string, unknown> {
     appId: string;
     indicator: "music" | "navigation" | "recording" | "call";
     label?: string;
@@ -47,7 +47,10 @@ export class DevicePointBuilder {
         private _getOrder: GetOrder
     ) { }
 
-    private emit(type: DeviceEventType, payload: Record<string, any> = {}): this {
+    private emit(
+        type: DeviceEventType,
+        payload: Record<string, unknown> = {},
+    ): this {
         this._events.push({
             kind: "DEVICE",
             deviceId: this._deviceId,

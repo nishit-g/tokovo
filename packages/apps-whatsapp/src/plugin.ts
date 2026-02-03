@@ -15,7 +15,7 @@ import type {
   TokovoPluginContract,
   PluginViews,
   PluginLayoutStrategy,
-} from "@tokovo/core/src/types/plugin-contract";
+} from "@tokovo/core";
 
 // Runtime Layer
 import { whatsappReducer } from "./runtime/reducer";
@@ -25,7 +25,7 @@ import { createWhatsAppInitialState } from "./runtime/initial-state";
 import { WhatsappChatView } from "./ui";
 
 // Lowering Layer (V2 is default)
-import { whatsappLowering, whatsappV2Lowering } from "./lowering";
+import { whatsappV2Lowering } from "./lowering";
 
 // DSL Layer
 import { whatsappDsl, type WhatsAppDslApi } from "./dsl";
@@ -61,6 +61,12 @@ const whatsappAssets = {
     message_in: "plugins/whatsapp/received.wav",
     message_out: "plugins/whatsapp/sent.wav",
     typing_loop: "plugins/whatsapp/typing_loop.wav",
+    call_ringtone: "plugins/whatsapp/call_ringtone.wav",
+    call_outgoing: "plugins/whatsapp/call_outgoing.wav",
+    call_end: "plugins/whatsapp/call_end.wav",
+    ptt_start: "plugins/whatsapp/ptt_start.wav",
+    ptt_send: "plugins/whatsapp/ptt_send.wav",
+    ptt_cancel: "plugins/whatsapp/ptt_cancel.wav",
   },
   icons: {
     app_icon: "/icons/whatsapp.svg",
@@ -139,6 +145,12 @@ export const WhatsAppPluginV2: TokovoPluginContract<"app_whatsapp"> & {
     "app_whatsapp.message_in": "plugins/whatsapp/received.wav",
     "app_whatsapp.message_out": "plugins/whatsapp/sent.wav",
     "app_whatsapp.typing_loop": "plugins/whatsapp/typing_loop.wav",
+    "app_whatsapp.call_ringtone": "plugins/whatsapp/call_ringtone.wav",
+    "app_whatsapp.call_outgoing": "plugins/whatsapp/call_outgoing.wav",
+    "app_whatsapp.call_end": "plugins/whatsapp/call_end.wav",
+    "app_whatsapp.ptt_start": "plugins/whatsapp/ptt_start.wav",
+    "app_whatsapp.ptt_send": "plugins/whatsapp/ptt_send.wav",
+    "app_whatsapp.ptt_cancel": "plugins/whatsapp/ptt_cancel.wav",
   },
 
   // === TIER A: Assets ===

@@ -4,7 +4,6 @@ import { KeyboardAwareView } from "@tokovo/react";
 import { Header as DefaultHeader } from "../Header";
 import { MessageList } from "../MessageList";
 import { InputArea as DefaultInputArea } from "../InputArea";
-import { TypingIndicator } from "../TypingIndicator";
 import {
   WhatsAppState,
   MessageData,
@@ -30,7 +29,7 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({
   deviceId,
   safeAreaInsets,
   width,
-  height,
+  height: _height,
 }) => {
   const appState = (world.appState?.["app_whatsapp"] ||
     world.appState?.["whatsapp"]) as WhatsAppState;

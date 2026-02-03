@@ -1,5 +1,4 @@
 import { DeviceShell } from "./types";
-import React from "react";
 
 class DeviceRegistryClass {
     private shells = new Map<string, DeviceShell>();

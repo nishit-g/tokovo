@@ -19,7 +19,9 @@
     "@tokovo/devices": "workspace:*",
     "@tokovo/apps-whatsapp": "workspace:*",
     "@tokovo/device-notifications": "workspace:*",
-    "@remotion/player": "^4.0.380",
+    "@tokovo/device-camera": "workspace:*",
+    "@tokovo/device-keyboard": "workspace:*",
+    "@remotion/player": "4.0.409",
     "react": "^18.2.0",
     "react-dom": "^18.2.0"
   },

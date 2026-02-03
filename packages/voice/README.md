@@ -321,7 +321,7 @@ Ensure you imported from the correct path:
 import { drama } from "@tokovo/voice";
 
 // ❌ Wrong - direct file import bypasses types
-import { drama } from "@tokovo/voice/src/scripts/drama";
+import { drama } from "@tokovo/voice/scripts";
 ```
 
 ### Audio Not Playing

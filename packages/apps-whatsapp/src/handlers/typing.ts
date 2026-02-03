@@ -18,7 +18,7 @@ export function registerTypingHandlers(): void {
   registerHandler<TypingEndEvent>("TypingEnded", (ctx, e) => {
     const actor = e.payload?.actor ?? e.from;
     if (ctx.conversation.typing && actor) {
-      delete ctx.conversation.typing[actor];
+      Reflect.deleteProperty(ctx.conversation.typing, actor);
     }
   });
 }

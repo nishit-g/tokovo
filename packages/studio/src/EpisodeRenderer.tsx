@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { runEpisode } from "@tokovo/core";
+import { replay, createEventIndex } from "@tokovo/core";
 import { TokovoRenderer } from "@tokovo/renderer";
 import type { PreparedTrackEpisode } from "@tokovo/compiler";
 
@@ -12,10 +12,21 @@ export function EpisodeRenderer({
   episodeIR,
   frame = 0,
 }: EpisodeRendererProps) {
-  const world = useMemo(() => {
+  const eventIndex = useMemo(() => {
     if (!episodeIR) return null;
-    return runEpisode(episodeIR as any, frame, { mode: "preview" });
-  }, [episodeIR, frame]);
+    return createEventIndex(episodeIR.events as any);
+  }, [episodeIR]);
+
+  const world = useMemo(() => {
+    if (!episodeIR || !eventIndex) return null;
+    return replay(
+      episodeIR.initialWorld,
+      episodeIR.events,
+      frame,
+      { mode: "preview", fps: episodeIR.fps },
+      eventIndex,
+    );
+  }, [episodeIR, eventIndex, frame]);
 
   if (!world) {
     return (
@@ -46,7 +57,12 @@ export function EpisodeRenderer({
         background: "#0a0a0f",
       }}
     >
-      <TokovoRenderer world={world} t={frame} debug={false} />
+      <TokovoRenderer
+        world={world}
+        t={frame}
+        fps={episodeIR.fps}
+        debug={false}
+      />
     </div>
   );
 }

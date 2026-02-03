@@ -12,7 +12,16 @@ interface StoriesAppState {
 
 export function computeStoryLayout(ctx: LayoutContext): StoryLayoutState {
   const { world, t, activeAppId, config } = ctx;
-  const storyConfig = config!.story!;
+  const storyConfig = config?.story;
+  if (!storyConfig) {
+    return {
+      kind: "STORY",
+      activeStoryIndex: 0,
+      storyCount: 0,
+      storyProgress: 0,
+      storyLayouts: [],
+    };
+  }
 
   const appState = world.appState?.[activeAppId] as
     | { stories?: StoriesAppState }

@@ -19,24 +19,17 @@ import {
 } from "@tokovo/core";
 import { AppSurface, TokovoProvider } from "@tokovo/react";
 import {
-  registerNotificationPlugin,
   createSelectors,
   NotificationBanner,
   getNotificationTokens,
 } from "@tokovo/device-notifications";
 import type { StackedNotificationInfo } from "@tokovo/device-notifications";
-import type { NotificationInstance } from "@tokovo/core";
 import {
   Keyboard,
   getKeyboardHeight,
-  getKeyboardSlideProgress,
-  registerKeyboardPlugin,
 } from "@tokovo/device-keyboard";
 
-registerKeyboardPlugin();
-registerNotificationPlugin();
 import { FrameRegistry, StatusBar, iPhone16Frame } from "@tokovo/devices";
-import { AppRegistry } from "@tokovo/core";
 import { NotificationOverlay } from "./overlays";
 import { LockscreenView, HomeScreenView } from "./screens";
 import { VisualDebugger } from "./VisualDebugger";
@@ -59,6 +52,7 @@ interface NotificationConfig {
 interface TokovoRendererProps {
   world: WorldState;
   t: number;
+  fps?: number;
   debug?: boolean;
   notificationConfig?: NotificationConfig;
   focusDeviceId?: string;
@@ -73,6 +67,7 @@ interface TokovoRendererProps {
 export const TokovoRenderer: React.FC<TokovoRendererProps> = ({
   world,
   t,
+  fps = 30,
   debug,
   notificationConfig = {},
   focusDeviceId,
@@ -82,8 +77,7 @@ export const TokovoRenderer: React.FC<TokovoRendererProps> = ({
   // Resolve Plugin Manager (Injectable > Global Fallback)
   const pm = pluginManager || PluginManager;
 
-  const { headsUpDuration = 150, showHeadsUpWhenAppOpen = true } =
-    notificationConfig;
+  void notificationConfig;
 
   // ==========================================================================
   // 1. LAYOUT ENGINE — Get layout blueprint
@@ -101,8 +95,7 @@ export const TokovoRenderer: React.FC<TokovoRendererProps> = ({
     );
   }
 
-  const { deviceId, device, appId, viewKind, layout, profile, variant } =
-    layoutOutput;
+  const { deviceId, device, appId, layout, profile, variant } = layoutOutput;
 
   // ==========================================================================
   // 2. CAMERA ENGINE — Get camera transform
@@ -133,8 +126,8 @@ export const TokovoRenderer: React.FC<TokovoRendererProps> = ({
   );
 
   const stackedNotifications = React.useMemo(() => {
-    return notificationSelectors.getStackedBannerNotifications(device, t);
-  }, [device, t, notificationSelectors]);
+    return notificationSelectors.getStackedBannerNotifications(device, t, fps);
+  }, [device, t, fps, notificationSelectors]);
 
   const activeHeadsUp =
     stackedNotifications.length > 0 ? stackedNotifications[0] : null;
@@ -204,13 +197,17 @@ export const TokovoRenderer: React.FC<TokovoRendererProps> = ({
             {(() => {
               // Active App (Unlocked)
               if (AppView && !device.isLocked) {
-                const pluginAssets = pm.get(appId!)?.assets;
+                if (!appId) {
+                  return <div style={{ flex: 1, backgroundColor: "black" }} />;
+                }
+
+                const pluginAssets = pm.get(appId)?.assets;
                 const designWidth = pluginAssets?.designWidth || 393;
 
                 const scale = profile.dimensions.width / designWidth;
 
                 return (
-                  <AppErrorBoundary appId={appId!}>
+                  <AppErrorBoundary appId={appId}>
                     <AppSurface
                       designWidth={designWidth}
                       targetWidth={profile.dimensions.width}
@@ -220,7 +217,7 @@ export const TokovoRenderer: React.FC<TokovoRendererProps> = ({
                       <TokovoProvider
                         world={world}
                         deviceId={deviceId}
-                        appId={appId!}
+                        appId={appId}
                         t={t}
                         layout={layout}
                         platform={variant}
@@ -308,7 +305,7 @@ export const TokovoRenderer: React.FC<TokovoRendererProps> = ({
                       tokens={notificationTokens}
                       scale={bannerScale}
                       currentFrame={t}
-                      fps={30}
+                      fps={fps}
                       stackIndex={info.stackIndex}
                       stackOffset={info.stackOffset}
                       stackIndexChangedAtFrame={info.stackIndexChangedAtFrame}
@@ -335,7 +332,7 @@ export const TokovoRenderer: React.FC<TokovoRendererProps> = ({
                   device.keyboard as unknown as import("@tokovo/device-keyboard").KeyboardState
                 }
                 currentFrame={t}
-                fps={30}
+                fps={fps}
                 scale={3}
               />
             )}

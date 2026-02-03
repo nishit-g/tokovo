@@ -12,12 +12,12 @@
  * Duration: 60 seconds @ 30fps (1800 frames)
  */
 
-import { defineEpisode } from "../types/episode-definition";
+import { defineEpisode } from "../types/episode-definition.js";
 import { episode } from "@tokovo/dsl";
-import { WhatsAppTrackBuilder } from "@tokovo/apps-whatsapp/src/dsl/track-builder";
+import { WhatsAppTrackBuilder } from "@tokovo/apps-whatsapp";
 import { NotificationTrackBuilder } from "@tokovo/device-notifications";
 import { drama_example } from "@tokovo/voice";
-import { AudioDirectorPlugin, OSDirectorPlugin, KeyboardPlugin } from "@tokovo/compiler";
+import { KeyboardPlugin } from "@tokovo/compiler";
 
 let orderCounter = 0;
 const getOrder = () => orderCounter++;

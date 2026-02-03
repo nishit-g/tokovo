@@ -1,5 +1,4 @@
 import React from "react";
-import { whatsappColors } from "./theme";
 
 // =============================================================================
 // NAVIGATION ICONS

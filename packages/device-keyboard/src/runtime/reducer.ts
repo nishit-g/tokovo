@@ -1,5 +1,5 @@
 import { produce } from "immer";
-import type { KeyboardState, KeyPressState, TypingAnimation } from "./state";
+import type { KeyboardState, KeyPressState } from "./state";
 import { createKeyboardInitialState } from "./state";
 
 interface KeyboardShowPayload {

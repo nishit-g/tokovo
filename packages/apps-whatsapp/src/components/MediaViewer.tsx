@@ -26,8 +26,8 @@ export const MediaViewer: React.FC<MediaViewerProps> = ({
   senderName,
   timestamp,
   onClose,
-  width = 393,
-  height = 852,
+  width: _width = 393,
+  height: _height = 852,
 }) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [showControls, setShowControls] = useState(true);

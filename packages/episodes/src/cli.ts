@@ -1,14 +1,22 @@
 #!/usr/bin/env node
 import { readFileSync, existsSync } from "fs";
 import { resolve } from "path";
-import { dryRun, formatDryRunResult, validateEpisode } from "./dry-run";
-import { formatValidationIssues } from "@tokovo/core";
+import {
+  dryRun,
+  formatDryRunResult,
+  formatValidationIssues,
+  validateEpisode,
+} from "./dry-run.js";
 
 interface CLIOptions {
   file?: string;
   verbose?: boolean;
   json?: boolean;
   strict?: boolean;
+}
+
+function writeLine(message: string): void {
+  process.stdout.write(`${message}\n`);
 }
 
 function parseArgs(args: string[]): CLIOptions {
@@ -32,7 +40,7 @@ function parseArgs(args: string[]): CLIOptions {
 }
 
 function printUsage(): void {
-  console.log(`
+  process.stdout.write(`
 Tokovo Episode Validator
 
 Usage:
@@ -96,17 +104,17 @@ function main(): void {
   });
 
   if (options.json) {
-    console.log(JSON.stringify(result, null, 2));
+    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
   } else {
-    console.log(formatDryRunResult(result));
+    writeLine(formatDryRunResult(result));
 
     if (options.verbose && result.valid) {
-      console.log("\n--- Validation Details ---");
+      writeLine("\n--- Validation Details ---");
       const validation = validateEpisode(parsed);
       if (validation.issues.length > 0) {
-        console.log(formatValidationIssues(validation.issues));
+        writeLine(formatValidationIssues(validation.issues));
       } else {
-        console.log("No validation issues found.");
+        writeLine("No validation issues found.");
       }
     }
   }

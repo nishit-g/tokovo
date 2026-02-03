@@ -8,9 +8,9 @@
 * @see packages/episodes/README.md
 */
 
-import { defineEpisode } from "../types/episode-definition";
-import { episode } from "@tokovo/dsl/src/v2";
-import { WhatsAppTrackBuilder } from "@tokovo/apps-whatsapp/src/dsl/track-builder";
+import { defineEpisode } from "../types/episode-definition.js";
+import { episode } from "@tokovo/dsl";
+import { WhatsAppTrackBuilder } from "@tokovo/apps-whatsapp";
 
 // Declaration order counter (required for event ordering)
 let order = 0;
@@ -60,8 +60,8 @@ cam.at("10s").animate({ scale: 1, duration: "0.5s" });
 })
 
 // === AUDIO TRACK (optional) ===
-.audio(audio => {
-// audio.span("0s", "30s").bgm("ambient", { volume: 0.1 });
+.audio(_audio => {
+// _audio.span("0s", "30s").bgm("ambient", { volume: 0.1 });
 })
 
 // === MARKERS (optional) ===

@@ -95,7 +95,7 @@ export function validatePluginDetailed<AppId extends string>(
     if (zodError instanceof z.ZodError) {
       zodError.issues.forEach((issue) => {
         errors.push({
-          field: issue.path.join(".") || "root",
+          field: formatZodPath(issue.path),
           message: issue.message,
           suggestion: getZodSuggestion(issue),
         });
@@ -271,6 +271,15 @@ function getZodSuggestion(issue: z.ZodIssue): string | undefined {
   }
   return undefined;
 }
+
+function formatZodPath(path: Array<string | number>): string {
+  return path.length > 0 ? path.join(".") : "root";
+}
+
+export const __test__ = {
+  getZodSuggestion,
+  formatZodPath,
+};
 
 export function assertPluginValid<AppId extends string>(
   plugin: TokovoPluginContract<AppId>,

@@ -2,12 +2,24 @@
   "name": "@tokovo/voice",
   "version": "0.0.1",
   "description": "AI voice generation and rendering for Tokovo video production",
-  "main": "./src/index.ts",
-  "types": "./src/index.ts",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
   "exports": {
-    ".": "./src/index.ts",
-    "./server": "./src/server.ts",
-    "./scripts": "./src/scripts/index.ts"
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./server": {
+      "types": "./dist/server.d.ts",
+      "default": "./dist/server.js"
+    },
+    "./scripts": {
+      "types": "./dist/scripts/index.d.ts",
+      "default": "./dist/scripts/index.js"
+    }
   },
   "scripts": {
     "build": "tsc",
@@ -29,6 +41,6 @@
   },
   "peerDependencies": {
     "react": "^18.0.0",
-    "remotion": "^4.0.0"
+    "remotion": "4.0.409"
   }
 }

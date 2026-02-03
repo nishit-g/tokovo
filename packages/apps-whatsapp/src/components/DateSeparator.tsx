@@ -6,7 +6,7 @@
  */
 
 import React from "react";
-import { getAppConfig, Platform } from "@tokovo/core";
+import { Platform } from "@tokovo/core";
 
 interface DateSeparatorProps {
     text: string;
@@ -14,7 +14,8 @@ interface DateSeparatorProps {
 }
 
 export const DateSeparator: React.FC<DateSeparatorProps> = ({
-    text = "Today"
+    text = "Today",
+    platform: _platform,
 }) => {
     return (
         <div style={{

@@ -1,12 +1,16 @@
 import { registerWhatsAppPlugin } from "@tokovo/apps-whatsapp";
 import { registerDevicesPlugin } from "@tokovo/devices";
 import { registerNotificationPlugin } from "@tokovo/device-notifications";
+import { registerKeyboardPlugin } from "@tokovo/device-keyboard";
+import { registerCameraPlugin } from "@tokovo/device-camera";
 // DISABLED: Timeline module incomplete - @tokovo/react/timeline not yet implemented
 // import { EpisodeEditor } from "@tokovo/react/timeline";
 
 registerDevicesPlugin();
 registerWhatsAppPlugin();
 registerNotificationPlugin();
+registerKeyboardPlugin();
+registerCameraPlugin();
 
 export function TimelineDemo() {
   return (

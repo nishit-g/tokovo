@@ -6,7 +6,7 @@
  */
 
 import React from "react";
-import { resolveStatusBarTheme, STATUS_BAR_PRESETS } from "@tokovo/core";
+import { STATUS_BAR_PRESETS } from "@tokovo/core";
 import type { StatusBarStrategyProps } from "../registries";
 import {
     SignalBarsIcon,

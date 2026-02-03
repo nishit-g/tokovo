@@ -7,7 +7,7 @@
  * @see docs-v2/EPISODE-ARCH.md
  */
 
-import type { EpisodeDefinition } from "../types/episode-definition";
+import type { EpisodeDefinition } from "../types/episode-definition.js";
 
 /**
  * Enterprise Episode Registry
@@ -26,7 +26,7 @@ export class EpisodeRegistry {
             console.warn(`[EpisodeRegistry] Overwriting: ${episode.meta.id}`);
         }
         this.episodes.set(episode.meta.id, episode);
-        console.log(`[EpisodeRegistry] ✓ Registered: ${episode.meta.id}`);
+        console.warn(`[EpisodeRegistry] ✓ Registered: ${episode.meta.id}`);
     }
 
     /**
@@ -46,8 +46,9 @@ export class EpisodeRegistry {
             episodes = episodes.filter(e => e.meta.category === opts.category);
         }
         if (opts?.tags?.length) {
+            const tags = opts.tags;
             episodes = episodes.filter(e =>
-                opts.tags!.some(tag => e.meta.tags?.includes(tag))
+                tags.some(tag => e.meta.tags?.includes(tag))
             );
         }
 

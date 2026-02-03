@@ -364,8 +364,12 @@ export function calculateSmartGap(
     const prevOverride = config.spacing.typeOverrides[prevType];
     const nextOverride = config.spacing.typeOverrides[nextType];
 
-    if (prevOverride?.gapAfter != null) return prevOverride.gapAfter;
-    if (nextOverride?.gapBefore != null) return nextOverride.gapBefore;
+    if (prevOverride?.gapAfter !== undefined && prevOverride.gapAfter !== null) {
+        return prevOverride.gapAfter;
+    }
+    if (nextOverride?.gapBefore !== undefined && nextOverride.gapBefore !== null) {
+        return nextOverride.gapBefore;
+    }
 
     // Visual Run Logic
     const sameSender = prevMessage.from === nextMessage.from;
@@ -551,9 +555,10 @@ export function applyEasing(progress: number, easing: EasingFunction): number {
         case "linear": return progress;
         case "easeOut": return 1 - Math.pow(1 - progress, 3);
         case "easeInOut": return progress < 0.5 ? 4 * progress * progress * progress : 1 - Math.pow(-2 * progress + 2, 3) / 2;
-        case "spring":
+        case "spring": {
             const c4 = (2 * Math.PI) / 3;
             return progress === 0 ? 0 : progress === 1 ? 1 : Math.pow(2, -10 * progress) * Math.sin((progress * 10 - 0.75) * c4) + 1;
+        }
         default: return progress;
     }
 }

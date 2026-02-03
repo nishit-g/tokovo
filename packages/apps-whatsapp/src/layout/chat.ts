@@ -103,17 +103,21 @@ export function computeChatLayout(
         type: prevMsg.type as MessageType,
         from: prevMsg.from,
         at: prevMsg.at,
-        hasReply: prevMsg.replyTo != null,
+        hasReply:
+          prevMsg.replyTo !== undefined && prevMsg.replyTo !== null,
         hasReactions: (prevMsg.reactions?.length ?? 0) > 0,
-        hasLinkPreview: prevMsg.linkPreview != null,
+        hasLinkPreview:
+          prevMsg.linkPreview !== undefined && prevMsg.linkPreview !== null,
       };
       const nextForGap: MessageForGap = {
         type: msg.type as MessageType,
         from: msg.from,
         at: msg.at,
-        hasReply: msg.replyTo != null,
+        hasReply:
+          msg.replyTo !== undefined && msg.replyTo !== null,
         hasReactions: (msg.reactions?.length ?? 0) > 0,
-        hasLinkPreview: msg.linkPreview != null,
+        hasLinkPreview:
+          msg.linkPreview !== undefined && msg.linkPreview !== null,
       };
 
       const gapContext: GapContext = {
@@ -257,7 +261,8 @@ export function computeChatLayout(
         type: lastMsg.type as MessageType,
         from: lastMsg.from,
         at: lastMsg.at,
-        hasReply: lastMsg.replyTo != null,
+        hasReply:
+          lastMsg.replyTo !== undefined && lastMsg.replyTo !== null,
         hasReactions: (lastMsg.reactions?.length ?? 0) > 0,
       };
       const typingForGap: MessageForGap = {
@@ -304,7 +309,6 @@ export function computeChatLayout(
   // ==========================================================
   // INPUT AREA ANCHOR (Semantic only, not visual layout item)
   // ==========================================================
-  const inputHeight = config.messageTypes.text.height.base; // Approximate or from config
   // Actually, Input Area is fixed to bottom of viewport usually, or below content?
   // In chat layout, contentHeight includes padding. Input area is separate.
   // Ideally, the InputArea component itself should report this, but since we compute layout here:

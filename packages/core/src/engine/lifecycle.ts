@@ -110,8 +110,12 @@ class LifecycleManagerClass {
 
   notifyBeforeReplay(ctx: LifecycleContext): void {
     for (const plugin of this.beforeReplayHooks) {
+      const hook = plugin.hooks.onBeforeReplay;
+      if (!hook) {
+        continue;
+      }
       try {
-        plugin.hooks.onBeforeReplay!(ctx);
+        hook(ctx);
       } catch (error) {
         log.error(`onBeforeReplay failed for plugin: ${plugin.id}`, error);
       }
@@ -120,8 +124,12 @@ class LifecycleManagerClass {
 
   notifyAfterReplay(state: WorldState, ctx: LifecycleContext): void {
     for (const plugin of this.afterReplayHooks) {
+      const hook = plugin.hooks.onAfterReplay;
+      if (!hook) {
+        continue;
+      }
       try {
-        plugin.hooks.onAfterReplay!(state, ctx);
+        hook(state, ctx);
       } catch (error) {
         log.error(`onAfterReplay failed for plugin: ${plugin.id}`, error);
       }

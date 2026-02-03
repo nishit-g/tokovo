@@ -1,10 +1,5 @@
 import React from "react";
-import {
-  DeviceProfile,
-  iPhone16Frame,
-  PixelFrame,
-  StatusBar,
-} from "@tokovo/devices";
+import { iPhone16Frame, PixelFrame, StatusBar } from "@tokovo/devices";
 import { DeviceState, NotificationInstance } from "@tokovo/core";
 import {
   Keyboard,
@@ -27,7 +22,7 @@ interface DeviceFrameProps {
 export const DeviceFrame: React.FC<DeviceFrameProps> = ({
   profileId,
   isLocked,
-  notifications,
+  notifications: _notifications,
   children,
   variant,
   device,

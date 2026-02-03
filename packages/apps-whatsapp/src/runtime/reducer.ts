@@ -4,11 +4,9 @@ import {
   WhatsAppMessage,
   WhatsAppConversation,
   WhatsAppState,
-  WhatsAppGroupMember,
 } from "../types";
 import {
   parseWhatsAppEvent,
-  type AnyWhatsAppEvent,
   type CustomEvent,
 } from "../schemas";
 import {
@@ -25,6 +23,73 @@ import {
 } from "../ir/group-ops";
 
 registerAllWhatsAppHandlers();
+
+const APP_TYPE_TO_LEGACY_KIND: Record<string, string> = {
+  MESSAGE_RECEIVED: "MessageReceived",
+  MESSAGE_SENT: "MessageSent",
+  IMAGE_RECEIVED: "ImageReceived",
+  IMAGE_SENT: "ImageSent",
+  VIDEO_RECEIVED: "VideoReceived",
+  VIDEO_SENT: "VideoSent",
+  VOICE_RECEIVED: "VoiceReceived",
+  VOICE_SENT: "VoiceSent",
+  GIF_RECEIVED: "GifReceived",
+  GIF_SENT: "GifSent",
+  STICKER_RECEIVED: "StickerReceived",
+  STICKER_SENT: "StickerSent",
+  DOCUMENT_RECEIVED: "DocumentReceived",
+  DOCUMENT_SENT: "DocumentSent",
+  CONTACT_RECEIVED: "ContactReceived",
+  CONTACT_SENT: "ContactSent",
+  LOCATION_RECEIVED: "LocationReceived",
+  LOCATION_SENT: "LocationSent",
+  TYPING_START: "TypingStarted",
+  TYPING_END: "TypingEnded",
+  REACT: "React",
+  READ: "ReadMessages",
+  READ_MESSAGES: "ReadMessages",
+  MESSAGE_DELETED: "MessageDeleted",
+  MESSAGE_EDITED: "MessageEdited",
+  MESSAGE_FORWARDED: "MessageForwarded",
+  VOICE_PLAY: "VoicePlay",
+  VOICE_PAUSE: "VoicePause",
+  CONVERSATION_OPENED: "ConversationOpened",
+  NAVIGATE_SCREEN: "NavigateScreen",
+  GO_BACK: "NavigateScreen",
+  DATE_SEPARATOR: "DateSeparator",
+  GROUP_MEMBER_ADDED: "GroupMemberAdded",
+  GROUP_MEMBER_REMOVED: "GroupMemberRemoved",
+  PIN_CONVERSATION: "PinConversation",
+  UNPIN_CONVERSATION: "UnpinConversation",
+  MUTE_CONVERSATION: "MuteConversation",
+  UNMUTE_CONVERSATION: "UnmuteConversation",
+  ARCHIVE_CONVERSATION: "ArchiveConversation",
+  UNARCHIVE_CONVERSATION: "UnarchiveConversation",
+  SET_DRAFT: "SetDraft",
+  REACTION_ADDED: "ReactionAdded",
+  MESSAGE_READ: "MessageRead",
+  VOICE_MESSAGE_RECEIVED: "VoiceMessageReceived",
+};
+
+function normalizeWhatsAppEvent(event: TimelineEvent): unknown {
+  if (event.kind !== "APP") return event;
+  const appId = (event as { appId?: string }).appId;
+  if (appId !== WHATSAPP_APP_ID) return event;
+
+  const type = (event as { type?: string }).type;
+  if (!type) return event;
+
+  const legacyKind = APP_TYPE_TO_LEGACY_KIND[type];
+  if (!legacyKind) return event;
+
+  const payload = (event as { payload?: Record<string, unknown> }).payload ?? {};
+
+  return {
+    ...event,
+    kind: legacyKind,
+    ...payload,
+  };
+}
 
 function getAppState(draft: WorldState): WhatsAppState {
   if (!draft.appState) {
@@ -234,7 +299,8 @@ function handleCustomOp(draft: WorldState, event: CustomEvent): void {
 }
 
 export function whatsappReducer(draft: WorldState, event: TimelineEvent): void {
-  const parsed = parseWhatsAppEvent(event);
+  const normalizedEvent = normalizeWhatsAppEvent(event);
+  const parsed = parseWhatsAppEvent(normalizedEvent);
   if (!parsed) {
     return;
   }
@@ -254,12 +320,16 @@ export function whatsappReducer(draft: WorldState, event: TimelineEvent): void {
   // Some events (like NavigateScreen) don't require a conversationId
   // Handle them with a minimal context
   if (!conversationId) {
+    const conversation: WhatsAppConversation = {
+      id: "",
+      messages: [],
+    };
     const ctx: HandlerContext = {
       draft,
       event: parsed,
-      conversation: { id: "", messages: [] } as WhatsAppConversation,
-      addMessage: () => {},
-      getMessageById: () => undefined,
+      conversation,
+      addMessage: (msg) => addMessage(conversation, msg),
+      getMessageById: (id) => getMessageById(conversation, id),
       generateTimestamp: (at) => generateTimestamp(at, draft, parsed.deviceId),
     };
     handler(ctx, parsed);

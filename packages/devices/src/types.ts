@@ -1,3 +1,7 @@
+import type { ComponentType } from "react";
+import type { FrameComponent } from "./registries/frame-registry";
+import type { StatusBarStrategyComponent } from "./registries/statusbar-registry";
+
 /**
  * Camera motion speed configuration
  */
@@ -102,13 +106,13 @@ export interface DeviceShell {
   id: string;
 
   /** The outer frame component (bezel + screen container) */
-  FrameComponent: React.ComponentType<any>;
+  FrameComponent: FrameComponent;
 
   /** The System UI (Status Bar) */
-  StatusBarComponent: React.ComponentType<any>;
+  StatusBarComponent: StatusBarStrategyComponent;
 
   /** The Home Indicator (Bottom bar) */
-  HomeIndicatorComponent?: React.ComponentType<any>;
+  HomeIndicatorComponent?: ComponentType<Record<string, unknown>>;
 
   /** Physical config */
   cornerRadius: number;

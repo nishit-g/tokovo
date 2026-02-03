@@ -5,11 +5,7 @@
  * Providers self-register at module load time.
  */
 
-import {
-    AnchorProvider,
-    AnchorSnapshot,
-    AnchorRegistry,
-} from "@tokovo/core";
+import { AnchorSnapshot, AnchorRegistry } from "@tokovo/core";
 import type { WorldState } from "@tokovo/core";
 
 import { NotificationAnchorProvider } from "./notification";

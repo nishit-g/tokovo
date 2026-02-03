@@ -15,8 +15,8 @@ export const AndroidBanner: React.FC<NotificationBannerProps> = ({
   renderActions,
   renderCustomContent,
   onTap,
-  onSwipe,
-  onDismiss,
+  onSwipe: _onSwipe,
+  onDismiss: _onDismiss,
 }) => {
   const { ir } = notification;
   const { banner, icon, text, typography, animation } = tokens;

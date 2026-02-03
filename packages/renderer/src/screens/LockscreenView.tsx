@@ -1,6 +1,10 @@
 import React from "react";
-import { Notification } from "@tokovo/core";
-import { LayoutState, LockscreenLayoutState } from "@tokovo/core";
+import {
+  AppMetadataRegistry,
+  LayoutState,
+  LockscreenLayoutState,
+  Notification,
+} from "@tokovo/core";
 
 /**
  * iOS 17/18 Lockscreen View
@@ -120,10 +124,7 @@ export const LockscreenView: React.FC<LockscreenViewProps> = ({
                     zIndex: 10 - index,
                   }}
                 >
-                  <NotificationCard
-                    notification={notification}
-                    variant={variant}
-                  />
+                  <NotificationCard notification={notification} />
                 </div>
               );
             })}
@@ -225,8 +226,7 @@ const LockscreenButton: React.FC<{ icon: "flashlight" | "camera" }> = ({
  */
 const NotificationCard: React.FC<{
   notification: Notification; // Is actually NotificationInstance
-  variant?: "ios" | "android";
-}> = ({ notification, variant = "ios" }) => {
+}> = ({ notification }) => {
   const ir = notification.ir;
   if (!ir) return null; // Safety check
 
@@ -234,7 +234,6 @@ const NotificationCard: React.FC<{
   // Since this is a React component, we might need to handle the case where "icon" is a string or component.
   // Ideally we pass it as a prop or context, but for now we look it up.
   // Note: In strict React, side-effect imports inside render are bad, but this is a static registry.
-  const { AppMetadataRegistry } = require("@tokovo/core");
   const meta = AppMetadataRegistry.get(ir.appId);
 
   const appIcon =

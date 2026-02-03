@@ -5,16 +5,17 @@
   "scripts": {
     "start": "npx remotion studio",
     "dev": "npx remotion studio",
-    "build": "npx remotion render",
+    "build": "tsc -p tsconfig.json",
     "upgrade": "remotion upgrade",
     "test": "eslint src --ext ts,tsx"
   },
   "dependencies": {
-    "@remotion/cli": "4.0.380",
+    "@remotion/cli": "4.0.409",
     "@tokovo/compiler": "workspace:*",
     "@tokovo/apps-whatsapp": "workspace:*",
     "@tokovo/core": "workspace:*",
     "@tokovo/device-camera": "workspace:*",
+    "@tokovo/device-keyboard": "workspace:*",
     "@tokovo/devices": "workspace:*",
     "@tokovo/device-notifications": "workspace:*",
     "@tokovo/dsl": "workspace:*",
@@ -24,7 +25,7 @@
     "@tokovo/voice": "workspace:*",
     "react": "18.2.0",
     "react-dom": "18.2.0",
-    "remotion": "4.0.380",
+    "remotion": "4.0.409",
     "zod": "^3.0.0"
   },
   "devDependencies": {

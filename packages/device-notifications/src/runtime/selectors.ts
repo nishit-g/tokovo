@@ -170,7 +170,7 @@ export function createSelectors(tokens: NotificationTokens) {
 
   let lastBannerResult: NotificationAnimationInfo[] | null = null;
   let lastStackedResult: StackedNotificationInfo[] = [];
-  let stackIndexHistory: Map<string, { index: number; changedAt: number }> =
+  const stackIndexHistory: Map<string, { index: number; changedAt: number }> =
     new Map();
   const stackSpacing = tokens.animation.stackSpacing;
 
@@ -305,10 +305,12 @@ export function getGroupedNotifications(
 
   for (const n of notifications) {
     const key = n.ir?.groupKey;
-    if (!groups.has(key)) {
-      groups.set(key, []);
+    const group = groups.get(key);
+    if (group) {
+      group.push(n);
+    } else {
+      groups.set(key, [n]);
     }
-    groups.get(key)!.push(n);
   }
 
   return groups;

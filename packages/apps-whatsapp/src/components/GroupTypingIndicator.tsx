@@ -23,7 +23,7 @@ export interface GroupTypingIndicatorProps {
 /**
  * Animated typing dot component.
  */
-const TypingDot: React.FC<{ delay: number }> = ({ delay }) => (
+const TypingDot: React.FC<{ delay: number }> = ({ delay: _delay }) => (
     <div
         style={{
             width: 6,

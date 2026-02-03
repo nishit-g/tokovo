@@ -142,7 +142,7 @@ interface CallOverlayProps {
 export const CallOverlay: React.FC<CallOverlayProps> = ({
     call,
     currentTime,
-    variant = "ios"
+    variant: _variant = "ios"
 }) => {
     if (call.status === "ended") return null;
 

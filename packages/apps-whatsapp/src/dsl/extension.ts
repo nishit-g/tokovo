@@ -9,7 +9,7 @@
  * @see docs/FUCKING_MESS.md Section 6.3
  */
 
-import type { DslExtension } from "@tokovo/core/src/types/plugin-contract";
+import type { DslExtension } from "@tokovo/core";
 
 // =============================================================================
 // DSL API INTERFACE

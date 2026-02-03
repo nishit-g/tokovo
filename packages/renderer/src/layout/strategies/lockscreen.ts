@@ -8,7 +8,14 @@ export function computeLockscreenLayout(
   ctx: LayoutContext,
 ): LockscreenLayoutState {
   const { world, t, activeDeviceId, config } = ctx;
-  const lockConfig = config!.lockscreen!;
+  const lockConfig = config?.lockscreen;
+  if (!lockConfig) {
+    return {
+      kind: "LOCKSCREEN",
+      notificationLayouts: [],
+      meta: {},
+    };
+  }
 
   const device = world.devices[activeDeviceId];
   const notifications = device?.notifications || [];

@@ -297,8 +297,8 @@ export type {
 
 export { DEFAULT_CAMERA_TRANSFORM, DEFAULT_VIEW_LAYOUT } from "@tokovo/core";
 
-import type { BaseCameraState, CameraTransform } from "@tokovo/core";
-import { DEFAULT_BASE_CAMERA_STATE, DEFAULT_TRANSFORM } from "@tokovo/core";
+import type { BaseCameraState } from "@tokovo/core";
+import { DEFAULT_BASE_CAMERA_STATE } from "@tokovo/core";
 
 export interface CameraState extends BaseCameraState {
   activeEffects: CameraEffect[];

@@ -3,7 +3,16 @@
     "compilerOptions": {
         "outDir": "dist",
         "rootDir": ".",
-        "jsx": "react-jsx"
+        "jsx": "react-jsx",
+        "baseUrl": ".",
+        "paths": {
+            "@tokovo/device-keyboard": [
+                "../../packages/device-keyboard/dist"
+            ],
+            "@tokovo/device-keyboard/*": [
+                "../../packages/device-keyboard/dist/*"
+            ]
+        }
     },
     "include": [
         "src/**/*",

@@ -95,6 +95,7 @@ export type {
   TokovoPluginContract,
   PluginReducer,
   PluginViews,
+  PluginLayoutStrategy,
   LoweringHandler,
   DslExtension,
   PluginAnchorRegistry,

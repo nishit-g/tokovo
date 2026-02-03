@@ -113,7 +113,7 @@ export function registerDevicesPlugin(): void {
     StatusBarStrategyRegistry.register("ios", IOSStatusBarStrategy);
     StatusBarStrategyRegistry.register("android", AndroidStatusBarStrategy);
 
-    console.log("[DevicesPlugin] Registered");
+    console.warn("[DevicesPlugin] Registered");
 }
 
 export default DevicesPlugin;

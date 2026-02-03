@@ -226,7 +226,7 @@ export class PluginManagerClass {
               };
               return {
                 anchors: {
-                  [anchorName]: {
+                  [`${plugin.id}:${anchorName}`]: {
                     x: bounds.x * dims.width,
                     y: bounds.y * dims.height,
                     width: bounds.width * dims.width,
@@ -244,7 +244,8 @@ export class PluginManagerClass {
 
       if (plugin.layouts && plugin.layouts.length > 0) {
         import("../registries/layout").then(({ LayoutRegistry }) => {
-          for (const layout of plugin.layouts!) {
+          const layouts = plugin.layouts;
+          for (const layout of layouts) {
             LayoutRegistry.register({
               appId: plugin.id,
               viewKind: layout.viewKind,

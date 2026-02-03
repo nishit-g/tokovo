@@ -126,16 +126,6 @@ function isDynamicIslandPayload(
   return payload?.kind === "dynamicIsland";
 }
 
-function isClearAllPayload(
-  payload: NotificationPayload | undefined,
-): payload is ClearAllPayload {
-  return payload?.kind === "clearAll";
-}
-
-function assertNever(x: never): never {
-  throw new Error(`Unexpected value: ${JSON.stringify(x)}`);
-}
-
 function createNotificationInstance(
   payload: ShowPayload,
   frame: number,

@@ -1,4 +1,4 @@
-import { defineEpisode } from "../types/episode-definition";
+import { defineEpisode } from "../types/episode-definition.js";
 import { episode } from "@tokovo/dsl";
 import { NotificationTrackBuilder } from "@tokovo/device-notifications";
 

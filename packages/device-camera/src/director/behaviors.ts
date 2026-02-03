@@ -6,7 +6,6 @@ import type {
   CameraEvent,
   MessageEventPayload,
   NotificationEventPayload,
-  TypingEventPayload,
 } from "./types";
 
 export interface FluidTennisConfig {
@@ -39,12 +38,6 @@ export const FLUID_TENNIS_DRAMATIC: FluidTennisConfig = {
   holdDuration: 0.6,
   panDistance: 50,
   spring: "dramatic",
-};
-
-const CONFIG_MAP: Record<string, FluidTennisConfig> = {
-  "fluid-tennis-casual": FLUID_TENNIS_CASUAL,
-  "fluid-tennis-energetic": FLUID_TENNIS_ENERGETIC,
-  "fluid-tennis-dramatic": FLUID_TENNIS_DRAMATIC,
 };
 
 function createFluidTennisBehavior(
@@ -159,9 +152,7 @@ function createInterruptFocusBehavior(): BehaviorFunction {
 }
 
 function createDriftAnticipationBehavior(): BehaviorFunction {
-  return (event: CameraEvent, context: CameraContext): CameraEffect[] => {
-    const payload = event.payload as TypingEventPayload;
-
+  return (event: CameraEvent, _context: CameraContext): CameraEffect[] => {
     return [
       {
         type: "animate",

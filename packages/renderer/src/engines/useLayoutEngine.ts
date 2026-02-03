@@ -20,7 +20,6 @@ import {
   WorldState,
   DeviceState,
   LAYOUT,
-  DEFAULT_CAMERA_STATE,
   LayoutState,
   ViewKind,
   LayoutContext,
@@ -147,7 +146,16 @@ export function useLayoutEngine(input: LayoutEngineInput): LayoutEngineOutput {
         if (viewKind === "CHAT") {
           // Prefer explicit conversationId, fallback to first one (Legacy behavior preserved for now)
           activeConversationId =
-            appState.conversationId || Object.keys(world.appState || {})[0];
+            appState.conversationId ||
+            (() => {
+              const conversations = (appState as { conversations?: unknown })
+                .conversations;
+              if (!conversations) return undefined;
+              if (Array.isArray(conversations)) {
+                return conversations[0]?.id;
+              }
+              return Object.keys(conversations as Record<string, unknown>)[0];
+            })();
         } else if (viewKind === "STORY") {
           activeStoryId = appState.activeStoryId;
         }

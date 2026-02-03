@@ -1,6 +1,14 @@
 import { z } from "zod";
-import { EpisodeSchema, EpisodeSchemaV1, TimelineEventSchema } from "./schema";
-import { formatValidationIssues, ValidationIssue } from "@tokovo/core";
+import { EpisodeSchema, EpisodeSchemaV1, TimelineEventSchema } from "./schema.js";
+
+export interface ValidationIssue {
+  path: string;
+  message: string;
+  code?: string;
+  severity: "error" | "warning";
+  expected?: string;
+  received?: unknown;
+}
 
 export interface DryRunResult {
   valid: boolean;
@@ -35,6 +43,28 @@ function zodErrorToIssues(error: z.ZodError): ValidationIssue[] {
     received: "received" in issue ? issue.received : undefined,
     expected: "expected" in issue ? String(issue.expected) : undefined,
   }));
+}
+
+export function formatValidationIssues(issues: ValidationIssue[]): string {
+  if (issues.length === 0) return "No validation issues";
+
+  const lines = issues.map((issue) => {
+    const prefix = issue.severity === "error" ? "✗" : "⚠";
+    let line = `${prefix} ${issue.path}: ${issue.message}`;
+    if (issue.expected) {
+      line += ` (expected: ${issue.expected})`;
+    }
+    if (issue.received !== undefined) {
+      const received =
+        typeof issue.received === "object"
+          ? JSON.stringify(issue.received)
+          : String(issue.received);
+      line += ` (received: ${received})`;
+    }
+    return line;
+  });
+
+  return lines.join("\n");
 }
 
 function countEventsByKind(

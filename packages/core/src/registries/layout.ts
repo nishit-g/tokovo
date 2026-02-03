@@ -133,7 +133,7 @@ class LayoutRegistryClass {
       this.strategies.delete(key);
     }
     if (keysToDelete.length > 0) {
-      console.log(
+      console.warn(
         `[LayoutRegistry] Unregistered ${keysToDelete.length} layouts for app: ${appId}`,
       );
     }

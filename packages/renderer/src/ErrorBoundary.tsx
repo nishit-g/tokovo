@@ -48,7 +48,7 @@ export class ErrorBoundary extends Component<
   }
 
   render(): ReactNode {
-    const { hasError, error, errorInfo } = this.state;
+    const { hasError, error } = this.state;
     const { children, fallback } = this.props;
 
     if (hasError && error) {

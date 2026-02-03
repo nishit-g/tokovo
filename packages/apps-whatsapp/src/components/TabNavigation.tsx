@@ -1,6 +1,6 @@
 import React from "react";
 import { UpdatesIcon, CallsTabIcon, CommunitiesIcon, ChatsIcon, SettingsIcon } from "./Icons";
-import { whatsappColors, typography, spacing } from "./theme";
+import { whatsappColors, typography } from "./theme";
 
 // =============================================================================
 // TYPES

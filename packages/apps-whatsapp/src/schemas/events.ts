@@ -1,7 +1,8 @@
 /**
- * WhatsApp Event Schemas - SINGLE SOURCE OF TRUTH
+ * WhatsApp Event Schemas - Normalized Reducer Shapes
  *
- * All WhatsApp runtime events are defined here using Zod.
+ * These schemas validate the normalized WhatsApp event shape consumed by
+ * the reducer/handlers. Runtime APP events are normalized before parsing.
  * TypeScript types are DERIVED from these schemas.
  * Validation happens at the reducer entry point.
  */

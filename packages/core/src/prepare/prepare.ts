@@ -430,13 +430,15 @@ export function prepareEpisode(
   const initialWorld = deriveInitialWorld(sceneIR, registry);
 
   // 4. Sort events
-  const sortedEvents = sortEvents(timeline.ops as RuntimeEvent[]);
+  const rawEvents = timeline.ops as RuntimeEvent[];
+  const sortedEvents = sortEvents(rawEvents);
 
   // 5. Validate
-  validateEpisode({ events: sortedEvents, initialWorld }, effectiveOptions);
+  validateEpisode({ events: rawEvents, initialWorld }, effectiveOptions);
 
   // 6. Collect assets
   const assets = collectAssets(registry);
+  _validateAssets(assets, effectiveOptions);
 
   // 7. Build compiled episode with event index for O(1) lookups
   const compiled: CompiledEpisode = {
@@ -492,6 +494,12 @@ export function runEpisode(
     episode.eventIndex,
   );
 }
+
+export const __test__ = {
+  collectAssets,
+  validateAssets: _validateAssets,
+  sortEvents,
+};
 
 // =============================================================================
 // RE-EXPORT TYPES

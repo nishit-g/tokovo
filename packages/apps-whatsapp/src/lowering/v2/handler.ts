@@ -6,50 +6,6 @@ export interface V2LoweringHandler {
   lower: (event: TrackEvent) => RuntimeEvent[];
 }
 
-type WhatsAppRuntimeEventKind =
-  | "MessageReceived"
-  | "MessageSent"
-  | "TypingStarted"
-  | "TypingEnded"
-  | "ImageReceived"
-  | "ImageSent"
-  | "VideoReceived"
-  | "VideoSent"
-  | "VoiceReceived"
-  | "VoiceSent"
-  | "GifReceived"
-  | "GifSent"
-  | "StickerReceived"
-  | "StickerSent"
-  | "DocumentReceived"
-  | "DocumentSent"
-  | "ContactReceived"
-  | "ContactSent"
-  | "LocationReceived"
-  | "LocationSent"
-  | "React"
-  | "ReadMessages"
-  | "ConversationOpened"
-  | "NavigateScreen"
-  | "MessageDeleted"
-  | "MessageEdited"
-  | "MessageForwarded"
-  | "DateSeparator"
-  | "GroupMemberAdded"
-  | "GroupMemberRemoved"
-  | "ReactionAdded"
-  | "MessageRead"
-  | "VoiceMessageReceived"
-  | "VoicePlay"
-  | "VoicePause"
-  | "PinConversation"
-  | "UnpinConversation"
-  | "MuteConversation"
-  | "UnmuteConversation"
-  | "ArchiveConversation"
-  | "UnarchiveConversation"
-  | "SetDraft";
-
 function isWhatsAppTrackEvent(event: TrackEvent): event is WhatsAppTrackEvent {
   return (
     (event as { kind?: string }).kind === "APP" &&
@@ -57,112 +13,118 @@ function isWhatsAppTrackEvent(event: TrackEvent): event is WhatsAppTrackEvent {
   );
 }
 
-const EVENT_TYPE_TO_KIND: Record<WhatsAppEventType, WhatsAppRuntimeEventKind> =
-  {
-    MESSAGE_RECEIVED: "MessageReceived",
-    MESSAGE_SENT: "MessageSent",
-    IMAGE_RECEIVED: "ImageReceived",
-    IMAGE_SENT: "ImageSent",
-    VIDEO_RECEIVED: "VideoReceived",
-    VIDEO_SENT: "VideoSent",
-    VOICE_RECEIVED: "VoiceReceived",
-    VOICE_SENT: "VoiceSent",
-    GIF_RECEIVED: "GifReceived",
-    GIF_SENT: "GifSent",
-    STICKER_RECEIVED: "StickerReceived",
-    STICKER_SENT: "StickerSent",
-    DOCUMENT_RECEIVED: "DocumentReceived",
-    DOCUMENT_SENT: "DocumentSent",
-    CONTACT_RECEIVED: "ContactReceived",
-    CONTACT_SENT: "ContactSent",
-    LOCATION_RECEIVED: "LocationReceived",
-    LOCATION_SENT: "LocationSent",
-    TYPING_START: "TypingStarted",
-    TYPING_END: "TypingEnded",
-    REACT: "React",
-    READ: "ReadMessages",
-    READ_MESSAGES: "ReadMessages",
-    MESSAGE_DELETED: "MessageDeleted",
-    MESSAGE_EDITED: "MessageEdited",
-    MESSAGE_FORWARDED: "MessageForwarded",
-    VOICE_PLAY: "VoicePlay",
-    VOICE_PAUSE: "VoicePause",
-    CONVERSATION_OPENED: "ConversationOpened",
-    NAVIGATE_SCREEN: "NavigateScreen",
-    GO_BACK: "NavigateScreen",
-    DATE_SEPARATOR: "DateSeparator",
-    GROUP_MEMBER_ADDED: "GroupMemberAdded",
-    GROUP_MEMBER_REMOVED: "GroupMemberRemoved",
-    PIN_CONVERSATION: "PinConversation",
-    UNPIN_CONVERSATION: "UnpinConversation",
-    MUTE_CONVERSATION: "MuteConversation",
-    UNMUTE_CONVERSATION: "UnmuteConversation",
-    ARCHIVE_CONVERSATION: "ArchiveConversation",
-    UNARCHIVE_CONVERSATION: "UnarchiveConversation",
-    SET_DRAFT: "SetDraft",
-    REACTION_ADDED: "ReactionAdded",
-    MESSAGE_READ: "MessageRead",
-    VOICE_MESSAGE_RECEIVED: "VoiceMessageReceived",
-  };
+const EVENT_TYPE_TO_KIND: Record<WhatsAppEventType, true> = {
+  MESSAGE_RECEIVED: true,
+  MESSAGE_SENT: true,
+  IMAGE_RECEIVED: true,
+  IMAGE_SENT: true,
+  VIDEO_RECEIVED: true,
+  VIDEO_SENT: true,
+  VOICE_RECEIVED: true,
+  VOICE_SENT: true,
+  GIF_RECEIVED: true,
+  GIF_SENT: true,
+  STICKER_RECEIVED: true,
+  STICKER_SENT: true,
+  DOCUMENT_RECEIVED: true,
+  DOCUMENT_SENT: true,
+  CONTACT_RECEIVED: true,
+  CONTACT_SENT: true,
+  LOCATION_RECEIVED: true,
+  LOCATION_SENT: true,
+  TYPING_START: true,
+  TYPING_END: true,
+  REACT: true,
+  READ: true,
+  READ_MESSAGES: true,
+  MESSAGE_DELETED: true,
+  MESSAGE_EDITED: true,
+  MESSAGE_FORWARDED: true,
+  VOICE_PLAY: true,
+  VOICE_PAUSE: true,
+  CONVERSATION_OPENED: true,
+  NAVIGATE_SCREEN: true,
+  GO_BACK: true,
+  DATE_SEPARATOR: true,
+  GROUP_MEMBER_ADDED: true,
+  GROUP_MEMBER_REMOVED: true,
+  PIN_CONVERSATION: true,
+  UNPIN_CONVERSATION: true,
+  MUTE_CONVERSATION: true,
+  UNMUTE_CONVERSATION: true,
+  ARCHIVE_CONVERSATION: true,
+  UNARCHIVE_CONVERSATION: true,
+  SET_DRAFT: true,
+  REACTION_ADDED: true,
+  MESSAGE_READ: true,
+  VOICE_MESSAGE_RECEIVED: true,
+};
 
 function createRuntimeEvent(
   event: WhatsAppTrackEvent,
-  kind: WhatsAppRuntimeEventKind,
+  overrideType?: string,
 ): RuntimeEvent {
+  const type = overrideType ?? event.type;
+  const payload = (event.payload ?? {}) as Record<string, unknown>;
+
   const base = {
     at: event.at,
     appId: event.appId,
     deviceId: event.deviceId,
-    conversationId: event.payload?.conversationId ?? event.conversationId,
-    kind,
-    payload: { ...event.payload },
+    conversationId:
+      (payload as { conversationId?: string }).conversationId ??
+      event.conversationId,
+    kind: "APP" as const,
+    type,
+    payload: { ...payload },
   };
 
   const result: Record<string, unknown> = { ...base };
 
-  switch (event.type) {
+  switch (type) {
     case "MESSAGE_RECEIVED":
-      result.from = event.payload.from;
-      result.text = event.payload.text;
+      result.from = (payload as { from?: string }).from;
+      result.text = (payload as { text?: string }).text;
       break;
 
     case "MESSAGE_SENT":
-      result.text = event.payload.text;
+      result.text = (payload as { text?: string }).text;
       break;
 
     case "TYPING_START":
     case "TYPING_END":
-      result.actor = event.payload.actor;
+      result.actor = (payload as { actor?: string }).actor;
       break;
 
     case "IMAGE_RECEIVED":
-      result.from = event.payload.from;
-      result.url = event.payload.url;
-      result.caption = event.payload.caption;
+      result.from = (payload as { from?: string }).from;
+      result.url = (payload as { url?: string }).url;
+      result.caption = (payload as { caption?: string }).caption;
       break;
 
     case "IMAGE_SENT":
-      result.url = event.payload.url;
-      result.caption = event.payload.caption;
+      result.url = (payload as { url?: string }).url;
+      result.caption = (payload as { caption?: string }).caption;
       break;
 
     case "VIDEO_RECEIVED":
-      result.from = event.payload.from;
-      result.url = event.payload.url;
-      result.duration = event.payload.duration;
+      result.from = (payload as { from?: string }).from;
+      result.url = (payload as { url?: string }).url;
+      result.duration = (payload as { duration?: number }).duration;
       break;
 
     case "VIDEO_SENT":
-      result.url = event.payload.url;
-      result.duration = event.payload.duration;
+      result.url = (payload as { url?: string }).url;
+      result.duration = (payload as { duration?: number }).duration;
       break;
 
     case "CONVERSATION_OPENED":
-      result.conversationId = event.payload.conversationId;
+      result.conversationId = (payload as { conversationId?: string })
+        .conversationId;
       break;
 
     case "NAVIGATE_SCREEN":
-      result.screen = event.payload.screen;
+      result.screen = (payload as { screen?: string }).screen;
       break;
   }
 
@@ -229,9 +191,9 @@ export const whatsappV2Lowering: V2LoweringHandler = {
     }
 
     const eventType = event.type;
-    const kind = EVENT_TYPE_TO_KIND[eventType];
+    const isKnownType = EVENT_TYPE_TO_KIND[eventType];
 
-    if (!kind) {
+    if (!isKnownType) {
       console.warn(`[whatsappV2Lowering] Unknown event type: ${eventType}`);
       return [];
     }
@@ -242,8 +204,8 @@ export const whatsappV2Lowering: V2LoweringHandler = {
         appId: event.appId,
         deviceId: event.deviceId,
         conversationId: event.conversationId,
-        kind: "NavigateScreen",
-        screen: "chats",
+        kind: "APP",
+        type: "NAVIGATE_SCREEN",
         payload: { screen: "chats" },
       };
       return [goBackEvent as unknown as RuntimeEvent];
@@ -253,6 +215,6 @@ export const whatsappV2Lowering: V2LoweringHandler = {
       return expandTypedMessage(event);
     }
 
-    return [createRuntimeEvent(event, kind)];
+    return [createRuntimeEvent(event)];
   },
 };

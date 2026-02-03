@@ -36,7 +36,7 @@ export function registerKeyboardPlugin(): void {
     );
 
     if (DEBUG) {
-      console.log("[KeyboardPlugin] Registered");
+      console.warn("[KeyboardPlugin] Registered");
     }
   });
 }

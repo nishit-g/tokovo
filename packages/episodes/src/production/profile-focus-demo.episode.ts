@@ -5,7 +5,7 @@
  * This episode shows how anchors work to target semantic UI elements.
  */
 
-import { defineEpisode } from "../types/episode-definition";
+import { defineEpisode } from "../types/episode-definition.js";
 import { episode } from "@tokovo/dsl";
 import { WhatsAppTrackBuilder } from "@tokovo/apps-whatsapp";
 import { KeyboardPlugin } from "@tokovo/compiler";

@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 import { createPluginBuilder } from "../builder";
 import {
   defineEventHandler,

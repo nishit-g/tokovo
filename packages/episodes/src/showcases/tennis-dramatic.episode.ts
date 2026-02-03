@@ -1,6 +1,6 @@
-import { defineEpisode } from "../types/episode-definition";
+import { defineEpisode } from "../types/episode-definition.js";
 import { episode } from "@tokovo/dsl";
-import { WhatsAppTrackBuilder } from "@tokovo/apps-whatsapp/src/dsl/track-builder";
+import { WhatsAppTrackBuilder } from "@tokovo/apps-whatsapp";
 import {
   CameraDirectorPlugin,
   AudioDirectorPlugin,

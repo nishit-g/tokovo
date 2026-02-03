@@ -58,7 +58,7 @@ export class CameraDirector {
 
       if (!behaviorName) {
         if (this._debug) {
-          console.log(
+          console.warn(
             `[CameraDirector] No behavior configured for event type: ${event.type}`,
           );
         }
@@ -77,7 +77,7 @@ export class CameraDirector {
         behaviorStats.set(statKey, (behaviorStats.get(statKey) || 0) + 1);
 
         if (this._debug) {
-          console.log(
+          console.warn(
             `[CameraDirector] Event ${event.id} (${event.type}) → ${eventEffects.length} effects via "${statKey}"`,
           );
         }
@@ -88,7 +88,7 @@ export class CameraDirector {
     const deduped = this._deduplicateEffects(sortedEffects);
 
     if (this._debug) {
-      console.log(
+      console.warn(
         `[CameraDirector] Total: ${events.length} events → ${deduped.length} effects (${effects.length - deduped.length} duplicates removed)`,
       );
     }

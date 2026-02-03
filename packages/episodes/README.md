@@ -13,14 +13,14 @@ Create video episodes by writing a single `.episode.ts` file. Episodes automatic
 pnpm turbo gen episode
 
 # Or manually create in production/
-touch packages/episodes/src/production/my-episode.episode.ts
+touch packages/episodes/production/my-episode.episode.ts
 ```
 
 ```typescript
-// packages/episodes/src/production/my-episode.episode.ts
+// packages/episodes/production/my-episode.episode.ts
 import { defineEpisode } from "../types/episode-definition";
-import { episode } from "@tokovo/dsl/src/v2";
-import { WhatsAppTrackBuilder } from "@tokovo/apps-whatsapp/src/dsl/track-builder";
+import { episode } from "@tokovo/dsl";
+import { WhatsAppTrackBuilder } from "@tokovo/apps-whatsapp";
 
 let order = 0;
 const getOrder = () => order++;
@@ -54,7 +54,7 @@ export default defineEpisode({
 
 ```bash
 # Add to production/index.ts
-echo 'import "./my-episode.episode";' >> packages/episodes/src/production/index.ts
+echo 'import "./my-episode.episode";' >> packages/episodes/production/index.ts
 
 # Restart dev server - episode appears automatically!
 ```
@@ -213,9 +213,9 @@ The `video-runner` app automatically loads episodes:
 // apps/video-runner/src/Root.tsx
 
 // Import episode folders (side-effect: auto-registers)
-import "@tokovo/episodes/src/production";
-import "@tokovo/episodes/src/showcases";
-import "@tokovo/episodes/src/tests";
+import "@tokovo/episodes/production";
+import "@tokovo/episodes/showcases";
+import "@tokovo/episodes/tests";
 
 // Registry now contains all episodes
 const production = episodeRegistry.filter({ category: "production" });
@@ -290,15 +290,15 @@ export * from "./schema";
 ### Step 1: Create Episode File
 
 ```bash
-touch packages/episodes/src/production/my-awesome-episode.episode.ts
+touch packages/episodes/production/my-awesome-episode.episode.ts
 ```
 
 ### Step 2: Define Episode
 
 ```typescript
 import { defineEpisode } from "../types/episode-definition";
-import { episode } from "@tokovo/dsl/src/v2";
-import { WhatsAppTrackBuilder } from "@tokovo/apps-whatsapp/src/dsl/track-builder";
+import { episode } from "@tokovo/dsl";
+import { WhatsAppTrackBuilder } from "@tokovo/apps-whatsapp";
 
 let order = 0;
 const getOrder = () => order++;
@@ -346,7 +346,7 @@ export default defineEpisode({
 ### Step 3: Register in Barrel
 
 ```typescript
-// packages/episodes/src/production/index.ts
+// packages/episodes/production/index.ts
 import "./track-demo.episode";
 import "./bakchodi-bros.episode";
 import "./my-awesome-episode.episode";  // Add this line

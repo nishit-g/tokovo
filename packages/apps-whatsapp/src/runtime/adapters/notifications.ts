@@ -6,7 +6,6 @@
 
 import {
   NotificationAdapter,
-  NotificationAdapterRegistry,
   Notification,
   FormattedNotification,
   TimelineEvent,
@@ -55,7 +54,7 @@ const whatsappAdapter: NotificationAdapter = {
           kind: "APP",
           appId: "app_whatsapp",
           deviceId: notification.deviceId || "phone",
-          type: "NAVIGATE",
+          type: "NAVIGATE_SCREEN",
           payload: { screen: "chat", conversationId: threadId },
         } as TimelineEvent);
       }
@@ -64,7 +63,7 @@ const whatsappAdapter: NotificationAdapter = {
     return baseEvents;
   },
 
-  measureHeight(notification: Notification, viewport: { width: number }) {
+  measureHeight(notification: Notification, _viewport: { width: number }) {
     let height = 180;
     if (notification.ir.preview?.kind === "image") {
       height += 200;

@@ -63,7 +63,6 @@ class StatusBarStrategyRegistryImpl {
             console.warn(`[StatusBarStrategyRegistry] Overwriting strategy: ${variant}`);
         }
         this.strategies.set(variant, component);
-        console.log(`[StatusBarStrategyRegistry] Registered: ${variant}`);
     }
 
     /**

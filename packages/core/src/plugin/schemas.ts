@@ -69,14 +69,15 @@ export const TokovoPluginContractSchema = z.object({
 
 export type ParsedPluginContract = z.infer<typeof TokovoPluginContractSchema>;
 
-export interface PluginValidationResult {
-  success: boolean;
-  data?: ParsedPluginContract;
-  errors?: Array<{
-    path: string;
-    message: string;
-  }>;
-}
+export type PluginValidationResult =
+  | { success: true; data: ParsedPluginContract }
+  | {
+      success: false;
+      errors: Array<{
+        path: string;
+        message: string;
+      }>;
+    };
 
 export function validatePluginSchema(input: unknown): PluginValidationResult {
   const result = TokovoPluginContractSchema.safeParse(input);
@@ -100,8 +101,8 @@ export function assertPluginSchema(
   const result = validatePluginSchema(input);
 
   if (!result.success) {
-    const formatted = result
-      .errors!.map((e) => `  - ${e.path}: ${e.message}`)
+    const formatted = result.errors
+      .map((e) => `  - ${e.path}: ${e.message}`)
       .join("\n");
 
     throw new Error(`Plugin schema validation failed:\n${formatted}`);
