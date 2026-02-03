@@ -35,6 +35,9 @@ const TokovoConfigSchema = z.object({
     duckedVolume: z.number().min(0).max(1),
     fadeOutDuration: z.number().int().min(0),
   }),
+  notifications: z.object({
+    cleanupDelayFrames: z.number().int().min(0),
+  }),
   camera: z.object({
     defaultZoom: z.number().min(0.1),
     minZoom: z.number().min(0.1),
@@ -86,6 +89,10 @@ export const TokovoConfig = {
     defaultVolume: 1.0,
     duckedVolume: 0.3,
     fadeOutDuration: 500,
+  },
+
+  notifications: {
+    cleanupDelayFrames: 45,
   },
 
   camera: {
@@ -189,6 +196,10 @@ export function getRenderingConfig() {
 
 export function getAudioConfig() {
   return currentConfig.audio;
+}
+
+export function getNotificationsConfig() {
+  return currentConfig.notifications;
 }
 
 export function getCameraConfig() {

@@ -71,14 +71,7 @@ class EventHandlerRegistryClass {
     }
 
     for (const { handler } of handlers) {
-      try {
-        handler(draft, event, ctx);
-      } catch (error) {
-        log.error(`Handler for "${kind}" threw an error`, error, {
-          eventKind: kind,
-          frame: ctx.frame,
-        });
-      }
+      handler(draft, event, ctx);
     }
 
     return true;

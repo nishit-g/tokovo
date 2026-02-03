@@ -20,6 +20,22 @@ export interface ConversationLayout {
   messageCount: number;
 }
 
+function hashString(hash: number, value: string): number {
+  for (let i = 0; i < value.length; i++) {
+    hash ^= value.charCodeAt(i);
+    hash = Math.imul(hash, 16777619);
+  }
+  return hash;
+}
+
+function hashNumber(hash: number, value: number): number {
+  return hashString(hash, value.toString());
+}
+
+function hashBoolean(hash: number, value: boolean): number {
+  return hashString(hash, value ? "1" : "0");
+}
+
 const DEFAULT_CONFIG: LayoutCacheConfig = {
   maxEntries: 50,
   enabled: true,
@@ -33,10 +49,32 @@ export class LayoutCache {
     this.config = { ...DEFAULT_CONFIG, ...config };
   }
 
+  private computeLayoutHash(conversation: WhatsAppConversation): string {
+    const messages = conversation.messages as WhatsAppMessage[];
+    let hash = 2166136261;
+
+    for (const message of messages) {
+      hash = hashString(hash, message.id);
+      hash = hashString(hash, message.type || "text");
+      hash = hashNumber(hash, message.text?.length ?? 0);
+      hash = hashBoolean(
+        hash,
+        Boolean(message.imageUrl || message.videoUrl || message.gifUrl),
+      );
+      hash = hashBoolean(hash, Boolean(message.replyTo));
+      hash = hashNumber(hash, message.reactions?.length ?? 0);
+      hash = hashBoolean(hash, Boolean(message.linkPreview));
+    }
+
+    // Convert to unsigned hex for compactness
+    return (hash >>> 0).toString(16);
+  }
+
   private generateCacheKey(conversation: WhatsAppConversation): string {
     const messages = conversation.messages as WhatsAppMessage[];
     const lastMessage = messages[messages.length - 1];
-    return `${conversation.id}_${messages.length}_${lastMessage?.id || "empty"}`;
+    const layoutHash = this.computeLayoutHash(conversation);
+    return `${conversation.id}_${messages.length}_${lastMessage?.id || "empty"}_${layoutHash}`;
   }
 
   get(conversation: WhatsAppConversation): ConversationLayout | null {

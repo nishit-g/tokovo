@@ -18,7 +18,7 @@ import {
   DEFAULT_AUDIO_STATE,
 } from "./types";
 import type { CameraTransform } from "./types/camera";
-import { getConfig, TokovoConfigType } from "./config";
+import { getConfig, TokovoConfigType, getNotificationsConfig } from "./config";
 
 let cachedConfig: TokovoConfigType | null = null;
 
@@ -65,6 +65,7 @@ import {
 } from "./engine/built-in-handlers";
 
 const log = createScopedLogger("engine");
+const sortedEventCache = new WeakMap<TimelineEvent[], TimelineEvent[]>();
 
 interface LegacyCameraConfig {
   type?: string;
@@ -204,7 +205,7 @@ export function replay(
   // Filter events up to current time - use index if provided for O(1) lookup
   const relevant = eventIndex
     ? getEventsUpTo(eventIndex, t)
-    : events.filter((e) => e.at <= t);
+    : getSortedEvents(events).filter((e) => e.at <= t);
 
   // Apply all events and finalize in a single Immer produce (perf: avoids double structural sharing)
   const finalState = produce(initialWithCamera, (draft) => {
@@ -454,6 +455,60 @@ function ensureInitialState(initial: WorldState): WorldState {
   };
 }
 
+function getSortedEvents(events: TimelineEvent[]): TimelineEvent[] {
+  const cached = sortedEventCache.get(events);
+  if (cached) {
+    return cached;
+  }
+
+  if (events.length <= 1 || isSortedByFrame(events)) {
+    sortedEventCache.set(events, events);
+    return events;
+  }
+
+  const withIndex = events.map((event, index) => ({ event, index }));
+  withIndex.sort((a, b) => {
+    if (a.event.at !== b.event.at) {
+      return a.event.at - b.event.at;
+    }
+    const orderA = getDeclarationOrder(a.event, a.index);
+    const orderB = getDeclarationOrder(b.event, b.index);
+    if (orderA !== orderB) {
+      return orderA - orderB;
+    }
+    return a.index - b.index;
+  });
+
+  const sorted = withIndex.map((entry) => entry.event);
+  sortedEventCache.set(events, sorted);
+  return sorted;
+}
+
+function isSortedByFrame(events: TimelineEvent[]): boolean {
+  let lastAt = -Infinity;
+  let lastOrder = -Infinity;
+
+  for (let i = 0; i < events.length; i++) {
+    const event = events[i];
+    const order = getDeclarationOrder(event, i);
+    if (event.at < lastAt) {
+      return false;
+    }
+    if (event.at === lastAt && order < lastOrder) {
+      return false;
+    }
+    lastAt = event.at;
+    lastOrder = order;
+  }
+
+  return true;
+}
+
+function getDeclarationOrder(event: TimelineEvent, fallback: number): number {
+  const order = (event as { _declarationOrder?: number })._declarationOrder;
+  return Number.isFinite(order) ? order : fallback;
+}
+
 function handleEventError(
   error: unknown,
   event: TimelineEvent,
@@ -606,6 +661,7 @@ function finalizeState(state: WorldState, t: number): WorldState {
     }
 
     cleanupExpiredSounds(draft, t);
+    cleanupExpiredNotifications(draft, t, getNotificationsConfig().cleanupDelayFrames);
 
     if (!draft.camera.deviceTransforms) {
       draft.camera.deviceTransforms = {};
@@ -626,4 +682,37 @@ function finalizeState(state: WorldState, t: number): WorldState {
         DEFAULT_CAMERA_TRANSFORM
       : DEFAULT_CAMERA_TRANSFORM;
   });
+}
+
+function cleanupExpiredNotifications(
+  draft: WorldState,
+  frame: number,
+  cleanupDelayFrames: number,
+): void {
+  for (const deviceId in draft.devices) {
+    if (!Object.hasOwn(draft.devices, deviceId)) {
+      continue;
+    }
+    const device = draft.devices[deviceId];
+    if (!device?.notifications || device.notifications.length === 0) {
+      continue;
+    }
+
+    device.notifications = device.notifications.filter((notification) => {
+      const dismissed = notification.state === "dismissed";
+      const expired =
+        notification.expiresAtFrame !== undefined &&
+        frame > notification.expiresAtFrame;
+
+      if (!dismissed && !expired) {
+        return true;
+      }
+
+      const effectiveEndFrame =
+        notification.dismissedAtFrame ??
+        notification.expiresAtFrame ??
+        0;
+      return effectiveEndFrame > frame - cleanupDelayFrames;
+    });
+  }
 }

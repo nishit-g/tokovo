@@ -48,14 +48,14 @@ registerBuiltInHandler("DEVICE", (draft, event, index, _ctx) => {
     ) {
       const notifReducer = ReducerRegistry.getFeatureReducer("NOTIFICATION");
       if (notifReducer) {
-        notifReducer(draft, event, index);
+        notifReducer(draft, event, index, _ctx);
       }
     }
 
     if (devType.startsWith("KEYBOARD_")) {
       const kbReducer = ReducerRegistry.getFeatureReducer("KEYBOARD");
       if (kbReducer) {
-        kbReducer(draft, event, index);
+        kbReducer(draft, event, index, _ctx);
       }
     }
   }
@@ -80,7 +80,7 @@ registerBuiltInHandler("AUDIO", (draft, event, _index, ctx) => {
 registerBuiltInHandler("KEYBOARD", (draft, event, index, _ctx) => {
   const kbReducer = ReducerRegistry.getFeatureReducer("KEYBOARD");
   if (kbReducer) {
-    kbReducer(draft, event, index);
+    kbReducer(draft, event, index, _ctx);
   }
 });
 

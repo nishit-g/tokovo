@@ -44,6 +44,24 @@ export function createEventIndex(events: TimelineEvent[]): EventIndex {
     maxFrame = Math.max(maxFrame, event.at);
   }
 
+  for (const frameEvents of byFrame.values()) {
+    if (frameEvents.length <= 1) continue;
+    if (!frameEvents.some((e) => "_declarationOrder" in (e as object))) {
+      continue;
+    }
+    const withIndex = frameEvents.map((event, index) => ({ event, index }));
+    withIndex.sort((a, b) => {
+      const orderA = getDeclarationOrder(a.event, a.index);
+      const orderB = getDeclarationOrder(b.event, b.index);
+      if (orderA !== orderB) {
+        return orderA - orderB;
+      }
+      return a.index - b.index;
+    });
+    frameEvents.length = 0;
+    frameEvents.push(...withIndex.map((entry) => entry.event));
+  }
+
   const frames = Array.from(byFrame.keys()).sort((a, b) => a - b);
 
   return {
@@ -52,6 +70,11 @@ export function createEventIndex(events: TimelineEvent[]): EventIndex {
     totalEvents: events.length,
     frames,
   };
+}
+
+function getDeclarationOrder(event: TimelineEvent, fallback: number): number {
+  const order = (event as { _declarationOrder?: number })._declarationOrder;
+  return Number.isFinite(order) ? order : fallback;
 }
 
 export function createKeyframedEventIndex(

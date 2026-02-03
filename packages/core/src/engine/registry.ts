@@ -5,6 +5,7 @@
  */
 
 import type { WorldState, TimelineEvent, DeviceState } from "../types";
+import type { HandlerContext } from "./handlers/types";
 import { EngineLogger } from "./logger";
 
 // =============================================================================
@@ -31,6 +32,7 @@ export type FeatureReducer = (
   draft: WorldState,
   event: TimelineEvent,
   index?: number,
+  ctx?: HandlerContext,
 ) => void;
 
 // =============================================================================

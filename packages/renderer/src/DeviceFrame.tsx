@@ -30,13 +30,23 @@ export const DeviceFrame: React.FC<DeviceFrameProps> = ({
   currentFrame = 0,
   fps = 30,
 }) => {
+  const FallbackFrame: React.FC<{
+    statusBar?: React.ReactNode;
+    children: React.ReactNode;
+  }> = ({ statusBar, children: frameChildren }) => (
+    <>
+      {statusBar}
+      {frameChildren}
+    </>
+  );
+
   // Strategy pattern: Select frame component based on profile ID
   const FrameComponent =
     profileId === "iphone16"
       ? iPhone16Frame
       : profileId === "pixel"
         ? PixelFrame
-        : React.Fragment;
+        : FallbackFrame;
 
   // Determine props to pass to the FrameComponent
   const frameProps = {};

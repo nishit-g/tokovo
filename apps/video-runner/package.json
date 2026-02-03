@@ -7,7 +7,8 @@
     "dev": "npx remotion studio",
     "build": "tsc -p tsconfig.json",
     "upgrade": "remotion upgrade",
-    "test": "eslint src --ext ts,tsx"
+    "test": "eslint src --ext ts,tsx",
+    "lint": "eslint src --ext ts,tsx"
   },
   "dependencies": {
     "@remotion/cli": "4.0.409",

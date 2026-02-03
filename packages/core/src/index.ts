@@ -224,6 +224,7 @@ export {
   getAnimationConfig,
   getRenderingConfig,
   getAudioConfig,
+  getNotificationsConfig,
   getCameraConfig,
   isDebugEnabled,
   enableDebug,

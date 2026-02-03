@@ -34,7 +34,7 @@ describe("EventHandlerRegistry", () => {
     EventHandlerRegistry.clear();
   });
 
-  it("continues after handler errors and supports unregister", () => {
+  it("propagates handler errors and supports unregister", () => {
     const calls: string[] = [];
     const unsub = EventHandlerRegistry.register({
       kind: "ERR",
@@ -47,13 +47,15 @@ describe("EventHandlerRegistry", () => {
       handler: () => calls.push("after"),
     });
 
-    EventHandlerRegistry.handle(
-      {} as WorldState,
-      { kind: "ERR" } as TimelineEvent,
-      { frame: 0, eventIndex: 0, mode: "preview" },
-    );
+    expect(() =>
+      EventHandlerRegistry.handle(
+        {} as WorldState,
+        { kind: "ERR" } as TimelineEvent,
+        { frame: 0, eventIndex: 0, mode: "preview" },
+      ),
+    ).toThrow("boom");
 
-    expect(calls).toEqual(["after"]);
+    expect(calls).toEqual([]);
     unsub();
     EventHandlerRegistry.clear();
   });

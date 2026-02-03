@@ -23,6 +23,7 @@ import {
   LayoutState,
   ViewKind,
   LayoutContext,
+  getKeyboardConfig,
 } from "@tokovo/core";
 import { computeLayout } from "../layout";
 import { iPhone16Profile, PixelProfile, DeviceProfile } from "@tokovo/devices";
@@ -176,12 +177,9 @@ export function useLayoutEngine(input: LayoutEngineInput): LayoutEngineOutput {
     const variant: "ios" | "android" = isPixel ? "android" : "ios";
 
     // 4. Compute keyboard height (for viewport shrink when typing)
-    const KEYBOARD_HEIGHT_IOS = 900; // At 3x scale
-    const KEYBOARD_HEIGHT_ANDROID = 750;
+    const keyboardConfig = getKeyboardConfig(variant);
     const keyboardHeight = device.keyboard?.visible
-      ? variant === "ios"
-        ? KEYBOARD_HEIGHT_IOS
-        : KEYBOARD_HEIGHT_ANDROID
+      ? keyboardConfig.height
       : 0;
 
     // 5. Compute effective viewport height (shrinks when keyboard visible)

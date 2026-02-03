@@ -1,5 +1,6 @@
 import { keyboardReducer } from "./runtime/reducer";
 import type { KeyboardState } from "@tokovo/core";
+import { ReducerRegistry } from "@tokovo/core";
 
 const DEBUG = process.env.NODE_ENV === "development";
 
@@ -9,34 +10,34 @@ export function registerKeyboardPlugin(): void {
   if (registered) return;
   registered = true;
 
-  import("@tokovo/core").then(({ ReducerRegistry }) => {
-    ReducerRegistry.registerFeatureReducer(
-      "KEYBOARD",
-      (draft, event, _index) => {
-        const deviceId = (event as { deviceId?: string }).deviceId;
-        if (!deviceId) return;
+  ReducerRegistry.registerFeatureReducer(
+    "KEYBOARD",
+    (draft, event, _index, ctx) => {
+      const deviceId = (event as { deviceId?: string }).deviceId;
+      if (!deviceId) return;
 
-        const device = draft.devices[deviceId];
-        if (!device) return;
+      const device = draft.devices[deviceId];
+      if (!device) return;
 
-        const kbEvent = {
-          kind: "DEVICE" as const,
-          type: (event as { type?: string }).type || "",
-          deviceId,
-          at: event.at,
-          payload: (event as { payload?: Record<string, unknown> }).payload,
-        };
+      const kbEvent = {
+        kind: "DEVICE" as const,
+        type: (event as { type?: string }).type || "",
+        deviceId,
+        at: event.at,
+        payload: (event as { payload?: Record<string, unknown> }).payload,
+      };
 
-        device.keyboard = keyboardReducer(
-          device.keyboard as KeyboardState | undefined,
-          kbEvent,
-          event.at,
-        );
-      },
-    );
+      const currentFrame = ctx?.frame ?? event.at;
 
-    if (DEBUG) {
-      console.warn("[KeyboardPlugin] Registered");
-    }
-  });
+      device.keyboard = keyboardReducer(
+        device.keyboard as KeyboardState | undefined,
+        kbEvent,
+        currentFrame,
+      );
+    },
+  );
+
+  if (DEBUG) {
+    console.warn("[KeyboardPlugin] Registered");
+  }
 }
