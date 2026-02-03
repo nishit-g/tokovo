@@ -140,7 +140,8 @@ function handlePlay(
   payload: AudioEventPayload,
   _ctx: HandlerContext,
 ): void {
-  const audio = draft.audio!;
+  const audio = draft.audio;
+  if (!audio) return;
 
   const instanceId = `sound_${audio.policyState.nextId++}`;
 
@@ -193,7 +194,8 @@ function handlePlay(
 }
 
 function handleStop(draft: WorldState, payload: AudioEventPayload): void {
-  const audio = draft.audio!;
+  const audio = draft.audio;
+  if (!audio) return;
 
   if (payload.instanceId) {
     deleteActiveSound(audio.activeSounds, payload.instanceId);
@@ -212,7 +214,8 @@ function handleStop(draft: WorldState, payload: AudioEventPayload): void {
 }
 
 function handleStopAll(draft: WorldState, payload: AudioEventPayload): void {
-  const audio = draft.audio!;
+  const audio = draft.audio;
+  if (!audio) return;
 
   if (payload.bus) {
     const instances = findInstancesByBus(
@@ -238,7 +241,8 @@ function handleFade(
   event: AudioEvent,
   payload: AudioEventPayload,
 ): void {
-  const audio = draft.audio!;
+  const audio = draft.audio;
+  if (!audio) return;
 
   let duration = payload.duration ?? DEFAULT_FADE_DURATION;
   const toVolume = payload.toVolume ?? 0;
@@ -290,7 +294,8 @@ function handleCrossfade(
   event: AudioEvent,
   payload: AudioEventPayload,
 ): void {
-  const audio = draft.audio!;
+  const audio = draft.audio;
+  if (!audio) return;
 
   const duration = payload.crossfadeDuration ?? payload.duration ?? 60;
 
@@ -427,7 +432,8 @@ export function handleAutoSounds(
   _ctx: HandlerContext,
 ): void {
   ensureAudioState(draft);
-  const audio = draft.audio!;
+  const audio = draft.audio;
+  if (!audio) return;
 
   const instructions = deriveAudioInstructions(
     event,

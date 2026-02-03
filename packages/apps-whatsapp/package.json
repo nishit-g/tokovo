@@ -16,13 +16,13 @@
     "@tokovo/ir": "workspace:*",
     "@tokovo/react": "workspace:*",
     "lucide-react": "^0.263.1",
-    "react": "^18.2.0",
+    "react": "18.3.1",
     "remotion": "4.0.409",
     "zod": "^3.22.0"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",
-    "@types/react": "18.2.0",
+    "@types/react": "18.3.1",
     "typescript": "^5.0.0"
   }
 }

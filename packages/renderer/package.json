@@ -18,14 +18,14 @@
     "@tokovo/devices": "workspace:*",
     "@tokovo/device-notifications": "workspace:*",
     "@tokovo/react": "workspace:*",
-    "react": "18.2.0",
-    "react-dom": "18.2.0",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
     "remotion": "4.0.409"
   },
   "devDependencies": {
     "typescript": "^5.0.0",
     "@types/node": "^20.0.0",
-    "@types/react": "18.2.0",
-    "@types/react-dom": "18.2.0"
+    "@types/react": "18.3.1",
+    "@types/react-dom": "18.3.1"
   }
 }

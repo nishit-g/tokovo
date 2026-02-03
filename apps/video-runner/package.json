@@ -24,13 +24,13 @@
     "@tokovo/ir": "workspace:*",
     "@tokovo/renderer": "workspace:*",
     "@tokovo/voice": "workspace:*",
-    "react": "18.2.0",
-    "react-dom": "18.2.0",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
     "remotion": "4.0.409",
     "zod": "^3.0.0"
   },
   "devDependencies": {
-    "@types/react": "18.2.0",
+    "@types/react": "18.3.1",
     "@types/web": "^0.0.61",
     "eslint": "^9.0.0",
     "prettier": "^3.0.0",

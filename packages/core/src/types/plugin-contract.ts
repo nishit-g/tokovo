@@ -10,6 +10,7 @@
  */
 
 import { RuntimeEvent } from "./runtime-event";
+import type { ComponentType } from "react";
 import type { Platform } from "../tokens";
 import type { AnchorFraming } from "./anchor";
 // =============================================================================
@@ -74,7 +75,7 @@ export type PluginReducer<AppId extends string = string> = (
  */
 export interface PluginViewProps {
   world: import("../types").WorldState;
-  deviceId: string;
+  deviceId?: string;
   platform?: "ios" | "android";
   t?: number;
 }
@@ -82,9 +83,7 @@ export interface PluginViewProps {
 /**
  * View component type (React.FC in practice)
  */
-export type PluginViewComponent = (
-  props: PluginViewProps,
-) => JSX.Element | null;
+export type PluginViewComponent = ComponentType<PluginViewProps>;
 
 /**
  * Platform-specific view strategies
