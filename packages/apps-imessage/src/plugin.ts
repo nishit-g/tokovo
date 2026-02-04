@@ -1,0 +1,116 @@
+import type { TokovoPluginContract, PluginViews, PluginReducer } from "@tokovo/core";
+import type { PluginManagerClass } from "@tokovo/react";
+import { IMESSAGE_APP_ID, IMESSAGE_DISPLAY_NAME, IMESSAGE_VERSION } from "./constants";
+import { iMessageReducer } from "./runtime/reducer";
+import { createIMessageInitialState } from "./runtime/initial-state";
+import { IMessageAnchors } from "./runtime/adapters/anchors";
+import { IMessageView } from "./ui";
+import { iMessageV2Lowering } from "./lowering";
+import { iMessageLayoutStrategies } from "./layout";
+
+const iMessageViews: PluginViews = {
+  AppRoot: IMessageView,
+  strategies: {
+    ios: {
+      ChatScreen: IMessageView,
+    },
+  },
+};
+
+const iMessageAssets = {
+  sounds: {
+    "app_imessage.message_in": "plugins/whatsapp/received.wav",
+    "app_imessage.message_out": "plugins/whatsapp/sent.wav",
+    "app_imessage.typing_loop": "plugins/whatsapp/typing_loop.wav",
+  },
+  icons: {
+    app_icon: "/icons/imessage.svg",
+  },
+};
+
+const iMessageAudioRules: NonNullable<TokovoPluginContract["audioRules"]> = [
+  {
+    match: { kind: "APP", appId: IMESSAGE_APP_ID, type: "IMESSAGE_MESSAGE_SEND" },
+    action: "PLAY_ONE_SHOT",
+    sound: "app_imessage.message_out",
+    bus: "ui",
+    duckMusic: true,
+  },
+  {
+    match: { kind: "APP", appId: IMESSAGE_APP_ID, type: "IMESSAGE_MESSAGE_RECEIVE" },
+    action: "PLAY_ONE_SHOT",
+    sound: "app_imessage.message_in",
+    bus: "ui",
+    duckMusic: true,
+  },
+  {
+    match: { kind: "APP", appId: IMESSAGE_APP_ID, type: "IMESSAGE_TYPING_START" },
+    action: "START_LOOP",
+    sound: "app_imessage.typing_loop",
+    bus: "sfx",
+    volume: 0.4,
+    idTemplate: "typing_{conversationId}_{actor}",
+  },
+  {
+    match: { kind: "APP", appId: IMESSAGE_APP_ID, type: "IMESSAGE_TYPING_END" },
+    action: "STOP_SOUND",
+    stopId: "typing_{conversationId}_{actor}",
+  },
+];
+
+export const IMessagePlugin: TokovoPluginContract<"app_imessage"> & {
+  v2Lowering: typeof iMessageV2Lowering;
+} = {
+  id: IMESSAGE_APP_ID,
+  version: IMESSAGE_VERSION,
+  displayName: IMESSAGE_DISPLAY_NAME,
+  reducer: iMessageReducer as PluginReducer<"app_imessage">,
+  views: iMessageViews,
+  createInitialState: createIMessageInitialState,
+  eventKinds: [
+    "IMESSAGE_CONVERSATION_CREATE",
+    "IMESSAGE_CONVERSATION_UPDATE",
+    "IMESSAGE_CONVERSATION_OPEN",
+    "IMESSAGE_CONVERSATION_PIN",
+    "IMESSAGE_CONVERSATION_UNPIN",
+    "IMESSAGE_CONVERSATION_MUTE",
+    "IMESSAGE_CONVERSATION_UNMUTE",
+    "IMESSAGE_MESSAGE_SEND",
+    "IMESSAGE_MESSAGE_RECEIVE",
+    "IMESSAGE_MESSAGE_EDIT",
+    "IMESSAGE_MESSAGE_DELETE",
+    "IMESSAGE_MESSAGE_STATUS_SET",
+    "IMESSAGE_TAPBACK_ADD",
+    "IMESSAGE_TAPBACK_REMOVE",
+    "IMESSAGE_TYPING_START",
+    "IMESSAGE_TYPING_END",
+    "IMESSAGE_MESSAGE_READ",
+    "IMESSAGE_GROUP_MEMBER_ADD",
+    "IMESSAGE_GROUP_MEMBER_REMOVE",
+    "IMESSAGE_GROUP_MEMBER_LEAVE",
+    "IMESSAGE_GROUP_NAME_CHANGE",
+    "IMESSAGE_GROUP_AVATAR_CHANGE",
+    "IMESSAGE_SET_SCREEN",
+    "IMESSAGE_SET_DRAFT",
+    "IMESSAGE_CLEAR_DRAFT",
+    "IMESSAGE_OPEN_MEDIA",
+  ] as const,
+  assets: {
+    ...iMessageAssets,
+    designWidth: 393,
+  },
+  audioRules: iMessageAudioRules,
+  v2Lowering: iMessageV2Lowering,
+  layouts: iMessageLayoutStrategies,
+  anchors: IMessageAnchors,
+};
+
+const registeredManagers = new WeakSet<PluginManagerClass>();
+
+export function registerIMessagePlugin(pluginManager: PluginManagerClass): void {
+  if (registeredManagers.has(pluginManager)) return;
+  registeredManagers.add(pluginManager);
+  pluginManager.register(IMessagePlugin);
+}
+
+export default IMessagePlugin;
