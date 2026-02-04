@@ -90,7 +90,7 @@ class XPointBuilder {
     private _deviceId: string,
     private _events: XTrackEvent[],
     private _getOrder: GetDeclarationOrder,
-  ) {}
+  ) { }
 
   private _push<T extends XEventType>(
     type: T,
@@ -274,6 +274,10 @@ class XPointBuilder {
       createdAt: data.createdAt,
     }));
   }
+
+  setThemeMode(mode: "dark" | "light" | "ghibli"): void {
+    this._push("SET_THEME_MODE", { mode });
+  }
 }
 
 class XSpanBuilder {
@@ -283,7 +287,7 @@ class XSpanBuilder {
     private _deviceId: string,
     private _events: XTrackEvent[],
     private _getOrder: GetDeclarationOrder,
-  ) {}
+  ) { }
 
   private _push<T extends XEventType>(type: T, payload: PayloadInput<T>): void {
     const order = this._getOrder();
@@ -313,7 +317,7 @@ export class XTrackBuilder {
     private _fps: number,
     private _deviceId: string,
     private _getOrder: GetDeclarationOrder,
-  ) {}
+  ) { }
 
   at(time: string | number): XPointBuilder {
     const frame = typeof time === "number" ? time : parseTimeToFrames(time, this._fps);

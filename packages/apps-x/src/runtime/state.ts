@@ -106,6 +106,8 @@ export interface XRoute {
   threadId?: string;
 }
 
+export type XThemeMode = "dark" | "light" | "ghibli";
+
 export interface XState {
   users: XUser[];
   tweets: XTweet[];
@@ -123,6 +125,7 @@ export interface XState {
   navigationStack: XRoute[];
   lastNavFrame: number;
   statusBarTheme?: "light" | "dark";
+  themeMode: XThemeMode;
 }
 
 export function createXInitialState(): XState {
@@ -143,5 +146,6 @@ export function createXInitialState(): XState {
     navigationStack: [],
     lastNavFrame: 0,
     statusBarTheme: "dark",
+    themeMode: "dark",
   };
 }

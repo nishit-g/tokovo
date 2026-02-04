@@ -26,8 +26,10 @@ export interface XThemeColors {
   pill: string;
 }
 
+export type XThemeMode = "dark" | "light" | "ghibli";
+
 export interface XTheme {
-  mode: "dark" | "light";
+  mode: XThemeMode;
   colors: XThemeColors;
   typography: typeof xTypography;
   spacing: typeof xSpacing;
@@ -91,6 +93,49 @@ export const X_LIGHT: XTheme = {
   spacing: xSpacing,
 };
 
-export function getXTheme(mode: "dark" | "light" = "dark"): XTheme {
-  return mode === "light" ? X_LIGHT : X_DARK;
+// Studio Ghibli inspired theme - soft, warm, handcrafted feel
+export const X_GHIBLI: XTheme = {
+  mode: "ghibli",
+  colors: {
+    // Soft sky blue from Ghibli backgrounds
+    background: "#E8F4F8",
+    surface: "#FDF8F3",
+    surfaceElevated: "#FFFFFF",
+    surfaceRaised: "#F5EDE4",
+    // Warm earthy text colors
+    textPrimary: "#2C3E50",
+    textSecondary: "#5D6D7E",
+    textMuted: "#839192",
+    textFaint: "#B4C6C9",
+    // Soft borders like watercolor edges
+    border: "#D5C4A1",
+    borderStrong: "#C4A77D",
+    // Forest green accent (Totoro forest)
+    accent: "#4A7C59",
+    accentSoft: "rgba(74,124,89,0.15)",
+    // Action colors - warm and organic
+    replyActive: "#5B8A72",
+    repostActive: "#7BA05B",
+    likeActive: "#D4726A",
+    bookmarkActive: "#B8860B",
+    // Status colors - softer, more organic
+    success: "#7BA05B",
+    danger: "#C75B5B",
+    warning: "#DAA520",
+    link: "#4A7C59",
+    pill: "rgba(44,62,80,0.08)",
+  },
+  typography: xTypography,
+  spacing: xSpacing,
+};
+
+export function getXTheme(mode: XThemeMode = "dark"): XTheme {
+  switch (mode) {
+    case "light":
+      return X_LIGHT;
+    case "ghibli":
+      return X_GHIBLI;
+    default:
+      return X_DARK;
+  }
 }

@@ -6,10 +6,15 @@ import type {
   XNotification,
   XDMThread,
   XDMMessage,
+  XThemeMode,
 } from "./state";
 
 export function getXState(world: WorldState): XState | undefined {
   return world.appState?.["app_x"] as XState | undefined;
+}
+
+export function getThemeMode(world: WorldState): XThemeMode {
+  return getXState(world)?.themeMode ?? "dark";
 }
 
 export function getUserById(world: WorldState, userId: string | null): XUser | null {

@@ -19,7 +19,8 @@ export type XEventType =
   | "SET_NOTIFICATIONS_TAB"
   | "NOTIFICATION_ADD"
   | "DM_THREAD_CREATE"
-  | "DM_SEND";
+  | "DM_SEND"
+  | "SET_THEME_MODE";
 
 export type XEventKind =
   | "ADD_USER"
@@ -40,7 +41,8 @@ export type XEventKind =
   | "ADD_NOTIFICATION"
   | "ADD_DM_THREAD"
   | "ADD_DM_MESSAGE"
-  | "NAVIGATE_BACK";
+  | "NAVIGATE_BACK"
+  | "SET_THEME_MODE";
 
 export type XScreen =
   | "timeline"
@@ -116,7 +118,7 @@ export interface TweetBasePayload {
   shareCount?: number;
 }
 
-export interface TweetCreatePayload extends TweetBasePayload {}
+export interface TweetCreatePayload extends TweetBasePayload { }
 
 export interface TweetReplyPayload extends TweetBasePayload {
   replyToId: string;
@@ -217,6 +219,7 @@ export type XEventPayloadMap = {
   NOTIFICATION_ADD: NotificationAddPayload;
   DM_THREAD_CREATE: DMThreadCreatePayload;
   DM_SEND: DMSendPayload;
+  SET_THEME_MODE: { mode: "dark" | "light" | "ghibli" };
 };
 
 export type XTrackEventFor<T extends XEventType> = TrackEventBase & {

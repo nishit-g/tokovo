@@ -26,6 +26,7 @@ function getAppState(draft: WorldState): XState {
   state.navigationStack ??= [];
   state.lastNavFrame ??= 0;
   state.statusBarTheme ??= "dark";
+  state.themeMode ??= "dark";
   return state;
 }
 
@@ -272,6 +273,11 @@ export const xReducer: PluginReducer<"app_x"> = (
       if (thread) {
         thread.messageIds.push(payload.id);
       }
+      break;
+    }
+    case "SET_THEME_MODE": {
+      const payload = event.payload as { mode: "dark" | "light" | "ghibli" };
+      appState.themeMode = payload.mode;
       break;
     }
   }
