@@ -13,12 +13,20 @@ Scaffold Tokovo app plugins with the turbo generator, then align the output with
 2. Review generated package under `packages/apps-<name>`.
 3. Register the plugin in `apps/video-runner/src/runtime.ts` and `packages/studio/src/runtime.ts`.
 4. Run tests: `pnpm test --filter=@tokovo/apps-<name>`.
+5. If episodes import the plugin, add `@tokovo/apps-<name>` to `packages/episodes/package.json` dependencies.
+6. After UI/state changes, rebuild: `pnpm run build --filter=@tokovo/apps-<name>` and `pnpm run build --filter=@tokovo/episodes`.
 
 ## Architecture Checkpoints (Always Enforce)
 - **Determinism**: No `Date.now()`/`Math.random()` in DSL, lowering, reducers, or runtime.
 - **Pipeline**: DSL → Track → Lowering → Runtime → Reducer → WorldState → UI → Anchors.
 - **Plugin contract**: `id`, `displayName`, `reducer`, `views`, `createInitialState`, `v2Lowering`, `layouts`, `anchors`, `eventKinds`.
 - **Type registries**: module augmentation for app state + track events + event kinds.
+
+## UI + State Gotchas (Common Failures)
+- **AppSurface sizing**: Render inside a full-height wrapper (`height: 100%`) instead of `100vh`, or the app surface may collapse and appear black.
+- **Safe areas**: Apply `safeAreaInsets` padding (top/bottom) so content doesn’t hide under status bar or home indicator.
+- **State guards**: Reducers should defensively initialize arrays (`users`, `tweets`, `timeline`, etc.) to avoid `undefined.find` crashes at frame 0.
+- **Status bar theme**: Set `statusBarTheme: "dark"` in app state for dark UIs so status bar icons are visible.
 
 ## Decision Tree
 - Need a new plugin scaffold? Use the generator and follow Quick Start.

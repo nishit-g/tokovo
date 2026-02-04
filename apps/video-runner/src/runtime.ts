@@ -1,6 +1,7 @@
 import { createTokovoRegistries, PluginManagerClass } from "@tokovo/react";
 import { registerBuiltInAnchorProviders } from "@tokovo/renderer";
 import { registerWhatsAppPlugin } from "@tokovo/apps-whatsapp";
+import { registerXPlugin } from "@tokovo/apps-x";
 import { createDeviceRegistries, registerDevicesPlugin } from "@tokovo/devices";
 import { registerNotificationPlugin } from "@tokovo/device-notifications";
 import { registerCameraPlugin } from "@tokovo/device-camera";
@@ -16,6 +17,7 @@ export const rendererRegistries = {
 
 registerDevicesPlugin(tokovoRegistries, deviceRegistries);
 registerWhatsAppPlugin(pluginManager);
+registerXPlugin(pluginManager);
 registerNotificationPlugin(tokovoRegistries.engine);
 registerCameraPlugin(pluginManager, tokovoRegistries.engine);
 registerKeyboardPlugin(tokovoRegistries.engine);

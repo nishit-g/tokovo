@@ -18,6 +18,7 @@
     "@tokovo/ir": "workspace:*",
     "@tokovo/devices": "workspace:*",
     "@tokovo/apps-whatsapp": "workspace:*",
+    "@tokovo/apps-x": "workspace:*",
     "@tokovo/device-notifications": "workspace:*",
     "@tokovo/device-camera": "workspace:*",
     "@tokovo/device-keyboard": "workspace:*",
