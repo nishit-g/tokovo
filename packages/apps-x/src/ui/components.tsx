@@ -1,5 +1,5 @@
 import React from "react";
-import { getXTheme } from "../config/theme";
+import { useXTheme } from "./ThemeContext";
 
 // =============================================================================
 // X LOGO
@@ -20,7 +20,7 @@ export const Avatar: React.FC<{
   src?: string;
   ring?: boolean;
 }> = ({ size = 40, src, ring }) => {
-  const theme = getXTheme("dark");
+  const theme = useXTheme();
   return (
     <div
       style={{
@@ -94,7 +94,7 @@ export const XIcon: React.FC<{
   size?: number;
   color?: string;
 }> = ({ name, size = 20, color }) => {
-  const theme = getXTheme("dark");
+  const theme = useXTheme();
   const c = color || theme.colors.textSecondary;
 
   const icons: Record<IconName, React.ReactNode> = {
@@ -258,7 +258,7 @@ export const ActionButton: React.FC<{
   active?: boolean;
   onClick?: () => void;
 }> = ({ icon, count, active, onClick }) => {
-  const theme = getXTheme("dark");
+  const theme = useXTheme();
 
   const activeColors: Record<string, string> = {
     reply: theme.colors.accent,
@@ -332,7 +332,7 @@ export const TabButton: React.FC<{
   active?: boolean;
   onClick?: () => void;
 }> = ({ label, active, onClick }) => {
-  const theme = getXTheme("dark");
+  const theme = useXTheme();
 
   return (
     <div

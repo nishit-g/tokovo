@@ -1,6 +1,6 @@
 import React from "react";
 import type { WorldState } from "@tokovo/core";
-import { getXTheme } from "../config/theme";
+import { useXTheme } from "./ThemeContext";
 import { getNotifications, getXState } from "../runtime/selectors";
 import { AppShell } from "./AppShell";
 import { Avatar, XIcon, VerifiedBadge, TabButton, formatTimestamp } from "./components";
@@ -13,7 +13,7 @@ interface NotificationsProps {
 
 // Notification icon based on type
 const NotificationIcon: React.FC<{ type: string }> = ({ type }) => {
-  const theme = getXTheme("dark");
+  const theme = useXTheme();
 
   switch (type) {
     case "like":
@@ -121,7 +121,7 @@ const getNotificationText = (type: string, count: number = 1): string => {
 };
 
 export const Notifications: React.FC<NotificationsProps> = ({ world }) => {
-  const theme = getXTheme("dark");
+  const theme = useXTheme();
   const state = getXState(world);
   const notifications = getNotifications(world);
   const users = state?.users ?? [];

@@ -1,5 +1,5 @@
 import React from "react";
-import { getXTheme } from "../config/theme";
+import { useXTheme } from "./ThemeContext";
 import { XIcon } from "./components";
 
 type NavItem = "home" | "search" | "bell" | "mail";
@@ -7,7 +7,7 @@ type NavItem = "home" | "search" | "bell" | "mail";
 export const BottomNav: React.FC<{ active?: NavItem }> = ({
   active = "home",
 }) => {
-  const theme = getXTheme("dark");
+  const theme = useXTheme();
 
   const navItems: { key: NavItem; icon: "home" | "search" | "bell" | "mail" }[] = [
     { key: "home", icon: "home" },

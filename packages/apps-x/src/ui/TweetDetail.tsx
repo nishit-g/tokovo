@@ -1,7 +1,7 @@
 import React from "react";
 import type { WorldState } from "@tokovo/core";
 import { framesToSeconds, TokovoConfig } from "@tokovo/core";
-import { getXTheme } from "../config/theme";
+import { useXTheme } from "./ThemeContext";
 import { getActiveTweet, getXState } from "../runtime/selectors";
 import { AppShell } from "./AppShell";
 import {
@@ -47,7 +47,7 @@ const formatCount = (n: number): string => {
 };
 
 export const TweetDetail: React.FC<TweetDetailProps> = ({ world }) => {
-  const theme = getXTheme("dark");
+  const theme = useXTheme();
   const state = getXState(world);
   const tweet = getActiveTweet(world);
   const users = state?.users ?? [];

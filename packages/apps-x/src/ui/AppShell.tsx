@@ -1,14 +1,14 @@
 import React from "react";
 import { useSafeAreaInsets } from "@tokovo/react";
-import { getXTheme } from "../config/theme";
 import { injectXStyles } from "../styles";
+import { useXTheme } from "./ThemeContext";
 
 interface AppShellProps {
   children: React.ReactNode;
 }
 
 export const AppShell: React.FC<AppShellProps> = ({ children }) => {
-  const theme = getXTheme("dark");
+  const theme = useXTheme();
   const safeArea = useSafeAreaInsets();
 
   React.useEffect(() => {

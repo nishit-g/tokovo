@@ -1,6 +1,6 @@
 import React from "react";
 import type { WorldState } from "@tokovo/core";
-import { getXTheme } from "../config/theme";
+import { useXTheme } from "./ThemeContext";
 import { getXState } from "../runtime/selectors";
 import { AppShell } from "./AppShell";
 import { Avatar, XIcon } from "./components";
@@ -12,7 +12,7 @@ interface ComposeProps {
 }
 
 export const Compose: React.FC<ComposeProps> = ({ world }) => {
-  const theme = getXTheme("dark");
+  const theme = useXTheme();
   const state = getXState(world);
   const draft = state?.composeDraft ?? "";
 
