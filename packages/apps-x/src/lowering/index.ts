@@ -211,6 +211,12 @@ export const xLowering: XLoweringHandler = {
             createdAt: getTimestamp(event, event.payload.createdAt),
           }),
         ];
+      case "SET_THEME_MODE":
+        return [
+          createRuntimeEvent(event, "SET_THEME_MODE", {
+            mode: event.payload.mode,
+          }),
+        ];
       default:
         return [];
     }
