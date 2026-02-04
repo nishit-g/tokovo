@@ -4,7 +4,14 @@ import { framesToSeconds, TokovoConfig } from "@tokovo/core";
 import { getXTheme } from "../config/theme";
 import { getActiveTweet, getXState } from "../runtime/selectors";
 import { AppShell } from "./AppShell";
-import { Avatar, MetricPill, VerifiedBadge, XIcon } from "./components";
+import {
+  Avatar,
+  VerifiedBadge,
+  XIcon,
+  ActionButton,
+  formatTimestamp as formatRelative,
+  TabButton,
+} from "./components";
 import { ScreenTransition } from "./ScreenTransition";
 import { BottomNav } from "./BottomNav";
 
@@ -12,7 +19,7 @@ interface TweetDetailProps {
   world: WorldState;
 }
 
-const formatTimestamp = (value: number) => {
+const formatFullTimestamp = (value: number) => {
   if (value > 1_000_000_000_000) {
     const date = new Date(value);
     const time = new Intl.DateTimeFormat(undefined, {
@@ -30,7 +37,13 @@ const formatTimestamp = (value: number) => {
   const seconds = framesToSeconds(value, fps);
   if (seconds < 60) return `${Math.floor(seconds)}s`;
   const minutes = Math.floor(seconds / 60);
-  return `${minutes}m`;
+  return `${minutes}m ago`;
+};
+
+const formatCount = (n: number): string => {
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
+  if (n >= 1_000) return `${Math.round(n / 1_000)}K`;
+  return n.toLocaleString();
 };
 
 export const TweetDetail: React.FC<TweetDetailProps> = ({ world }) => {
@@ -45,7 +58,12 @@ export const TweetDetail: React.FC<TweetDetailProps> = ({ world }) => {
   if (!tweet) {
     return (
       <AppShell>
-        <div style={{ padding: theme.spacing.screenPadding, color: theme.colors.textSecondary }}>
+        <div
+          style={{
+            padding: theme.spacing.screenPadding,
+            color: theme.colors.textSecondary,
+          }}
+        >
           Tweet not found.
         </div>
       </AppShell>
@@ -60,288 +78,413 @@ export const TweetDetail: React.FC<TweetDetailProps> = ({ world }) => {
   const quote = tweet.quoteTweetId
     ? state?.tweets.find((t) => t.id === tweet.quoteTweetId)
     : undefined;
+  const quoteAuthor = quote ? getUser(quote.authorId) : undefined;
 
   return (
     <AppShell>
+      {/* Header */}
       <div
         style={{
           height: theme.spacing.headerHeight,
           display: "flex",
           alignItems: "center",
-          justifyContent: "space-between",
           padding: `0 ${theme.spacing.screenPadding}px`,
+          gap: 32,
           borderBottom: `1px solid ${theme.colors.border}`,
-          backgroundColor: theme.colors.surface,
+          backgroundColor: "rgba(0,0,0,0.65)",
+          backdropFilter: "blur(12px)",
+          position: "sticky",
+          top: 0,
+          zIndex: 10,
         }}
       >
-        <span style={{ fontSize: 14, fontWeight: 700 }}>Post</span>
-        <XIcon name="search" />
+        <XIcon name="back" size={20} color={theme.colors.textPrimary} />
+        <span
+          style={{
+            fontSize: 17,
+            fontWeight: 700,
+            color: theme.colors.textPrimary,
+          }}
+        >
+          Post
+        </span>
       </div>
 
       <ScreenTransition lastNavFrame={state?.lastNavFrame}>
-        <div style={{ padding: theme.spacing.screenPadding, flex: 1 }}>
+        <div style={{ flex: 1 }}>
+          {/* Main Tweet */}
           <div
             style={{
-              border: `1px solid ${theme.colors.border}`,
-              borderRadius: 18,
-              padding: theme.spacing.cardPadding,
-              backgroundColor: theme.colors.surface,
-              boxShadow: "0 18px 30px rgba(0,0,0,0.25)",
+              padding: theme.spacing.screenPadding,
+              borderBottom: `1px solid ${theme.colors.border}`,
             }}
           >
-            <div style={{ display: "flex", gap: 12 }}>
-              <Avatar size={theme.spacing.avatarSize} />
-              <div>
-                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                  <span style={{ fontSize: 14, fontWeight: 700 }}>
+            {/* Author Row */}
+            <div
+              style={{
+                display: "flex",
+                gap: 12,
+                alignItems: "center",
+              }}
+            >
+              <Avatar size={48} />
+              <div style={{ flex: 1 }}>
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 4,
+                  }}
+                >
+                  <span
+                    style={{
+                      fontSize: 15,
+                      fontWeight: 700,
+                      color: theme.colors.textPrimary,
+                    }}
+                  >
                     {author?.name ?? "Unknown"}
                   </span>
-                  {author?.verified && <VerifiedBadge variant={author.verified} />}
-                  <span style={{ fontSize: 11, color: theme.colors.textMuted }}>
-                    @{author?.handle ?? "unknown"}
-                  </span>
+                  {author?.verified && (
+                    <VerifiedBadge variant={author.verified} size={18} />
+                  )}
                 </div>
-                {tweet.repostOfId && (
-                  <div style={{ fontSize: 11, color: theme.colors.textMuted, marginTop: 4 }}>
-                    Repost
-                  </div>
-                )}
+                <div
+                  style={{
+                    fontSize: 15,
+                    color: theme.colors.textSecondary,
+                  }}
+                >
+                  @{author?.handle ?? "unknown"}
+                </div>
               </div>
+              <XIcon name="more" size={20} color={theme.colors.textSecondary} />
             </div>
-            <div style={{ marginTop: 16, fontSize: 16, lineHeight: 1.5 }}>
+
+            {/* Tweet Text */}
+            <div
+              style={{
+                marginTop: 12,
+                fontSize: 17,
+                lineHeight: 1.5,
+                color: theme.colors.textPrimary,
+              }}
+            >
               {tweet.text}
             </div>
 
+            {/* Media */}
             {tweet.media && (
               <div
                 style={{
                   marginTop: 12,
                   borderRadius: 16,
                   border: `1px solid ${theme.colors.border}`,
-                  background:
-                    tweet.media.type === "image"
-                      ? "linear-gradient(135deg, #10141c, #1f2937)"
-                      : "linear-gradient(135deg, #111827, #0f172a)",
-                  height: tweet.media.aspect === "wide" ? 140 : 200,
+                  backgroundColor: theme.colors.surfaceRaised,
+                  height: tweet.media.aspect === "wide" ? 180 : 280,
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
-                  color: theme.colors.textMuted,
-                  fontSize: 12,
+                  overflow: "hidden",
                 }}
               >
-                {tweet.media.type.toUpperCase()} MEDIA
+                <span
+                  style={{
+                    color: theme.colors.textSecondary,
+                    fontSize: 13,
+                  }}
+                >
+                  {tweet.media.type.toUpperCase()}
+                </span>
               </div>
             )}
 
+            {/* Link Preview */}
             {tweet.linkPreview && (
               <div
                 style={{
                   marginTop: 12,
-                  borderRadius: 14,
+                  borderRadius: 16,
                   border: `1px solid ${theme.colors.border}`,
-                  backgroundColor: theme.colors.surfaceRaised,
-                  padding: 12,
+                  overflow: "hidden",
                 }}
               >
-                <div style={{ fontSize: 11, color: theme.colors.textMuted }}>
-                  {tweet.linkPreview.domain}
-                </div>
-                <div style={{ fontSize: 14, fontWeight: 600, marginTop: 4 }}>
-                  {tweet.linkPreview.title}
-                </div>
-                {tweet.linkPreview.description && (
-                  <div style={{ fontSize: 12, color: theme.colors.textSecondary, marginTop: 4 }}>
-                    {tweet.linkPreview.description}
+                <div
+                  style={{
+                    height: 120,
+                    backgroundColor: theme.colors.surfaceRaised,
+                  }}
+                />
+                <div style={{ padding: 12 }}>
+                  <div
+                    style={{
+                      fontSize: 13,
+                      color: theme.colors.textSecondary,
+                    }}
+                  >
+                    {tweet.linkPreview.domain}
                   </div>
-                )}
+                  <div
+                    style={{
+                      fontSize: 15,
+                      color: theme.colors.textPrimary,
+                      marginTop: 4,
+                    }}
+                  >
+                    {tweet.linkPreview.title}
+                  </div>
+                </div>
               </div>
             )}
 
-            {tweet.poll && (
-              <div
-                style={{
-                  marginTop: 12,
-                  borderRadius: 14,
-                  border: `1px solid ${theme.colors.border}`,
-                  backgroundColor: theme.colors.surfaceRaised,
-                  padding: 12,
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: 8,
-                }}
-              >
-                {(() => {
-                  const poll = tweet.poll!;
-                  return poll.options.map((opt) => {
-                    const total = poll.totalVotes || 1;
-                    const percent = Math.round((opt.votes / total) * 100);
-                    return (
-                      <div key={opt.label}>
-                        <div style={{ fontSize: 12, color: theme.colors.textSecondary }}>
-                          {opt.label}
-                        </div>
-                        <div
-                          style={{
-                            marginTop: 4,
-                            height: 6,
-                            borderRadius: 999,
-                            backgroundColor: theme.colors.pill,
-                            overflow: "hidden",
-                          }}
-                        >
-                          <div
-                            style={{
-                              width: `${percent}%`,
-                              height: "100%",
-                              backgroundColor: theme.colors.accent,
-                            }}
-                          />
-                        </div>
-                      </div>
-                    );
-                  });
-                })()}
-                {(() => {
-                  const poll = tweet.poll!;
-                  return (
-                    <div style={{ fontSize: 11, color: theme.colors.textMuted }}>
-                      {poll.totalVotes} votes
-                    </div>
-                  );
-                })()}
-              </div>
-            )}
-
+            {/* Quote Tweet */}
             {quote && (
               <div
                 style={{
                   marginTop: 12,
-                  borderRadius: 14,
-                  border: `1px solid ${theme.colors.borderStrong}`,
-                  backgroundColor: theme.colors.surfaceRaised,
+                  borderRadius: 16,
+                  border: `1px solid ${theme.colors.border}`,
                   padding: 12,
                 }}
               >
-                <div style={{ fontSize: 12, color: theme.colors.textMuted }}>
-                  Quote
-                </div>
-                <div style={{ fontSize: 13, marginTop: 4 }}>{quote.text}</div>
-              </div>
-            )}
-
-            <div style={{ marginTop: 10, fontSize: 12, color: theme.colors.textMuted }}>
-              {formatTimestamp(tweet.createdAt)} · from X for iPhone
-            </div>
-
-            <div
-              style={{
-                marginTop: 12,
-                display: "flex",
-                gap: 10,
-                flexWrap: "wrap",
-              }}
-            >
-              <MetricPill label="Reply" value={tweet.replyIds.length} />
-              <MetricPill label="Repost" value={tweet.repostCount} />
-              <MetricPill label="Like" value={tweet.likeCount} active={liked} />
-            </div>
-
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(3, 1fr)",
-                gap: 10,
-                marginTop: 12,
-                color: theme.colors.textMuted,
-                fontSize: 12,
-              }}
-            >
-              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                <XIcon name="analytics" size={14} />
-                {tweet.viewCount}
-              </div>
-              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                <XIcon name="bookmark" size={14} />
-                {tweet.bookmarkCount}
-              </div>
-              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                <XIcon name="share" size={14} />
-                {tweet.shareCount}
-              </div>
-            </div>
-          </div>
-
-          <div style={{ marginTop: 20 }}>
-            <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 10 }}>Replies</div>
-            <div
-              style={{
-                border: `1px solid ${theme.colors.border}`,
-                borderRadius: 16,
-                padding: theme.spacing.cardPadding,
-                backgroundColor: theme.colors.surface,
-                display: "flex",
-                gap: 12,
-                alignItems: "flex-start",
-                marginBottom: 16,
-              }}
-            >
-              <Avatar size={32} />
-              <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 11, color: theme.colors.textMuted }}>
-                  Replying to @{author?.handle ?? "unknown"}
-                </div>
-                <div style={{ marginTop: 6, fontSize: 14, color: theme.colors.textSecondary }}>
-                  {state?.composeDraft?.length ? state.composeDraft : "Post your reply"}
-                </div>
-              </div>
-              <button
-                style={{
-                  border: "none",
-                  borderRadius: 999,
-                  padding: "6px 14px",
-                  backgroundColor: theme.colors.accent,
-                  color: "#fff",
-                  fontSize: 12,
-                  fontWeight: 700,
-                }}
-              >
-                Reply
-              </button>
-            </div>
-            {replies.length === 0 && (
-              <div style={{ color: theme.colors.textSecondary, fontSize: 13 }}>
-                No replies yet.
-              </div>
-            )}
-            <div style={{ display: "flex", flexDirection: "column", gap: theme.spacing.cardGap }}>
-              {replies.map((reply) => {
-                const replyAuthor = getUser(reply?.authorId);
-                if (!reply) return null;
-                return (
-                  <div
-                    key={reply.id}
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 4,
+                  }}
+                >
+                  <Avatar size={20} />
+                  <span
                     style={{
-                      border: `1px solid ${theme.colors.border}`,
-                      borderRadius: 12,
-                      padding: theme.spacing.cardPadding,
-                      backgroundColor: theme.colors.surface,
+                      fontSize: 13,
+                      fontWeight: 700,
+                      color: theme.colors.textPrimary,
+                      marginLeft: 4,
                     }}
                   >
-                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                      <span style={{ fontSize: 13, fontWeight: 700 }}>
-                        {replyAuthor?.name ?? "Unknown"}
-                      </span>
-                      <span style={{ fontSize: 11, color: theme.colors.textMuted }}>
-                        @{replyAuthor?.handle ?? "unknown"}
-                      </span>
-                    </div>
-                    <div style={{ marginTop: 6, fontSize: 14 }}>{reply.text}</div>
-                  </div>
-                );
-              })}
+                    {quoteAuthor?.name ?? "Unknown"}
+                  </span>
+                  {quoteAuthor?.verified && (
+                    <VerifiedBadge variant={quoteAuthor.verified} size={14} />
+                  )}
+                  <span
+                    style={{
+                      fontSize: 13,
+                      color: theme.colors.textSecondary,
+                    }}
+                  >
+                    @{quoteAuthor?.handle ?? "unknown"}
+                  </span>
+                </div>
+                <div
+                  style={{
+                    marginTop: 4,
+                    fontSize: 15,
+                    color: theme.colors.textPrimary,
+                  }}
+                >
+                  {quote.text}
+                </div>
+              </div>
+            )}
+
+            {/* Timestamp + Source */}
+            <div
+              style={{
+                marginTop: 16,
+                fontSize: 15,
+                color: theme.colors.textSecondary,
+              }}
+            >
+              {formatFullTimestamp(tweet.createdAt)} ·{" "}
+              <span style={{ color: theme.colors.textPrimary }}>
+                {formatCount(tweet.viewCount)}
+              </span>{" "}
+              Views
             </div>
           </div>
+
+          {/* Engagement Stats Bar */}
+          <div
+            style={{
+              display: "flex",
+              padding: `12px ${theme.spacing.screenPadding}px`,
+              borderBottom: `1px solid ${theme.colors.border}`,
+              gap: 20,
+            }}
+          >
+            <span style={{ fontSize: 14, color: theme.colors.textSecondary }}>
+              <span
+                style={{ fontWeight: 700, color: theme.colors.textPrimary }}
+              >
+                {formatCount(tweet.repostCount)}
+              </span>{" "}
+              Reposts
+            </span>
+            <span style={{ fontSize: 14, color: theme.colors.textSecondary }}>
+              <span
+                style={{ fontWeight: 700, color: theme.colors.textPrimary }}
+              >
+                {formatCount(tweet.likeCount)}
+              </span>{" "}
+              Likes
+            </span>
+            <span style={{ fontSize: 14, color: theme.colors.textSecondary }}>
+              <span
+                style={{ fontWeight: 700, color: theme.colors.textPrimary }}
+              >
+                {formatCount(tweet.bookmarkCount)}
+              </span>{" "}
+              Bookmarks
+            </span>
+          </div>
+
+          {/* Action Row */}
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-around",
+              padding: `12px ${theme.spacing.screenPadding}px`,
+              borderBottom: `1px solid ${theme.colors.border}`,
+            }}
+          >
+            <ActionButton icon="reply" />
+            <ActionButton icon="repost" />
+            <ActionButton icon="like" active={liked} />
+            <ActionButton icon="bookmark" />
+            <ActionButton icon="share" />
+          </div>
+
+          {/* Reply Composer */}
+          <div
+            style={{
+              display: "flex",
+              padding: `12px ${theme.spacing.screenPadding}px`,
+              gap: 12,
+              borderBottom: `1px solid ${theme.colors.border}`,
+            }}
+          >
+            <Avatar size={40} />
+            <div style={{ flex: 1 }}>
+              <div
+                style={{
+                  fontSize: 15,
+                  color: theme.colors.textSecondary,
+                }}
+              >
+                Post your reply
+              </div>
+            </div>
+            <button
+              style={{
+                padding: "8px 16px",
+                borderRadius: 9999,
+                border: "none",
+                backgroundColor: theme.colors.accent,
+                opacity: 0.5,
+                color: "#FFFFFF",
+                fontSize: 15,
+                fontWeight: 700,
+              }}
+            >
+              Reply
+            </button>
+          </div>
+
+          {/* Replies */}
+          {replies.length === 0 ? (
+            <div
+              style={{
+                padding: 32,
+                textAlign: "center",
+                color: theme.colors.textSecondary,
+              }}
+            >
+              No replies yet
+            </div>
+          ) : (
+            replies.map((reply) => {
+              if (!reply) return null;
+              const replyAuthor = getUser(reply.authorId);
+              return (
+                <div
+                  key={reply.id}
+                  style={{
+                    display: "flex",
+                    padding: `${theme.spacing.tweetPaddingV}px ${theme.spacing.tweetPaddingH}px`,
+                    borderBottom: `1px solid ${theme.colors.border}`,
+                    gap: theme.spacing.avatarGap,
+                  }}
+                >
+                  <Avatar size={40} />
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 4,
+                      }}
+                    >
+                      <span
+                        style={{
+                          fontSize: 15,
+                          fontWeight: 700,
+                          color: theme.colors.textPrimary,
+                        }}
+                      >
+                        {replyAuthor?.name ?? "Unknown"}
+                      </span>
+                      {replyAuthor?.verified && (
+                        <VerifiedBadge variant={replyAuthor.verified} size={16} />
+                      )}
+                      <span
+                        style={{
+                          fontSize: 15,
+                          color: theme.colors.textSecondary,
+                        }}
+                      >
+                        @{replyAuthor?.handle ?? "unknown"}
+                      </span>
+                      <span style={{ color: theme.colors.textSecondary }}>·</span>
+                      <span
+                        style={{
+                          fontSize: 15,
+                          color: theme.colors.textSecondary,
+                        }}
+                      >
+                        {formatRelative(reply.createdAt)}
+                      </span>
+                    </div>
+                    <div
+                      style={{
+                        fontSize: 15,
+                        lineHeight: 1.4,
+                        color: theme.colors.textPrimary,
+                        marginTop: 4,
+                      }}
+                    >
+                      {reply.text}
+                    </div>
+                    <div
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        marginTop: 12,
+                        maxWidth: 425,
+                      }}
+                    >
+                      <ActionButton icon="reply" count={reply.replyIds.length} />
+                      <ActionButton icon="repost" count={reply.repostCount} />
+                      <ActionButton icon="like" count={reply.likeCount} />
+                      <ActionButton icon="view" count={reply.viewCount} />
+                      <ActionButton icon="bookmark" />
+                    </div>
+                  </div>
+                </div>
+              );
+            })
+          )}
         </div>
       </ScreenTransition>
 

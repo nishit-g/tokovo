@@ -50,7 +50,7 @@ export const Compose: React.FC<ComposeProps> = ({ world }) => {
             style={{
               border: `1px solid ${theme.colors.border}`,
               borderRadius: 18,
-              padding: theme.spacing.cardPadding,
+              padding: theme.spacing.tweetPaddingH,
               backgroundColor: theme.colors.surface,
               display: "flex",
               gap: 12,

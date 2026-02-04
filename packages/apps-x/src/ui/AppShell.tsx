@@ -25,26 +25,38 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
         fontFamily:
           "'Söhne', 'GT America', 'Neue Haas Grotesk Display', 'Helvetica Neue', sans-serif",
         paddingTop: safeArea.top,
-        paddingBottom: safeArea.bottom,
         boxSizing: "border-box",
         display: "flex",
         flexDirection: "column",
         position: "relative",
         overflow: "hidden",
         backgroundImage:
-          "radial-gradient(circle at 20% 10%, rgba(29,155,240,0.12), transparent 45%), radial-gradient(circle at 80% 5%, rgba(255,255,255,0.05), transparent 55%)",
+          "radial-gradient(circle at 20% 10%, rgba(29,155,240,0.08), transparent 45%), radial-gradient(circle at 80% 5%, rgba(255,255,255,0.03), transparent 55%)",
       }}
     >
+      {/* Line texture overlay */}
       <div
         style={{
           position: "absolute",
           inset: 0,
           backgroundImage:
-            "repeating-linear-gradient(135deg, rgba(255,255,255,0.02) 0, rgba(255,255,255,0.02) 1px, transparent 1px, transparent 6px)",
+            "repeating-linear-gradient(135deg, rgba(255,255,255,0.015) 0, rgba(255,255,255,0.015) 1px, transparent 1px, transparent 6px)",
           pointerEvents: "none",
         }}
       />
-      <div style={{ position: "relative", zIndex: 1, display: "flex", flexDirection: "column", flex: 1 }}>
+
+      {/* Main content area - scrollable */}
+      <div
+        style={{
+          position: "relative",
+          zIndex: 1,
+          display: "flex",
+          flexDirection: "column",
+          flex: 1,
+          overflow: "auto",
+          paddingBottom: safeArea.bottom,
+        }}
+      >
         {children}
       </div>
     </div>

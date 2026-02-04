@@ -1,21 +1,40 @@
 export const xColors = {
+  // Core backgrounds - X Lights Out theme
   background: "#000000",
-  surface: "#0B0B0F",
-  surfaceElevated: "#111318",
-  surfaceRaised: "#161A21",
-  textPrimary: "#FFFFFF",
-  textSecondary: "#C7CDD6",
-  textMuted: "#6B7280",
-  textFaint: "#4B5563",
-  border: "#1F242C",
-  borderStrong: "#2A313C",
+  surface: "#16181C",
+  surfaceElevated: "#1D1F23",
+  surfaceRaised: "#202327",
+
+  // Text hierarchy
+  textPrimary: "#E7E9EA",
+  textSecondary: "#71767B",
+  textMuted: "#536471",
+  textFaint: "#3D4144",
+
+  // Borders
+  border: "#2F3336",
+  borderStrong: "#3E4245",
+
+  // Brand accent
   accent: "#1D9BF0",
-  accentSoft: "rgba(29,155,240,0.18)",
+  accentSoft: "rgba(29,155,240,0.1)",
+
+  // Action states
+  replyActive: "#1D9BF0",
+  repostActive: "#00BA7C",
+  likeActive: "#F91880",
+  bookmarkActive: "#1D9BF0",
+
+  // Status colors
   success: "#00BA7C",
   danger: "#F91880",
-  warning: "#F5A524",
-  link: "#6EE7FF",
-  pill: "rgba(255,255,255,0.08)",
+  warning: "#FFAD1F",
+
+  // Links
+  link: "#1D9BF0",
+
+  // Pills/chips
+  pill: "rgba(239,243,244,0.1)",
 } as const;
 
 export const xTypography = {
@@ -30,13 +49,18 @@ export const xTypography = {
 
 export const xSpacing = {
   screenPadding: 16,
-  cardPadding: 14,
-  cardGap: 14,
-  headerHeight: 54,
-  avatarSize: 36,
-  iconSize: 14,
-  navHeight: 60,
-  fabSize: 52,
+  tweetPaddingH: 16,
+  tweetPaddingV: 12,
+  cardGap: 0,
+  headerHeight: 53,
+  avatarSize: 40,
+  avatarGap: 12,
+  actionIconSize: 18,
+  actionGap: 48,
+  navHeight: 50,
+  fabSize: 56,
+  bannerHeight: 125,
+  tabBarHeight: 44,
 } as const;
 
 export const xTheme = {

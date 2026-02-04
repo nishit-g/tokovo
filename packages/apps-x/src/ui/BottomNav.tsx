@@ -2,25 +2,57 @@ import React from "react";
 import { getXTheme } from "../config/theme";
 import { XIcon } from "./components";
 
-export const BottomNav: React.FC<{ active?: "home" | "search" | "bell" | "mail" }> = ({
+type NavItem = "home" | "search" | "bell" | "mail";
+
+export const BottomNav: React.FC<{ active?: NavItem }> = ({
   active = "home",
 }) => {
   const theme = getXTheme("dark");
+
+  const navItems: { key: NavItem; icon: "home" | "search" | "bell" | "mail" }[] = [
+    { key: "home", icon: "home" },
+    { key: "search", icon: "search" },
+    { key: "bell", icon: "bell" },
+    { key: "mail", icon: "mail" },
+  ];
+
   return (
     <div
       style={{
-        marginTop: "auto",
-        padding: "10px 24px 18px",
-        borderTop: `1px solid ${theme.colors.border}`,
-        backgroundColor: theme.colors.surface,
+        height: theme.spacing.navHeight,
+        minHeight: theme.spacing.navHeight,
         display: "flex",
-        justifyContent: "space-between",
+        alignItems: "center",
+        justifyContent: "space-around",
+        borderTop: `1px solid ${theme.colors.border}`,
+        backgroundColor: "rgba(0,0,0,0.85)",
+        backdropFilter: "blur(12px)",
+        marginTop: "auto",
+        flexShrink: 0,
       }}
     >
-      <XIcon name="home" active={active === "home"} />
-      <XIcon name="search" active={active === "search"} />
-      <XIcon name="bell" active={active === "bell"} />
-      <XIcon name="mail" active={active === "mail"} />
+      {navItems.map(({ key, icon }) => {
+        const isActive = active === key;
+        const iconName = isActive ? (`${icon}Filled` as const) : icon;
+
+        return (
+          <div
+            key={key}
+            style={{
+              padding: 8,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <XIcon
+              name={iconName}
+              size={26}
+              color={isActive ? theme.colors.textPrimary : theme.colors.textSecondary}
+            />
+          </div>
+        );
+      })}
     </div>
   );
 };

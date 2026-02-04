@@ -1,15 +1,32 @@
 import React from "react";
 import type { WorldState } from "@tokovo/core";
 import { getXTheme } from "../config/theme";
-import { getActiveUser, getXState, getTimelineTweets } from "../runtime/selectors";
+import {
+  getActiveUser,
+  getXState,
+  getTimelineTweets,
+} from "../runtime/selectors";
 import { AppShell } from "./AppShell";
-import { Avatar, VerifiedBadge, XIcon } from "./components";
+import {
+  Avatar,
+  VerifiedBadge,
+  XIcon,
+  ActionButton,
+  formatTimestamp,
+  TabButton,
+} from "./components";
 import { ScreenTransition } from "./ScreenTransition";
 import { BottomNav } from "./BottomNav";
 
 interface ProfileProps {
   world: WorldState;
 }
+
+const formatCount = (n: number): string => {
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
+  if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`;
+  return n.toString();
+};
 
 export const Profile: React.FC<ProfileProps> = ({ world }) => {
   const theme = getXTheme("dark");
@@ -21,13 +38,18 @@ export const Profile: React.FC<ProfileProps> = ({ world }) => {
       : null);
 
   const tweets = getTimelineTweets(world).filter(
-    (tweet) => tweet.authorId === activeUser?.id,
+    (tweet) => tweet.authorId === activeUser?.id
   );
 
   if (!activeUser) {
     return (
       <AppShell>
-        <div style={{ padding: theme.spacing.screenPadding, color: theme.colors.textSecondary }}>
+        <div
+          style={{
+            padding: theme.spacing.screenPadding,
+            color: theme.colors.textSecondary,
+          }}
+        >
           Profile not found.
         </div>
       </AppShell>
@@ -36,95 +58,294 @@ export const Profile: React.FC<ProfileProps> = ({ world }) => {
 
   return (
     <AppShell>
+      {/* Header */}
       <div
         style={{
           height: theme.spacing.headerHeight,
           display: "flex",
           alignItems: "center",
-          justifyContent: "space-between",
           padding: `0 ${theme.spacing.screenPadding}px`,
-          borderBottom: `1px solid ${theme.colors.border}`,
-          backgroundColor: theme.colors.surface,
+          gap: 32,
+          backgroundColor: "rgba(0,0,0,0.65)",
+          backdropFilter: "blur(12px)",
+          position: "sticky",
+          top: 0,
+          zIndex: 10,
         }}
       >
-        <span style={{ fontSize: 14, fontWeight: 700 }}>{activeUser.name}</span>
-        <XIcon name="search" />
+        <XIcon name="back" size={20} color={theme.colors.textPrimary} />
+        <div style={{ flex: 1 }}>
+          <div
+            style={{
+              fontSize: 17,
+              fontWeight: 700,
+              color: theme.colors.textPrimary,
+            }}
+          >
+            {activeUser.name}
+          </div>
+          <div style={{ fontSize: 13, color: theme.colors.textSecondary }}>
+            {tweets.length} posts
+          </div>
+        </div>
       </div>
 
       <ScreenTransition lastNavFrame={state?.lastNavFrame}>
-        <div style={{ padding: theme.spacing.screenPadding, flex: 1 }}>
+        <div style={{ flex: 1 }}>
+          {/* Banner */}
           <div
             style={{
-              border: `1px solid ${theme.colors.border}`,
-              borderRadius: 18,
-              padding: theme.spacing.cardPadding,
-              backgroundColor: theme.colors.surface,
+              height: theme.spacing.bannerHeight,
+              background:
+                "linear-gradient(135deg, #1D1F23 0%, #2F3336 50%, #1D1F23 100%)",
             }}
-          >
-            <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-              <Avatar size={64} />
-              <div>
-                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <span style={{ fontSize: 18, fontWeight: 700 }}>{activeUser.name}</span>
-                  {activeUser.verified && <VerifiedBadge variant={activeUser.verified} />}
-                </div>
-                <div style={{ fontSize: 12, color: theme.colors.textMuted }}>
-                  @{activeUser.handle}
-                </div>
-              </div>
-            </div>
-            <div style={{ fontSize: 14, marginTop: 12 }}>
-              {activeUser.bio ?? "No bio yet."}
-            </div>
+          />
+
+          {/* Profile Info Section */}
+          <div style={{ padding: `0 ${theme.spacing.screenPadding}px` }}>
+            {/* Avatar + Follow Button Row */}
             <div
               style={{
-                marginTop: 12,
                 display: "flex",
-                gap: 16,
-                fontSize: 12,
-                color: theme.colors.textSecondary,
+                justifyContent: "space-between",
+                alignItems: "flex-start",
+                marginTop: -32,
               }}
             >
-              <span>
-                <strong style={{ color: theme.colors.textPrimary }}>
-                  {activeUser.following}
-                </strong>{" "}
+              <div
+                style={{
+                  width: 80,
+                  height: 80,
+                  borderRadius: "50%",
+                  border: `4px solid ${theme.colors.background}`,
+                  background:
+                    "linear-gradient(135deg, #2F3336 0%, #1D1F23 100%)",
+                }}
+              />
+              <div style={{ marginTop: 44, display: "flex", gap: 8 }}>
+                <button
+                  style={{
+                    padding: "6px 12px",
+                    borderRadius: 20,
+                    border: `1px solid ${theme.colors.border}`,
+                    backgroundColor: "transparent",
+                    color: theme.colors.textPrimary,
+                    fontSize: 14,
+                    fontWeight: 700,
+                    cursor: "pointer",
+                  }}
+                >
+                  <XIcon name="more" size={18} color={theme.colors.textPrimary} />
+                </button>
+                <button
+                  style={{
+                    padding: "6px 12px",
+                    borderRadius: 20,
+                    border: `1px solid ${theme.colors.border}`,
+                    backgroundColor: "transparent",
+                    color: theme.colors.textPrimary,
+                    fontSize: 14,
+                    fontWeight: 700,
+                    cursor: "pointer",
+                  }}
+                >
+                  <XIcon name="mail" size={18} color={theme.colors.textPrimary} />
+                </button>
+                <button
+                  style={{
+                    padding: "6px 16px",
+                    borderRadius: 20,
+                    border: "none",
+                    backgroundColor: theme.colors.textPrimary,
+                    color: theme.colors.background,
+                    fontSize: 14,
+                    fontWeight: 700,
+                    cursor: "pointer",
+                  }}
+                >
+                  Follow
+                </button>
+              </div>
+            </div>
+
+            {/* Name + Handle */}
+            <div style={{ marginTop: 12 }}>
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 4,
+                }}
+              >
+                <span
+                  style={{
+                    fontSize: 20,
+                    fontWeight: 800,
+                    color: theme.colors.textPrimary,
+                  }}
+                >
+                  {activeUser.name}
+                </span>
+                {activeUser.verified && (
+                  <VerifiedBadge variant={activeUser.verified} size={20} />
+                )}
+              </div>
+              <div
+                style={{
+                  fontSize: 15,
+                  color: theme.colors.textSecondary,
+                  marginTop: 2,
+                }}
+              >
+                @{activeUser.handle}
+              </div>
+            </div>
+
+            {/* Bio */}
+            {activeUser.bio && (
+              <div
+                style={{
+                  fontSize: 15,
+                  color: theme.colors.textPrimary,
+                  marginTop: 12,
+                  lineHeight: 1.4,
+                }}
+              >
+                {activeUser.bio}
+              </div>
+            )}
+
+            {/* Following / Followers */}
+            <div
+              style={{
+                display: "flex",
+                gap: 20,
+                marginTop: 12,
+              }}
+            >
+              <span style={{ fontSize: 14, color: theme.colors.textSecondary }}>
+                <span
+                  style={{
+                    fontWeight: 700,
+                    color: theme.colors.textPrimary,
+                  }}
+                >
+                  {formatCount(activeUser.following ?? 0)}
+                </span>{" "}
                 Following
               </span>
-              <span>
-                <strong style={{ color: theme.colors.textPrimary }}>
-                  {activeUser.followers}
-                </strong>{" "}
+              <span style={{ fontSize: 14, color: theme.colors.textSecondary }}>
+                <span
+                  style={{
+                    fontWeight: 700,
+                    color: theme.colors.textPrimary,
+                  }}
+                >
+                  {formatCount(activeUser.followers ?? 0)}
+                </span>{" "}
                 Followers
               </span>
             </div>
           </div>
 
-          <div style={{ marginTop: 20 }}>
-            <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 10 }}>Posts</div>
+          {/* Tab Bar */}
+          <div
+            style={{
+              display: "flex",
+              borderBottom: `1px solid ${theme.colors.border}`,
+              marginTop: 16,
+            }}
+          >
+            <TabButton label="Posts" active />
+            <TabButton label="Replies" />
+            <TabButton label="Media" />
+            <TabButton label="Likes" />
+          </div>
+
+          {/* Posts List */}
+          <div>
             {tweets.length === 0 && (
-              <div style={{ color: theme.colors.textSecondary, fontSize: 13 }}>
-                No posts yet.
+              <div
+                style={{
+                  padding: 32,
+                  textAlign: "center",
+                  color: theme.colors.textSecondary,
+                }}
+              >
+                @{activeUser.handle} hasn't posted yet.
               </div>
             )}
-            <div style={{ display: "flex", flexDirection: "column", gap: theme.spacing.cardGap }}>
-              {tweets.map((tweet) => (
-                <div
-                  key={tweet.id}
-                  style={{
-                    border: `1px solid ${theme.colors.border}`,
-                    borderRadius: 12,
-                    padding: theme.spacing.cardPadding,
-                    backgroundColor: theme.colors.surface,
-                  }}
-                >
-                  <div style={{ fontSize: 14 }}>{tweet.text}</div>
-                  <div style={{ marginTop: 8, fontSize: 11, color: theme.colors.textMuted }}>
-                    Reply {tweet.replyIds.length} · Repost {tweet.repostCount} · Like {tweet.likeCount}
+
+            {tweets.map((tweet) => (
+              <div
+                key={tweet.id}
+                style={{
+                  display: "flex",
+                  padding: `${theme.spacing.tweetPaddingV}px ${theme.spacing.tweetPaddingH}px`,
+                  borderBottom: `1px solid ${theme.colors.border}`,
+                  gap: theme.spacing.avatarGap,
+                }}
+              >
+                <Avatar size={theme.spacing.avatarSize} />
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 4,
+                      marginBottom: 2,
+                    }}
+                  >
+                    <span
+                      style={{
+                        fontWeight: 700,
+                        fontSize: 15,
+                        color: theme.colors.textPrimary,
+                      }}
+                    >
+                      {activeUser.name}
+                    </span>
+                    {activeUser.verified && (
+                      <VerifiedBadge variant={activeUser.verified} size={16} />
+                    )}
+                    <span
+                      style={{ fontSize: 15, color: theme.colors.textSecondary }}
+                    >
+                      @{activeUser.handle}
+                    </span>
+                    <span style={{ color: theme.colors.textSecondary }}>·</span>
+                    <span
+                      style={{ fontSize: 15, color: theme.colors.textSecondary }}
+                    >
+                      {formatTimestamp(tweet.createdAt)}
+                    </span>
+                  </div>
+                  <div
+                    style={{
+                      fontSize: 15,
+                      lineHeight: 1.4,
+                      color: theme.colors.textPrimary,
+                    }}
+                  >
+                    {tweet.text}
+                  </div>
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      marginTop: 12,
+                      maxWidth: 425,
+                    }}
+                  >
+                    <ActionButton icon="reply" count={tweet.replyIds.length} />
+                    <ActionButton icon="repost" count={tweet.repostCount} />
+                    <ActionButton icon="like" count={tweet.likeCount} />
+                    <ActionButton icon="view" count={tweet.viewCount} />
+                    <ActionButton icon="bookmark" />
                   </div>
                 </div>
-              ))}
-            </div>
+              </div>
+            ))}
           </div>
         </div>
       </ScreenTransition>
