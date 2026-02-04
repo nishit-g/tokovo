@@ -1,12 +1,20 @@
+/**
+ * iMessage Header Component
+ * 
+ * iOS 17 style navigation header with frosted glass effect
+ */
 import React from "react";
-import { iOS_IMESSAGE_LIGHT, LAYOUT_CONSTANTS } from "../config";
+import { useIMessageTheme } from "../ui/ThemeContext";
+import { iMessageSpacing, iMessageTypography } from "../config/tokens";
+import type { IMessageTheme } from "../config/imessage-theme";
 
 interface HeaderProps {
   name: string;
   avatar?: string;
   isGroup?: boolean;
   participantCount?: number;
-  theme?: typeof iOS_IMESSAGE_LIGHT;
+  /** For backward compatibility - prefer using inside ThemeContext */
+  theme?: IMessageTheme;
   safeAreaTop?: number;
 }
 
@@ -15,12 +23,16 @@ export const Header: React.FC<HeaderProps> = ({
   avatar,
   isGroup = false,
   participantCount,
-  theme = iOS_IMESSAGE_LIGHT,
+  theme: propTheme,
   safeAreaTop,
 }) => {
+  // Use hook theme if available, fall back to prop
+  const contextTheme = useIMessageTheme();
+  const theme = propTheme ?? contextTheme;
+
   const { colors, typography } = theme;
-  const topInset = safeAreaTop ?? LAYOUT_CONSTANTS.SAFE_AREA_TOP;
-  const headerHeight = topInset + 44;
+  const topInset = safeAreaTop ?? iMessageSpacing.safeAreaTop;
+  const headerHeight = topInset + 44; // 44pt is iOS standard nav height
 
   return (
     <div
@@ -28,37 +40,54 @@ export const Header: React.FC<HeaderProps> = ({
         height: headerHeight,
         backgroundColor: colors.header.background,
         backdropFilter: "blur(20px)",
+        WebkitBackdropFilter: "blur(20px)",
         display: "flex",
         alignItems: "center",
-        padding: `${topInset}px ${LAYOUT_CONSTANTS.LIST_PADDING}px 0`,
-        borderBottom: `1px solid ${colors.system.separator}`,
+        padding: `${topInset}px ${iMessageSpacing.headerPaddingH}px 0`,
+        borderBottom: `0.5px solid ${colors.system.separator}`,
       }}
     >
+      {/* Back button */}
       <div
         style={{
           display: "flex",
           alignItems: "center",
           color: colors.header.icons,
-          marginRight: 12,
-          fontFamily: typography.headerTitle.family,
-          fontSize: 14,
-          fontWeight: 500,
+          marginRight: iMessageSpacing.headerAvatarGap,
+          fontFamily: iMessageTypography.fontFamily,
+          fontSize: iMessageTypography.headerTitle.fontSize,
+          fontWeight: 400,
+          cursor: "pointer",
         }}
       >
-        <span style={{ fontSize: 22, marginRight: 4 }}>‹</span>
-        Messages
+        <svg
+          width="20"
+          height="20"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          style={{ marginRight: 4 }}
+        >
+          <polyline points="15 18 9 12 15 6" />
+        </svg>
       </div>
+
+      {/* Avatar */}
       <div
         style={{
-          width: LAYOUT_CONSTANTS.HEADER_AVATAR_SIZE,
-          height: LAYOUT_CONSTANTS.HEADER_AVATAR_SIZE,
+          width: iMessageSpacing.headerAvatarSize,
+          height: iMessageSpacing.headerAvatarSize,
           borderRadius: "50%",
           backgroundColor: colors.bubble.received,
           overflow: "hidden",
-          marginRight: 10,
+          marginRight: iMessageSpacing.headerAvatarGap,
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
+          flexShrink: 0,
         }}
       >
         {avatar ? (
@@ -70,8 +99,8 @@ export const Header: React.FC<HeaderProps> = ({
         ) : (
           <span
             style={{
-              fontFamily: typography.headerTitle.family,
-              fontSize: typography.headerTitle.size,
+              fontFamily: iMessageTypography.fontFamily,
+              fontSize: iMessageTypography.headerTitle.fontSize,
               fontWeight: 500,
               color: colors.system.timestamp,
             }}
@@ -80,13 +109,18 @@ export const Header: React.FC<HeaderProps> = ({
           </span>
         )}
       </div>
-      <div style={{ flex: 1 }}>
+
+      {/* Title block */}
+      <div style={{ flex: 1, minWidth: 0 }}>
         <div
           style={{
-            fontFamily: typography.headerTitle.family,
-            fontSize: typography.headerTitle.size,
-            fontWeight: typography.headerTitle.weight,
+            fontFamily: iMessageTypography.fontFamily,
+            fontSize: iMessageTypography.headerTitle.fontSize,
+            fontWeight: iMessageTypography.headerTitle.fontWeight,
             color: colors.header.title,
+            whiteSpace: "nowrap",
+            overflow: "hidden",
+            textOverflow: "ellipsis",
           }}
         >
           {name}
@@ -94,8 +128,8 @@ export const Header: React.FC<HeaderProps> = ({
         {isGroup && participantCount ? (
           <div
             style={{
-              fontFamily: typography.headerSubtitle.family,
-              fontSize: typography.headerSubtitle.size,
+              fontFamily: iMessageTypography.fontFamily,
+              fontSize: iMessageTypography.headerSubtitle.fontSize,
               color: colors.header.subtitle,
             }}
           >
@@ -103,43 +137,47 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
         ) : null}
       </div>
-      <div style={{ display: "flex", gap: 12 }}>
+
+      {/* Action buttons */}
+      <div style={{ display: "flex", gap: iMessageSpacing.headerAvatarGap }}>
+        {/* Video call */}
         <IconButton color={colors.header.icons}>
-          <svg viewBox="0 0 24 24" width="16" height="16" fill="none">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none">
             <rect
-              x="3"
+              x="2"
               y="6"
-              width="13"
+              width="14"
               height="12"
-              rx="3"
+              rx="2"
               stroke="currentColor"
-              strokeWidth="1.8"
+              strokeWidth="1.5"
             />
             <path
-              d="M16 9.5 L21 7.5 V16.5 L16 14.5 Z"
+              d="M16 9.5 L21 7 V17 L16 14.5 Z"
               fill="currentColor"
             />
           </svg>
         </IconButton>
+        {/* Info */}
         <IconButton color={colors.header.icons}>
-          <svg viewBox="0 0 24 24" width="16" height="16" fill="none">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none">
             <circle
               cx="12"
               cy="12"
               r="9"
               stroke="currentColor"
-              strokeWidth="1.8"
+              strokeWidth="1.5"
             />
             <line
               x1="12"
-              y1="10"
+              y1="11"
               x2="12"
               y2="16"
               stroke="currentColor"
-              strokeWidth="1.8"
+              strokeWidth="1.5"
               strokeLinecap="round"
             />
-            <circle cx="12" cy="7" r="1.2" fill="currentColor" />
+            <circle cx="12" cy="8" r="1" fill="currentColor" />
           </svg>
         </IconButton>
       </div>
@@ -154,10 +192,9 @@ const IconButton: React.FC<{ color: string; children: React.ReactNode }> = ({
   return (
     <div
       style={{
-        width: 28,
-        height: 28,
-        borderRadius: 14,
-        border: `1.5px solid ${color}`,
+        width: 32,
+        height: 32,
+        borderRadius: 16,
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
