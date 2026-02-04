@@ -1,4 +1,5 @@
 import React from "react";
+import { Easing, interpolate, useCurrentFrame } from "remotion";
 import {
   keyboardTypography,
   keyboardSpacing,
@@ -11,6 +12,9 @@ export interface KeyProps {
   label: string;
   width?: number;
   isActive?: boolean;
+  currentFrame?: number;
+  pressStartFrame?: number | null;
+  pressDuration?: number;
   variant?: "default" | "special" | "space" | "return";
   scale?: number;
   theme?: KeyboardTheme;
@@ -20,10 +24,15 @@ export const Key: React.FC<KeyProps> = ({
   label,
   width = keyboardSpacing.key.defaultWidth,
   isActive = false,
+  currentFrame,
+  pressStartFrame = null,
+  pressDuration,
   variant = "default",
   scale = 1,
   theme = "light",
 }) => {
+  const frame = useCurrentFrame();
+  const resolvedFrame = currentFrame ?? frame;
   const colors = getKeyboardColors(theme);
   const shadows = createKeyboardShadows(colors);
   const scaledHeight = keyboardSpacing.key.height * scale;
@@ -66,6 +75,25 @@ export const Key: React.FC<KeyProps> = ({
   };
 
   const displayLabel = label === "space" ? "space" : label;
+  const pressProgress = (() => {
+    if (pressStartFrame === null || !pressDuration || pressDuration <= 0) {
+      return isActive ? 1 : 0;
+    }
+    const elapsed = resolvedFrame - pressStartFrame;
+    if (elapsed <= 0) return 0;
+    if (elapsed >= pressDuration) return 1;
+    return elapsed / pressDuration;
+  })();
+  const scaleProgress = interpolate(
+    pressProgress,
+    [0, 1],
+    [1, 1.02],
+    {
+      extrapolateLeft: "clamp",
+      extrapolateRight: "clamp",
+      easing: Easing.out(Easing.quad),
+    },
+  );
 
   return (
     <div
@@ -116,8 +144,7 @@ export const Key: React.FC<KeyProps> = ({
           alignItems: "center",
           justifyContent: "center",
           boxShadow: isActive ? shadows.keyActive(scale) : shadows.key(scale),
-          transform: isActive ? "scale(1.02)" : "scale(1)",
-          transition: "all 0.08s ease-out",
+          transform: `scale(${scaleProgress})`,
           zIndex: isActive ? 10 : 1,
           position: "relative",
           backdropFilter: variant === "default" ? "blur(8px)" : "none",

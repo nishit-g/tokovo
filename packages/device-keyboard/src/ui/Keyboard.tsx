@@ -58,6 +58,52 @@ export const Keyboard: React.FC<KeyboardProps> = ({
 
   const activeKey = getActiveKey();
 
+  const getKeyPressState = (
+    key: string,
+  ): { startFrame: number; duration: number } | null => {
+    const keyLower = key.toLowerCase();
+    let best: { startFrame: number; duration: number } | null = null;
+
+    for (const kp of state.activeKeyPresses) {
+      if (kp.key.toLowerCase() !== keyLower) continue;
+      const endFrame = kp.startFrame + kp.duration;
+      if (currentFrame >= kp.startFrame && currentFrame < endFrame) {
+        if (!best || kp.startFrame > best.startFrame) {
+          best = { startFrame: kp.startFrame, duration: kp.duration };
+        }
+      }
+    }
+
+    if (state.typingAnimation) {
+      const { text, startFrame, charDelay } = state.typingAnimation;
+      const elapsed = currentFrame - startFrame;
+      if (elapsed >= 0) {
+        const charIndex = Math.floor(elapsed / charDelay);
+        const frameInChar = elapsed % charDelay;
+        const keyPressDuration = Math.min(charDelay, 6);
+
+        if (charIndex < text.length && frameInChar < keyPressDuration) {
+          const activeChar = text[charIndex];
+          const matches =
+            activeChar.toLowerCase() === keyLower ||
+            (activeChar === " " && keyLower === "space");
+          if (matches) {
+            const pressStartFrame = startFrame + charIndex * charDelay;
+            const press = {
+              startFrame: pressStartFrame,
+              duration: keyPressDuration,
+            };
+            if (!best || press.startFrame > best.startFrame) {
+              best = press;
+            }
+          }
+        }
+      }
+    }
+
+    return best;
+  };
+
   const displaySuggestions =
     state.suggestions.length > 0
       ? state.suggestions.slice(0, 3)
@@ -152,6 +198,8 @@ export const Keyboard: React.FC<KeyboardProps> = ({
       <KeyRow
         keys={layout.rows[0]}
         activeKey={activeKey}
+        currentFrame={currentFrame}
+        getKeyPressState={getKeyPressState}
         scale={scale}
         theme={theme}
       />
@@ -166,6 +214,8 @@ export const Keyboard: React.FC<KeyboardProps> = ({
           <KeyRow
             keys={layout.rows[1]}
             activeKey={activeKey}
+            currentFrame={currentFrame}
+            getKeyPressState={getKeyPressState}
             scale={scale}
             theme={theme}
           />
@@ -188,6 +238,9 @@ export const Keyboard: React.FC<KeyboardProps> = ({
               width={layout.specialKeys.shift.width}
               variant="special"
               isActive={activeKey === "shift"}
+              currentFrame={currentFrame}
+              pressStartFrame={getKeyPressState("shift")?.startFrame ?? null}
+              pressDuration={getKeyPressState("shift")?.duration}
               scale={scale}
               theme={theme}
             />
@@ -199,6 +252,9 @@ export const Keyboard: React.FC<KeyboardProps> = ({
                 label={key}
                 width={sp.key.defaultWidth}
                 isActive={activeKey?.toLowerCase() === key.toLowerCase()}
+                currentFrame={currentFrame}
+                pressStartFrame={getKeyPressState(key)?.startFrame ?? null}
+                pressDuration={getKeyPressState(key)?.duration}
                 scale={scale}
                 theme={theme}
               />
@@ -210,6 +266,11 @@ export const Keyboard: React.FC<KeyboardProps> = ({
               width={layout.specialKeys.backspace.width}
               variant="special"
               isActive={activeKey === "backspace"}
+              currentFrame={currentFrame}
+              pressStartFrame={
+                getKeyPressState("backspace")?.startFrame ?? null
+              }
+              pressDuration={getKeyPressState("backspace")?.duration}
               scale={scale}
               theme={theme}
             />
@@ -221,6 +282,8 @@ export const Keyboard: React.FC<KeyboardProps> = ({
         <KeyRow
           keys={layout.rows[2]}
           activeKey={activeKey}
+          currentFrame={currentFrame}
+          getKeyPressState={getKeyPressState}
           scale={scale}
           theme={theme}
         />
@@ -230,6 +293,8 @@ export const Keyboard: React.FC<KeyboardProps> = ({
         <KeyRow
           keys={layout.rows[3]}
           activeKey={activeKey}
+          currentFrame={currentFrame}
+          getKeyPressState={getKeyPressState}
           scale={scale}
           theme={theme}
         />
@@ -269,6 +334,9 @@ export const Keyboard: React.FC<KeyboardProps> = ({
               width={layout.specialKeys.space.width}
               variant="space"
               isActive={activeKey === "space"}
+              currentFrame={currentFrame}
+              pressStartFrame={getKeyPressState("space")?.startFrame ?? null}
+              pressDuration={getKeyPressState("space")?.duration}
               scale={scale}
               theme={theme}
             />
@@ -283,6 +351,16 @@ export const Keyboard: React.FC<KeyboardProps> = ({
               width={layout.specialKeys.return.width}
               variant="return"
               isActive={activeKey === "return" || activeKey === "send"}
+              currentFrame={currentFrame}
+              pressStartFrame={
+                getKeyPressState("return")?.startFrame ??
+                getKeyPressState("send")?.startFrame ??
+                null
+              }
+              pressDuration={
+                getKeyPressState("return")?.duration ??
+                getKeyPressState("send")?.duration
+              }
               scale={scale}
               theme={theme}
             />

@@ -16,21 +16,23 @@ const ThemeContext = createContext<ThemeContextValue>({
 interface ThemeProviderProps {
   platform?: Platform;
   darkMode?: boolean;
+  themeId?: string;
   children: React.ReactNode;
 }
 
 export function ThemeProvider({
   platform = "ios",
   darkMode = false,
+  themeId,
   children,
 }: ThemeProviderProps): React.ReactElement {
   const value = useMemo<ThemeContextValue>(
     () => ({
-      theme: getTheme(platform, darkMode),
+      theme: getTheme(platform, darkMode, themeId),
       platform,
       isDarkMode: darkMode,
     }),
-    [platform, darkMode],
+    [platform, darkMode, themeId],
   );
 
   return (

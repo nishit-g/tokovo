@@ -19,7 +19,7 @@ import {
   type EpisodeDefinition,
   type FormatId,
 } from "@tokovo/episodes";
-import { EpisodeRenderer } from "./EpisodeRenderer";
+import { EpisodeRenderer, calculateEpisodeMetadata } from "./EpisodeRenderer";
 
 // =============================================================================
 // EPISODE IMPORTS (side-effect: auto-registers with registry)
@@ -81,6 +81,7 @@ function renderEpisode(ep: EpisodeDefinition) {
       width={format.width}
       height={format.height}
       defaultProps={{ episodeId: ep.meta.id }}
+      calculateMetadata={calculateEpisodeMetadata}
       schema={z.object({ episodeId: z.string() })}
     />
   );

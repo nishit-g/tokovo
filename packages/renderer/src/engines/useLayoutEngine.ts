@@ -197,6 +197,9 @@ export function useLayoutEngine(input: LayoutEngineInput): LayoutEngineOutput {
   const { world, t, focusDeviceId } = input;
   const registries = useRendererRegistries();
   const loggedMissingDevices = useRef(new Set<string>());
+  const loggedMissingViewMode = useRef(new Set<string>());
+  const loggedMissingConversation = useRef(new Set<string>());
+  const loggedMissingStory = useRef(new Set<string>());
   const cachedResult = useRef<CachedLayoutResult | null>(null);
 
   return useMemo(() => {
@@ -256,6 +259,12 @@ export function useLayoutEngine(input: LayoutEngineInput): LayoutEngineOutput {
       ] as import("@tokovo/core").BaseAppState | undefined;
 
       if (!appState?.viewMode) {
+        if (!loggedMissingViewMode.current.has(appId)) {
+          loggedMissingViewMode.current.add(appId);
+          console.warn(
+            `[LayoutEngine] App "${appId}" missing viewMode. Falling back to ${meta.viewStrategy || "TRANSITION"} in preview.`,
+          );
+        }
         if (mode === "render") {
           throw new Error(
             `LayoutEngine: App "${appId}" did not provide viewMode in render mode.`,
@@ -272,6 +281,12 @@ export function useLayoutEngine(input: LayoutEngineInput): LayoutEngineOutput {
           appState?.conversationId || extendedAppState?.activeConversationId;
 
         if (!activeConversationId && mode !== "render") {
+          if (!loggedMissingConversation.current.has(appId)) {
+            loggedMissingConversation.current.add(appId);
+            console.warn(
+              `[LayoutEngine] App "${appId}" missing conversationId for CHAT view. Using first available conversation in preview.`,
+            );
+          }
           const conversations = (appState as { conversations?: unknown })
             ?.conversations;
           if (conversations) {
@@ -292,6 +307,14 @@ export function useLayoutEngine(input: LayoutEngineInput): LayoutEngineOutput {
         }
       } else if (viewKind === "STORY") {
         activeStoryId = appState?.activeStoryId;
+        if (!activeStoryId && mode !== "render") {
+          if (!loggedMissingStory.current.has(appId)) {
+            loggedMissingStory.current.add(appId);
+            console.warn(
+              `[LayoutEngine] App "${appId}" missing activeStoryId for STORY view in preview.`,
+            );
+          }
+        }
         if (!activeStoryId && mode === "render") {
           throw new Error(
             `LayoutEngine: App "${appId}" missing activeStoryId for STORY view in render mode.`,

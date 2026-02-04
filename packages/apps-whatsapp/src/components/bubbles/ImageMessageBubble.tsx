@@ -1,4 +1,5 @@
 import React, { memo } from "react";
+import { Img, staticFile } from "remotion";
 import { Platform } from "@tokovo/core";
 import { MediaBubbleBase, TimestampRow, TimestampOverlay } from "./shared";
 import {
@@ -26,6 +27,9 @@ export const ImageMessageBubble = memo(function ImageMessageBubble({
   timestamp = "10:42",
   read = false,
 }: ImageMessageBubbleProps) {
+  const resolvedImageUrl = imageUrl.startsWith("/")
+    ? staticFile(imageUrl)
+    : imageUrl;
   return (
     <MediaBubbleBase
       isMe={isMe}
@@ -36,8 +40,8 @@ export const ImageMessageBubble = memo(function ImageMessageBubble({
       noPadding
     >
       <div style={{ position: "relative", overflow: "hidden" }}>
-        <img
-          src={imageUrl}
+        <Img
+          src={resolvedImageUrl}
           style={{
             width: "100%",
             height: "auto",

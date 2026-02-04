@@ -69,7 +69,6 @@ export const AndroidLockScreen: React.FC<NotificationLockScreenProps> = ({
                   animationProgress,
                 ),
                 opacity: getOpacityForItem(animationState, animationProgress),
-                transition: `transform ${animation.enterDuration / 30}s ${animation.curve}, opacity ${animation.enterDuration / 30}s ${animation.curve}`,
               }}
             >
               {ir.icon && (

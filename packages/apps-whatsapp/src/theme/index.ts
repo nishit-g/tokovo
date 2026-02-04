@@ -1,4 +1,5 @@
 export type Platform = "ios" | "android";
+export type WhatsAppThemeId = "whatsapp-ghibli" | "whatsapp-cyberpunk";
 
 export interface WhatsAppColorPalette {
   sentBubble: string;
@@ -239,23 +240,117 @@ export const androidDarkTheme: WhatsAppTheme = {
   },
 };
 
-export function getTheme(platform: Platform, darkMode = false): WhatsAppTheme {
-  if (platform === "ios") {
-    return darkMode ? iosDarkTheme : iosTheme;
+const GHIBLI_OVERRIDES: Partial<WhatsAppTheme> = {
+  colors: {
+    sentBubble: "#CFE6D7",
+    receivedBubble: "#FFFDF7",
+    sentBubbleText: "#24302A",
+    receivedBubbleText: "#2F2A24",
+    background: "#F7F2E8",
+    chatBackground: "#E7E0D2",
+    headerBackground: "#F2E6D6",
+    headerText: "#2B2A27",
+    inputBackground: "#FFF9F0",
+    inputText: "#2B2A27",
+    inputPlaceholder: "#9C8F7A",
+    divider: "#D7C9B6",
+    timestamp: "#8C7F6B",
+    systemMessage: "#8C7F6B",
+    typingIndicator: "#8C7F6B",
+    accent: "#6BAA7A",
+    link: "#3E7FA8",
+    unreadBadge: "#6BAA7A",
+    unreadBadgeText: "#FFFFFF",
+    onlineStatus: "#6BAA7A",
+    checkmark: "#7C8F85",
+    checkmarkRead: "#3E7FA8",
+  },
+};
+
+const CYBERPUNK_OVERRIDES: Partial<WhatsAppTheme> = {
+  colors: {
+    sentBubble: "#1A3D5A",
+    receivedBubble: "#2B103A",
+    sentBubbleText: "#E8F6FF",
+    receivedBubbleText: "#F8E7FF",
+    background: "#0B0F1E",
+    chatBackground: "#0F1326",
+    headerBackground: "#0C0F1F",
+    headerText: "#E8F6FF",
+    inputBackground: "#12172B",
+    inputText: "#E8F6FF",
+    inputPlaceholder: "#8AA0B8",
+    divider: "#1E2A3A",
+    timestamp: "#7BB4FF",
+    systemMessage: "#7BB4FF",
+    typingIndicator: "#7BB4FF",
+    accent: "#00F5FF",
+    link: "#FF2D95",
+    unreadBadge: "#FF2D95",
+    unreadBadgeText: "#0B0F1E",
+    onlineStatus: "#00F5FF",
+    checkmark: "#7BB4FF",
+    checkmarkRead: "#00F5FF",
+  },
+};
+
+function mergeTheme(base: WhatsAppTheme, overrides: Partial<WhatsAppTheme>) {
+  return {
+    ...base,
+    colors: { ...base.colors, ...overrides.colors },
+    typography: { ...base.typography, ...overrides.typography },
+    spacing: { ...base.spacing, ...overrides.spacing },
+    safeArea: { ...base.safeArea, ...overrides.safeArea },
+  };
+}
+
+function normalizeThemeId(themeId?: string): WhatsAppThemeId | null {
+  if (!themeId) return null;
+  const normalized = themeId.toLowerCase();
+  if (normalized === "whatsapp-ghibli" || normalized === "ghibli") {
+    return "whatsapp-ghibli";
   }
-  return darkMode ? androidDarkTheme : androidTheme;
+  if (normalized === "whatsapp-cyberpunk" || normalized === "cyberpunk") {
+    return "whatsapp-cyberpunk";
+  }
+  return null;
+}
+
+export function getTheme(
+  platform: Platform,
+  darkMode = false,
+  themeId?: string,
+): WhatsAppTheme {
+  const base =
+    platform === "ios"
+      ? darkMode
+        ? iosDarkTheme
+        : iosTheme
+      : darkMode
+        ? androidDarkTheme
+        : androidTheme;
+
+  const normalizedTheme = normalizeThemeId(themeId);
+  if (normalizedTheme === "whatsapp-ghibli") {
+    return mergeTheme(base, GHIBLI_OVERRIDES);
+  }
+  if (normalizedTheme === "whatsapp-cyberpunk") {
+    return mergeTheme(base, CYBERPUNK_OVERRIDES);
+  }
+  return base;
 }
 
 export function getThemeForDevice(
   deviceId: string,
   darkMode = false,
+  themeId?: string,
 ): WhatsAppTheme {
   const isAndroid =
     deviceId.toLowerCase().includes("android") ||
     deviceId.toLowerCase().includes("pixel") ||
     deviceId.toLowerCase().includes("samsung") ||
     deviceId.toLowerCase().includes("galaxy");
-  return getTheme(isAndroid ? "android" : "ios", darkMode);
+  return getTheme(isAndroid ? "android" : "ios", darkMode, themeId);
 }
 
 export { WhatsAppThemeProvider, useTheme } from "./context";

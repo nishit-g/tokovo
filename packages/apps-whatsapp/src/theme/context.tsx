@@ -6,17 +6,19 @@ const ThemeContext = createContext<WhatsAppTheme | null>(null);
 export interface WhatsAppThemeProviderProps {
   platform?: Platform;
   darkMode?: boolean;
+  themeId?: string;
   children: React.ReactNode;
 }
 
 export function WhatsAppThemeProvider({
   platform = "ios",
   darkMode = false,
+  themeId,
   children,
 }: WhatsAppThemeProviderProps) {
   const theme = useMemo(
-    () => getTheme(platform, darkMode),
-    [platform, darkMode],
+    () => getTheme(platform, darkMode, themeId),
+    [platform, darkMode, themeId],
   );
   return (
     <ThemeContext.Provider value={theme}>{children}</ThemeContext.Provider>

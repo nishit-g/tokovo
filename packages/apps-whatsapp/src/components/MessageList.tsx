@@ -1,16 +1,17 @@
 import React, { useEffect, useRef } from "react";
+import { useKeyboardHeight } from "@tokovo/react";
 import { MessageBubble } from "./MessageBubble";
 import { useMessageGrouping } from "../hooks/useMessageGrouping";
 import { MessageData } from "../types";
 import { TypingIndicator } from "./TypingIndicator";
-
-const DEFAULT_BG = "#ECE5DD";
+import { useTheme } from "../theme/context";
 
 interface MessageListProps {
   messages: MessageData[];
   ownerName?: string;
   isTyping?: boolean;
   isGroupChat?: boolean;
+  bottomPadding?: number;
 }
 
 export const MessageList: React.FC<MessageListProps> = ({
@@ -18,10 +19,13 @@ export const MessageList: React.FC<MessageListProps> = ({
   ownerName = "me",
   isTyping,
   isGroupChat = false,
+  bottomPadding = 100,
 }) => {
-  const backgroundColor = DEFAULT_BG;
+  const theme = useTheme();
+  const backgroundColor = theme.colors.chatBackground;
   const doodlePattern = "";
   const doodleOpacity = 0.04;
+  const keyboardHeight = useKeyboardHeight();
 
   const groups = useMessageGrouping(messages, ownerName);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -31,7 +35,7 @@ export const MessageList: React.FC<MessageListProps> = ({
     if (containerRef.current) {
       containerRef.current.scrollTop = containerRef.current.scrollHeight;
     }
-  }, [messages.length, lastMessageId, isTyping]);
+  }, [messages.length, lastMessageId, isTyping, keyboardHeight]);
 
   return (
     <div
@@ -46,7 +50,7 @@ export const MessageList: React.FC<MessageListProps> = ({
         padding: "10px 16px",
         overflowY: "auto",
         WebkitOverflowScrolling: "touch",
-        paddingBottom: 100,
+        paddingBottom: bottomPadding + keyboardHeight,
       }}
     >
       {doodlePattern && (

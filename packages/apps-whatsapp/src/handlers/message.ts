@@ -24,8 +24,13 @@ export function registerMessageHandlers(): void {
     const msgType = (payload.messageType ??
       msgPayload.type ??
       "text") as WhatsAppMessageType;
+    const declarationOrder = (e as { _declarationOrder?: number })
+      ._declarationOrder;
+    const fallbackIndex = ctx.conversation.messages.length;
     const msgId =
-      payload.messageId ?? msgPayload.id ?? `msg_${e.at}_${fromUser}`;
+      payload.messageId ??
+      msgPayload.id ??
+      `msg_${e.at}_${fromUser}_${declarationOrder ?? fallbackIndex}`;
 
     const newMessage: WhatsAppMessage = {
       id: msgId,
@@ -71,7 +76,13 @@ export function registerMessageHandlers(): void {
     const msgType = (payload.messageType ??
       msgPayload.type ??
       "text") as WhatsAppMessageType;
-    const msgId = payload.messageId ?? msgPayload.id ?? `msg_${e.at}_me`;
+    const declarationOrder = (e as { _declarationOrder?: number })
+      ._declarationOrder;
+    const fallbackIndex = ctx.conversation.messages.length;
+    const msgId =
+      payload.messageId ??
+      msgPayload.id ??
+      `msg_${e.at}_me_${declarationOrder ?? fallbackIndex}`;
 
     const newMessage: WhatsAppMessage = {
       id: msgId,

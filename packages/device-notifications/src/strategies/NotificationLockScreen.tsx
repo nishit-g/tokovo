@@ -82,7 +82,6 @@ export const NotificationLockScreen: React.FC<NotificationLockScreenProps> = ({
                   animationProgress,
                 ),
                 opacity: getOpacityForItem(animationState, animationProgress),
-                transition: `transform ${durationSeconds}s ${animation.curve}, opacity ${durationSeconds}s ${animation.curve}`,
               }}
             >
               {ir.icon ? (

@@ -1,4 +1,5 @@
 import React, { memo } from "react";
+import { Img, staticFile } from "remotion";
 import { Platform } from "@tokovo/core";
 import { MediaBubbleBase, TimestampOverlay } from "./shared";
 import { FONT_FAMILY } from "./constants";
@@ -19,6 +20,7 @@ export const GifMessageBubble = memo(function GifMessageBubble({
   timestamp = "10:42",
   read = false,
 }: GifMessageBubbleProps) {
+  const resolvedGifUrl = gifUrl.startsWith("/") ? staticFile(gifUrl) : gifUrl;
   return (
     <MediaBubbleBase
       isMe={isMe}
@@ -29,8 +31,8 @@ export const GifMessageBubble = memo(function GifMessageBubble({
       noPadding
     >
       <div style={{ position: "relative", overflow: "hidden" }}>
-        <img
-          src={gifUrl}
+        <Img
+          src={resolvedGifUrl}
           style={{
             width: "100%",
             height: "auto",

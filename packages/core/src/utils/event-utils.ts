@@ -30,7 +30,8 @@ export interface EventIndex {
 
 export interface KeyframedEventIndex extends EventIndex {
   keyframeInterval: number;
-  keyframes: Map<number, TimelineEvent[]>;
+  keyframes: Map<number, number>;
+  sortedEvents: TimelineEvent[];
 }
 
 export const EVENT_KIND_PRIORITY: Record<string, number> = {
@@ -121,17 +122,21 @@ export function createKeyframedEventIndex(
   keyframeInterval = 300,
 ): KeyframedEventIndex {
   const base = createEventIndex(events);
-  const keyframes = new Map<number, TimelineEvent[]>();
-  const accumulated: TimelineEvent[] = [];
+  const sortedEvents = events
+    .map((event, index) => ({ event, index }))
+    .sort((a, b) => compareEvents(a.event, b.event, a.index, b.index))
+    .map((entry) => entry.event);
+  const keyframes = new Map<number, number>();
+  let accumulatedCount = 0;
 
   for (const frame of base.frames) {
     const frameEvents = base.byFrame.get(frame);
     if (frameEvents) {
-      accumulated.push(...frameEvents);
+      accumulatedCount += frameEvents.length;
     }
 
     if (frame % keyframeInterval === 0 || frame === base.maxFrame) {
-      keyframes.set(frame, accumulated.slice());
+      keyframes.set(frame, accumulatedCount);
     }
   }
 
@@ -139,6 +144,7 @@ export function createKeyframedEventIndex(
     ...base,
     keyframeInterval,
     keyframes,
+    sortedEvents,
   };
 }
 
@@ -179,14 +185,15 @@ export function getEventsUpToKeyframed(
 ): TimelineEvent[] {
   const nearestKeyframe =
     Math.floor(t / index.keyframeInterval) * index.keyframeInterval;
-  const cached = index.keyframes.get(nearestKeyframe);
+  const cachedCount = index.keyframes.get(nearestKeyframe);
 
-  if (!cached) {
+  if (!cachedCount) {
     return getEventsUpTo(index, t);
   }
 
+  const baseEvents = index.sortedEvents.slice(0, cachedCount);
   if (t === nearestKeyframe) {
-    return cached;
+    return baseEvents;
   }
 
   const additional: TimelineEvent[] = [];
@@ -201,7 +208,7 @@ export function getEventsUpToKeyframed(
     }
   }
 
-  return [...cached, ...additional];
+  return additional.length > 0 ? baseEvents.concat(additional) : baseEvents;
 }
 
 export function getEventsAt(index: EventIndex, t: number): TimelineEvent[] {

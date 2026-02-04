@@ -16,6 +16,26 @@ import { computeTransitionLayout } from "./strategies/transition";
 export * from "./types";
 export * from "./config";
 
+const mergedConfigCache = new WeakMap<object, typeof defaultLayoutConfig>();
+
+function resolveLayoutConfig(config?: Partial<typeof defaultLayoutConfig>) {
+    if (!config) return defaultLayoutConfig;
+    const cached = mergedConfigCache.get(config as object);
+    if (cached) return cached;
+
+    const merged = {
+        ...defaultLayoutConfig,
+        ...config,
+        chat: { ...defaultLayoutConfig.chat, ...config.chat },
+        feed: { ...defaultLayoutConfig.feed, ...config.feed },
+        story: { ...defaultLayoutConfig.story, ...config.story },
+        lockscreen: { ...defaultLayoutConfig.lockscreen, ...config.lockscreen },
+        transition: { ...defaultLayoutConfig.transition, ...config.transition },
+    };
+    mergedConfigCache.set(config as object, merged);
+    return merged;
+}
+
 /**
  * Compute layout using LayoutRegistry with fallbacks.
  *
@@ -29,15 +49,7 @@ export function computeLayout(
     registry: LayoutRegistryClass,
 ): LayoutState {
     // Deep merge provided config with defaults
-    const config = {
-        ...defaultLayoutConfig,
-        ...ctx.config,
-        chat: { ...defaultLayoutConfig.chat, ...ctx.config?.chat },
-        feed: { ...defaultLayoutConfig.feed, ...ctx.config?.feed },
-        story: { ...defaultLayoutConfig.story, ...ctx.config?.story },
-        lockscreen: { ...defaultLayoutConfig.lockscreen, ...ctx.config?.lockscreen },
-        transition: { ...defaultLayoutConfig.transition, ...ctx.config?.transition },
-    };
+    const config = resolveLayoutConfig(ctx.config);
     const fullCtx = { ...ctx, config };
 
     // 1. Try app-specific layout from registry

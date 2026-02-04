@@ -67,9 +67,7 @@ export function computeChatLayout(
 
   const conversation = conversations[activeConversationId];
   const allMessages = conversation.messages as WhatsAppMessage[];
-  const messages = allMessages.filter(
-    (m: WhatsAppMessage) => m.at === undefined || m.at <= t,
-  );
+  const lastVisibleIndex = findLastVisibleIndex(allMessages, t);
 
   const layoutCache = getLayoutCache(ctx.layoutCache);
   const conversationLayout = computeConversationLayout(conversation, {
@@ -91,8 +89,8 @@ export function computeChatLayout(
   // ==========================================================
   // SINGLE-PASS LAYOUT ALGORITHM
   // ==========================================================
-  for (let i = 0; i < messages.length; i++) {
-    const msg = messages[i] as LayoutMessage;
+  for (let i = 0; i <= lastVisibleIndex; i++) {
+    const msg = allMessages[i] as LayoutMessage;
     const msgType = (msg.type || "text") as MessageType;
     const baseLayout = conversationLayout.messageLayouts.get(msg.id);
     if (!baseLayout) {
@@ -171,7 +169,10 @@ export function computeChatLayout(
     const typingWidth = typingConfig.width.fixed || typingConfig.width.min;
 
     // Calculate gap before typing indicator
-    const lastMsg = messages[messages.length - 1] as LayoutMessage | undefined;
+    const lastMsg =
+      lastVisibleIndex >= 0
+        ? (allMessages[lastVisibleIndex] as LayoutMessage)
+        : undefined;
     if (lastMsg) {
       const prevForGap: MessageForGap = {
         type: lastMsg.type as MessageType,
@@ -319,4 +320,28 @@ export function computeChatLayout(
       groups: semanticGroups,
     },
   };
+}
+
+function findLastVisibleIndex(
+  messages: WhatsAppMessage[],
+  frame: number,
+): number {
+  if (messages.length === 0) return -1;
+
+  let low = 0;
+  let high = messages.length - 1;
+  let result = -1;
+
+  while (low <= high) {
+    const mid = Math.floor((low + high) / 2);
+    const at = messages[mid]?.at ?? 0;
+    if (at <= frame) {
+      result = mid;
+      low = mid + 1;
+    } else {
+      high = mid - 1;
+    }
+  }
+
+  return result;
 }

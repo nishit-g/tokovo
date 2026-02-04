@@ -105,9 +105,7 @@ export const DNDIcon: React.FC<{ color: string }> = ({ color }) => (
 /** Format timestamp to HH:MM */
 export function formatTime(timestamp: number): string {
     const date = new Date(timestamp);
-    return date.toLocaleTimeString("en-US", {
-        hour: "numeric",
-        minute: "2-digit",
-        hour12: false,
-    });
+    const hours = date.getUTCHours();
+    const minutes = date.getUTCMinutes();
+    return `${hours.toString()}:${minutes.toString().padStart(2, "0")}`;
 }

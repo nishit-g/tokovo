@@ -1,4 +1,5 @@
 import React, { memo } from "react";
+import { Img, staticFile } from "remotion";
 import { MediaBubbleBase, TimestampRow } from "./shared";
 import {
   FONT_FAMILY,
@@ -29,6 +30,10 @@ export const LocationMessageBubble = memo(function LocationMessageBubble({
   timestamp = "10:42",
   read = false,
 }: LocationMessageBubbleProps) {
+  const resolvedMapThumbnailUrl =
+    mapThumbnailUrl && mapThumbnailUrl.startsWith("/")
+      ? staticFile(mapThumbnailUrl)
+      : mapThumbnailUrl;
   return (
     <MediaBubbleBase
       isMe={isMe}
@@ -49,8 +54,8 @@ export const LocationMessageBubble = memo(function LocationMessageBubble({
         }}
       >
         {mapThumbnailUrl ? (
-          <img
-            src={mapThumbnailUrl}
+          <Img
+            src={resolvedMapThumbnailUrl || ""}
             alt="Map"
             style={{ width: "100%", height: "100%", objectFit: "cover" }}
           />

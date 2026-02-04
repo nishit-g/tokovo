@@ -1,5 +1,5 @@
 import React, { memo } from "react";
-import { useCurrentFrame, interpolate } from "remotion";
+import { Img, staticFile, useCurrentFrame, interpolate } from "remotion";
 import { DoubleCheckIcon, MutedIcon, PinIcon } from "./Icons";
 import { whatsappColors, typography, spacing } from "./theme";
 
@@ -237,8 +237,8 @@ export const ChatListItem = memo(function ChatListItem({
           }}
         >
           {avatarUrl ? (
-            <img
-              src={avatarUrl}
+            <Img
+              src={avatarUrl.startsWith("/") ? staticFile(avatarUrl) : avatarUrl}
               alt={name}
               style={{ width: "100%", height: "100%", objectFit: "cover" }}
             />

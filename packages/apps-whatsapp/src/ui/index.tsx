@@ -33,6 +33,13 @@ export const WhatsappChatView: React.FC<WhatsappChatViewProps> = ({
   height,
   safeAreaInsets,
 }) => {
+  const resolvedDeviceId =
+    deviceId ?? Object.keys(world.devices || {})[0];
+  const appTheme =
+    resolvedDeviceId && world.devices?.[resolvedDeviceId]?.appTheme
+      ? world.devices[resolvedDeviceId]?.appTheme
+      : undefined;
+
   // 1. Resolve App State & Screen
   const appState = world.appState?.["app_whatsapp"] as WhatsAppState;
   const currentScreen = appState?.currentScreen || "chat";
@@ -80,7 +87,7 @@ export const WhatsappChatView: React.FC<WhatsappChatViewProps> = ({
   }, []);
 
   return (
-    <WhatsAppThemeProvider platform={platform}>
+    <WhatsAppThemeProvider platform={platform} themeId={appTheme}>
       <div style={{ width: "100%", height: "100%", backgroundColor: "#000" }}>
         {activeScreenContent}
       </div>

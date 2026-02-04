@@ -64,16 +64,24 @@ export interface PreparedTrackEpisode {
 export function prepareTrackEpisode(
   ir: TrackEpisodeIR,
   plugins: TokovoPlugin[],
-  options: { config?: TokovoConfigType } = {},
+  options: {
+    config?: TokovoConfigType;
+    validate?: boolean;
+    log?: boolean;
+  } = {},
 ): PreparedTrackEpisode {
   const config = options.config ?? TokovoConfig;
-  const validation = safeValidateTrackEpisodeIR(ir);
-  if (!validation.success) {
-    console.error(
-      "[prepareTrackEpisode] IR validation failed:",
-      validation.error.format(),
-    );
-    throw new Error(`Invalid TrackEpisodeIR: ${validation.error.message}`);
+  const shouldValidate = options.validate ?? true;
+  const shouldLog = options.log ?? true;
+  if (shouldValidate) {
+    const validation = safeValidateTrackEpisodeIR(ir);
+    if (!validation.success) {
+      console.error(
+        "[prepareTrackEpisode] IR validation failed:",
+        validation.error.format(),
+      );
+      throw new Error(`Invalid TrackEpisodeIR: ${validation.error.message}`);
+    }
   }
 
   const runtimeEvents = lowerEpisode(ir, plugins) as RuntimeEvent[];
@@ -97,13 +105,15 @@ export function prepareTrackEpisode(
     })),
   };
 
-  console.log("[prepareTrackEpisode] Prepared episode:", {
-    id: ir.id,
-    trackEvents: ir.events.length,
-    runtimeEvents: runtimeEvents.length,
-    devices: ir.devices.length,
-    conversations: ir.devices.flatMap((d) => d.conversations || []).length,
-  });
+  if (shouldLog) {
+    console.log("[prepareTrackEpisode] Prepared episode:", {
+      id: ir.id,
+      trackEvents: ir.events.length,
+      runtimeEvents: runtimeEvents.length,
+      devices: ir.devices.length,
+      conversations: ir.devices.flatMap((d) => d.conversations || []).length,
+    });
+  }
 
   const eventSignature = computeEventSignature(sortedEvents);
   const keyframeInterval = config.rendering.cacheKeyframeInterval;

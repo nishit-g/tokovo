@@ -21,6 +21,20 @@ import type {
   VoiceMessageReceivedEvent,
 } from "../schemas";
 import type { WhatsAppMessage } from "../types";
+import type { HandlerContext } from "./registry";
+
+function buildMediaMessageId(
+  ctx: HandlerContext,
+  e: { at: number; _declarationOrder?: number },
+  from: string,
+  kind: string,
+) {
+  const declarationOrder = (e as { _declarationOrder?: number })
+    ._declarationOrder;
+  const fallbackIndex = ctx.conversation.messages.length;
+  const orderSuffix = declarationOrder ?? fallbackIndex;
+  return `msg_${e.at}_${from}_${kind}_${orderSuffix}`;
+}
 
 let registered = false;
 
@@ -30,9 +44,10 @@ export function registerMediaHandlers(): void {
 
   registerHandler<ImageReceivedEvent>("ImageReceived", (ctx, e) => {
     const payload = e.payload ?? {};
+    const from = payload.from ?? e.from ?? "unknown";
     const msg: WhatsAppMessage = {
-      id: `msg_${e.at}_${payload.from ?? e.from}_img`,
-      from: payload.from ?? e.from,
+      id: buildMediaMessageId(ctx, e, from, "img"),
+      from,
       type: "image",
       imageUrl: payload.url,
       caption: payload.caption,
@@ -46,7 +61,7 @@ export function registerMediaHandlers(): void {
   registerHandler<ImageSentEvent>("ImageSent", (ctx, e) => {
     const payload = e.payload ?? {};
     const msg: WhatsAppMessage = {
-      id: `msg_${e.at}_me_img`,
+      id: buildMediaMessageId(ctx, e, "me", "img"),
       from: "me",
       type: "image",
       imageUrl: payload.url,
@@ -60,9 +75,10 @@ export function registerMediaHandlers(): void {
 
   registerHandler<VideoReceivedEvent>("VideoReceived", (ctx, e) => {
     const payload = e.payload ?? {};
+    const from = payload.from ?? e.from ?? "unknown";
     const msg: WhatsAppMessage = {
-      id: `msg_${e.at}_${payload.from ?? e.from}_vid`,
-      from: payload.from ?? e.from,
+      id: buildMediaMessageId(ctx, e, from, "vid"),
+      from,
       type: "video",
       thumbnailUrl: payload.url,
       videoUrl: payload.url,
@@ -78,7 +94,7 @@ export function registerMediaHandlers(): void {
   registerHandler<VideoSentEvent>("VideoSent", (ctx, e) => {
     const payload = e.payload ?? {};
     const msg: WhatsAppMessage = {
-      id: `msg_${e.at}_me_vid`,
+      id: buildMediaMessageId(ctx, e, "me", "vid"),
       from: "me",
       type: "video",
       thumbnailUrl: payload.url,
@@ -94,9 +110,10 @@ export function registerMediaHandlers(): void {
 
   registerHandler<VoiceReceivedEvent>("VoiceReceived", (ctx, e) => {
     const payload = e.payload ?? {};
+    const from = payload.from ?? e.from ?? "unknown";
     const msg: WhatsAppMessage = {
-      id: `msg_${e.at}_${payload.from ?? e.from}_voice`,
-      from: payload.from ?? e.from,
+      id: buildMediaMessageId(ctx, e, from, "voice"),
+      from,
       type: "voice",
       duration: payload.duration ?? 5,
       isPlaying: false,
@@ -111,7 +128,7 @@ export function registerMediaHandlers(): void {
   registerHandler<VoiceSentEvent>("VoiceSent", (ctx, e) => {
     const payload = e.payload ?? {};
     const msg: WhatsAppMessage = {
-      id: `msg_${e.at}_me_voice`,
+      id: buildMediaMessageId(ctx, e, "me", "voice"),
       from: "me",
       type: "voice",
       duration: payload.duration ?? 5,
@@ -126,9 +143,10 @@ export function registerMediaHandlers(): void {
 
   registerHandler<GifReceivedEvent>("GifReceived", (ctx, e) => {
     const payload = e.payload ?? {};
+    const from = payload.from ?? e.from ?? "unknown";
     const msg: WhatsAppMessage = {
-      id: `msg_${e.at}_${payload.from ?? e.from}_gif`,
-      from: payload.from ?? e.from,
+      id: buildMediaMessageId(ctx, e, from, "gif"),
+      from,
       type: "gif",
       gifUrl: payload.url,
       timestamp: ctx.generateTimestamp(e.at),
@@ -141,7 +159,7 @@ export function registerMediaHandlers(): void {
   registerHandler<GifSentEvent>("GifSent", (ctx, e) => {
     const payload = e.payload ?? {};
     const msg: WhatsAppMessage = {
-      id: `msg_${e.at}_me_gif`,
+      id: buildMediaMessageId(ctx, e, "me", "gif"),
       from: "me",
       type: "gif",
       gifUrl: payload.url,
@@ -154,9 +172,10 @@ export function registerMediaHandlers(): void {
 
   registerHandler<StickerReceivedEvent>("StickerReceived", (ctx, e) => {
     const payload = e.payload ?? {};
+    const from = payload.from ?? e.from ?? "unknown";
     const msg: WhatsAppMessage = {
-      id: `msg_${e.at}_${payload.from ?? e.from}_sticker`,
-      from: payload.from ?? e.from,
+      id: buildMediaMessageId(ctx, e, from, "sticker"),
+      from,
       type: "sticker",
       stickerUrl: payload.url,
       timestamp: ctx.generateTimestamp(e.at),
@@ -169,7 +188,7 @@ export function registerMediaHandlers(): void {
   registerHandler<StickerSentEvent>("StickerSent", (ctx, e) => {
     const payload = e.payload ?? {};
     const msg: WhatsAppMessage = {
-      id: `msg_${e.at}_me_sticker`,
+      id: buildMediaMessageId(ctx, e, "me", "sticker"),
       from: "me",
       type: "sticker",
       stickerUrl: payload.url,
@@ -182,9 +201,10 @@ export function registerMediaHandlers(): void {
 
   registerHandler<DocumentReceivedEvent>("DocumentReceived", (ctx, e) => {
     const payload = e.payload ?? {};
+    const from = payload.from ?? e.from ?? "unknown";
     const msg: WhatsAppMessage = {
-      id: `msg_${e.at}_${payload.from ?? e.from}_doc`,
-      from: payload.from ?? e.from,
+      id: buildMediaMessageId(ctx, e, from, "doc"),
+      from,
       type: "document",
       documentUrl: payload.url,
       fileName: payload.fileName ?? "Document",
@@ -200,7 +220,7 @@ export function registerMediaHandlers(): void {
   registerHandler<DocumentSentEvent>("DocumentSent", (ctx, e) => {
     const payload = e.payload ?? {};
     const msg: WhatsAppMessage = {
-      id: `msg_${e.at}_me_doc`,
+      id: buildMediaMessageId(ctx, e, "me", "doc"),
       from: "me",
       type: "document",
       documentUrl: payload.url,
@@ -216,9 +236,10 @@ export function registerMediaHandlers(): void {
 
   registerHandler<ContactReceivedEvent>("ContactReceived", (ctx, e) => {
     const payload = e.payload ?? {};
+    const from = payload.from ?? e.from ?? "unknown";
     const msg: WhatsAppMessage = {
-      id: `msg_${e.at}_${payload.from ?? e.from}_contact`,
-      from: payload.from ?? e.from,
+      id: buildMediaMessageId(ctx, e, from, "contact"),
+      from,
       type: "contact",
       contactName: payload.name,
       contactPhone: payload.phone,
@@ -233,7 +254,7 @@ export function registerMediaHandlers(): void {
   registerHandler<ContactSentEvent>("ContactSent", (ctx, e) => {
     const payload = e.payload ?? {};
     const msg: WhatsAppMessage = {
-      id: `msg_${e.at}_me_contact`,
+      id: buildMediaMessageId(ctx, e, "me", "contact"),
       from: "me",
       type: "contact",
       contactName: payload.name,
@@ -248,9 +269,10 @@ export function registerMediaHandlers(): void {
 
   registerHandler<LocationReceivedEvent>("LocationReceived", (ctx, e) => {
     const payload = e.payload ?? {};
+    const from = payload.from ?? e.from ?? "unknown";
     const msg: WhatsAppMessage = {
-      id: `msg_${e.at}_${payload.from ?? e.from}_loc`,
-      from: payload.from ?? e.from,
+      id: buildMediaMessageId(ctx, e, from, "loc"),
+      from,
       type: "location",
       latitude: payload.lat,
       longitude: payload.lng,
@@ -267,7 +289,7 @@ export function registerMediaHandlers(): void {
   registerHandler<LocationSentEvent>("LocationSent", (ctx, e) => {
     const payload = e.payload ?? {};
     const msg: WhatsAppMessage = {
-      id: `msg_${e.at}_me_loc`,
+      id: buildMediaMessageId(ctx, e, "me", "loc"),
       from: "me",
       type: "location",
       latitude: payload.lat,
@@ -325,7 +347,7 @@ export function registerMediaHandlers(): void {
     "VoiceMessageReceived",
     (ctx, e) => {
       const msg: WhatsAppMessage = {
-        id: `voice_${e.at}_${e.from}`,
+        id: buildMediaMessageId(ctx, e, e.from ?? "unknown", "voice_msg"),
         from: e.from,
         type: "voice",
         duration: e.duration,

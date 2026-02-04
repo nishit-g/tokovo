@@ -107,7 +107,7 @@ export class OSDirectorPlugin implements CompilerPlugin {
 
   private parseStartTime(time: Date | string | undefined): Date {
     if (!time) {
-      return new Date();
+      return new Date("2024-01-01T09:41:00Z");
     }
     if (typeof time === "string") {
       return new Date(time);

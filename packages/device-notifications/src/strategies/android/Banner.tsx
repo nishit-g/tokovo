@@ -21,11 +21,6 @@ export const AndroidBanner: React.FC<NotificationBannerProps> = ({
   const { ir } = notification;
   const { banner, icon, text, typography, animation } = tokens;
 
-  const enterDurationSeconds = animation.enterDuration / fps;
-  const exitDurationSeconds = animation.exitDuration / fps;
-  const animationDuration =
-    animationState === "exiting" ? exitDurationSeconds : enterDurationSeconds;
-
   const baseTop = banner.margin.top * scale;
   const stackedTop = baseTop + stackOffset * scale;
 
@@ -96,7 +91,6 @@ export const AndroidBanner: React.FC<NotificationBannerProps> = ({
         gap: banner.gap * scale,
         transform: getTransform(),
         opacity: animationValues.opacity,
-        transition: `transform ${animationDuration}s ${animation.curve}, opacity ${animationDuration}s ${animation.curve}`,
         zIndex: 9999 - stackIndex,
         fontFamily: typography.fontFamily,
         overflow: "hidden",

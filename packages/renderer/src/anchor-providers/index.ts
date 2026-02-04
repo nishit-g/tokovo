@@ -6,4 +6,5 @@
  */
 
 export * from "./notification";
+export * from "./whatsapp";
 export * from "./registry";

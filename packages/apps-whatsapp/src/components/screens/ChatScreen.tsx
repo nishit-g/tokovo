@@ -4,6 +4,7 @@ import { KeyboardAwareView } from "@tokovo/react";
 import { Header as DefaultHeader } from "../Header";
 import { MessageList } from "../MessageList";
 import { InputArea as DefaultInputArea } from "../InputArea";
+import { useTheme } from "../../theme/context";
 import {
   WhatsAppState,
   MessageData,
@@ -31,14 +32,32 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({
   width,
   height: _height,
 }) => {
+  const theme = useTheme();
   const appState = (world.appState?.["app_whatsapp"] ||
     world.appState?.["whatsapp"]) as WhatsAppState;
   const conversations = (appState?.conversations ?? {}) as Record<
     string,
     WhatsAppConversation
   >;
+  const conversationIdFromMessages = (() => {
+    let bestId: string | undefined;
+    let bestAt = -Infinity;
+    for (const [id, conv] of Object.entries(conversations)) {
+      const messages = conv?.messages ?? [];
+      const last = messages[messages.length - 1];
+      if (!last) continue;
+      const at = typeof last.at === "number" ? last.at : -Infinity;
+      if (at > bestAt) {
+        bestAt = at;
+        bestId = id;
+      }
+    }
+    return bestId;
+  })();
+
   const conversationId =
     appState?.currentConversationId ||
+    conversationIdFromMessages ||
     appState?.conversationId ||
     Object.keys(conversations)[0];
 
@@ -148,6 +167,8 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({
 
   const safeAreaTop = physicalSafeTop / scale;
   const safeAreaBottom = physicalSafeBottom / scale;
+  const bottomPadding =
+    theme.spacing.inputAreaHeight + safeAreaBottom + 12;
 
   return (
     <KeyboardAwareView>
@@ -166,6 +187,7 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({
           Object.keys(conversation.typing).some((id) => id !== "me")
         }
         isGroupChat={conversation?.type === "group"}
+        bottomPadding={bottomPadding}
       />
 
       <DefaultInputArea

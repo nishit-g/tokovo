@@ -1,4 +1,5 @@
 import React from "react";
+import { Img, staticFile } from "remotion";
 import { useTheme } from "../../theme/ThemeContext";
 
 interface MessageBubbleProps {
@@ -158,10 +159,11 @@ export const Avatar = React.memo(function Avatar({
   };
 
   if (src) {
+    const resolvedSrc = src.startsWith("/") ? staticFile(src) : src;
     return (
       <div style={avatarStyle}>
-        <img
-          src={src}
+        <Img
+          src={resolvedSrc}
           alt={name}
           style={{ width: "100%", height: "100%", objectFit: "cover" }}
         />

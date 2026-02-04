@@ -101,11 +101,22 @@ export async function calculateEpisodeMetadata({
 // =============================================================================
 
 function resolvePlugins(appIds: string[]) {
-  return appIds
-    .map((appId) => pluginManager.get(appId))
+  const missing: string[] = [];
+  const plugins = appIds
+    .map((appId) => {
+      const plugin = pluginManager.get(appId);
+      if (!plugin) missing.push(appId);
+      return plugin;
+    })
     .filter(
       (plugin): plugin is NonNullable<typeof plugin> => plugin !== undefined,
     );
+  if (missing.length > 0) {
+    console.warn(
+      `[Video-Runner] Missing plugins for appIds: ${missing.join(", ")}`,
+    );
+  }
+  return plugins;
 }
 
 // =============================================================================
@@ -144,6 +155,8 @@ const EpisodeRendererInner: React.FC<EpisodeRendererProps> = ({
   );
   const [voiceConfig, setVoiceConfig] = useState<VoiceConfig | null>(null);
   const [error, setError] = useState<Error | null>(null);
+
+  const config = useMemo(() => createConfig(), []);
 
   // === PREPARE EPISODE (runs once on mount) ===
   useEffect(() => {
@@ -200,7 +213,11 @@ const EpisodeRendererInner: React.FC<EpisodeRendererProps> = ({
         }
 
         const plugins = resolvePlugins(ep.config.apps);
-        const result = prepareTrackEpisode(ir, plugins);
+        const result = prepareTrackEpisode(ir, plugins, {
+          config,
+          validate: false,
+          log: false,
+        });
 
         setPrepared(result);
         continueRender(handle);
@@ -211,12 +228,10 @@ const EpisodeRendererInner: React.FC<EpisodeRendererProps> = ({
       }
     }
     prepare();
-  }, [episodeId, handle]);
+  }, [episodeId, handle, config]);
 
   // === ALL HOOKS MUST BE CALLED BEFORE CONDITIONAL RETURNS ===
   // (React rules of hooks - hooks must be called unconditionally)
-
-  const config = useMemo(() => createConfig(), []);
 
   // === CREATE EVENT INDEX + STATE CACHE ===
   const keyframedEventIndex = useMemo(() => {
@@ -307,13 +322,19 @@ const EpisodeRendererInner: React.FC<EpisodeRendererProps> = ({
       typeof episode.config.format === "string"
         ? getFormat(episode.config.format as FormatId)
         : episode.config.format;
-    const defaultProfile = getDeviceProfile(rendererRegistries.devices, "iphone16");
+    const deviceId =
+      worldWithVoice?.camera?.activeDeviceId ||
+      Object.keys(worldWithVoice?.devices ?? {})[0];
+    const profileId =
+      (deviceId && worldWithVoice?.devices?.[deviceId]?.profileId) ||
+      "iphone16";
+    const profile = getDeviceProfile(rendererRegistries.devices, profileId);
     const s = Math.min(
-      fmt.width / defaultProfile.dimensions.width,
-      fmt.height / defaultProfile.dimensions.height,
+      fmt.width / profile.dimensions.width,
+      fmt.height / profile.dimensions.height,
     );
     return { scale: s };
-  }, [episode]);
+  }, [episode, worldWithVoice]);
 
   // === ERROR STATE ===
   if (error) {

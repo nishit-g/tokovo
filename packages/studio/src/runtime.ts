@@ -1,4 +1,5 @@
 import { createTokovoRegistries, PluginManagerClass } from "@tokovo/react";
+import { registerBuiltInAnchorProviders } from "@tokovo/renderer";
 import { registerWhatsAppPlugin } from "@tokovo/apps-whatsapp";
 import { createDeviceRegistries, registerDevicesPlugin } from "@tokovo/devices";
 import { registerNotificationPlugin } from "@tokovo/device-notifications";
@@ -18,3 +19,4 @@ registerWhatsAppPlugin(pluginManager);
 registerNotificationPlugin(tokovoRegistries.engine);
 registerKeyboardPlugin(tokovoRegistries.engine);
 registerCameraPlugin(pluginManager, tokovoRegistries.engine);
+registerBuiltInAnchorProviders(tokovoRegistries.plugins.anchors);

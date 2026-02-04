@@ -1,4 +1,5 @@
 import React, { memo } from "react";
+import { Img, staticFile } from "remotion";
 import { Platform } from "@tokovo/core";
 import { MediaBubbleBase, DoubleCheckIcon } from "./shared";
 import {
@@ -51,8 +52,12 @@ export const ContactMessageBubble = memo(function ContactMessageBubble({
         }}
       >
         {contactAvatarUrl ? (
-          <img
-            src={contactAvatarUrl}
+          <Img
+            src={
+              contactAvatarUrl.startsWith("/")
+                ? staticFile(contactAvatarUrl)
+                : contactAvatarUrl
+            }
             alt=""
             style={{
               width: 44,

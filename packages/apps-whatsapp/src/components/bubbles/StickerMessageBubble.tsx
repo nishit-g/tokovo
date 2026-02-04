@@ -1,4 +1,5 @@
 import React, { memo } from "react";
+import { Img, staticFile } from "remotion";
 import { DoubleCheckIcon } from "./shared";
 import { FONT_FAMILY, TIMESTAMP_SIZE } from "./constants";
 
@@ -15,10 +16,13 @@ export const StickerMessageBubble = memo(function StickerMessageBubble({
   timestamp = "10:42",
   read = false,
 }: StickerMessageBubbleProps) {
+  const resolvedStickerUrl = stickerUrl.startsWith("/")
+    ? staticFile(stickerUrl)
+    : stickerUrl;
   return (
     <div style={{ position: "relative", width: 136, height: 136 }}>
-      <img
-        src={stickerUrl}
+      <Img
+        src={resolvedStickerUrl}
         style={{
           width: "100%",
           height: "100%",

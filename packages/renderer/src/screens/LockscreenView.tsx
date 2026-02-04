@@ -18,19 +18,23 @@ interface LockscreenViewProps {
   variant?: "ios" | "android";
   time?: string;
   date?: string;
+  timestampMs?: number;
 }
 
 export const LockscreenView: React.FC<LockscreenViewProps> = ({
   notifications = [],
   layout,
   variant = "ios",
-  time = "9:41",
+  time,
   date,
+  timestampMs,
 }) => {
   const isAndroid = variant === "android";
   const lockscreenLayout =
     layout?.kind === "LOCKSCREEN" ? (layout as LockscreenLayoutState) : null;
-  const displayDate = date || formatDate();
+  const clockMs = timestampMs ?? DEFAULT_CLOCK_MS;
+  const displayTime = time ?? formatClockTime(clockMs);
+  const displayDate = date ?? formatClockDate(clockMs);
 
   const activeNotifications = notifications.filter((n) => {
     if (n.dismissedAtFrame !== undefined) return false;
@@ -70,7 +74,7 @@ export const LockscreenView: React.FC<LockscreenViewProps> = ({
             fontVariantNumeric: "tabular-nums",
           }}
         >
-          {time}
+          {displayTime}
         </div>
         <div
           style={{
@@ -307,7 +311,17 @@ const NotificationCard: React.FC<{
 /**
  * Format date
  */
-function formatDate(): string {
+const DEFAULT_CLOCK_MS = Date.parse("2024-01-01T09:41:00Z");
+
+function formatClockTime(timestampMs: number): string {
+  const date = new Date(timestampMs);
+  const hour24 = date.getUTCHours();
+  const hour12 = hour24 % 12 === 0 ? 12 : hour24 % 12;
+  const minutes = date.getUTCMinutes();
+  return `${hour12}:${minutes.toString().padStart(2, "0")}`;
+}
+
+function formatClockDate(timestampMs: number): string {
   const days = [
     "Sunday",
     "Monday",
@@ -331,6 +345,6 @@ function formatDate(): string {
     "November",
     "December",
   ];
-  const now = new Date();
-  return `${days[now.getDay()]}, ${months[now.getMonth()]} ${now.getDate()}`;
+  const now = new Date(timestampMs);
+  return `${days[now.getUTCDay()]}, ${months[now.getUTCMonth()]} ${now.getUTCDate()}`;
 }

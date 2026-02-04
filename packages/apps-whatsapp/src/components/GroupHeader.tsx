@@ -11,6 +11,7 @@
 
 import React from "react";
 import { ChevronLeftIcon, VideoCallIcon, PhoneCallIcon } from "./Icons";
+import { Img, staticFile } from "remotion";
 
 export interface GroupMemberInfo {
     id: string;
@@ -147,8 +148,8 @@ export const GroupHeader: React.FC<GroupHeaderProps> = ({
 
             {/* Avatar */}
             {groupAvatar ? (
-                <img
-                    src={groupAvatar}
+                <Img
+                    src={groupAvatar.startsWith("/") ? staticFile(groupAvatar) : groupAvatar}
                     alt={groupName}
                     style={{
                         width: 40,

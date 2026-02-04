@@ -1,4 +1,5 @@
 import React, { memo } from "react";
+import { Img, staticFile } from "remotion";
 import { Platform } from "@tokovo/core";
 import {
   MediaBubbleBase,
@@ -39,6 +40,9 @@ export const VideoMessageBubble = memo(function VideoMessageBubble({
   isPlaying = false,
   playProgress = 0,
 }: VideoMessageBubbleProps) {
+  const resolvedThumbnailUrl = thumbnailUrl.startsWith("/")
+    ? staticFile(thumbnailUrl)
+    : thumbnailUrl;
   return (
     <MediaBubbleBase
       isMe={isMe}
@@ -49,8 +53,8 @@ export const VideoMessageBubble = memo(function VideoMessageBubble({
       noPadding
     >
       <div style={{ position: "relative", overflow: "hidden" }}>
-        <img
-          src={thumbnailUrl}
+        <Img
+          src={resolvedThumbnailUrl}
           style={{
             width: "100%",
             height: "auto",

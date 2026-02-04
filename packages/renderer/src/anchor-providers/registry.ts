@@ -13,6 +13,7 @@ import type {
 import type { WorldState } from "@tokovo/core";
 
 import { NotificationAnchorProvider } from "./notification";
+import { WhatsAppAnchorProvider } from "./whatsapp";
 
 export function registerBuiltInAnchorProviders(
     registry: AnchorRegistryClass,
@@ -20,6 +21,7 @@ export function registerBuiltInAnchorProviders(
     // Apps self-register when imported
     // Only Notification provider is left here (for now)
     registry.register(NotificationAnchorProvider);
+    registry.register(WhatsAppAnchorProvider);
 }
 
 // =============================================================================

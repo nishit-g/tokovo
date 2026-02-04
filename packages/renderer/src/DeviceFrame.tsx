@@ -5,6 +5,7 @@ import {
   Keyboard,
   KeyboardState,
   getKeyboardHeight,
+  getKeyboardSlideProgress,
 } from "@tokovo/device-keyboard";
 
 interface DeviceFrameProps {
@@ -70,6 +71,13 @@ export const DeviceFrame: React.FC<DeviceFrameProps> = ({
     )
   );
 
+  const keyboardSlideProgress = keyboardState
+    ? getKeyboardSlideProgress(keyboardState, currentFrame, fps)
+    : 0;
+  const keyboardPadding = keyboardState
+    ? getKeyboardHeight() * keyboardSlideProgress
+    : 0;
+
   return (
     <FrameComponent {...frameProps} statusBar={statusBar}>
       <div
@@ -77,8 +85,7 @@ export const DeviceFrame: React.FC<DeviceFrameProps> = ({
           position: "relative",
           width: "100%",
           height: "100%",
-          paddingBottom: keyboardState?.visible ? getKeyboardHeight() : 0,
-          transition: "padding-bottom 0.25s ease-out",
+          paddingBottom: keyboardPadding,
         }}
       >
         {children}

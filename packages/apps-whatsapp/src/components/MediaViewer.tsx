@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
+import { Img, Video, staticFile } from "remotion";
 
 export interface MediaViewerProps {
   mediaUrl: string;
@@ -31,6 +32,10 @@ export const MediaViewer: React.FC<MediaViewerProps> = ({
 }) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [showControls, setShowControls] = useState(true);
+  const resolvedMediaUrl = useMemo(
+    () => (mediaUrl.startsWith("/") ? staticFile(mediaUrl) : mediaUrl),
+    [mediaUrl],
+  );
 
   const handlePlayPause = () => {
     setIsPlaying(!isPlaying);
@@ -172,8 +177,8 @@ export const MediaViewer: React.FC<MediaViewerProps> = ({
         }}
       >
         {mediaType === "image" ? (
-          <img
-            src={mediaUrl}
+          <Img
+            src={resolvedMediaUrl}
             alt=""
             style={{
               maxWidth: "100%",
@@ -192,15 +197,13 @@ export const MediaViewer: React.FC<MediaViewerProps> = ({
               justifyContent: "center",
             }}
           >
-            <video
-              src={mediaUrl}
+            <Video
+              src={resolvedMediaUrl}
               style={{
                 maxWidth: "100%",
                 maxHeight: "100%",
                 objectFit: "contain",
               }}
-              playsInline
-              autoPlay={isPlaying}
             />
 
             {!isPlaying && showControls && (

@@ -40,6 +40,7 @@ export const MessageBubble = memo(function MessageBubble({
     "location",
     "gif",
   ].includes(message.type);
+  const reactionOffset = message.reactions && message.reactions.length > 0 ? 18 : 0;
 
   const shouldShowSender = showSenderName && isGroupChat && !isMe && senderName;
 
@@ -57,7 +58,7 @@ export const MessageBubble = memo(function MessageBubble({
         style={{
           alignSelf: isMe ? "flex-end" : "flex-start",
           maxWidth: "75%",
-          marginBottom: 2,
+          marginBottom: 2 + reactionOffset,
           display: "flex",
           flexDirection: "column",
           position: "relative",
@@ -192,7 +193,7 @@ export const MessageBubble = memo(function MessageBubble({
         alignSelf: isMe ? "flex-end" : "flex-start",
         maxWidth: "75%",
         position: "relative",
-        marginBottom: 2,
+        marginBottom: 2 + reactionOffset,
         display: "flex",
         flexDirection: "column",
       }}

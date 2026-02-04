@@ -1,4 +1,5 @@
 import React from "react";
+import { Img, staticFile } from "remotion";
 
 export interface LinkPreviewData {
   url: string;
@@ -28,6 +29,10 @@ export const LinkPreview: React.FC<LinkPreviewProps> = ({
   compact = false,
 }) => {
   const bgColor = isMyMessage ? "rgba(0,0,0,0.05)" : "rgba(0,0,0,0.03)";
+  const resolvedImage =
+    preview.image && preview.image.startsWith("/")
+      ? staticFile(preview.image)
+      : preview.image;
 
   return (
     <div
@@ -38,14 +43,14 @@ export const LinkPreview: React.FC<LinkPreviewProps> = ({
         backgroundColor: bgColor,
       }}
     >
-      {preview.image && (
-        <div
+      {resolvedImage && (
+        <Img
+          src={resolvedImage}
           style={{
             width: "100%",
             height: compact ? 80 : 120,
-            backgroundImage: `url(${preview.image})`,
-            backgroundSize: "cover",
-            backgroundPosition: "center",
+            objectFit: "cover",
+            display: "block",
           }}
         />
       )}
@@ -65,8 +70,12 @@ export const LinkPreview: React.FC<LinkPreviewProps> = ({
             }}
           >
             {preview.favicon && (
-              <img
-                src={preview.favicon}
+              <Img
+                src={
+                  preview.favicon.startsWith("/")
+                    ? staticFile(preview.favicon)
+                    : preview.favicon
+                }
                 alt=""
                 style={{
                   width: 12,

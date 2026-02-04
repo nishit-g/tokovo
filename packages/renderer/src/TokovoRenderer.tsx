@@ -330,6 +330,7 @@ const TokovoRendererInner: React.FC<TokovoRendererProps> = ({
                     notifications={device.os?.notifications || []}
                     layout={layout}
                     variant={variant}
+                    timestampMs={device.os?.clock}
                     // TODO: Pass Metadata Registry for icon lookup?
                     // LockscreenView already uses it (Step 642).
                   />

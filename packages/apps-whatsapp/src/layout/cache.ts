@@ -137,6 +137,7 @@ export function getLayoutCache(
 
 export class LayoutCache {
   private cache: Map<string, ConversationLayout> = new Map();
+  private hashCache: WeakMap<WhatsAppConversation, string> = new WeakMap();
   private config: LayoutCacheConfig;
   private scopeKey: string;
 
@@ -146,6 +147,9 @@ export class LayoutCache {
   }
 
   private computeLayoutHash(conversation: WhatsAppConversation): string {
+    const cached = this.hashCache.get(conversation);
+    if (cached) return cached;
+
     const messages = conversation.messages as WhatsAppMessage[];
     let hash = 2166136261;
 
@@ -243,7 +247,9 @@ export class LayoutCache {
     }
 
     // Convert to unsigned hex for compactness
-    return (hash >>> 0).toString(16);
+    const result = (hash >>> 0).toString(16);
+    this.hashCache.set(conversation, result);
+    return result;
   }
 
   private generateCacheKey(
@@ -294,6 +300,7 @@ export class LayoutCache {
 
   clear(): void {
     this.cache.clear();
+    this.hashCache = new WeakMap();
   }
 
   setEnabled(enabled: boolean): void {
