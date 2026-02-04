@@ -26,9 +26,14 @@ import {
   DEFAULT_AUDIO_STATE,
   DEFAULT_OS_STATE,
 } from "../types";
-import { replay, replayIncremental } from "../engine";
+import { replayIncremental } from "../engine";
 import type { EventIndex, KeyframedEventIndex } from "../utils/event-utils";
-import type { StateCache } from "../utils/state-cache";
+import {
+  type StateCache,
+  createStateCache,
+  ensureStateCacheIdentity,
+  computeEventSignature,
+} from "../utils/state-cache";
 import type { TokovoConfigType } from "../config";
 
 // Type for compile function (optional peer dependency)
@@ -395,6 +400,7 @@ export function prepareEpisode(
 ): CompiledEpisode {
   const { strict = true, mode = "preview", includeDebug = true } = options;
   const effectiveOptions = { ...options, strict, mode };
+  const config = options.config ?? getConfig();
 
   // 1. Build plugin registry
   const registry = buildPluginRegistry(plugins);
@@ -437,6 +443,9 @@ export function prepareEpisode(
   _validateAssets(assets, effectiveOptions);
 
   // 7. Build compiled episode with event index for O(1) lookups
+  const eventSignature = computeEventSignature(sortedEvents);
+  const keyframeInterval = config.rendering.cacheKeyframeInterval;
+
   const compiled: CompiledEpisode = {
     id: input.episodeId,
     durationInFrames: input.durationInFrames || 600,
@@ -446,15 +455,17 @@ export function prepareEpisode(
     eventIndex: createEventIndex(sortedEvents),
     keyframedEventIndex: createKeyframedEventIndex(
       sortedEvents,
-      getConfig().rendering.cacheKeyframeInterval,
+      keyframeInterval,
     ),
+    keyframeInterval,
+    eventSignature,
     assets,
   };
 
   // 8. Add debug info
   if (includeDebug) {
     compiled.debug = {
-      buildTimestamp: Date.now(),
+      buildTimestamp: options.debugTimestamp,
       sourceEpisodeId: input.episodeId,
     };
   }
@@ -495,34 +506,35 @@ export function runEpisode(
     config: options.config,
   };
 
-  const keyframedIndex =
-    options.keyframedEventIndex ??
-    episode.keyframedEventIndex ??
-    (options.stateCache
-      ? createKeyframedEventIndex(
-          episode.events,
-          options.config.rendering.cacheKeyframeInterval,
-        )
-      : undefined);
+  const keyframeInterval =
+    episode.keyframeInterval ??
+    options.config.rendering.cacheKeyframeInterval;
+  const eventSignature =
+    episode.eventSignature ?? computeEventSignature(episode.events);
 
-  if (options.stateCache && keyframedIndex) {
-    return replayIncremental(
-      episode.initialWorld,
+  let keyframedIndex =
+    options.keyframedEventIndex ?? episode.keyframedEventIndex;
+  if (!keyframedIndex || episode.keyframeInterval !== keyframeInterval) {
+    keyframedIndex = createKeyframedEventIndex(
       episode.events,
-      frame,
-      ctx,
-      keyframedIndex,
-      options.stateCache,
+      keyframeInterval,
     );
   }
 
-  const eventIndex = options.eventIndex ?? episode.eventIndex;
-  return replay(
+  const stateCache =
+    options.stateCache ?? createStateCache(keyframeInterval);
+  ensureStateCacheIdentity(stateCache, {
+    episodeId: episode.id,
+    eventSignature,
+  });
+
+  return replayIncremental(
     episode.initialWorld,
     episode.events,
     frame,
     ctx,
-    eventIndex as EventIndex | undefined,
+    keyframedIndex,
+    stateCache,
   );
 }
 

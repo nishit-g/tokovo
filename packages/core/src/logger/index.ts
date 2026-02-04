@@ -83,6 +83,8 @@ export interface LoggerConfig {
   consoleOutput: boolean;
   /** Whether to include stack traces in errors */
   includeStackTraces: boolean;
+  /** Deterministic clock override (useful for tests) */
+  clock?: () => number;
 }
 
 // =============================================================================
@@ -116,6 +118,7 @@ const DEFAULT_CONFIG: LoggerConfig = {
   components: [],
   consoleOutput: !isProduction,
   includeStackTraces: !isProduction,
+  clock: () => Date.now(),
 };
 
 // =============================================================================
@@ -252,7 +255,7 @@ class TokovoLogger {
       component,
       message,
       data,
-      timestamp: Date.now(),
+      timestamp: this.config.clock?.() ?? 0,
       frame: typeof data?.frame === "number" ? data.frame : undefined,
     };
 

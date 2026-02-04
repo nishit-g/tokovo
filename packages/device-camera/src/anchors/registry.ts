@@ -15,6 +15,7 @@ import type {
   AnchorRegistryClass,
   AnchorSnapshot,
   AnchorFraming,
+  AnchorProviderContext,
 } from "@tokovo/core";
 
 // Re-export registry class/factory from core
@@ -29,11 +30,12 @@ export { DEFAULT_FRAMING, EMPTY_SNAPSHOT } from "@tokovo/core";
 export function getAnchorsForApp(
   registry: AnchorRegistryClass,
   appId: string,
-  world: unknown,
+  world: import("@tokovo/core").WorldState,
   layout: unknown,
   deviceId: string,
+  context?: AnchorProviderContext,
 ): AnchorSnapshot {
-  return registry.getAnchorsForApp(appId, world, layout, deviceId);
+  return registry.getAnchorsForApp(appId, world, layout, deviceId, context);
 }
 
 export function getAnchorFraming(

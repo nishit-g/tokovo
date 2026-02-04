@@ -87,6 +87,7 @@ describe("notification registry and dsl", () => {
       body: "Body",
     });
     expect(show.type).toBe("SHOW_NOTIFICATION");
+    expect(show.at).toBe(1);
 
     const update = updateNotification(2, "phone", "n1", { title: "New" });
     expect(update.type).toBe("UPDATE_NOTIFICATION");
@@ -96,6 +97,7 @@ describe("notification registry and dsl", () => {
 
     const tap = tapNotification(4, "phone", "n1", "open");
     expect(tap.type).toBe("TAP_NOTIFICATION");
+    expect(tap.at).toBe(4);
 
     const swipe = swipeNotification(5, "phone", "n1", "left", "archive");
     expect(swipe.type).toBe("SWIPE_NOTIFICATION");

@@ -60,7 +60,7 @@ export {
 // ENGINES
 // ===========================================================================
 export { useLayoutEngine, useCameraEngine, useAudioEngine } from "./engines";
-export { NULL_LAYOUT_OUTPUT, NULL_AUDIO_OUTPUT } from "./engines";
+export { NULL_AUDIO_OUTPUT } from "./engines";
 export type {
   LayoutEngineInput,
   LayoutEngineOutput,

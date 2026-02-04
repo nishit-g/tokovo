@@ -21,7 +21,9 @@ const provider: AnchorProvider = {
 describe("Anchor registry", () => {
   it("registers, resolves, and clears providers", () => {
     const registry = createAnchorRegistry();
-    expect(registry.getAnchorsForApp("missing", {}, {}, "device")).toBeDefined();
+    expect(
+      registry.getAnchorsForApp("missing", {} as WorldState, {}, "device"),
+    ).toBeDefined();
 
     registry.register(provider);
     expect(registry.has("app_test")).toBe(true);
@@ -29,7 +31,12 @@ describe("Anchor registry", () => {
     expect(registry.getRegisteredApps()).toEqual(["app_test"]);
     expect(registry.getProviderCount()).toBe(1);
 
-    const snapshot = registry.getAnchorsForApp("app_test", {}, {}, "device");
+    const snapshot = registry.getAnchorsForApp(
+      "app_test",
+      {} as WorldState,
+      {},
+      "device",
+    );
     expect(snapshot.anchors?.["app_test:header"]).toBeDefined();
 
     const framing = registry.getFraming("app_test", "app_test:header");

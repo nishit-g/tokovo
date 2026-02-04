@@ -3,8 +3,6 @@ import { EngineConfig } from "../engine/config";
 import { EngineLogger, AudioLogger } from "../engine/logger";
 import {
   SnapshotCache,
-  getSnapshotCache,
-  resetSnapshotCache,
   runWithSnapshot,
 } from "../engine/snapshot-cache";
 import type { WorldState } from "../types";
@@ -100,9 +98,8 @@ describe("engine runtime utilities", () => {
     expect(skipInterval.getExact(3)).toBeNull();
   });
 
-  it("uses global snapshot cache utilities", () => {
-    resetSnapshotCache();
-    const cache = getSnapshotCache({ interval: 1 });
+  it("runs with snapshots when cache is provided", () => {
+    const cache = new SnapshotCache({ interval: 1 });
     cache.save(0, baseWorld);
 
     const result = runWithSnapshot(
@@ -113,8 +110,6 @@ describe("engine runtime utilities", () => {
     );
 
     expect((result.appState as any).ran).toBe(true);
-
-    resetSnapshotCache();
   });
 
   it("runs without snapshots when cache is empty", () => {

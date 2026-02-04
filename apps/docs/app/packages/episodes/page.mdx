@@ -62,10 +62,15 @@ Quality assurance episodes for testing rendering and features.
 
 ```typescript
 import { trackDemoV2 } from "@tokovo/episodes/production";
-import { replay } from "@tokovo/core";
+import { runEpisode, createTokovoRegistries, getConfig } from "@tokovo/core";
 
 // Get world state at 22.5 seconds
-const worldState = replay(trackDemoV2, 22.5);
+const registries = createTokovoRegistries();
+const worldState = runEpisode(trackDemoV2, 675, {
+  mode: "preview",
+  registries: registries.engine,
+  config: getConfig(),
+});
 ```
 
 **Key Pattern:** Opening → Suspense → Reveal → Celebration
@@ -245,16 +250,24 @@ Every single WhatsApp message type and action in one comprehensive demo.
 
 ```typescript
 import { trackDemoV2, bakchodiBros, cameraShowcase } from '@tokovo/episodes/production'
-import { replay, createTokovoRegistries, PluginManagerClass } from '@tokovo/core'
+import { runEpisode, createTokovoRegistries, PluginManagerClass, getConfig } from '@tokovo/core'
+import { createDeviceRegistries, registerDevicesPlugin } from "@tokovo/devices";
 
 // Get state at specific time
 const registries = createTokovoRegistries()
+const deviceRegistries = createDeviceRegistries()
+registerDevicesPlugin(registries, deviceRegistries)
+
+const rendererRegistries = {
+  plugins: registries.plugins,
+  devices: deviceRegistries,
+}
 const pluginManager = new PluginManagerClass(registries.plugins)
 
-const worldAt15s = replay(bakchodiBros, 15, {
+const worldAt15s = runEpisode(bakchodiBros, 450, {
   mode: "preview",
-  fps: 30,
   registries: registries.engine,
+  config: getConfig(),
 })
 
 // Render in Remotion
@@ -262,13 +275,10 @@ import { TokovoRenderer } from '@tokovo/renderer'
 
 function MyComposition() {
   const frame = useCurrentFrame()
-  const fps = useVideoConfig().fps
-  const t = frame / fps
-
-  const worldState = replay(bakchodiBros, t, {
+  const worldState = runEpisode(bakchodiBros, frame, {
     mode: "preview",
-    fps,
     registries: registries.engine,
+    config: getConfig(),
   })
 
   return (

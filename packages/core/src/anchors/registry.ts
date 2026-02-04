@@ -4,6 +4,7 @@ import type {
   AnchorFraming,
   Rect,
   ResolvedAnchor,
+  AnchorProviderContext,
 } from "../types/anchor";
 import { DEFAULT_FRAMING, EMPTY_SNAPSHOT } from "../types/anchor";
 import type { WorldState } from "../types";
@@ -14,6 +15,7 @@ export type {
   AnchorFraming,
   Rect,
   ResolvedAnchor,
+  AnchorProviderContext,
 };
 export { DEFAULT_FRAMING, EMPTY_SNAPSHOT };
 
@@ -54,15 +56,16 @@ export class AnchorRegistryClass {
 
   getAnchorsForApp(
     appId: string,
-    world: unknown,
+    world: WorldState,
     layout: unknown,
     deviceId: string,
+    context?: AnchorProviderContext,
   ): AnchorSnapshot {
     const provider = this.providerRegistry.get(appId);
     if (!provider) {
       return EMPTY_SNAPSHOT;
     }
-    return provider.getAnchors(world, layout, deviceId);
+    return provider.getAnchors(world, layout, deviceId, context);
   }
 
   getFraming(appId: string, anchorId: string): AnchorFraming {
@@ -96,7 +99,7 @@ export class AnchorRegistryClass {
     const device = world.devices[deviceId];
     if (!device) return null;
 
-    const snapshot = provider.getAnchors(world, device, deviceId);
+    const snapshot = provider.getAnchors(world, undefined, deviceId);
     return snapshot?.anchors?.[anchorId] || null;
   }
 

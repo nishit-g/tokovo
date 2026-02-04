@@ -28,7 +28,7 @@ import {
   getKeyboardHeight,
 } from "@tokovo/device-keyboard";
 
-import { StatusBar, iPhone16Frame } from "@tokovo/devices";
+import { useDeviceRegistries } from "@tokovo/devices";
 import { NotificationOverlay } from "./overlays";
 import { LockscreenView, HomeScreenView } from "./screens";
 import { VisualDebugger } from "./VisualDebugger";
@@ -37,7 +37,6 @@ import { useLayoutEngine } from "./engines/useLayoutEngine";
 import { useCameraEngine } from "./engines/useCameraEngine";
 import { AppErrorBoundary } from "./ErrorBoundary";
 import { RendererRegistryProvider, type RendererRegistries } from "./RegistryContext";
-import { useDeviceRegistries } from "@tokovo/devices";
 
 const log = createScopedLogger("renderer");
 
@@ -161,11 +160,34 @@ const TokovoRendererInner: React.FC<TokovoRendererProps> = ({
   // 5. RENDER — Paint the blueprints
   // ==========================================================================
 
-  // Resolve Device Frame from registry (with fallback to iPhone16)
+  const FallbackFrame: React.FC<{
+    statusBar?: React.ReactNode;
+    children: React.ReactNode;
+    variant?: string;
+  }> = ({ statusBar, children: frameChildren }) => (
+    <>
+      {statusBar}
+      {frameChildren}
+    </>
+  );
+
+  // Resolve Device Frame from registry (with safe fallback)
   const FrameComponent =
-    deviceRegistries.frames.get(device.profileId) ||
-    deviceRegistries.frames.get("iphone16") ||
-    iPhone16Frame;
+    deviceRegistries.frames.getWithFallback(device.profileId, "iphone16") ??
+    FallbackFrame;
+
+  const statusBarTheme = (() => {
+    const fallbackTheme = variant === "android" ? "dark" : "light";
+    if (!appId) return fallbackTheme;
+    const state = world.appState?.[appId];
+    if (!state || typeof state === "string") return fallbackTheme;
+    const theme = (state as { statusBarTheme?: "light" | "dark" })
+      .statusBarTheme;
+    return theme === "dark" ? "dark" : "light";
+  })();
+
+  const StatusBarStrategy =
+    deviceRegistries.statusBars.getWithFallback(variant, "ios");
 
   return (
     <div
@@ -181,19 +203,14 @@ const TokovoRendererInner: React.FC<TokovoRendererProps> = ({
         <div style={{ width: "100%", height: "100%", ...deviceStyle }}>
           {/* Extract statusBarTheme from foreground app's state */}
           <FrameComponent
+            variant={variant}
             statusBar={
-              <StatusBar
-                os={device.os}
-                variant={variant}
-                theme={(() => {
-                  if (!appId) return "light";
-                  const state = world.appState?.[appId];
-                  if (!state || typeof state === "string") return "light";
-                  const theme = (state as { statusBarTheme?: "light" | "dark" })
-                    .statusBarTheme;
-                  return theme === "dark" ? "dark" : "light";
-                })()}
-              />
+              StatusBarStrategy ? (
+                <StatusBarStrategy
+                  os={device.os}
+                  theme={statusBarTheme}
+                />
+              ) : null
             }
           >
             {/* ========================================================================= */}

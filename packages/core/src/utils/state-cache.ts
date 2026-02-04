@@ -1,4 +1,4 @@
-import type { WorldState } from "../types";
+import type { WorldState, TimelineEvent } from "../types";
 
 export interface StateCache {
   keyframeStates: Map<number, WorldState>;
@@ -6,16 +6,75 @@ export interface StateCache {
   keyframeInterval: number;
   lastComputedFrame: number;
   lastState: WorldState | null;
+  episodeId?: string;
+  eventSignature?: string;
 }
 
-export function createStateCache(keyframeInterval = 300): StateCache {
+export interface StateCacheIdentity {
+  episodeId?: string;
+  eventSignature?: string;
+}
+
+export function createStateCache(
+  keyframeInterval = 300,
+  identity: StateCacheIdentity = {},
+): StateCache {
   return {
     keyframeStates: new Map(),
     sortedFrames: [],
     keyframeInterval,
     lastComputedFrame: -1,
     lastState: null,
+    episodeId: identity.episodeId,
+    eventSignature: identity.eventSignature,
   };
+}
+
+export function computeEventSignature(events: TimelineEvent[]): string {
+  let hash = 0;
+  for (const event of events) {
+    hash = hashNumber(hash, event.at);
+    hash = hashString(hash, String(event.kind));
+    const type = (event as { type?: string }).type;
+    if (type) {
+      hash = hashString(hash, type);
+    }
+  }
+  return `${events.length}:${(hash >>> 0).toString(16)}`;
+}
+
+function hashNumber(seed: number, value: number): number {
+  const n = value | 0;
+  return ((seed << 5) - seed + n) | 0;
+}
+
+function hashString(seed: number, value: string): number {
+  let hash = seed | 0;
+  for (let i = 0; i < value.length; i++) {
+    hash = ((hash << 5) - hash + value.charCodeAt(i)) | 0;
+  }
+  return hash;
+}
+
+export function setStateCacheIdentity(
+  cache: StateCache,
+  identity: StateCacheIdentity,
+): void {
+  cache.episodeId = identity.episodeId;
+  cache.eventSignature = identity.eventSignature;
+}
+
+export function ensureStateCacheIdentity(
+  cache: StateCache,
+  identity: StateCacheIdentity,
+): void {
+  if (
+    cache.episodeId !== identity.episodeId ||
+    cache.eventSignature !== identity.eventSignature
+  ) {
+    clearStateCache(cache);
+    setStateCacheIdentity(cache, identity);
+  }
 }
 
 export function getCachedStateForFrame(

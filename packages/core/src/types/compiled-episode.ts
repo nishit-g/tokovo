@@ -84,6 +84,10 @@ export interface CompiledEpisode {
 
   /** Pre-computed keyframed index for incremental replay */
   keyframedEventIndex?: import("../utils/event-utils").KeyframedEventIndex;
+  /** Keyframe interval used when building keyframedEventIndex */
+  keyframeInterval?: number;
+  /** Signature for detecting event mismatches across caches */
+  eventSignature?: string;
 
   // === Assets ===
   /** Validated at compile time */
@@ -113,6 +117,12 @@ export interface PrepareOptions {
 
   /** Include debug info */
   includeDebug?: boolean;
+
+  /** Deterministic config used to compute derived indexes */
+  config?: import("../config").TokovoConfigType;
+
+  /** Optional deterministic timestamp for debug metadata */
+  debugTimestamp?: number;
 
   /** Episode overrides */
   overrides?: {

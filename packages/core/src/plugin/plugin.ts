@@ -222,16 +222,21 @@ export class PluginManagerClass {
               world: WorldState,
               _layout: unknown,
               deviceId: string,
+              context,
             ) => {
               const bounds = provider(world, deviceId);
               if (!bounds) {
                 return { anchors: {}, deviceId, appId: plugin.id };
               }
               const device = world.devices?.[deviceId];
-              const dims = device?.screenDimensions ?? {
-                width: 430,
-                height: 932,
-              };
+              const profileDims =
+                context?.getDeviceProfile?.(device?.profileId)?.dimensions;
+              const dims =
+                profileDims ??
+                device?.screenDimensions ?? {
+                  width: 430,
+                  height: 932,
+                };
               return {
                 anchors: {
                   [`${plugin.id}:${anchorName}`]: {

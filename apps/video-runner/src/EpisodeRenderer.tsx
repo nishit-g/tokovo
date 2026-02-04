@@ -44,7 +44,7 @@ import {
   voiceScheduleToSoundCues,
 } from "@tokovo/voice";
 import type { VoiceConfig } from "@tokovo/ir";
-import { iPhone16Profile } from "@tokovo/devices";
+import { getDeviceProfile } from "@tokovo/devices";
 import {
   episodeRegistry,
   getFormat,
@@ -307,9 +307,10 @@ const EpisodeRendererInner: React.FC<EpisodeRendererProps> = ({
       typeof episode.config.format === "string"
         ? getFormat(episode.config.format as FormatId)
         : episode.config.format;
+    const defaultProfile = getDeviceProfile(rendererRegistries.devices, "iphone16");
     const s = Math.min(
-      fmt.width / iPhone16Profile.dimensions.width,
-      fmt.height / iPhone16Profile.dimensions.height,
+      fmt.width / defaultProfile.dimensions.width,
+      fmt.height / defaultProfile.dimensions.height,
     );
     return { scale: s };
   }, [episode]);

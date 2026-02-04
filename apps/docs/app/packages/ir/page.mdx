@@ -53,7 +53,7 @@ IR sits at the center of Tokovo's architecture:
 ### Key Benefits:
 
 1. **DSL compiles to IR** — TypeScript DSL → IR JSON via `@tokovo/compiler`
-2. **Engine reads IR** — `@tokovo/core`'s `replay()` takes IR as input
+2. **Engine reads IR** — `@tokovo/core`'s `runEpisode()` consumes the compiled episode
 3. **Portability** — Save episodes as `.json` files, load them anywhere
 4. **Version control** — Git-friendly JSON you can diff and review
 5. **AI generation** — LLMs can create valid IR without knowing TypeScript
@@ -375,7 +375,11 @@ import type { TrackEpisodeIR } from "@tokovo/ir";
 const episodeIR: TrackEpisodeIR = JSON.parse(fs.readFileSync("episode.json"));
 
 // Get world state at frame 90
-const worldState = replay(episodeIR.initial, episodeIR.events, 90);
+const worldState = runEpisode(episodeIR, 90, {
+  mode: "preview",
+  registries: registries.engine,
+  config: getConfig(),
+});
 
 console.log(worldState.devices.phone.foregroundAppId);
 // Output: 'app_whatsapp'

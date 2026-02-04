@@ -162,18 +162,36 @@ The renderer consumes `WorldState` and produces React components that Remotion c
 
 ```typescript
 // Renderer flow
+import { createTokovoRegistries, getConfig } from "@tokovo/core";
+import { createDeviceRegistries, registerDevicesPlugin } from "@tokovo/devices";
+
+const tokovoRegistries = createTokovoRegistries();
+const deviceRegistries = createDeviceRegistries();
+registerDevicesPlugin(tokovoRegistries, deviceRegistries);
+
+const rendererRegistries = {
+  plugins: tokovoRegistries.plugins,
+  devices: deviceRegistries,
+};
+
 function EpisodeRenderer({ frame }: { frame: number }) {
-  const world = computeWorldState(events, frame);
+  const world = runEpisode(episode, frame, {
+    mode: "preview",
+    registries: tokovoRegistries.engine,
+    config: getConfig(),
+  });
 
   return (
-    <>
-      <CameraLayer camera={world.camera}>
-        {Object.entries(world.devices).map(([id, device]) => (
-          <DeviceFrame key={id} device={device} />
-        ))}
-      </CameraLayer>
-      <AudioLayer audio={world.audio} frame={frame} />
-    </>
+    <RendererRegistryProvider registries={rendererRegistries}>
+      <>
+        <CameraLayer camera={world.camera}>
+          {Object.entries(world.devices).map(([id, device]) => (
+            <DeviceFrame key={id} device={device} />
+          ))}
+        </CameraLayer>
+        <AudioLayer audio={world.audio} frame={frame} />
+      </>
+    </RendererRegistryProvider>
   );
 }
 ```

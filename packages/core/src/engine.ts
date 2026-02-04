@@ -127,6 +127,8 @@ export class PluginError extends Error {
  * Given same `initial`, `events`, and `t`, output is always identical.
  * No side effects except dev logging.
  *
+ * @deprecated Use replayIncremental() or runEpisode() with a StateCache.
+ *
  * @param initial - Initial world state
  * @param events - Events to apply
  * @param t - Target frame number

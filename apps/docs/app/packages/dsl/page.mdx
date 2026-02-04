@@ -807,7 +807,10 @@ The DSL compiles to IR (Intermediate Representation) JSON:
 ```typescript
 import { episode } from "@tokovo/dsl";
 import { prepareTrackEpisode } from "@tokovo/compiler";
+import { createTokovoRegistries, getConfig } from "@tokovo/core";
 import { whatsappPlugin } from "@tokovo/apps-whatsapp";
+
+const tokovoRegistries = createTokovoRegistries();
 
 // 1. Author episode with DSL
 const ir = episode("story", { fps: 30, duration: "10s" })
@@ -818,7 +821,12 @@ const ir = episode("story", { fps: 30, duration: "10s" })
 const prepared = prepareTrackEpisode(ir, [whatsappPlugin]);
 
 // 3. Use in renderer
-export const MyComposition = () => runEpisode(prepared);
+export const MyComposition = () =>
+  runEpisode(prepared, frame, {
+    mode: "preview",
+    registries: tokovoRegistries.engine,
+    config: getConfig(),
+  });
 ```
 
 **Compilation process:**

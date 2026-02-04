@@ -15,6 +15,7 @@ import type {
   WorldState,
   TokovoPlugin,
   DeviceState,
+  TokovoConfigType,
 } from "@tokovo/core";
 import { DEFAULT_CAMERA_STATE, DEFAULT_AUDIO_STATE } from "@tokovo/core";
 import {
@@ -22,6 +23,7 @@ import {
   createEventIndex,
   createKeyframedEventIndex,
   getConfig,
+  computeEventSignature,
 } from "@tokovo/core";
 import { lowerEpisode } from "./lowering";
 
@@ -36,6 +38,8 @@ export interface PreparedTrackEpisode {
   events: RuntimeEvent[];
   eventIndex?: ReturnType<typeof createEventIndex>;
   keyframedEventIndex?: ReturnType<typeof createKeyframedEventIndex>;
+  keyframeInterval?: number;
+  eventSignature?: string;
   initialWorld: WorldState;
   plugins: TokovoPlugin[];
   metadata: {
@@ -60,7 +64,9 @@ export interface PreparedTrackEpisode {
 export function prepareTrackEpisode(
   ir: TrackEpisodeIR,
   plugins: TokovoPlugin[],
+  options: { config?: TokovoConfigType } = {},
 ): PreparedTrackEpisode {
+  const config = options.config ?? getConfig();
   const validation = safeValidateTrackEpisodeIR(ir);
   if (!validation.success) {
     console.error(
@@ -99,6 +105,9 @@ export function prepareTrackEpisode(
     conversations: ir.devices.flatMap((d) => d.conversations || []).length,
   });
 
+  const eventSignature = computeEventSignature(sortedEvents);
+  const keyframeInterval = config.rendering.cacheKeyframeInterval;
+
   return {
     id: ir.id,
     fps: ir.fps,
@@ -107,8 +116,10 @@ export function prepareTrackEpisode(
     eventIndex: createEventIndex(sortedEvents),
     keyframedEventIndex: createKeyframedEventIndex(
       sortedEvents,
-      getConfig().rendering.cacheKeyframeInterval,
+      keyframeInterval,
     ),
+    keyframeInterval,
+    eventSignature,
     initialWorld,
     plugins,
     metadata,

@@ -233,7 +233,7 @@ const prepared = prepareTrackEpisode(episodeIR, [whatsappPlugin]);
 //   fps: number
 //   durationInFrames: number
 //   events: RuntimeEvent[]          ← Lowered and sorted
-//   initialWorld: WorldState         ← Ready for replay()
+//   initialWorld: WorldState         ← Ready for runEpisode()
 //   plugins: TokovoPlugin[]
 //   metadata: { markers, sections }
 // }
@@ -242,14 +242,19 @@ const prepared = prepareTrackEpisode(episodeIR, [whatsappPlugin]);
 ### With runEpisode()
 
 ```typescript
-import { runEpisode } from "@tokovo/core";
+import { runEpisode, createTokovoRegistries, getConfig } from "@tokovo/core";
 import { prepareTrackEpisode } from "@tokovo/compiler";
 
 const prepared = prepareTrackEpisode(episodeIR, [whatsappPlugin]);
 
 // Execute in Remotion
 export const MyComposition = () => {
-  return runEpisode(prepared);
+  const registries = createTokovoRegistries();
+  return runEpisode(prepared, frame, {
+    mode: "preview",
+    registries: registries.engine,
+    config: getConfig(),
+  });
 };
 ```
 
@@ -471,7 +476,11 @@ const prepared = prepareTrackEpisode(episodeIR, plugins);
 
 ```typescript
 // Runtime (happens every frame)
-const worldState = replay(prepared.initialWorld, prepared.events, currentFrame);
+const worldState = runEpisode(prepared, currentFrame, {
+  mode: "preview",
+  registries: registries.engine,
+  config: getConfig(),
+});
 ```
 
 ---

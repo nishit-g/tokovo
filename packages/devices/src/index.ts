@@ -98,10 +98,13 @@ export { IOSStatusBarStrategy, AndroidStatusBarStrategy } from "./strategies";
 // =============================================================================
 
 export { iPhone16Profile } from "./iphone16/profile";
+/** @deprecated Prefer device registries (use registerDevicesPlugin). */
 export { iPhone16Frame } from "./iphone16/Frame";
+/** @deprecated Prefer device registries (use registerDevicesPlugin). */
 export { iPhone16Shell } from "./iphone16/shell";
 
 export { PixelProfile } from "./pixel/profile";
+/** @deprecated Prefer device registries (use registerDevicesPlugin). */
 export { PixelFrame } from "./pixel/Frame";
 
 // =============================================================================
@@ -125,18 +128,33 @@ export {
 // =============================================================================
 
 import type { DeviceRegistries } from "./registries";
-import { iPhone16Profile } from "./iphone16/profile";
 import type { DeviceProfile } from "./types";
 
 /**
  * Get device profile by ID
  * @param registries - Scoped device registries
  * @param profileId - Device profile ID (e.g., "iphone16", "pixel")
- * @returns DeviceProfile or default iPhone16Profile if not found
+ * @returns DeviceProfile, falling back to first registered profile
  */
 export function getDeviceProfile(
   registries: DeviceRegistries,
   profileId: string,
 ): DeviceProfile {
-  return registries.devices.getOrDefault(profileId, "iphone16") || iPhone16Profile;
+  const profile = registries.devices.get(profileId);
+  if (profile) return profile;
+
+  if (registries.devices.has("iphone16")) {
+    const fallback = registries.devices.get("iphone16");
+    if (fallback) return fallback;
+  }
+
+  const firstId = registries.devices.list()[0];
+  if (firstId) {
+    const fallback = registries.devices.get(firstId);
+    if (fallback) return fallback;
+  }
+
+  throw new Error(
+    `Device profile not found: ${profileId}. Register device profiles before rendering.`,
+  );
 }

@@ -24,6 +24,8 @@ export interface FrameProps {
     height?: number;
     scale?: number;
     showStatusBar?: boolean;
+    statusBar?: React.ReactNode;
+    variant?: string;
     className?: string;
     style?: React.CSSProperties;
 }

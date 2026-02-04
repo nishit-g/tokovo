@@ -18,6 +18,7 @@ import {
 } from "../anchors/resolver";
 import type { AnchorProvider, Rect, AnchorSnapshot } from "../anchors/types";
 import { DEFAULT_FRAMING } from "../anchors/types";
+import type { WorldState } from "@tokovo/core";
 
 describe("camera anchor system", () => {
   beforeEach(() => {
@@ -116,7 +117,7 @@ describe("camera anchor system", () => {
 
   describe("getAnchorsForApp", () => {
     test("returns empty snapshot when provider not found", () => {
-      const result = getAnchorsForApp("nonexistent", {}, {}, "dev1");
+      const result = getAnchorsForApp("nonexistent", {} as WorldState, {}, "dev1");
 
       expect(result.anchors).toEqual({});
       expect(result.deviceId).toBe("");
@@ -143,7 +144,7 @@ describe("camera anchor system", () => {
 
       const result = getAnchorsForApp(
         "test_app",
-        { mockWorld: true },
+        { mockWorld: true } as unknown as WorldState,
         { mockLayout: true },
         "device1",
       );

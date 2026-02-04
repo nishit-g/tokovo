@@ -126,12 +126,14 @@ episode("multi-device", { fps: 30, duration: "15s" })
 ### Registering Devices
 
 ```typescript
-import { createDeviceRegistries, iPhone16Profile } from "@tokovo/devices";
+import { createTokovoRegistries } from "@tokovo/core";
+import { createDeviceRegistries, registerDevicesPlugin } from "@tokovo/devices";
 
+const tokovoRegistries = createTokovoRegistries();
 const registries = createDeviceRegistries();
 
-// Register a device profile
-registries.devices.register("iphone16", iPhone16Profile);
+// Register default device profiles/frames/strategies
+registerDevicesPlugin(tokovoRegistries, registries);
 
 // Get a registered profile
 const profile = registries.devices.get("iphone16");
@@ -154,7 +156,7 @@ import { createDeviceRegistries, getDeviceProfile } from "@tokovo/devices";
 
 const registries = createDeviceRegistries();
 
-// Get profile by ID (with fallback to default)
+// Get profile by ID (with fallback to first registered profile)
 const profile = getDeviceProfile(registries, "iphone16");
 
 // List all registered devices
@@ -279,25 +281,40 @@ Device geometry affects:
 - **Anchor Positioning**: UI elements respect Dynamic Island and home indicator
 - **Safe Areas**: Content avoids notches, status bars, rounded corners
 
-### Frame Rendering
+### Frame Rendering (Registry-First)
 
 ```typescript
-import { iPhone16Frame, PixelFrame } from '@tokovo/devices'
+import { createTokovoRegistries } from "@tokovo/core";
+import { createDeviceRegistries, registerDevicesPlugin } from "@tokovo/devices";
+import { RendererRegistryProvider, DeviceFrame } from "@tokovo/renderer";
 
-// Render device frame
-<iPhone16Frame>
-  <AppContent />
-</iPhone16Frame>
+const tokovoRegistries = createTokovoRegistries();
+const deviceRegistries = createDeviceRegistries();
+registerDevicesPlugin(tokovoRegistries, deviceRegistries);
 
-// Or use registry
-import { createDeviceRegistries } from '@tokovo/devices'
+const rendererRegistries = {
+  plugins: tokovoRegistries.plugins,
+  devices: deviceRegistries,
+};
 
-const registries = createDeviceRegistries()
-const Frame = registries.frames.get('iphone16')
+<RendererRegistryProvider registries={rendererRegistries}>
+  <DeviceFrame device={deviceState}>
+    <AppContent />
+  </DeviceFrame>
+</RendererRegistryProvider>
+```
+
+If you need the raw frame component, pull it from the registry (not direct imports):
+
+```typescript
+const Frame = registries.frames.getWithFallback(deviceState.profileId, "iphone16");
+
 <Frame>
   <AppContent />
 </Frame>
 ```
+
+> Direct imports like `iPhone16Frame` / `PixelFrame` are deprecated. Use registries so multiple renderer instances stay isolated.
 
 ## Device Reducer
 

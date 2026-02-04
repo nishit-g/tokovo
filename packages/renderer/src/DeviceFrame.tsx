@@ -1,5 +1,5 @@
 import React from "react";
-import { iPhone16Frame, PixelFrame, StatusBar } from "@tokovo/devices";
+import { useDeviceRegistries } from "@tokovo/devices";
 import { DeviceState, NotificationInstance } from "@tokovo/core";
 import {
   Keyboard,
@@ -8,7 +8,7 @@ import {
 } from "@tokovo/device-keyboard";
 
 interface DeviceFrameProps {
-  profileId: string;
+  profileId?: string;
   isLocked?: boolean;
   notifications?: NotificationInstance[];
   children: React.ReactNode;
@@ -30,6 +30,8 @@ export const DeviceFrame: React.FC<DeviceFrameProps> = ({
   currentFrame = 0,
   fps = 30,
 }) => {
+  const deviceRegistries = useDeviceRegistries();
+
   const FallbackFrame: React.FC<{
     statusBar?: React.ReactNode;
     children: React.ReactNode;
@@ -40,29 +42,32 @@ export const DeviceFrame: React.FC<DeviceFrameProps> = ({
     </>
   );
 
-  // Strategy pattern: Select frame component based on profile ID
+  const resolvedProfileId = profileId || device?.profileId || "iphone16";
+  const profile = deviceRegistries.devices.get(resolvedProfileId);
+  const platform = variant ?? profile?.platform ?? "ios";
+
+  // Strategy pattern: Select frame component from registry
   const FrameComponent =
-    profileId === "iphone16"
-      ? iPhone16Frame
-      : profileId === "pixel"
-        ? PixelFrame
-        : FallbackFrame;
+    deviceRegistries.frames.getWithFallback(resolvedProfileId, "iphone16") ??
+    FallbackFrame;
 
   // Determine props to pass to the FrameComponent
   const frameProps = {};
-  if (profileId === "iphone16" || profileId === "pixel") {
-    if (variant) {
-      Object.assign(frameProps, { variant });
-    }
+  if (variant) {
+    Object.assign(frameProps, { variant });
   }
+
+  const StatusBarStrategy =
+    deviceRegistries.statusBars.getWithFallback(platform, "ios");
 
   // StatusBar reads from device.os if available
   const statusBar = (
-    <StatusBar
-      os={device?.os}
-      variant={variant}
-      theme={variant === "android" ? "dark" : "light"}
-    />
+    StatusBarStrategy && (
+      <StatusBarStrategy
+        os={device?.os}
+        theme={platform === "android" ? "dark" : "light"}
+      />
+    )
   );
 
   return (

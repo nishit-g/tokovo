@@ -11,25 +11,38 @@ import {
   LayoutRect,
   SemanticAnchorId,
 } from "@tokovo/core";
-import type { WorldState } from "@tokovo/core";
+import type { WorldState, AnchorProviderContext } from "@tokovo/core";
 
 const APP_ID = "app_notification";
 
-// Device profile lookup (shared pattern across providers)
-function getDeviceProfile(profileId?: string): {
-  dimensions: { width: number; height: number };
-} {
-  const profiles: Record<
-    string,
-    { dimensions: { width: number; height: number } }
-  > = {
-    iphone16: { dimensions: { width: 430, height: 932 } },
-    iphone15: { dimensions: { width: 430, height: 932 } },
-    iphone14: { dimensions: { width: 390, height: 844 } },
-    pixel8: { dimensions: { width: 412, height: 915 } },
-    pixel7: { dimensions: { width: 412, height: 915 } },
-  };
-  return profiles[profileId || "iphone16"] || profiles.iphone16;
+function getViewportDimensions(
+  device: WorldState["devices"][string] | undefined,
+  context?: AnchorProviderContext,
+): { width: number; height: number } {
+  const profileId = device?.profileId;
+  const profile = context?.getDeviceProfile?.(profileId);
+  if (profile) {
+    return profile.dimensions;
+  }
+  if (device?.screenDimensions) {
+    return {
+      width: device.screenDimensions.width,
+      height: device.screenDimensions.height,
+    };
+  }
+  return { width: 430, height: 932 };
+}
+
+function hasDynamicIsland(
+  device: WorldState["devices"][string] | undefined,
+  context?: AnchorProviderContext,
+): boolean {
+  const profileId = device?.profileId;
+  const shell = context?.getDeviceShell?.(profileId);
+  if (shell) {
+    return shell.hasDynamicIsland;
+  }
+  return false;
 }
 
 /**
@@ -63,18 +76,18 @@ export const NotificationAnchorProvider: AnchorProvider = {
 
   getAnchors(
     world: WorldState,
-    layout: unknown,
+    _layout: unknown,
     deviceId: string,
+    context?: AnchorProviderContext,
   ): AnchorSnapshot {
     const anchors: Partial<Record<SemanticAnchorId, LayoutRect>> = {};
 
     const device = world.devices[deviceId];
     const notifications = device?.notifications || [];
 
-    // Get viewport dimensions from device profile (NOT hardcoded)
-    const profile = getDeviceProfile(device?.profileId);
-    const viewportWidth = profile.dimensions.width;
-    const viewportHeight = profile.dimensions.height;
+    const viewport = getViewportDimensions(device, context);
+    const viewportWidth = viewport.width;
+    const viewportHeight = viewport.height;
 
     // =========================================================================
     // HEADS-UP NOTIFICATION
@@ -98,9 +111,8 @@ export const NotificationAnchorProvider: AnchorProvider = {
     // =========================================================================
     // DYNAMIC ISLAND
     // =========================================================================
-    // Dynamic Island is always available on modern iPhones
-    const hasDynamicIsland = device?.profileId?.includes("iphone1") || true;
-    if (hasDynamicIsland) {
+    // Dynamic Island is resolved from device shell capabilities
+    if (hasDynamicIsland(device, context)) {
       anchors.dynamicIsland = {
         x: viewportWidth * 0.3,
         y: 11,

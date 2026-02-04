@@ -31,12 +31,12 @@ Tokovo's performance model is built on three principles:
 
 ### **1. Determinism = Predictable Performance**
 
-Because `replay()` is a pure function, performance is predictable:
+Because `runEpisode()` is a pure, incremental function, performance is predictable:
 
 ```ts
 // Same inputs = same computational cost
-const state1 = replay(episode, t); // 5ms
-const state2 = replay(episode, t); // 5ms (always)
+const state1 = runEpisode(episode, t, opts); // 5ms
+const state2 = runEpisode(episode, t, opts); // 5ms (always)
 ```
 
 No cache invalidation bugs. No unpredictable GC pauses from leaked listeners.
@@ -53,7 +53,7 @@ Each frame is computed independently. This means:
 
 Performance bottlenecks live in your episode data:
 
-- Too many events → slow `replay()`
+- Too many events → slow `runEpisode()`
 - Deep state nesting → expensive Immer operations
 - Large text blocks → slow layout calculations
 
@@ -67,18 +67,19 @@ Tokovo's deterministic design directly improves performance:
 
 ### **Snapshot Caching**
 
-Because `replay()` is deterministic, we can cache state snapshots:
+Because `runEpisode()` is deterministic, we can cache state snapshots:
 
 ```ts
-// packages/core/src/engine/snapshot-cache.ts
-const cache = new SnapshotCache({
-  interval: 30, // Snapshot every 30 frames
-  maxSnapshots: 100, // Keep 100 snapshots (10s @ 30fps with 30-frame interval)
-});
+// Incremental replay with a StateCache
+const stateCache = createStateCache(30);
+const keyframedIndex = createKeyframedEventIndex(episode.events, 30);
 
 // When rendering frame 148:
-const snapshot = cache.getClosest(148); // Gets snapshot at frame 120
-const state = replay(episode, 148, { startFrom: snapshot }); // Only replay 28 frames
+const state = runEpisode(episode, 148, {
+  ...opts,
+  keyframedEventIndex: keyframedIndex,
+  stateCache,
+}); // Only replays delta frames
 ```
 
 **Performance impact:** 3-5x faster rendering for 30s+ episodes.
@@ -133,7 +134,7 @@ Remotion can render frames in parallel because Tokovo is stateless:
 remotion render --concurrency=4
 ```
 
-Each worker calls `replay(episode, t)` independently. No shared state = no race conditions.
+Each worker calls `runEpisode(episode, t, opts)` independently. No shared state = no race conditions.
 
 **Performance impact:** 4x faster renders on 4-core machines.
 
@@ -143,7 +144,7 @@ Each worker calls `replay(episode, t)` independently. No shared state = no race 
 
 ### **1. Minimize Event Count**
 
-Every event increases `replay()` cost. Reduce unnecessary events:
+Every event increases `runEpisode()` cost. Reduce unnecessary events:
 
 #### ❌ **Anti-pattern: Event Spam**
 
@@ -600,9 +601,9 @@ time remotion render --output=video.mp4
 
 ```ts
 // Add to episode debug mode
-console.time("replay");
-const state = replay(episode, t);
-console.timeEnd("replay");
+console.time("runEpisode");
+const state = runEpisode(episode, t, opts);
+console.timeEnd("runEpisode");
 ```
 
 **Target:** \u003c 5ms per frame.
@@ -638,7 +639,7 @@ remotion render --log=verbose
 
 **Common Causes:**
 
-1. **Too many events:** \u003e 500 events → slow `replay()`
+1. **Too many events:** > 500 events → slow `runEpisode()`
 2. **Large images:** 4K+ images decoded every frame
 3. **Complex effects:** Multiple blurs/shadows/gradients
 4. **No concurrency:** Single-threaded rendering
@@ -799,7 +800,7 @@ Now that you've mastered performance optimization:
 
 - **[Debugging Studio](/guides/debugging-studio)** — Profile episodes visually
 - **[Episode Authoring](/guides/episode-authoring)** — Design efficient episodes from scratch
-- **[@tokovo/core Package](/packages/core)** — Deep dive into `replay()` internals
+- **[@tokovo/core Package](/packages/core)** — Deep dive into incremental replay internals
 - **[@tokovo/renderer Package](/packages/renderer)** — Layout engine architecture
 
 ---

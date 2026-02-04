@@ -105,9 +105,14 @@ const t = frame; // Tokovo uses frames directly
 The episode runner calls `runEpisode()` to replay all events up to frame `t`:
 
 ```typescript
-import { runEpisode } from "@tokovo/core";
+import { runEpisode, createTokovoRegistries, getConfig } from "@tokovo/core";
 
-const world = runEpisode(preparedEpisode, frame);
+const registries = createTokovoRegistries();
+const world = runEpisode(preparedEpisode, frame, {
+  mode: "preview",
+  registries: registries.engine,
+  config: getConfig(),
+});
 ```
 
 This produces a `WorldState` snapshot containing:
@@ -181,7 +186,7 @@ The main orchestrator component.
 - `world: WorldState` — The current world state
 - `t: number` — Current frame
 - `pluginManager: PluginManagerClass` — Registered plugins and views
-- `registries: PluginRegistries` — Scoped plugin registries
+- `registries: RendererRegistries` — Scoped plugin + device registries
 - `debug?: boolean` — Enable visual debugger
 - `focusDeviceId?: string` — Which device to render (multi-device support)
 - `eventIndex?: EventIndex` — Event index for camera transitions
@@ -190,15 +195,30 @@ The main orchestrator component.
 
 ```tsx
 import { TokovoRenderer } from "@tokovo/renderer";
-import { runEpisode, createTokovoRegistries, PluginManagerClass } from "@tokovo/core";
+import {
+  runEpisode,
+  createTokovoRegistries,
+  PluginManagerClass,
+  getConfig,
+} from "@tokovo/core";
+import { createDeviceRegistries, registerDevicesPlugin } from "@tokovo/devices";
+
+const tokovoRegistries = createTokovoRegistries();
+const deviceRegistries = createDeviceRegistries();
+registerDevicesPlugin(tokovoRegistries, deviceRegistries);
+
+const rendererRegistries = {
+  plugins: tokovoRegistries.plugins,
+  devices: deviceRegistries,
+};
+const pluginManager = new PluginManagerClass(tokovoRegistries.plugins);
 
 function MyVideo() {
-  const registries = createTokovoRegistries();
-  const pluginManager = new PluginManagerClass(registries.plugins);
   const frame = useCurrentFrame();
   const world = runEpisode(episode, frame, {
     mode: "preview",
-    registries: registries.engine,
+    registries: tokovoRegistries.engine,
+    config: getConfig(),
   });
 
   return (
@@ -215,6 +235,8 @@ function MyVideo() {
 ### `<DeviceFrame>`
 
 Renders the device chrome (bezels, notch, camera cutout).
+
+> `<DeviceFrame>` reads from scoped device registries. Wrap it with `RendererRegistryProvider` (or `DeviceRegistryProvider`) before rendering.
 
 Automatically selected based on `device.profileId`:
 
@@ -347,8 +369,8 @@ The renderer is **completely stateless** and **pure**:
 
 ```typescript
 // Frame 100 will ALWAYS produce the same UI
-const world1 = runEpisode(episode, 100);
-const world2 = runEpisode(episode, 100);
+const world1 = runEpisode(episode, 100, opts);
+const world2 = runEpisode(episode, 100, opts);
 
 // These are identical (deep equality)
 assert.deepEqual(world1, world2);
@@ -426,6 +448,7 @@ import {
   createEventIndex,
   createTokovoRegistries,
   PluginManagerClass,
+  getConfig,
 } from "@tokovo/core";
 import { AbsoluteFill, useCurrentFrame } from "remotion";
 
@@ -443,6 +466,7 @@ export const CustomVideo = ({ episode }) => {
       runEpisode(episode, frame, {
         mode: "preview",
         registries: registries.engine,
+        config: getConfig(),
       }),
     [episode, frame, registries],
   );
@@ -853,6 +877,7 @@ const pluginManager = new PluginManagerClass(registries.plugins);
 const world = runEpisode(episode, frame, {
   mode: "preview",
   registries: registries.engine,
+  config: getConfig(),
 });
 
 <TokovoRenderer

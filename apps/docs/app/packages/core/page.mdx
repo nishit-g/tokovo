@@ -41,7 +41,7 @@ The core engine is framework-agnostic and optimized for:
 │  ┌───────────────────────────────────────────────────────────┐  │
 │  │                        ENGINE                              │  │
 │  │  ┌────────────┐  ┌────────────┐  ┌────────────┐          │  │
-│  │  │  replay()  │  │ applyEvent │  │  prepare   │          │  │
+│  │  │runEpisode()│  │ applyEvent │  │  prepare   │          │  │
 │  │  │            │  │            │  │  Episode   │          │  │
 │  │  └────────────┘  └────────────┘  └────────────┘          │  │
 │  └───────────────────────────────────────────────────────────┘  │
@@ -77,22 +77,22 @@ The core engine is framework-agnostic and optimized for:
 
 ## Major Subsystems
 
-### 1. Engine — Deterministic Replay
+### 1. Engine — Deterministic Incremental Replay
 
 The core engine is a **pure function** that computes `WorldState` at any point in time:
 
 ```typescript
-function replay(
-  initial: WorldState,
-  events: TimelineEvent[],
+function runEpisode(
+  episode: CompiledEpisode,
   t: number,
+  options: RunOptions,
 ): WorldState;
 ```
 
 **How it works:**
 
-1. Filter events where `event.at <= t`
-2. Apply events sequentially using registered reducers
+1. Build or reuse a keyframed event index
+2. Apply delta events since the nearest keyframe
 3. Return immutable state snapshot
 
 **Key features:**
@@ -120,18 +120,24 @@ const initialWorld = createInitialWorld({
 
 const registries = createTokovoRegistries();
 
-const registries = createTokovoRegistries();
-
 const events = [
   { at: 0, kind: "OS", type: "UNLOCK" },
   { at: 30, kind: "OS", type: "OPEN_APP", payload: { appId: "app_whatsapp" } },
 ];
 
-// Get state at frame 45
-const worldAt45 = replay(initialWorld, events, 45, {
-  mode: "preview",
+const episode = {
+  id: "demo",
+  initialWorld,
+  events,
+  durationInFrames: 300,
   fps: 30,
+};
+
+// Get state at frame 45
+const worldAt45 = runEpisode(episode, 45, {
+  mode: "preview",
   registries: registries.engine,
+  config: getConfig(),
 });
 // worldAt45.devices.main_phone.isLocked === false
 // worldAt45.devices.main_phone.foregroundAppId === 'app_whatsapp'
@@ -604,19 +610,21 @@ const world: WorldState = {
 
 ## Most-Used APIs
 
-### `replay()` — Compute World State
+### `runEpisode()` — Compute World State (Incremental)
 
 ```typescript
-import { replay, createTokovoRegistries } from "@tokovo/core";
+import { runEpisode, createTokovoRegistries, getConfig } from "@tokovo/core";
 
 const registries = createTokovoRegistries();
 
-const worldState = replay(initialWorld, events, currentFrame, {
+const worldState = runEpisode(preparedEpisode, currentFrame, {
   mode: "preview",
-  fps: 30,
   registries: registries.engine,
+  config: getConfig(),
 });
 ```
+
+> `replay()` is still available as a low‑level API, but it is deprecated. Use `runEpisode()` (incremental replay) for all runtime paths.
 
 ### `definePlugin()` — Create Plugin
 
@@ -649,7 +657,9 @@ pluginManager.register(myPlugin);
 ```typescript
 import { prepareEpisode } from "@tokovo/core";
 
-const prepared = prepareEpisode(episodeJSON);
+const prepared = prepareEpisode(episodeJSON, plugins, {
+  config: getConfig(),
+});
 // Returns: { initial, events, metadata, warnings }
 ```
 
@@ -673,7 +683,7 @@ const bounds = registries.plugins.anchors.resolveAnchor(
 
 `@tokovo/core` guarantees **bit-for-bit determinism**:
 
-> Given the same `initial` state, `events` array, and frame number `t`, the `replay()` function will **always** produce identical output.
+> Given the same `initial` state, `events` array, `config`, and frame number `t`, `runEpisode()` will **always** produce identical output.
 
 **What this means:**
 

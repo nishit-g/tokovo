@@ -5,7 +5,11 @@
  * Providers self-register at module load time.
  */
 
-import type { AnchorSnapshot, AnchorRegistryClass } from "@tokovo/core";
+import type {
+    AnchorSnapshot,
+    AnchorRegistryClass,
+    AnchorProviderContext,
+} from "@tokovo/core";
 import type { WorldState } from "@tokovo/core";
 
 import { NotificationAnchorProvider } from "./notification";
@@ -36,11 +40,12 @@ export function getAnchorsForApp(
     appId: string,
     world: WorldState,
     layout: unknown,
-    deviceId: string
+    deviceId: string,
+    context?: AnchorProviderContext,
 ): AnchorSnapshot | null {
     const provider = registry.get(appId);
     if (!provider) return null;
-    return provider.getAnchors(world, layout, deviceId);
+    return provider.getAnchors(world, layout, deviceId, context);
 }
 
 /**
@@ -51,14 +56,15 @@ export function getAllAnchors(
     registry: AnchorRegistryClass,
     world: WorldState,
     layout: unknown,
-    deviceId: string
+    deviceId: string,
+    context?: AnchorProviderContext,
 ): Map<string, AnchorSnapshot> {
     const results = new Map<string, AnchorSnapshot>();
 
     for (const appId of registry.getRegisteredApps()) {
         const provider = registry.get(appId);
         if (provider) {
-            results.set(appId, provider.getAnchors(world, layout, deviceId));
+            results.set(appId, provider.getAnchors(world, layout, deviceId, context));
         }
     }
 

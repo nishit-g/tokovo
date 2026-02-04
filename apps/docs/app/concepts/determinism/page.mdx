@@ -15,8 +15,17 @@ In Tokovo, determinism means:
 Given an **episode** (initial world state + timeline events) and a **time `t`**, Tokovo will compute the exact same `WorldState` every single time.
 
 ```ts
-replay(episode, (t = 3.5)) === replay(episode, (t = 3.5)); // Always true
+const tokovoRegistries = createTokovoRegistries();
+const opts = {
+  mode: "preview",
+  registries: tokovoRegistries.engine,
+  config: getConfig(),
+};
+
+runEpisode(episode, 105, opts) === runEpisode(episode, 105, opts); // Always true
 ```
+
+> `replay()` is a low‑level API and is deprecated for runtime usage.
 
 This means:
 
@@ -58,7 +67,11 @@ This is crucial for:
 When debugging, you can ask: "What is the state at `t=3.5s`?"—and get the same answer every time.
 
 ```ts
-const state = replay(episode, 3.5);
+const state = runEpisode(episode, 105, {
+  mode: "preview",
+  registries: tokovoRegistries.engine,
+  config: getConfig(),
+});
 console.log(state.devices.phone1.foregroundAppId);
 // Always prints the same value for this episode + time
 ```
@@ -71,10 +84,18 @@ Determinism makes testing trivial:
 
 ```ts
 test("message appears at correct time", () => {
-  const state = replay(episode, 2.0);
+  const state = runEpisode(episode, 60, {
+    mode: "preview",
+    registries: tokovoRegistries.engine,
+    config: getConfig(),
+  });
   expect(state.appState.whatsapp.messages).toHaveLength(0);
 
-  const stateAfter = replay(episode, 2.5);
+  const stateAfter = runEpisode(episode, 75, {
+    mode: "preview",
+    registries: tokovoRegistries.engine,
+    config: getConfig(),
+  });
   expect(stateAfter.appState.whatsapp.messages).toHaveLength(1);
   expect(stateAfter.appState.whatsapp.messages[0].text).toBe("Hey!");
 });
@@ -123,32 +144,36 @@ A small change in the episode → predictable change in the video.
 
 Tokovo's architecture enforces determinism at every layer:
 
-### **1. Pure `replay()` Function**
+### **1. Pure `runEpisode()` Function**
 
 The core engine is a **pure function**:
 
 ```ts
-function replay(
-  initial: WorldState,
-  events: TimelineEvent[],
-  t: number,
-): WorldState {
-  // Filter events up to time t
-  const relevantEvents = events.filter((e) => e.at <= t);
+const stateCache = createStateCache();
+const keyframedIndex = createKeyframedEventIndex(
+  episode.events,
+  getConfig().rendering.cacheKeyframeInterval,
+);
 
-  // Reduce events into state
-  return relevantEvents.reduce((state, event) => {
-    return produce(state, (draft) => {
-      // Apply event handlers (all pure)
-      applyEvent(draft, event);
-    });
-  }, initial);
+function runEpisodeAtFrame(
+  episode: CompiledEpisode,
+  t: number,
+  options: RunOptions,
+): WorldState {
+  return replayIncremental(
+    episode.initialWorld,
+    episode.events,
+    t,
+    options,
+    keyframedIndex,
+    stateCache,
+  );
 }
 ```
 
 **Contract:**
 
-> Given the same `initial`, `events`, and `t`, `replay()` always returns the exact same `WorldState`.
+> Given the same `episode`, `options`, and `t`, `runEpisode()` always returns the exact same `WorldState`.
 
 No side effects. No hidden state. No I/O.
 
@@ -229,7 +254,7 @@ Tokovo's deterministic layers:
 │                     ▼                                        │
 │  PURE FUNCTION                                               │
 │  ┌────────────────────────────────────────────────────┐     │
-│  │ replay(ir, t) {                                    │     │
+│  │ runEpisode(episode, t) {                           │     │
 │  │   // No randomness                                 │     │
 │  │   // No I/O                                        │     │
 │  │   // No side effects                               │     │
@@ -275,25 +300,22 @@ The episode JSON is **immutable data**:
 
 No functions. No callbacks. Just data.
 
-### **`replay()` — The Pure Engine**
+### **`runEpisode()` — The Pure Engine**
 
 ```ts
-export function replay(
-  initial: WorldState,
-  events: TimelineEvent[],
+export function runEpisode(
+  episode: CompiledEpisode,
   t: number,
   ctx: ReplayContext,
 ): WorldState {
-  // Deterministic filter
-  const relevantEvents = events.filter((e) => e.at <= t);
-
-  // Deterministic reduce
-  return relevantEvents.reduce((state, event) => {
-    return produce(state, (draft) => {
-      // All handlers are pure
-      ctx.registries.eventHandlers.handle(draft, event, { frame: t });
-    });
-  }, initial);
+  return replayIncremental(
+    episode.initialWorld,
+    episode.events,
+    t,
+    ctx,
+    keyframedIndex,
+    stateCache,
+  );
 }
 ```
 
@@ -354,7 +376,7 @@ Tokovo doesn't handle live user input—episodes are pre-authored. User interact
 
 ### **2. Asset Loading (Build-Time)**
 
-Image/font loading happens at **build time**, not during `replay()`:
+Image/font loading happens at **build time**, not during `runEpisode()`:
 
 ```ts
 // Assets loaded before rendering
@@ -364,7 +386,7 @@ const assets = await loadAssets(episode.assetManifest);
 <TokovoRenderer worldState={state} assets={assets} />
 ```
 
-The renderer receives pre-loaded assets, so `replay()` stays pure.
+The renderer receives pre-loaded assets, so `runEpisode()` stays pure.
 
 ### **3. Rendering (Remotion's Responsibility)**
 
@@ -436,10 +458,10 @@ const timestamp = Date.now();
 const timestamp = ctx.frame;
 ```
 
-3. **Don't fetch external data during replay**
+3. **Don't fetch external data during runEpisode**
 
 ```ts
-// BAD: Network call during replay
+// BAD: Network call during runEpisode
 const data = await fetch("/api/messages");
 
 // GOOD: Preload data and include in episode
@@ -486,7 +508,7 @@ Search for:
 window.__TOKOVO_LOG_EVENTS = true;
 ```
 
-This logs every event processed by `replay()`, helping you spot timing inconsistencies.
+This logs every event processed by `runEpisode()`, helping you spot timing inconsistencies.
 
 ---
 

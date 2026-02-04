@@ -562,12 +562,17 @@ describe("receiveTypingSend pattern", () => {
 ### Integration Test: State at Specific Time
 
 ```typescript
-import { replay } from "@tokovo/core";
+import { runEpisode, createTokovoRegistries, getConfig } from "@tokovo/core";
 
 describe("Breakup Episode", () => {
   it("shows correct state at emotional peak", () => {
-    const ir = compile(breakupEpisode);
-    const state = replay(ir, 8); // 8 seconds in
+    const registries = createTokovoRegistries();
+    const prepared = prepareEpisode(breakupEpisode);
+    const state = runEpisode(prepared, 240, {
+      mode: "preview",
+      registries: registries.engine,
+      config: getConfig(),
+    }); // 8 seconds in
 
     // Should have Sarah's breakup message
     expect(state.apps.app_whatsapp.messages).toHaveLength(2);

@@ -27,7 +27,12 @@ import {
 } from "@tokovo/device-camera";
 
 // Core imports for world/layout types
-import type { WorldState, EventIndex, CameraTransform } from "@tokovo/core";
+import type {
+  WorldState,
+  EventIndex,
+  CameraTransform,
+  AnchorProviderContext,
+} from "@tokovo/core";
 import { DEFAULT_TRANSFORM } from "@tokovo/core";
 
 import { LayoutEngineOutput } from "./useLayoutEngine";
@@ -90,6 +95,20 @@ export function useCameraEngine(input: CameraEngineInput): CameraEngineOutput {
     // 1. GET ANCHOR SNAPSHOT
     // =====================================================================
     let anchorSnapshot: AnchorSnapshot | undefined;
+    const anchorContext: AnchorProviderContext = {
+      getDeviceProfile: (profileId?: string) => {
+        if (!profileId) return undefined;
+        return (
+          registries.devices.devices.get(profileId) ??
+          registries.devices.devices.get("iphone16")
+        );
+      },
+      getDeviceShell: (profileId?: string) => {
+        if (!profileId) return undefined;
+        return registries.devices.shells.get(profileId);
+      },
+    };
+
     if (appId) {
       anchorSnapshot = getAnchorsForApp(
         registries.plugins.anchors,
@@ -97,6 +116,7 @@ export function useCameraEngine(input: CameraEngineInput): CameraEngineOutput {
         world,
         layout,
         deviceId,
+        anchorContext,
       );
     }
 

@@ -42,7 +42,7 @@ tokovo/
 │   └── video-runner/      # Remotion rendering app
 │
 └── packages/
-    ├── core/              # WorldState, replay() engine
+    ├── core/              # WorldState, runEpisode() engine
     ├── devices/           # Device profiles
     ├── apps-whatsapp/     # WhatsApp runtime + UI
     ├── renderer/          # React rendering layer
@@ -104,8 +104,8 @@ Tokovo consists of 14 packages organized into logical layers:
 
 ### Core Packages (P0 — Required)
 
-- **`@tokovo/core`** — The heart of Tokovo. Contains `WorldState`, `TimelineEvent`, and the deterministic `replay()` engine
-- **`@tokovo/renderer`** — React rendering layer with `TokovoRenderer`, `DeviceFrame`, and `AppViewRegistry`
+- **`@tokovo/core`** — The heart of Tokovo. Contains `WorldState`, `TimelineEvent`, and the deterministic `runEpisode()` engine
+- **`@tokovo/renderer`** — React rendering layer with `TokovoRenderer`, `DeviceFrame`, and `RendererRegistryProvider`
 - **`@tokovo/devices`** — Device profiles (iPhone 16, Pixel) and device state management
 - **`@tokovo/apps-whatsapp`** — WhatsApp runtime reducer and React UI components
 

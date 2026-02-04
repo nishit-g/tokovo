@@ -59,7 +59,7 @@ This architecture makes Tokovo a **data-driven video engine** — perfect for ge
 │  ┌───────────────────────────────────────────────────────────┐  │
 │  │  LAYER 3: ENGINE                                           │  │
 │  │  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐        │  │
-│  │  │   replay()  │  │   Plugin    │  │  Registries │        │  │
+│  │  │ runEpisode()│  │   Plugin    │  │  Registries │        │  │
 │  │  │   (pure)    │  │   System    │  │  (App/Sound)│        │  │
 │  │  └──────┬──────┘  └─────────────┘  └─────────────┘        │  │
 │  └─────────┼──────────────────────────────────────────────────┘  │
@@ -156,27 +156,29 @@ The compiler **lowers** high-level DSL code into Intermediate Representation (IR
 
 The Engine Layer is **pure logic**. It knows nothing about React, Remotion, or rendering. Its sole job: **compute the world state at any given time `t`**.
 
-#### `replay()` Function
+#### `runEpisode()` Function (Incremental)
 
 The heart of Tokovo's determinism:
 
 ```ts
-function replay(
-  initialWorld: WorldState,
-  events: TimelineEvent[],
+function runEpisode(
+  episode: CompiledEpisode,
   t: number,
+  options: RunOptions,
 ): WorldState;
 ```
 
 **How it works:**
 
-1. Filter events where `event.at <= t`
-2. Sort events by time
-3. Reduce them into state using Immer-based reducers
+1. Build or reuse a keyframed event index
+2. Use a `StateCache` to avoid replaying from frame 0
+3. Apply only the delta events since the nearest keyframe
 4. Return the world snapshot at time `t`
 
+> `replay()` remains as a low‑level API but is deprecated for runtime use.
+
 This is how Remotion asks Tokovo: _"At frame 148, what should the phone look like?"_  
-Tokovo answers **deterministically** by replaying all events up to that moment.
+Tokovo answers **deterministically** by running incremental replay up to that moment.
 
 #### Plugin System
 
@@ -318,7 +320,7 @@ Remotion provides:
 - Preview player
 - Audio synchronization
 
-Tokovo hooks into Remotion's `useCurrentFrame()` to compute `t`, then calls `replay(t)` to get state.
+Tokovo hooks into Remotion's `useCurrentFrame()` to compute `t`, then calls `runEpisode(t)` to get state.
 
 #### Video Output
 
@@ -347,7 +349,7 @@ How data moves through the system:
 │                                     │                            │
 │  3. REPLAY                          ▼                            │
 │  ┌────────────────────────────────────────────────────┐          │
-│  │                    replay(t)                        │          │
+│  │                   runEpisode(t)                     │          │
 │  │  ┌──────────┐    ┌──────────┐    ┌──────────┐     │          │
 │  │  │ events   │───▶│ reducers │───▶│ WorldState│     │          │
 │  │  │ at ≤ t   │    │ (Immer)  │    │ @ time t │     │          │
@@ -476,7 +478,7 @@ This overview covers Tokovo's high-level architecture. For deeper dives:
 Tokovo is a **four-layer, deterministic video engine**:
 
 1. **Content Layer** — Episodes (JSON/DSL) → IR
-2. **Engine Layer** — `replay(t)` → WorldState
+2. **Engine Layer** — `runEpisode(t)` → WorldState
 3. **Layout Layer** — WorldState → Geometry
 4. **Render Layer** — Geometry → Video
 

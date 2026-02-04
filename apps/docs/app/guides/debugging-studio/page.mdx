@@ -178,9 +178,14 @@ This enables **frame-by-frame debugging** without waiting for renders.
 Studio computes WorldState at the current frame using:
 
 ```typescript
-import { runEpisode } from "@tokovo/core";
+import { runEpisode, createTokovoRegistries, getConfig } from "@tokovo/core";
 
-const world = runEpisode(episode, currentFrame, { mode: "preview" });
+const registries = createTokovoRegistries();
+const world = runEpisode(episode, currentFrame, {
+  mode: "preview",
+  registries: registries.engine,
+  config: getConfig(),
+});
 ```
 
 **What's Inspectable:**
@@ -632,11 +637,19 @@ Studio previews use the **same rendering pipeline** as Remotion:
 
 ```typescript
 // Studio preview (EpisodeRenderer.tsx)
-const world = runEpisode(episode, frame, { mode: "preview" });
+const world = runEpisode(episode, frame, {
+  mode: "preview",
+  registries: tokovoRegistries.engine,
+  config: getConfig(),
+});
 return <TokovoRenderer world={world} t={frame} />;
 
 // Remotion render (video-runner)
-const world = runEpisode(episode, frame, { mode: "render" });
+const world = runEpisode(episode, frame, {
+  mode: "render",
+  registries: tokovoRegistries.engine,
+  config: getConfig(),
+});
 return <TokovoRenderer world={world} t={frame} />;
 ```
 

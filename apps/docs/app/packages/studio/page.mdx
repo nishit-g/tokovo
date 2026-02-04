@@ -191,9 +191,15 @@ Debug panel for inspecting state at current frame:
 ```typescript
 // Planned API
 import { InspectorPanel } from "@tokovo/react/timeline";
+import { createTokovoRegistries, getConfig } from "@tokovo/core";
 
 function DebugView({ episode, frame }) {
-  const world = runEpisode(episode, frame);
+  const registries = createTokovoRegistries();
+  const world = runEpisode(episode, frame, {
+    mode: "preview",
+    registries: registries.engine,
+    config: getConfig(),
+  });
 
   return (
     <InspectorPanel
@@ -290,12 +296,22 @@ If Studio doesn't meet your needs, you can build custom editors using `@tokovo/r
 ```typescript
 import { useState } from "react";
 import { TokovoProvider, useDevice, useWorld } from "@tokovo/react";
-import { runEpisode, createTokovoRegistries, PluginManagerClass } from "@tokovo/core";
+import {
+  runEpisode,
+  createTokovoRegistries,
+  PluginManagerClass,
+  getConfig,
+} from "@tokovo/core";
 import type { PreparedTrackEpisode } from "@tokovo/compiler";
 
 function CustomStudio({ episode }: { episode: PreparedTrackEpisode }) {
   const [frame, setFrame] = useState(0);
-  const world = runEpisode(episode, frame);
+  const registries = createTokovoRegistries();
+  const world = runEpisode(episode, frame, {
+    mode: "preview",
+    registries: registries.engine,
+    config: getConfig(),
+  });
 
   return (
     <div className="studio-layout">
@@ -360,25 +376,44 @@ function PhonePreview() {
 Here's a minimal episode preview using Studio's architecture:
 
 ```typescript
-import { useState, useMemo } from "react";
-import { runEpisode } from "@tokovo/core";
+import { useState, useMemo, useEffect } from "react";
+import {
+  runEpisode,
+  createTokovoRegistries,
+  PluginManagerClass,
+  getConfig,
+} from "@tokovo/core";
 import { TokovoRenderer } from "@tokovo/renderer";
+import { createDeviceRegistries, registerDevicesPlugin } from "@tokovo/devices";
 import type { PreparedTrackEpisode } from "@tokovo/compiler";
 
 function MinimalStudio({ episode }: { episode: PreparedTrackEpisode }) {
   const [frame, setFrame] = useState(0);
   const [playing, setPlaying] = useState(false);
   const registries = useMemo(() => createTokovoRegistries(), []);
+  const deviceRegistries = useMemo(() => createDeviceRegistries(), []);
+  const rendererRegistries = useMemo(
+    () => ({
+      plugins: registries.plugins,
+      devices: deviceRegistries,
+    }),
+    [registries, deviceRegistries],
+  );
   const pluginManager = useMemo(
     () => new PluginManagerClass(registries.plugins),
     [registries],
   );
+
+  useEffect(() => {
+    registerDevicesPlugin(registries, deviceRegistries);
+  }, [registries, deviceRegistries]);
 
   const world = useMemo(
     () =>
       runEpisode(episode, frame, {
         mode: "preview",
         registries: registries.engine,
+        config: getConfig(),
       }),
     [episode, frame, registries]
   );

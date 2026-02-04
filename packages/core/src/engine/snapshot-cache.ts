@@ -3,19 +3,23 @@ import type { WorldState } from "../types";
 export interface StateSnapshot {
   frame: number;
   state: WorldState;
-  timestamp: number;
+  timestamp?: number;
 }
 
 export interface SnapshotCacheConfig {
   interval: number;
   maxSnapshots: number;
   enabled: boolean;
+  includeTimestamp: boolean;
+  clock?: () => number;
+  cloneState?: (state: WorldState) => WorldState;
 }
 
 const DEFAULT_CONFIG: SnapshotCacheConfig = {
   interval: 30,
   maxSnapshots: 100,
   enabled: true,
+  includeTimestamp: false,
 };
 
 export class SnapshotCache {
@@ -42,10 +46,14 @@ export class SnapshotCache {
       }
     }
 
+    const cloneState =
+      this.config.cloneState ?? ((value: WorldState) => structuredClone(value));
     const snapshot: StateSnapshot = {
       frame,
-      state: structuredClone(state),
-      timestamp: Date.now(),
+      state: cloneState(state),
+      timestamp: this.config.includeTimestamp
+        ? this.config.clock?.() ?? 0
+        : undefined,
     };
 
     this.snapshots.set(frame, snapshot);
@@ -103,29 +111,11 @@ export class SnapshotCache {
   }
 }
 
-let globalSnapshotCache: SnapshotCache | null = null;
-
-export function getSnapshotCache(
-  config?: Partial<SnapshotCacheConfig>,
-): SnapshotCache {
-  if (!globalSnapshotCache) {
-    globalSnapshotCache = new SnapshotCache(config);
-  }
-  return globalSnapshotCache;
-}
-
-export function resetSnapshotCache(): void {
-  if (globalSnapshotCache) {
-    globalSnapshotCache.clear();
-  }
-  globalSnapshotCache = null;
-}
-
 export function runWithSnapshot(
   targetFrame: number,
   initialWorld: WorldState,
   applyEventsFromFrame: (startFrame: number, state: WorldState) => WorldState,
-  cache: SnapshotCache = getSnapshotCache(),
+  cache: SnapshotCache,
 ): WorldState {
   const snapshot = cache.getClosest(targetFrame);
 

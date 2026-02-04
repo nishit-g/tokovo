@@ -6,7 +6,7 @@ title: Timeline Events
 
 > **The declarative building blocks that define what happens and when**
 
-Timeline Events are the fundamental units of change in Tokovo episodes. They describe everything that happens during your video — from messages arriving to devices unlocking to cameras zooming. Events are the **input** to the replay engine, which processes them to build WorldState at any given time.
+Timeline Events are the fundamental units of change in Tokovo episodes. They describe everything that happens during your video — from messages arriving to devices unlocking to cameras zooming. Events are the **input** to the incremental replay engine (`runEpisode()`), which processes them to build WorldState at any given time.
 
 ---
 
@@ -367,6 +367,8 @@ Operating system state changes:
 Timeline Events are processed in **chronological order** by their `at` timestamp:
 
 ```typescript
+import { createTokovoRegistries, getConfig } from "@tokovo/core";
+
 const events = [
   { at: 1.0, kind: "DEVICE", type: "UNLOCK", ... },
   { at: 2.0, kind: "APP", type: "MESSAGE_RECEIVED", ... },
@@ -374,7 +376,15 @@ const events = [
   { at: 3.5, kind: "APP", type: "TYPING_START", ... },
 ];
 
-replay(events, 2.5);
+const tokovoRegistries = createTokovoRegistries();
+
+const opts = {
+  mode: "preview",
+  registries: tokovoRegistries.engine,
+  config: getConfig(),
+};
+
+runEpisode(episode, 75, opts);
 // ✅ UNLOCK applied (at 1.0 <= 2.5)
 // ✅ MESSAGE_RECEIVED applied (at 2.0 <= 2.5)
 // ✅ FOCUS applied (at 2.0 <= 2.5)
@@ -508,7 +518,7 @@ episode("my-story", { fps: 30, duration: "10s" })
 │  │               text: "What's up?" } }               │     │
 │  │ ]                                                  │     │
 │  └──────────────────┬─────────────────────────────────┘     │
-│                     │ replay(events, t)                      │
+│                     │ runEpisode(episode, t)                 │
 │                     ▼                                        │
 │  WORLDSTATE @ t                                              │
 │  ┌────────────────────────────────────────────────────┐     │
@@ -540,18 +550,19 @@ Timeline Events and WorldState form a **unidirectional data flow**:
 **Events are the input** → **WorldState is the output**
 
 ```typescript
-function replay(episode: CompiledEpisode, t: number): WorldState {
-  let world = episode.initialWorld;
-
-  // Filter events up to time t
-  const relevantEvents = episode.events.filter((e) => e.at <= t);
-
-  // Apply each event to build state
-  for (const event of relevantEvents) {
-    world = applyEvent(world, event);
-  }
-
-  return world;
+function runEpisodeAtFrame(
+  episode: CompiledEpisode,
+  t: number,
+  options: RunOptions,
+): WorldState {
+  return replayIncremental(
+    episode.initialWorld,
+    episode.events,
+    t,
+    options,
+    keyframedIndex,
+    stateCache,
+  );
 }
 ```
 

@@ -28,7 +28,21 @@ export interface ResolvedAnchor {
 export interface AnchorProvider {
   appId: string;
   framing: Record<string, AnchorFraming>;
-  getAnchors(world: unknown, layout: unknown, deviceId: string): AnchorSnapshot;
+  getAnchors(
+    world: WorldState,
+    layout: unknown,
+    deviceId: string,
+    context?: AnchorProviderContext,
+  ): AnchorSnapshot;
+}
+
+export interface AnchorProviderContext {
+  getDeviceProfile?: (
+    profileId?: string,
+  ) => { dimensions: { width: number; height: number } } | undefined;
+  getDeviceShell?: (
+    profileId?: string,
+  ) => { hasDynamicIsland: boolean } | undefined;
 }
 
 export type SemanticAnchorId =

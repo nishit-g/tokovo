@@ -26,7 +26,7 @@ import {
   getKeyboardConfig,
 } from "@tokovo/core";
 import { computeLayout } from "../layout";
-import { iPhone16Profile, PixelProfile, DeviceProfile } from "@tokovo/devices";
+import type { DeviceProfile, DeviceRegistries } from "@tokovo/devices";
 import { useRendererRegistries } from "../RegistryContext";
 
 // =============================================================================
@@ -50,7 +50,7 @@ export interface LayoutEngineOutput {
   viewKind: ViewKind;
   /** Computed layout state (discriminated union - use layout.kind to narrow) */
   layout: LayoutState;
-  /** Device profile (iPhone16, Pixel, etc.) */
+  /** Device profile (from device registries) */
   profile: DeviceProfile;
   /** Platform variant */
   variant: "ios" | "android";
@@ -85,17 +85,53 @@ const NULL_LAYOUT: LayoutState = {
   meta: {},
 };
 
-export const NULL_LAYOUT_OUTPUT: LayoutEngineOutput = {
-  deviceId: "__null__",
-  device: NULL_DEVICE,
-  appId: undefined,
-  viewKind: "TRANSITION",
-  layout: NULL_LAYOUT,
-  profile: iPhone16Profile,
-  variant: "ios",
-  effectiveViewportHeight: iPhone16Profile.dimensions.height,
-  isError: true,
+const FALLBACK_PROFILE: DeviceProfile = {
+  id: "fallback",
+  name: "Fallback Device",
+  type: "phone",
+  platform: "ios",
+  dimensions: { width: 393, height: 852 },
+  screen: { width: 393, height: 852, ppi: 460, cornerRadius: 0 },
+  pixelDensity: 3,
+  safeArea: { top: 0, bottom: 0, left: 0, right: 0 },
 };
+
+function resolveProfile(
+  registries: DeviceRegistries,
+  profileId?: string,
+): DeviceProfile {
+  if (profileId) {
+    const profile = registries.devices.get(profileId);
+    if (profile) return profile;
+  }
+
+  if (registries.devices.has("iphone16")) {
+    const profile = registries.devices.get("iphone16");
+    if (profile) return profile;
+  }
+
+  const firstId = registries.devices.list()[0];
+  if (firstId) {
+    const profile = registries.devices.get(firstId);
+    if (profile) return profile;
+  }
+
+  return FALLBACK_PROFILE;
+}
+
+function buildNullLayoutOutput(profile: DeviceProfile): LayoutEngineOutput {
+  return {
+    deviceId: "__null__",
+    device: { ...NULL_DEVICE, profileId: profile.id },
+    appId: undefined,
+    viewKind: "TRANSITION",
+    layout: NULL_LAYOUT,
+    profile,
+    variant: profile.platform,
+    effectiveViewportHeight: profile.dimensions.height,
+    isError: true,
+  };
+}
 
 // =============================================================================
 // LAYOUT ENGINE HOOK
@@ -118,7 +154,8 @@ export function useLayoutEngine(input: LayoutEngineInput): LayoutEngineOutput {
       console.error(
         `[LayoutEngine] Device "${deviceId}" not found. Returning NULL_LAYOUT.`,
       );
-      return NULL_LAYOUT_OUTPUT;
+      const fallbackProfile = resolveProfile(registries.devices);
+      return buildNullLayoutOutput(fallbackProfile);
     }
 
     const appId = device.foregroundAppId;
@@ -172,10 +209,8 @@ export function useLayoutEngine(input: LayoutEngineInput): LayoutEngineOutput {
     }
 
     // 3. Get device profile
-    const profile =
-      device.profileId === "pixel" ? PixelProfile : iPhone16Profile;
-    const isPixel = device.profileId.includes("pixel");
-    const variant: "ios" | "android" = isPixel ? "android" : "ios";
+    const profile = resolveProfile(registries.devices, device.profileId);
+    const variant: "ios" | "android" = profile.platform;
 
     // 4. Compute keyboard height (for viewport shrink when typing)
     const keyboardConfig = getKeyboardConfig(variant);

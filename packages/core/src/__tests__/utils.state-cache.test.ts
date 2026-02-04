@@ -6,6 +6,7 @@ import {
   getCachedStateForFrame,
   invalidateCacheAfter,
   clearStateCache,
+  ensureStateCacheIdentity,
 } from "../utils/state-cache";
 
 const baseState = {
@@ -51,5 +52,15 @@ describe("state cache", () => {
     cacheStateAtKeyframe(cache, 5, baseState);
     cacheStateAtKeyframe(cache, 3, baseState);
     expect(cache.sortedFrames).toEqual([3, 5]);
+  });
+
+  it("clears cache when identity changes", () => {
+    const cache = createStateCache(1, { episodeId: "a", eventSignature: "x" });
+    cacheStateAtKeyframe(cache, 1, baseState);
+    expect(cache.sortedFrames).toEqual([1]);
+
+    ensureStateCacheIdentity(cache, { episodeId: "b", eventSignature: "y" });
+    expect(cache.sortedFrames).toEqual([]);
+    expect(cache.episodeId).toBe("b");
   });
 });
