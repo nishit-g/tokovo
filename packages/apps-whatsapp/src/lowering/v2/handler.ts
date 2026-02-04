@@ -170,7 +170,8 @@ function expandTypedMessage(event: WhatsAppTrackEvent): RuntimeEvent[] {
     payload: { key: "return", duration: 4 },
   } as unknown as RuntimeEvent);
 
-  events.push(createRuntimeEvent(event, "MessageSent"));
+  // Keep type in APP_* namespace so runtime normalization can map it.
+  events.push(createRuntimeEvent(event));
 
   events.push({
     at: keyboardHideAt,
