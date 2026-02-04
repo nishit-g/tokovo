@@ -5,7 +5,7 @@
  * Provides fallbacks for common view kinds when no plugin is registered.
  */
 
-import type { LayoutRegistryClass } from "@tokovo/core";
+import type { LayoutRegistryClass } from "@tokovo/react";
 import { LayoutContext, LayoutState } from "./types";
 import { defaultLayoutConfig } from "./config";
 import { computeFeedLayout } from "./strategies/feed";

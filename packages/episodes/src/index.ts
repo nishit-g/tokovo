@@ -23,7 +23,12 @@
 // =============================================================================
 // REGISTRY (Auto-discovery)
 // =============================================================================
-export { episodeRegistry, EpisodeRegistry } from "./registry/index.js";
+export {
+  episodeRegistry,
+  EpisodeRegistry,
+  createEpisodeRegistry,
+  getEpisodeRegistrySnapshot,
+} from "./registry/index.js";
 
 // =============================================================================
 // TYPES & HELPERS

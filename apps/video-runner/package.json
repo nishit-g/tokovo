@@ -22,6 +22,7 @@
     "@tokovo/dsl": "workspace:*",
     "@tokovo/episodes": "workspace:*",
     "@tokovo/ir": "workspace:*",
+    "@tokovo/react": "workspace:*",
     "@tokovo/renderer": "workspace:*",
     "@tokovo/voice": "workspace:*",
     "react": "18.3.1",

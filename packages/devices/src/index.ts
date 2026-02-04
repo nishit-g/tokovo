@@ -98,14 +98,7 @@ export { IOSStatusBarStrategy, AndroidStatusBarStrategy } from "./strategies";
 // =============================================================================
 
 export { iPhone16Profile } from "./iphone16/profile";
-/** @deprecated Prefer device registries (use registerDevicesPlugin). */
-export { iPhone16Frame } from "./iphone16/Frame";
-/** @deprecated Prefer device registries (use registerDevicesPlugin). */
-export { iPhone16Shell } from "./iphone16/shell";
-
 export { PixelProfile } from "./pixel/profile";
-/** @deprecated Prefer device registries (use registerDevicesPlugin). */
-export { PixelFrame } from "./pixel/Frame";
 
 // =============================================================================
 // KEYBOARDS (Legacy export)

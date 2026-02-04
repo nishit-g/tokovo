@@ -9,7 +9,8 @@
  * @see docs/ARCHITECTURE.md
  */
 
-import type { PluginReducer, PluginManagerClass } from "@tokovo/core";
+import type { PluginReducer } from "@tokovo/core";
+import type { PluginManagerClass } from "@tokovo/react";
 import { WHATSAPP_APP_ID } from "./constants";
 import type {
   TokovoPluginContract,
@@ -108,8 +109,8 @@ export const WhatsAppPluginV2: TokovoPluginContract<"app_whatsapp"> & {
     "VideoSent",
     "VoiceReceived",
     "VoiceSent",
-    "VoicePlayStarted",
-    "VoicePlayPaused",
+    "VoicePlay",
+    "VoicePause",
     "GifReceived",
     "GifSent",
     "StickerReceived",
@@ -131,12 +132,12 @@ export const WhatsAppPluginV2: TokovoPluginContract<"app_whatsapp"> & {
     "NavigateScreen",
     "GroupMemberAdded",
     "GroupMemberRemoved",
-    "ConversationPinned",
-    "ConversationUnpinned",
-    "ConversationMuted",
-    "ConversationUnmuted",
-    "ConversationArchived",
-    "ConversationUnarchived",
+    "PinConversation",
+    "UnpinConversation",
+    "MuteConversation",
+    "UnmuteConversation",
+    "ArchiveConversation",
+    "UnarchiveConversation",
     "SetDraft",
   ] as const,
 

@@ -7,20 +7,16 @@ import {
 } from "@tokovo/core";
 import {
   DEFAULT_LAYOUT_CONFIG,
-  calculateMessageHeight,
   calculateSmartGap,
-  calculateBubbleWidth,
   applyEasing,
-  isMessageCentered,
-  doesMessageBreakGrouping,
   UI_CONSTANTS,
   type MessageLayoutConfig,
-  type MessageForHeight,
   type MessageForGap,
   type MessageType,
   type GapContext,
 } from "../config";
 import { MessageData, WhatsAppMessage, WhatsAppConversation } from "../types";
+import { computeConversationLayout, getLayoutCache } from "./cache";
 
 type LayoutMessage = MessageData & {
   replyTo?: { messageId: string; text: string; from: string };
@@ -70,14 +66,18 @@ export function computeChatLayout(
   }
 
   const conversation = conversations[activeConversationId];
-  // Filter messages visible at time t
-  const messages = (conversation.messages as WhatsAppMessage[]).filter(
+  const allMessages = conversation.messages as WhatsAppMessage[];
+  const messages = allMessages.filter(
     (m: WhatsAppMessage) => m.at === undefined || m.at <= t,
   );
 
-  // Detect if this is a group chat (more than 2 unique senders)
-  const uniqueSenders = new Set(messages.map((m: WhatsAppMessage) => m.from));
-  const isGroupChat = uniqueSenders.size > 2;
+  const layoutCache = getLayoutCache(ctx.layoutCache);
+  const conversationLayout = computeConversationLayout(conversation, {
+    viewportWidth,
+    viewportHeight,
+    layoutConfig: config,
+    cache: layoutCache,
+  });
 
   const messageLayouts: Record<string, ChatMessageLayout> = {};
   const semanticRegions: Record<string, SemanticRegion> = {};
@@ -86,7 +86,6 @@ export function computeChatLayout(
     system: [],
   };
 
-  let currentY = config.spacing.global.topPadding;
   let lastMessageId: string | undefined;
 
   // ==========================================================
@@ -94,81 +93,15 @@ export function computeChatLayout(
   // ==========================================================
   for (let i = 0; i < messages.length; i++) {
     const msg = messages[i] as LayoutMessage;
-    const prevMsg = i > 0 ? (messages[i - 1] as LayoutMessage) : undefined;
     const msgType = (msg.type || "text") as MessageType;
-
-    // Calculate gap from previous message
-    if (prevMsg) {
-      const prevForGap: MessageForGap = {
-        type: prevMsg.type as MessageType,
-        from: prevMsg.from,
-        at: prevMsg.at,
-        hasReply:
-          prevMsg.replyTo !== undefined && prevMsg.replyTo !== null,
-        hasReactions: (prevMsg.reactions?.length ?? 0) > 0,
-        hasLinkPreview:
-          prevMsg.linkPreview !== undefined && prevMsg.linkPreview !== null,
-      };
-      const nextForGap: MessageForGap = {
-        type: msg.type as MessageType,
-        from: msg.from,
-        at: msg.at,
-        hasReply:
-          msg.replyTo !== undefined && msg.replyTo !== null,
-        hasReactions: (msg.reactions?.length ?? 0) > 0,
-        hasLinkPreview:
-          msg.linkPreview !== undefined && msg.linkPreview !== null,
-      };
-
-      const gapContext: GapContext = {
-        prevMessage: prevForGap,
-        nextMessage: nextForGap,
-      };
-
-      const gap = calculateSmartGap(gapContext, config);
-      currentY += gap;
+    const baseLayout = conversationLayout.messageLayouts.get(msg.id);
+    if (!baseLayout) {
+      continue;
     }
 
-    // Calculate height using the config-based function
-    const msgForHeight: MessageForHeight = {
-      type: msgType,
-      text: "text" in msg ? msg.text : undefined,
-      caption: "caption" in msg ? msg.caption : undefined,
-      from: msg.from,
-      prevFrom: (() => {
-        const prev = i > 0 ? messages[i - 1] : undefined;
-        if (!prev) return undefined;
-
-        const prevType = (prev.type || "text") as MessageType;
-        if (doesMessageBreakGrouping(prevType, config)) return "BREAK";
-
-        return prev.from;
-      })(),
-      isGroupChat,
-      reactions: msg.reactions,
-      replyTo: msg.replyTo,
-      linkPreview: msg.linkPreview,
-    };
-
-    const height = calculateMessageHeight(msgForHeight, viewportWidth, config);
-
-    // Calculate bubble width using per-type config
-    const bubbleWidth = calculateBubbleWidth(
-      msgForHeight,
-      viewportWidth,
-      config,
-    );
-
-    const isMe = msg.from === "me";
-
-    // Animation: Horizontal Slide in (Safety First)
-    // Vertical animation risks overlapping with the next bubble (like typing indicator)
-    // because layout assumes final position. Horizontal slide avoids this collision.
-    const messageAt = msg.at ?? 0;
-    const timeSinceAppear = t - messageAt;
+    const timeSinceAppear = t - baseLayout.messageAt;
     let opacity = 1;
     let translateX = 0;
-    // Ensure translateY is 0 to prevent vertical overlap
     const translateY = 0;
 
     if (
@@ -179,46 +112,22 @@ export function computeChatLayout(
       const ease = applyEasing(progress, "easeOut");
       opacity = ease;
 
-      // Slide in from side
-      // Me (Right): Slide from right (+offset -> 0)
-      // Other (Left): Slide from left (-offset -> 0)
       const offset = config.animation.messageAppearOffset * (1 - ease);
-      translateX = isMe ? offset : -offset;
+      translateX = baseLayout.isMe ? offset : -offset;
     }
 
-    // Compute rect for director targeting
-    const isCentered = isMessageCentered(msgType, config);
-
-    let rectX: number;
-    if (isCentered) {
-      // Center system messages
-      rectX = (viewportWidth - bubbleWidth) / 2;
-    } else {
-      rectX = isMe
-        ? viewportWidth - config.spacing.global.bubbleMargin - bubbleWidth
-        : config.spacing.global.bubbleMargin;
-    }
-
-    const rect = {
-      x: rectX,
-      y: currentY,
-      width: bubbleWidth,
-      height,
-    };
+    const rect = baseLayout.rect;
 
     messageLayouts[msg.id] = {
       id: msg.id,
-      y: currentY,
-      height,
+      y: baseLayout.y,
+      height: baseLayout.height,
       opacity,
       translateY,
       translateX,
       rect,
     };
 
-    // --- SEMANTIC ANCHOR GENERATION ---
-
-    // 1. Message Anchor
     const anchorId = msg.id;
     semanticRegions[anchorId] = {
       id: anchorId,
@@ -240,7 +149,14 @@ export function computeChatLayout(
     }
 
     lastMessageId = msg.id;
-    currentY += height;
+  }
+
+  let currentY = config.spacing.global.topPadding;
+  if (lastMessageId) {
+    const lastLayout = conversationLayout.messageLayouts.get(lastMessageId);
+    if (lastLayout) {
+      currentY = lastLayout.y + lastLayout.height;
+    }
   }
 
   // ==========================================================
@@ -278,7 +194,13 @@ export function computeChatLayout(
       };
 
       const gap = calculateSmartGap(gapContext, config);
-      currentY += gap;
+      const lastLayout = conversationLayout.messageLayouts.get(lastMsg.id);
+      const lastMessageBottom =
+        lastLayout?.y !== undefined && lastLayout?.height !== undefined
+          ? lastLayout.y + lastLayout.height
+          : config.spacing.global.topPadding;
+
+      currentY = lastMessageBottom + gap;
     }
 
     const rect = {
@@ -359,7 +281,18 @@ export function computeChatLayout(
     metadata: { sticky: true },
   };
 
-  const contentHeight = currentY + config.spacing.global.bottomPadding;
+  const lastVisibleLayout =
+    lastMessageId !== undefined
+      ? conversationLayout.messageLayouts.get(lastMessageId)
+      : undefined;
+  const lastVisibleBottom =
+    lastVisibleLayout?.y !== undefined && lastVisibleLayout?.height !== undefined
+      ? lastVisibleLayout.y + lastVisibleLayout.height
+      : config.spacing.global.topPadding;
+  const contentHeight = Math.max(
+    currentY,
+    lastVisibleBottom,
+  ) + config.spacing.global.bottomPadding;
 
   // ==========================================================
   // SCROLL POSITION
@@ -379,7 +312,7 @@ export function computeChatLayout(
     typingLayout,
     meta: {
       lastMessageId,
-      isGroupChat, // Expose for components
+      isGroupChat: conversationLayout.isGroupChat, // Expose for components
     },
     semantic: {
       regions: semanticRegions,

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { replay, createInitialWorld } from "../engine";
 import { createEngineRegistries } from "../engine/registries";
-import { getConfig } from "../config";
+import { createConfig } from "../config";
 
 describe("replay APP event routing", () => {
   it("routes APP events by appId to the registered reducer", () => {
@@ -39,7 +39,7 @@ describe("replay APP event routing", () => {
     const state = replay(initial, events, 10, {
       mode: "preview",
       registries,
-      config: getConfig(),
+      config: createConfig(),
     });
     expect((state.appState as { app_test?: { value: number } }).app_test?.value)
       .toBe(2);

@@ -1,4 +1,4 @@
-import { createTokovoRegistries, PluginManagerClass } from "@tokovo/core";
+import { createTokovoRegistries, PluginManagerClass } from "@tokovo/react";
 import { registerWhatsAppPlugin } from "@tokovo/apps-whatsapp";
 import { createDeviceRegistries, registerDevicesPlugin } from "@tokovo/devices";
 import { registerNotificationPlugin } from "@tokovo/device-notifications";

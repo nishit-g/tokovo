@@ -1,14 +1,55 @@
-import type { Platform } from "../tokens";
-import type { LayoutContext, LayoutState } from "../types";
 import type {
+  Platform,
+  LayoutContext,
+  LayoutState,
   PluginReducer,
   PluginViews,
-  PluginAnchorProvider,
-  PluginAutoSoundRule,
-  PluginNotificationAdapter,
-  PluginFormattedNotification,
-} from "../types/plugin-contract";
-import type { Notification } from "../types/notification";
+  Notification,
+  WorldState,
+} from "@tokovo/core";
+
+// Types defined locally since they're internal to plugin-contract but not re-exported from core index
+export interface AnchorBounds {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
+export type PluginAnchorProvider = (
+  world: WorldState,
+  deviceId: string,
+) => AnchorBounds | null;
+
+export interface PluginAutoSoundRule {
+  match: {
+    kind: string;
+    type?: string;
+    appId?: string;
+    from?: string | "*";
+  };
+  action: "PLAY_ONE_SHOT" | "START_LOOP" | "STOP_SOUND";
+  sound?: string;
+  stopId?: string;
+  bus?: "voice" | "sfx" | "ui" | "music" | "master";
+  volume?: number;
+  idTemplate?: string;
+  duckMusic?: boolean;
+  loop?: boolean;
+  priority?: number;
+}
+
+export interface PluginFormattedNotification {
+  icon: string;
+  color: string;
+  title: string;
+  body: string;
+  subtitle?: string;
+}
+
+export interface PluginNotificationAdapter {
+  format: (notification: Notification) => PluginFormattedNotification;
+}
 
 export interface ReducerCapability<AppId extends string = string> {
   readonly _type: "reducer";

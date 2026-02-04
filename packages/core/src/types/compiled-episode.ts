@@ -88,6 +88,8 @@ export interface CompiledEpisode {
   keyframeInterval?: number;
   /** Signature for detecting event mismatches across caches */
   eventSignature?: string;
+  /** Deterministic config used during preparation */
+  config?: import("../config").TokovoConfigType;
 
   // === Assets ===
   /** Validated at compile time */

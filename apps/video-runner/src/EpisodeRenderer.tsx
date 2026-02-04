@@ -25,7 +25,7 @@ import {
   replayIncremental,
   createKeyframedEventIndex,
   createStateCache,
-  getConfig,
+  createConfig,
 } from "@tokovo/core";
 import {
   prepareTrackEpisode,
@@ -216,7 +216,7 @@ const EpisodeRendererInner: React.FC<EpisodeRendererProps> = ({
   // === ALL HOOKS MUST BE CALLED BEFORE CONDITIONAL RETURNS ===
   // (React rules of hooks - hooks must be called unconditionally)
 
-  const config = useMemo(() => getConfig(), []);
+  const config = useMemo(() => createConfig(), []);
 
   // === CREATE EVENT INDEX + STATE CACHE ===
   const keyframedEventIndex = useMemo(() => {
@@ -399,6 +399,12 @@ const EpisodeRendererInner: React.FC<EpisodeRendererProps> = ({
             t={frame}
             fps={fps}
             debug={false}
+            config={config}
+            layoutCacheKey={
+              prepared
+                ? `${prepared.id}:${prepared.eventSignature ?? "unknown"}`
+                : undefined
+            }
             eventIndex={keyframedEventIndex}
             pluginManager={pluginManager}
             registries={rendererRegistries}

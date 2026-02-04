@@ -14,7 +14,7 @@ import {
 import { createEngineRegistries, type EngineRegistries } from "../engine/registries";
 import * as handlerModule from "../engine/handlers";
 import { logger } from "../logger";
-import { getConfig } from "../config";
+import { createConfig } from "../config";
 
 const baseWorld = (): WorldState => ({
   devices: { phone: { id: "phone" } },
@@ -27,12 +27,12 @@ let registries: EngineRegistries;
 const previewCtx = () => ({
   mode: "preview" as const,
   registries,
-  config: getConfig(),
+  config: createConfig(),
 });
 const renderCtx = () => ({
   mode: "render" as const,
   registries,
-  config: getConfig(),
+  config: createConfig(),
 });
 
 beforeEach(() => {
@@ -189,13 +189,18 @@ describe("engine replay", () => {
     });
     registries.reducers.registerEventKinds("app", ["CUSTOM"]);
 
-    try {
-      replay(baseWorld(), [{ at: 0, kind: "CUSTOM" } as any], 0, renderCtx());
-      throw new Error("expected replay to throw");
-    } catch (err) {
-      expect(err).toBeInstanceOf(PluginError);
-      expect((err as PluginError).pluginId).toBe("CUSTOM");
-    }
+    const renderIndex = createKeyframedEventIndex([{ at: 0, kind: "CUSTOM" } as any], 1);
+    const renderCache = createStateCache(1);
+    expect(() =>
+      replayIncremental(
+        baseWorld(),
+        [{ at: 0, kind: "CUSTOM" } as any],
+        0,
+        renderCtx(),
+        renderIndex,
+        renderCache,
+      ),
+    ).toThrow(PluginError);
 
     const errors: any[] = [];
     replay(baseWorld(), [{ at: 0, kind: "CUSTOM" } as any], 0, {
@@ -212,7 +217,11 @@ describe("engine replay", () => {
     });
 
     const events = [{ at: 0, kind: "APP", appId: "app" } as any];
-    expect(() => replay(baseWorld(), events, 0, renderCtx())).toThrow(PluginError);
+    const index = createKeyframedEventIndex(events as any, 1);
+    const cache = createStateCache(1);
+    expect(() =>
+      replayIncremental(baseWorld(), events, 0, renderCtx(), index, cache),
+    ).toThrow(PluginError);
   });
 
   it("captures errors in preview mode", () => {

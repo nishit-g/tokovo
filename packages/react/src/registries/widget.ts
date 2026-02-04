@@ -6,7 +6,7 @@
  */
 
 import type { WidgetSlot, WidgetMode, WidgetComponent } from "../plugin/plugin";
-import type { Platform } from "../tokens";
+import type { Platform } from "@tokovo/core";
 
 // =============================================================================
 // WIDGET REGISTRY

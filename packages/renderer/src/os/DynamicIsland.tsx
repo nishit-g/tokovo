@@ -6,7 +6,8 @@
  */
 
 import React from "react";
-import { WorldState, DeviceState, WidgetProps } from "@tokovo/core";
+import { WorldState, DeviceState } from "@tokovo/core";
+import type { WidgetProps } from "@tokovo/react";
 import { useRendererRegistries } from "../RegistryContext";
 import { DeviceProfile, DynamicIslandConfig } from "@tokovo/devices";
 

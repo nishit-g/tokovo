@@ -7,7 +7,10 @@
  */
 
 import { z } from "zod";
-import { episodeRegistry } from "../registry/episode-registry.js";
+import {
+  episodeRegistry,
+  type EpisodeRegistry,
+} from "../registry/episode-registry.js";
 import type { TrackEpisodeIR } from "@tokovo/ir";
 
 // =============================================================================
@@ -203,6 +206,7 @@ export const EpisodeDefinitionSchema = z.object({
  */
 export function defineEpisode(
   definition: EpisodeDefinition,
+  options?: { registry?: EpisodeRegistry },
 ): EpisodeDefinition {
   // Validate at define-time
   const result = EpisodeDefinitionSchema.safeParse(definition);
@@ -214,8 +218,9 @@ export function defineEpisode(
     throw new Error(`Invalid episode definition: ${result.error.message}`);
   }
 
-  // Auto-register with global registry
-  episodeRegistry.register(definition);
+  // Auto-register with provided registry (or global registry by default)
+  const registry = options?.registry ?? episodeRegistry;
+  registry.register(definition);
 
   return definition;
 }

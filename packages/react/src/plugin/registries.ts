@@ -1,47 +1,29 @@
 import {
   createReducerRegistry,
   type ReducerRegistryClass,
-} from "../engine/registry";
+  createSoundRegistry,
+  type SoundRegistryAPI,
+  createAnchorRegistry,
+  type AnchorRegistryClass,
+  createAutoSoundRegistry,
+  type AutoSoundRegistryClass,
+  createNotificationAdapterRegistry,
+  type NotificationAdapterRegistryClass,
+  createBehaviorRegistry,
+  type BehaviorRegistryAPI,
+} from "@tokovo/core";
 import {
   createAppRegistry,
   type AppRegistryAPI,
-} from "../registries/app";
-import {
-  createSoundRegistry,
-  type SoundRegistryAPI,
-} from "../registries/sound";
-import {
   createLayoutRegistry,
   type LayoutRegistryClass,
-} from "../registries/layout";
-import {
   createAppMetadataRegistry,
   type AppMetadataRegistryAPI,
-} from "../registries/metadata";
-import {
-  createAnchorRegistry,
-  type AnchorRegistryClass,
-} from "../anchors/registry";
-import {
-  createAutoSoundRegistry,
-  type AutoSoundRegistryClass,
-} from "../audio/auto-sound";
-import {
-  createNotificationAdapterRegistry,
-  type NotificationAdapterRegistryClass,
-} from "../notifications/adapter";
-import {
   createWidgetRegistry,
   type WidgetRegistryClass,
-} from "../registries/widget";
-import {
   createIconRegistry,
   type IconRegistryAPI,
-} from "../registries/icon";
-import {
-  createBehaviorRegistry,
-  type BehaviorRegistryAPI,
-} from "../registries/behavior";
+} from "../registries";
 
 export interface PluginRegistries {
   reducers: ReducerRegistryClass;

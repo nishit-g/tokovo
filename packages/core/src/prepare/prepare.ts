@@ -19,7 +19,7 @@ import {
   createEventIndex,
   createKeyframedEventIndex,
 } from "../utils/event-utils";
-import { getConfig } from "../config";
+import { TokovoConfig } from "../config";
 import {
   WorldState,
   DEFAULT_BASE_CAMERA_STATE as DEFAULT_BASE_CAMERA_STATE,
@@ -400,7 +400,7 @@ export function prepareEpisode(
 ): CompiledEpisode {
   const { strict = true, mode = "preview", includeDebug = true } = options;
   const effectiveOptions = { ...options, strict, mode };
-  const config = options.config ?? getConfig();
+  const config = options.config ?? TokovoConfig;
 
   // 1. Build plugin registry
   const registry = buildPluginRegistry(plugins);
@@ -459,6 +459,7 @@ export function prepareEpisode(
     ),
     keyframeInterval,
     eventSignature,
+    config,
     assets,
   };
 
@@ -500,6 +501,21 @@ export function runEpisode(
   frame: number,
   options: RunOptions,
 ): WorldState {
+  if (
+    episode.keyframeInterval !== undefined &&
+    episode.keyframeInterval !==
+      options.config.rendering.cacheKeyframeInterval
+  ) {
+    const message =
+      `runEpisode config mismatch: episode was prepared with cacheKeyframeInterval=` +
+      `${episode.keyframeInterval}, but runtime config has ` +
+      `${options.config.rendering.cacheKeyframeInterval}.`;
+    if (options.mode === "render") {
+      throw new Error(message);
+    }
+    console.warn(message);
+  }
+
   const ctx = {
     mode: options.mode,
     registries: options.registries,

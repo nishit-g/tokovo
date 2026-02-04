@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@tokovo/core": "workspace:*",
+    "@tokovo/react": "workspace:*",
     "@tokovo/ir": "workspace:*"
   },
   "devDependencies": {

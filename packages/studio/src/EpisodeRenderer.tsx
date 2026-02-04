@@ -3,7 +3,7 @@ import {
   replayIncremental,
   createKeyframedEventIndex,
   createStateCache,
-  getConfig,
+  createConfig,
 } from "@tokovo/core";
 import { TokovoRenderer } from "@tokovo/renderer";
 import type { PreparedTrackEpisode } from "@tokovo/compiler";
@@ -18,7 +18,7 @@ export function EpisodeRenderer({
   episodeIR,
   frame = 0,
 }: EpisodeRendererProps) {
-  const config = useMemo(() => getConfig(), []);
+  const config = useMemo(() => createConfig(), []);
   const keyframedEventIndex = useMemo(() => {
     if (!episodeIR) return null;
     return (
@@ -85,6 +85,8 @@ export function EpisodeRenderer({
         t={frame}
         fps={episodeIR.fps}
         debug={false}
+        config={config}
+        layoutCacheKey={`${episodeIR.id}:${episodeIR.eventSignature ?? "unknown"}`}
         eventIndex={keyframedEventIndex ?? undefined}
         pluginManager={pluginManager}
         registries={rendererRegistries}

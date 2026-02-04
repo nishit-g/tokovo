@@ -31,3 +31,46 @@ export type {
 
 export { AppSurface } from "./AppSurface";
 export type { AppSurfaceProps } from "./AppSurface";
+
+// =============================================================================
+// UI REGISTRIES
+// =============================================================================
+export * from "./registries";
+
+// =============================================================================
+// PLUGINS
+// =============================================================================
+export * from "./plugin";
+
+// =============================================================================
+// RUNTIME REGISTRIES
+// =============================================================================
+export {
+  createTokovoRegistries,
+  type TokovoRegistries,
+  type TokovoRegistriesOverrides,
+} from "./registries/runtime";
+
+// =============================================================================
+// NOTIFICATION VIEWS
+// =============================================================================
+export {
+  createNotificationViewRegistry,
+  NotificationViewRegistryClass,
+} from "./notifications/registry";
+export type {
+  NotificationViewProps,
+  NotificationViewComponent,
+} from "./notifications/registry";
+
+// =============================================================================
+// PLUGIN VALIDATION UTILS
+// =============================================================================
+export {
+  AppMetadataSchema,
+  TokovoPluginSchema,
+  validatePlugin,
+  validatePluginDetailed,
+  assertPluginValid,
+} from "./utils/validation";
+export type { ValidationError, ValidationResult } from "./utils/validation";

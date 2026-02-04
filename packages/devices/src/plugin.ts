@@ -8,7 +8,18 @@
 
 // Runtime Layer
 import { deviceReducer } from "./reducer";
-import type { TokovoRegistries } from "@tokovo/core";
+
+// Local interface for the registries we need (TokovoRegistries is not exported from core)
+interface TokovoRegistries {
+    engine: {
+        reducers: {
+            registerDeviceReducer: (reducer: typeof deviceReducer) => void;
+        };
+    };
+    plugins: {
+        sounds: any; // eslint-disable-line @typescript-eslint/no-explicit-any
+    };
+}
 
 // Registries
 import type { DeviceRegistries } from "./registries/bundle";

@@ -13,9 +13,12 @@ import React from "react";
 import {
   WorldState,
   EventIndex,
-  PluginManagerClass,
   createScopedLogger,
+  TokovoConfig,
+  TokovoConfigType,
+  type LayoutCacheStore,
 } from "@tokovo/core";
+import { PluginManagerClass } from "@tokovo/react";
 import { AppSurface, TokovoProvider } from "@tokovo/react";
 import {
   createSelectors,
@@ -54,11 +57,30 @@ interface TokovoRendererProps {
   t: number;
   fps?: number;
   debug?: boolean;
+  mode?: "preview" | "render";
+  config?: TokovoConfigType;
+  layoutCacheKey?: string;
   notificationConfig?: NotificationConfig;
   focusDeviceId?: string;
   eventIndex?: EventIndex;
   pluginManager: PluginManagerClass;
   registries: RendererRegistries;
+}
+
+function createLayoutCacheStore(scopeKey: string): LayoutCacheStore {
+  const cache = new Map<string, unknown>();
+  return {
+    scopeKey,
+    get<T>(key: string): T | undefined {
+      return cache.get(key) as T | undefined;
+    },
+    set<T>(key: string, value: T): void {
+      cache.set(key, value);
+    },
+    clear(): void {
+      cache.clear();
+    },
+  };
 }
 
 // =============================================================================
@@ -70,6 +92,9 @@ const TokovoRendererInner: React.FC<TokovoRendererProps> = ({
   t,
   fps = 30,
   debug,
+  mode = "preview",
+  config = TokovoConfig,
+  layoutCacheKey,
   notificationConfig = {},
   focusDeviceId,
   eventIndex,
@@ -77,13 +102,27 @@ const TokovoRendererInner: React.FC<TokovoRendererProps> = ({
 }) => {
   const pm = pluginManager;
   const deviceRegistries = useDeviceRegistries();
+  const layoutCache = React.useMemo(
+    () =>
+      createLayoutCacheStore(
+        layoutCacheKey ?? "tokovo:layout-cache:default",
+      ),
+    [layoutCacheKey],
+  );
 
   void notificationConfig;
 
   // ==========================================================================
   // 1. LAYOUT ENGINE — Get layout blueprint
   // ==========================================================================
-  const layoutOutput = useLayoutEngine({ world, t, focusDeviceId });
+  const layoutOutput = useLayoutEngine({
+    world,
+    t,
+    focusDeviceId,
+    mode,
+    config,
+    layoutCache,
+  });
 
   // Handle error state (device not found)
   if (layoutOutput.isError) {

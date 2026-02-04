@@ -9,15 +9,6 @@ export * from "./type-guards";
 export * from "./event-utils";
 
 export {
-  AppMetadataSchema,
-  TokovoPluginSchema,
-  validatePlugin,
-  validatePluginDetailed,
-  assertPluginValid,
-} from "./validation";
-export type { ValidationError, ValidationResult } from "./validation";
-
-export {
   SeededRNG,
   deterministicId,
   hashBasedId,

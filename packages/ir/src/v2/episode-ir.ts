@@ -158,6 +158,9 @@ export interface TrackEpisodeIR {
   /** Episode description (metadata) */
   description?: string;
 
+  /** Deterministic seed for any randomized builders */
+  seed?: number | string;
+
   /** Device configurations */
   devices: DeviceConfig[];
 
@@ -189,4 +192,6 @@ export interface TrackEpisodeConfig {
   duration: string | number;
   title?: string;
   description?: string;
+  /** Deterministic seed for any randomized builders */
+  seed?: number | string;
 }

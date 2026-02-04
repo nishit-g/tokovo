@@ -142,6 +142,11 @@ export function replay(
   ctx: ReplayContext,
   eventIndex?: EventIndex,
 ): WorldState {
+  if (ctx.mode === "render") {
+    throw new Error(
+      "replay() is disabled in render mode. Use replayIncremental() with a StateCache or runEpisode().",
+    );
+  }
   if (t < 0) {
     log.warn(`Replay called with negative t: ${t}, using t=0`);
     t = 0;
@@ -327,6 +332,11 @@ export function replayIncremental(
   }
 
   if (!eventIndex || !stateCache) {
+    if (ctx.mode === "render") {
+      throw new Error(
+        "replayIncremental() requires a KeyframedEventIndex and StateCache in render mode.",
+      );
+    }
     return replay(initial, events, t, ctx, eventIndex);
   }
 
@@ -637,6 +647,22 @@ function finalizeState(
     for (const deviceId in draft.devices) {
       if (Object.hasOwn(draft.devices, deviceId)) {
         if (!firstDeviceId) firstDeviceId = deviceId;
+        const device = draft.devices[deviceId];
+        if (device?.keyboard?.activeKeyPresses?.length) {
+          device.keyboard.activeKeyPresses =
+            device.keyboard.activeKeyPresses.filter(
+              (kp) => t < kp.startFrame + kp.duration,
+            );
+        }
+        if (device?.keyboard?.typingAnimation) {
+          const { text, startFrame, charDelay } =
+            device.keyboard.typingAnimation;
+          const lastFrame =
+            startFrame + Math.max(0, (text.length - 1) * charDelay);
+          if (t > lastFrame) {
+            device.keyboard.typingAnimation = undefined;
+          }
+        }
         draft.camera.deviceTransforms[deviceId] =
           DEFAULT_CAMERA_TRANSFORM as CameraTransform;
       }

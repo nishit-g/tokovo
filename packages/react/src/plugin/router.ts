@@ -1,10 +1,10 @@
-import { type Rect } from "../anchors/registry";
+import type { Rect } from "@tokovo/core";
 import { PluginManagerClass } from "./plugin";
 import type {
   TokovoPluginContract,
   PluginLayoutConstants,
-} from "../types/plugin-contract";
-import type { WorldState } from "../types";
+} from "@tokovo/core";
+import type { WorldState } from "@tokovo/core";
 import type { PluginRegistries } from "./registries";
 
 export interface PluginAccessor {

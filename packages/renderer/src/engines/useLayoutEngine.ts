@@ -15,7 +15,7 @@
  * avoid object allocations in loops.
  */
 
-import { useMemo } from "react";
+import { useMemo, useRef } from "react";
 import {
   WorldState,
   DeviceState,
@@ -24,6 +24,9 @@ import {
   ViewKind,
   LayoutContext,
   getKeyboardConfig,
+  TokovoConfig,
+  type TokovoConfigType,
+  type LayoutCacheStore,
 } from "@tokovo/core";
 import { computeLayout } from "../layout";
 import type { DeviceProfile, DeviceRegistries } from "@tokovo/devices";
@@ -37,6 +40,9 @@ export interface LayoutEngineInput {
   world: WorldState;
   t: number;
   focusDeviceId?: string;
+  mode?: "preview" | "render";
+  config?: TokovoConfigType;
+  layoutCache?: LayoutCacheStore;
 }
 
 export interface LayoutEngineOutput {
@@ -134,14 +140,69 @@ function buildNullLayoutOutput(profile: DeviceProfile): LayoutEngineOutput {
 }
 
 // =============================================================================
+// INCREMENTAL LAYOUT CACHE
+// =============================================================================
+
+interface CachedLayoutResult {
+  frame: number;
+  worldSignature: string;
+  deviceId: string;
+  output: LayoutEngineOutput;
+}
+
+/**
+ * Compute a signature for the relevant world state parts.
+ * Only changes when layout-affecting state changes.
+ */
+function computeWorldSignature(
+  world: WorldState,
+  deviceId: string,
+  appId: string | undefined,
+): string {
+  // Fast path: compute a lightweight signature from state that affects layout
+  const device = world.devices[deviceId];
+  const appState = appId ? world.appState?.[appId] : undefined;
+
+  // Hash key components that affect layout
+  const parts = [
+    deviceId,
+    device?.foregroundAppId ?? "",
+    device?.isLocked ? "1" : "0",
+    device?.keyboard?.visible ? "1" : "0",
+    appId ?? "",
+    // For chat apps, include conversation and message count
+    (appState as { conversationId?: string } | undefined)?.conversationId ?? "",
+    // Include viewMode if present
+    (appState as { viewMode?: string } | undefined)?.viewMode ?? "",
+  ];
+
+  // For chat apps, include message count for layout invalidation
+  const conversationId = (appState as { conversationId?: string } | undefined)?.conversationId;
+  if (conversationId && appState) {
+    const conversations = (appState as { conversations?: Record<string, { messages?: unknown[] }> }).conversations;
+    const convo = conversations?.[conversationId];
+    if (convo?.messages) {
+      parts.push(String(convo.messages.length));
+    }
+  }
+
+  return parts.join("|");
+}
+
+// =============================================================================
 // LAYOUT ENGINE HOOK
 // =============================================================================
 
 export function useLayoutEngine(input: LayoutEngineInput): LayoutEngineOutput {
   const { world, t, focusDeviceId } = input;
   const registries = useRendererRegistries();
+  const loggedMissingDevices = useRef(new Set<string>());
+  const cachedResult = useRef<CachedLayoutResult | null>(null);
 
   return useMemo(() => {
+    const mode = input.mode ?? "preview";
+    const config = input.config ?? TokovoConfig;
+
     // 1. Determine active device
     const deviceId =
       focusDeviceId ||
@@ -151,14 +212,35 @@ export function useLayoutEngine(input: LayoutEngineInput): LayoutEngineOutput {
 
     // Return safe fallback instead of crashing
     if (!device) {
-      console.error(
-        `[LayoutEngine] Device "${deviceId}" not found. Returning NULL_LAYOUT.`,
-      );
+      if (!loggedMissingDevices.current.has(deviceId)) {
+        loggedMissingDevices.current.add(deviceId);
+        console.error(
+          `[LayoutEngine] Device "${deviceId}" not found. Returning NULL_LAYOUT.`,
+        );
+      }
       const fallbackProfile = resolveProfile(registries.devices);
+      if (mode === "render") {
+        throw new Error(
+          `LayoutEngine: Device "${deviceId}" not found in render mode.`,
+        );
+      }
       return buildNullLayoutOutput(fallbackProfile);
     }
 
     const appId = device.foregroundAppId;
+
+    // INCREMENTAL CACHE CHECK
+    // If world signature hasn't changed for this frame, return cached result
+    const worldSignature = computeWorldSignature(world, deviceId, appId);
+    const cached = cachedResult.current;
+    if (
+      cached &&
+      cached.frame === t &&
+      cached.deviceId === deviceId &&
+      cached.worldSignature === worldSignature
+    ) {
+      return cached.output;
+    }
 
     // 2. Determine ViewKind
     let viewKind: ViewKind = "TRANSITION";
@@ -169,40 +251,53 @@ export function useLayoutEngine(input: LayoutEngineInput): LayoutEngineOutput {
       viewKind = "LOCKSCREEN";
     } else if (appId) {
       const meta = registries.plugins.metadata.get(appId);
-      viewKind = meta.viewStrategy || "TRANSITION";
-
-      // 2. Check Dynamic App State for overrides via STANDARD CONTRACT
-      // Apps MUST implement `BaseAppState` to dynamically switch layouts.
-      // Heuristics have been removed for architectural purity.
       const appState = world.appState?.[
         appId
-      ] as import("@tokovo/core").BaseAppState;
+      ] as import("@tokovo/core").BaseAppState | undefined;
 
-      if (appState && appState.viewMode) {
-        viewKind = appState.viewMode;
-
-        // Extract Standard Context
-        if (viewKind === "CHAT") {
-          // Prefer explicit conversationId, fallback to first one (Legacy behavior preserved for now)
-          activeConversationId =
-            appState.conversationId ||
-            (() => {
-              const conversations = (appState as { conversations?: unknown })
-                .conversations;
-              if (!conversations) return undefined;
-              if (Array.isArray(conversations)) {
-                return conversations[0]?.id;
-              }
-              return Object.keys(conversations as Record<string, unknown>)[0];
-            })();
-        } else if (viewKind === "STORY") {
-          activeStoryId = appState.activeStoryId;
+      if (!appState?.viewMode) {
+        if (mode === "render") {
+          throw new Error(
+            `LayoutEngine: App "${appId}" did not provide viewMode in render mode.`,
+          );
         }
+        viewKind = meta.viewStrategy || "TRANSITION";
+      } else {
+        viewKind = appState.viewMode;
       }
 
-      // 3. Twitter Special Case (Implicit Feed if not set)
-      // TODO: Move this to Twitter App Reducer in next sprint
-      if (appId === "app_twitter" && !viewKind) viewKind = "FEED";
+      if (viewKind === "CHAT") {
+        const extendedAppState = appState as typeof appState & { activeConversationId?: string };
+        activeConversationId =
+          appState?.conversationId || extendedAppState?.activeConversationId;
+
+        if (!activeConversationId && mode !== "render") {
+          const conversations = (appState as { conversations?: unknown })
+            ?.conversations;
+          if (conversations) {
+            if (Array.isArray(conversations)) {
+              activeConversationId = conversations[0]?.id;
+            } else {
+              activeConversationId = Object.keys(
+                conversations as Record<string, unknown>,
+              )[0];
+            }
+          }
+        }
+
+        if (!activeConversationId && mode === "render") {
+          throw new Error(
+            `LayoutEngine: App "${appId}" missing conversationId for CHAT view in render mode.`,
+          );
+        }
+      } else if (viewKind === "STORY") {
+        activeStoryId = appState?.activeStoryId;
+        if (!activeStoryId && mode === "render") {
+          throw new Error(
+            `LayoutEngine: App "${appId}" missing activeStoryId for STORY view in render mode.`,
+          );
+        }
+      }
     } else {
       // No app open, show home screen
       viewKind = "HOMESCREEN";
@@ -213,7 +308,7 @@ export function useLayoutEngine(input: LayoutEngineInput): LayoutEngineOutput {
     const variant: "ios" | "android" = profile.platform;
 
     // 4. Compute keyboard height (for viewport shrink when typing)
-    const keyboardConfig = getKeyboardConfig(variant);
+    const keyboardConfig = getKeyboardConfig(config, variant);
     const keyboardHeight = device.keyboard?.visible
       ? keyboardConfig.height
       : 0;
@@ -222,9 +317,9 @@ export function useLayoutEngine(input: LayoutEngineInput): LayoutEngineOutput {
     const effectiveViewportHeight =
       viewKind === "CHAT"
         ? profile.dimensions.height -
-          LAYOUT.CHAT_HEADER_HEIGHT -
-          LAYOUT.CHAT_INPUT_HEIGHT -
-          keyboardHeight
+        LAYOUT.CHAT_HEADER_HEIGHT -
+        LAYOUT.CHAT_INPUT_HEIGHT -
+        keyboardHeight
         : profile.dimensions.height;
 
     // 5. Build layout context and compute layout
@@ -239,11 +334,12 @@ export function useLayoutEngine(input: LayoutEngineInput): LayoutEngineOutput {
       viewportWidth: profile.dimensions.width,
       viewportHeight: effectiveViewportHeight,
       safeAreaInsets: profile.safeArea,
+      layoutCache: input.layoutCache,
     };
 
     const layout = computeLayout(layoutContext, registries.plugins.layouts);
 
-    return {
+    const output: LayoutEngineOutput = {
       deviceId,
       device,
       appId,
@@ -256,5 +352,23 @@ export function useLayoutEngine(input: LayoutEngineInput): LayoutEngineOutput {
       effectiveViewportHeight,
       isError: false,
     };
-  }, [world, t, focusDeviceId, registries]);
+
+    // Store in cache for incremental optimization
+    cachedResult.current = {
+      frame: t,
+      worldSignature,
+      deviceId,
+      output,
+    };
+
+    return output;
+  }, [
+    world,
+    t,
+    focusDeviceId,
+    registries,
+    input.mode,
+    input.config,
+    input.layoutCache,
+  ]);
 }

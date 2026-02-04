@@ -6,8 +6,8 @@
  */
 
 import React from "react";
-import { WorldState, LayoutState } from "../types";
-import { createRegistry } from "./factory";
+import type { WorldState, LayoutState } from "@tokovo/core";
+import { createRegistry } from "@tokovo/core";
 
 // =============================================================================
 // TYPES

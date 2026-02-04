@@ -11,20 +11,23 @@
  * - Notification adapters
  */
 
-import { WorldState, BackgroundAppState, Notification } from "../types";
-import { AppReducer } from "../engine";
-import { Platform } from "../tokens";
-import type { NotificationAdapter } from "../notifications/adapter";
+import type { ReactElement } from "react";
 import type {
+  WorldState,
+  BackgroundAppState,
+  Notification,
+  AppReducer,
+  Platform,
+  NotificationAdapter,
   PluginNotificationAdapter,
   PluginAnchorRegistry,
   TokovoPluginContract,
   PluginViews,
   PluginReducer,
-} from "../types/plugin-contract";
-import { AppMetadata } from "../registries/metadata";
+} from "@tokovo/core";
+import { createScopedLogger } from "@tokovo/core";
+import type { AppMetadata } from "../registries/metadata";
 import { validatePlugin } from "../utils/validation";
-import { createScopedLogger } from "../logger";
 import type { PluginRegistries } from "./registries";
 
 const log = createScopedLogger("plugin");
@@ -59,7 +62,7 @@ export interface AppViewProps {
 
 export type AppViewComponent = (
   props: AppViewProps,
-) => React.ReactElement | null;
+) => ReactElement | null;
 
 export type ScreenComponent = AppViewComponent;
 
@@ -98,7 +101,7 @@ export interface WidgetProps {
   platform: Platform;
 }
 
-export type WidgetComponent = (props: WidgetProps) => React.ReactElement | null;
+export type WidgetComponent = (props: WidgetProps) => ReactElement | null;
 
 export interface WidgetSlot {
   mode: WidgetMode;
@@ -263,8 +266,8 @@ export class PluginManagerClass {
             viewKind: layout.viewKind,
             platforms: layout.platforms ?? [],
             computeLayout: layout.computeLayout as (
-              ctx: import("../types/layout").LayoutContext,
-            ) => import("../types/layout").LayoutState,
+              ctx: import("@tokovo/core").LayoutContext,
+            ) => import("@tokovo/core").LayoutState,
           });
         }
         cleanups.push(() => {

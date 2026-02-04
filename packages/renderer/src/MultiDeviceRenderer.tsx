@@ -3,8 +3,8 @@ import {
   WorldState,
   VideoConfig,
   DEFAULT_VIDEO_CONFIG,
-  PluginManagerClass,
 } from "@tokovo/core";
+import { PluginManagerClass } from "@tokovo/react";
 import { TokovoRenderer } from "./TokovoRenderer";
 import { AudioLayer } from "./AudioLayer";
 import { getDeviceProfile } from "@tokovo/devices";

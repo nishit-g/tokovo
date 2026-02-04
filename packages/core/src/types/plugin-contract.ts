@@ -10,7 +10,6 @@
  */
 
 import { RuntimeEvent } from "./runtime-event";
-import type { ComponentType } from "react";
 import type { Platform } from "../tokens";
 import type { AnchorFraming } from "./anchor";
 // =============================================================================
@@ -81,9 +80,11 @@ export interface PluginViewProps {
 }
 
 /**
- * View component type (React.FC in practice)
+ * View component type (UI component in practice)
  */
-export type PluginViewComponent = ComponentType<PluginViewProps>;
+export type UIComponent<Props = unknown> = (props: Props) => unknown;
+
+export type PluginViewComponent = UIComponent<PluginViewProps>;
 
 /**
  * Platform-specific view strategies

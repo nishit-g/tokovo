@@ -18,7 +18,31 @@ export { DEFAULT_BASE_CAMERA_STATE as DEFAULT_CAMERA_STATE } from "./types";
 // =============================================================================
 // ENGINE - Replay loop and handlers
 // =============================================================================
-export * from "./engine";
+export {
+  createInitialWorld,
+  replayIncremental,
+  createEventIndex,
+  createKeyframedEventIndex,
+  createStateCache,
+  getCachedStateForFrame,
+  cacheStateAtKeyframe,
+  invalidateCacheAfter,
+  clearStateCache,
+  handleAutoSounds,
+} from "./engine";
+export type {
+  ReplayContext,
+  PluginError,
+  DeviceReducer,
+  AppReducer,
+  FeatureReducer,
+  StateCache,
+  KeyframedEventIndex,
+} from "./engine";
+export { createReducerRegistry } from "./engine/registry";
+export type { ReducerRegistryClass } from "./engine/registry";
+export { EngineConfig } from "./engine/config";
+export { EngineLogger } from "./engine/logger";
 
 // =============================================================================
 // ANCHOR REGISTRY - Anchor registration and resolution
@@ -43,35 +67,15 @@ export * from "./audio";
 // =============================================================================
 export {
   createRegistry,
-  createAppRegistry,
   createSoundRegistry,
-  createWidgetRegistry,
-  getDynamicIslandWidget,
-  getNotificationWidgets,
   createBehaviorRegistry,
-  createAppMetadataRegistry,
-  createLayoutRegistry,
-  createIconRegistry,
-  getAppIcon,
 } from "./registries";
 export type {
   Registry,
-  AppViewProps,
-  AppViewComponent,
-  AppRegistryAPI,
-  AppMetadata,
-  AppMetadataRegistryAPI,
-  LayoutStrategy,
-  LayoutRegistryClass,
   SoundRegistryAPI,
   CameraIntent,
   AppBehavior,
   BehaviorRegistryAPI,
-  WidgetRegistryClass,
-  IconMetadata,
-  IconVariant,
-  IconSize,
-  IconRegistryAPI,
 } from "./registries";
 
 // =============================================================================
@@ -83,12 +87,6 @@ export * from "./notifications";
 // PLUGIN - Plugin system
 // Named exports to avoid conflicts with ./registries
 // =============================================================================
-export {
-  PluginManagerClass,
-  definePlugin,
-  registerPlugins,
-  createPluginRegistries,
-} from "./plugin";
 export type {
   TokovoPluginContract,
   PluginReducer,
@@ -99,12 +97,16 @@ export type {
   PluginAnchorRegistry,
   PluginNotificationAdapter,
   PluginTier,
-  TokovoPlugin,
-  ScreenComponent,
-  WidgetProps,
-  WidgetComponent,
-  PluginRegistries,
-} from "./plugin";
+  PluginLayoutConstants,
+  AppEventKindRegistry,
+  AppInitialStateRegistry,
+  PluginViewProps,
+  PluginViewComponent,
+  UIComponent,
+} from "./types/plugin-contract";
+
+/** TokovoPlugin is an alias for TokovoPluginContract<string> for convenience */
+export type TokovoPlugin = import("./types/plugin-contract").TokovoPluginContract<string>;
 
 // =============================================================================
 // UTILS - Utilities
@@ -150,35 +152,6 @@ export type {
 // Note: Legacy container removed in favor of engine + plugin scoped registries.
 
 // =============================================================================
-// COMPOSABLES - Micro-plugin pattern for composable plugin capabilities
-// =============================================================================
-export {
-  defineReducer,
-  defineViews,
-  defineAnchors,
-  defineLayouts,
-  defineAudioRules,
-  defineNotificationAdapter,
-  defineInitialState,
-  composePlugin,
-  getCapability,
-  hasCapability,
-} from "./plugin/composables";
-export type {
-  ReducerCapability,
-  ViewsCapability,
-  AnchorsCapability,
-  LayoutsCapability,
-  AudioCapability,
-  NotificationsCapability,
-  InitialStateCapability,
-  PluginCapability,
-  ComposedPlugin,
-  AnchorFramingConfig,
-  PluginLayoutDefinition,
-} from "./plugin/composables";
-
-// =============================================================================
 // LOGGER - Structured logging for debugging AI-generated content
 // =============================================================================
 export {
@@ -222,9 +195,7 @@ export type {
 // =============================================================================
 export {
   TokovoConfig,
-  configureEngine,
-  getConfig,
-  resetConfig,
+  createConfig,
   getTimingConfig,
   getKeyboardConfig,
   getAnimationConfig,
@@ -233,31 +204,11 @@ export {
   getNotificationsConfig,
   getCameraConfig,
   isDebugEnabled,
-  enableDebug,
-  disableDebug,
 } from "./config";
 export type { TokovoConfigType } from "./config";
-
-// =============================================================================
-// PLUGIN BUILDER - Fluent API for plugin creation
-// =============================================================================
-export {
-  createPluginBuilder,
-  definePlugin as createPlugin,
-} from "./plugin/builder";
-export type { PluginBuilder, PluginBuilderConfig } from "./plugin/builder";
 
 // =============================================================================
 // ENGINE FACADE - Unified engine initialization and control
 // =============================================================================
 export { createEngine, createEngineRegistries } from "./engine/index";
 export type { EngineRegistries } from "./engine/index";
-
-// =============================================================================
-// RUNTIME REGISTRIES - Bundled registry creation
-// =============================================================================
-export {
-  createTokovoRegistries,
-  type TokovoRegistries,
-  type TokovoRegistriesOverrides,
-} from "./registries/runtime";

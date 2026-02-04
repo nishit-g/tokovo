@@ -1,5 +1,5 @@
 import type { TokovoPluginContract, EngineRegistries } from "@tokovo/core";
-import type { PluginManagerClass } from "@tokovo/core";
+import type { PluginManagerClass } from "@tokovo/react";
 import { cameraReducer } from "./reducer";
 import { cameraV2Lowering, CAMERA_EVENT_TYPES } from "./lowering";
 

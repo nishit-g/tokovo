@@ -6,8 +6,8 @@
  */
 
 import React from "react";
-import { createRegistry } from "./factory";
-import type { ViewKind } from "../types";
+import { createRegistry } from "@tokovo/core";
+import type { ViewKind } from "@tokovo/core";
 
 // =============================================================================
 // TYPES

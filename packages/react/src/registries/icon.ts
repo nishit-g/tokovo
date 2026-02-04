@@ -1,5 +1,5 @@
 import React from "react";
-import { createRegistry } from "./factory";
+import { createRegistry } from "@tokovo/core";
 
 export type IconVariant = "default" | "dark" | "light" | "monochrome";
 export type IconSize = "small" | "medium" | "large" | "xlarge";

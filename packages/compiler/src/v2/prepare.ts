@@ -22,8 +22,8 @@ import {
   compareEvents,
   createEventIndex,
   createKeyframedEventIndex,
-  getConfig,
   computeEventSignature,
+  TokovoConfig,
 } from "@tokovo/core";
 import { lowerEpisode } from "./lowering";
 
@@ -66,7 +66,7 @@ export function prepareTrackEpisode(
   plugins: TokovoPlugin[],
   options: { config?: TokovoConfigType } = {},
 ): PreparedTrackEpisode {
-  const config = options.config ?? getConfig();
+  const config = options.config ?? TokovoConfig;
   const validation = safeValidateTrackEpisodeIR(ir);
   if (!validation.success) {
     console.error(

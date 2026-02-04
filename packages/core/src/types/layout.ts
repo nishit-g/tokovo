@@ -73,6 +73,13 @@ export interface SafeAreaInsets {
   right: number;
 }
 
+export interface LayoutCacheStore {
+  scopeKey: string;
+  get<T>(key: string): T | undefined;
+  set<T>(key: string, value: T): void;
+  clear(): void;
+}
+
 export interface LayoutContext {
   world: WorldState;
   t: number;
@@ -87,6 +94,8 @@ export interface LayoutContext {
   /** Device safe area insets (notch, home indicator, etc.) */
   safeAreaInsets: SafeAreaInsets;
   config?: Partial<LayoutConfig>;
+  /** Optional shared cache for layout strategies (scoped per episode/run). */
+  layoutCache?: LayoutCacheStore;
 }
 
 // =============================================================================

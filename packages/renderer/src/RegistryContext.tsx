@@ -1,5 +1,5 @@
 import React from "react";
-import type { PluginRegistries } from "@tokovo/core";
+import type { PluginRegistries } from "@tokovo/react";
 import type { DeviceRegistries } from "@tokovo/devices";
 import { DeviceRegistryProvider } from "@tokovo/devices";
 

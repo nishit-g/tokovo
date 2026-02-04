@@ -46,7 +46,7 @@ export * from "./handlers";
 // Engine Facade - unified API for engine initialization and control
 import { builtInMiddlewares } from "./middleware";
 import type { EngineRegistries } from "./registries";
-import { configureEngine, resetConfig, TokovoConfig } from "../config";
+import { createConfig, TokovoConfig } from "../config";
 
 export interface EngineInitOptions {
   config?: Partial<typeof TokovoConfig>;
@@ -57,6 +57,7 @@ export interface EngineInitOptions {
 class TokovoEngineFacade {
   private initialized = false;
   private initializing = false;
+  private config = TokovoConfig;
 
   constructor(private registries: EngineRegistries) {}
 
@@ -66,7 +67,7 @@ class TokovoEngineFacade {
 
     try {
       if (options.config) {
-        configureEngine(options.config);
+        this.config = createConfig(options.config);
       }
 
       if (options.enableBuiltInMiddlewares !== false) {
@@ -89,8 +90,11 @@ class TokovoEngineFacade {
     this.registries.lifecycle.destroyAll();
     this.registries.eventHandlers.clear();
     this.registries.middleware.clear();
-    resetConfig();
     this.initialized = false;
+  }
+
+  getConfig(): typeof TokovoConfig {
+    return this.config;
   }
 
   get isInitialized(): boolean {

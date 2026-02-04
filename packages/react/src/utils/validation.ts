@@ -1,5 +1,5 @@
 import { z } from "zod";
-import type { TokovoPluginContract } from "../types/plugin-contract";
+import type { TokovoPluginContract } from "@tokovo/core";
 import type { AppMetadata } from "../registries/metadata";
 
 export const AppMetadataSchema = z.object({

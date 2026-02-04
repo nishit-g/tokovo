@@ -29,9 +29,5 @@ export {
 } from "./dsl";
 export type { NotificationOptions } from "./dsl";
 
-// View registry
-export { createNotificationViewRegistry, NotificationViewRegistryClass } from "./registry";
-export type { NotificationViewProps, NotificationViewComponent } from "./registry";
-
 // Scheduler
 export { NotificationScheduler } from "./scheduler";

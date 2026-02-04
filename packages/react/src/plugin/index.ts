@@ -18,7 +18,7 @@ export type {
   PluginLayoutConstants,
   AppEventKindRegistry,
   AppInitialStateRegistry,
-} from "../types/plugin-contract";
+} from "@tokovo/core";
 
 // Plugin Zod schemas for runtime validation
 export {

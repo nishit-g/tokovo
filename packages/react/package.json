@@ -8,16 +8,21 @@
     "dist"
   ],
   "scripts": {
-    "build": "tsc"
+    "build": "tsc",
+    "test": "vitest run"
   },
   "dependencies": {
-    "@tokovo/core": "workspace:*"
+    "@tokovo/core": "workspace:*",
+    "zod": "^4.2.1"
   },
   "peerDependencies": {
     "react": "^18.0.0 || ^19.0.0",
     "react-dom": "^18.0.0 || ^19.0.0"
   },
   "devDependencies": {
-    "@types/react": "18.3.1"
+    "@types/react": "18.3.1",
+    "@types/react-dom": "18.3.1",
+    "react-dom": "18.3.1",
+    "vitest": "^1.0.0"
   }
 }

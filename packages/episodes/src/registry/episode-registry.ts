@@ -37,6 +37,13 @@ export class EpisodeRegistry {
     }
 
     /**
+     * Snapshot the current registry contents.
+     * Useful for multi-process rendering pipelines.
+     */
+    snapshot(): EpisodeDefinition[] {
+        return this.all();
+    }
+    /**
      * Filter episodes by category or tags.
      */
     filter(opts?: { category?: string; tags?: string[] }): EpisodeDefinition[] {
@@ -88,3 +95,20 @@ export class EpisodeRegistry {
  * Global episode registry singleton.
  */
 export const episodeRegistry = new EpisodeRegistry();
+
+/**
+ * Create an explicit episode registry instance.
+ * Prefer this for batch rendering or tests.
+ */
+export function createEpisodeRegistry(): EpisodeRegistry {
+    return new EpisodeRegistry();
+}
+
+/**
+ * Get a snapshot of the provided registry (or the global registry by default).
+ */
+export function getEpisodeRegistrySnapshot(
+    registry: EpisodeRegistry = episodeRegistry,
+): EpisodeDefinition[] {
+    return registry.snapshot();
+}

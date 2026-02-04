@@ -3,7 +3,7 @@ import type { TokovoPluginContract } from "../types/plugin-contract";
 import type { CompiledEpisode } from "../types/compiled-episode";
 import { prepareTestUtils } from "../testing";
 import { createEngineRegistries } from "../engine/registries";
-import { getConfig } from "../config";
+import { createConfig } from "../config";
 
 const baseInput = {
   episodeId: "ep1",
@@ -194,7 +194,7 @@ describe("prepare episode", () => {
     const state = mod.runEpisode(compiled, 0, {
       mode: "preview",
       registries: createEngineRegistries(),
-      config: getConfig(),
+      config: createConfig(),
     });
     expect(state).toEqual(compiled.initialWorld);
   });

@@ -2,13 +2,26 @@ import type {
   TokovoPluginContract,
   PluginViews,
   PluginReducer,
-} from "../types/plugin-contract";
-import type { PluginLifecycleHooks } from "../engine/lifecycle";
-import type { EventHandlerDefinition } from "../engine/event-handlers";
-import type { MiddlewareDefinition } from "../engine/middleware";
-import type { EngineRegistries } from "../engine/registries";
+  EngineRegistries,
+} from "@tokovo/core";
 import { PluginManagerClass } from "./plugin";
-import { createScopedLogger } from "../logger";
+import { createScopedLogger } from "@tokovo/core";
+
+// Define types locally that aren't exported from core
+export interface PluginLifecycleHooks {
+  onInit?: () => void;
+  onDestroy?: () => void;
+}
+
+export interface EventHandlerDefinition {
+  kind: string;
+  handler: (draft: unknown, event: unknown) => void;
+}
+
+export interface MiddlewareDefinition {
+  id?: string;
+  handler: (event: unknown, draft: unknown, ctx: unknown, next: () => void) => void;
+}
 
 const log = createScopedLogger("plugin-builder");
 
@@ -126,7 +139,7 @@ export function createPluginBuilder(
       }
 
       for (const mw of built.middlewares) {
-        unsubscribers.push(registries.middleware.use(mw));
+        unsubscribers.push(registries.middleware.use(mw as any));
       }
 
       log.info(`Plugin registered: ${config.displayName} (${config.id})`);

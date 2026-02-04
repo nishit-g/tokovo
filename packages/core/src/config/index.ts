@@ -52,7 +52,24 @@ const TokovoConfigSchema = z.object({
   }),
 });
 
-export const TokovoConfig = {
+function deepFreeze<T>(value: T): T {
+  if (value && typeof value === "object") {
+    Object.freeze(value);
+    for (const key of Object.keys(value)) {
+      const child = (value as Record<string, unknown>)[key];
+      if (
+        child &&
+        typeof child === "object" &&
+        !Object.isFrozen(child)
+      ) {
+        deepFreeze(child);
+      }
+    }
+  }
+  return value;
+}
+
+export const TokovoConfig = deepFreeze({
   timing: {
     effectCleanupBuffer: 30,
     defaultTransitionDuration: 30,
@@ -108,7 +125,7 @@ export const TokovoConfig = {
     logPerformance: false,
     showBoundingBoxes: false,
   },
-} as const;
+} as const);
 
 export type TokovoConfigType = typeof TokovoConfig;
 
@@ -142,8 +159,6 @@ function deepMerge<T extends object>(base: T, override: DeepPartial<T>): T {
   return result;
 }
 
-let currentConfig = { ...TokovoConfig };
-
 export class ConfigValidationError extends Error {
   constructor(
     message: string,
@@ -154,9 +169,9 @@ export class ConfigValidationError extends Error {
   }
 }
 
-export function configureEngine(
-  overrides: DeepPartial<TokovoConfigType>,
-): void {
+export function createConfig(
+  overrides: DeepPartial<TokovoConfigType> = {},
+): TokovoConfigType {
   const merged = deepMerge(TokovoConfig, overrides);
 
   const result = TokovoConfigSchema.safeParse(merged);
@@ -167,55 +182,55 @@ export function configureEngine(
     );
   }
 
-  currentConfig = merged;
+  return deepFreeze(merged);
 }
 
-export function getConfig(): TokovoConfigType {
-  return currentConfig;
+export function getTimingConfig(
+  config: TokovoConfigType = TokovoConfig,
+) {
+  return config.timing;
 }
 
-export function resetConfig(): void {
-  currentConfig = { ...TokovoConfig };
+export function getKeyboardConfig(
+  config: TokovoConfigType = TokovoConfig,
+  platform: "ios" | "android" = "ios",
+) {
+  return config.keyboard[platform];
 }
 
-export function getTimingConfig() {
-  return currentConfig.timing;
+export function getAnimationConfig(
+  config: TokovoConfigType = TokovoConfig,
+) {
+  return config.animation;
 }
 
-export function getKeyboardConfig(platform: "ios" | "android" = "ios") {
-  return currentConfig.keyboard[platform];
+export function getRenderingConfig(
+  config: TokovoConfigType = TokovoConfig,
+) {
+  return config.rendering;
 }
 
-export function getAnimationConfig() {
-  return currentConfig.animation;
+export function getAudioConfig(
+  config: TokovoConfigType = TokovoConfig,
+) {
+  return config.audio;
 }
 
-export function getRenderingConfig() {
-  return currentConfig.rendering;
+export function getNotificationsConfig(
+  config: TokovoConfigType = TokovoConfig,
+) {
+  return config.notifications;
 }
 
-export function getAudioConfig() {
-  return currentConfig.audio;
-}
-
-export function getNotificationsConfig() {
-  return currentConfig.notifications;
-}
-
-export function getCameraConfig() {
-  return currentConfig.camera;
+export function getCameraConfig(
+  config: TokovoConfigType = TokovoConfig,
+) {
+  return config.camera;
 }
 
 export function isDebugEnabled(
+  config: TokovoConfigType = TokovoConfig,
   feature: keyof typeof TokovoConfig.debug,
 ): boolean {
-  return currentConfig.debug[feature];
-}
-
-export function enableDebug(feature: keyof typeof TokovoConfig.debug): void {
-  (currentConfig.debug as Record<string, boolean>)[feature] = true;
-}
-
-export function disableDebug(feature: keyof typeof TokovoConfig.debug): void {
-  (currentConfig.debug as Record<string, boolean>)[feature] = false;
+  return config.debug[feature];
 }

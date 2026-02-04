@@ -1,13 +1,13 @@
-import { createReducerRegistry } from "../engine/registry";
 import {
+  createReducerRegistry,
   createEngineRegistries,
   type EngineRegistries,
-} from "../engine/registries";
+  registerBuiltInSounds,
+} from "@tokovo/core";
 import {
   createPluginRegistries,
   type PluginRegistries,
 } from "../plugin/registries";
-import { registerBuiltInSounds } from "../audio/sounds";
 
 export interface TokovoRegistries {
   engine: EngineRegistries;

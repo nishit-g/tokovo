@@ -35,11 +35,56 @@ export default tseslint.config(
       eqeqeq: ["error", "always"],
     },
   },
+  // =========================================================================
+  // PACKAGE BOUNDARY RULES
+  // Prevents layer violations: core should not import from UI packages
+  // =========================================================================
+  {
+    files: ["packages/core/src/**/*.ts"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: [
+            {
+              group: ["@tokovo/react", "@tokovo/react/*"],
+              message: "Core cannot import from @tokovo/react (UI layer). Move UI types to react package.",
+            },
+            {
+              group: ["@tokovo/renderer", "@tokovo/renderer/*"],
+              message: "Core cannot import from @tokovo/renderer (UI layer). Core must be headless.",
+            },
+            {
+              group: ["react", "react-dom"],
+              message: "Core cannot import React directly. UI components belong in @tokovo/react.",
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
+    files: ["packages/renderer/src/**/*.ts", "packages/renderer/src/**/*.tsx"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: [
+            {
+              group: ["@tokovo/apps-*"],
+              message: "Renderer should not import app packages directly. Use registries instead.",
+            },
+          ],
+        },
+      ],
+    },
+  },
   {
     files: ["**/*.test.ts", "**/*.spec.ts"],
     rules: {
       "@typescript-eslint/no-explicit-any": "off",
       "no-console": "off",
+      "no-restricted-imports": "off",
     },
   },
   {

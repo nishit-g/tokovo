@@ -39,7 +39,21 @@ export interface AnchorProvider {
 export interface AnchorProviderContext {
   getDeviceProfile?: (
     profileId?: string,
-  ) => { dimensions: { width: number; height: number } } | undefined;
+  ) =>
+    | {
+        dimensions: { width: number; height: number };
+        safeArea?: { top: number; bottom: number; left: number; right: number };
+        dynamicIsland?: {
+          centerX: number;
+          topY: number;
+          collapsedWidth: number;
+          collapsedHeight: number;
+          expandedWidth?: number;
+          expandedHeight?: number;
+          cornerRadius?: number;
+        };
+      }
+    | undefined;
   getDeviceShell?: (
     profileId?: string,
   ) => { hasDynamicIsland: boolean } | undefined;

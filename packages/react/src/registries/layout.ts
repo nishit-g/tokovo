@@ -17,8 +17,7 @@
  * return strategy?.computeLayout(ctx) ?? defaultLayout(ctx);
  */
 
-import type { Platform } from "../tokens";
-import type { LayoutContext, LayoutState } from "../types/layout";
+import type { Platform, LayoutContext, LayoutState } from "@tokovo/core";
 
 // Re-export types for convenience
 export type { LayoutContext, LayoutState };

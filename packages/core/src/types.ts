@@ -217,6 +217,8 @@ export type {
   SemanticRegion,
   SemanticLayoutState,
   LayoutContext,
+  LayoutCacheStore,
+  SafeAreaInsets,
   LayoutConfig,
   ChatLayoutConfig,
   FeedLayoutConfig,

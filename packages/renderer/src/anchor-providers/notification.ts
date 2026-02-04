@@ -18,31 +18,32 @@ const APP_ID = "app_notification";
 function getViewportDimensions(
   device: WorldState["devices"][string] | undefined,
   context?: AnchorProviderContext,
-): { width: number; height: number } {
+): { width: number; height: number; safeAreaTop: number } {
   const profileId = device?.profileId;
   const profile = context?.getDeviceProfile?.(profileId);
   if (profile) {
-    return profile.dimensions;
+    return {
+      width: profile.dimensions.width,
+      height: profile.dimensions.height,
+      safeAreaTop: profile.safeArea?.top ?? 0,
+    };
   }
   if (device?.screenDimensions) {
     return {
       width: device.screenDimensions.width,
       height: device.screenDimensions.height,
+      safeAreaTop: device.screenDimensions.safeAreaTop,
     };
   }
-  return { width: 430, height: 932 };
+  return { width: 430, height: 932, safeAreaTop: 0 };
 }
 
-function hasDynamicIsland(
+function resolveProfile(
   device: WorldState["devices"][string] | undefined,
   context?: AnchorProviderContext,
-): boolean {
+) {
   const profileId = device?.profileId;
-  const shell = context?.getDeviceShell?.(profileId);
-  if (shell) {
-    return shell.hasDynamicIsland;
-  }
-  return false;
+  return context?.getDeviceProfile?.(profileId);
 }
 
 /**
@@ -85,9 +86,13 @@ export const NotificationAnchorProvider: AnchorProvider = {
     const device = world.devices[deviceId];
     const notifications = device?.notifications || [];
 
+    const profile = resolveProfile(device, context);
     const viewport = getViewportDimensions(device, context);
     const viewportWidth = viewport.width;
     const viewportHeight = viewport.height;
+    const safeAreaTop =
+      profile?.safeArea?.top ?? viewport.safeAreaTop ?? 0;
+    const dynamicIsland = profile?.dynamicIsland;
 
     // =========================================================================
     // HEADS-UP NOTIFICATION
@@ -99,10 +104,13 @@ export const NotificationAnchorProvider: AnchorProvider = {
     });
 
     if (activeHeadsUp) {
+      const headsUpTop = dynamicIsland
+        ? dynamicIsland.topY + dynamicIsland.collapsedHeight + 12
+        : safeAreaTop + 12;
       // Heads-up at top of screen, below Dynamic Island
       anchors.headsUpNotification = {
         x: 16,
-        y: 60, // Below Dynamic Island
+        y: headsUpTop,
         width: viewportWidth - 32,
         height: 100, // Typical banner height
       };
@@ -112,12 +120,20 @@ export const NotificationAnchorProvider: AnchorProvider = {
     // DYNAMIC ISLAND
     // =========================================================================
     // Dynamic Island is resolved from device shell capabilities
-    if (hasDynamicIsland(device, context)) {
+    if (dynamicIsland) {
+      const width =
+        dynamicIsland.collapsedWidth ||
+        dynamicIsland.expandedWidth ||
+        viewportWidth * 0.4;
+      const height =
+        dynamicIsland.collapsedHeight ||
+        dynamicIsland.expandedHeight ||
+        37;
       anchors.dynamicIsland = {
-        x: viewportWidth * 0.3,
-        y: 11,
-        width: viewportWidth * 0.4,
-        height: 37,
+        x: dynamicIsland.centerX - width / 2,
+        y: dynamicIsland.topY,
+        width,
+        height,
       };
     }
 
