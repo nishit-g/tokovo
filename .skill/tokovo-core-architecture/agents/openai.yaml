@@ -1,0 +1,4 @@
+interface:
+  display_name: "Tokovo Core Architecture"
+  short_description: "Core runtime architecture, registries, and determinism"
+  default_prompt: "Use -core-architecture to explain Tokovo's core runtime and plugin architecture."

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Tokovo Device Plugins"
+  short_description: "Device plugin wiring for camera, keyboard, audio, notifications"
+  default_prompt: "Use -device-plugins to wire device plugins and device registries."
