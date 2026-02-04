@@ -12,7 +12,7 @@ Tokovo is organized as a pnpm monorepo with clearly separated concerns. This doc
 ```
 tokovo/
 ├── apps/
-│   ├── docs/                    # Documentation site (Next.js + Fumadocs)
+│   ├── docs/                    # Documentation site (Next.js + Nextra)
 │   └── video-runner/            # Dev environment for testing episodes
 │
 ├── packages/
@@ -24,6 +24,7 @@ tokovo/
 │   ├── voice/                   # Voice-over pipeline
 │   ├── devices/                 # Device frame components
 │   ├── apps-whatsapp/           # WhatsApp app simulation
+│   ├── apps-x/                  # X (Twitter) app simulation
 │   ├── device-camera/           # Camera simulation
 │   ├── device-keyboard/         # Keyboard simulation
 │   ├── device-notifications/    # Notification system
@@ -119,9 +120,9 @@ import type {
   RuntimeEvent,
   VoiceRuntimeEvent,
 } from "@tokovo/core";
+import { createTokovoRegistries } from "@tokovo/react";
 
 // Registries
-import { createTokovoRegistries } from "@tokovo/core";
 
 const registries = createTokovoRegistries();
 const { apps, sounds, anchors } = registries.plugins;
@@ -169,9 +170,6 @@ const compiled = compile(episodeDef);
 import { episode } from "@tokovo/dsl";
 import { WhatsAppTrackBuilder } from "@tokovo/apps-whatsapp";
 
-let order = 0;
-const getOrder = () => order++;
-
 const myEpisode = episode("my-episode", { fps: 30, duration: "10s" })
   .device("phone1", "iphone-14", {
     app: "app_whatsapp",
@@ -179,7 +177,7 @@ const myEpisode = episode("my-episode", { fps: 30, duration: "10s" })
   })
   .track(
     "app_whatsapp",
-    () => new WhatsAppTrackBuilder(30, "phone1", "dm_hello", getOrder),
+    (getOrder) => new WhatsAppTrackBuilder(30, "phone1", "dm_hello", getOrder),
     (wa) => {
       wa.at("1s").send("Hello!");
     },
@@ -274,15 +272,15 @@ import { WhatsAppChat, WhatsAppMessage } from "@tokovo/apps-whatsapp";
 **Role**: Development environment for testing episodes with hot reload.
 
 ```bash
-pnpm turbo dev --filter=video-runner
+pnpm dev --filter=video-runner
 ```
 
 ### apps/docs
 
-**Role**: Documentation site built with Next.js and Fumadocs.
+**Role**: Documentation site built with Next.js and Nextra.
 
 ```bash
-pnpm turbo dev --filter=docs
+pnpm dev --filter=docs
 ```
 
 ---
@@ -302,9 +300,9 @@ Each package supports standard scripts:
 Run across all packages with Turbo:
 
 ```bash
-pnpm turbo build              # Build everything
-pnpm turbo build --filter=@tokovo/core  # Build single package
-pnpm turbo dev --filter=video-runner    # Dev mode for runner
+pnpm build                         # Build everything
+pnpm build --filter=@tokovo/core   # Build single package
+pnpm dev --filter=video-runner     # Dev mode for runner
 ```
 
 ---

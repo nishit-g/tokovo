@@ -118,9 +118,6 @@ A TypeScript-first authoring experience with autocomplete and type safety:
 import { episode } from "@tokovo/dsl";
 import { WhatsAppTrackBuilder } from "@tokovo/apps-whatsapp";
 
-let order = 0;
-const getOrder = () => order++;
-
 episode("my-story", { fps: 30, duration: "20s" })
   .device("phone", "iphone16", {
     app: "app_whatsapp",
@@ -128,14 +125,14 @@ episode("my-story", { fps: 30, duration: "20s" })
   })
   .track(
     "app_whatsapp",
-    () => new WhatsAppTrackBuilder(30, "phone", "chat_alice", getOrder),
+    (getOrder) => new WhatsAppTrackBuilder(30, "phone", "chat_alice", getOrder),
     (wa) => {
       wa.at("1s").receive("Alice", "Hey!");
       wa.at("3s").typing("Alice");
       wa.at("4s").receive("Alice", "What's up?");
     },
   )
-  .camera((c) => c.at("0s").focus("lastMessage"));
+  .camera((c) => c.at("0s").focus("app_whatsapp:message"));
 ```
 
 #### 3. Compiler (Lowering to IR)
@@ -270,14 +267,14 @@ function computeLayout(worldState: WorldState, t: number): LayoutData {
 
 Anchors are **named positions** in the UI that the camera can reference:
 
-- `lastMessage` → Y-position of the most recent chat bubble
-- `typingIndicator` → Position of typing dots
+- `message` → Y-position of the most recent chat bubble
+- `typing` → Position of typing dots
 - `notificationBadge` → App icon badge position
 
 Camera movements reference anchors, not hardcoded coordinates:
 
 ```ts
-camera.at("2s").focus("lastMessage");
+camera.at("2s").focus("app_whatsapp:message");
 camera.at("2s").zoom(1.5);
 ```
 

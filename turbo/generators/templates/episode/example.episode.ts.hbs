@@ -1,32 +1,43 @@
 // example-{{ name }}.episode.ts
 //
 // IMPORTANT: This episode does NOT register the plugin.
-// Plugin registration is handled by the app entry point (e.g., video-runner/Root.tsx)
+// Plugin registration is handled by the app entry point (e.g., video-runner/runtime.ts)
 // before any episodes run. Episodes only use DSL APIs.
 //
-import { createEpisode, beat } from "@tokovo/episodes";
+import { defineEpisode } from "@tokovo/episodes";
+import { episode } from "@tokovo/dsl";
+import { {{ pascalCase name }}TrackBuilder } from "@tokovo/apps-{{ name }}";
 
-export const example{{ pascalCase name }}Episode = createEpisode({
-  id: "example-{{ name }}",
-  title: "{{ displayName }} Demo",
-
-  script: () => {
-    beat("intro", (b) => {
-      b.use("app_{{ name }}")
-        .createNote({ title: "Hello World", content: "This is my first note!" })
-        .wait(1000);
-    });
-
-    beat("view", (b) => {
-      b.use("app_{{ name }}")
-        .viewNote("note-1")
-        .wait(2000);
-    });
-
-    beat("edit", (b) => {
-      b.use("app_{{ name }}")
-        .editNote("note-1", { content: "Updated content!" })
-        .wait(1000);
-    });
+export default defineEpisode({
+  meta: {
+    id: "example-{{ name }}",
+    title: "{{ displayName }} Demo",
+    category: "production",
   },
+  config: {
+    format: "1080x1920",
+    durationInFrames: 300,
+    apps: ["app_{{ name }}"],
+  },
+  build: () =>
+    episode("example-{{ name }}", {
+      fps: 30,
+      duration: "10s",
+      title: "{{ displayName }} Demo",
+    })
+      .device("phone", "iphone16", { app: "app_{{ name }}" })
+      .track(
+        "app_{{ name }}",
+        (getOrder) => new {{ pascalCase name }}TrackBuilder(30, "phone", getOrder),
+        (notes) => {
+          notes.at("1s").createNote({
+            id: "note-1",
+            title: "Hello World",
+            content: "This is my first note!",
+          });
+          notes.at("3s").viewNote("note-1");
+          notes.at("5s").editNote("note-1", { content: "Updated content!" });
+        },
+      )
+      .build(),
 });

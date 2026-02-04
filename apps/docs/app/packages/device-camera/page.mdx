@@ -18,7 +18,7 @@ In Tokovo, the camera isn't just a viewport—it's a **storytelling device**. Li
 
 The camera system is built on three foundational concepts:
 
-1. **Semantic Anchors** — Focus on meaningful UI elements ("lastMessage", "inputArea") instead of pixel coordinates
+1. **Semantic Anchors** — Focus on meaningful UI elements (`app_whatsapp:message`, `app_whatsapp:input`) instead of pixel coordinates
 2. **Effect Processors** — Composable camera effects that can be layered and combined
 3. **Frame-Based Determinism** — Every camera movement is reproducible at any point in the timeline
 
@@ -84,20 +84,20 @@ Focus semantically on UI elements using the Anchor System:
   cam.at('0s').set({ scale: 1 })
 
   // Focus on the most recent message
-  cam.at('2s').focus('lastMessage', {
+  cam.at('2s').focus('app_whatsapp:message', {
     scale: 1.15,
     duration: '0.4s',
     easing: 'easeOut'
   })
 
-  // Focus on notification banner
-  cam.at('5s').focus('notification', {
+  // Focus on header area
+  cam.at('5s').focus('app_whatsapp:header', {
     scale: 1.2,
     duration: '0.5s'
   })
 
-  // Focus on typing indicator
-  cam.at('8s').focus('inputArea', {
+  // Focus on typing area
+  cam.at('8s').focus('app_whatsapp:typing', {
     scale: 1.05,
     duration: '0.3s'
   })
@@ -106,12 +106,12 @@ Focus semantically on UI elements using the Anchor System:
 
 **Available Anchors** (app-dependent):
 
-- `deviceScreen` — Full device viewport
-- `lastMessage` — Most recent message in chat
-- `inputArea` — Message input field
-- `notification` — Notification banner
-- `appIcon` — Specific app icon (multi-device)
-- `profileHeader` — Profile/chat header
+- `device` — Full device viewport
+- `app_whatsapp:message` — Most recent message in chat
+- `app_whatsapp:input` — Message input field
+- `app_whatsapp:typing` — Typing bubble
+- `app_whatsapp:header` — Chat header
+- `app_whatsapp:profile` — Profile avatar
 
 See [Anchor System](/concepts/anchors) for complete documentation.
 
@@ -122,13 +122,13 @@ Track an anchor continuously as it moves:
 ```typescript
 .camera((cam) => {
   // Start tracking the input area as user types
-  cam.span('3s', '8s').track('inputArea', {
+  cam.span('3s', '8s').track('app_whatsapp:input', {
     scale: 1.05,
     smoothing: 0.15  // 0 = instant, 1 = very smooth
   })
 
   // Track last message as new messages arrive
-  cam.span('10s', '20s').track('lastMessage', {
+  cam.span('10s', '20s').track('app_whatsapp:message', {
     scale: 1.1,
     smoothing: 0.2
   })
@@ -347,7 +347,7 @@ const CAMERA_FEELS = {
   cam.at('0s').set({ scale: 1 })
 
   // Message arrives - focus on it
-  cam.at('5s').focus('lastMessage', {
+  cam.at('5s').focus('app_whatsapp:message', {
     scale: 1.15,
     duration: '0.4s',
     easing: 'easeOut'
@@ -387,20 +387,20 @@ const CAMERA_FEELS = {
 ```typescript
 .camera((cam) => {
   // Focus on notification
-  cam.at('2s').focus('notification', {
+  cam.at('2s').focus('app_whatsapp:header', {
     scale: 1.1,
     duration: '0.5s'
   })
 
   // Pan down to message
-  cam.at('4s').focus('lastMessage', {
+  cam.at('4s').focus('app_whatsapp:message', {
     scale: 1.15,
     duration: '0.8s',
     easing: 'easeInOut'
   })
 
   // Pan to input area
-  cam.at('7s').focus('inputArea', {
+  cam.at('7s').focus('app_whatsapp:input', {
     scale: 1.05,
     duration: '0.6s'
   })
@@ -411,24 +411,28 @@ const CAMERA_FEELS = {
 
 The camera system is tightly integrated with the [Anchor System](/concepts/anchors):
 
-1. **Apps register anchors** via `AnchorProvider` interface
-2. **Camera resolves anchors** at render time to get current positions
-3. **Camera calculates transform** to frame the anchor with desired scale/framing
+1. **Apps define anchors** via `PluginAnchorRegistry`
+2. **PluginManager registers providers** into the anchor registry
+3. **Camera resolves anchors** at render time for framing
 
 ```typescript
-// WhatsApp provides anchors
-const anchorProvider: AnchorProvider = {
-  getAnchors(world, deviceId, appId) {
-    return {
-      lastMessage: { x: 100, y: 500, width: 300, height: 80 },
-      inputArea: { x: 50, y: 1200, width: 400, height: 60 },
-    };
+// App provides anchors
+import type { PluginAnchorRegistry } from "@tokovo/core";
+
+const anchors: PluginAnchorRegistry = {
+  providers: {
+    message: (_world, _deviceId) => ({
+      x: 0.5,
+      y: 0.6,
+      width: 0.7,
+      height: 0.15,
+    }),
   },
 };
 
 // Camera uses anchors
-cam.at("2s").focus("lastMessage");
-// → Camera calculates transform to center lastMessage with scale 1.15
+cam.at("2s").focus("app_whatsapp:message");
+// → Camera calculates transform to center message with scale 1.15
 ```
 
 See [Anchor System](/concepts/anchors) for implementation details.
@@ -438,33 +442,25 @@ See [Anchor System](/concepts/anchors) for implementation details.
 Camera movements are stored in the Timeline as events:
 
 ```typescript
-// Focus effect → CAMERA_FOCUS event
+// Focus effect → CAMERA event
 {
   at: 2.0,
-  kind: 'CAMERA',
-  deviceId: 'phone',
-  effect: {
-    type: 'focus',
-    anchorId: 'lastMessage',
-    scale: 1.15,
-    startFrame: 60,
-    endFrame: 72
-  }
+  kind: "CAMERA",
+  type: "FOCUS",
+  deviceId: "phone",
+  anchorId: "app_whatsapp:message",
+  scale: 1.15,
+  duration: 12
 }
 
-// Zoom effect → CAMERA_ZOOM event
+// Zoom effect → CAMERA event
 {
   at: 5.0,
-  kind: 'CAMERA',
-  deviceId: 'phone',
-  effect: {
-    type: 'zoom',
-    targetScale: 1.3,
-    targetX: 0,
-    targetY: -40,
-    startFrame: 150,
-    endFrame: 174
-  }
+  kind: "CAMERA",
+  type: "ZOOM",
+  deviceId: "phone",
+  scale: 1.3,
+  duration: 30
 }
 ```
 
@@ -511,10 +507,10 @@ registerCameraProcessor(shakeProcessor);
 - `focus` — Anchor-based framing
 - `track` — Continuous anchor following
 - `shake` — Perlin noise shake
-- `punchZoom` — Spring-based impact zoom
-- `dutchTilt` — Z-axis rotation
+- `punch-zoom` — Spring-based impact zoom
+- `dutch-tilt` — Z-axis rotation
 - `flash` — Color overlay
-- `whipPan` — Directional blur
+- `whip-pan` — Directional blur
 - `reset` — Return to neutral
 
 ## Links

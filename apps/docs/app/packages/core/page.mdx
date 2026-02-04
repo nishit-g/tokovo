@@ -105,7 +105,8 @@ function runEpisode(
 **Example:**
 
 ```typescript
-import { replay, createInitialWorld, createTokovoRegistries } from "@tokovo/core";
+import { replay, createInitialWorld } from "@tokovo/core";
+import { createTokovoRegistries } from "@tokovo/react";
 
 const initialWorld = createInitialWorld({
   devices: {
@@ -137,7 +138,7 @@ const episode = {
 const worldAt45 = runEpisode(episode, 45, {
   mode: "preview",
   registries: registries.engine,
-  config: getConfig(),
+  config: TokovoConfig,
 });
 // worldAt45.devices.main_phone.isLocked === false
 // worldAt45.devices.main_phone.foregroundAppId === 'app_whatsapp'
@@ -154,7 +155,7 @@ const worldAt45 = runEpisode(episode, 45, {
 Maps `appId` → React view component
 
 ```typescript
-import { createTokovoRegistries } from "@tokovo/core";
+import { createTokovoRegistries } from "@tokovo/react";
 
 const registries = createTokovoRegistries();
 registries.plugins.apps.register("app_whatsapp", WhatsAppView);
@@ -166,7 +167,7 @@ const view = registries.plugins.apps.get("app_whatsapp");
 Manages sound asset URLs with namespacing
 
 ```typescript
-import { createTokovoRegistries } from "@tokovo/core";
+import { createTokovoRegistries } from "@tokovo/react";
 
 const registries = createTokovoRegistries();
 registries.plugins.sounds.registerNamespaced("app_whatsapp", {
@@ -182,7 +183,7 @@ const url = registries.plugins.sounds.get("app_whatsapp:notification");
 Resolves semantic positions (e.g., "message bubble", "send button")
 
 ```typescript
-import { createTokovoRegistries } from "@tokovo/core";
+import { createTokovoRegistries } from "@tokovo/react";
 
 const registries = createTokovoRegistries();
 const bounds = registries.plugins.anchors.resolveAnchor(
@@ -198,7 +199,7 @@ const bounds = registries.plugins.anchors.resolveAnchor(
 Platform-specific layout computation strategies
 
 ```typescript
-import { createTokovoRegistries } from "@tokovo/core";
+import { createTokovoRegistries } from "@tokovo/react";
 
 const registries = createTokovoRegistries();
 registries.plugins.layouts.register({
@@ -217,7 +218,7 @@ registries.plugins.layouts.register({
 Dynamic Island, status bar, and lockscreen widgets
 
 ```typescript
-import { createTokovoRegistries } from "@tokovo/core";
+import { createTokovoRegistries } from "@tokovo/react";
 
 const registries = createTokovoRegistries();
 registries.plugins.widgets.register({
@@ -432,7 +433,7 @@ Tokovo uses **scoped registries** per runtime. Create them once and pass them to
 engine/replay/rendering calls:
 
 ```typescript
-import { createTokovoRegistries } from "@tokovo/core";
+import { createTokovoRegistries } from "@tokovo/react";
 
 const registries = createTokovoRegistries();
 
@@ -459,7 +460,7 @@ Plugins are **batteries-included app modules** that bundle everything an app nee
 **Defining a plugin:**
 
 ```typescript
-import { definePlugin } from "@tokovo/core";
+import { definePlugin } from "@tokovo/react";
 
 export const whatsappPlugin = definePlugin({
   id: "app_whatsapp",
@@ -523,7 +524,7 @@ export const whatsappPlugin = definePlugin({
 **Registering plugins:**
 
 ```typescript
-import { createTokovoRegistries, PluginManagerClass } from "@tokovo/core";
+import { createTokovoRegistries, PluginManagerClass } from "@tokovo/react";
 
 const registries = createTokovoRegistries();
 const pluginManager = new PluginManagerClass(registries.plugins);
@@ -562,13 +563,13 @@ const myPlugin = composePlugin(
 | **Notifications** | `NotificationIR`, `NotificationInstance`            | Notification system       |
 | **Keyboard**      | `KeyboardState`, `TypingSchedule`                   | Virtual keyboard          |
 | **Layout**        | `LayoutState`, `ChatLayoutState`, `FeedLayoutState` | Layout computation        |
-| **Anchors**       | `AnchorProvider`, `AnchorFraming`                   | Semantic positioning      |
+| **Anchors**       | `AnchorRegistryClass`, `AnchorSnapshot`, `AnchorFraming` | Semantic positioning      |
 | **Plugin**        | `TokovoPlugin`, `PluginReducer`, `PluginViews`      | Plugin contracts          |
 | **Validation**    | `ValidationResult`, `ValidationIssue`               | Schema validation         |
 | **Logger**        | `LogEntry`, `LogLevel`, `LogCollector`              | Structured logging        |
 | **Config**        | `TokovoConfig`, `TimingConfig`                      | Engine configuration      |
 | **Registry**      | `Registry`, `AppMetadata`, `LayoutStrategy`         | Registry interfaces       |
-| **Runtime**       | `TokovoRegistries`, `createTokovoRegistries`        | Scoped registries         |
+| **Runtime**       | `TokovoRegistries`, `createTokovoRegistries` (from `@tokovo/react`) | Scoped registries |
 
 **Example: WorldState**
 
@@ -613,14 +614,15 @@ const world: WorldState = {
 ### `runEpisode()` — Compute World State (Incremental)
 
 ```typescript
-import { runEpisode, createTokovoRegistries, getConfig } from "@tokovo/core";
+import { runEpisode, TokovoConfig } from "@tokovo/core";
+import { createTokovoRegistries } from "@tokovo/react";
 
 const registries = createTokovoRegistries();
 
 const worldState = runEpisode(preparedEpisode, currentFrame, {
   mode: "preview",
   registries: registries.engine,
-  config: getConfig(),
+  config: TokovoConfig,
 });
 ```
 
@@ -629,7 +631,7 @@ const worldState = runEpisode(preparedEpisode, currentFrame, {
 ### `definePlugin()` — Create Plugin
 
 ```typescript
-import { definePlugin } from "@tokovo/core";
+import { definePlugin } from "@tokovo/react";
 
 export const myPlugin = definePlugin({
   id: "app_myapp",
@@ -644,7 +646,7 @@ export const myPlugin = definePlugin({
 ### `PluginManagerClass.register()` — Register Plugin
 
 ```typescript
-import { createTokovoRegistries, PluginManagerClass } from "@tokovo/core";
+import { createTokovoRegistries, PluginManagerClass } from "@tokovo/react";
 
 const registries = createTokovoRegistries();
 const pluginManager = new PluginManagerClass(registries.plugins);
@@ -658,7 +660,7 @@ pluginManager.register(myPlugin);
 import { prepareEpisode } from "@tokovo/core";
 
 const prepared = prepareEpisode(episodeJSON, plugins, {
-  config: getConfig(),
+  config: TokovoConfig,
 });
 // Returns: { initial, events, metadata, warnings }
 ```
@@ -666,7 +668,7 @@ const prepared = prepareEpisode(episodeJSON, plugins, {
 ### `resolveAnchor()` — Get Semantic Position
 
 ```typescript
-import { createTokovoRegistries } from "@tokovo/core";
+import { createTokovoRegistries } from "@tokovo/react";
 
 const registries = createTokovoRegistries();
 const bounds = registries.plugins.anchors.resolveAnchor(

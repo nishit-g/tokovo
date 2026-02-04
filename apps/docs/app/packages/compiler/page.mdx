@@ -242,7 +242,8 @@ const prepared = prepareTrackEpisode(episodeIR, [whatsappPlugin]);
 ### With runEpisode()
 
 ```typescript
-import { runEpisode, createTokovoRegistries, getConfig } from "@tokovo/core";
+import { runEpisode, TokovoConfig } from "@tokovo/core";
+import { createTokovoRegistries } from "@tokovo/react";
 import { prepareTrackEpisode } from "@tokovo/compiler";
 
 const prepared = prepareTrackEpisode(episodeIR, [whatsappPlugin]);
@@ -253,7 +254,7 @@ export const MyComposition = () => {
   return runEpisode(prepared, frame, {
     mode: "preview",
     registries: registries.engine,
-    config: getConfig(),
+    config: TokovoConfig,
   });
 };
 ```
@@ -342,10 +343,10 @@ episode("story", { duration: "10s", fps: 30 })
   .device("phone", "iphone16", { app: "app_whatsapp" })
   .camera((cam) => {
     // ❌ at: 400 frames > 300 frames
-    cam.at(400).focus("deviceScreen");
+    cam.at(400).focus("device");
 
     // ✅ at: 90 frames < 300 frames
-    cam.at(90).focus("deviceScreen");
+    cam.at(90).focus("device");
   });
 ```
 
@@ -363,14 +364,14 @@ Event references device 'phone_2' but no such device is configured
 // ❌ Device not defined
 episode("story", { duration: "10s", fps: 30 })
   .camera((cam) => {
-    cam.at(0).focus("phone_2:lastMessage"); // ← 'phone_2' doesn't exist
+    cam.at(0).focus("app_whatsapp:message"); // ← app must be registered
   });
 
 // ✅ Define device first
 episode("story", { duration: "10s", fps: 30 })
   .device("phone_2", "pixel8", { app: "app_whatsapp" })
   .camera((cam) => {
-    cam.at(0).focus("phone_2:lastMessage"); // ← Now valid
+    cam.at(0).focus("app_whatsapp:message"); // ← Now valid
   });
 ```
 
@@ -479,7 +480,7 @@ const prepared = prepareTrackEpisode(episodeIR, plugins);
 const worldState = runEpisode(prepared, currentFrame, {
   mode: "preview",
   registries: registries.engine,
-  config: getConfig(),
+  config: TokovoConfig,
 });
 ```
 
@@ -523,7 +524,7 @@ const whatsappLowering: PluginLowering = {
 ### Registering in Plugin
 
 ```typescript
-import { definePlugin } from '@tokovo/core';
+import { definePlugin } from '@tokovo/react';
 
 export const whatsappPlugin = definePlugin({
   id: 'app_whatsapp',

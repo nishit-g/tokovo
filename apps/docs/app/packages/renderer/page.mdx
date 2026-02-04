@@ -105,13 +105,14 @@ const t = frame; // Tokovo uses frames directly
 The episode runner calls `runEpisode()` to replay all events up to frame `t`:
 
 ```typescript
-import { runEpisode, createTokovoRegistries, getConfig } from "@tokovo/core";
+import { runEpisode, TokovoConfig } from "@tokovo/core";
+import { createTokovoRegistries } from "@tokovo/react";
 
 const registries = createTokovoRegistries();
 const world = runEpisode(preparedEpisode, frame, {
   mode: "preview",
   registries: registries.engine,
-  config: getConfig(),
+  config: TokovoConfig,
 });
 ```
 
@@ -197,10 +198,9 @@ The main orchestrator component.
 import { TokovoRenderer } from "@tokovo/renderer";
 import {
   runEpisode,
-  createTokovoRegistries,
-  PluginManagerClass,
-  getConfig,
+  TokovoConfig,
 } from "@tokovo/core";
+import { createTokovoRegistries, PluginManagerClass } from "@tokovo/react";
 import { createDeviceRegistries, registerDevicesPlugin } from "@tokovo/devices";
 
 const tokovoRegistries = createTokovoRegistries();
@@ -218,7 +218,7 @@ function MyVideo() {
   const world = runEpisode(episode, frame, {
     mode: "preview",
     registries: tokovoRegistries.engine,
-    config: getConfig(),
+    config: TokovoConfig,
   });
 
   return (
@@ -256,7 +256,7 @@ Automatically selected based on `device.profileId`:
 Apps register their UI components via the plugin system:
 
 ```typescript
-import { createTokovoRegistries, PluginManagerClass } from "@tokovo/core";
+import { createTokovoRegistries, PluginManagerClass } from "@tokovo/react";
 
 const registries = createTokovoRegistries();
 const pluginManager = new PluginManagerClass(registries.plugins);
@@ -446,10 +446,9 @@ import { TokovoRenderer } from "@tokovo/renderer";
 import {
   runEpisode,
   createEventIndex,
-  createTokovoRegistries,
-  PluginManagerClass,
-  getConfig,
+  TokovoConfig,
 } from "@tokovo/core";
+import { createTokovoRegistries, PluginManagerClass } from "@tokovo/react";
 import { AbsoluteFill, useCurrentFrame } from "remotion";
 
 export const CustomVideo = ({ episode }) => {
@@ -466,7 +465,7 @@ export const CustomVideo = ({ episode }) => {
       runEpisode(episode, frame, {
         mode: "preview",
         registries: registries.engine,
-        config: getConfig(),
+        config: TokovoConfig,
       }),
     [episode, frame, registries],
   );
@@ -872,12 +871,14 @@ export const simpleChat = defineEpisode({
 ### Custom Layout Config
 
 ```tsx
+import { createTokovoRegistries, PluginManagerClass } from "@tokovo/react";
+
 const registries = createTokovoRegistries();
 const pluginManager = new PluginManagerClass(registries.plugins);
 const world = runEpisode(episode, frame, {
   mode: "preview",
   registries: registries.engine,
-  config: getConfig(),
+  config: TokovoConfig,
 });
 
 <TokovoRenderer

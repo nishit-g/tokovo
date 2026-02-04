@@ -1,7 +1,8 @@
 import React, { memo } from "react";
-import { Img, staticFile, useCurrentFrame, interpolate } from "remotion";
+import { Img, useCurrentFrame, interpolate } from "remotion";
 import { DoubleCheckIcon, MutedIcon, PinIcon } from "./Icons";
 import { whatsappColors, typography, spacing } from "./theme";
+import { resolveAvatarWithFallback } from "../utils/avatar";
 
 // =============================================================================
 // TYPES
@@ -22,13 +23,13 @@ export interface ChatListItemProps {
   isPinned?: boolean;
   hasStatus?: boolean;
   mediaType?:
-    | "photo"
-    | "video"
-    | "voice"
-    | "sticker"
-    | "document"
-    | "gif"
-    | null;
+  | "photo"
+  | "video"
+  | "voice"
+  | "sticker"
+  | "document"
+  | "gif"
+  | null;
   senderName?: string;
 }
 
@@ -236,29 +237,11 @@ export const ChatListItem = memo(function ChatListItem({
             flexShrink: 0,
           }}
         >
-          {avatarUrl ? (
-            <Img
-              src={avatarUrl.startsWith("/") ? staticFile(avatarUrl) : avatarUrl}
-              alt={name}
-              style={{ width: "100%", height: "100%", objectFit: "cover" }}
-            />
-          ) : (
-            <div
-              style={{
-                width: "100%",
-                height: "100%",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                background: `hsl(${(name.charCodeAt(0) * 10) % 360}, 60%, 70%)`,
-                color: "white",
-                fontSize: 22,
-                fontWeight: 500,
-              }}
-            >
-              {name.charAt(0).toUpperCase()}
-            </div>
-          )}
+          <Img
+            src={resolveAvatarWithFallback(avatarUrl, name)}
+            alt={name}
+            style={{ width: "100%", height: "100%", objectFit: "cover" }}
+          />
         </div>
       </div>
 

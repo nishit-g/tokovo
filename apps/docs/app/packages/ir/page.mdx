@@ -244,9 +244,6 @@ The **DSL** (Domain-Specific Language) is how you _author_ episodes. The **IR** 
 import { episode } from "@tokovo/dsl";
 import { WhatsAppTrackBuilder } from "@tokovo/apps-whatsapp";
 
-let order = 0;
-const getOrder = () => order++;
-
 episode("breakup-01", { duration: "10s", fps: 30 })
   .device("phone", "iphone16", {
     app: "app_whatsapp",
@@ -254,7 +251,7 @@ episode("breakup-01", { duration: "10s", fps: 30 })
   })
   .track(
     "app_whatsapp",
-    () => new WhatsAppTrackBuilder(30, "phone", "conv_alice", getOrder),
+    (getOrder) => new WhatsAppTrackBuilder(30, "phone", "conv_alice", getOrder),
     (wa) => {
       wa.at("1s").receive("Alice", "We need to talk.");
       wa.at("3s").receive("Alice", "This isn't working.");
@@ -378,7 +375,7 @@ const episodeIR: TrackEpisodeIR = JSON.parse(fs.readFileSync("episode.json"));
 const worldState = runEpisode(episodeIR, 90, {
   mode: "preview",
   registries: registries.engine,
-  config: getConfig(),
+  config: TokovoConfig,
 });
 
 console.log(worldState.devices.phone.foregroundAppId);

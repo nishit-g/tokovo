@@ -98,9 +98,6 @@ Here's how simple it is to create a phone conversation:
 import { episode } from "@tokovo/dsl";
 import { WhatsAppTrackBuilder } from "@tokovo/apps-whatsapp";
 
-let order = 0;
-const getOrder = () => order++;
-
 episode("my-story", { fps: 30, duration: "10s" })
   .device("phone", "iphone16", {
     app: "app_whatsapp",
@@ -108,7 +105,7 @@ episode("my-story", { fps: 30, duration: "10s" })
   })
   .track(
     "app_whatsapp",
-    () => new WhatsAppTrackBuilder(30, "phone", "dm_alice", getOrder),
+    (getOrder) => new WhatsAppTrackBuilder(30, "phone", "dm_alice", getOrder),
     (wa) => {
       wa.at("1s").receive("Alice", "Hey! How are you?");
       wa.at("3s").typing("Alice");
@@ -116,7 +113,7 @@ episode("my-story", { fps: 30, duration: "10s" })
     },
   )
   .camera((cam) => {
-    cam.at("0s").focus("lastMessage", { scale: 1.05, duration: "0.4s" });
+    cam.at("0s").focus("app_whatsapp:message", { scale: 1.05, duration: "0.4s" });
     cam.at("4s").animate({ scale: 1.2, duration: "0.5s" });
   });
 ```

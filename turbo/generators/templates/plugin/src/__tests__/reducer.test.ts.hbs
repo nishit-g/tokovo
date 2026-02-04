@@ -3,6 +3,7 @@ import { produce } from "immer";
 import { {{ camelCase name }}Reducer } from "../runtime/reducer";
 import { create{{ pascalCase name }}InitialState } from "../runtime/state";
 import type { WorldState, RuntimeEvent } from "@tokovo/core";
+import { DEFAULT_AUDIO_STATE, DEFAULT_BASE_CAMERA_STATE } from "@tokovo/core";
 
 // Helper to create a minimal WorldState with plugin state
 function createTestWorldState(): WorldState {
@@ -11,7 +12,8 @@ function createTestWorldState(): WorldState {
       "app_{{ name }}": create{{ pascalCase name }}InitialState(),
     },
     devices: {},
-    camera: { mode: "default" as const },
+    camera: DEFAULT_BASE_CAMERA_STATE,
+    audio: DEFAULT_AUDIO_STATE,
   } as WorldState;
 }
 
@@ -35,8 +37,8 @@ describe("{{ pascalCase name }} Reducer", () => {
         id: "1",
         title: "Test",
         content: "Content",
-        createdAt: Date.now(),
-        updatedAt: Date.now(),
+        createdAt: 0,
+        updatedAt: 0,
       },
     });
 
@@ -56,8 +58,8 @@ describe("{{ pascalCase name }} Reducer", () => {
         id: "1",
         title: "Original",
         content: "Content",
-        createdAt: Date.now(),
-        updatedAt: Date.now(),
+        createdAt: 0,
+        updatedAt: 0,
       },
     });
 
@@ -66,7 +68,7 @@ describe("{{ pascalCase name }} Reducer", () => {
       kind: "APP",
       appId: "app_{{ name }}",
       type: "UPDATE_NOTE",
-      payload: { noteId: "1", title: "Updated", updatedAt: Date.now() },
+      payload: { noteId: "1", title: "Updated", updatedAt: 10 },
     });
 
     const appState = updatedState.appState?.["app_{{ name }}"];
@@ -84,8 +86,8 @@ describe("{{ pascalCase name }} Reducer", () => {
         id: "1",
         title: "Test",
         content: "Content",
-        createdAt: Date.now(),
-        updatedAt: Date.now(),
+        createdAt: 0,
+        updatedAt: 0,
       },
     });
 

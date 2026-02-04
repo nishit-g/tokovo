@@ -32,7 +32,7 @@ Each plugin can include:
 - **Audio Rules**: Automatic sound playback on events
 - **Notification Adapters**: Custom notification formatting
 - **Anchors**: Camera framing targets (semantic anchors)
-- **DSL Extensions**: Authoring API for beat builders
+- **DSL Extensions**: Authoring API for track builders
 
 ---
 
@@ -46,7 +46,7 @@ Tokovo has three main categories of plugins:
 
 ```typescript
 // packages/apps-whatsapp/src/plugin.ts
-import { definePlugin } from "@tokovo/core/plugin";
+import { definePlugin } from "@tokovo/react";
 
 export const WhatsAppPlugin = definePlugin({
   id: "app_whatsapp",
@@ -96,7 +96,7 @@ export const WhatsAppPlugin = definePlugin({
 
 ```typescript
 // packages/devices/src/plugin.ts
-import { definePlugin } from "@tokovo/core/plugin";
+import { definePlugin } from "@tokovo/react";
 
 export const DevicesPlugin = definePlugin({
   id: "devices",
@@ -180,7 +180,7 @@ export const CameraPlugin = definePlugin({
 │                           ▼                                  │
 │  CORE ENGINE                                                 │
 │  ┌────────────────────────────────────────────────────┐     │
-│  │  PluginManager.get('app_whatsapp')                 │     │
+│  │  pluginManager.get('app_whatsapp')                 │     │
 │  │    │                                                │     │
 │  │    ▼                                                │     │
 │  │  ┌─────────────────────────────────────────┐       │     │
@@ -209,7 +209,7 @@ export const CameraPlugin = definePlugin({
 When a plugin registers, the `PluginManagerClass` distributes its pieces to specialized registries:
 
 ```typescript
-import { createTokovoRegistries, PluginManagerClass } from "@tokovo/core";
+import { createTokovoRegistries, PluginManagerClass } from "@tokovo/react";
 
 const registries = createTokovoRegistries();
 const pluginManager = new PluginManagerClass(registries.plugins);
@@ -252,9 +252,6 @@ Episodes reference plugins using their string ID:
 import { episode } from "@tokovo/dsl";
 import { WhatsAppTrackBuilder } from "@tokovo/apps-whatsapp";
 
-let order = 0;
-const getOrder = () => order++;
-
 const ep = episode("demo", { duration: "5s", fps: 30 })
   .device("main_phone", "iphone16", {
     app: "app_whatsapp",
@@ -262,7 +259,7 @@ const ep = episode("demo", { duration: "5s", fps: 30 })
   })
   .track(
     "app_whatsapp", // ← Plugin ID
-    () => new WhatsAppTrackBuilder(30, "main_phone", "dm_alice", getOrder),
+    (getOrder) => new WhatsAppTrackBuilder(30, "main_phone", "dm_alice", getOrder),
     (wa) => {
       wa.at("1s").receive("Alice", "Hey there!");
     },
@@ -423,7 +420,7 @@ const unread = world.appState.app_whatsapp?.unreadCount ?? 0;
 A Tier A plugin requires only:
 
 ```typescript
-import { definePlugin } from "@tokovo/core/plugin";
+import { definePlugin } from "@tokovo/react";
 
 export const MyPlugin = definePlugin({
   // Identity
@@ -445,10 +442,10 @@ export const MyPlugin = definePlugin({
 
 ### Registration
 
-Register your plugin in the episode entrypoint:
+Register your plugin in the app entrypoint (e.g., `apps/video-runner/src/runtime.ts`):
 
 ```typescript
-import { createTokovoRegistries, PluginManagerClass } from "@tokovo/core";
+import { createTokovoRegistries, PluginManagerClass } from "@tokovo/react";
 import { MyPlugin } from "./plugins/my-plugin";
 
 const registries = createTokovoRegistries();
@@ -461,7 +458,7 @@ pluginManager.register(MyPlugin);
 Or use the helper:
 
 ```typescript
-import { createTokovoRegistries, PluginManagerClass, registerPlugins } from "@tokovo/core";
+import { createTokovoRegistries, PluginManagerClass, registerPlugins } from "@tokovo/react";
 
 const registries = createTokovoRegistries();
 const pluginManager = new PluginManagerClass(registries.plugins);
@@ -498,20 +495,28 @@ The TokovoPluginContract supports **four tiers** of functionality:
 
 ### Tier B: Lowering (Optional)
 
-- `lowering`: Converts DSL track events to runtime events
+- `v2Lowering`: Converts DSL track events to runtime events
 - `layouts`: Platform-specific layout strategies
 
 **Example**: Plugins with custom authoring formats
 
 ### Tier C: DSL (Optional)
 
-- `dsl`: Authoring API for beat builders
+- Track builder classes used with `episode().track(...)`
 
-**Example**: Plugins that add `.use("plugin_id")` API
+**Example**: Plugins that add a track builder
 
 ```typescript
-// DSL extension
-b.use("app_whatsapp").receive("Alice", "Hello!");
+import { episode } from "@tokovo/dsl";
+import { WhatsAppTrackBuilder } from "@tokovo/apps-whatsapp";
+
+// Track builder usage
+episode("demo", { fps: 30, duration: "5s" })
+  .device("phone", "iphone16", { app: "app_whatsapp" })
+  .track("app_whatsapp", (getOrder) => new WhatsAppTrackBuilder(30, "phone", getOrder), (wa) => {
+    wa.at("1s").send("Hello!");
+  })
+  .build();
 ```
 
 ### Tier D: Compiler (Advanced)
@@ -534,11 +539,13 @@ Tokovo ships with core plugins:
 | **Device Profiles** | `@tokovo/devices`              | iPhone, Android profiles and OS features             |
 | **Camera**          | `@tokovo/device-camera`        | Camera app simulation with shutter, preview          |
 | **Notifications**   | `@tokovo/device-notifications` | Notification system with banners, badges             |
+| **Keyboard**        | `@tokovo/device-keyboard`      | Virtual keyboard simulation                           |
+| **X (Twitter)**     | `@tokovo/apps-x`               | X app simulation                                      |
 
 ### Using Built-in Plugins
 
 ```typescript
-import { createTokovoRegistries, PluginManagerClass } from "@tokovo/core";
+import { createTokovoRegistries, PluginManagerClass } from "@tokovo/react";
 import { WhatsAppPlugin } from "@tokovo/apps-whatsapp";
 import { CameraPlugin } from "@tokovo/device-camera";
 import { episode } from "@tokovo/dsl";
@@ -550,9 +557,6 @@ const pluginManager = new PluginManagerClass(registries.plugins);
 pluginManager.register(WhatsAppPlugin);
 pluginManager.register(CameraPlugin);
 
-let order = 0;
-const getOrder = () => order++;
-
 const ep = episode("plugin-demo", { duration: "6s", fps: 30 })
   .device("phone", "iphone16", {
     app: "app_whatsapp",
@@ -560,13 +564,13 @@ const ep = episode("plugin-demo", { duration: "6s", fps: 30 })
   })
   .track(
     "app_whatsapp",
-    () => new WhatsAppTrackBuilder(30, "phone", "dm_sarah", getOrder),
+    (getOrder) => new WhatsAppTrackBuilder(30, "phone", "dm_sarah", getOrder),
     (wa) => {
       wa.at("1s").receive("Sarah", "Check this out!");
     },
   )
   .camera((cam) => {
-    cam.at("2s").focus("lastMessage");
+    cam.at("2s").focus("app_whatsapp:message");
   })
   .build();
 ```
@@ -695,7 +699,7 @@ const event: AppEvent<"app_whatsapp"> = {
 Plugins are registered once at startup, not per-frame:
 
 ```typescript
-import { createTokovoRegistries, PluginManagerClass } from "@tokovo/core";
+import { createTokovoRegistries, PluginManagerClass } from "@tokovo/react";
 
 const registries = createTokovoRegistries();
 const pluginManager = new PluginManagerClass(registries.plugins);
@@ -754,14 +758,14 @@ const sortedMessages = useMemo(
 
 For complete plugin contract and types:
 
-- [`packages/core/src/types/plugin-contract.ts`](https://github.com/yourusername/tokovo/blob/main/packages/core/src/types/plugin-contract.ts)
-- [`packages/core/src/plugin/plugin.ts`](https://github.com/yourusername/tokovo/blob/main/packages/core/src/plugin/plugin.ts)
-- [`packages/core/src/plugin/router.ts`](https://github.com/yourusername/tokovo/blob/main/packages/core/src/plugin/router.ts)
+- `packages/core/src/types/plugin-contract.ts`
+- `packages/react/src/plugin/plugin.ts`
+- `packages/react/src/plugin/router.ts`
 
 ---
 
 ## Next Steps
 
 - **[Create Your First Plugin](/guides/creating-plugins)**: Step-by-step guide
-- **[WhatsApp Plugin Source](https://github.com/yourusername/tokovo/tree/main/packages/apps-whatsapp)**: Reference implementation
+- **WhatsApp Plugin Source**: `packages/apps-whatsapp` (reference implementation)
 - **[Plugin API Reference](/api/plugin)**: Complete TypeScript definitions

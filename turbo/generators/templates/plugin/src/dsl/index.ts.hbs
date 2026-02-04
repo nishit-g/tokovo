@@ -1,53 +1,153 @@
-import type { DslExtension } from "@tokovo/core";
+import { parseTimeToFrames } from "@tokovo/dsl";
+import type { {{ pascalCase name }}TrackEvent } from "../types";
 
-// Method Chaining Design: DSL methods return Api type for fluent syntax
-// Example: b.use("app_{{ name }}").createNote({...}).viewNote("1").editNote("1", {...})
+type GetDeclarationOrder = () => number;
 
-interface {{ pascalCase name }}DslApi {
-  createNote: (data: { title: string; content: string }) => {{ pascalCase name }}DslApi;
-  viewNote: (noteId: string) => {{ pascalCase name }}DslApi;
-  editNote: (noteId: string, data: { title?: string; content?: string }) => {{ pascalCase name }}DslApi;
-  deleteNote: (noteId: string) => {{ pascalCase name }}DslApi;
+export interface CreateNoteInput {
+  id?: string;
+  title: string;
+  content: string;
+  createdAt?: number;
+  updatedAt?: number;
 }
 
-// Builder interface for recording operations
-interface {{ pascalCase name }}Builder {
-  ops: { kind: string; [key: string]: unknown }[];
-  wait: (duration: number) => void;
+export interface EditNoteInput {
+  title?: string;
+  content?: string;
+  updatedAt?: number;
 }
 
-// Utility for generating unique note IDs
-function generateNoteId(): string {
-  return `note-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+type PayloadInput =
+  | Record<string, unknown>
+  | ((order: number) => Record<string, unknown>);
+
+// Utility for deterministic note IDs (frame + declaration order)
+function createNoteId(frame: number, order: number): string {
+  return `note-${frame}-${order}`;
 }
 
-export const {{ camelCase name }}Dsl: DslExtension<{{ pascalCase name }}DslApi> = {
-  createApi: (builderUnknown) => {
-    const builder = builderUnknown as {{ pascalCase name }}Builder;
+class {{ pascalCase name }}PointBuilder {
+  constructor(
+    private _frame: number,
+    private _deviceId: string,
+    private _events: {{ pascalCase name }}TrackEvent[],
+    private _getOrder: GetDeclarationOrder,
+  ) {}
 
-    const api: {{ pascalCase name }}DslApi = {
-      createNote: (data) => {
-        builder.ops.push({
-          kind: "CreateNote",
-          ...data,
-          id: generateNoteId(),
-        });
-        return api;
-      },
-      viewNote: (noteId) => {
-        builder.ops.push({ kind: "ViewNote", noteId });
-        return api;
-      },
-      editNote: (noteId, data) => {
-        builder.ops.push({ kind: "EditNote", noteId, ...data });
-        return api;
-      },
-      deleteNote: (noteId) => {
-        builder.ops.push({ kind: "DeleteNote", noteId });
-        return api;
-      },
-    };
+  private _push(type: string, payload: PayloadInput, duration?: number): void {
+    const order = this._getOrder();
+    const resolvedPayload = typeof payload === "function" ? payload(order) : payload;
+    this._events.push({
+      at: this._frame,
+      duration,
+      kind: "APP",
+      appId: "app_{{ name }}",
+      type,
+      payload: resolvedPayload,
+      deviceId: this._deviceId,
+      _declarationOrder: order,
+    } as {{ pascalCase name }}TrackEvent);
+  }
 
-    return api;
-  },
-};
+  createNote(data: CreateNoteInput): void {
+    this._push("NOTE_CREATE", (order) => ({
+      id: data.id ?? createNoteId(this._frame, order),
+      title: data.title,
+      content: data.content,
+      createdAt: data.createdAt,
+      updatedAt: data.updatedAt ?? data.createdAt,
+    }));
+  }
+
+  viewNote(noteId: string): void {
+    this._push("NOTE_VIEW", { noteId });
+  }
+
+  editNote(noteId: string, data: EditNoteInput): void {
+    this._push("NOTE_EDIT", { noteId, ...data });
+  }
+
+  deleteNote(noteId: string): void {
+    this._push("NOTE_DELETE", { noteId });
+  }
+}
+
+class {{ pascalCase name }}SpanBuilder {
+  constructor(
+    private _frame: number,
+    private _duration: number,
+    private _deviceId: string,
+    private _events: {{ pascalCase name }}TrackEvent[],
+    private _getOrder: GetDeclarationOrder,
+  ) {}
+
+  private _push(type: string, payload: PayloadInput): void {
+    const order = this._getOrder();
+    const resolvedPayload = typeof payload === "function" ? payload(order) : payload;
+    this._events.push({
+      at: this._frame,
+      duration: this._duration,
+      kind: "APP",
+      appId: "app_{{ name }}",
+      type,
+      payload: resolvedPayload,
+      deviceId: this._deviceId,
+      _declarationOrder: order,
+    } as {{ pascalCase name }}TrackEvent);
+  }
+
+  createNote(data: CreateNoteInput): void {
+    this._push("NOTE_CREATE", (order) => ({
+      id: data.id ?? createNoteId(this._frame, order),
+      title: data.title,
+      content: data.content,
+      createdAt: data.createdAt,
+      updatedAt: data.updatedAt ?? data.createdAt,
+    }));
+  }
+
+  viewNote(noteId: string): void {
+    this._push("NOTE_VIEW", { noteId });
+  }
+
+  editNote(noteId: string, data: EditNoteInput): void {
+    this._push("NOTE_EDIT", { noteId, ...data });
+  }
+
+  deleteNote(noteId: string): void {
+    this._push("NOTE_DELETE", { noteId });
+  }
+}
+
+export class {{ pascalCase name }}TrackBuilder {
+  _events: {{ pascalCase name }}TrackEvent[] = [];
+
+  constructor(
+    private _fps: number,
+    private _deviceId: string,
+    private _getOrder: GetDeclarationOrder,
+  ) {}
+
+  at(time: string | number): {{ pascalCase name }}PointBuilder {
+    const frame = typeof time === "number" ? time : parseTimeToFrames(time, this._fps);
+    return new {{ pascalCase name }}PointBuilder(
+      frame,
+      this._deviceId,
+      this._events,
+      this._getOrder,
+    );
+  }
+
+  span(start: string | number, end: string | number): {{ pascalCase name }}SpanBuilder {
+    const startFrame = typeof start === "number" ? start : parseTimeToFrames(start, this._fps);
+    const endFrame = typeof end === "number" ? end : parseTimeToFrames(end, this._fps);
+    const duration = Math.max(0, endFrame - startFrame);
+    return new {{ pascalCase name }}SpanBuilder(
+      startFrame,
+      duration,
+      this._deviceId,
+      this._events,
+      this._getOrder,
+    );
+  }
+}

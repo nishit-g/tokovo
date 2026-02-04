@@ -1,11 +1,11 @@
 import type { TokovoPluginContract, PluginViews } from "@tokovo/core";
-import { PluginManager } from "@tokovo/core";
+import type { PluginManagerClass } from "@tokovo/react";
 import { {{ pascalCase name }}View } from "./ui";
 import { {{ camelCase name }}Reducer } from "./runtime/reducer";
 import { {{ camelCase name }}Lowering } from "./lowering";
-import { {{ camelCase name }}Dsl } from "./dsl";
 import { {{ camelCase name }}LayoutStrategies } from "./layout";
 import { {{ camelCase name }}Anchors } from "./runtime/adapters/anchors";
+import { create{{ pascalCase name }}InitialState } from "./runtime/state";
 
 // Assemble views object
 const {{ camelCase name }}Views: PluginViews = {
@@ -13,22 +13,34 @@ const {{ camelCase name }}Views: PluginViews = {
 };
 
 // Plugin contract definition
-export const {{ pascalCase name }}Plugin: TokovoPluginContract<"app_{{ name }}"> = {
+export const {{ pascalCase name }}Plugin: TokovoPluginContract<"app_{{ name }}"> & {
+  v2Lowering: typeof {{ camelCase name }}Lowering;
+} = {
   id: "app_{{ name }}",
+  version: "0.0.0",
   displayName: "{{ displayName }}",
   views: {{ camelCase name }}Views,
   reducer: {{ camelCase name }}Reducer,
-  lowering: {{ camelCase name }}Lowering,
-  dsl: {{ camelCase name }}Dsl,
-  layout: {{ camelCase name }}LayoutStrategies,
+  createInitialState: create{{ pascalCase name }}InitialState,
+  eventKinds: [
+    "ADD_NOTE",
+    "UPDATE_NOTE",
+    "DELETE_NOTE",
+    "SET_ACTIVE_NOTE",
+    "SET_SCREEN",
+  ] as const,
+  v2Lowering: {{ camelCase name }}Lowering,
+  layouts: {{ camelCase name }}LayoutStrategies,
   anchors: {{ camelCase name }}Anchors,
 };
 
 // Registration function with guard
-let _registered = false;
+const registeredManagers = new WeakSet<PluginManagerClass>();
 
-export function register{{ pascalCase name }}Plugin(): void {
-  if (_registered) return;
-  _registered = true;
-  PluginManager.register({{ pascalCase name }}Plugin);
+export function register{{ pascalCase name }}Plugin(
+  pluginManager: PluginManagerClass,
+): void {
+  if (registeredManagers.has(pluginManager)) return;
+  registeredManagers.add(pluginManager);
+  pluginManager.register({{ pascalCase name }}Plugin);
 }

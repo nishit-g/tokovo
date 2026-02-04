@@ -73,14 +73,15 @@ The root context provider that makes Tokovo state available to all child compone
 
 ```tsx
 import { TokovoProvider } from "@tokovo/react";
-import { runEpisode, createTokovoRegistries, getConfig } from "@tokovo/core";
+import { createTokovoRegistries } from "@tokovo/react";
+import { runEpisode, TokovoConfig } from "@tokovo/core";
 
 function CustomPlayer({ episode, frame }) {
   const registries = createTokovoRegistries();
   const opts = {
     mode: "preview",
     registries: registries.engine,
-    config: getConfig(),
+    config: TokovoConfig,
   };
   const world = runEpisode(episode, frame, opts);
 
@@ -435,13 +436,9 @@ Here's how to build a custom episode player with your own UI controls:
 
 ```tsx
 import { useState } from "react";
+import { createTokovoRegistries } from "@tokovo/react";
 import { TokovoProvider, useDevice, useAppState } from "@tokovo/react";
-import {
-  runEpisode,
-  prepareEpisode,
-  createTokovoRegistries,
-  getConfig,
-} from "@tokovo/core";
+import { runEpisode, prepareEpisode, TokovoConfig } from "@tokovo/core";
 
 function CustomPlayer({ episodeJSON }) {
   const [frame, setFrame] = useState(0);
@@ -450,7 +447,7 @@ function CustomPlayer({ episodeJSON }) {
   const opts = {
     mode: "preview",
     registries: registries.engine,
-    config: getConfig(),
+    config: TokovoConfig,
   };
 
   const prepared = prepareEpisode(episodeJSON);
@@ -504,8 +501,9 @@ function PhonePreview() {
 
 ```tsx
 import { Composition, useCurrentFrame } from "remotion";
+import { createTokovoRegistries } from "@tokovo/react";
 import { TokovoProvider, useDevice } from "@tokovo/react";
-import { runEpisode, createTokovoRegistries, getConfig } from "@tokovo/core";
+import { runEpisode, TokovoConfig } from "@tokovo/core";
 
 function MyEpisode({ episode }) {
   const frame = useCurrentFrame();
@@ -513,7 +511,7 @@ function MyEpisode({ episode }) {
   const opts = {
     mode: "preview",
     registries: registries.engine,
-    config: getConfig(),
+    config: TokovoConfig,
   };
   const world = runEpisode(episode, frame, opts);
 
@@ -576,6 +574,7 @@ function MyEpisode({ episode }) {
 
 ```tsx
 import { TokovoProvider, useDevice, useAppState } from "@tokovo/react";
+import { createTokovoRegistries } from "@tokovo/react";
 
 function BrandedPlayer({ episode, brand }) {
   const [frame, setFrame] = useState(0);
@@ -583,7 +582,7 @@ function BrandedPlayer({ episode, brand }) {
   const opts = {
     mode: "preview",
     registries: registries.engine,
-    config: getConfig(),
+    config: TokovoConfig,
   };
   const world = runEpisode(episode, frame, opts);
 
@@ -618,6 +617,7 @@ function BrandedPlayer({ episode, brand }) {
 
 ```tsx
 import { TokovoProvider, useWorld } from "@tokovo/react";
+import { createTokovoRegistries } from "@tokovo/react";
 
 function EpisodeEditor({ episode }) {
   const [frame, setFrame] = useState(0);
@@ -627,7 +627,7 @@ function EpisodeEditor({ episode }) {
   const opts = {
     mode: "preview",
     registries: registries.engine,
-    config: getConfig(),
+    config: TokovoConfig,
   };
   const world = runEpisode(episode, frame, opts);
 
@@ -679,8 +679,9 @@ function LivePreview() {
 ```tsx
 // app/episodes/[id]/page.tsx
 import { TokovoProvider } from "@tokovo/react";
+import { createTokovoRegistries } from "@tokovo/react";
 import { getEpisode } from "@/lib/episodes";
-import { runEpisode, createTokovoRegistries, getConfig } from "@tokovo/core";
+import { runEpisode, TokovoConfig } from "@tokovo/core";
 
 export default async function EpisodePage({ params }) {
   const episode = await getEpisode(params.id);
@@ -702,7 +703,7 @@ function EpisodePlayer({ episode }) {
   const opts = {
     mode: "preview",
     registries: registries.engine,
-    config: getConfig(),
+    config: TokovoConfig,
   };
   const world = runEpisode(episode, frame, opts);
 
@@ -725,6 +726,7 @@ function EpisodePlayer({ episode }) {
 
 ```tsx
 import { TokovoProvider, useDevice, useAppState } from "@tokovo/react";
+import { createTokovoRegistries } from "@tokovo/react";
 
 function TokovoStudio() {
   const [project, setProject] = useState(null);
@@ -736,7 +738,7 @@ function TokovoStudio() {
   const opts = {
     mode: "preview",
     registries: registries.engine,
-    config: getConfig(),
+    config: TokovoConfig,
   };
   const world = runEpisode(project.episode, frame, opts);
 
@@ -800,7 +802,8 @@ function StudioCanvas() {
 
 ```tsx
 import { TokovoProvider, useDevice } from "@tokovo/react";
-import { runEpisode, createTokovoRegistries, getConfig } from "@tokovo/core";
+import { createTokovoRegistries } from "@tokovo/react";
+import { runEpisode, TokovoConfig } from "@tokovo/core";
 import { useCurrentFrame } from "remotion";
 
 export function MinimalPlayer({ episode }) {
@@ -809,7 +812,7 @@ export function MinimalPlayer({ episode }) {
   const opts = {
     mode: "preview",
     registries: registries.engine,
-    config: getConfig(),
+    config: TokovoConfig,
   };
   const world = runEpisode(episode, frame, opts);
 
@@ -845,7 +848,8 @@ function SimplePhone() {
 
 ```tsx
 import { TokovoProvider } from "@tokovo/react";
-import { runEpisode, createTokovoRegistries, getConfig } from "@tokovo/core";
+import { createTokovoRegistries } from "@tokovo/react";
+import { runEpisode, TokovoConfig } from "@tokovo/core";
 
 function DualPhoneComposition({ episode }) {
   const frame = useCurrentFrame();
@@ -853,7 +857,7 @@ function DualPhoneComposition({ episode }) {
   const opts = {
     mode: "preview",
     registries: registries.engine,
-    config: getConfig(),
+    config: TokovoConfig,
   };
   const world = runEpisode(episode, frame, opts);
 

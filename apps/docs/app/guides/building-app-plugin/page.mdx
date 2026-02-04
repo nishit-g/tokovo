@@ -29,12 +29,13 @@ This creates a production-ready plugin with:
 
 - ✅ Runtime (state, reducer, selectors, anchors)
 - ✅ UI (4 React views with routing)
-- ✅ DSL (fluent chain API)
+- ✅ DSL (v2 track builder)
 - ✅ Lowering + Layout
+- ✅ Types + module augmentation
 - ✅ Theme system + design tokens
 - ✅ Tests (9 tests ready to run)
 
-**After generation**, register in `apps/video-runner/src/Root.tsx` and use immediately.
+**After generation**, register in `apps/video-runner/src/runtime.ts` and use immediately.
 
 **Full generator docs:** `turbo/generators/README.md`
 
@@ -61,7 +62,7 @@ We'll use the WhatsApp plugin as a reference, but build something simpler to foc
 
 ## Step 1: Set Up Plugin Structure
 
-First, create the file structure for your plugin:
+First, create the file structure for your plugin. The generator uses a full `runtime/` + `types/` layout; the manual path below shows a simplified structure to focus on the concepts.
 
 ```
 packages/apps-myapp/
@@ -356,82 +357,56 @@ export function MyAppUI({ state }: MyAppUIProps) {
 
 ## Step 5: Register Anchors for Camera Framing
 
-Anchors allow the camera to focus on specific UI elements.
+Anchors allow the camera to focus on specific UI elements. In Tokovo, anchors are **plugin-defined** and **world-state-driven** — no DOM access.
 
-**Update `src/ui/MyAppUI.tsx`:**
+**Create `src/runtime/adapters/anchors.ts`:**
 
 ```typescript
-import React, { useLayoutEffect } from "react";
+import type { PluginAnchorRegistry, WorldState } from "@tokovo/core";
 import type { MyAppState } from "../types";
 
-interface MyAppUIProps {
-  state: MyAppState;
-  deviceId: string; // NEW: Device ID for anchor registration
-}
+export const MyAppAnchors: PluginAnchorRegistry = {
+  providers: {
+    message: (world: WorldState) => {
+      const app = world.appState.app_myapp as MyAppState | undefined;
+      const last = app?.messages?.[app.messages.length - 1];
 
-export function MyAppUI({ state, deviceId }: MyAppUIProps) {
-  // Register anchor for the last message
-  useLayoutEffect(() => {
-    const lastMsg = state.messages[state.messages.length - 1];
-    if (lastMsg) {
-      // Register anchor for camera framing
-      // (Simplified - in real plugin, use registries.plugins.anchors)
-      window.registerAnchor?.(`${deviceId}:lastMessage`, {
-        x: 0.5, // Centered horizontally
-        y: 0.6, // Slightly below center
-        width: 0.7, // 70% of screen width
-        height: 0.15, // 15% of screen height
-      });
-    }
-  }, [state.messages, deviceId]);
+      // Your reducer should keep a normalized anchor on each message
+      // { x, y, width, height } in 0–1 space
+      return last?.anchor ?? null;
+    },
+  },
+  framing: {
+    message: {
+      anchorPoint: { x: 0.5, y: 0.55 },
+      paddingPx: 40,
+      targetFill: 0.6,
+    },
+  },
+};
+```
 
-  return (
-    <div
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        height: "100%",
-        backgroundColor: "#f5f5f5",
-        fontFamily: "system-ui, -apple-system, sans-serif",
-      }}
-    >
-      {/* ...rest of UI... */}
-    </div>
-  );
-}
+**Attach anchors in `src/plugin.ts`:**
+
+```typescript
+import { MyAppAnchors } from "./runtime/adapters/anchors";
+
+export const MyAppPlugin: TokovoPluginContract<"app_myapp"> = {
+  id: "app_myapp",
+  version: "1.0.0",
+  displayName: "My App",
+  reducer: myAppReducer,
+  views: { AppRoot: MyAppView },
+  createInitialState: createMyAppInitialState,
+  anchors: MyAppAnchors,
+};
 ```
 
 **Anchor Concepts:**
 
-- **Normalized coordinates** - x, y, width, height in range 0-1
-- **Device-scoped anchors** - Prefix with deviceId for uniqueness
-- **Layout-driven** - Register in `useLayoutEffect` before paint
-- **Common anchors** - `lastMessage`, `typing`, `header`, `device`
-
-In production, you'd use a scoped anchor registry:
-
-```typescript
-import { createTokovoRegistries } from "@tokovo/core";
-
-const registries = createTokovoRegistries();
-
-registries.plugins.anchors.register({
-  appId: "app_myapp",
-  framing: {},
-  getAnchors: (_world, _layout, deviceId) => ({
-    anchors: {
-      [`${deviceId}:lastMessage`]: {
-        x: 0.5,
-        y: 0.6,
-        width: 0.7,
-        height: 0.15,
-      },
-    },
-    deviceId,
-    appId: "app_myapp",
-  }),
-});
-```
+- **Normalized coordinates** - x, y, width, height in range 0–1
+- **State-driven** - anchors are derived from `WorldState`
+- **Camera usage** - `cam.focus("app_myapp:message")`
 
 ---
 
@@ -558,7 +533,7 @@ Bundle everything together into a plugin definition.
 **`src/plugin.ts`**
 
 ```typescript
-import type { TokovoPlugin } from "@tokovo/core/plugin";
+import type { TokovoPlugin } from "@tokovo/react";
 import { myAppReducer, createInitialState } from "./reducer";
 import { MyAppUI } from "./ui/MyAppUI";
 import type { MyAppState, MyAppEvent } from "./types";
@@ -609,8 +584,8 @@ Now you can use your plugin in episodes!
 **Register the plugin:**
 
 ```typescript
-// In your episode file or app entrypoint
-import { createTokovoRegistries, PluginManagerClass } from "@tokovo/core";
+// In your app entrypoint (e.g., apps/video-runner/src/runtime.ts)
+import { createTokovoRegistries, PluginManagerClass } from "@tokovo/react";
 import { MyAppPlugin } from "@tokovo/apps-myapp";
 
 const registries = createTokovoRegistries();
@@ -625,16 +600,13 @@ pluginManager.register(MyAppPlugin);
 import { episode } from "@tokovo/dsl";
 import { MyAppTrackBuilder } from "@tokovo/apps-myapp";
 
-let order = 0;
-const getOrder = () => order++;
-
 episode("test-myapp", { fps: 30, duration: "20s" })
   .device("phone", "iphone16", {
     app: "app_myapp",
   })
   .track(
     "app_myapp",
-    () => new MyAppTrackBuilder(30, "phone", getOrder),
+    (getOrder) => new MyAppTrackBuilder(30, "phone", getOrder),
     (app) => {
       // First message arrives
       app.at("1s").receive("Alice", "Hey! How's it going?");
@@ -661,9 +633,9 @@ episode("test-myapp", { fps: 30, duration: "20s" })
   )
   .camera((cam) => {
     // Focus on messages as they arrive
-    cam.at("1s").focus("lastMessage", { duration: "0.5s" });
-    cam.at("10s").focus("lastMessage", { duration: "0.5s" });
-    cam.at("16s").focus("lastMessage", { duration: "0.5s" });
+    cam.at("1s").focus("app_whatsapp:message", { duration: "0.5s" });
+    cam.at("10s").focus("app_whatsapp:message", { duration: "0.5s" });
+    cam.at("16s").focus("app_whatsapp:message", { duration: "0.5s" });
   })
   .build();
 ```
@@ -689,16 +661,16 @@ state.messages.push(newMessage); // NEVER mutate directly!
 
 ### Anchor Registration Best Practices
 
-- **Register in `useLayoutEffect`** - Before browser paint
-- **Use device-scoped IDs** - Prefix with `deviceId`
-- **Provide semantic names** - `lastMessage`, `typing`, `header`
-- **Normalized coordinates** - 0-1 range for x, y, width, height
+- **Use plugin providers** — define anchors in `PluginAnchorRegistry`
+- **Use app-scoped IDs** — `app_myapp:message`
+- **Provide semantic names** — `message`, `typing`, `header`
+- **Normalized coordinates** — 0–1 range for x, y, width, height
 
 ```typescript
-// ✅ Good (inside your AnchorProvider.getAnchors)
+// ✅ Good (inside your provider)
 return {
   anchors: {
-    [`${deviceId}:lastMessage`]: {
+    "app_myapp:message": {
       x: 0.5, // 50% from left
       y: 0.6, // 60% from top
       width: 0.7, // 70% of screen width
@@ -712,7 +684,7 @@ return {
 // ❌ Bad - pixel coordinates (non-responsive)
 return {
   anchors: {
-    lastMessage: {
+    "app_myapp:message": {
       x: 540, // Breaks on different screen sizes
       y: 1200,
       width: 700,
@@ -845,15 +817,15 @@ function reducer(state, event) {
 }
 ```
 
-### ❌ Hardcoding Device IDs
+### ❌ Hardcoding Anchor IDs
 
 ```typescript
-// ❌ Bad - breaks multi-device support
-return { anchors: { lastMessage: { /* ... */ } }, deviceId, appId: "app_myapp" };
+// ❌ Bad - un-namespaced anchors can collide
+return { anchors: { message: { /* ... */ } }, deviceId, appId: "app_myapp" };
 
-// ✅ Good - device-scoped
+// ✅ Good - app-scoped
 return {
-  anchors: { [`${deviceId}:lastMessage`]: { /* ... */ } },
+  anchors: { "app_myapp:message": { /* ... */ } },
   deviceId,
   appId: "app_myapp",
 };

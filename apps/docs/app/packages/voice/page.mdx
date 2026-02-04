@@ -186,7 +186,7 @@ my_narration.duration("intro", 30); // Duration in frames
 
 // Coordinate camera with voice
 .camera((cam) => {
-  cam.at(my_narration.start("dialog1")).focus("speaker");
+  cam.at(my_narration.start("dialog1")).focus("app_whatsapp:profile");
   cam.at(my_narration.end("dialog1")).reset();
 })
 ```
@@ -411,10 +411,10 @@ Don't hardcode timings — use the script helpers:
 
 ```typescript
 // Bad: Hardcoded timing
-cam.at("3.5s").focus("reaction");
+cam.at("3.5s").focus("app_whatsapp:message");
 
 // Good: Derived from voice
-cam.at(drama.end("line1")).focus("reaction");
+cam.at(drama.end("line1")).focus("app_whatsapp:message");
 ```
 
 ### 3. Validate Segment Order

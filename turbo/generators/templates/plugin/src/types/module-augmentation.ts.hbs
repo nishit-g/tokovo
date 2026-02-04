@@ -1,0 +1,22 @@
+import type { {{ pascalCase name }}TrackEvent, {{ pascalCase name }}EventKind } from "./events";
+import type { {{ pascalCase name }}State } from "../runtime/state";
+
+declare module "@tokovo/ir" {
+  interface AppTrackEventRegistry {
+    app_{{ name }}: {{ pascalCase name }}TrackEvent;
+  }
+}
+
+declare module "@tokovo/core" {
+  interface AppStateMap {
+    app_{{ name }}: {{ pascalCase name }}State;
+  }
+
+  interface AppEventKindRegistry {
+    app_{{ name }}: {{ pascalCase name }}EventKind;
+  }
+
+  interface AppInitialStateRegistry {
+    app_{{ name }}: {{ pascalCase name }}State;
+  }
+}

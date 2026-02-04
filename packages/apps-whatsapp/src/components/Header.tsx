@@ -1,7 +1,8 @@
 import { ChevronLeft, Video, Phone } from "lucide-react";
-import { Img, staticFile } from "remotion";
+import { Img } from "remotion";
 import { UI_CONSTANTS } from "../config/layout-config";
 import { useTheme } from "../theme/context";
+import { resolveAvatarWithFallback } from "../utils/avatar";
 
 export interface HeaderProps {
   contactName: string;
@@ -17,8 +18,8 @@ export const Header: React.FC<HeaderProps> = ({
   safeAreaTop = 47,
 }) => {
   const theme = useTheme();
-  const resolvedAvatarUrl =
-    avatarUrl && avatarUrl.startsWith("/") ? staticFile(avatarUrl) : avatarUrl;
+  // Use fallback avatar when local paths don't exist
+  const resolvedAvatarUrl = resolveAvatarWithFallback(avatarUrl, contactName);
 
   const contentHeight = UI_CONSTANTS.HEADER_CONTENT_HEIGHT;
   const totalHeight = safeAreaTop + contentHeight;
@@ -69,14 +70,10 @@ export const Header: React.FC<HeaderProps> = ({
           flexShrink: 0,
         }}
       >
-        {avatarUrl ? (
-          <Img
-            src={resolvedAvatarUrl!}
-            style={{ width: "100%", height: "100%", objectFit: "cover" }}
-          />
-        ) : (
-          <div style={{ width: "100%", height: "100%", background: "#ccc" }} />
-        )}
+        <Img
+          src={resolvedAvatarUrl}
+          style={{ width: "100%", height: "100%", objectFit: "cover" }}
+        />
       </div>
 
       <div

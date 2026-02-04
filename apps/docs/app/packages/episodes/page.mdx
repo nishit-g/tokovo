@@ -62,14 +62,15 @@ Quality assurance episodes for testing rendering and features.
 
 ```typescript
 import { trackDemoV2 } from "@tokovo/episodes/production";
-import { runEpisode, createTokovoRegistries, getConfig } from "@tokovo/core";
+import { runEpisode, TokovoConfig } from "@tokovo/core";
+import { createTokovoRegistries } from "@tokovo/react";
 
 // Get world state at 22.5 seconds
 const registries = createTokovoRegistries();
 const worldState = runEpisode(trackDemoV2, 675, {
   mode: "preview",
   registries: registries.engine,
-  config: getConfig(),
+  config: TokovoConfig,
 });
 ```
 
@@ -250,7 +251,8 @@ Every single WhatsApp message type and action in one comprehensive demo.
 
 ```typescript
 import { trackDemoV2, bakchodiBros, cameraShowcase } from '@tokovo/episodes/production'
-import { runEpisode, createTokovoRegistries, PluginManagerClass, getConfig } from '@tokovo/core'
+import { runEpisode, TokovoConfig } from "@tokovo/core";
+import { createTokovoRegistries, PluginManagerClass } from "@tokovo/react";
 import { createDeviceRegistries, registerDevicesPlugin } from "@tokovo/devices";
 
 // Get state at specific time
@@ -267,7 +269,7 @@ const pluginManager = new PluginManagerClass(registries.plugins)
 const worldAt15s = runEpisode(bakchodiBros, 450, {
   mode: "preview",
   registries: registries.engine,
-  config: getConfig(),
+  config: TokovoConfig,
 })
 
 // Render in Remotion
@@ -278,7 +280,7 @@ function MyComposition() {
   const worldState = runEpisode(bakchodiBros, frame, {
     mode: "preview",
     registries: registries.engine,
-    config: getConfig(),
+    config: TokovoConfig,
   })
 
   return (
@@ -365,7 +367,7 @@ wa.span("7s", "10s").typing("them");
 wa.at("10s").receive("Sarah", "I have something important to tell you...");
 
 // Camera focus on reveal
-cam.at("10s").focus("lastMessage", { scale: 1.15, duration: "0.4s" });
+cam.at("10s").focus("app_whatsapp:message", { scale: 1.15, duration: "0.4s" });
 ```
 
 Build suspense with typing, then focus camera on reveal.
@@ -440,9 +442,6 @@ import { defineEpisode } from "@tokovo/episodes";
 import { episode } from "@tokovo/dsl";
 import { WhatsAppTrackBuilder } from "@tokovo/apps-whatsapp";
 
-let orderCounter = 0;
-const getOrder = () => orderCounter++;
-
 export default defineEpisode({
   // 1. Metadata
   meta: {
@@ -482,7 +481,7 @@ export default defineEpisode({
       // WhatsApp messages
       .track(
         "app_whatsapp",
-        () => new WhatsAppTrackBuilder(30, "phone", "dm_contact", getOrder),
+        (getOrder) => new WhatsAppTrackBuilder(30, "phone", "dm_contact", getOrder),
         (wa) => {
           wa.at("1s").receive("Contact", "Message here");
           wa.span("3s", "5s").typing("me");
@@ -545,7 +544,7 @@ View on GitHub: `packages/episodes/src/`
 - **[Getting Started](/docs/getting-started)** - Your first episode tutorial
 - **[WhatsApp App](/packages/apps-whatsapp)** - WhatsApp-specific features
 - **[Camera System](/docs/camera)** - Camera effects reference
-- **[Episode Architecture](https://github.com/yourusername/tokovo/blob/main/docs-v2/EPISODE-ARCH.md)** - Deep dive into episode system
+- **[Episode Data Flow](/architecture/data-flow)** - How IR and runtime events flow through the engine
 
 ---
 

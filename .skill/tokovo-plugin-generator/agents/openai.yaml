@@ -1,0 +1,4 @@
+interface:
+  display_name: "Tokovo Plugin Generator"
+  short_description: "Generate Tokovo plugins from turbo templates"
+  default_prompt: "Use -plugin-generator to scaffold a new Tokovo app plugin."

@@ -7,6 +7,7 @@ import {
 } from "../runtime/selectors";
 import { create{{ pascalCase name }}InitialState } from "../runtime/state";
 import type { WorldState } from "@tokovo/core";
+import { DEFAULT_AUDIO_STATE, DEFAULT_BASE_CAMERA_STATE } from "@tokovo/core";
 
 describe("{{ pascalCase name }} Selectors", () => {
   it("get{{ pascalCase name }}State returns plugin state", () => {
@@ -15,7 +16,8 @@ describe("{{ pascalCase name }} Selectors", () => {
         "app_{{ name }}": create{{ pascalCase name }}InitialState(),
       },
       devices: {},
-      camera: { mode: "default" as const },
+      camera: DEFAULT_BASE_CAMERA_STATE,
+      audio: DEFAULT_AUDIO_STATE,
     } as WorldState;
 
     const state = get{{ pascalCase name }}State(world);
@@ -33,14 +35,15 @@ describe("{{ pascalCase name }} Selectors", () => {
               id: "1",
               title: "Test",
               content: "Content",
-              createdAt: Date.now(),
-              updatedAt: Date.now(),
+              createdAt: 10,
+              updatedAt: 20,
             },
           ],
         },
       },
       devices: {},
-      camera: { mode: "default" as const },
+      camera: DEFAULT_BASE_CAMERA_STATE,
+      audio: DEFAULT_AUDIO_STATE,
     } as WorldState;
 
     const notes = getNotes(world);
@@ -49,7 +52,7 @@ describe("{{ pascalCase name }} Selectors", () => {
   });
 
   it("getActiveNote returns active note", () => {
-    const now = Date.now();
+    const now = 42;
     const world: WorldState = {
       appState: {
         "app_{{ name }}": {
@@ -61,7 +64,8 @@ describe("{{ pascalCase name }} Selectors", () => {
         },
       },
       devices: {},
-      camera: { mode: "default" as const },
+      camera: DEFAULT_BASE_CAMERA_STATE,
+      audio: DEFAULT_AUDIO_STATE,
     } as WorldState;
 
     const note = getActiveNote(world);
@@ -78,7 +82,8 @@ describe("{{ pascalCase name }} Selectors", () => {
         },
       },
       devices: {},
-      camera: { mode: "default" as const },
+      camera: DEFAULT_BASE_CAMERA_STATE,
+      audio: DEFAULT_AUDIO_STATE,
     } as WorldState;
 
     const screen = getCurrentScreen(world);

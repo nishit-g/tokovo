@@ -14,7 +14,7 @@ pnpm add @tokovo/device-keyboard
 
 ```tsx
 import { registerKeyboardPlugin } from "@tokovo/device-keyboard";
-import { createTokovoRegistries } from "@tokovo/core";
+import { createTokovoRegistries } from "@tokovo/react";
 
 const registries = createTokovoRegistries();
 
@@ -27,14 +27,11 @@ registerKeyboardPlugin(registries.engine); // Call once at init
 import { episode } from "@tokovo/dsl";
 import { KeyboardTrackBuilder } from "@tokovo/device-keyboard";
 
-let order = 0;
-const getOrder = () => order++;
-
 episode("keyboard-demo", { fps: 30, duration: "5s" })
   .device("main_phone", "iphone16", { app: "app_whatsapp" })
   .track(
     "keyboard",
-    () => new KeyboardTrackBuilder(30, "main_phone", getOrder),
+    (getOrder) => new KeyboardTrackBuilder(30, "main_phone", getOrder),
     (keyboard) => {
       keyboard
         .show("1s")

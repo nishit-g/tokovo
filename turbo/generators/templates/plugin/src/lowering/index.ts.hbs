@@ -1,8 +1,23 @@
-// Transforms TrackEvents (PascalCase) → RuntimeEvents (UPPERCASE_SNAKE)
-import type { TrackEvent, RuntimeEvent } from "@tokovo/core";
+// Transforms TrackEvents → RuntimeEvents
+import type { TrackEvent } from "@tokovo/ir";
+import type { RuntimeEvent } from "@tokovo/core";
+import type { {{ pascalCase name }}TrackEvent } from "../types";
 
 export interface {{ pascalCase name }}LoweringHandler {
   lower: (event: TrackEvent) => RuntimeEvent[];
+}
+
+function is{{ pascalCase name }}TrackEvent(
+  event: TrackEvent,
+): event is {{ pascalCase name }}TrackEvent {
+  return (
+    (event as { kind?: string }).kind === "APP" &&
+    (event as { appId?: string }).appId === "app_{{ name }}"
+  );
+}
+
+function getTimestamp(event: TrackEvent, override?: number): number {
+  return typeof override === "number" ? override : event.at;
 }
 
 // Helper to build RuntimeEvent with all required fields
@@ -23,34 +38,42 @@ function createRuntimeEvent(
 
 export const {{ camelCase name }}Lowering: {{ pascalCase name }}LoweringHandler = {
   lower: (event: TrackEvent): RuntimeEvent[] => {
-    switch (event.kind) {
-      case "CreateNote":
+    if (!is{{ pascalCase name }}TrackEvent(event)) {
+      return [];
+    }
+    const payload = (event.payload ?? {}) as Record<string, unknown>;
+    switch (event.type) {
+      case "NOTE_CREATE": {
+        const createdAt = getTimestamp(event, payload.createdAt as number | undefined);
+        const updatedAt =
+          typeof payload.updatedAt === "number" ? payload.updatedAt : createdAt;
         return [
           createRuntimeEvent(event, "ADD_NOTE", {
-            id: (event as any).id,
-            title: (event as any).title,
-            content: (event as any).content,
-            createdAt: Date.now(),
-            updatedAt: Date.now(),
+            id: payload.id ?? `note-${event.at}-${event._declarationOrder ?? 0}`,
+            title: payload.title,
+            content: payload.content,
+            createdAt,
+            updatedAt,
           }),
         ];
-      case "ViewNote":
+      }
+      case "NOTE_VIEW":
         return [
-          createRuntimeEvent(event, "SET_ACTIVE_NOTE", { noteId: (event as any).noteId }),
+          createRuntimeEvent(event, "SET_ACTIVE_NOTE", { noteId: payload.noteId }),
           createRuntimeEvent(event, "SET_SCREEN", { screen: "detail" }),
         ];
-      case "EditNote":
+      case "NOTE_EDIT":
         return [
           createRuntimeEvent(event, "UPDATE_NOTE", {
-            noteId: (event as any).noteId,
-            title: (event as any).title,
-            content: (event as any).content,
-            updatedAt: Date.now(),
+            noteId: payload.noteId,
+            title: payload.title,
+            content: payload.content,
+            updatedAt: getTimestamp(event, payload.updatedAt as number | undefined),
           }),
         ];
-      case "DeleteNote":
+      case "NOTE_DELETE":
         return [
-          createRuntimeEvent(event, "DELETE_NOTE", { noteId: (event as any).noteId }),
+          createRuntimeEvent(event, "DELETE_NOTE", { noteId: payload.noteId }),
         ];
       default:
         return [];

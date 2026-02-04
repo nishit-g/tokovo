@@ -1,861 +1,266 @@
 # Creating Custom Anchors
 
-> **Gain precise control over camera movements by creating semantic anchors for UI elements**
+> **Gain precise control over camera movements with semantic anchors that stay deterministic**
 
-Anchors are named reference points that the camera can focus on during episode playback. While Tokovo provides built-in anchors like `deviceScreen` and `lastMessage`, creating custom anchors lets you direct the camera to specific UI regions, animations, or dynamic content with surgical precision.
+Anchors are named reference points that the camera can focus on during episode playback. Tokovo anchors are **defined by plugins** and **computed from world state**, so they stay deterministic and replayable in every render.
 
 **What you'll learn:**
 
-- Understanding the anchor system architecture
-- Creating simple static anchors
-- Building dynamic anchors that update with state
-- Best practices for naming and lifecycle management
-- Common patterns for message-based and region-based anchors
-- Troubleshooting anchor-related issues
+- How Tokovo's anchor system actually works today
+- Defining anchors in your plugin with `PluginAnchorRegistry`
+- Returning normalized bounds (0–1) for stability across devices
+- Building dynamic anchors from world state
+- Framing tips for cinematic camera moves
+- Common failure modes and fixes
 
 **Prerequisites:**
 
 - Completed [First Episode Quickstart](/getting-started/first-episode)
 - Familiarity with [Cinematic Camera](/guides/cinematic-camera)
-- Basic understanding of React component lifecycle
-- TypeScript knowledge recommended
+- Basic understanding of plugin structure
 
 **Time estimate:** 20-30 minutes
 
 ---
 
-## What Are Custom Anchors?
+## What Are Anchors?
 
-### Anchors vs Direct Coordinates
+Anchors are **named camera targets**. Instead of panning to raw pixels, you reference a semantic name like `app_myapp:message` and the camera resolves it to a bounding box.
 
-You could position the camera using raw coordinates:
+**Benefits:**
 
-```typescript
-// ❌ Brittle — breaks if UI layout changes
-cam.at("2s").pan({ x: 645, y: 1200 });
-cam.at("2s").zoom(1.5);
-```
-
-**Problems with raw coordinates:**
-
-- ❌ Layout changes break camera movements
-- ❌ No semantic meaning (what is "645, 1200"?)
-- ❌ Hard to maintain across episodes
-- ❌ Difficult to synchronize with dynamic content
-
-**Benefits of anchors:**
-
-- ✅ **Semantic** — `.focus('notificationBanner')` is self-documenting
-- ✅ **Layout-independent** — anchors update automatically
-- ✅ **Reusable** — same anchor name works across episodes
-- ✅ **Dynamic** — anchors track moving or changing content
-
-Think of anchors as **named bookmarks** in your UI that the camera can intelligently target.
+- ✅ **Semantic** — `focus("app_myapp:message")` communicates intent
+- ✅ **Stable** — normalized bounds adapt to different device profiles
+- ✅ **Deterministic** — no DOM access, no runtime layout drift
+- ✅ **Reusable** — anchor names work across episodes
 
 ---
 
-## How the Anchor System Works
+## How The Anchor System Works
 
 ### Anchor Registration Flow
 
 ```
-┌─────────────────┐
-│  UI Component   │  Registers anchor with bounds
-└────────┬────────┘
-         │ registerAnchor('myElement', { x, y, w, h })
-         ▼
-┌─────────────────┐
-│ Anchor Registry │  Stores anchor → geometry mapping
-└────────┬────────┘
+┌────────────────────┐
+│  Plugin Definition │  anchors.providers
+└────────┬───────────┘
          │
          ▼
-┌─────────────────┐
-│ Camera System   │  Resolves anchor to camera position
-└─────────────────┘  .focus('myElement') → pan/zoom
+┌────────────────────┐
+│ PluginManagerClass │  registers providers
+└────────┬───────────┘
+         │
+         ▼
+┌────────────────────┐
+│ Anchor Registry    │  appId + anchorName
+└────────┬───────────┘
+         │
+         ▼
+┌────────────────────┐
+│ Camera System      │  cam.focus("app_x:anchor")
+└────────────────────┘
 ```
 
-**Key Concepts:**
+### Important Constraints
 
-1. **Registration** — Components register anchors during render
-2. **Storage** — Registry maintains anchor-to-bounds mapping
-3. **Resolution** — Camera queries registry to find target position
-4. **Updates** — Anchors can be re-registered as UI changes
-
-### Semantic vs Geometric Positioning
-
-**Geometric (Low-level):**
-
-```typescript
-{ x: 645, y: 1200, width: 400, height: 80 }
-```
-
-**Semantic (High-level):**
-
-```typescript
-registerAnchor("welcomeMessage", bounds);
-cam.focus("welcomeMessage");
-```
-
-The camera system converts semantic names into geometric camera transforms automatically.
+- **Providers are pure**: `provider(world, deviceId) => AnchorBounds | null`
+- **Bounds are normalized**: all values are **0–1**, not pixels
+- **Anchor IDs are namespaced**: `appId:anchorName`
 
 ---
 
 ## Creating Simple Anchors
 
-### Basic Anchor Registration
+### 1. Define a Plugin Anchor Registry
 
-Register an anchor from any React component using the `registerAnchor` API:
+Create a file for anchor providers (pattern used in core plugins):
 
 ```typescript
-import { registerAnchor } from '@tokovo/core'
-import { useLayoutEffect } from 'react'
+// packages/apps-myapp/src/runtime/adapters/anchors.ts
+import type { PluginAnchorRegistry, WorldState } from "@tokovo/core";
 
-function CustomBanner() {
-  useLayoutEffect(() => {
-    // Register anchor with bounding box
-    registerAnchor('welcomeBanner', {
-      x: 100,
-      y: 200,
-      width: 1090,
-      height: 120
-    })
-  }, [])
+export const MyAppAnchors: PluginAnchorRegistry = {
+  providers: {
+    header: (_world: WorldState, _deviceId: string) => ({
+      x: 0.5,
+      y: 0.12,
+      width: 0.9,
+      height: 0.18,
+    }),
 
-  return (
-    <div className="banner">
-      Welcome to Tokovo!
-    </div>
-  )
-}
+    input: (_world: WorldState, _deviceId: string) => ({
+      x: 0.5,
+      y: 0.88,
+      width: 0.95,
+      height: 0.18,
+    }),
+  },
+};
 ```
 
-**Use in camera:**
+**Notes:**
+
+- `x` and `y` are **center coordinates** (0–1)
+- `width` and `height` are **normalized** (0–1)
+
+### 2. Attach Anchors to the Plugin
 
 ```typescript
-episode("story", { duration: 30, fps: 30 }).camera((cam) => {
-  cam.at("0s").focus("deviceScreen");
-  cam.at("2s").focus("welcomeBanner"); // Camera pans/zooms to banner
-});
+// packages/apps-myapp/src/plugin.ts
+import type { TokovoPluginContract } from "@tokovo/core";
+import { MyAppAnchors } from "./runtime/adapters/anchors";
+
+export const MyAppPlugin: TokovoPluginContract<"app_myapp"> = {
+  id: "app_myapp",
+  version: "1.0.0",
+  displayName: "My App",
+  reducer: myAppReducer,
+  views: { AppRoot: MyAppView },
+  createInitialState: createMyAppInitialState,
+  anchors: MyAppAnchors,
+};
 ```
 
-### Computing Bounds from DOM Elements
-
-Use React refs to compute anchor bounds from actual rendered elements:
+### 3. Use Anchors in Camera DSL
 
 ```typescript
-import { useLayoutEffect, useRef } from 'react'
-import { registerAnchor } from '@tokovo/core'
-
-function NotificationBadge({ count }: { count: number }) {
-  const ref = useRef<HTMLDivElement>(null)
-
-  useLayoutEffect(() => {
-    if (!ref.current) return
-
-    const rect = ref.current.getBoundingClientRect()
-
-    registerAnchor('notificationBadge', {
-      x: rect.left,
-      y: rect.top,
-      width: rect.width,
-      height: rect.height
-    })
-  }, [count]) // Re-register when count changes
-
-  return (
-    <div ref={ref} className="badge">
-      {count}
-    </div>
-  )
-}
-```
-
-**Why this works:**
-
-- Uses actual rendered dimensions
-- Automatically adapts to content size
-- Updates when dependencies change
-
-### Inline Anchor Registration
-
-For one-off anchors, register inline during render:
-
-```typescript
-function MessageBubble({ message, isLast }: MessageProps) {
-  const ref = useRef<HTMLDivElement>(null)
-
-  useLayoutEffect(() => {
-    if (!ref.current || !isLast) return
-
-    const rect = ref.current.getBoundingClientRect()
-
-    // Register anchor for last message only
-    registerAnchor('lastMessage', {
-      x: rect.left,
-      y: rect.top,
-      width: rect.width,
-      height: rect.height
-    })
-  }, [isLast, message.content])
-
-  return <div ref={ref}>{message.content}</div>
-}
+episode("story", { duration: 30, fps: 30 })
+  .camera((cam) => {
+    cam.at("0s").focus("app_myapp:header");
+    cam.at("2s").focus("app_myapp:input");
+  });
 ```
 
 ---
 
-## Dynamic Anchors
+## Dynamic Anchors (World State Driven)
 
-### State-Driven Anchor Updates
+Anchors should update based on **state**, not DOM. The provider uses `WorldState` so you can compute bounds from your app state.
 
-Anchors that update based on component state or props:
-
-```typescript
-function TypingIndicator({ isTyping, sender }: TypingProps) {
-  const ref = useRef<HTMLDivElement>(null)
-
-  useLayoutEffect(() => {
-    if (!ref.current || !isTyping) return
-
-    const rect = ref.current.getBoundingClientRect()
-
-    // Register anchor when typing starts
-    registerAnchor('typingIndicator', {
-      x: rect.left,
-      y: rect.top,
-      width: rect.width,
-      height: rect.height
-    })
-
-    // Cleanup when typing stops
-    return () => {
-      unregisterAnchor('typingIndicator')
-    }
-  }, [isTyping, sender])
-
-  if (!isTyping) return null
-
-  return (
-    <div ref={ref} className="typing">
-      {sender} is typing...
-    </div>
-  )
-}
-```
-
-**Camera usage:**
+### Example: Anchor the Latest Message
 
 ```typescript
-wa.at("5s").typing("Alice");
-cam.at("5s").focus("typingIndicator"); // Focuses on indicator when active
+import type { PluginAnchorRegistry, WorldState } from "@tokovo/core";
 
-wa.at("8s").stopTyping("Alice");
-cam.at("8s").focus("lastMessage"); // Returns to message view
+type MyAppState = {
+  messages: Array<{
+    id: string;
+    anchor: { x: number; y: number; width: number; height: number };
+  }>;
+};
+
+export const MyAppAnchors: PluginAnchorRegistry = {
+  providers: {
+    message: (world: WorldState) => {
+      const app = world.appState.app_myapp as MyAppState | undefined;
+      const last = app?.messages?.[app.messages.length - 1];
+      return last?.anchor ?? null;
+    },
+  },
+};
 ```
 
-### Animated Anchor Tracking
+**Pattern:**
 
-Track elements that animate or move:
+- Store layout-derived anchors in your app state
+- Update them through events or reducers
+- Keep providers pure and deterministic
+
+---
+
+## Framing Overrides (Cinematic Control)
+
+Anchors define **where** the camera looks. Framing defines **how** it composes the shot.
 
 ```typescript
-function PopupNotification({ message, visible }: PopupProps) {
-  const ref = useRef<HTMLDivElement>(null)
+import type { PluginAnchorRegistry } from "@tokovo/core";
 
-  useLayoutEffect(() => {
-    if (!ref.current || !visible) return
-
-    const updateAnchor = () => {
-      const rect = ref.current!.getBoundingClientRect()
-
-      registerAnchor('popup', {
-        x: rect.left,
-        y: rect.top,
-        width: rect.width,
-        height: rect.height
-      })
-    }
-
-    // Update anchor during animation
-    const animationFrame = requestAnimationFrame(updateAnchor)
-
-    return () => {
-      cancelAnimationFrame(animationFrame)
-      unregisterAnchor('popup')
-    }
-  }, [visible, message])
-
-  return (
-    <motion.div
-      ref={ref}
-      initial={{ y: -100, opacity: 0 }}
-      animate={{ y: 0, opacity: 1 }}
-    >
-      {message}
-    </motion.div>
-  )
-}
+export const MyAppAnchors: PluginAnchorRegistry = {
+  providers: {
+    message: (_world, _deviceId) => ({ x: 0.5, y: 0.55, width: 0.85, height: 0.2 }),
+  },
+  framing: {
+    message: {
+      anchorPoint: { x: 0.5, y: 0.55 },
+      paddingPx: 40,
+      targetFill: 0.6,
+    },
+  },
+};
 ```
 
-### Conditional Anchor Registration
+**Use framing when:**
 
-Register anchors only when certain conditions are met:
+- You want a tighter crop (`targetFill`)
+- The camera should bias up/down/left/right (`anchorPoint`)
+- You want extra breathing room (`paddingPx`)
 
-```typescript
-function SearchResults({ results, query }: SearchProps) {
-  const firstResultRef = useRef<HTMLDivElement>(null)
+---
 
-  useLayoutEffect(() => {
-    if (!firstResultRef.current || results.length === 0) return
+## Naming Conventions
 
-    const rect = firstResultRef.current.getBoundingClientRect()
+**Recommended:**
 
-    // Only register anchor when results exist
-    registerAnchor('firstSearchResult', {
-      x: rect.left,
-      y: rect.top,
-      width: rect.width,
-      height: rect.height
-    })
+- Anchor names are **local** to the plugin (`"message"`, `"header"`)
+- Camera references use the **namespaced key** (`"app_myapp:message"`)
+- Keep names short and semantic
 
-    return () => unregisterAnchor('firstSearchResult')
-  }, [results])
+**Avoid:**
 
-  if (results.length === 0) return <div>No results</div>
-
-  return (
-    <div>
-      <div ref={firstResultRef}>{results[0].title}</div>
-      {/* ... more results ... */}
-    </div>
-  )
-}
-```
+- Raw positions in the name (`"x120_y400"`)
+- Anchors that depend on DOM measurement
 
 ---
 
 ## Best Practices
 
-### Naming Conventions
-
-**✅ Good anchor names:**
-
-```typescript
-"lastMessage"; // Semantic, describes what it points to
-"typingIndicator"; // Clear purpose
-"notificationBanner"; // Specific UI region
-"firstSearchResult"; // Positional + semantic
-"replyButton"; // Action-oriented
-```
-
-**❌ Avoid:**
-
-```typescript
-"anchor1"; // No semantic meaning
-"thing"; // Too vague
-"messageAnchor"; // Redundant suffix
-"THE_ANCHOR"; // Inconsistent casing
-```
-
-**Naming patterns:**
-
-- Use `camelCase` consistently
-- Be specific but concise
-- Describe _what_ or _where_, not _how_
-- Avoid generic names like `element` or `div`
-
-### Anchor Lifecycle Management
-
-**Always clean up anchors:**
-
-```typescript
-useLayoutEffect(() => {
-  registerAnchor("myAnchor", bounds);
-
-  return () => {
-    unregisterAnchor("myAnchor"); // Prevent memory leaks
-  };
-}, [dependencies]);
-```
-
-**When to re-register:**
-
-- Content changes (new message, updated text)
-- Layout shifts (screen rotation, resize)
-- Animation completes
-- Component re-renders with new props
-
-**When to unregister:**
-
-- Component unmounts
-- Conditional rendering removes element
-- Anchor no longer needed (e.g., typing stops)
-
-### Performance Considerations
-
-**❌ Avoid registering in render:**
-
-```typescript
-function Bad() {
-  // ❌ Registers every render cycle!
-  registerAnchor('myAnchor', bounds)
-  return <div>...</div>
-}
-```
-
-**✅ Use useLayoutEffect:**
-
-```typescript
-function Good() {
-  useLayoutEffect(() => {
-    // ✅ Only registers when dependencies change
-    registerAnchor('myAnchor', bounds)
-  }, [dependencies])
-
-  return <div>...</div>
-}
-```
-
-**Batch anchor updates:**
-
-```typescript
-// ✅ Good — update once after all messages render
-useLayoutEffect(() => {
-  messages.forEach((msg, idx) => {
-    registerAnchor(`message_${idx}`, computeBounds(msg));
-  });
-}, [messages]);
-```
-
----
-
-## Common Patterns
-
-### Message Anchors
-
-Track individual messages in a conversation:
-
-```typescript
-function MessageList({ messages }: MessageListProps) {
-  const messageRefs = useRef<Map<string, HTMLDivElement>>(new Map())
-
-  useLayoutEffect(() => {
-    messageRefs.current.forEach((element, messageId) => {
-      const rect = element.getBoundingClientRect()
-
-      registerAnchor(`message_${messageId}`, {
-        x: rect.left,
-        y: rect.top,
-        width: rect.width,
-        height: rect.height
-      })
-    })
-
-    // Also register "lastMessage" for convenience
-    const lastMsg = messages[messages.length - 1]
-    if (lastMsg) {
-      const element = messageRefs.current.get(lastMsg.id)
-      if (element) {
-        const rect = element.getBoundingClientRect()
-        registerAnchor('lastMessage', {
-          x: rect.left,
-          y: rect.top,
-          width: rect.width,
-          height: rect.height
-        })
-      }
-    }
-  }, [messages])
-
-  return (
-    <div>
-      {messages.map((msg) => (
-        <div
-          key={msg.id}
-          ref={(el) => {
-            if (el) messageRefs.current.set(msg.id, el)
-          }}
-        >
-          {msg.content}
-        </div>
-      ))}
-    </div>
-  )
-}
-```
-
-### Region Anchors
-
-Define semantic screen regions:
-
-```typescript
-function AppLayout() {
-  const headerRef = useRef<HTMLDivElement>(null)
-  const contentRef = useRef<HTMLDivElement>(null)
-  const footerRef = useRef<HTMLDivElement>(null)
-
-  useLayoutEffect(() => {
-    const regions = [
-      { ref: headerRef, name: 'headerRegion' },
-      { ref: contentRef, name: 'contentRegion' },
-      { ref: footerRef, name: 'footerRegion' }
-    ]
-
-    regions.forEach(({ ref, name }) => {
-      if (!ref.current) return
-
-      const rect = ref.current.getBoundingClientRect()
-      registerAnchor(name, {
-        x: rect.left,
-        y: rect.top,
-        width: rect.width,
-        height: rect.height
-      })
-    })
-  }, [])
-
-  return (
-    <>
-      <header ref={headerRef}>...</header>
-      <main ref={contentRef}>...</main>
-      <footer ref={footerRef}>...</footer>
-    </>
-  )
-}
-```
-
-### Composite Anchors
-
-Create anchors that combine multiple elements:
-
-```typescript
-function ChatHeader({ avatar, name, status }: HeaderProps) {
-  const containerRef = useRef<HTMLDivElement>(null)
-  const avatarRef = useRef<HTMLDivElement>(null)
-  const nameRef = useRef<HTMLDivElement>(null)
-
-  useLayoutEffect(() => {
-    // Register container anchor
-    if (containerRef.current) {
-      const rect = containerRef.current.getBoundingClientRect()
-      registerAnchor('chatHeader', {
-        x: rect.left,
-        y: rect.top,
-        width: rect.width,
-        height: rect.height
-      })
-    }
-
-    // Register sub-element anchors
-    if (avatarRef.current) {
-      const rect = avatarRef.current.getBoundingClientRect()
-      registerAnchor('chatAvatar', {
-        x: rect.left,
-        y: rect.top,
-        width: rect.width,
-        height: rect.height
-      })
-    }
-
-    if (nameRef.current) {
-      const rect = nameRef.current.getBoundingClientRect()
-      registerAnchor('chatName', {
-        x: rect.left,
-        y: rect.top,
-        width: rect.width,
-        height: rect.height
-      })
-    }
-  }, [name, status])
-
-  return (
-    <div ref={containerRef}>
-      <img ref={avatarRef} src={avatar} />
-      <span ref={nameRef}>{name}</span>
-    </div>
-  )
-}
-```
-
----
-
-## Complete Example: Custom Notification Anchor
-
-Let's build a complete example showing a notification that appears, gets focused by the camera, then disappears.
-
-**Notification Component:**
-
-```typescript
-import { useLayoutEffect, useRef } from 'react'
-import { registerAnchor, unregisterAnchor } from '@tokovo/core'
-
-interface NotificationProps {
-  message: string
-  sender: string
-  visible: boolean
-}
-
-export function Notification({ message, sender, visible }: NotificationProps) {
-  const ref = useRef<HTMLDivElement>(null)
-
-  useLayoutEffect(() => {
-    if (!ref.current || !visible) {
-      // Clean up anchor when hidden
-      unregisterAnchor('notification')
-      return
-    }
-
-    const rect = ref.current.getBoundingClientRect()
-
-    registerAnchor('notification', {
-      x: rect.left,
-      y: rect.top,
-      width: rect.width,
-      height: rect.height
-    })
-
-    return () => unregisterAnchor('notification')
-  }, [visible, message, sender])
-
-  if (!visible) return null
-
-  return (
-    <div ref={ref} className="notification">
-      <div className="sender">{sender}</div>
-      <div className="message">{message}</div>
-    </div>
-  )
-}
-```
-
-**Episode with camera focus:**
-
-```typescript
-import { episode } from "@tokovo/dsl";
-import { WhatsAppTrackBuilder } from "@tokovo/apps-whatsapp";
-
-let order = 0;
-const getOrder = () => order++;
-
-const notificationEpisode = episode("notification-demo", {
-  duration: "15s",
-  fps: 30,
-})
-  .device("phone", "iphone16", {
-    app: "app_whatsapp",
-    conversations: [{ id: "dm_alice", name: "Alice" }],
-  })
-  .track(
-    "app_whatsapp",
-    () => new WhatsAppTrackBuilder(30, "phone", "dm_alice", getOrder),
-    (wa) => {
-      // Trigger notification
-      wa.at("2s").receive("Alice", "Hey! Check this out!");
-
-      // Hide notification
-      wa.at("7s").dismissNotification();
-    },
-  )
-  .camera((cam) => {
-    // Start with device overview
-    cam.at("0s").focus("deviceScreen");
-
-    // Notification appears at 2s
-    cam.at("2s").focus("notification");
-    cam.at("2s").zoom(1.3);
-
-    // Hold on notification
-    cam.at("7s").focus("deviceScreen");
-    cam.at("7s").zoom(1.0);
-  })
-  .build();
-```
-
-**Result:**
-
-1. Camera shows full device screen
-2. At 2s, notification slides in from top
-3. Camera smoothly pans and zooms to notification
-4. Holds focus for 5 seconds
-5. Notification dismisses, camera returns to device view
+1. **Use normalized bounds** — always return values in 0–1 space
+2. **Keep providers pure** — no async, no DOM, no randomness
+3. **Namespaced focus** — always include `appId:` in camera focus
+4. **Prefer state-driven geometry** — store geometry in app state
+5. **Define framing where it matters** — not every anchor needs custom framing
 
 ---
 
 ## Troubleshooting
 
-### Anchor Not Found
+### Anchor Is Not Found
 
-**Problem:** Camera throws "Anchor 'myAnchor' not found"
+**Symptoms:** camera jumps to default framing or nothing happens.
 
-**Solutions:**
+**Checklist:**
 
-1. **Check registration timing:**
+- Plugin is registered in `apps/video-runner/src/runtime.ts`
+- Anchor provider returns non-null bounds
+- Camera uses namespaced key (`app_myapp:anchor`)
 
-   ```typescript
-   // ❌ Component hasn't rendered yet
-   cam.at("0s").focus("myAnchor");
+### Anchor Appears in Wrong Position
 
-   // ✅ Wait for component to mount
-   cam.at("0.5s").focus("myAnchor");
-   ```
+**Symptoms:** camera focuses off-screen or too large.
 
-2. **Verify conditional rendering:**
+**Checklist:**
 
-   ```typescript
-   // Element only renders when visible=true
-   {visible && <div ref={ref}>...</div>}
+- Bounds are normalized (0–1), not pixels
+- `x` and `y` are **center**, not top-left
+- `width` and `height` are normalized
 
-   // Camera should check same condition
-   if (visible) {
-     cam.at('2s').focus('myAnchor')
-   }
-   ```
+### Anchor Jitters Frame-to-Frame
 
-3. **Add fallback anchor:**
-   ```typescript
-   cam.at("2s").focus("myAnchor", { fallback: "deviceScreen" });
-   ```
+**Symptoms:** camera moves subtly each frame.
 
-### Anchor Bounds Are Incorrect
+**Checklist:**
 
-**Problem:** Anchor points to wrong location or size
-
-**Solutions:**
-
-1. **Use `useLayoutEffect` instead of `useEffect`:**
-
-   ```typescript
-   // ✅ Runs before paint, accurate bounds
-   useLayoutEffect(() => {
-     registerAnchor("myAnchor", bounds);
-   }, []);
-   ```
-
-2. **Account for device scaling:**
-
-   ```typescript
-   const deviceScale = 0.5; // iPhone renders at 2x
-
-   registerAnchor("myAnchor", {
-     x: rect.left * deviceScale,
-     y: rect.top * deviceScale,
-     width: rect.width * deviceScale,
-     height: rect.height * deviceScale,
-   });
-   ```
-
-3. **Debug anchor bounds:**
-   ```typescript
-   useLayoutEffect(() => {
-     const rect = ref.current!.getBoundingClientRect()
-     console.log('Anchor bounds:', rect)
-     registerAnchor('myAnchor', { ... })
-   }, [])
-   ```
-
-### Anchor Doesn't Update
-
-**Problem:** Anchor position is stale after UI changes
-
-**Solutions:**
-
-1. **Add missing dependencies:**
-
-   ```typescript
-   // ❌ Missing 'message' dependency
-   useLayoutEffect(() => {
-     registerAnchor("lastMessage", bounds);
-   }, []);
-
-   // ✅ Re-registers when message changes
-   useLayoutEffect(() => {
-     registerAnchor("lastMessage", bounds);
-   }, [message]);
-   ```
-
-2. **Force re-registration:**
-   ```typescript
-   useLayoutEffect(() => {
-     unregisterAnchor("myAnchor");
-     registerAnchor("myAnchor", computeBounds());
-   }, [trigger]);
-   ```
-
-### Memory Leaks
-
-**Problem:** Anchors accumulate over time, slowing down episodes
-
-**Solutions:**
-
-1. **Always clean up:**
-
-   ```typescript
-   useLayoutEffect(() => {
-     registerAnchor("myAnchor", bounds);
-
-     return () => {
-       unregisterAnchor("myAnchor"); // Critical!
-     };
-   }, []);
-   ```
-
-2. **Use unique anchor names per instance:**
-
-   ```typescript
-   // ❌ All messages use same anchor name
-   registerAnchor("message", bounds);
-
-   // ✅ Each message has unique anchor
-   registerAnchor(`message_${messageId}`, bounds);
-   ```
+- Provider is deterministic
+- You are not using unstable values
+- State updates are consistent and event-driven
 
 ---
 
-## Next Steps
+## Recap
 
-### Explore Camera Integration
+- Anchors are **plugin-defined** and **state-driven**
+- Providers return **normalized bounds** (0–1)
+- Use **namespaced keys** when focusing the camera
+- Add **framing** for cinematic control
 
-- **[Cinematic Camera Guide](/guides/cinematic-camera)** — Advanced camera choreography
-- Learn camera transitions, easing, and timing
-- Combine multiple anchors in camera sequences
-
-### Study Built-in Anchors
-
-Examine how Tokovo's built-in anchors work:
-
-```typescript
-// packages/renderer/src/anchors/
-deviceScreen.ts; // Full device viewport
-lastMessage.ts; // Most recent message
-typingIndicator.ts; // Active typing indicator
-```
-
-### Build Advanced Anchors
-
-Experiment with:
-
-- **Offset anchors** — Relative to parent elements
-- **Interpolated anchors** — Smooth transitions between positions
-- **Viewport-aware anchors** — Adjust for safe areas and notches
-
----
-
-## Conclusion
-
-Custom anchors unlock precise, semantic camera control in Tokovo episodes. By registering named reference points in your UI, you enable:
-
-- ✅ **Maintainable camera work** — Layout-independent positioning
-- ✅ **Dynamic storytelling** — Track moving or changing content
-- ✅ **Reusable patterns** — Same anchors across episodes
-- ✅ **Readable code** — Semantic names over raw coordinates
-
-**Key Takeaways:**
-
-1. **Register anchors in `useLayoutEffect`** — Accurate bounds, proper cleanup
-2. **Use semantic naming** — `notificationBanner` > `anchor1`
-3. **Update with dependencies** — Re-register when content changes
-4. **Always clean up** — Prevent memory leaks with `unregisterAnchor`
-5. **Combine with camera** — Anchors + focus/zoom = cinematic control
-
-Start small with static anchors, then progressively add dynamic tracking as your storytelling needs grow. 🎬
-
-**Happy anchoring!**
+If you want, I can review your plugin anchors and tighten the framing system for you.

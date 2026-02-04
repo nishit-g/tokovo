@@ -28,16 +28,13 @@ pnpm add @tokovo/device-notifications
 import { NotificationTrackBuilder } from "@tokovo/device-notifications";
 import { episode } from "@tokovo/dsl";
 
-let order = 0;
-const getOrder = () => order++;
-
 episode("story", { fps: 30, duration: "10s" })
   .device("phone", "iphone16", {
     app: "app_whatsapp",
   })
   .track(
     "notifications",
-    () => new NotificationTrackBuilder(30, "phone", getOrder),
+    (getOrder) => new NotificationTrackBuilder(30, "phone", getOrder),
     (noti) => {
       noti.at("2s").show({
         id: "notif_1",
@@ -669,9 +666,6 @@ The DSL is platform-agnostic; rendering adapts via the token system.
 import { episode } from "@tokovo/dsl";
 import { NotificationTrackBuilder } from "@tokovo/device-notifications";
 
-let order = 0;
-const getOrder = () => order++;
-
 export default episode("notification-demo", { fps: 30, duration: "30s" })
   .device("phone", "iphone16", {
     app: "app_whatsapp",
@@ -679,7 +673,7 @@ export default episode("notification-demo", { fps: 30, duration: "30s" })
 
   .track(
     "notifications",
-    () => new NotificationTrackBuilder(30, "phone", getOrder),
+    (getOrder) => new NotificationTrackBuilder(30, "phone", getOrder),
     (noti) => {
       // Basic notification
       noti.at("1s").show({

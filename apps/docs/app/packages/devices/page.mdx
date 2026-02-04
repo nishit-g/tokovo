@@ -80,14 +80,11 @@ Each device profile includes:
 import { episode } from "@tokovo/dsl";
 import { DeviceTrackBuilder } from "@tokovo/devices";
 
-let order = 0;
-const getOrder = () => order++;
-
 episode("demo", { fps: 30, duration: "10s" })
   .device("phone", "iphone16", { app: "app_whatsapp" })
   .track(
     "devices",
-    () => new DeviceTrackBuilder(30, "phone", getOrder),
+    (getOrder) => new DeviceTrackBuilder(30, "phone", getOrder),
     (device) => {
       // Device profile automatically applied
       device.at("1s").unlock();
@@ -99,22 +96,20 @@ episode("demo", { fps: 30, duration: "10s" })
 ### Multiple Devices
 
 ```typescript
-let order = 0;
-const getOrder = () => order++;
 
 episode("multi-device", { fps: 30, duration: "15s" })
   .device("alice", "iphone16", { app: "app_whatsapp" })
   .device("bob", "pixel", { app: "app_whatsapp" })
   .track(
     "devices",
-    () => new DeviceTrackBuilder(30, "alice", getOrder),
+    (getOrder) => new DeviceTrackBuilder(30, "alice", getOrder),
     (device) => {
       device.at("1s").unlock();
     },
   )
   .track(
     "devices",
-    () => new DeviceTrackBuilder(30, "bob", getOrder),
+    (getOrder) => new DeviceTrackBuilder(30, "bob", getOrder),
     (device) => {
       device.at("2s").unlock();
     },
@@ -126,8 +121,9 @@ episode("multi-device", { fps: 30, duration: "15s" })
 ### Registering Devices
 
 ```typescript
-import { createTokovoRegistries } from "@tokovo/core";
+
 import { createDeviceRegistries, registerDevicesPlugin } from "@tokovo/devices";
+import { createTokovoRegistries } from "@tokovo/react";
 
 const tokovoRegistries = createTokovoRegistries();
 const registries = createDeviceRegistries();
@@ -284,8 +280,9 @@ Device geometry affects:
 ### Frame Rendering (Registry-First)
 
 ```typescript
-import { createTokovoRegistries } from "@tokovo/core";
+
 import { createDeviceRegistries, registerDevicesPlugin } from "@tokovo/devices";
+import { createTokovoRegistries } from "@tokovo/react";
 import { RendererRegistryProvider, DeviceFrame } from "@tokovo/renderer";
 
 const tokovoRegistries = createTokovoRegistries();
@@ -424,14 +421,11 @@ registries.devices.register("myphone", MyPhoneProfile);
 ```typescript
 import { DeviceTrackBuilder } from "@tokovo/devices";
 
-let order = 0;
-const getOrder = () => order++;
-
 episode("demo", { fps: 30, duration: "10s" })
   .device("phone", "myphone", { app: "app_whatsapp" })
   .track(
     "devices",
-    () => new DeviceTrackBuilder(30, "phone", getOrder),
+    (getOrder) => new DeviceTrackBuilder(30, "phone", getOrder),
     (device) => {
       device.at("1s").unlock();
     },
@@ -518,14 +512,11 @@ import type {
 import { episode } from "@tokovo/dsl";
 import { DeviceTrackBuilder } from "@tokovo/devices";
 
-let order = 0;
-const getOrder = () => order++;
-
 episode("phone-demo", { fps: 30, duration: "30s" })
   .device("phone", "iphone16", { app: "app_whatsapp" })
   .track(
     "devices",
-    () => new DeviceTrackBuilder(30, "phone", getOrder),
+    (getOrder) => new DeviceTrackBuilder(30, "phone", getOrder),
     (device) => {
       // Initial state
       device.at("0s").setBattery(85, true);

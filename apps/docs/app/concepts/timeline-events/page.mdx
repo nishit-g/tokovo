@@ -275,7 +275,7 @@ Camera movements and effects:
   at: 2.0,
   kind: "CAMERA",
   type: "FOCUS",
-  payload: { anchorId: "lastMessage", duration: 30 }
+  payload: { anchorId: "app_whatsapp:message", duration: 30 }
 }
 
 // Zoom
@@ -367,7 +367,8 @@ Operating system state changes:
 Timeline Events are processed in **chronological order** by their `at` timestamp:
 
 ```typescript
-import { createTokovoRegistries, getConfig } from "@tokovo/core";
+import { TokovoConfig } from "@tokovo/core";
+import { createTokovoRegistries } from "@tokovo/react";
 
 const events = [
   { at: 1.0, kind: "DEVICE", type: "UNLOCK", ... },
@@ -381,7 +382,7 @@ const tokovoRegistries = createTokovoRegistries();
 const opts = {
   mode: "preview",
   registries: tokovoRegistries.engine,
-  config: getConfig(),
+  config: TokovoConfig,
 };
 
 runEpisode(episode, 75, opts);
@@ -436,9 +437,6 @@ The DSL's track builders generate Timeline Events under the hood:
 import { episode } from "@tokovo/dsl";
 import { WhatsAppTrackBuilder } from "@tokovo/apps-whatsapp";
 
-let order = 0;
-const getOrder = () => order++;
-
 episode("my-story", { fps: 30, duration: "10s" })
   .device("phone", "iphone16", {
     app: "app_whatsapp",
@@ -446,7 +444,7 @@ episode("my-story", { fps: 30, duration: "10s" })
   })
   .track(
     "app_whatsapp",
-    () => new WhatsAppTrackBuilder(30, "phone", "default", getOrder),
+    (getOrder) => new WhatsAppTrackBuilder(30, "phone", "default", getOrder),
     (wa) => {
       wa.at("2s").receive("Alice", "Hey!");
       wa.at("3s").typing("Alice");
@@ -649,7 +647,7 @@ Camera responds to message arrival:
 ```typescript
 [
   { at: 2.0, kind: "APP", type: "MESSAGE_RECEIVED", ... },
-  { at: 2.1, kind: "CAMERA", type: "FOCUS", payload: { anchorId: "lastMessage" } },
+  { at: 2.1, kind: "CAMERA", type: "FOCUS", payload: { anchorId: "app_whatsapp:message" } },
 ]
 ```
 
@@ -740,6 +738,6 @@ Semantic signals for auto-directors:
 
 For complete TypeScript definitions:
 
-- [`packages/core/src/types/runtime-event.ts`](https://github.com/yourusername/tokovo/blob/main/packages/core/src/types/runtime-event.ts) — RuntimeEvent types
-- [`packages/ir/src/v2/track-event.ts`](https://github.com/yourusername/tokovo/blob/main/packages/ir/src/v2/track-event.ts) — TrackEvent IR types
-- [`packages/compiler/src/v2/lowering.ts`](https://github.com/yourusername/tokovo/blob/main/packages/compiler/src/v2/lowering.ts) — Event lowering logic
+- `packages/core/src/types/runtime-event.ts` — RuntimeEvent types
+- `packages/ir/src/v2/track-event.ts` — TrackEvent IR types
+- `packages/compiler/src/v2/lowering.ts` — Event lowering logic

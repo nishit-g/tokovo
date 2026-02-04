@@ -1,16 +1,29 @@
 {
   "name": "@tokovo/apps-{{ name }}",
   "version": "0.0.0",
-  "main": "./src/index.ts",
-  "types": "./src/index.ts",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
   "dependencies": {
     "@tokovo/core": "workspace:*",
+    "@tokovo/dsl": "workspace:*",
+    "@tokovo/ir": "workspace:*",
+    "@tokovo/react": "workspace:*",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
     "immer": "^10.0.0"
   },
   "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/react": "18.3.1",
+    "typescript": "^5.0.0",
     "vitest": "^1.0.0"
   },
   "scripts": {
+    "build": "tsc",
+    "lint": "eslint . --ext .ts,.tsx",
     "test": "vitest run",
     "test:watch": "vitest"
   }

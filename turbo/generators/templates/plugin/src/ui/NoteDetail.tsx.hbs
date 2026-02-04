@@ -1,4 +1,5 @@
 import React from "react";
+import { TokovoConfig, framesToSeconds } from "@tokovo/core";
 import type { {{ pascalCase name }}State } from "../runtime/state";
 import { get{{ pascalCase name }}Theme } from "../config/theme";
 import { {{ camelCase name }}Spacing } from "../components/tokens";
@@ -11,6 +12,12 @@ export const NoteDetail: React.FC<NoteDetailProps> = ({ appState }) => {
   const theme = get{{ pascalCase name }}Theme("light");
   const activeNoteId = appState?.activeNoteId;
   const note = appState?.notes.find((n) => n.id === activeNoteId);
+  const fps = TokovoConfig.rendering.defaultFps ?? 30;
+
+  const formatFrameTime = (frame: number): string => {
+    const seconds = framesToSeconds(frame, fps);
+    return `t=${seconds.toFixed(2)}s`;
+  };
 
   if (!note) {
     return (
@@ -55,7 +62,7 @@ export const NoteDetail: React.FC<NoteDetailProps> = ({ appState }) => {
         {note.title}
       </h1>
       <p style=\{{ ...theme.typography.caption, color: theme.colors.text, marginBottom: 24 }}>
-        Last updated: {new Date(note.updatedAt).toLocaleString()}
+        Last updated: {formatFrameTime(note.updatedAt)}
       </p>
       <div
         style=\{{

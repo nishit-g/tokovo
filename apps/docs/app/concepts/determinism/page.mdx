@@ -15,11 +15,13 @@ In Tokovo, determinism means:
 Given an **episode** (initial world state + timeline events) and a **time `t`**, Tokovo will compute the exact same `WorldState` every single time.
 
 ```ts
+import { createTokovoRegistries } from "@tokovo/react";
+
 const tokovoRegistries = createTokovoRegistries();
 const opts = {
   mode: "preview",
   registries: tokovoRegistries.engine,
-  config: getConfig(),
+  config: TokovoConfig,
 };
 
 runEpisode(episode, 105, opts) === runEpisode(episode, 105, opts); // Always true
@@ -70,7 +72,7 @@ When debugging, you can ask: "What is the state at `t=3.5s`?"—and get the same
 const state = runEpisode(episode, 105, {
   mode: "preview",
   registries: tokovoRegistries.engine,
-  config: getConfig(),
+  config: TokovoConfig,
 });
 console.log(state.devices.phone1.foregroundAppId);
 // Always prints the same value for this episode + time
@@ -87,14 +89,14 @@ test("message appears at correct time", () => {
   const state = runEpisode(episode, 60, {
     mode: "preview",
     registries: tokovoRegistries.engine,
-    config: getConfig(),
+    config: TokovoConfig,
   });
   expect(state.appState.whatsapp.messages).toHaveLength(0);
 
   const stateAfter = runEpisode(episode, 75, {
     mode: "preview",
     registries: tokovoRegistries.engine,
-    config: getConfig(),
+    config: TokovoConfig,
   });
   expect(stateAfter.appState.whatsapp.messages).toHaveLength(1);
   expect(stateAfter.appState.whatsapp.messages[0].text).toBe("Hey!");
@@ -152,7 +154,7 @@ The core engine is a **pure function**:
 const stateCache = createStateCache();
 const keyframedIndex = createKeyframedEventIndex(
   episode.events,
-  getConfig().rendering.cacheKeyframeInterval,
+  TokovoConfig.rendering.cacheKeyframeInterval,
 );
 
 function runEpisodeAtFrame(

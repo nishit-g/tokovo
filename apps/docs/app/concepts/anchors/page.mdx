@@ -1,79 +1,63 @@
 # Anchors
 
-**Anchors** are Tokovo's semantic positioning system that bridges the gap between meaning and geometry. Instead of hardcoding camera coordinates like `{x: 100, y: 500}`, you reference semantic points like `"lastMessage"` or `"profile"`. The camera system resolves these anchors to actual screen coordinates at render time.
-
-This abstraction makes episodes resilient to layout changes, device variations, and app UI updates. You describe _what_ the camera should focus on, not _where_.
-
----
-
-## What are Anchors?
-
-An **anchor** is a named reference point in the UI that has:
-
-1. **A semantic name** — e.g., `"lastMessage"`, `"inputArea"`, `"headsUpNotification"`
-2. **A bounding rectangle** — `{x, y, width, height}` in device coordinates
-3. **Framing configuration** — how the camera should frame this anchor
+Anchors are Tokovo's semantic positioning system. Instead of hardcoding camera coordinates like `{x: 100, y: 500}`, you reference a **meaningful name** like `message` and let the camera resolve it to geometry at render time.
 
 Anchors are:
 
-- **Dynamic** — Their positions update every frame based on WorldState
-- **Semantic** — Named by meaning, not coordinates
-- **Plugin-provided** — Apps register their own anchors
-- **Camera-consumed** — Used by the camera system for framing
+- **Semantic** — named for intent, not coordinates
+- **Deterministic** — derived from WorldState only
+- **Plugin-owned** — apps define their own anchors
+- **Camera-consumed** — camera effects resolve and frame them
+
+---
+
+## What Is an Anchor?
+
+An anchor is a named UI region defined by:
+
+1. **A name** — e.g., `message`, `input`, `header`
+2. **A bounding rectangle** — `{x, y, width, height}` (pixels after normalization)
+3. **Framing config** — how the camera composes the shot
+
+Anchors update **every frame** based on WorldState, which makes them stable and replayable.
 
 ---
 
 ## How Anchors Work
 
-The anchor system has three layers:
+### 1. Plugin Defines Anchor Providers
 
-### 1. Plugin Registration
-
-Each app plugin can register **anchor providers** that expose semantic regions from their UI. For example, the WhatsApp plugin registers anchors for:
-
-- `lastMessage` — The most recent message bubble
-- `inputArea` — The text input field at the bottom
-- `header` — The chat header with contact info
-- `profile` — The profile picture in the header
-- `message:{messageId}` — Specific message by ID
-
-Anchor providers compute bounding boxes from **layout state** (not DOM measurement). The layout engine calculates message positions deterministically, then anchor providers expose them.
-
-### 2. Anchor Registry
-
-The **Anchor Registry** is a central lookup table maintained by `@tokovo/core`. When the renderer computes layout for an app, it:
-
-1. Calls the app's anchor provider with `(WorldState, LayoutState, deviceId)`
-2. Receives an `AnchorSnapshot` containing all available anchors
-3. Stores this snapshot for the camera system
-
-The registry updates every frame, ensuring anchor positions stay synchronized with UI state.
-
-### 3. Camera Resolution
-
-When the camera wants to focus on an anchor:
+Plugins expose anchors via `PluginAnchorRegistry`:
 
 ```typescript
-camera.focus("lastMessage", { preset: "message" });
+import type { PluginAnchorRegistry } from "@tokovo/core";
+
+export const MyAppAnchors: PluginAnchorRegistry = {
+  providers: {
+    message: (_world, _deviceId) => ({ x: 0.5, y: 0.55, width: 0.85, height: 0.2 }),
+    input: (_world, _deviceId) => ({ x: 0.5, y: 0.88, width: 0.95, height: 0.18 }),
+  },
+  framing: {
+    message: { anchorPoint: { x: 0.5, y: 0.55 }, paddingPx: 40, targetFill: 0.6 },
+  },
+};
 ```
 
-The camera system:
+**Important:** provider bounds are **normalized (0–1)**. They are scaled to device pixels at runtime.
 
-1. Looks up `"lastMessage"` in the anchor snapshot
-2. Retrieves the bounding rect `{x: 100, y: 500, width: 300, height: 80}`
-3. Applies **framing configuration** (anchor point, padding, target fill)
-4. Converts to camera transform (scale, originX, originY)
-5. Animates to the new position
+### 2. Plugin Manager Registers Providers
 
-If an anchor isn't found, the system uses **fallback chains**:
+When a plugin registers, `PluginManagerClass` wires providers into the anchor registry (`createTokovoRegistries().plugins.anchors`).
 
-```
-lastMessage → content → app → device
-inputArea → content → app → device
-notification → header → app → device
+### 3. Camera Resolves Anchors
+
+Camera effects request anchors by their namespaced key:
+
+```typescript
+cam.at("2s").focus("app_whatsapp:message");
 ```
 
-This prevents violent camera snaps when anchors are temporarily unavailable.
+Tokovo resolves the anchor with fallback chains and framing rules, then computes camera transform.
 
 ---
 
@@ -83,272 +67,83 @@ This prevents violent camera snaps when anchors are temporarily unavailable.
   {`┌─────────────────────────────────────────────────────────────┐
 │                      ANCHOR SYSTEM                           │
 ├─────────────────────────────────────────────────────────────┤
-│                                                              │
-│  PLUGIN (WhatsApp)                                           │
+│  PLUGIN                                                     │
 │  ┌────────────────────────────────────────────────────┐     │
-│  │ Layout calculation                                 │     │
-│  │   lastMsg at { x: 100, y: 500, w: 300, h: 80 }    │     │
-│  │                                                    │     │
-│  │ registerAnchor('lastMessage', bbox)                │     │
+│  │ anchors.providers                                  │     │
+│  │   message → { x: 0.5, y: 0.55, w: 0.85, h: 0.2 }   │     │
 │  └──────────────────┬─────────────────────────────────┘     │
 │                     │                                        │
 │                     ▼                                        │
 │  ANCHOR REGISTRY                                             │
 │  ┌────────────────────────────────────────────────────┐     │
-│  │ {                                                  │     │
-│  │   'lastMessage': { x: 100, y: 500, w: 300, h: 80 },│     │
-│  │   'deviceScreen': { x: 0, y: 0, w: 375, h: 812 }, │     │
-│  │   'appHeader': { x: 0, y: 0, w: 375, h: 44 }      │     │
-│  │ }                                                  │     │
+│  │ anchors snapshot (per app)                         │     │
+│  │   app_whatsapp:message → { x: 188, y: 455, w: 318, h: 166 }│     │
 │  └──────────────────┬─────────────────────────────────┘     │
 │                     │                                        │
 │                     ▼                                        │
 │  CAMERA SYSTEM                                               │
 │  ┌────────────────────────────────────────────────────┐     │
-│  │ .focus('lastMessage')                              │     │
-│  │   → getAnchor('lastMessage')                       │     │
-│  │   → { x: 100, y: 500, w: 300, h: 80 }             │     │
-│  │   → Pan camera to center on this bbox              │     │
+│  │ .focus("app_whatsapp:message")                     │     │
+│  │   → resolve + apply framing                         │     │
 │  └────────────────────────────────────────────────────┘     │
-│                                                              │
 └─────────────────────────────────────────────────────────────┘`}
 </ASCIIDiagram>
 
 ---
 
-## Anchor Types
-
-Tokovo supports three categories of anchors:
+## Anchor Categories
 
 ### Element Anchors
 
-Point to specific UI elements:
-
-- `lastMessage` — Most recent chat bubble
-- `profile` — Profile picture in header
-- `message:{id}` — Specific message by ID
+- `message` — most recent message bubble
+- `message:{id}` — specific message
+- `profile` — profile avatar in header
 
 ### Region Anchors
 
-Cover areas of the screen:
-
-- `device` — Full device viewport
-- `app` — App content area (excluding status bar)
-- `content` — Scrollable content region
-- `inputArea` — Input field and controls
-- `header` — App header/navigation bar
+- `device` — full device viewport
+- `app` — app content area
+- `content` — scrollable region
+- `input` — input and controls
+- `header` — navigation bar
 
 ### Overlay Anchors
 
-Target system overlays:
-
-- `headsUpNotification` — Banner notification at top
+- `headsUpNotification` — banner notification
 - `dynamicIsland` — iOS Dynamic Island
-- `keyboard` — On-screen keyboard (when visible)
+- `keyboard` — on-screen keyboard
 
 ---
 
 ## Framing Configuration
 
-Each anchor has **framing metadata** that tells the camera how to frame it:
+Anchors can define **framing** to control camera composition:
 
 ```typescript
 {
-  anchorPoint: { x: 0.5, y: 0.5 },  // Center of the bbox
-  paddingPx: 40,                     // Extra breathing room
-  targetFill: 0.6                    // Fill 60% of viewport
+  anchorPoint: { x: 0.5, y: 0.5 },
+  paddingPx: 40,
+  targetFill: 0.6,
 }
 ```
 
-**Anchor Point** determines which part of the bbox to center on:
-
-- `{x: 0.5, y: 0.5}` — Center
-- `{x: 0.6, y: 0.5}` — Slightly right (for "me" bubbles)
-- `{x: 0.4, y: 0.5}` — Slightly left (for "other" bubbles)
-- `{x: 0.5, y: 0.1}` — Top center (for notifications)
-
-**Target Fill** controls zoom level:
-
-- `1.0` — Fill entire viewport (for `device` anchor)
-- `0.6` — Fill 60% (for messages)
-- `0.35` — Fill 35% (for notifications)
-- `0.15` — Fill 15% (for Dynamic Island)
-
----
-
-## Common Anchors
-
-### Chat Apps (WhatsApp, Instagram DM, Messages)
-
-| Anchor            | Description                   | Typical Use               |
-| ----------------- | ----------------------------- | ------------------------- |
-| `lastMessage`     | Most recent message bubble    | Focus after new message   |
-| `inputArea`       | Text input field at bottom    | Focus when user typing    |
-| `header`          | Chat header with contact info | Establish shot            |
-| `profile`         | Profile picture in header     | Close-up on character     |
-| `message:{id}`    | Specific message by ID        | Reference earlier message |
-| `typingIndicator` | Typing dots bubble            | Show someone typing       |
-
-### Notifications
-
-| Anchor                   | Description                | Typical Use                    |
-| ------------------------ | -------------------------- | ------------------------------ |
-| `headsUpNotification`    | Banner notification at top | React to incoming notification |
-| `dynamicIsland`          | iOS Dynamic Island         | Show live activity             |
-| `lockscreenNotification` | Notification on lockscreen | Wake device with notification  |
-
-### Global Anchors
-
-| Anchor     | Description                       | Typical Use            |
-| ---------- | --------------------------------- | ---------------------- |
-| `device`   | Full device viewport              | Establish shot, reset  |
-| `app`      | App content area                  | Wide view of app       |
-| `keyboard` | On-screen keyboard (when visible) | Focus on typing action |
-
----
-
-## Camera Integration
-
-Anchors are used by camera commands:
-
-### Focus
-
-One-time camera movement to an anchor:
-
-```typescript
-camera.focus("lastMessage", {
-  preset: "message", // Uses preset scale/easing
-  duration: "0.5s",
-});
-```
-
-### Track
-
-Continuous following of an anchor:
-
-```typescript
-camera.track("lastMessage", {
-  smoothing: 0.15, // How smoothly to follow
-  duration: "2s",
-});
-```
-
-The camera system resolves the anchor name to coordinates, applies framing, and animates to the target position.
-
----
-
-## Semantic vs Geometric Positioning
-
-**Geometric positioning** (manual camera control):
-
-```typescript
-camera.at("1s").set({
-  scale: 1.2,
-  originX: 0.5,
-  originY: 0.4,
-});
-```
-
-**Semantic positioning** (anchor-based):
-
-```typescript
-camera.at("1s").focus("lastMessage");
-```
-
-Benefits of semantic positioning:
-
-- **Resilient to layout changes** — Message moves down as new ones appear? Anchor follows automatically
-- **Device-independent** — Works on iPhone, Pixel, different screen sizes
-- **Self-documenting** — `focus("profile")` is clearer than `{originX: 0.2, originY: 0.15}`
-- **Easier to author** — No manual coordinate calculation
-
-Tokovo supports **both** approaches. Use manual control for cinematic effects, anchors for content-driven framing.
+- **anchorPoint** biases the focal point within the rect
+- **paddingPx** adds breathing room
+- **targetFill** controls how much of the viewport the rect fills
 
 ---
 
 ## Best Practices
 
-### 1. Use anchors for content-driven framing
-
-When the camera should follow UI elements (messages, notifications, typing indicators), use anchors. They adapt automatically to dynamic content.
-
-### 2. Use manual control for cinematic effects
-
-For intentional camera choreography (shake, rotation, dramatic zoom), use manual camera commands. Combine with anchors as needed.
-
-### 3. Provide fallback chains
-
-When registering custom anchors, ensure there are reasonable fallbacks. If `customAnchor` isn't found, the system should gracefully fall back to `content`, `app`, or `device`.
-
-### 4. Test with different devices
-
-Anchor positions vary by device size and app layout. Test episodes on multiple device profiles to ensure anchors resolve correctly.
-
-### 5. Use descriptive anchor names
-
-Name anchors by semantic meaning (`lastMessage`, `profile`) not position (`topLeft`, `center`). This makes episodes self-documenting and resilient to UI redesigns.
+1. **Normalize bounds** — always return 0–1 values
+2. **Keep providers pure** — no DOM, no async, no randomness
+3. **Store geometry in state** — compute anchors from WorldState
+4. **Use framing sparingly** — only where cinematic intent matters
 
 ---
 
-## Advanced: Custom Anchors
+## Related Reading
 
-App plugins can register custom anchors for app-specific UI:
-
-```typescript
-export const MyAppAnchors: PluginAnchorRegistry = {
-  providers: {
-    default: (world: WorldState, deviceId: string) => {
-      // Compute anchor positions from layout state
-      return {
-        anchors: {
-          customElement: { x: 100, y: 200, width: 150, height: 50 },
-          anotherAnchor: { x: 50, y: 400, width: 300, height: 100 },
-        },
-        deviceId,
-        appId: "app_myapp",
-      };
-    },
-  },
-  framing: {
-    customElement: {
-      anchorPoint: { x: 0.5, y: 0.5 },
-      paddingPx: 20,
-      targetFill: 0.5,
-    },
-  },
-};
-```
-
-Register the anchor provider in your plugin:
-
-```typescript
-export const MyAppPlugin: TokovoPlugin = {
-  id: "app_myapp",
-  name: "MyApp",
-  anchors: MyAppAnchors,
-  // ... other plugin properties
-};
-```
-
-Now episodes can use `camera.focus("customElement")` to target your app's UI.
-
----
-
-## Related Concepts
-
-- **[Camera System](/concepts/camera)** — How the camera uses anchors for framing
-- **[Layout Engine](/concepts/layout)** — How layout state provides anchor positions
-- **[Plugins](/concepts/plugins)** — How to register custom anchors in your app
-
----
-
-## Summary
-
-Anchors are Tokovo's semantic positioning system:
-
-- **Plugins** register anchors from layout state
-- **Registry** maintains current anchor positions
-- **Camera** resolves anchors to transforms
-- **Fallbacks** prevent errors when anchors unavailable
-
-This abstraction makes episodes **resilient, readable, and device-independent**. Instead of fragile coordinates, you work with meaningful semantic names that adapt to dynamic UI state.
+- [Cinematic Camera](/guides/cinematic-camera)
+- [Creating Custom Anchors](/guides/creating-custom-anchors)
+- [Plugin System](/concepts/plugins)

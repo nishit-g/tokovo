@@ -37,9 +37,6 @@ Compare these two approaches to creating the same episode:
 import { episode } from "@tokovo/dsl";
 import { WhatsAppTrackBuilder } from "@tokovo/apps-whatsapp";
 
-let order = 0;
-const getOrder = () => order++;
-
 episode("story", { fps: 30, duration: "10s" })
   .device("phone", "iphone16", {
     app: "app_whatsapp",
@@ -47,7 +44,7 @@ episode("story", { fps: 30, duration: "10s" })
   })
   .track(
     "app_whatsapp",
-    () => new WhatsAppTrackBuilder(30, "phone", "dm_alice", getOrder),
+    (getOrder) => new WhatsAppTrackBuilder(30, "phone", "dm_alice", getOrder),
     (wa) => {
       wa.at("1s").receive("Alice", "Hey!");
       wa.at("3s").send("Hi there!");
@@ -58,6 +55,8 @@ episode("story", { fps: 30, duration: "10s" })
   })
   .build();
 ```
+
+**Tip:** Prefer the `(getOrder) => new TrackBuilder(...)` factory signature. It uses the episode’s central ordering counter, so you don’t need manual `order++` bookkeeping across tracks.
 
 ### Raw IR (JSON)
 
@@ -285,7 +284,7 @@ Add camera movements and effects.
 .camera(cam => {
   cam.at('0s').set({ scale: 1 });
   cam.at('1s').animate({ scale: 1.2, duration: '0.5s' });
-  cam.at('3s').focus('lastMessage', { scale: 1.1 });
+  cam.at('3s').focus('app_whatsapp:message', { scale: 1.1 });
   cam.at('5s').shake({ intensityX: 5, intensityY: 5, duration: '0.3s' });
 })
 ```
@@ -347,11 +346,8 @@ Add an app-specific track.
 ```typescript
 import { WhatsAppTrackBuilder } from '@tokovo/apps-whatsapp';
 
-let order = 0;
-const getOrder = () => order++;
-
 .track('app_whatsapp',
-  () => new WhatsAppTrackBuilder(30, 'phone', 'dm_alice', getOrder),
+  (getOrder) => new WhatsAppTrackBuilder(30, 'phone', 'dm_alice', getOrder),
   wa => {
     wa.at('1s').receive('Alice', 'Hey!');
     wa.at('3s').send('Hi there!');
@@ -454,7 +450,7 @@ cam.at("1s").animate({
 Focus camera on an element.
 
 ```typescript
-cam.at('2s').focus('lastMessage', {
+cam.at('2s').focus('app_whatsapp:message', {
   scale?: number,
   padding?: number,
   duration?: string | number,
@@ -465,7 +461,7 @@ cam.at('2s').focus('lastMessage', {
 **Example:**
 
 ```typescript
-cam.at("3s").focus("lastMessage", { scale: 1.15, duration: "0.4s" });
+cam.at("3s").focus("app_whatsapp:message", { scale: 1.15, duration: "0.4s" });
 ```
 
 #### `.shake(options)`
@@ -518,7 +514,7 @@ Operations that last for a duration.
 Continuously track an element.
 
 ```typescript
-cam.span('5s', '10s').track('inputArea', {
+cam.span('5s', '10s').track('app_whatsapp:input', {
   scale?: number,
   lag?: number
 })
@@ -527,7 +523,7 @@ cam.span('5s', '10s').track('inputArea', {
 **Example:**
 
 ```typescript
-cam.span("5s", "10s").track("typingIndicator", { scale: 1.1 });
+cam.span("5s", "10s").track("typing", { scale: 1.1 });
 ```
 
 ---
@@ -672,7 +668,7 @@ const dialogStart = drama_example.start("seg_1", 30);
 
 // Coordinate camera with voice
 .camera((cam) => {
-  cam.at(drama_example.start("seg_1")).focus("reaction");
+  cam.at(drama_example.start("seg_1")).focus("app_whatsapp:message");
   cam.at(drama_example.end("seg_2")).reset();
 })
 ```
@@ -773,7 +769,7 @@ wa.at('10s').read()
 
 ```typescript
 .track('app_whatsapp',
-  () => new WhatsAppTrackBuilder(30, 'phone', 'dm_alice', getOrder),
+  (getOrder) => new WhatsAppTrackBuilder(30, 'phone', 'dm_alice', getOrder),
   wa => {
     wa.at('1s').receive('Alice', 'Hey! How are you?');
     wa.span('3s', '5s').typing('me');
@@ -806,8 +802,9 @@ The DSL compiles to IR (Intermediate Representation) JSON:
 
 ```typescript
 import { episode } from "@tokovo/dsl";
+import { createTokovoRegistries } from "@tokovo/react";
 import { prepareTrackEpisode } from "@tokovo/compiler";
-import { createTokovoRegistries, getConfig } from "@tokovo/core";
+import { TokovoConfig } from "@tokovo/core";
 import { whatsappPlugin } from "@tokovo/apps-whatsapp";
 
 const tokovoRegistries = createTokovoRegistries();
@@ -825,7 +822,7 @@ export const MyComposition = () =>
   runEpisode(prepared, frame, {
     mode: "preview",
     registries: tokovoRegistries.engine,
-    config: getConfig(),
+    config: TokovoConfig,
   });
 ```
 
@@ -843,9 +840,6 @@ export const MyComposition = () =>
 import { episode } from "@tokovo/dsl";
 import { WhatsAppTrackBuilder } from "@tokovo/apps-whatsapp";
 import { breakup_narration } from "@tokovo/voice";
-
-let order = 0;
-const getOrder = () => order++;
 
 const ir = episode("breakup-scene", {
   fps: 30,
@@ -869,7 +863,7 @@ const ir = episode("breakup-scene", {
   // WhatsApp conversation
   .track(
     "app_whatsapp",
-    () => new WhatsAppTrackBuilder(30, "phone", "dm_alex", getOrder),
+    (getOrder) => new WhatsAppTrackBuilder(30, "phone", "dm_alex", getOrder),
     (wa) => {
       wa.at("1s").receive("Alex", "We need to talk.");
       wa.span("3s", "6s").typing("me");
@@ -888,7 +882,7 @@ const ir = episode("breakup-scene", {
   .camera((cam) => {
     cam.at("0s").set({ scale: 1 });
     cam.at("1s").animate({ scale: 1.1, duration: "0.5s", easing: "easeOut" });
-    cam.at("12s").focus("lastMessage", { scale: 1.2, duration: "0.8s" });
+    cam.at("12s").focus("app_whatsapp:message", { scale: 1.2, duration: "0.8s" });
     cam.at("12.5s").shake({ intensityX: 3, intensityY: 3, duration: "0.4s" });
     cam
       .at("25s")
@@ -938,11 +932,9 @@ const ir = episode("breakup-scene", {
 Always use order counters for app tracks:
 
 ```typescript
-let order = 0;
-const getOrder = () => order++;
 
 .track('app_whatsapp',
-  () => new WhatsAppTrackBuilder(30, 'phone', 'dm_alice', getOrder),
+  (getOrder) => new WhatsAppTrackBuilder(30, 'phone', 'dm_alice', getOrder),
   wa => { ... }
 )
 ```

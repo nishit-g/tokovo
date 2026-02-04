@@ -191,14 +191,15 @@ Debug panel for inspecting state at current frame:
 ```typescript
 // Planned API
 import { InspectorPanel } from "@tokovo/react/timeline";
-import { createTokovoRegistries, getConfig } from "@tokovo/core";
+import { createTokovoRegistries } from "@tokovo/react";
+import { TokovoConfig } from "@tokovo/core";
 
 function DebugView({ episode, frame }) {
   const registries = createTokovoRegistries();
   const world = runEpisode(episode, frame, {
     mode: "preview",
     registries: registries.engine,
-    config: getConfig(),
+    config: TokovoConfig,
   });
 
   return (
@@ -298,10 +299,9 @@ import { useState } from "react";
 import { TokovoProvider, useDevice, useWorld } from "@tokovo/react";
 import {
   runEpisode,
-  createTokovoRegistries,
-  PluginManagerClass,
-  getConfig,
+  TokovoConfig,
 } from "@tokovo/core";
+import { createTokovoRegistries, PluginManagerClass } from "@tokovo/react";
 import type { PreparedTrackEpisode } from "@tokovo/compiler";
 
 function CustomStudio({ episode }: { episode: PreparedTrackEpisode }) {
@@ -310,7 +310,7 @@ function CustomStudio({ episode }: { episode: PreparedTrackEpisode }) {
   const world = runEpisode(episode, frame, {
     mode: "preview",
     registries: registries.engine,
-    config: getConfig(),
+    config: TokovoConfig,
   });
 
   return (
@@ -379,10 +379,9 @@ Here's a minimal episode preview using Studio's architecture:
 import { useState, useMemo, useEffect } from "react";
 import {
   runEpisode,
-  createTokovoRegistries,
-  PluginManagerClass,
-  getConfig,
+  TokovoConfig,
 } from "@tokovo/core";
+import { createTokovoRegistries, PluginManagerClass } from "@tokovo/react";
 import { TokovoRenderer } from "@tokovo/renderer";
 import { createDeviceRegistries, registerDevicesPlugin } from "@tokovo/devices";
 import type { PreparedTrackEpisode } from "@tokovo/compiler";
@@ -413,7 +412,7 @@ function MinimalStudio({ episode }: { episode: PreparedTrackEpisode }) {
       runEpisode(episode, frame, {
         mode: "preview",
         registries: registries.engine,
-        config: getConfig(),
+        config: TokovoConfig,
       }),
     [episode, frame, registries]
   );

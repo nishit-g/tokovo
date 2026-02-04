@@ -42,10 +42,6 @@ import { defineEpisode } from "@tokovo/episodes";
 import { episode } from "@tokovo/dsl";
 import { WhatsAppTrackBuilder } from "@tokovo/apps-whatsapp";
 
-// Counter for event ordering
-let orderCounter = 0;
-const getOrder = () => orderCounter++;
-
 export default defineEpisode({
   meta: {
     id: "hello-world",
@@ -82,7 +78,7 @@ export default defineEpisode({
       })
       .track(
         "app_whatsapp",
-        () => new WhatsAppTrackBuilder(30, "phone", "dm_alice", getOrder),
+        (getOrder) => new WhatsAppTrackBuilder(30, "phone", "dm_alice", getOrder),
         (wa) => {
           wa.at("1s").receive("Alice", "Hey!");
           wa.at("3s").receive("Alice", "How are you?");

@@ -29,6 +29,7 @@
   ],
   "scripts": {
     "build": "tsc",
+    "dev": "tsc --watch",
     "lint": "eslint . --ext .ts,.tsx",
     "validate": "tsx src/cli.ts"
   },

@@ -162,7 +162,8 @@ The renderer consumes `WorldState` and produces React components that Remotion c
 
 ```typescript
 // Renderer flow
-import { createTokovoRegistries, getConfig } from "@tokovo/core";
+import { TokovoConfig } from "@tokovo/core";
+import { createTokovoRegistries } from "@tokovo/react";
 import { createDeviceRegistries, registerDevicesPlugin } from "@tokovo/devices";
 
 const tokovoRegistries = createTokovoRegistries();
@@ -178,7 +179,7 @@ function EpisodeRenderer({ frame }: { frame: number }) {
   const world = runEpisode(episode, frame, {
     mode: "preview",
     registries: tokovoRegistries.engine,
-    config: getConfig(),
+    config: TokovoConfig,
   });
 
   return (

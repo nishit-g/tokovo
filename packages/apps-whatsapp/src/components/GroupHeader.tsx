@@ -11,7 +11,8 @@
 
 import React from "react";
 import { ChevronLeftIcon, VideoCallIcon, PhoneCallIcon } from "./Icons";
-import { Img, staticFile } from "remotion";
+import { Img } from "remotion";
+import { resolveAvatarWithFallback } from "../utils/avatar";
 
 export interface GroupMemberInfo {
     id: string;
@@ -149,7 +150,7 @@ export const GroupHeader: React.FC<GroupHeaderProps> = ({
             {/* Avatar */}
             {groupAvatar ? (
                 <Img
-                    src={groupAvatar.startsWith("/") ? staticFile(groupAvatar) : groupAvatar}
+                    src={resolveAvatarWithFallback(groupAvatar, groupName)}
                     alt={groupName}
                     style={{
                         width: 40,

@@ -74,9 +74,6 @@ Every Tokovo episode follows this structure:
 import { episode } from "@tokovo/dsl";
 import { WhatsAppTrackBuilder } from "@tokovo/apps-whatsapp";
 
-let order = 0;
-const getOrder = () => order++;
-
 const myEpisode = episode("story-name", { duration: "30s", fps: 30 })
   .device("phone", "iphone16", {
     app: "app_whatsapp",
@@ -84,7 +81,7 @@ const myEpisode = episode("story-name", { duration: "30s", fps: 30 })
   })
   .track(
     "app_whatsapp",
-    () => new WhatsAppTrackBuilder(30, "phone", "dm_alice", getOrder),
+    (getOrder) => new WhatsAppTrackBuilder(30, "phone", "dm_alice", getOrder),
     (wa) => {
       // Schedule app events
       wa.at("1s").receive("Alice", "Hello!");
@@ -93,8 +90,8 @@ const myEpisode = episode("story-name", { duration: "30s", fps: 30 })
   )
   .camera((cam) => {
     // Choreograph camera movements
-    cam.at("0s").focus("deviceScreen");
-    cam.at("1s").focus("lastMessage");
+    cam.at("0s").focus("device");
+    cam.at("1s").focus("app_whatsapp:message");
   })
   .build();
 ```
@@ -154,8 +151,8 @@ import type { CameraTrackBuilder } from "@tokovo/dsl";
 
 export const breakupCameraWork = (cam: CameraTrackBuilder) => {
   cam.at("0s").set({ scale: 0.9 });
-  cam.at("0s").focus("deviceScreen");
-  cam.at("1s").focus("lastMessage");
+  cam.at("0s").focus("device");
+  cam.at("1s").focus("app_whatsapp:message");
   cam.at("8s").shake({ intensityX: 1.2, intensityY: 1.2, duration: "0.4s" });
   cam.at("8.5s").animate({ scale: 1.4, duration: "0.5s" });
   // ... more choreography
@@ -170,9 +167,6 @@ import { WhatsAppTrackBuilder } from "@tokovo/apps-whatsapp";
 import { openingExchange, desperateResponse } from "./conversations";
 import { breakupCameraWork } from "./camera";
 
-let order = 0;
-const getOrder = () => order++;
-
 export const breakupEpisode = episode("breakup", { duration: "30s", fps: 30 })
   .device("phone", "iphone16", {
     app: "app_whatsapp",
@@ -180,7 +174,7 @@ export const breakupEpisode = episode("breakup", { duration: "30s", fps: 30 })
   })
   .track(
     "app_whatsapp",
-    () => new WhatsAppTrackBuilder(30, "phone", "dm_sarah", getOrder),
+    (getOrder) => new WhatsAppTrackBuilder(30, "phone", "dm_sarah", getOrder),
     (wa) => {
       openingExchange(wa);
       desperateResponse(wa);
@@ -228,7 +222,7 @@ const receiveTypingSend = (
 ```typescript
 .track(
   "app_whatsapp",
-  () => new WhatsAppTrackBuilder(30, "phone", "dm_alice", getOrder),
+  (getOrder) => new WhatsAppTrackBuilder(30, "phone", "dm_alice", getOrder),
   (wa) => {
     receiveTypingSend(wa, "Alice", "Want coffee?", "Sure!", 1);
     receiveTypingSend(wa, "Alice", "When?", "Now?", 7);
@@ -464,7 +458,7 @@ const myConversation = (wa: WhatsAppTrackBuilder) => {
 };
 
 const myCameraWork = (cam: CameraTrackBuilder) => {
-  cam.at("0s").focus("deviceScreen");
+  cam.at("0s").focus("device");
   // cam.at('1s').invalidAnchor() // ❌ TypeScript error!
 };
 ```
@@ -531,8 +525,6 @@ import { receiveTypingSend } from "./patterns";
 
 describe("receiveTypingSend pattern", () => {
   it("generates correct event sequence", () => {
-    let order = 0;
-    const getOrder = () => order++;
 
     const ep = episode("test", { duration: "10s", fps: 30 })
       .device("phone", "iphone16", {
@@ -541,7 +533,7 @@ describe("receiveTypingSend pattern", () => {
       })
       .track(
         "app_whatsapp",
-        () => new WhatsAppTrackBuilder(30, "phone", "dm_alice", getOrder),
+        (getOrder) => new WhatsAppTrackBuilder(30, "phone", "dm_alice", getOrder),
         (wa) => {
           receiveTypingSend(wa, "Alice", "Hi", "Hello", 1, 2, 2);
         },
@@ -562,7 +554,8 @@ describe("receiveTypingSend pattern", () => {
 ### Integration Test: State at Specific Time
 
 ```typescript
-import { runEpisode, createTokovoRegistries, getConfig } from "@tokovo/core";
+import { runEpisode, TokovoConfig } from "@tokovo/core";
+import { createTokovoRegistries } from "@tokovo/react";
 
 describe("Breakup Episode", () => {
   it("shows correct state at emotional peak", () => {
@@ -571,7 +564,7 @@ describe("Breakup Episode", () => {
     const state = runEpisode(prepared, 240, {
       mode: "preview",
       registries: registries.engine,
-      config: getConfig(),
+      config: TokovoConfig,
     }); // 8 seconds in
 
     // Should have Sarah's breakup message
@@ -581,7 +574,7 @@ describe("Breakup Episode", () => {
     );
 
     // Camera should be focused and zoomed
-    expect(state.camera.focus).toBe("lastMessage");
+    expect(state.camera.focus).toBe("message");
     expect(state.camera.zoom).toBeGreaterThan(1.0);
   });
 });
@@ -710,7 +703,7 @@ wa.at(`${t}s`).receive("Alice", "Message 4");
 // ❌ Bad — 500-line builder function
 .track(
   "app_whatsapp",
-  () => new WhatsAppTrackBuilder(30, "phone", "dm_story", getOrder),
+  (getOrder) => new WhatsAppTrackBuilder(30, "phone", "dm_story", getOrder),
   (wa) => {
     // ... 500 lines of messages, typing, reactions ...
   },
@@ -732,7 +725,7 @@ const act3 = (wa) => {
 
 .track(
   "app_whatsapp",
-  () => new WhatsAppTrackBuilder(30, "phone", "dm_story", getOrder),
+  (getOrder) => new WhatsAppTrackBuilder(30, "phone", "dm_story", getOrder),
   (wa) => {
     act1(wa);
     act2(wa);
@@ -798,15 +791,15 @@ const dramaticReveal = (
     let t = startTime;
 
     buildup.forEach(() => {
-      cam.at(`${t}s`).focus("lastMessage");
+      cam.at(`${t}s`).focus("app_whatsapp:message");
       t += 2;
     });
 
-    cam.at(`${t}s`).focus("typingIndicator");
+    cam.at(`${t}s`).focus("app_whatsapp:typing");
     cam.at(`${t}s`).animate({ scale: 1.2, duration: "0.3s" });
     t += 3;
 
-    cam.at(`${t}s`).focus("lastMessage");
+    cam.at(`${t}s`).focus("app_whatsapp:message");
     cam.at(`${t}s`).shake({ intensityX: 1.5, intensityY: 1.5, duration: "0.3s" });
     cam.at(`${t + 0.2}s`).animate({ scale: 1.5, duration: "0.3s" });
   };
@@ -829,7 +822,7 @@ episode("mystery", { duration: "20s", fps: 30 })
   })
   .track(
     "app_whatsapp",
-    () => new WhatsAppTrackBuilder(30, "phone", "dm_detective", getOrder),
+    (getOrder) => new WhatsAppTrackBuilder(30, "phone", "dm_detective", getOrder),
     reveal.app,
   )
   .camera(reveal.camera);
