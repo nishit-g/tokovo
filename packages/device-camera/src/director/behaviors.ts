@@ -74,10 +74,21 @@ function createFluidTennisBehavior(
       const burstIndex = context.getBurstIndex(event);
 
       effects.push({
+        type: "focus",
+        timestamp: event.timestamp,
+        params: {
+          anchor: payload.anchor,
+          scale: Math.max(1.05, config.baseScale - 0.06),
+          duration: 0.35,
+          easing: "easeOut",
+        },
+      });
+
+      effects.push({
         type: "animate",
         timestamp: event.timestamp,
         params: {
-          y: -(config.panDistance * burstIndex),
+          y: -(config.panDistance * Math.min(burstIndex, 2)),
           duration: 0.3,
           easing: "easeOut",
         },
@@ -92,23 +103,6 @@ function createFluidTennisBehavior(
           frequency: 12,
           decay: 0.9,
           duration: 0.3,
-        },
-      });
-    }
-
-    const nextEvent = context.getNextEvent(event);
-    const shouldReset =
-      nextEvent &&
-      context.getSender(nextEvent) !== context.getSender(event) &&
-      nextEvent.timestamp - event.timestamp > context.fps * 0.5;
-
-    if (shouldReset) {
-      effects.push({
-        type: "reset",
-        timestamp: event.timestamp + context.fps * config.holdDuration,
-        params: {
-          duration: 0.8,
-          easing: "easeOut",
         },
       });
     }
@@ -134,18 +128,25 @@ function createInterruptFocusBehavior(): BehaviorFunction {
       priority: 100,
     });
 
-    const dismissTime =
-      event.timestamp + (payload.duration || 1.5) * context.fps;
+    const dismissTime = event.timestamp + (payload.duration || 1.5) * context.fps;
+    const previous = context.getPreviousEvent(event);
+    const previousAnchor =
+      previous && typeof previous.payload === "object" && previous.payload
+        ? (previous.payload as { anchor?: string }).anchor
+        : undefined;
 
-    effects.push({
-      type: "reset",
-      timestamp: dismissTime,
-      params: {
-        duration: 0.5,
-        easing: "easeOut",
-      },
-      priority: 100,
-    });
+    if (previousAnchor) {
+      effects.push({
+        type: "focus",
+        timestamp: dismissTime,
+        params: {
+          anchor: previousAnchor,
+          duration: 0.6,
+          easing: "easeOut",
+        },
+        priority: 100,
+      });
+    }
 
     return effects;
   };

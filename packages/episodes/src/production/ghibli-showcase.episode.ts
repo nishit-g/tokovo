@@ -42,7 +42,7 @@ export default defineEpisode({
           network: "5G",
         },
       })
-      .background("forest-night")
+      .background({ type: "image", src: "/backgrounds/ghibli-forest.png" })
 
       .track(
         "app_whatsapp",

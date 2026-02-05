@@ -41,7 +41,7 @@ describe("camera processors", () => {
       expect(result).toEqual(DEFAULT_TRANSFORM);
     });
 
-    test("returns initial transform when frame is after effect ends", () => {
+    test("persists final state for completed persistent effects", () => {
       const effects: CameraEffect[] = [
         {
           type: "zoom",
@@ -54,7 +54,7 @@ describe("camera processors", () => {
       ];
 
       const result = processActiveEffects(50, effects);
-      expect(result).toEqual(DEFAULT_TRANSFORM);
+      expect(result.scale).toBeCloseTo(2, 2);
     });
 
     test("processes single active zoom effect", () => {

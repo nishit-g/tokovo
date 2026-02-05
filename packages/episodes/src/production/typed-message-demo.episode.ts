@@ -40,6 +40,7 @@ export default defineEpisode({
           },
         ],
       })
+      .background({ type: "image", src: "/backgrounds/dark-studio.png" })
       .track(
         "app_whatsapp",
         () => new WhatsAppTrackBuilder(30, "phone", "dm_friend", getOrder),

@@ -14,6 +14,8 @@ import type { WorldState } from "@tokovo/core";
 
 import { NotificationAnchorProvider } from "./notification";
 import { WhatsAppAnchorProvider } from "./whatsapp";
+import { XAnchorProvider } from "./x";
+import { IMessageAnchorProvider } from "./imessage";
 
 export function registerBuiltInAnchorProviders(
     registry: AnchorRegistryClass,
@@ -22,6 +24,8 @@ export function registerBuiltInAnchorProviders(
     // Only Notification provider is left here (for now)
     registry.register(NotificationAnchorProvider);
     registry.register(WhatsAppAnchorProvider);
+    registry.register(XAnchorProvider);
+    registry.register(IMessageAnchorProvider);
 }
 
 // =============================================================================

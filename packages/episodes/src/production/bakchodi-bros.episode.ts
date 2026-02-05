@@ -10,9 +10,11 @@
 import { defineEpisode } from "../types/episode-definition.js";
 import { episode } from "@tokovo/dsl";
 import { WhatsAppTrackBuilder } from "@tokovo/apps-whatsapp";
-import { CameraDirectorPlugin,
+import {
+  CameraDirectorPlugin,
   AudioDirectorPlugin,
-  OSDirectorPlugin, KeyboardPlugin } from "@tokovo/compiler";
+  OSDirectorPlugin, KeyboardPlugin
+} from "@tokovo/compiler";
 
 let orderCounter = 0;
 const getOrder = () => orderCounter++;
@@ -53,6 +55,7 @@ export default defineEpisode({
           network: "4G",
         },
       })
+      .background({ type: "image", src: "/backgrounds/night-window.png" })
 
       .track(
         "app_whatsapp",

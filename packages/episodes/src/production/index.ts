@@ -29,3 +29,7 @@ import "./mega-x.episode";
 import "./mega-whatsapp.episode";
 import "./mega-mega-whatsapp.episode";
 import "./whatsapp-ghibli.episode";
+import "./whatsapp-to-x.episode";
+import "./whatsapp-to-x-viral.episode";
+import "./x-anchor-tour.episode";
+import "./imessage-anchor-tour.episode";

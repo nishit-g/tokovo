@@ -30,6 +30,7 @@ export default defineEpisode({
           network: "5G",
         },
       })
+      .background({ type: "image", src: "/backgrounds/neon-city.png" })
       .track(
         "app_x",
         (getOrder) => new XTrackBuilder(30, "phone", getOrder),

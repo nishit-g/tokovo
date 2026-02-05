@@ -17,4 +17,5 @@ import "./tennis-casual.episode";
 import "./tennis-dramatic.episode";
 import "./tennis-energetic.episode";
 import "./tennis-fluid-demo.episode";
-import "./ghibli-x.episode"
+import "./tennis-group-organic.episode";
+import "./ghibli-x.episode";

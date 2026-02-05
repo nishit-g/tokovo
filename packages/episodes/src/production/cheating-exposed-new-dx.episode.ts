@@ -52,7 +52,7 @@ export default defineEpisode({
           network: "5G",
         },
       })
-      .background("sunset-glow")
+      .background({ type: "image", src: "/backgrounds/cozy-bedroom.png" })
 
       .track(
         "app_whatsapp",

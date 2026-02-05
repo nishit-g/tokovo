@@ -42,7 +42,7 @@ export default defineEpisode({
           network: "5G",
         },
       })
-      .background("neon-city")
+      .background({ type: "video", src: "/backgrounds/bokeh-loop.mp4" })
 
       .track(
         "app_whatsapp",

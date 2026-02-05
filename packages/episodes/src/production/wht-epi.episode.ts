@@ -57,6 +57,7 @@ export default defineEpisode({
           network: "5G",
         },
       })
+      .background({ type: "image", src: "/backgrounds/cafe-lofi.png" })
 
       .track(
         "app_whatsapp",

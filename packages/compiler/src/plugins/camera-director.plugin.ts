@@ -69,7 +69,7 @@ export class CameraDirectorPlugin implements CompilerPlugin {
             from: payload.from as string,
             text: payload.text as string,
             order: eventId - 1,
-            anchor: `message-${eventId - 1}`,
+            anchor: "lastMessage",
           },
         });
       } else if (e.kind === "APP" && e.type === "MESSAGE_SENT") {
@@ -82,7 +82,7 @@ export class CameraDirectorPlugin implements CompilerPlugin {
             from: "me",
             text: payload.text as string,
             order: eventId - 1,
-            anchor: `message-${eventId - 1}`,
+            anchor: "lastMessage",
           },
         });
       } else if (e.kind === "DEVICE" && e.type === "NOTIFICATION_SHOW") {

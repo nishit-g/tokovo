@@ -41,7 +41,7 @@ export default defineEpisode({
           network: "5G",
         },
       })
-      .background("studio-light")
+      .background({ type: "image", src: "/backgrounds/dark-studio.png" })
 
       .track(
         "app_whatsapp",

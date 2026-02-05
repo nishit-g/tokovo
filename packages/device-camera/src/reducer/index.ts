@@ -135,7 +135,7 @@ export function cameraReducer(
         anchorId:
           (event.anchorId as string) ?? (event.anchor as string) ?? "device",
         scale: (event.scale as number) ?? 1.05,
-        smoothing: (event.smoothing as number) ?? 0.18,
+        smoothing: ((event.smoothing as number) ?? (event.lag as number)) ?? 0.18,
         easing,
       };
       draft.camera.activeEffects.push(effect);

@@ -72,6 +72,7 @@ export default defineEpisode({
           network: "5G",
         },
       })
+      .background({ type: "image", src: "/backgrounds/ghibli-forest.png" })
       .track(
         "app_whatsapp",
         (getOrder) => new WhatsAppTrackBuilder(30, "phone", "dm_totoro", getOrder),

@@ -49,6 +49,7 @@ export default defineEpisode({
                 network: "5G",
             },
         })
+        .background({ type: "image", src: "/backgrounds/dark-studio.png" })
 
         // === WHATSAPP TRACK ===
         .track("app_whatsapp", () => {
@@ -72,12 +73,12 @@ export default defineEpisode({
                 duration: "0.8s",  // Smooth ease back: 5s → 5.8s
             });
         }).use(
-        new KeyboardPlugin({
-          onlyForSentMessages: true,
-          defaultCharDelay: 3,
-          excludeShortMessages: 3,
-        }),
-      )
+            new KeyboardPlugin({
+                onlyForSentMessages: true,
+                defaultCharDelay: 3,
+                excludeShortMessages: 3,
+            }),
+        )
 
         .build(),
 });

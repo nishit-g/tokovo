@@ -57,7 +57,7 @@ describe("CameraDirector", () => {
       expect(result.eventCount).toBe(3);
 
       const focusEffects = result.effects.filter((e) => e.type === "focus");
-      expect(focusEffects.length).toBe(1);
+      expect(focusEffects.length).toBe(3);
 
       const animateEffects = result.effects.filter((e) => e.type === "animate");
       expect(animateEffects.length).toBeGreaterThan(0);
@@ -75,10 +75,10 @@ describe("CameraDirector", () => {
       const result = director.choreograph(events);
 
       const focusEffects = result.effects.filter((e) => e.type === "focus");
-      expect(focusEffects.length).toBe(2);
+      expect(focusEffects.length).toBe(4);
 
       const resetEffects = result.effects.filter((e) => e.type === "reset");
-      expect(resetEffects.length).toBeGreaterThan(0);
+      expect(resetEffects.length).toBe(0);
     });
 
     it("should sort effects by timestamp and priority", () => {

@@ -8,6 +8,7 @@ const meta = {
   "device-camera": "@tokovo/device-camera",
   "device-keyboard": "@tokovo/device-keyboard",
   "device-notifications": "@tokovo/device-notifications",
+  "apps-imessage": "@tokovo/apps-imessage",
   "apps-x": "@tokovo/apps-x",
   "apps-whatsapp": "@tokovo/apps-whatsapp",
   renderer: "@tokovo/renderer",

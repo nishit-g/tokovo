@@ -41,6 +41,7 @@ export default defineEpisode({
           network: "5G",
         },
       })
+      .background({ type: "image", src: "/backgrounds/dark-studio.png" })
 
       .track(
         "device_notifications",

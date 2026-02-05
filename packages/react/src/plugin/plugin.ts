@@ -210,51 +210,57 @@ export class PluginManagerClass {
 
       if (plugin.anchors && "providers" in plugin.anchors) {
         const anchorRegistry = plugin.anchors as PluginAnchorRegistry;
-        for (const [anchorName, provider] of Object.entries(
-          anchorRegistry.providers,
-        )) {
-          this.registries.anchors.register({
-            appId: plugin.id,
-            framing: {
-              [anchorName]: {
-                anchorPoint: { x: 0.5, y: 0.5 },
-                paddingPx: 50,
-              },
-            },
-            getAnchors: (
-              world: WorldState,
-              _layout: unknown,
-              deviceId: string,
-              context,
-            ) => {
-              const bounds = provider(world, deviceId);
-              if (!bounds) {
-                return { anchors: {}, deviceId, appId: plugin.id };
-              }
-              const device = world.devices?.[deviceId];
-              const profileDims =
-                context?.getDeviceProfile?.(device?.profileId)?.dimensions;
-              const dims =
-                profileDims ??
-                device?.screenDimensions ?? {
-                  width: 430,
-                  height: 932,
-                };
-              return {
-                anchors: {
-                  [`${plugin.id}:${anchorName}`]: {
-                    x: bounds.x * dims.width,
-                    y: bounds.y * dims.height,
-                    width: bounds.width * dims.width,
-                    height: bounds.height * dims.height,
-                  },
-                },
-                deviceId,
-                appId: plugin.id,
+        const defaultFraming = {
+          anchorPoint: { x: 0.5, y: 0.5 },
+          paddingPx: 50,
+        };
+        const mergedFraming = Object.fromEntries(
+          Object.keys(anchorRegistry.providers).map((anchorName) => [
+            anchorName,
+            anchorRegistry.framing?.[anchorName] ?? defaultFraming,
+          ]),
+        );
+
+        this.registries.anchors.register({
+          appId: plugin.id,
+          framing: mergedFraming,
+          getAnchors: (
+            world: WorldState,
+            _layout: unknown,
+            deviceId: string,
+            context,
+          ) => {
+            const device = world.devices?.[deviceId];
+            const profileDims =
+              context?.getDeviceProfile?.(device?.profileId)?.dimensions;
+            const dims =
+              profileDims ??
+              device?.screenDimensions ?? {
+                width: 430,
+                height: 932,
               };
-            },
-          });
-        }
+
+            const anchors: Record<string, { x: number; y: number; width: number; height: number }> = {};
+            for (const [anchorName, provider] of Object.entries(
+              anchorRegistry.providers,
+            )) {
+              const bounds = provider(world, deviceId);
+              if (!bounds) continue;
+              anchors[anchorName] = {
+                x: bounds.x * dims.width,
+                y: bounds.y * dims.height,
+                width: bounds.width * dims.width,
+                height: bounds.height * dims.height,
+              };
+            }
+
+            return {
+              anchors,
+              deviceId,
+              appId: plugin.id,
+            };
+          },
+        });
         cleanups.push(() => this.registries.anchors.unregister(plugin.id));
       }
 

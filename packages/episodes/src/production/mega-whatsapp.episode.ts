@@ -60,7 +60,7 @@ export default defineEpisode({
           network: "5G",
         },
       })
-      .background("neon-city")
+      .background({ type: "image", src: "/backgrounds/neon-city.png" })
       .track(
         "app_whatsapp",
         (getOrder) => {

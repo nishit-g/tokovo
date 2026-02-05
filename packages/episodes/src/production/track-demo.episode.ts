@@ -48,6 +48,7 @@ export default defineEpisode({
                 network: "5G",
             },
         })
+        .background({ type: "image", src: "/backgrounds/cozy-bedroom.png" })
 
         // === WHATSAPP TRACK ===
         .track("app_whatsapp", (getOrder) => new WhatsAppTrackBuilder(30, "phone", "dm_sarah", getOrder), wa => {

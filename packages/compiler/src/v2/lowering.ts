@@ -370,6 +370,140 @@ function lowerDeviceEvent(event: TrackEvent): RuntimeEvent[] {
   const type = e.type as string;
 
   switch (type) {
+    case "LOCK":
+      return [{ ...base, type: "LOCK", payload: {} } as DeviceRuntimeEvent];
+
+    case "UNLOCK":
+      return [{ ...base, type: "UNLOCK", payload: {} } as DeviceRuntimeEvent];
+
+    case "OPEN_APP":
+      return [
+        {
+          ...base,
+          type: "OPEN_APP",
+          payload: { appId: (p.appId ?? e.appId) as string },
+        } as DeviceRuntimeEvent,
+      ];
+
+    case "CLOSE_APP":
+      return [{ ...base, type: "CLOSE_APP", payload: {} } as DeviceRuntimeEvent];
+
+    case "GO_HOME":
+      return [{ ...base, type: "GO_HOME", payload: {} } as DeviceRuntimeEvent];
+
+    case "SET_BADGE":
+      return [
+        {
+          ...base,
+          type: "SET_BADGE",
+          payload: {
+            appId: (p.appId ?? e.appId) as string,
+            count: Number(p.count ?? e.count ?? 0),
+          },
+        } as DeviceRuntimeEvent,
+      ];
+
+    case "SET_BATTERY":
+      return [
+        {
+          ...base,
+          type: "SET_BATTERY",
+          payload: {
+            percent: Number(p.percent ?? p.level ?? e.percent ?? e.level ?? 100),
+            charging: Boolean(p.charging ?? e.charging ?? false),
+          },
+        } as unknown as DeviceRuntimeEvent,
+      ];
+
+    case "SET_NETWORK":
+      return [
+        {
+          ...base,
+          type: "SET_NETWORK",
+          payload: {
+            network: (p.network ?? p.type ?? e.network ?? e.type) as string,
+            strength: Number(p.strength ?? e.strength ?? 4),
+          },
+        } as unknown as DeviceRuntimeEvent,
+      ];
+
+    case "SET_DND":
+      return [
+        {
+          ...base,
+          type: "SET_DND",
+          payload: { dnd: Boolean(p.dnd ?? p.enabled ?? e.dnd ?? e.enabled ?? false) },
+        } as unknown as DeviceRuntimeEvent,
+      ];
+
+    case "SET_DYNAMIC_ISLAND":
+      return [
+        {
+          ...base,
+          type: "SET_DYNAMIC_ISLAND",
+          payload: {
+            visible: Boolean(p.visible ?? e.visible ?? false),
+            mode: (p.mode ?? e.mode ?? "idle") as string,
+          },
+        } as DeviceRuntimeEvent,
+      ];
+
+    case "INCOMING_CALL":
+      return [
+        {
+          ...base,
+          type: "INCOMING_CALL",
+          payload: {
+            callerId: (p.callerId ?? e.callerId) as string,
+            callerName: (p.callerName ?? e.callerName) as string | undefined,
+            callerAvatar: (p.callerAvatar ?? e.callerAvatar) as string | undefined,
+            isVideo: Boolean(p.isVideo ?? e.isVideo ?? false),
+          },
+        } as DeviceRuntimeEvent,
+      ];
+
+    case "CALL_ANSWERED":
+      return [
+        {
+          ...base,
+          type: "CALL_ANSWERED",
+          payload: {},
+        } as DeviceRuntimeEvent,
+      ];
+
+    case "CALL_ENDED":
+      return [
+        {
+          ...base,
+          type: "CALL_ENDED",
+          payload: {},
+        } as DeviceRuntimeEvent,
+      ];
+
+    case "START_BACKGROUND_APP":
+      return [
+        {
+          ...base,
+          type: "START_BACKGROUND_APP",
+          payload: {
+            appId: (p.appId ?? e.appId) as string,
+            indicator: (p.indicator ?? e.indicator) as string | undefined,
+            label: (p.label ?? e.label) as string | undefined,
+          },
+        } as DeviceRuntimeEvent,
+      ];
+
+    case "STOP_BACKGROUND_APP":
+      return [
+        {
+          ...base,
+          type: "STOP_BACKGROUND_APP",
+          payload: {
+            appId: (p.appId ?? e.appId) as string,
+          },
+        } as DeviceRuntimeEvent,
+      ];
+
     case "NOTIFICATION_SHOW": {
       // Map IR uppercase priorities to runtime lowercase
       const irPriority = (p.priority ?? e.priority) as string | undefined;

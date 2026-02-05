@@ -12,14 +12,17 @@
  */
 
 import type {
+  AnchorProvider,
   AnchorRegistryClass,
   AnchorSnapshot,
   AnchorFraming,
   AnchorProviderContext,
+  Rect,
 } from "@tokovo/core";
 
 // Re-export registry class/factory from core
-export { createAnchorRegistry } from "@tokovo/core";
+import { createAnchorRegistry } from "@tokovo/core";
+export { createAnchorRegistry };
 export type { AnchorRegistryClass };
 
 // Re-export types
@@ -27,21 +30,108 @@ export type { AnchorProvider, AnchorSnapshot, AnchorFraming, Rect } from "@tokov
 
 export { DEFAULT_FRAMING, EMPTY_SNAPSHOT } from "@tokovo/core";
 
+const defaultRegistry = createAnchorRegistry();
+
+export function registerAnchorProvider(provider: AnchorProvider): void {
+  defaultRegistry.register(provider);
+}
+
+export function unregisterAnchorProvider(appId: string): boolean {
+  return defaultRegistry.unregister(appId);
+}
+
+export function getAnchorProvider(appId: string): AnchorProvider | undefined {
+  return defaultRegistry.get(appId);
+}
+
+export function hasAnchorProvider(appId: string): boolean {
+  return defaultRegistry.has(appId);
+}
+
+export function getRegisteredAppIds(): string[] {
+  return defaultRegistry.getRegisteredApps();
+}
+
+export function getProviderCount(): number {
+  return defaultRegistry.getProviderCount();
+}
+
+export function clearAnchorProviders(): void {
+  defaultRegistry.clear();
+}
+
+type WorldState = import("@tokovo/core").WorldState;
+
 export function getAnchorsForApp(
-  registry: AnchorRegistryClass,
   appId: string,
-  world: import("@tokovo/core").WorldState,
+  world: WorldState,
   layout: unknown,
   deviceId: string,
   context?: AnchorProviderContext,
+): AnchorSnapshot;
+export function getAnchorsForApp(
+  registry: AnchorRegistryClass,
+  appId: string,
+  world: WorldState,
+  layout: unknown,
+  deviceId: string,
+  context?: AnchorProviderContext,
+): AnchorSnapshot;
+export function getAnchorsForApp(
+  registryOrAppId: AnchorRegistryClass | string,
+  appIdOrWorld: string | WorldState,
+  worldOrLayout: WorldState | unknown,
+  layoutOrDeviceId: unknown,
+  deviceIdOrContext?: string | AnchorProviderContext,
+  context?: AnchorProviderContext,
 ): AnchorSnapshot {
-  return registry.getAnchorsForApp(appId, world, layout, deviceId, context);
+  if (typeof registryOrAppId === "string") {
+    return defaultRegistry.getAnchorsForApp(
+      registryOrAppId,
+      appIdOrWorld as WorldState,
+      worldOrLayout,
+      layoutOrDeviceId as string,
+      deviceIdOrContext as AnchorProviderContext | undefined,
+    );
+  }
+
+  return registryOrAppId.getAnchorsForApp(
+    appIdOrWorld as string,
+    worldOrLayout as WorldState,
+    layoutOrDeviceId,
+    deviceIdOrContext as string,
+    context,
+  );
 }
 
+export function getAnchorFraming(
+  appId: string,
+  anchorId: string,
+): AnchorFraming;
 export function getAnchorFraming(
   registry: AnchorRegistryClass,
   appId: string,
   anchorId: string,
+): AnchorFraming;
+export function getAnchorFraming(
+  registryOrAppId: AnchorRegistryClass | string,
+  appIdOrAnchorId: string,
+  anchorId?: string,
 ): AnchorFraming {
-  return registry.getFraming(appId, anchorId);
+  if (typeof registryOrAppId === "string") {
+    return defaultRegistry.getFraming(registryOrAppId, appIdOrAnchorId);
+  }
+  return registryOrAppId.getFraming(appIdOrAnchorId, anchorId ?? "");
+}
+
+export function resolveAnchor(
+  anchorId: string,
+  world: WorldState,
+  deviceId: string,
+): Rect | null {
+  return defaultRegistry.resolveAnchor(anchorId, world, deviceId);
+}
+
+export function hasAnchor(anchorId: string): boolean {
+  return defaultRegistry.hasAnchor(anchorId);
 }
