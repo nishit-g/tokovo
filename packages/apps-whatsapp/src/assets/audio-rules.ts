@@ -51,11 +51,13 @@ export const whatsappAudioRules: AutoSoundRule[] = [
     match: { kind: "APP", appId: WHATSAPP_APP_ID, type: "CALL_CONNECTED" },
     action: "STOP_SOUND",
     stopId: "call_ring_{callId}",
+    sound: "app_whatsapp.call_ringtone",
   },
   {
     match: { kind: "APP", appId: WHATSAPP_APP_ID, type: "CALL_CONNECTED" },
     action: "STOP_SOUND",
     stopId: "call_out_{callId}",
+    sound: "app_whatsapp.call_outgoing",
   },
   {
     match: { kind: "APP", appId: WHATSAPP_APP_ID, type: "CALL_ENDED" },
@@ -68,11 +70,13 @@ export const whatsappAudioRules: AutoSoundRule[] = [
     match: { kind: "APP", appId: WHATSAPP_APP_ID, type: "CALL_ENDED" },
     action: "STOP_SOUND",
     stopId: "call_ring_{callId}",
+    sound: "app_whatsapp.call_ringtone",
   },
   {
     match: { kind: "APP", appId: WHATSAPP_APP_ID, type: "CALL_ENDED" },
     action: "STOP_SOUND",
     stopId: "call_out_{callId}",
+    sound: "app_whatsapp.call_outgoing",
   },
   {
     match: { kind: "APP", appId: WHATSAPP_APP_ID, type: "VOICE_RECORD_START" },

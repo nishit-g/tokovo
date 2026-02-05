@@ -59,15 +59,15 @@ const whatsappViews: PluginViews = {
 
 const whatsappAssets = {
   sounds: {
-    message_in: "plugins/whatsapp/received.wav",
-    message_out: "plugins/whatsapp/sent.wav",
-    typing_loop: "plugins/whatsapp/typing_loop.wav",
-    call_ringtone: "plugins/whatsapp/call_ringtone.wav",
-    call_outgoing: "plugins/whatsapp/call_outgoing.wav",
-    call_end: "plugins/whatsapp/call_end.wav",
-    ptt_start: "plugins/whatsapp/ptt_start.wav",
-    ptt_send: "plugins/whatsapp/ptt_send.wav",
-    ptt_cancel: "plugins/whatsapp/ptt_cancel.wav",
+    "app_whatsapp.message_in": "plugins/whatsapp/received.wav",
+    "app_whatsapp.message_out": "plugins/whatsapp/sent.wav",
+    "app_whatsapp.typing_loop": "plugins/whatsapp/typing_loop.wav",
+    "app_whatsapp.call_ringtone": "plugins/whatsapp/call_ringtone.wav",
+    "app_whatsapp.call_outgoing": "plugins/whatsapp/call_outgoing.wav",
+    "app_whatsapp.call_end": "plugins/whatsapp/call_end.wav",
+    "app_whatsapp.ptt_start": "plugins/whatsapp/ptt_start.wav",
+    "app_whatsapp.ptt_send": "plugins/whatsapp/ptt_send.wav",
+    "app_whatsapp.ptt_cancel": "plugins/whatsapp/ptt_cancel.wav",
   },
   icons: {
     app_icon: "/icons/whatsapp.svg",

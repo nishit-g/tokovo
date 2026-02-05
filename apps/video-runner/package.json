@@ -13,6 +13,7 @@
   "dependencies": {
     "@remotion/cli": "4.0.409",
     "@tokovo/compiler": "workspace:*",
+    "@tokovo/apps-imessage": "workspace:*",
     "@tokovo/apps-whatsapp": "workspace:*",
     "@tokovo/apps-x": "workspace:*",
     "@tokovo/core": "workspace:*",

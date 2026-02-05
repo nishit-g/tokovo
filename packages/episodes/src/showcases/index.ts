@@ -12,7 +12,9 @@
 import "./camera-director-full.episode";
 import "./mega-camera-director.episode";
 import "./mega-camera-showcase.episode";
+import "./imessage-demo.episode";
 import "./tennis-casual.episode";
 import "./tennis-dramatic.episode";
 import "./tennis-energetic.episode";
 import "./tennis-fluid-demo.episode";
+import "./ghibli-x.episode"

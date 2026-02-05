@@ -17,6 +17,7 @@
     "@tokovo/react": "workspace:*",
     "@tokovo/ir": "workspace:*",
     "@tokovo/devices": "workspace:*",
+    "@tokovo/apps-imessage": "workspace:*",
     "@tokovo/apps-whatsapp": "workspace:*",
     "@tokovo/apps-x": "workspace:*",
     "@tokovo/device-notifications": "workspace:*",
