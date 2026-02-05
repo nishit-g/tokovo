@@ -10,6 +10,43 @@ The camera is the **director's eye** in Tokovo. While devices handle what appear
 npm install @tokovo/device-camera
 ```
 
+## V1 Tooling
+
+```bash
+# Validate episode camera authoring rules (hard-fail friendly)
+tokovo-camera lint packages/episodes/src
+
+# Check anti-coupling and anchor contract diagnostics
+tokovo-camera doctor
+
+# Text preview of focus/track/reset choreography in one episode
+tokovo-camera preview packages/episodes/src/production/whatsapp-to-x.episode.ts
+
+# Auto-migrate old camera patterns to V1 defaults
+tokovo-camera migrate-v1 packages/episodes/src
+```
+
+## Live Debug HUD
+
+Use the preview HUD to see camera state and target anchors frame-by-frame:
+
+```bash
+TOKOVO_CAMERA_DEBUG=1 pnpm --filter video-runner dev
+```
+
+HUD includes:
+
+- Full transform (`scale`, `origin`, `translate`, `rotation`, `shake`)
+- Active camera effect
+- Requested + resolved anchor IDs
+- Red anchor box on the currently focused/tracked anchor
+- Fallback flag when resolution falls back
+
+## Multi-Device / Multi-Camera
+
+- Multi-device layouts are supported now (`SINGLE`, split, `PIP`).
+- True independent multi-camera timelines per device are not yet a first-class feature.
+
 ## Core Concepts
 
 ### Camera as Cinematic Tool
@@ -124,14 +161,23 @@ Track an anchor continuously as it moves:
   // Start tracking the input area as user types
   cam.span('3s', '8s').track('app_whatsapp:input', {
     scale: 1.05,
-    smoothing: 0.15  // 0 = instant, 1 = very smooth
+    smoothing: 0.15, // 0 = instant, 1 = very smooth
+    deadZonePx: 12,
+    maxVelocityPxPerSec: 900,
+    predictiveLookaheadFrames: 2
   })
 
   // Track last message as new messages arrive
   cam.span('10s', '20s').track('app_whatsapp:message', {
     scale: 1.1,
-    smoothing: 0.2
+    smoothing: 0.2,
+    deadZonePx: 12,
+    maxVelocityPxPerSec: 900
   })
+
+  // Preset-driven authoring for faster DX
+  cam.span('20s', '26s').trackCinematic('lastMessage', { scale: 1.12 })
+  cam.span('26s', '30s').trackDrama('lastMessage')
 })
 ```
 

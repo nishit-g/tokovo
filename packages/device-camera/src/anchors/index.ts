@@ -22,7 +22,14 @@ export {
   anchorToOrigin,
   calculateFillScale,
   resolveAnchorFully,
+  isAnchorAvailable,
 } from "./resolver";
+
+export {
+  getAnchorDiagnostics,
+  resetAnchorDiagnostics,
+  type AnchorDiagnosticsSnapshot,
+} from "./diagnostics";
 
 // Registry
 export * from "./registry";

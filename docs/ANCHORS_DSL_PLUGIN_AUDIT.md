@@ -120,10 +120,14 @@ Point API (`cam.at(...)`):
 - `whipPan({ direction, blur?, duration? })`
 
 Span API (`cam.span(start, end)`):
-- `track(anchorId, { scale?, lag? })`
+- `track(anchorId, { scale?, smoothing?, deadZonePx?, maxVelocityPxPerSec?, predictiveLookaheadFrames? })`
+- `trackCinematic(anchorId, overrides?)`
+- `trackDrama(anchorId, overrides?)`
+- `trackFastBeat(anchorId, overrides?)`
+- `trackCalm(anchorId, overrides?)`
 
 Note:
-- Camera reducer now accepts both `smoothing` and `lag` for track events.
+- Camera V1 only accepts `smoothing` (breaking change; `lag` removed).
 
 ## 2.2 WhatsApp DSL (`@tokovo/apps-whatsapp`)
 

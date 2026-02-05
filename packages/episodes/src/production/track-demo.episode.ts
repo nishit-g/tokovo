@@ -96,12 +96,12 @@ export default defineEpisode({
             cam.at("0s").set({ scale: 1 });
             cam.at("1s").animate({ scale: 1.08, duration: "0.5s", easing: "easeOut" });
             cam.at("10s").focus("lastMessage", { scale: 1.15, duration: "0.4s" });
-            cam.span("13s", "14s").track("inputArea", { scale: 1.05 });
+            cam.span("13s", "14s").trackCinematic("inputArea", { scale: 1.05 });
             cam.at("20s").animate({ scale: 1.3, y: -40, duration: "0.8s", easing: "cinematic" });
             cam.at("20.5s").shake({ intensityX: 5, intensityY: 4, frequency: 20, decay: 0.85, duration: "0.4s" });
             cam.at("23s").focus("lastMessage", { scale: 1.2, duration: "0.5s" });
             cam.at("30s").animate({ scale: 1.05, y: 0, duration: "1s", easing: "easeOut" });
-            cam.at("40s").reset({ duration: "2s", easing: "easeOut" });
+            cam.at("40s").focus("device", { scale: 1.01, duration: "1.2s", easing: "easeOut" });
         })
 
         // === AUDIO TRACK ===

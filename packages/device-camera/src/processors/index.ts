@@ -209,7 +209,14 @@ const trackProcessor: EffectProcessor = {
   process(ctx): CameraTransform {
     const e = ctx.effect as TrackEffect;
     const progress = getProgress(ctx.t, e.startFrame, e.endFrame);
-    const smoothing = e.smoothing ?? 0.18;
+    const smoothing = Math.max(0.01, Math.min(1, e.smoothing ?? 0.18));
+    const deadZonePx = Math.max(0, e.deadZonePx ?? 14);
+    const maxVelocityPxPerSec = Math.max(60, e.maxVelocityPxPerSec ?? 720);
+    const predictiveLookaheadFrames = Math.max(
+      0,
+      e.predictiveLookaheadFrames ?? 0,
+    );
+    const fps = DEFAULT_FPS;
 
     let originX = ctx.transform.originX;
     let originY = ctx.transform.originY;
@@ -222,8 +229,42 @@ const trackProcessor: EffectProcessor = {
         ctx.viewport,
         ctx.anchorRegistry,
       );
-      originX = lerp(ctx.transform.originX, resolved.originX, smoothing);
-      originY = lerp(ctx.transform.originY, resolved.originY, smoothing);
+
+      // Predictive lookahead biases towards motion direction to avoid late catches.
+      const predictiveFactor = Math.min(0.35, predictiveLookaheadFrames / fps);
+      let targetOriginX =
+        resolved.originX +
+        (resolved.originX - ctx.transform.originX) * predictiveFactor;
+      let targetOriginY =
+        resolved.originY +
+        (resolved.originY - ctx.transform.originY) * predictiveFactor;
+
+      targetOriginX = Math.max(0, Math.min(1, targetOriginX));
+      targetOriginY = Math.max(0, Math.min(1, targetOriginY));
+
+      const deadZoneX = deadZonePx / ctx.viewport.width;
+      const deadZoneY = deadZonePx / ctx.viewport.height;
+
+      const deltaX = targetOriginX - ctx.transform.originX;
+      const deltaY = targetOriginY - ctx.transform.originY;
+
+      const adjustedDeltaX = Math.abs(deltaX) <= deadZoneX ? 0 : deltaX;
+      const adjustedDeltaY = Math.abs(deltaY) <= deadZoneY ? 0 : deltaY;
+
+      const maxPerFrameX = (maxVelocityPxPerSec / ctx.viewport.width) / fps;
+      const maxPerFrameY = (maxVelocityPxPerSec / ctx.viewport.height) / fps;
+
+      const stepX = Math.max(
+        -maxPerFrameX,
+        Math.min(maxPerFrameX, adjustedDeltaX * smoothing),
+      );
+      const stepY = Math.max(
+        -maxPerFrameY,
+        Math.min(maxPerFrameY, adjustedDeltaY * smoothing),
+      );
+
+      originX = Math.max(0, Math.min(1, ctx.transform.originX + stepX));
+      originY = Math.max(0, Math.min(1, ctx.transform.originY + stepY));
     }
 
     const easeIn = Math.min(1, progress * 5);

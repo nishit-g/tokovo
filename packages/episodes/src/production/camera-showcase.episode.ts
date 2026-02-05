@@ -84,7 +84,11 @@ export default defineEpisode({
           easing: "easeOut",
         });
 
-        cam.at("12s").reset({ duration: "0.6s", spring: "smooth" });
+        cam.at("12s").focus("device", {
+          scale: 1.04,
+          duration: "0.6s",
+          easing: "easeOut",
+        });
 
         cam.at("15s").shake({
           intensityX: 8,

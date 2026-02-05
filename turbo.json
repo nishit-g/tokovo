@@ -13,6 +13,16 @@
             ]
         },
         "lint": {},
+        "camera:lint": {
+            "dependsOn": [
+                "^build"
+            ]
+        },
+        "bench": {
+            "dependsOn": [
+                "^build"
+            ]
+        },
         "typecheck": {
             "dependsOn": [
                 "^build"

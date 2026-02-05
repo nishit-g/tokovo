@@ -39,7 +39,8 @@ Full deep audit lives in:
 `@tokovo/dsl` camera operations:
 
 - Point API (`cam.at(...)`): `set`, `zoom`, `pan`, `animate`, `focus`, `shake`, `reset`, `punchZoom`, `dutchTilt`, `flash`, `whipPan`
-- Span API (`cam.span(...)`): `track(anchorId, { scale?, lag? })`
+- Span API (`cam.span(...)`): `track(anchorId, { scale?, smoothing?, deadZonePx?, maxVelocityPxPerSec?, predictiveLookaheadFrames? })`
+- Preset helpers: `trackCinematic`, `trackDrama`, `trackFastBeat`, `trackCalm`
 
 ## App DSL Surface
 
@@ -84,4 +85,3 @@ These define reducer wiring, event kinds, lowering, layouts, audio rules, and an
 Reference episode:
 
 - `packages/episodes/src/showcases/tennis-group-organic.episode.ts`
-

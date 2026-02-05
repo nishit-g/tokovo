@@ -105,8 +105,7 @@ export function cameraReducer(
     // =================================================================
     // focus - Semantic anchor focus (one-time)
     // =================================================================
-    case "focus":
-    case "anchor-focus": {
+    case "focus": {
       const effect: FocusEffect = {
         type: "focus",
         id: `focus_${at}`,
@@ -125,8 +124,7 @@ export function cameraReducer(
     // =================================================================
     // track - Continuous anchor following
     // =================================================================
-    case "track":
-    case "anchor-track": {
+    case "track": {
       const effect: TrackEffect = {
         type: "track",
         id: `track_${at}`,
@@ -134,8 +132,13 @@ export function cameraReducer(
         endFrame: at + duration,
         anchorId:
           (event.anchorId as string) ?? (event.anchor as string) ?? "device",
+        preset: event.preset as TrackEffect["preset"],
         scale: (event.scale as number) ?? 1.05,
-        smoothing: ((event.smoothing as number) ?? (event.lag as number)) ?? 0.18,
+        smoothing: (event.smoothing as number) ?? 0.18,
+        deadZonePx: (event.deadZonePx as number) ?? 14,
+        maxVelocityPxPerSec: (event.maxVelocityPxPerSec as number) ?? 720,
+        predictiveLookaheadFrames:
+          (event.predictiveLookaheadFrames as number) ?? 0,
         easing,
       };
       draft.camera.activeEffects.push(effect);

@@ -218,8 +218,12 @@ export interface FocusEffect extends EffectBase {
 export interface TrackEffect extends EffectBase {
   type: "track";
   anchorId: string;
+  preset?: "cinematic" | "drama" | "fast-beat" | "calm";
   scale?: number;
   smoothing?: number;
+  deadZonePx?: number;
+  maxVelocityPxPerSec?: number;
+  predictiveLookaheadFrames?: number;
 }
 
 /**

@@ -69,7 +69,8 @@ export default defineEpisode({
             });
 
             // At 5s: Return to neutral (zoom OUT) - starts exactly when focus ends!
-            cam.at("5s").reset({
+            cam.at("5s").focus("device", {
+                scale: 1.02,
                 duration: "0.8s",  // Smooth ease back: 5s → 5.8s
             });
         }).use(

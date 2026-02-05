@@ -86,13 +86,12 @@ export default defineEpisode({
       )
       .camera((cam) => {
         cam.at("0s").focus("device", { scale: 1, duration: "0.5s" });
-        cam.span("1s", "31s").track("lastMessage", { scale: 1.12, lag: 0.2 });
-        cam.span("5s", "6.4s").track("typingIndicator", { scale: 1.08, lag: 0.24 });
-        cam.span("13.2s", "14.2s").track("inputArea", { scale: 1.05, lag: 0.2 });
-        cam.span("22.2s", "24.2s").track("typingIndicator", { scale: 1.08, lag: 0.24 });
+        cam.span("1s", "31s").trackCinematic("lastMessage", { scale: 1.12, smoothing: 0.2 });
+        cam.span("5s", "6.4s").trackCinematic("typingIndicator", { scale: 1.08, smoothing: 0.24 });
+        cam.span("13.2s", "14.2s").trackCinematic("inputArea", { scale: 1.05, smoothing: 0.2 });
+        cam.span("22.2s", "24.2s").trackCinematic("typingIndicator", { scale: 1.08, smoothing: 0.24 });
         cam.at("9.4s").focus("headsUpNotification", { scale: 1.18, duration: "0.35s" });
         cam.at("10.9s").focus("lastMessage", { scale: 1.12, duration: "0.45s" });
       })
       .build(),
 });
-

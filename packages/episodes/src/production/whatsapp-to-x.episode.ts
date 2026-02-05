@@ -221,10 +221,10 @@ export default defineEpisode({
       )
       .camera((cam) => {
         cam.at("0s").focus("device", { scale: 1, duration: "0.5s" });
-        cam.span("1s", "10.6s").track("lastMessage", { scale: 1.12, lag: 0.2 });
-        cam.span("3.6s", "4.8s").track("typingIndicator", { scale: 1.08, lag: 0.24 });
+        cam.span("1s", "10.6s").trackCinematic("lastMessage", { scale: 1.12, smoothing: 0.2 });
+        cam.span("3.6s", "4.8s").trackCinematic("typingIndicator", { scale: 1.08, smoothing: 0.24 });
         cam.at("10.9s").focus("timeline_header", { scale: 1.08, duration: "0.5s" });
-        cam.span("11.2s", "15.8s").track("tweet_card", { scale: 1.1, lag: 0.18 });
+        cam.span("11.2s", "15.8s").trackCinematic("tweet_card", { scale: 1.1, smoothing: 0.18 });
         cam.at("17.6s").focus("notifications_list", { scale: 1.07, duration: "0.45s" });
         cam.at("19.6s").focus("dm_thread", { scale: 1.08, duration: "0.5s" });
         cam.at("23.4s").focus("profile_header", { scale: 1.06, duration: "0.5s" });

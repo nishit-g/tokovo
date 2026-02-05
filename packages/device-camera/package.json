@@ -2,13 +2,22 @@
   "name": "@tokovo/device-camera",
   "version": "0.1.0",
   "description": "Enterprise-grade cinematic camera system for Tokovo",
+  "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
+  "bin": {
+    "tokovo-camera": "./dist/cli.js"
+  },
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch",
     "lint": "eslint src --ext .ts,.tsx",
-    "test": "vitest"
+    "test": "vitest",
+    "camera:lint": "node ./dist/cli.js lint",
+    "camera:doctor": "node ./dist/cli.js doctor",
+    "camera:preview": "node ./dist/cli.js preview",
+    "camera:migrate-v1": "node ./dist/cli.js migrate-v1",
+    "bench": "vitest --run src/__tests__/perf.budget.test.ts"
   },
   "dependencies": {
     "@tokovo/core": "workspace:*",

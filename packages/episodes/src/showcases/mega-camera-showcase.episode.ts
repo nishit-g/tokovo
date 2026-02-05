@@ -109,227 +109,68 @@ export default defineEpisode({
       )
 
       .camera((cam) => {
-        cam.at("1s").focus("message-0", {
-          scale: 1.2,
-          duration: "0.5s",
-          easing: "easeOut",
+        cam.at("0s").focus("device", { scale: 1, duration: "0.4s" });
+        cam.span("0.8s", "39.2s").trackCinematic("lastMessage", {
+          scale: 1.14,
+          smoothing: 0.2,
+          deadZonePx: 12,
+          maxVelocityPxPerSec: 960,
+          predictiveLookaheadFrames: 2,
         });
-        cam.at("1s").shake({
-          intensityX: 3,
-          intensityY: 2,
-          frequency: 15,
-          decay: 0.9,
-          duration: "0.4s",
+        cam.span("3.5s", "6s").trackCinematic("typingIndicator", {
+          scale: 1.08,
+          smoothing: 0.24,
+          deadZonePx: 10,
+          maxVelocityPxPerSec: 1020,
+          predictiveLookaheadFrames: 3,
         });
-
-        cam.at("2.5s").focus("message-3", {
-          scale: 1.25,
-          duration: "0.5s",
-          easing: "easeOut",
+        cam.span("8s", "10s").trackCinematic("typingIndicator", {
+          scale: 1.08,
+          smoothing: 0.24,
+          deadZonePx: 10,
+          maxVelocityPxPerSec: 1020,
+          predictiveLookaheadFrames: 3,
         });
-        cam.at("2.5s").shake({
-          intensityX: 4,
-          intensityY: 3,
-          frequency: 18,
-          decay: 0.85,
-          duration: "0.4s",
+        cam.span("15s", "17s").trackCinematic("typingIndicator", {
+          scale: 1.09,
+          smoothing: 0.23,
+          deadZonePx: 10,
+          maxVelocityPxPerSec: 1020,
+          predictiveLookaheadFrames: 3,
         });
-
-        cam.at("5.5s").reset({
-          duration: "0.5s",
-          easing: "easeOut",
+        cam.span("23s", "26s").trackCinematic("typingIndicator", {
+          scale: 1.1,
+          smoothing: 0.23,
+          deadZonePx: 10,
+          maxVelocityPxPerSec: 1020,
+          predictiveLookaheadFrames: 3,
         });
-
-        cam.at("6s").focus("message-4", {
-          scale: 1.25,
-          duration: "0.5s",
-          easing: "easeOut",
-        });
-        cam.at("6s").shake({
-          intensityX: 5,
-          intensityY: 3,
-          frequency: 20,
-          decay: 0.85,
-          duration: "0.4s",
-        });
-
-        cam.at("7.5s").reset({
-          duration: "0.8s",
-          easing: "easeOut",
+        cam.span("33s", "35s").trackCinematic("typingIndicator", {
+          scale: 1.08,
+          smoothing: 0.24,
+          deadZonePx: 10,
+          maxVelocityPxPerSec: 1020,
+          predictiveLookaheadFrames: 3,
         });
 
-        cam.at("10s").focus("message-6", {
-          scale: 1.2,
-          duration: "0.5s",
-          easing: "easeOut",
-        });
-        cam.at("10s").shake({
-          intensityX: 3,
-          intensityY: 2,
-          frequency: 15,
-          decay: 0.9,
-          duration: "0.4s",
-        });
-
+        cam.at("2.5s").focus("lastMessage", { scale: 1.24, duration: "0.3s" });
+        cam.at("6s").focus("lastMessage", { scale: 1.24, duration: "0.28s" });
         cam.at("11.5s").focus("headsUpNotification", {
-          scale: 1.3,
-          duration: "0.5s",
-          easing: "easeOut",
+          scale: 1.24,
+          duration: "0.28s",
         });
-        cam.at("11.5s").shake({
-          intensityX: 2,
-          intensityY: 1,
-          frequency: 12,
-          decay: 0.95,
-          duration: "0.3s",
-        });
-
-        cam.at("13s").reset({
-          duration: "0.5s",
-          easing: "easeOut",
-        });
-
-        cam.at("13.5s").focus("message-7", {
-          scale: 1.2,
-          duration: "0.5s",
-          easing: "easeOut",
-        });
-
-        cam.at("16.5s").reset({
-          duration: "0.5s",
-          easing: "easeOut",
-        });
-
-        cam.at("17s").focus("message-8", {
-          scale: 1.2,
-          duration: "0.5s",
-          easing: "easeOut",
-        });
-
-        cam.at("18s").focus("message-10", {
-          scale: 1.25,
-          duration: "0.5s",
-          easing: "easeOut",
-        });
-        cam.at("18s").shake({
-          intensityX: 4,
-          intensityY: 3,
-          frequency: 16,
-          decay: 0.9,
-          duration: "0.4s",
-        });
-
-        cam.at("20s").reset({
-          duration: "0.8s",
-          easing: "easeOut",
-        });
-
-        cam.at("21s").focus("message-11", {
-          scale: 1.2,
-          duration: "0.5s",
-          easing: "easeOut",
-        });
-
-        cam.at("22.5s").reset({
-          duration: "0.5s",
-          easing: "easeOut",
-        });
-
-        cam.at("26s").focus("message-12", {
-          scale: 1.4,
-          duration: "0.6s",
-          easing: "easeOut",
-        });
-        cam.at("26s").shake({
-          intensityX: 8,
-          intensityY: 5,
-          frequency: 22,
-          decay: 0.8,
-          duration: "0.6s",
-        });
-
-        cam.at("27.5s").reset({
-          duration: "0.8s",
-          easing: "easeOut",
-        });
-
+        cam.at("12.8s").focus("lastMessage", { scale: 1.16, duration: "0.34s" });
+        cam.at("18s").focus("lastMessage", { scale: 1.24, duration: "0.3s" });
+        cam.at("26s").focus("lastMessage", { scale: 1.3, duration: "0.34s" });
         cam.at("28s").focus("headsUpNotification", {
-          scale: 1.3,
-          duration: "0.4s",
-          easing: "easeOut",
+          scale: 1.24,
+          duration: "0.28s",
         });
-
-        cam.at("29.5s").reset({
-          duration: "0.5s",
-          easing: "easeOut",
-        });
-
-        cam.at("30s").focus("message-13", {
-          scale: 1.25,
-          duration: "0.5s",
-          easing: "easeOut",
-        });
-        cam.at("30s").shake({
-          intensityX: 5,
-          intensityY: 3,
-          frequency: 18,
-          decay: 0.88,
-          duration: "0.4s",
-        });
-
-        cam.at("31s").focus("message-15", {
-          scale: 1.3,
-          duration: "0.5s",
-          easing: "easeOut",
-        });
-        cam.at("31s").shake({
-          intensityX: 6,
-          intensityY: 4,
-          frequency: 20,
-          decay: 0.85,
-          duration: "0.5s",
-        });
-
-        cam.at("32.5s").reset({
-          duration: "0.8s",
-          easing: "easeOut",
-        });
-
-        cam.at("35s").focus("message-16", {
-          scale: 1.2,
-          duration: "0.5s",
-          easing: "easeOut",
-        });
-        cam.at("35s").shake({
-          intensityX: 3,
-          intensityY: 2,
-          frequency: 14,
-          decay: 0.9,
-          duration: "0.4s",
-        });
-
-        cam.at("37s").reset({
-          duration: "1s",
-          easing: "easeOut",
-        });
-
-        cam.at("38s").focus("message-18", {
-          scale: 1.15,
-          duration: "0.6s",
-          easing: "easeOut",
-        });
-        cam.at("38s").shake({
-          intensityX: 4,
-          intensityY: 2.5,
-          frequency: 16,
-          decay: 0.9,
-          duration: "0.5s",
-        });
-
-        cam.at("39.5s").reset({
-          duration: "0.5s",
-          easing: "easeOut",
-        });
+        cam.at("29.2s").focus("lastMessage", { scale: 1.16, duration: "0.34s" });
+        cam.at("31s").focus("lastMessage", { scale: 1.25, duration: "0.3s" });
+        cam.at("35s").focus("lastMessage", { scale: 1.2, duration: "0.28s" });
+        cam.at("38s").focus("lastMessage", { scale: 1.16, duration: "0.3s" });
+        cam.at("39.4s").focus("device", { scale: 1.03, duration: "0.4s" });
       })
 
       .build(),

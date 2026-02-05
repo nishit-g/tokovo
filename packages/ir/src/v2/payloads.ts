@@ -64,8 +64,12 @@ export interface CameraPayloads {
   };
   TRACK_START: {
     anchorId: string;
+    preset?: "cinematic" | "drama" | "fast-beat" | "calm";
     scale?: number;
-    lag?: number;
+    smoothing?: number;
+    deadZonePx?: number;
+    maxVelocityPxPerSec?: number;
+    predictiveLookaheadFrames?: number;
   };
   TRACK_END: Record<string, never>;
   SHAKE_START: {
@@ -100,8 +104,12 @@ export interface CameraPayloads {
   };
   ANCHOR_TRACK: {
     anchorId: string;
+    preset?: "cinematic" | "drama" | "fast-beat" | "calm";
     scale?: number;
-    lag?: number;
+    smoothing?: number;
+    deadZonePx?: number;
+    maxVelocityPxPerSec?: number;
+    predictiveLookaheadFrames?: number;
     duration?: number;
   };
   CUT: {

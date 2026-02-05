@@ -177,23 +177,6 @@ describe("cameraReducer", () => {
       });
     });
 
-    test("handles anchor-focus alias", () => {
-      const state = { camera: createDefaultCameraState() };
-      const event = {
-        kind: "CAMERA" as const,
-        type: "anchor-focus",
-        at: 0,
-        anchorId: "inputArea",
-      };
-
-      cameraReducer(state, event);
-
-      expect(state.camera.activeEffects[0]).toMatchObject({
-        type: "focus",
-        anchorId: "inputArea",
-      });
-    });
-
     test("uses anchor field as fallback for anchorId", () => {
       const state = { camera: createDefaultCameraState() };
       const event = {
@@ -256,24 +239,7 @@ describe("cameraReducer", () => {
       });
     });
 
-    test("handles anchor-track alias", () => {
-      const state = { camera: createDefaultCameraState() };
-      const event = {
-        kind: "CAMERA" as const,
-        type: "anchor-track",
-        at: 0,
-        anchorId: "device",
-      };
-
-      cameraReducer(state, event);
-
-      expect(state.camera.activeEffects[0]).toMatchObject({
-        type: "track",
-        anchorId: "device",
-      });
-    });
-
-    test("uses default scale and smoothing", () => {
+    test("uses default scale and track control settings", () => {
       const state = { camera: createDefaultCameraState() };
       const event = {
         kind: "CAMERA" as const,
@@ -288,6 +254,9 @@ describe("cameraReducer", () => {
       expect(effect).toMatchObject({
         scale: 1.05,
         smoothing: 0.18,
+        deadZonePx: 14,
+        maxVelocityPxPerSec: 720,
+        predictiveLookaheadFrames: 0,
       });
     });
   });

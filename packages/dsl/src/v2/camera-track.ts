@@ -38,8 +38,12 @@ export interface CameraFocusOptions {
 }
 
 export interface CameraTrackOptions {
+    preset?: "cinematic" | "drama" | "fast-beat" | "calm";
     scale?: number;
-    lag?: number;
+    smoothing?: number;
+    deadZonePx?: number;
+    maxVelocityPxPerSec?: number;
+    predictiveLookaheadFrames?: number;
 }
 
 export interface CameraShakeOptions {
@@ -436,19 +440,39 @@ export class CameraSpanBuilder {
                 type: "TRACK_START",
                 payload: {
                     anchorId,
+                    preset: options.preset,
                     scale: options.scale,
-                    lag: options.lag,
+                    smoothing: options.smoothing,
+                    deadZonePx: options.deadZonePx,
+                    maxVelocityPxPerSec: options.maxVelocityPxPerSec,
+                    predictiveLookaheadFrames: options.predictiveLookaheadFrames,
                 },
                 _declarationOrder: this._getOrder(),
-            },
+            } as CameraTrackEvent,
             {
                 at: this._endFrame,
                 kind: "CAMERA",
                 type: "TRACK_END",
                 payload: {},
                 _declarationOrder: this._getOrder(),
-            }
+            } as CameraTrackEvent
         );
+    }
+
+    trackCinematic(anchorId: string, options: Omit<CameraTrackOptions, "preset"> = {}): void {
+        this.track(anchorId, { ...options, preset: "cinematic" });
+    }
+
+    trackDrama(anchorId: string, options: Omit<CameraTrackOptions, "preset"> = {}): void {
+        this.track(anchorId, { ...options, preset: "drama" });
+    }
+
+    trackFastBeat(anchorId: string, options: Omit<CameraTrackOptions, "preset"> = {}): void {
+        this.track(anchorId, { ...options, preset: "fast-beat" });
+    }
+
+    trackCalm(anchorId: string, options: Omit<CameraTrackOptions, "preset"> = {}): void {
+        this.track(anchorId, { ...options, preset: "calm" });
     }
 }
 

@@ -43,10 +43,7 @@ import type {
   VoicePlaySegmentEvent,
   VoiceStopEvent,
 } from "@tokovo/core";
-import { createScopedLogger } from "@tokovo/core";
 import { cameraV2Lowering } from "@tokovo/device-camera";
-
-const log = createScopedLogger("compiler");
 
 // =============================================================================
 // TYPES
@@ -113,8 +110,9 @@ function lowerAppEvent(
 ): RuntimeEvent[] {
   const appId = (event as { appId?: string }).appId;
   if (!appId) {
-    log.warn("APP event missing appId", { event });
-    return [];
+    throw new Error(
+      `APP event missing appId at frame ${(event as { at?: number }).at ?? "unknown"}`,
+    );
   }
 
   const pluginLowerer = ctx.pluginLowerers.get(appId);
@@ -122,8 +120,7 @@ function lowerAppEvent(
     return pluginLowerer.lower(event, ctx);
   }
 
-  log.warn(`No plugin lowerer registered for appId: ${appId}. Event dropped.`);
-  return [];
+  throw new Error(`No plugin lowerer registered for appId: ${appId}`);
 }
 
 // Camera lowering is now delegated to @tokovo/device-camera
@@ -672,8 +669,7 @@ function lowerDeviceEvent(event: TrackEvent): RuntimeEvent[] {
       ];
 
     default:
-      log.warn(`Unknown DEVICE event type: ${type}`);
-      return [];
+      throw new Error(`Unknown DEVICE event type: ${type}`);
   }
 }
 

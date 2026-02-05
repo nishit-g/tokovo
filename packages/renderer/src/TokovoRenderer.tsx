@@ -147,7 +147,7 @@ const TokovoRendererInner: React.FC<TokovoRendererProps> = ({
     eventIndex,
   });
 
-  const { cameraStyle, deviceStyle } = cameraOutput;
+  const { cameraStyle, deviceStyle, transform, debugInfo } = cameraOutput;
 
   // ==========================================================================
   // 3. HELPER: Find active heads-up notification
@@ -402,7 +402,14 @@ const TokovoRendererInner: React.FC<TokovoRendererProps> = ({
         </div>
       </div>
 
-      {debug && <VisualDebugger world={world} t={t} />}
+      {debug && (
+        <VisualDebugger
+          world={world}
+          t={t}
+          transform={transform}
+          debugInfo={debugInfo}
+        />
+      )}
     </div>
   );
 };

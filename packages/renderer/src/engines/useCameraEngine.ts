@@ -24,6 +24,7 @@ import {
   // Anchors
   AnchorSnapshot,
   getAnchorsForApp,
+  resolveAnchorWithFallback,
 } from "@tokovo/device-camera";
 
 // Core imports for world/layout types
@@ -71,6 +72,15 @@ export interface CameraEngineOutput {
 
   /** Anchor snapshot used this frame */
   anchorSnapshot?: AnchorSnapshot;
+
+  /** Debug telemetry for current frame */
+  debugInfo?: {
+    activeEffectType?: string;
+    requestedAnchor?: string;
+    resolvedAnchor?: string;
+    fallbackUsed: boolean;
+    resolvedRect?: { x: number; y: number; width: number; height: number };
+  };
 }
 
 // =============================================================================
@@ -159,12 +169,50 @@ export function useCameraEngine(input: CameraEngineInput): CameraEngineOutput {
     const cameraStyle = buildCameraCSS(transform, viewport);
     const deviceStyle = buildDeviceCSS(layout);
 
+    const activeAnchorEffect = effects
+      .filter(
+        (effect) =>
+          (effect.type === "focus" || effect.type === "track") &&
+          t >= effect.startFrame &&
+          t < effect.endFrame,
+      )
+      .sort((a, b) => b.startFrame - a.startFrame)[0] as
+      | (CameraEffect & { anchorId?: string })
+      | undefined;
+
+    let debugInfo: CameraEngineOutput["debugInfo"] = {
+      activeEffectType: activeAnchorEffect?.type,
+      requestedAnchor: activeAnchorEffect?.anchorId,
+      fallbackUsed: false,
+    };
+
+    if (
+      activeAnchorEffect?.anchorId &&
+      anchorSnapshot &&
+      anchorSnapshot.anchors &&
+      viewport
+    ) {
+      const resolved = resolveAnchorWithFallback(
+        activeAnchorEffect.anchorId,
+        anchorSnapshot.anchors,
+        viewport,
+      );
+      debugInfo = {
+        activeEffectType: activeAnchorEffect.type,
+        requestedAnchor: activeAnchorEffect.anchorId,
+        resolvedAnchor: resolved.anchor,
+        fallbackUsed: resolved.isFallback,
+        resolvedRect: resolved.rect,
+      };
+    }
+
     return {
       transform,
       cameraStyle,
       deviceStyle,
       directorSkipped,
       anchorSnapshot,
+      debugInfo,
     };
   }, [world, t, layoutOutput, eventIndex, registries]);
 }

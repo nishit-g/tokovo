@@ -55,6 +55,8 @@ import {
 import { ErrorBoundary } from "./ErrorBoundary";
 import { pluginManager, rendererRegistries, tokovoRegistries } from "./runtime";
 
+const CAMERA_DEBUG_ENABLED = process.env.TOKOVO_CAMERA_DEBUG === "1";
+
 // =============================================================================
 // TYPES
 // =============================================================================
@@ -436,7 +438,7 @@ const EpisodeRendererInner: React.FC<EpisodeRendererProps> = ({
             world={worldWithVoice}
             t={frame}
             fps={fps}
-            debug={false}
+            debug={CAMERA_DEBUG_ENABLED}
             config={config}
             layoutCacheKey={
               prepared

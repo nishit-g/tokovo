@@ -6,6 +6,7 @@
 
 import { Rect, ResolvedAnchor, AnchorSnapshot, AnchorFraming } from "./types";
 import type { AnchorRegistryClass } from "@tokovo/core";
+import { recordFallback, recordUnresolved } from "./diagnostics";
 
 // =============================================================================
 // FALLBACK CHAINS
@@ -24,6 +25,13 @@ const FALLBACK_CHAINS: Record<string, string[]> = {
   app: ["app", "device"],
   notification: ["notification", "header", "app"],
 };
+
+export function isAnchorAvailable(
+  anchorName: string,
+  snapshot: AnchorSnapshot,
+): boolean {
+  return Boolean(snapshot.anchors[anchorName]);
+}
 
 // =============================================================================
 // PUBLIC API
@@ -55,6 +63,7 @@ export function resolveAnchorWithFallback(
   const chain = FALLBACK_CHAINS[anchorName] || [anchorName, "app", "device"];
   for (const fallback of chain) {
     if (anchors[fallback]) {
+      recordFallback(anchorName);
       return {
         rect: anchors[fallback],
         anchor: fallback,
@@ -65,6 +74,7 @@ export function resolveAnchorWithFallback(
 
   // Ultimate fallback: device rect or viewport
   if (viewport) {
+    recordUnresolved(anchorName);
     return {
       rect: { x: 0, y: 0, width: viewport.width, height: viewport.height },
       anchor: "device",
@@ -74,6 +84,7 @@ export function resolveAnchorWithFallback(
 
   // Can't resolve - return centered rect matching common phone proportions
   // This prevents violent camera snap to top-left corner
+  recordUnresolved(anchorName);
   return {
     rect: { x: 50, y: 200, width: 300, height: 500 },
     anchor: "unknown",

@@ -23,6 +23,45 @@ interface LoweringContext {
   fps: number;
 }
 
+interface TrackPresetDefaults {
+  scale: number;
+  smoothing: number;
+  deadZonePx: number;
+  maxVelocityPxPerSec: number;
+  predictiveLookaheadFrames: number;
+}
+
+const TRACK_PRESETS: Record<string, TrackPresetDefaults> = {
+  cinematic: {
+    scale: 1.1,
+    smoothing: 0.2,
+    deadZonePx: 12,
+    maxVelocityPxPerSec: 840,
+    predictiveLookaheadFrames: 2,
+  },
+  drama: {
+    scale: 1.17,
+    smoothing: 0.16,
+    deadZonePx: 10,
+    maxVelocityPxPerSec: 1080,
+    predictiveLookaheadFrames: 3,
+  },
+  "fast-beat": {
+    scale: 1.12,
+    smoothing: 0.14,
+    deadZonePx: 9,
+    maxVelocityPxPerSec: 1260,
+    predictiveLookaheadFrames: 4,
+  },
+  calm: {
+    scale: 1.06,
+    smoothing: 0.24,
+    deadZonePx: 14,
+    maxVelocityPxPerSec: 680,
+    predictiveLookaheadFrames: 1,
+  },
+};
+
 // =============================================================================
 // LOWERING HANDLER
 // =============================================================================
@@ -34,8 +73,8 @@ interface LoweringContext {
  * - SET → CUT (instant camera change)
  * - ANIMATE_START → ZOOM (animated zoom)
  * - SHAKE_START → SHAKE (screen shake)
- * - FOCUS → ANCHOR_FOCUS (semantic anchor focus)
- * - TRACK_START → ANCHOR_TRACK (continuous follow)
+ * - FOCUS → focus (semantic anchor focus)
+ * - TRACK_START → track (continuous follow)
  * - RESET → RESET (return to neutral)
  */
 export function cameraV2Lowering(
@@ -83,6 +122,8 @@ export function cameraV2Lowering(
           easing: payload?.easing ?? "ease-out",
         },
       ];
+    case "ANIMATE_END":
+      return [];
 
     // =================================================================
     // SHAKE_START → SHAKE
@@ -99,6 +140,8 @@ export function cameraV2Lowering(
           decay: payload?.decay ?? 0.8,
         },
       ];
+    case "SHAKE_END":
+      return [];
 
     // =================================================================
     // FOCUS → focus (processor registered as 'focus')
@@ -118,15 +161,26 @@ export function cameraV2Lowering(
     // TRACK_START → track (processor registered as 'track')
     // =================================================================
     case "TRACK_START":
+      const presetName = (payload?.preset as string | undefined) ?? "cinematic";
+      const preset = TRACK_PRESETS[presetName] ?? TRACK_PRESETS.cinematic;
       return [
         {
           ...baseEvent,
           type: "track",
           anchorId: payload?.anchorId ?? payload?.anchor ?? "device",
-          scale: payload?.scale ?? 1.05,
-          smoothing: payload?.lag ?? 0.18,
+          preset: presetName,
+          scale: payload?.scale ?? preset.scale,
+          smoothing: payload?.smoothing ?? preset.smoothing,
+          deadZonePx: payload?.deadZonePx ?? preset.deadZonePx,
+          maxVelocityPxPerSec:
+            payload?.maxVelocityPxPerSec ?? preset.maxVelocityPxPerSec,
+          predictiveLookaheadFrames:
+            payload?.predictiveLookaheadFrames ??
+            preset.predictiveLookaheadFrames,
         },
       ];
+    case "TRACK_END":
+      return [];
 
     // =================================================================
     // RESET → RESET
@@ -194,19 +248,8 @@ export function cameraV2Lowering(
         },
       ];
 
-    // =================================================================
-    // Pass-through for already-runtime events
-    // =================================================================
-    case "ZOOM":
-    case "SHAKE":
-    case "ANCHOR_FOCUS":
-    case "ANCHOR_TRACK":
-    case "CUT":
-      return [baseEvent];
-
     default:
-      console.warn(`[cameraV2Lowering] Unknown event type: ${event.type}`);
-      return [baseEvent];
+      throw new Error(`[cameraV2Lowering] Unknown CAMERA event type: ${event.type}`);
   }
 }
 
@@ -229,14 +272,4 @@ export const CAMERA_EVENT_TYPES = [
   "DUTCH_TILT",
   "FLASH",
   "WHIP_PAN",
-  // Runtime types
-  "ZOOM",
-  "SHAKE",
-  "ANCHOR_FOCUS",
-  "ANCHOR_TRACK",
-  "CUT",
-  "punch-zoom",
-  "dutch-tilt",
-  "flash",
-  "whip-pan",
 ] as const;
