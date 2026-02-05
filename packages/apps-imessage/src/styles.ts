@@ -21,6 +21,12 @@ export function injectIMessageStyles(): void {
       0% { opacity: 0; transform: scale(0.98); }
       100% { opacity: 1; transform: scale(1); }
     }
+
+    @keyframes imessage-typing-pulse {
+      0%, 100% { opacity: 0.4; transform: scale(0.9); }
+      50% { opacity: 1; transform: scale(1.1); }
+    }
   `;
   document.head.appendChild(style);
 }
+

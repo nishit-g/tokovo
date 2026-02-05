@@ -1,113 +1,146 @@
+/**
+ * iMessage Input Bar Component
+ * 
+ * iOS 17 style message input with apps button, camera, and send
+ */
 import React from "react";
-import { iOS_IMESSAGE_LIGHT, LAYOUT_CONSTANTS } from "../config";
+import { useIMessageTheme } from "../ui/ThemeContext";
+import { iMessageSpacing, iMessageTypography } from "../config/tokens";
+import type { IMessageTheme } from "../config/imessage-theme";
 
 interface InputBarProps {
-  theme?: typeof iOS_IMESSAGE_LIGHT;
+  /** For backward compatibility - prefer using inside ThemeContext */
+  theme?: IMessageTheme;
   draft?: string;
   safeAreaBottom?: number;
 }
 
 export const InputBar: React.FC<InputBarProps> = ({
-  theme = iOS_IMESSAGE_LIGHT,
+  theme: propTheme,
   draft = "",
   safeAreaBottom,
 }) => {
+  const contextTheme = useIMessageTheme();
+  const theme = propTheme ?? contextTheme;
   const { colors, typography } = theme;
-  const bottomInset = safeAreaBottom ?? LAYOUT_CONSTANTS.SAFE_AREA_BOTTOM;
+  const bottomInset = safeAreaBottom ?? iMessageSpacing.safeAreaBottom;
+
+  const hasDraft = draft.length > 0;
 
   return (
     <div
       style={{
-        height: LAYOUT_CONSTANTS.INPUT_HEIGHT + bottomInset,
+        height: iMessageSpacing.inputHeight + bottomInset,
         backgroundColor: colors.input.background,
-        borderTop: `1px solid ${colors.system.separator}`,
-        padding: `${LAYOUT_CONSTANTS.INPUT_PADDING}px ${LAYOUT_CONSTANTS.INPUT_PADDING}px ${bottomInset}px`,
+        borderTop: `0.5px solid ${colors.system.separator}`,
+        padding: `${iMessageSpacing.inputPaddingV}px ${iMessageSpacing.inputPaddingH}px ${bottomInset}px`,
         display: "flex",
         alignItems: "center",
-        gap: 10,
+        gap: iMessageSpacing.inputIconGap,
       }}
     >
-      <div
-        style={{
-          width: 28,
-          height: 28,
-          borderRadius: 14,
-          backgroundColor: colors.input.field,
-          border: `1px solid ${colors.input.border}`,
-          position: "relative",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-        }}
-      >
-        <div
-          style={{
-            width: 12,
-            height: 2,
-            backgroundColor: colors.header.icons,
-            borderRadius: 2,
-            position: "absolute",
-          }}
-        />
-        <div
-          style={{
-            width: 2,
-            height: 12,
-            backgroundColor: colors.header.icons,
-            borderRadius: 2,
-            position: "absolute",
-          }}
-        />
-      </div>
+      {/* Apps button (plus icon) */}
+      <IconButton color={colors.header.icons}>
+        <svg viewBox="0 0 24 24" width={iMessageSpacing.inputIconSize} height={iMessageSpacing.inputIconSize} fill="none">
+          <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="1.5" />
+          <line x1="12" y1="8" x2="12" y2="16" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+          <line x1="8" y1="12" x2="16" y2="12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+        </svg>
+      </IconButton>
+
+      {/* Text input field */}
       <div
         style={{
           flex: 1,
-          height: LAYOUT_CONSTANTS.INPUT_FIELD_HEIGHT,
-          borderRadius: LAYOUT_CONSTANTS.INPUT_BORDER_RADIUS,
+          height: iMessageSpacing.inputFieldHeight,
+          borderRadius: iMessageSpacing.inputBorderRadius,
           backgroundColor: colors.input.field,
           border: `1px solid ${colors.input.border}`,
-          padding: "0 12px",
+          padding: `0 ${iMessageSpacing.bubblePaddingH}px`,
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
-          color: colors.input.placeholder,
-          fontFamily: typography.input.family,
-          fontSize: typography.input.size,
+          fontFamily: iMessageTypography.fontFamily,
+          fontSize: iMessageTypography.input.fontSize,
         }}
       >
-        <span>{draft || "iMessage"}</span>
-        <div
-          style={{
-            width: 20,
-            height: 20,
-            borderRadius: 6,
-            border: `1.5px solid ${colors.input.icons}`,
-            position: "relative",
-          }}
-        >
-          <div
-            style={{
-              width: 6,
-              height: 6,
-              borderRadius: 3,
-              backgroundColor: colors.input.icons,
-              position: "absolute",
-              top: 3,
-              left: 3,
-            }}
-          />
-        </div>
+        <span style={{ color: hasDraft ? colors.bubble.otherText : colors.input.placeholder }}>
+          {draft || "iMessage"}
+        </span>
+        {/* Memoji/sticker icon */}
+        {!hasDraft && (
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" style={{ color: colors.input.icons }}>
+            <rect x="4" y="4" width="16" height="16" rx="4" stroke="currentColor" strokeWidth="1.5" />
+            <circle cx="9" cy="10" r="1.5" fill="currentColor" />
+            <circle cx="15" cy="10" r="1.5" fill="currentColor" />
+            <path d="M8 15 C10 17, 14 17, 16 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+          </svg>
+        )}
       </div>
-      <div
-        style={{
-          width: 28,
-          height: 28,
-          borderRadius: 14,
-          backgroundColor: colors.input.sendButton,
-        }}
-      />
+
+      {/* Send button or audio button */}
+      {hasDraft ? (
+        <SendButton color={colors.input.sendButton} />
+      ) : (
+        <IconButton color={colors.input.icons}>
+          <svg viewBox="0 0 24 24" width={iMessageSpacing.inputIconSize} height={iMessageSpacing.inputIconSize} fill="none">
+            <path
+              d="M12 3 L12 15"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+            />
+            <path
+              d="M12 21 C16 21, 19 18, 19 14 L19 12"
+              stroke="currentColor"
+              strokeWidth="1.5"
+              strokeLinecap="round"
+            />
+            <path
+              d="M12 21 C8 21, 5 18, 5 14 L5 12"
+              stroke="currentColor"
+              strokeWidth="1.5"
+              strokeLinecap="round"
+            />
+            <circle cx="12" cy="7" r="4" stroke="currentColor" strokeWidth="1.5" />
+          </svg>
+        </IconButton>
+      )}
     </div>
   );
 };
+
+const IconButton: React.FC<{ color: string; children: React.ReactNode }> = ({ color, children }) => (
+  <div
+    style={{
+      width: 32,
+      height: 32,
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      color,
+    }}
+  >
+    {children}
+  </div>
+);
+
+const SendButton: React.FC<{ color: string }> = ({ color }) => (
+  <div
+    style={{
+      width: 28,
+      height: 28,
+      borderRadius: 14,
+      backgroundColor: color,
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+    }}
+  >
+    <svg viewBox="0 0 24 24" width="16" height="16" fill="white">
+      <path d="M12 4 L12 20 M12 4 L6 10 M12 4 L18 10" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+    </svg>
+  </div>
+);
 
 export default InputBar;

@@ -1,34 +1,45 @@
+/**
+ * iMessage Typing Indicator Component
+ * 
+ * Animated three-dot typing bubble
+ */
 import React from "react";
-import { iOS_IMESSAGE_LIGHT, LAYOUT_CONSTANTS } from "../config";
+import { useIMessageTheme } from "../ui/ThemeContext";
+import { iMessageSpacing, iMessageAnimations } from "../config/tokens";
+import type { IMessageTheme } from "../config/imessage-theme";
 
 interface TypingIndicatorProps {
-  theme?: typeof iOS_IMESSAGE_LIGHT;
+  /** For backward compatibility - prefer using inside ThemeContext */
+  theme?: IMessageTheme;
 }
 
-export const TypingIndicator: React.FC<TypingIndicatorProps> = ({
-  theme = iOS_IMESSAGE_LIGHT,
-}) => {
+export const TypingIndicator: React.FC<TypingIndicatorProps> = ({ theme: propTheme }) => {
+  const contextTheme = useIMessageTheme();
+  const theme = propTheme ?? contextTheme;
+
   return (
     <div
       style={{
         display: "flex",
-        gap: LAYOUT_CONSTANTS.TYPING_DOT_GAP,
-        padding: "6px 8px",
-        borderRadius: 20,
+        gap: iMessageSpacing.typingDotGap,
+        padding: `${iMessageSpacing.typingBubblePaddingV}px ${iMessageSpacing.typingBubblePaddingH}px`,
+        borderRadius: iMessageSpacing.bubbleRadius,
         backgroundColor: theme.colors.bubble.received,
         alignSelf: "flex-start",
-        marginBottom: LAYOUT_CONSTANTS.MESSAGE_GAP,
+        marginBottom: iMessageSpacing.messageGapNormal,
       }}
     >
-      {Array.from({ length: 3 }).map((_, i) => (
+      {[0, 1, 2].map((i) => (
         <div
           key={i}
+          className="imessage-typing-dot"
           style={{
-            width: LAYOUT_CONSTANTS.TYPING_DOT_SIZE,
-            height: LAYOUT_CONSTANTS.TYPING_DOT_SIZE,
-            borderRadius: LAYOUT_CONSTANTS.TYPING_DOT_SIZE / 2,
+            width: iMessageSpacing.typingDotSize,
+            height: iMessageSpacing.typingDotSize,
+            borderRadius: iMessageSpacing.typingDotSize / 2,
             backgroundColor: theme.colors.system.timestamp,
-            opacity: 0.6,
+            animation: `imessage-typing-pulse ${iMessageAnimations.typingDotDuration}ms ease-in-out infinite`,
+            animationDelay: `${i * iMessageAnimations.typingDotDelay}ms`,
           }}
         />
       ))}
