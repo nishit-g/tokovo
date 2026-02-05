@@ -3,8 +3,13 @@ import { IMESSAGE_APP_ID } from "../constants";
 import type {
   IMessageAttachment,
   IMessageBubbleEffect,
+  IMessageScreenEffect,
   IMessageTapbackType,
+  IMessageLinkPreview,
   MessageReference,
+  VoiceAttachment,
+  ContactAttachment,
+  CalendarAttachment,
 } from "../types";
 import type { IMessageTrackEvent } from "../types";
 import type { IMessageConversation, IMessageParticipant } from "../types";
@@ -51,6 +56,44 @@ export interface TapbackInput {
   messageId?: string;
   messageRef?: MessageReference;
   fromMe?: boolean;
+}
+
+export interface SendWithEffectInput {
+  text?: string;
+  bubbleEffect?: IMessageBubbleEffect;
+  screenEffect?: IMessageScreenEffect;
+  messageId?: string;
+}
+
+export interface SendLinkInput {
+  url: string;
+  preview?: Omit<IMessageLinkPreview, "url">;
+  text?: string;
+  messageId?: string;
+}
+
+export interface SendAudioInput {
+  url: string;
+  duration: number;
+  waveform?: number[];
+  messageId?: string;
+}
+
+export interface SendContactInput {
+  name: string;
+  phone?: string;
+  email?: string;
+  avatarUrl?: string;
+  messageId?: string;
+}
+
+export interface SendCalendarInput {
+  title: string;
+  startDate: string;
+  endDate?: string;
+  location?: string;
+  isAllDay?: boolean;
+  messageId?: string;
 }
 
 export class IMessagePointBuilder {
@@ -300,6 +343,107 @@ export class IMessagePointBuilder {
 
   setThemeMode(mode: "light" | "dark") {
     this._push("IMESSAGE_SET_THEME_MODE", { mode });
+  }
+
+  /** Send message with screen effect (balloons, confetti, etc.) */
+  sendWithEffect(input: SendWithEffectInput) {
+    this._push("IMESSAGE_MESSAGE_SEND", (order) => ({
+      conversationId: this._conversationId,
+      text: input.text,
+      messageId: input.messageId ?? createMessageId(this._frame, order),
+      effect: input.bubbleEffect,
+    }));
+    if (input.screenEffect) {
+      this._push("IMESSAGE_SCREEN_EFFECT", {
+        effect: input.screenEffect,
+        conversationId: this._conversationId,
+      });
+    }
+  }
+
+  /** Send link with rich preview */
+  sendLink(input: SendLinkInput) {
+    const preview = { url: input.url, ...input.preview };
+    this._push("IMESSAGE_MESSAGE_SEND", (order) => ({
+      conversationId: this._conversationId,
+      text: input.text ?? input.url,
+      messageId: input.messageId ?? createMessageId(this._frame, order),
+      attachments: [{ kind: "link" as const, preview }],
+    }));
+  }
+
+  /** Send audio/voice message */
+  sendAudio(input: SendAudioInput) {
+    const attachment: VoiceAttachment = {
+      kind: "voice",
+      url: input.url,
+      duration: input.duration,
+      waveform: input.waveform,
+    };
+    this._push("IMESSAGE_MESSAGE_SEND", (order) => ({
+      conversationId: this._conversationId,
+      messageId: input.messageId ?? createMessageId(this._frame, order),
+      attachments: [attachment],
+    }));
+  }
+
+  /** Send contact card */
+  sendContact(input: SendContactInput) {
+    const attachment: ContactAttachment = {
+      kind: "contact",
+      name: input.name,
+      phone: input.phone,
+      email: input.email,
+      avatarUrl: input.avatarUrl,
+    };
+    this._push("IMESSAGE_MESSAGE_SEND", (order) => ({
+      conversationId: this._conversationId,
+      messageId: input.messageId ?? createMessageId(this._frame, order),
+      attachments: [attachment],
+    }));
+  }
+
+  /** Send calendar invite */
+  sendCalendar(input: SendCalendarInput) {
+    const attachment: CalendarAttachment = {
+      kind: "calendar",
+      title: input.title,
+      startDate: input.startDate,
+      endDate: input.endDate,
+      location: input.location,
+      isAllDay: input.isAllDay,
+    };
+    this._push("IMESSAGE_MESSAGE_SEND", (order) => ({
+      conversationId: this._conversationId,
+      messageId: input.messageId ?? createMessageId(this._frame, order),
+      attachments: [attachment],
+    }));
+  }
+
+  /** Unsend a message with poof animation */
+  unsend(messageId: string) {
+    this._push("IMESSAGE_MESSAGE_UNSEND", {
+      conversationId: this._conversationId,
+      messageId,
+    });
+  }
+
+  /** Start search within conversation */
+  search(query: string) {
+    this._push("IMESSAGE_SEARCH_START", { query });
+  }
+
+  /** Clear search */
+  clearSearch() {
+    this._push("IMESSAGE_SEARCH_CLEAR", {});
+  }
+
+  /** Trigger screen effect */
+  screenEffect(effect: "balloons" | "confetti" | "lasers" | "fireworks" | "celebration" | "echo" | "spotlight" | "love") {
+    this._push("IMESSAGE_SCREEN_EFFECT", {
+      effect,
+      conversationId: this._conversationId,
+    });
   }
 }
 

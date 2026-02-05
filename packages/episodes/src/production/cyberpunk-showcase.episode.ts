@@ -55,7 +55,7 @@ export default defineEpisode({
 
           wa.at("7s").receive("V", "Arasaka tower. Main subnet.");
 
-          wa.at("9s").receiveImage("V", "/images/arasaka-tower.jpg", {
+          wa.at("9s").receiveImage("V", "/placeholders/media.svg", {
             caption: "The target. Don't flatline on me.",
           });
 
@@ -68,15 +68,15 @@ export default defineEpisode({
             longitude: -118.2437,
             locationName: "Afterlife",
             locationAddress: "Night City, Watson District",
-            mapThumbnailUrl: "/maps/night-city.png",
+            mapThumbnailUrl: "/placeholders/map.svg",
           });
 
           wa.at("19s").send("Nova. Bringing my best chrome. 🦾");
 
           wa.at("21s").receive("V", "Stay frosty out there");
 
-          wa.at("23s").receiveSticker("V", "/stickers/samurai.webp");
-          wa.at("25s").sendSticker("/stickers/skull-neon.webp");
+          wa.at("23s").receiveSticker("V", "/placeholders/media.svg");
+          wa.at("25s").sendSticker("/placeholders/media.svg");
 
           wa.at("27s").react({ index: 0 }, "⚡");
           wa.at("28s").react({ index: 4 }, "🔥");

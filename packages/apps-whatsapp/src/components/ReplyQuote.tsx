@@ -9,6 +9,7 @@
 
 import React from "react";
 import { Camera, Video, Mic } from "lucide-react";
+import { whatsappColors } from "./theme";
 
 export interface ReplyToData {
     messageId: string;
@@ -24,17 +25,14 @@ interface ReplyQuoteProps {
     onClick?: () => void;
 }
 
-// WhatsApp brand colors
-const WA_GREEN = "#25D366";
-const WA_TEAL = "#128C7E";
-
 export const ReplyQuote: React.FC<ReplyQuoteProps> = ({
     replyTo,
     isMyMessage = false,
     onClick,
 }) => {
     // Color based on who sent the original
-    const barColor = replyTo.from === "me" ? WA_TEAL : WA_GREEN;
+    const barColor =
+      replyTo.from === "me" ? whatsappColors.primaryDark : whatsappColors.primary;
 
     return (
         <div
@@ -42,7 +40,9 @@ export const ReplyQuote: React.FC<ReplyQuoteProps> = ({
             style={{
                 display: "flex",
                 gap: 0,
-                backgroundColor: isMyMessage ? "rgba(0,0,0,0.05)" : "rgba(0,0,0,0.03)",
+                backgroundColor: isMyMessage
+                  ? whatsappColors.separatorLight
+                  : whatsappColors.separatorUltraLight,
                 borderRadius: 6,
                 overflow: "hidden",
                 marginBottom: 4,
@@ -80,7 +80,7 @@ export const ReplyQuote: React.FC<ReplyQuoteProps> = ({
                     {/* Message preview */}
                     <div style={{
                         fontSize: 13,
-                        color: "#667781",
+                        color: whatsappColors.textSecondary,
                         fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif",
                         whiteSpace: "nowrap",
                         overflow: "hidden",
@@ -92,19 +92,19 @@ export const ReplyQuote: React.FC<ReplyQuoteProps> = ({
                         {/* Type icon */}
                         {replyTo.type === "image" && (
                             <>
-                                <Camera size={12} color="#667781" />
+                                <Camera size={12} color={whatsappColors.textSecondary} />
                                 <span>Photo</span>
                             </>
                         )}
                         {replyTo.type === "video" && (
                             <>
-                                <Video size={12} color="#667781" />
+                                <Video size={12} color={whatsappColors.textSecondary} />
                                 <span>Video</span>
                             </>
                         )}
                         {replyTo.type === "voice" && (
                             <>
-                                <Mic size={12} color="#667781" />
+                                <Mic size={12} color={whatsappColors.textSecondary} />
                                 <span>Voice message</span>
                             </>
                         )}

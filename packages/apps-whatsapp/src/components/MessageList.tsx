@@ -5,6 +5,7 @@ import { useMessageGrouping } from "../hooks/useMessageGrouping";
 import { MessageData } from "../types";
 import { TypingIndicator } from "./TypingIndicator";
 import { useTheme } from "../theme/context";
+import { senderColors } from "./theme";
 
 interface MessageListProps {
   messages: MessageData[];
@@ -12,6 +13,17 @@ interface MessageListProps {
   isTyping?: boolean;
   isGroupChat?: boolean;
   bottomPadding?: number;
+}
+
+function getSenderColor(name: string | undefined): string | undefined {
+  if (!name) return undefined;
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) {
+    hash = (hash << 5) - hash + name.charCodeAt(i);
+    hash |= 0;
+  }
+  const index = Math.abs(hash) % senderColors.length;
+  return senderColors[index];
 }
 
 export const MessageList: React.FC<MessageListProps> = ({
@@ -23,8 +35,10 @@ export const MessageList: React.FC<MessageListProps> = ({
 }) => {
   const theme = useTheme();
   const backgroundColor = theme.colors.chatBackground;
-  const doodlePattern = "";
-  const doodleOpacity = 0.04;
+  const doodlePattern = `radial-gradient(${theme.colors.divider} 0.8px, transparent 0.8px)`;
+  const doodleOpacity = 0.22;
+  const listPaddingX = theme.spacing.sectionGap;
+  const listPaddingY = Math.max(8, theme.spacing.sectionGap - 4);
   const keyboardHeight = useKeyboardHeight();
 
   const groups = useMessageGrouping(messages, ownerName);
@@ -47,7 +61,7 @@ export const MessageList: React.FC<MessageListProps> = ({
         position: "relative",
         display: "flex",
         flexDirection: "column",
-        padding: "10px 16px",
+        padding: `${listPaddingY}px ${listPaddingX}px`,
         overflowY: "auto",
         WebkitOverflowScrolling: "touch",
         paddingBottom: bottomPadding + keyboardHeight,
@@ -62,7 +76,7 @@ export const MessageList: React.FC<MessageListProps> = ({
             right: 0,
             bottom: 0,
             backgroundImage: doodlePattern,
-            backgroundSize: "200px 200px",
+            backgroundSize: "28px 28px",
             opacity: doodleOpacity,
             pointerEvents: "none",
           }}
@@ -95,7 +109,8 @@ export const MessageList: React.FC<MessageListProps> = ({
                 isFirst={item.isFirst}
                 isLast={item.isLast}
                 isGroupChat={isGroupChat}
-                senderName={item.data.from}
+                senderName={item.data.senderName ?? item.data.from}
+                senderColor={getSenderColor(item.data.senderName ?? item.data.from)}
                 showSenderName={isGroupChat && !group.isMe && item.isFirst}
                 messageOrder={messageStartIndex + idx}
               />

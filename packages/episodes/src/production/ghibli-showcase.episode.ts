@@ -58,23 +58,23 @@ export default defineEpisode({
 
           wa.at("7s").receive("Totoro", "Just bring your umbrella ☂️");
 
-          wa.at("9s").receiveImage("Totoro", "/images/forest-path.jpg", {
+          wa.at("9s").receiveImage("Totoro", "/placeholders/media.svg", {
             caption: "The path to the tree 🌳",
           });
 
-          wa.at("12s").sendImage("/images/bento-box.jpg");
+          wa.at("12s").sendImage("/placeholders/media.svg");
 
           wa.at("14s").receive("Totoro", "The soot sprites say hello!");
 
-          wa.at("16s").receiveSticker("Totoro", "/stickers/dust-bunny.webp");
-          wa.at("18s").sendSticker("/stickers/heart.webp");
+          wa.at("16s").receiveSticker("Totoro", "/placeholders/media.svg");
+          wa.at("18s").sendSticker("/placeholders/media.svg");
 
           wa.at("20s").receiveLocation("Totoro", {
             latitude: 35.6585,
             longitude: 139.7454,
             locationName: "Camphor Tree",
             locationAddress: "The Heart of the Forest",
-            mapThumbnailUrl: "/maps/forest-map.png",
+            mapThumbnailUrl: "/placeholders/map.svg",
           });
 
           wa.at("23s").send("I can see the tree now! 🌲");

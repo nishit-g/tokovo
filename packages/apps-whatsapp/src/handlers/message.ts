@@ -11,6 +11,16 @@ import type { WhatsAppMessage, WhatsAppMessageType } from "../types";
 
 let registered = false;
 
+function bumpUnread(ctx: { draft: unknown; conversation: { id: string; unreadCount?: number } }, from: string): void {
+  if (from === "me" || from === "system") return;
+  const appState = (ctx.draft as { appState?: { app_whatsapp?: { currentConversationId?: string } } })
+    .appState?.app_whatsapp;
+  if (appState?.currentConversationId && appState.currentConversationId === ctx.conversation.id) {
+    return;
+  }
+  ctx.conversation.unreadCount = (ctx.conversation.unreadCount ?? 0) + 1;
+}
+
 export function registerMessageHandlers(): void {
   if (registered) return;
   registered = true;
@@ -66,6 +76,7 @@ export function registerMessageHandlers(): void {
     }
 
     ctx.addMessage(newMessage);
+    bumpUnread(ctx, fromUser);
   });
 
   registerHandler<MessageSentEvent>("MessageSent", (ctx, e) => {

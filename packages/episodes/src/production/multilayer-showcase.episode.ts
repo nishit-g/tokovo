@@ -112,7 +112,7 @@ export default defineEpisode({
           wa.span("15s", "17s").typing("them");
           wa.at("17s").receive("Alex", "Don't play dumb with me.");
 
-          wa.at("20s").receiveImage("Alex", "/images/screenshot-evidence.jpg", {
+          wa.at("20s").receiveImage("Alex", "/placeholders/media.svg", {
             caption: "Explain this.",
           });
 
@@ -178,7 +178,7 @@ export default defineEpisode({
             appId: "Instagram",
             title: "Instagram",
             body: "sarah_j liked your story",
-            icon: "/apps/instagram.png",
+            icon: "/placeholders/app-icon.svg",
             priority: "default",
           });
           notif.at("9s").swipe("notif_instagram", "right");
@@ -188,7 +188,7 @@ export default defineEpisode({
             appId: "Twitter",
             title: "Twitter",
             body: "@mikejones mentioned you in a tweet",
-            icon: "/apps/twitter.png",
+            icon: "/placeholders/app-icon.svg",
             priority: "default",
           });
           notif.at("17s").swipe("notif_twitter", "right");
@@ -198,7 +198,7 @@ export default defineEpisode({
             appId: "app_whatsapp",
             title: "Alex 💔",
             body: "Image",
-            icon: "/apps/whatsapp.png",
+            icon: "/placeholders/app-icon.svg",
             priority: "high",
           });
           notif.at("25s").dismiss("notif_wa_alex");
@@ -208,7 +208,7 @@ export default defineEpisode({
             appId: "app_whatsapp",
             title: "Unknown Number",
             body: "He found out.",
-            icon: "/apps/whatsapp.png",
+            icon: "/placeholders/app-icon.svg",
             priority: "high",
           });
           notif.at("32s").dismiss("notif_unknown");
@@ -218,7 +218,7 @@ export default defineEpisode({
             appId: "Gmail",
             title: "Gmail",
             body: "Your flight is confirmed for tomorrow",
-            icon: "/apps/gmail.png",
+            icon: "/placeholders/app-icon.svg",
             priority: "default",
           });
           notif.at("41s").swipe("notif_email", "right");
@@ -228,7 +228,7 @@ export default defineEpisode({
             appId: "app_whatsapp",
             title: "Alex 💔",
             body: "Goodbye.",
-            icon: "/apps/whatsapp.png",
+            icon: "/placeholders/app-icon.svg",
             priority: "high",
           });
           notif.at("50s").dismiss("notif_wa_goodbye");
@@ -238,7 +238,7 @@ export default defineEpisode({
             appId: "System",
             title: "Low Battery",
             body: "26% remaining. Connect to power.",
-            icon: "/apps/battery.png",
+            icon: "/placeholders/app-icon.svg",
             priority: "critical",
           });
         },

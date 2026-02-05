@@ -1,5 +1,6 @@
 import React from "react";
 import { Img, staticFile } from "remotion";
+import { whatsappColors } from "./theme";
 
 export interface LinkPreviewData {
   url: string;
@@ -18,17 +19,14 @@ interface LinkPreviewProps {
 
 const FONT_FAMILY =
   "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif";
-const WA_GREEN = "#25D366";
-const WA_GRAY = "#8E8E93";
-const WA_TEXT_PRIMARY = "#111B21";
-const WA_TEXT_SECONDARY = "#667781";
-
 export const LinkPreview: React.FC<LinkPreviewProps> = ({
   preview,
   isMyMessage = false,
   compact = false,
 }) => {
-  const bgColor = isMyMessage ? "rgba(0,0,0,0.05)" : "rgba(0,0,0,0.03)";
+  const bgColor = isMyMessage
+    ? whatsappColors.separatorLight
+    : whatsappColors.separatorUltraLight;
   const resolvedImage =
     preview.image && preview.image.startsWith("/")
       ? staticFile(preview.image)
@@ -87,7 +85,7 @@ export const LinkPreview: React.FC<LinkPreviewProps> = ({
             <span
               style={{
                 fontSize: 10,
-                color: WA_GRAY,
+                color: whatsappColors.textSecondary,
                 fontFamily: FONT_FAMILY,
                 textTransform: "uppercase",
                 letterSpacing: 0.3,
@@ -102,7 +100,7 @@ export const LinkPreview: React.FC<LinkPreviewProps> = ({
           style={{
             fontSize: compact ? 14 : 16,
             fontWeight: 600,
-            color: WA_TEXT_PRIMARY,
+            color: whatsappColors.textPrimary,
             fontFamily: FONT_FAMILY,
             lineHeight: 1.3,
             marginBottom: 2,
@@ -119,7 +117,7 @@ export const LinkPreview: React.FC<LinkPreviewProps> = ({
           <div
             style={{
               fontSize: compact ? 12 : 14,
-              color: WA_TEXT_SECONDARY,
+              color: whatsappColors.textSecondary,
               fontFamily: FONT_FAMILY,
               lineHeight: 1.4,
               display: "-webkit-box",
@@ -135,7 +133,7 @@ export const LinkPreview: React.FC<LinkPreviewProps> = ({
         <div
           style={{
             fontSize: 10,
-            color: WA_GREEN,
+            color: whatsappColors.primary,
             fontFamily: FONT_FAMILY,
             marginTop: 4,
             overflow: "hidden",
@@ -171,18 +169,18 @@ export const MiniLinkPreview: React.FC<{ url: string }> = ({ url }) => {
         alignItems: "center",
         gap: 4,
         padding: "4px 6px",
-        backgroundColor: "rgba(0,0,0,0.03)",
+        backgroundColor: whatsappColors.separatorUltraLight,
         borderRadius: 6,
         marginBottom: 3,
       }}
     >
-      <svg width="12" height="12" viewBox="0 0 24 24" fill={WA_GREEN}>
+      <svg width="12" height="12" viewBox="0 0 24 24" fill={whatsappColors.primary}>
         <path d="M3.9 12c0-1.71 1.39-3.1 3.1-3.1h4V7H7c-2.76 0-5 2.24-5 5s2.24 5 5 5h4v-1.9H7c-1.71 0-3.1-1.39-3.1-3.1zM8 13h8v-2H8v2zm9-6h-4v1.9h4c1.71 0 3.1 1.39 3.1 3.1s-1.39 3.1-3.1 3.1h-4V17h4c2.76 0 5-2.24 5-5s-2.24-5-5-5z" />
       </svg>
       <span
         style={{
           fontSize: 12,
-          color: WA_GREEN,
+          color: whatsappColors.primary,
           fontFamily: FONT_FAMILY,
         }}
       >

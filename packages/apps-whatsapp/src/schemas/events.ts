@@ -268,7 +268,7 @@ export const DocumentReceivedEventSchema = BaseEventSchema.extend({
       url: z.string().optional(),
       from: z.string().optional(),
       fileName: z.string().optional(),
-      fileSize: z.string().optional(),
+      fileSize: z.union([z.string(), z.number()]).optional(),
       fileType: z.string().optional(),
     })
     .optional(),
@@ -280,7 +280,7 @@ export const DocumentSentEventSchema = BaseEventSchema.extend({
     .object({
       url: z.string().optional(),
       fileName: z.string().optional(),
-      fileSize: z.string().optional(),
+      fileSize: z.union([z.string(), z.number()]).optional(),
       fileType: z.string().optional(),
     })
     .optional(),
@@ -295,6 +295,10 @@ export const ContactReceivedEventSchema = BaseEventSchema.extend({
       name: z.string().optional(),
       phone: z.string().optional(),
       avatar: z.string().optional(),
+      contactName: z.string().optional(),
+      contactPhone: z.string().optional(),
+      contactAvatar: z.string().optional(),
+      contactAvatarUrl: z.string().optional(),
     })
     .optional(),
 });
@@ -306,6 +310,10 @@ export const ContactSentEventSchema = BaseEventSchema.extend({
       name: z.string().optional(),
       phone: z.string().optional(),
       avatar: z.string().optional(),
+      contactName: z.string().optional(),
+      contactPhone: z.string().optional(),
+      contactAvatar: z.string().optional(),
+      contactAvatarUrl: z.string().optional(),
     })
     .optional(),
 });
@@ -318,8 +326,13 @@ export const LocationReceivedEventSchema = BaseEventSchema.extend({
       from: z.string().optional(),
       lat: z.number().optional(),
       lng: z.number().optional(),
+      latitude: z.number().optional(),
+      longitude: z.number().optional(),
       name: z.string().optional(),
+      label: z.string().optional(),
       address: z.string().optional(),
+      locationName: z.string().optional(),
+      locationAddress: z.string().optional(),
       mapThumbnailUrl: z.string().optional(),
     })
     .optional(),
@@ -331,8 +344,13 @@ export const LocationSentEventSchema = BaseEventSchema.extend({
     .object({
       lat: z.number().optional(),
       lng: z.number().optional(),
+      latitude: z.number().optional(),
+      longitude: z.number().optional(),
       name: z.string().optional(),
+      label: z.string().optional(),
       address: z.string().optional(),
+      locationName: z.string().optional(),
+      locationAddress: z.string().optional(),
       mapThumbnailUrl: z.string().optional(),
     })
     .optional(),

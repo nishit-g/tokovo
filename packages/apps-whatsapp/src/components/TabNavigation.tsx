@@ -1,6 +1,6 @@
 import React from "react";
 import { UpdatesIcon, CallsTabIcon, CommunitiesIcon, ChatsIcon, SettingsIcon } from "./Icons";
-import { whatsappColors, typography } from "./theme";
+import { whatsappColors, typography, spacing } from "./theme";
 
 // =============================================================================
 // TYPES
@@ -24,19 +24,18 @@ const TabBadge: React.FC<{ count: number; isMuted?: boolean }> = ({ count, isMut
     <div
       style={{
         position: "absolute",
-        top: -4,
-        right: -8,
-        backgroundColor: isMuted ? whatsappColors.textSecondary : whatsappColors.primary,
+        top: spacing.tabBadgeOffsetTop,
+        right: spacing.tabBadgeOffsetRight,
+        backgroundColor: isMuted ? whatsappColors.badgeMuted : whatsappColors.primary,
         color: "white",
-        borderRadius: 10,
-        minWidth: 18,
-        height: 18,
-        padding: "0 5px",
+        borderRadius: spacing.badgeRadius,
+        minWidth: spacing.badgeMinWidth,
+        height: spacing.badgeHeight,
+        padding: `0 ${spacing.badgePadding}px`,
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        fontSize: 11,
-        fontWeight: "600",
+        ...typography.badge,
       }}
     >
       {count > 99 ? "99+" : count}
@@ -69,14 +68,14 @@ export const TabNavigation: React.FC<TabNavigationProps> = ({
   return (
     <div
       style={{
-        backgroundColor: "rgba(249, 249, 249, 0.94)",
+        backgroundColor: whatsappColors.surfaceGlass,
         backdropFilter: "blur(20px)",
         WebkitBackdropFilter: "blur(20px)",
         borderTop: `0.5px solid ${whatsappColors.separator}`,
         display: "flex",
         justifyContent: "space-around",
         paddingBottom: safeAreaBottom,
-        paddingTop: 6,
+        paddingTop: spacing.tabPaddingTop,
         position: "absolute",
         bottom: 0,
         left: 0,

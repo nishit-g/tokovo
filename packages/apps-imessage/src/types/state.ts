@@ -21,6 +21,10 @@ export interface IMessageState {
     timeColor?: string;
   };
   conversations?: Record<string, IMessageConversation>;
+  /** Active search query */
+  searchQuery?: string;
+  /** Active screen effect (balloons, confetti, etc.) */
+  activeScreenEffect?: "balloons" | "confetti" | "lasers" | "fireworks" | "celebration" | "echo" | "spotlight" | "love";
 }
 
 export function asIMessageState(

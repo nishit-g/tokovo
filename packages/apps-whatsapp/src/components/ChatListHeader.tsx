@@ -25,13 +25,19 @@ const FilterChip: React.FC<{
   <div
     onClick={onClick}
     style={{
-      padding: "6px 14px",
+      padding: `${spacing.filterChipPaddingY}px ${spacing.filterChipPaddingX}px`,
       backgroundColor: isActive
         ? whatsappColors.bgTertiary
         : whatsappColors.bgSecondary,
       borderRadius: spacing.filterChipRadius,
+      border: isActive
+        ? `1px solid ${whatsappColors.separatorLight}`
+        : `1px solid ${whatsappColors.separatorUltraLight}`,
+      boxShadow: isActive
+        ? "0 6px 14px rgba(0,0,0,0.06)"
+        : "0 1px 0 rgba(0,0,0,0.02)",
       ...typography.chip,
-      fontWeight: isActive ? "600" : "400",
+      fontWeight: isActive ? "600" : "500",
       color: isActive
         ? whatsappColors.textPrimary
         : whatsappColors.textSecondary,
@@ -63,7 +69,7 @@ export const ChatListHeader: React.FC<ChatListHeaderProps> = ({
   return (
     <div
       style={{
-        backgroundColor: "rgba(255, 255, 255, 0.94)",
+        backgroundColor: whatsappColors.surfaceGlass,
         backdropFilter: "blur(20px)",
         WebkitBackdropFilter: "blur(20px)",
         display: "flex",
@@ -78,8 +84,8 @@ export const ChatListHeader: React.FC<ChatListHeaderProps> = ({
       <div
         style={{
           paddingTop: safeAreaTop,
-          paddingLeft: 20,
-          paddingRight: 16,
+          paddingLeft: spacing.pagePaddingWide,
+          paddingRight: spacing.pagePaddingX,
           height: spacing.navBarHeight + safeAreaTop,
           display: "flex",
           justifyContent: "space-between",
@@ -92,7 +98,7 @@ export const ChatListHeader: React.FC<ChatListHeaderProps> = ({
           {showEditButton && (
             <div
               style={{
-                color: whatsappColors.iosBlue,
+                color: whatsappColors.primary,
                 fontSize: 17,
                 fontWeight: "400",
                 cursor: "pointer",
@@ -104,16 +110,22 @@ export const ChatListHeader: React.FC<ChatListHeaderProps> = ({
         </div>
 
         {/* Right Actions */}
-        <div style={{ display: "flex", gap: 20, alignItems: "center" }}>
+        <div
+          style={{
+            display: "flex",
+            gap: spacing.headerActionGap,
+            alignItems: "center",
+          }}
+        >
           <div
             style={{ cursor: "pointer", display: "flex", alignItems: "center" }}
           >
-            <CameraFillIcon color={whatsappColors.iosBlue} />
+            <CameraFillIcon color={whatsappColors.primary} />
           </div>
           <div
             style={{ cursor: "pointer", display: "flex", alignItems: "center" }}
           >
-            <ComposeIcon color={whatsappColors.iosBlue} size={24} />
+            <ComposeIcon color={whatsappColors.primary} size={24} />
           </div>
         </div>
       </div>
@@ -121,7 +133,7 @@ export const ChatListHeader: React.FC<ChatListHeaderProps> = ({
       {/* Large Title */}
       <div
         style={{
-          padding: "4px 20px 10px 20px",
+          padding: `4px ${spacing.pagePaddingWide}px 10px ${spacing.pagePaddingWide}px`,
           ...typography.largeTitle,
           color: whatsappColors.textPrimary,
           display: "flex",
@@ -132,7 +144,11 @@ export const ChatListHeader: React.FC<ChatListHeaderProps> = ({
       </div>
 
       {/* Search Bar */}
-      <div style={{ padding: "0 16px 10px 16px" }}>
+      <div
+        style={{
+          padding: `0 ${spacing.pagePaddingX}px 10px ${spacing.pagePaddingX}px`,
+        }}
+      >
         <div
           style={{
             backgroundColor: whatsappColors.bgSecondary,
@@ -140,13 +156,15 @@ export const ChatListHeader: React.FC<ChatListHeaderProps> = ({
             height: spacing.searchBarHeight,
             display: "flex",
             alignItems: "center",
-            padding: "0 10px",
+            padding: `0 ${spacing.searchPaddingX}px`,
+            border: `1px solid ${whatsappColors.separatorUltraLight}`,
+            boxShadow: "0 1px 0 rgba(0,0,0,0.02)",
           }}
         >
           <SearchIcon color={whatsappColors.textSecondary} size={16} />
           <div
             style={{
-              marginLeft: 8,
+              marginLeft: spacing.searchIconGap,
               fontSize: 17,
               color: whatsappColors.textSecondary,
               flex: 1,
@@ -160,9 +178,9 @@ export const ChatListHeader: React.FC<ChatListHeaderProps> = ({
       {/* Filter Chips */}
       <div
         style={{
-          padding: "0 16px 12px 16px",
+          padding: `0 ${spacing.pagePaddingX}px 12px ${spacing.pagePaddingX}px`,
           display: "flex",
-          gap: 8,
+          gap: spacing.filterChipGap,
           overflowX: "auto",
         }}
       >

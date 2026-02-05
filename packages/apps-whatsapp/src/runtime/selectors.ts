@@ -41,7 +41,8 @@ export function selectConversations(
 export function selectCurrentConversationId(
   world: WorldState,
 ): string | undefined {
-  return selectAppState(world)?.conversationId;
+  const appState = selectAppState(world);
+  return appState?.currentConversationId ?? appState?.conversationId;
 }
 
 /**

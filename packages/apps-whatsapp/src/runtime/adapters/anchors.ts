@@ -22,6 +22,11 @@ export const WhatsAppAnchors: PluginAnchorRegistry = {
       paddingPx: 40,
       targetFill: 0.6,
     },
+    lastMessage: {
+      anchorPoint: { x: 0.5, y: 0.5 },
+      paddingPx: 40,
+      targetFill: 0.6,
+    },
     device: {
       anchorPoint: { x: 0.5, y: 0.5 },
       paddingPx: 0,
@@ -32,7 +37,17 @@ export const WhatsAppAnchors: PluginAnchorRegistry = {
       paddingPx: 30,
       targetFill: 0.3,
     },
+    typing_indicator: {
+      anchorPoint: { x: 0.35, y: 0.5 },
+      paddingPx: 30,
+      targetFill: 0.3,
+    },
     input: {
+      anchorPoint: { x: 0.5, y: 0.8 },
+      paddingPx: 20,
+      targetFill: 0.9,
+    },
+    input_area: {
       anchorPoint: { x: 0.5, y: 0.8 },
       paddingPx: 20,
       targetFill: 0.9,
@@ -46,6 +61,16 @@ export const WhatsAppAnchors: PluginAnchorRegistry = {
       anchorPoint: { x: 0.2, y: 0.15 },
       paddingPx: 50,
       targetFill: 0.4,
+    },
+    content: {
+      anchorPoint: { x: 0.5, y: 0.5 },
+      paddingPx: 20,
+      targetFill: 0.8,
+    },
+    app: {
+      anchorPoint: { x: 0.5, y: 0.5 },
+      paddingPx: 0,
+      targetFill: 1.0,
     },
   },
 };

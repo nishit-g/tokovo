@@ -12,6 +12,7 @@
 
 import type { TrackMessageRef } from "@tokovo/ir";
 import type { WhatsAppTrackEvent, WhatsAppEventType } from "../types/events";
+import { parseFileSizeToBytes } from "../utils/file-size";
 
 // =============================================================================
 // TYPES
@@ -177,10 +178,12 @@ export class WhatsAppPointBuilder {
     from: string,
     options: { fileName: string; fileSize: string; fileType?: string },
   ): void {
+    const fileSizeBytes = parseFileSizeToBytes(options.fileSize);
+    const fileSize = fileSizeBytes ?? options.fileSize;
     this._push("DOCUMENT_RECEIVED", {
       from,
       fileName: options.fileName,
-      fileSize: options.fileSize,
+      fileSize,
       fileType: options.fileType,
       messageType: "document",
     });
@@ -191,9 +194,11 @@ export class WhatsAppPointBuilder {
     fileSize: string;
     fileType?: string;
   }): void {
+    const fileSizeBytes = parseFileSizeToBytes(options.fileSize);
+    const fileSize = fileSizeBytes ?? options.fileSize;
     this._push("DOCUMENT_SENT", {
       fileName: options.fileName,
-      fileSize: options.fileSize,
+      fileSize,
       fileType: options.fileType,
       messageType: "document",
     });
@@ -209,9 +214,9 @@ export class WhatsAppPointBuilder {
   ): void {
     this._push("CONTACT_RECEIVED", {
       from,
-      name: options.contactName,
-      phone: options.contactPhone,
-      avatar: options.contactAvatarUrl,
+      contactName: options.contactName,
+      contactPhone: options.contactPhone,
+      contactAvatar: options.contactAvatarUrl,
       messageType: "contact",
     });
   }
@@ -222,9 +227,9 @@ export class WhatsAppPointBuilder {
     contactAvatarUrl?: string;
   }): void {
     this._push("CONTACT_SENT", {
-      name: options.contactName,
-      phone: options.contactPhone,
-      avatar: options.contactAvatarUrl,
+      contactName: options.contactName,
+      contactPhone: options.contactPhone,
+      contactAvatar: options.contactAvatarUrl,
       messageType: "contact",
     });
   }
@@ -241,10 +246,10 @@ export class WhatsAppPointBuilder {
   ): void {
     this._push("LOCATION_RECEIVED", {
       from,
-      lat: options.latitude,
-      lng: options.longitude,
-      name: options.locationName,
-      address: options.locationAddress,
+      latitude: options.latitude,
+      longitude: options.longitude,
+      locationName: options.locationName,
+      locationAddress: options.locationAddress,
       mapThumbnailUrl: options.mapThumbnailUrl,
       messageType: "location",
     });
@@ -258,10 +263,10 @@ export class WhatsAppPointBuilder {
     mapThumbnailUrl?: string;
   }): void {
     this._push("LOCATION_SENT", {
-      lat: options.latitude,
-      lng: options.longitude,
-      name: options.locationName,
-      address: options.locationAddress,
+      latitude: options.latitude,
+      longitude: options.longitude,
+      locationName: options.locationName,
+      locationAddress: options.locationAddress,
       mapThumbnailUrl: options.mapThumbnailUrl,
       messageType: "location",
     });
@@ -445,6 +450,7 @@ export class WhatsAppTrackBuilder {
       _declarationOrder: this._getOrder(),
     });
     this._conversationId = conversationId;
+    this._currentConversation = conversationId;
   }
 
   /**
@@ -461,6 +467,78 @@ export class WhatsAppTrackBuilder {
       type: "NAVIGATE_SCREEN",
       payload: {
         screen: "chats",
+      },
+      _declarationOrder: this._getOrder(),
+    });
+  }
+
+  /**
+   * Open the status screen at a specific time.
+   */
+  openStatus(time: string | number = "0s"): void {
+    const frame = parseTime(time, this._fps);
+    this._events.push({
+      at: frame,
+      deviceId: this._deviceId,
+      kind: "APP",
+      appId: "app_whatsapp",
+      type: "NAVIGATE_SCREEN",
+      payload: {
+        screen: "status",
+      },
+      _declarationOrder: this._getOrder(),
+    });
+  }
+
+  /**
+   * Open the calls screen at a specific time.
+   */
+  openCalls(time: string | number = "0s"): void {
+    const frame = parseTime(time, this._fps);
+    this._events.push({
+      at: frame,
+      deviceId: this._deviceId,
+      kind: "APP",
+      appId: "app_whatsapp",
+      type: "NAVIGATE_SCREEN",
+      payload: {
+        screen: "calls",
+      },
+      _declarationOrder: this._getOrder(),
+    });
+  }
+
+  /**
+   * Open the communities screen at a specific time.
+   */
+  openCommunities(time: string | number = "0s"): void {
+    const frame = parseTime(time, this._fps);
+    this._events.push({
+      at: frame,
+      deviceId: this._deviceId,
+      kind: "APP",
+      appId: "app_whatsapp",
+      type: "NAVIGATE_SCREEN",
+      payload: {
+        screen: "communities",
+      },
+      _declarationOrder: this._getOrder(),
+    });
+  }
+
+  /**
+   * Open the settings screen at a specific time.
+   */
+  openSettings(time: string | number = "0s"): void {
+    const frame = parseTime(time, this._fps);
+    this._events.push({
+      at: frame,
+      deviceId: this._deviceId,
+      kind: "APP",
+      appId: "app_whatsapp",
+      type: "NAVIGATE_SCREEN",
+      payload: {
+        screen: "settings",
       },
       _declarationOrder: this._getOrder(),
     });
@@ -510,7 +588,7 @@ export class WhatsAppTrackBuilder {
    * Add a date separator (e.g., "Today", "Yesterday").
    */
   dateSeparator(text: string = "Today"): void {
-    const frame = parseTime("0s", this._fps);
+    const frame = this._currentTime;
     this._events.push({
       at: frame,
       deviceId: this._deviceId,
@@ -794,7 +872,9 @@ export class WhatsAppTrackBuilder {
         from,
         latitude: options.latitude,
         longitude: options.longitude,
-        label: options.locationName,
+        locationName: options.locationName,
+        locationAddress: options.locationAddress,
+        mapThumbnailUrl: options.mapThumbnailUrl,
       },
       _declarationOrder: this._getOrder(),
     });
@@ -807,8 +887,8 @@ export class WhatsAppTrackBuilder {
     options: { fileName: string; fileSize: string; fileType?: string }
   ): this {
     const conversationId = this._currentConversation || this._conversationId;
-    // Parse fileSize string (e.g., "2.3 MB") to number of bytes
-    const fileSizeNum = parseFloat(options.fileSize) * 1024 * 1024;
+    const fileSizeBytes = parseFileSizeToBytes(options.fileSize);
+    const fileSize = fileSizeBytes ?? options.fileSize;
     this._events.push({
       at: this._currentTime,
       deviceId: this._deviceId,
@@ -821,7 +901,8 @@ export class WhatsAppTrackBuilder {
         from,
         url: "", // Documents require URL in payload
         fileName: options.fileName,
-        fileSize: fileSizeNum,
+        fileSize,
+        fileType: options.fileType,
       },
       _declarationOrder: this._getOrder(),
     });

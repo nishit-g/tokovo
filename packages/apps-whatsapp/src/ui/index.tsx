@@ -6,6 +6,10 @@ import { WhatsAppThemeProvider } from "../theme/context";
 // Screens
 import { ChatScreen } from "../components/screens/ChatScreen";
 import { ChatListScreen } from "../components/screens/ChatListScreen";
+import { StatusScreen } from "../components/screens/StatusScreen";
+import { CommunitiesScreen } from "../components/screens/CommunitiesScreen";
+import { CallsScreen } from "../components/screens/CallsScreen";
+import { ProfileScreen } from "../components/screens/ProfileScreen";
 
 import { WhatsAppState } from "../types";
 
@@ -60,6 +64,46 @@ export const WhatsappChatView: React.FC<WhatsappChatViewProps> = ({
     case "chats-list":
       activeScreenContent = (
         <ChatListScreen
+          world={world}
+          width={activeWidth}
+          height={activeHeight}
+          safeAreaInsets={safeAreaInsets}
+        />
+      );
+      break;
+    case "status":
+      activeScreenContent = (
+        <StatusScreen
+          world={world}
+          width={activeWidth}
+          height={activeHeight}
+          safeAreaInsets={safeAreaInsets}
+        />
+      );
+      break;
+    case "communities":
+      activeScreenContent = (
+        <CommunitiesScreen
+          world={world}
+          width={activeWidth}
+          height={activeHeight}
+          safeAreaInsets={safeAreaInsets}
+        />
+      );
+      break;
+    case "calls":
+      activeScreenContent = (
+        <CallsScreen
+          world={world}
+          width={activeWidth}
+          height={activeHeight}
+          safeAreaInsets={safeAreaInsets}
+        />
+      );
+      break;
+    case "profile":
+      activeScreenContent = (
+        <ProfileScreen
           world={world}
           width={activeWidth}
           height={activeHeight}

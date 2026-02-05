@@ -2,6 +2,7 @@ import React from "react";
 import { useCurrentFrame, useVideoConfig } from "remotion";
 import { Keyboard, Camera, Mic, Send } from "lucide-react";
 import { useTheme } from "../theme/context";
+import { whatsappColors } from "./theme";
 
 export const InputArea: React.FC<{
   text?: string;
@@ -21,8 +22,8 @@ export const InputArea: React.FC<{
       data-anchor="input"
       style={{
         backgroundColor: theme.colors.inputBackground,
-        borderTop: "none",
-        padding: `6px 16px ${paddingBottom}px 10px`,
+        borderTop: `1px solid ${theme.colors.divider}`,
+        padding: `8px 14px ${paddingBottom}px 10px`,
         display: "flex",
         alignItems: "flex-end",
         gap: 12,
@@ -42,10 +43,10 @@ export const InputArea: React.FC<{
         style={{
           flex: 1,
           backgroundColor: theme.colors.background,
-          borderRadius: 24,
+          borderRadius: 22,
           border: `1px solid ${theme.colors.divider}`,
-          padding: "4px 4px 4px 12px",
-          minHeight: 38,
+          padding: "6px 4px 6px 12px",
+          minHeight: 40,
           display: "flex",
           alignItems: "center",
           gap: 8,
@@ -131,6 +132,7 @@ export const InputArea: React.FC<{
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
+              boxShadow: `0 6px 12px ${whatsappColors.primaryGlow}`,
             }}
           >
             <Send

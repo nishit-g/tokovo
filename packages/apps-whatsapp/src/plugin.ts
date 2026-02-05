@@ -124,6 +124,7 @@ export const WhatsAppPluginV2: TokovoPluginContract<"app_whatsapp"> & {
     "React",
     "ReactionAdded",
     "ReadMessages",
+    "MessageRead",
     "MessageDeleted",
     "MessageEdited",
     "MessageForwarded",
@@ -139,6 +140,7 @@ export const WhatsAppPluginV2: TokovoPluginContract<"app_whatsapp"> & {
     "ArchiveConversation",
     "UnarchiveConversation",
     "SetDraft",
+    "VoiceMessageReceived",
   ] as const,
 
   // === SOUNDS (for SoundRegistry via PluginManager) ===
@@ -198,6 +200,6 @@ export function registerWhatsAppPlugin(
   pluginManager.register(WhatsAppPluginV2);
 }
 
-export type { WhatsAppDslApi };
-
 export default WhatsAppPluginV2;
+
+export type { WhatsAppDslApi };

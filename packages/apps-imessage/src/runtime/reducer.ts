@@ -96,6 +96,8 @@ function inferKind(
     if (primary === "sticker") return "sticker";
     if (primary === "gif") return "gif";
     if (primary === "contact") return "contact";
+    if (primary === "calendar") return "calendar";
+    if (primary === "link") return "link";
     if (primary === "location") return "location";
     if (primary === "payment") return "payment";
     return "media";
@@ -513,6 +515,32 @@ export function iMessageReducer(draft: WorldState, event: TimelineEvent): void {
     case "IMESSAGE_SET_THEME_MODE": {
       const data = asPayload<"IMESSAGE_SET_THEME_MODE">(payload);
       state.themeMode = data.mode;
+      break;
+    }
+    case "IMESSAGE_MESSAGE_UNSEND": {
+      if (!conversationId) return;
+      const conv = ensureConversation(state, conversationId);
+      const unsend = asPayload<"IMESSAGE_MESSAGE_UNSEND">(payload);
+      const target = conv.messages.find((m) => m.id === unsend.messageId);
+      if (target) {
+        target.isUnsent = true;
+        target.text = undefined;
+        target.attachments = undefined;
+      }
+      break;
+    }
+    case "IMESSAGE_SEARCH_START": {
+      const search = asPayload<"IMESSAGE_SEARCH_START">(payload);
+      state.searchQuery = search.query;
+      break;
+    }
+    case "IMESSAGE_SEARCH_CLEAR": {
+      state.searchQuery = undefined;
+      break;
+    }
+    case "IMESSAGE_SCREEN_EFFECT": {
+      const effect = asPayload<"IMESSAGE_SCREEN_EFFECT">(payload);
+      state.activeScreenEffect = effect.effect;
       break;
     }
     default:

@@ -56,7 +56,7 @@ export default defineEpisode({
             appId: "app_whatsapp",
             title: "Alex",
             body: "Hey! Are you free for lunch today? 🍕",
-            icon: "/apps/whatsapp.png",
+            icon: "/placeholders/app-icon.svg",
             priority: "default",
             threadKey: "chat_alex",
           });
@@ -73,7 +73,7 @@ export default defineEpisode({
             appId: "app_whatsapp",
             title: "Work Group",
             body: "Mike: The deadline is tomorrow!",
-            icon: "/apps/whatsapp.png",
+            icon: "/placeholders/app-icon.svg",
             priority: "high",
             threadKey: "chat_work_group",
             groupKey: "work_group",
@@ -84,7 +84,7 @@ export default defineEpisode({
             appId: "app_whatsapp",
             title: "Sarah",
             body: "Did you see the news? 📰",
-            icon: "/apps/whatsapp.png",
+            icon: "/placeholders/app-icon.svg",
             priority: "default",
             threadKey: "chat_sarah",
           });
@@ -94,7 +94,7 @@ export default defineEpisode({
             appId: "app_whatsapp",
             title: "Mom ❤️",
             body: "Call me when you get a chance",
-            icon: "/apps/whatsapp.png",
+            icon: "/placeholders/app-icon.svg",
             priority: "high",
             threadKey: "chat_mom",
           });
@@ -124,7 +124,7 @@ export default defineEpisode({
             appId: "Uber",
             title: "Your ride is arriving!",
             body: "Toyota Camry • 2 min away",
-            icon: "/apps/uber.png",
+            icon: "/placeholders/app-icon.svg",
             priority: "critical",
           });
 
@@ -133,7 +133,7 @@ export default defineEpisode({
             appId: "Calendar",
             title: "Meeting in 10 minutes",
             body: "Team Standup - Zoom",
-            icon: "/apps/calendar.png",
+            icon: "/placeholders/app-icon.svg",
             priority: "high",
             actions: [
               { id: "join", label: "Join" },
@@ -146,7 +146,7 @@ export default defineEpisode({
             appId: "Instagram",
             title: "New follower",
             body: "@design_guru started following you",
-            icon: "/apps/instagram.png",
+            icon: "/placeholders/app-icon.svg",
             priority: "default",
           });
 
@@ -164,7 +164,7 @@ export default defineEpisode({
             appId: "Mail",
             title: "boss@company.com",
             body: "Q4 Report Review",
-            icon: "/apps/mail.png",
+            icon: "/placeholders/app-icon.svg",
             groupKey: "inbox",
           });
 
@@ -173,7 +173,7 @@ export default defineEpisode({
             appId: "Mail",
             title: "team@company.com",
             body: "Sprint Planning Notes",
-            icon: "/apps/mail.png",
+            icon: "/placeholders/app-icon.svg",
             groupKey: "inbox",
           });
 
@@ -182,7 +182,7 @@ export default defineEpisode({
             appId: "Mail",
             title: "hr@company.com",
             body: "Holiday Schedule Update",
-            icon: "/apps/mail.png",
+            icon: "/placeholders/app-icon.svg",
             groupKey: "inbox",
           });
 
@@ -196,7 +196,7 @@ export default defineEpisode({
             appId: "app_whatsapp",
             title: "Alex",
             body: "So... lunch? 🍕",
-            icon: "/apps/whatsapp.png",
+            icon: "/placeholders/app-icon.svg",
             priority: "high",
             threadKey: "chat_alex",
             replyable: true,

@@ -89,8 +89,8 @@ export default defineEpisode({
           wa.at("50.5s").receive("Sarah", "I took photos");
           wa.at("52s").receive("Sarah", "I'm so sorry");
 
-          wa.at("55s").receiveImage("Sarah", "/evidence/evidence1.jpg");
-          wa.at("60s").receiveImage("Sarah", "/evidence/evidence2.jpg");
+          wa.at("55s").receiveImage("Sarah", "/placeholders/media.svg");
+          wa.at("60s").receiveImage("Sarah", "/placeholders/media.svg");
           wa.span("64s", "65s").typing("me");
           wa.at("65s").send("is that...");
           wa.at("66.5s").send("that's his car");
@@ -108,7 +108,7 @@ export default defineEpisode({
           wa.span("84.5s", "86.5s").typing("them");
           wa.at("86.5s").receive("Sarah", "I don't know her");
           wa.at("88s").receive("Sarah", "but I got a closer photo");
-          wa.at("90s").receiveImage("Sarah", "/evidence/evidence3.jpg");
+          wa.at("90s").receiveImage("Sarah", "/placeholders/media.svg");
 
           wa.span("96s", "97s").typing("me");
           wa.at("97s").send("I'm going to be sick");
@@ -136,8 +136,8 @@ export default defineEpisode({
           wa.span("119s", "120s").typing("me");
           wa.at("120s").send("really?");
           wa.at("121s").send("then explain this");
-          wa.at("122s").sendImage("/evidence/evidence1.jpg");
-          wa.at("126s").sendImage("/evidence/evidence3.jpg");
+          wa.at("122s").sendImage("/placeholders/media.svg");
+          wa.at("126s").sendImage("/placeholders/media.svg");
 
           wa.span("130s", "133s").typing("them");
           wa.span("135s", "137s").typing("them");

@@ -52,7 +52,7 @@ const MemberItem: React.FC<{
           width: 40,
           height: 40,
           borderRadius: 20,
-          backgroundColor: "#DFE5E7",
+          backgroundColor: whatsappColors.bgSecondary,
           backgroundImage: member.avatar ? `url(${member.avatar})` : undefined,
           backgroundSize: "cover",
           backgroundPosition: "center",
@@ -64,7 +64,12 @@ const MemberItem: React.FC<{
         }}
       >
         {!member.avatar && (
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="#8696A0">
+          <svg
+            width="22"
+            height="22"
+            viewBox="0 0 24 24"
+            fill={whatsappColors.textSecondary}
+          >
             <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
           </svg>
         )}
@@ -291,7 +296,7 @@ export const GroupInfoScreen: React.FC<GroupInfoScreenProps> = ({
               width: 100,
               height: 100,
               borderRadius: 50,
-              backgroundColor: "#DFE5E7",
+              backgroundColor: whatsappColors.bgSecondary,
               backgroundImage: groupData.avatar
                 ? `url(${groupData.avatar})`
                 : undefined,
@@ -304,7 +309,12 @@ export const GroupInfoScreen: React.FC<GroupInfoScreenProps> = ({
             }}
           >
             {!groupData.avatar && (
-              <svg width="48" height="48" viewBox="0 0 24 24" fill="#8696A0">
+              <svg
+                width="48"
+                height="48"
+                viewBox="0 0 24 24"
+                fill={whatsappColors.textSecondary}
+              >
                 <path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z" />
               </svg>
             )}

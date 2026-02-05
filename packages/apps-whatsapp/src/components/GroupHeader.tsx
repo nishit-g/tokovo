@@ -13,6 +13,7 @@ import React from "react";
 import { ChevronLeftIcon, VideoCallIcon, PhoneCallIcon } from "./Icons";
 import { Img } from "remotion";
 import { resolveAvatarWithFallback } from "../utils/avatar";
+import { whatsappColors, spacing, typography } from "./theme";
 
 export interface GroupMemberInfo {
     id: string;
@@ -79,7 +80,7 @@ const CompositeAvatar: React.FC<{ members: GroupMemberInfo[] }> = ({ members }) 
             gridTemplateColumns: "1fr 1fr",
             gridTemplateRows: "1fr 1fr",
             overflow: "hidden",
-            backgroundColor: "#E5E5EA",
+            backgroundColor: whatsappColors.bgSecondary,
         }}>
             {displayMembers.map((m, i) => (
                 <div
@@ -94,7 +95,7 @@ const CompositeAvatar: React.FC<{ members: GroupMemberInfo[] }> = ({ members }) 
                         justifyContent: "center",
                         fontSize: 10,
                         fontWeight: 600,
-                        color: "#FFFFFF",
+                        color: whatsappColors.avatarBorder,
                     }}
                 >
                     {!m.avatar && m.name ? m.name.charAt(0).toUpperCase() : ""}
@@ -108,7 +109,12 @@ const CompositeAvatar: React.FC<{ members: GroupMemberInfo[] }> = ({ members }) 
  * Get placeholder background color for composite avatar slots.
  */
 function getPlaceholderColor(index: number): string {
-    const colors = ["#8E8E93", "#AEAEB2", "#C7C7CC", "#D1D1D6"];
+    const colors = [
+        whatsappColors.textSecondary,
+        whatsappColors.separator,
+        whatsappColors.separatorLight,
+        whatsappColors.separatorUltraLight,
+    ];
     return colors[index % colors.length];
 }
 
@@ -125,12 +131,12 @@ export const GroupHeader: React.FC<GroupHeaderProps> = ({
         <div style={{
             display: "flex",
             alignItems: "center",
-            backgroundColor: "#F6F6F6",
+            backgroundColor: whatsappColors.bgSecondary,
             paddingTop: safeAreaTop,
             paddingBottom: 12,
-            paddingLeft: 8,
-            paddingRight: 16,
-            borderBottom: "0.5px solid rgba(0,0,0,0.1)",
+            paddingLeft: spacing.contentMarginLeft,
+            paddingRight: spacing.contentMarginRight,
+            borderBottom: `0.5px solid ${whatsappColors.separatorLight}`,
         }}>
             {/* Back Button */}
             <div
@@ -144,7 +150,7 @@ export const GroupHeader: React.FC<GroupHeaderProps> = ({
                     cursor: onBack ? "pointer" : "default",
                 }}
             >
-                <ChevronLeftIcon color="#007AFF" />
+                <ChevronLeftIcon color={whatsappColors.primary} />
             </div>
 
             {/* Avatar */}
@@ -170,9 +176,9 @@ export const GroupHeader: React.FC<GroupHeaderProps> = ({
                 overflow: "hidden",
             }}>
                 <div style={{
-                    fontSize: 17,
+                    fontSize: typography.title.fontSize,
                     fontWeight: 600,
-                    color: "#000000",
+                    color: whatsappColors.textPrimary,
                     whiteSpace: "nowrap",
                     overflow: "hidden",
                     textOverflow: "ellipsis",
@@ -180,8 +186,8 @@ export const GroupHeader: React.FC<GroupHeaderProps> = ({
                     {groupName}
                 </div>
                 <div style={{
-                    fontSize: 12,
-                    color: "#8E8E93",
+                    fontSize: typography.caption.fontSize,
+                    color: whatsappColors.textSecondary,
                     whiteSpace: "nowrap",
                     overflow: "hidden",
                     textOverflow: "ellipsis",
@@ -196,8 +202,8 @@ export const GroupHeader: React.FC<GroupHeaderProps> = ({
                 display: "flex",
                 gap: 20,
             }}>
-                <VideoCallIcon color="#007AFF" />
-                <PhoneCallIcon color="#007AFF" />
+                <VideoCallIcon color={whatsappColors.primary} />
+                <PhoneCallIcon color={whatsappColors.primary} />
             </div>
         </div>
     );

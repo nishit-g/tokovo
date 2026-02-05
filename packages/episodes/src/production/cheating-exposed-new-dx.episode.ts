@@ -108,9 +108,9 @@ export default defineEpisode({
 
           // Evidence
           wa.pause(3);
-          wa.receiveImage("Sarah", "/evidence/evidence1.jpg");
+          wa.receiveImage("Sarah", "/placeholders/media.svg");
           wa.pause(5);
-          wa.receiveImage("Sarah", "/evidence/evidence2.jpg");
+          wa.receiveImage("Sarah", "/placeholders/media.svg");
           wa.pause(4);
           wa.send("is that...");
           wa.pause(2);

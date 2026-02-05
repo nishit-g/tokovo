@@ -11,6 +11,7 @@ import {
   LocationMessageBubble,
 } from "./MediaBubbles";
 import { LinkPreview } from "./LinkPreview";
+import { DateSeparator } from "./DateSeparator";
 
 const FONT_FAMILY =
   "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif";
@@ -303,6 +304,9 @@ export const MessageContent: React.FC<MessageContentProps> = ({
       );
 
     case "system":
+      if (message.systemType === "date_change") {
+        return <DateSeparator text={message.text ?? "Today"} />;
+      }
       return <SystemContent text={message.text} />;
 
     case "deleted":

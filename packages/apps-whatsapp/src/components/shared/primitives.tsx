@@ -150,7 +150,7 @@ export const Avatar = React.memo(function Avatar({
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
-    color: "#FFFFFF",
+    color: theme.colors.unreadBadgeText,
     fontFamily: theme.typography.fontFamily,
     fontSize: pixelSize * 0.4,
     fontWeight: 600,

@@ -2,7 +2,7 @@ import React, { memo } from "react";
 import { Img, staticFile } from "remotion";
 import { Platform } from "@tokovo/core";
 import { MediaBubbleBase, TimestampOverlay } from "./shared";
-import { FONT_FAMILY } from "./constants";
+import { FONT_FAMILY, WA_WHITE } from "./constants";
 
 export interface GifMessageBubbleProps {
   gifUrl: string;
@@ -57,7 +57,7 @@ export const GifMessageBubble = memo(function GifMessageBubble({
             style={{
               fontSize: 8,
               fontWeight: 700,
-              color: "#FFFFFF",
+              color: WA_WHITE,
               fontFamily: FONT_FAMILY,
               letterSpacing: 0.3,
             }}

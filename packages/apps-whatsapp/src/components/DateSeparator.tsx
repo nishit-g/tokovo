@@ -7,6 +7,7 @@
 
 import React from "react";
 import { Platform } from "@tokovo/core";
+import { whatsappColors, typography } from "./theme";
 
 interface DateSeparatorProps {
     text: string;
@@ -25,19 +26,19 @@ export const DateSeparator: React.FC<DateSeparatorProps> = ({
             padding: "16px 0",
         }}>
             <div
-                className="wa-ios-blur"
                 style={{
-                    backgroundColor: "var(--wa-bg-header)", // Use header blur bg or specific pill bg
-                    padding: "8px 24px",
+                    backgroundColor: whatsappColors.surfaceGlass,
+                    padding: "6px 18px",
                     borderRadius: 16,
-                    boxShadow: "var(--wa-shadow-sm)",
+                    border: `0.5px solid ${whatsappColors.separatorLight}`,
+                    boxShadow: "0 1px 2px rgba(0,0,0,0.08)",
                 }}>
                 <span style={{
-                    fontSize: 26, // ~9px visual
-                    fontWeight: 500,
-                    color: "var(--wa-text-secondary)",
-                    fontFamily: "var(--wa-ios-font)",
-                    letterSpacing: 0.2,
+                    fontSize: typography.caption.fontSize,
+                    fontWeight: 600,
+                    color: whatsappColors.textSecondary,
+                    fontFamily: "inherit",
+                    letterSpacing: 0.4,
                     textTransform: "uppercase",
                 }}>
                     {text}

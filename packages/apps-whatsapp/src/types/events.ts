@@ -1,4 +1,5 @@
 import type { TrackEventBase } from "@tokovo/ir";
+import type { WhatsAppMessageType } from "./messages";
 
 export interface MessageReference {
   messageId?: string;
@@ -22,6 +23,9 @@ export interface MessageReceivedPayload {
   messageId?: string;
   replyTo?: ReplyToPayload;
   silent?: boolean;
+  messageType?: WhatsAppMessageType;
+  url?: string;
+  caption?: string;
 }
 
 export interface MessageSentPayload {
@@ -31,6 +35,10 @@ export interface MessageSentPayload {
   replyTo?: ReplyToPayload;
   typed?: boolean;
   charDelay?: number;
+  messageType?: WhatsAppMessageType;
+  url?: string;
+  caption?: string;
+  durationSeconds?: number;
 }
 
 export interface ImageReceivedPayload {
@@ -109,7 +117,8 @@ export interface DocumentReceivedPayload {
   from: string;
   url: string;
   fileName: string;
-  fileSize?: number;
+  fileSize?: number | string;
+  fileType?: string;
   messageId?: string;
 }
 
@@ -117,7 +126,8 @@ export interface DocumentSentPayload {
   conversationId: string;
   url: string;
   fileName: string;
-  fileSize?: number;
+  fileSize?: number | string;
+  fileType?: string;
   messageId?: string;
 }
 
@@ -127,6 +137,13 @@ export interface ContactReceivedPayload {
   contactName: string;
   contactPhone?: string;
   contactAvatar?: string;
+  contactAvatarUrl?: string;
+  /** @deprecated Use contactName/contactPhone/contactAvatar instead. */
+  name?: string;
+  /** @deprecated Use contactName/contactPhone/contactAvatar instead. */
+  phone?: string;
+  /** @deprecated Use contactName/contactPhone/contactAvatar instead. */
+  avatar?: string;
   messageId?: string;
 }
 
@@ -135,6 +152,13 @@ export interface ContactSentPayload {
   contactName: string;
   contactPhone?: string;
   contactAvatar?: string;
+  contactAvatarUrl?: string;
+  /** @deprecated Use contactName/contactPhone/contactAvatar instead. */
+  name?: string;
+  /** @deprecated Use contactName/contactPhone/contactAvatar instead. */
+  phone?: string;
+  /** @deprecated Use contactName/contactPhone/contactAvatar instead. */
+  avatar?: string;
   messageId?: string;
 }
 
@@ -143,7 +167,19 @@ export interface LocationReceivedPayload {
   from: string;
   latitude: number;
   longitude: number;
+  locationName?: string;
+  locationAddress?: string;
+  mapThumbnailUrl?: string;
+  /** @deprecated Use locationName/locationAddress instead. */
   label?: string;
+  /** @deprecated Use locationName/locationAddress instead. */
+  name?: string;
+  /** @deprecated Use locationName/locationAddress instead. */
+  address?: string;
+  /** @deprecated Use latitude/longitude instead. */
+  lat?: number;
+  /** @deprecated Use latitude/longitude instead. */
+  lng?: number;
   messageId?: string;
 }
 
@@ -151,7 +187,19 @@ export interface LocationSentPayload {
   conversationId: string;
   latitude: number;
   longitude: number;
+  locationName?: string;
+  locationAddress?: string;
+  mapThumbnailUrl?: string;
+  /** @deprecated Use locationName/locationAddress instead. */
   label?: string;
+  /** @deprecated Use locationName/locationAddress instead. */
+  name?: string;
+  /** @deprecated Use locationName/locationAddress instead. */
+  address?: string;
+  /** @deprecated Use latitude/longitude instead. */
+  lat?: number;
+  /** @deprecated Use latitude/longitude instead. */
+  lng?: number;
   messageId?: string;
 }
 
@@ -215,7 +263,14 @@ export interface ConversationOpenedPayload {
 }
 
 export interface NavigateScreenPayload {
-  screen: "chats" | "status" | "calls" | "settings" | "profile" | "chat";
+  screen:
+    | "chats"
+    | "status"
+    | "calls"
+    | "communities"
+    | "settings"
+    | "profile"
+    | "chat";
   conversationId?: string;
 }
 

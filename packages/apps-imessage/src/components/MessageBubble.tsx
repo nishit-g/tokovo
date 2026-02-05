@@ -1,6 +1,10 @@
 import React from "react";
 import type { IMessageMessage, IMessageTapbackType } from "../types";
 import { iOS_IMESSAGE_LIGHT, LAYOUT_CONSTANTS } from "../config";
+import { AudioMessage } from "./AudioMessage";
+import { ContactCard } from "./ContactCard";
+import { CalendarCard } from "./CalendarCard";
+import { LinkPreviewCard } from "./LinkPreviewCard";
 
 interface MessageBubbleProps {
   message: IMessageMessage;
@@ -118,7 +122,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
           </div>
         ) : null}
 
-        {renderAttachments(attachments, bubble, bubbleColor)}
+        {renderAttachments(attachments, bubble, bubbleColor, fromMe)}
 
         {(text || kind === "text") && (
           <div
@@ -183,6 +187,7 @@ function renderAttachments(
   attachments: IMessageMessage["attachments"],
   bubble: typeof iOS_IMESSAGE_LIGHT.bubble,
   bubbleColor: string,
+  fromMe: boolean = false,
 ) {
   if (!attachments || attachments.length === 0) return null;
   const primary = attachments[0];
@@ -230,17 +235,18 @@ function renderAttachments(
     );
   }
 
+  // Voice/Audio message with waveform
   if (primary.kind === "voice") {
     return (
       <div
         style={{
-          backgroundColor: "rgba(0,0,0,0.08)",
+          backgroundColor: fromMe ? bubbleColor : "rgba(0,0,0,0.06)",
           borderRadius: bubble.borderRadius,
-          padding: 10,
           marginBottom: LAYOUT_CONSTANTS.BUBBLE_GAP,
+          overflow: "hidden",
         }}
       >
-        Voice message ({primary.duration}s)
+        <AudioMessage attachment={primary} fromMe={fromMe} />
       </div>
     );
   }
@@ -257,17 +263,29 @@ function renderAttachments(
     );
   }
 
+  // Contact card with avatar and actions
   if (primary.kind === "contact") {
     return (
-      <div
-        style={{
-          backgroundColor: "rgba(0,0,0,0.08)",
-          borderRadius: bubble.borderRadius,
-          padding: 10,
-          marginBottom: LAYOUT_CONSTANTS.BUBBLE_GAP,
-        }}
-      >
-        Contact: {primary.name}
+      <div style={{ marginBottom: LAYOUT_CONSTANTS.BUBBLE_GAP }}>
+        <ContactCard contact={primary} fromMe={fromMe} />
+      </div>
+    );
+  }
+
+  // Calendar invite
+  if (primary.kind === "calendar") {
+    return (
+      <div style={{ marginBottom: LAYOUT_CONSTANTS.BUBBLE_GAP }}>
+        <CalendarCard event={primary} fromMe={fromMe} />
+      </div>
+    );
+  }
+
+  // Link preview
+  if (primary.kind === "link") {
+    return (
+      <div style={{ marginBottom: LAYOUT_CONSTANTS.BUBBLE_GAP }}>
+        <LinkPreviewCard preview={primary.preview} fromMe={fromMe} />
       </div>
     );
   }

@@ -14,6 +14,17 @@ export type IMessageTapbackType =
 
 export type IMessageBubbleEffect = "slam" | "loud" | "gentle" | "ink";
 
+/** Full-screen effects for iMessage */
+export type IMessageScreenEffect =
+  | "balloons"
+  | "confetti"
+  | "lasers"
+  | "fireworks"
+  | "celebration"
+  | "echo"
+  | "spotlight"
+  | "love";
+
 export type IMessageMessageStatus =
   | "sending"
   | "sent"
@@ -34,6 +45,23 @@ export interface IMessageTapback {
 
 export interface IMessageEffect {
   bubble?: IMessageBubbleEffect;
+  screen?: IMessageScreenEffect;
+}
+
+/** Link preview for URLs */
+export interface IMessageLinkPreview {
+  url: string;
+  title?: string;
+  description?: string;
+  thumbnail?: string;
+  domain?: string;
+  favicon?: string;
+}
+
+/** Edit history record */
+export interface IMessageEditRecord {
+  text: string;
+  editedAt: number;
 }
 
 export interface ImageAttachment {
@@ -55,8 +83,10 @@ export interface VideoAttachment {
 
 export interface VoiceAttachment {
   kind: "voice";
+  url?: string;
   duration: number;
   waveform?: number[];
+  played?: boolean;
 }
 
 export interface StickerAttachment {
@@ -74,7 +104,17 @@ export interface ContactAttachment {
   kind: "contact";
   name: string;
   phone?: string;
+  email?: string;
   avatarUrl?: string;
+}
+
+export interface CalendarAttachment {
+  kind: "calendar";
+  title: string;
+  startDate: string;
+  endDate?: string;
+  location?: string;
+  isAllDay?: boolean;
 }
 
 export interface LocationAttachment {
@@ -91,6 +131,11 @@ export interface PaymentAttachment {
   note?: string;
 }
 
+export interface LinkAttachment {
+  kind: "link";
+  preview: IMessageLinkPreview;
+}
+
 export type IMessageAttachment =
   | ImageAttachment
   | VideoAttachment
@@ -98,8 +143,10 @@ export type IMessageAttachment =
   | StickerAttachment
   | GifAttachment
   | ContactAttachment
+  | CalendarAttachment
   | LocationAttachment
-  | PaymentAttachment;
+  | PaymentAttachment
+  | LinkAttachment;
 
 export type IMessageMessageKind =
   | "text"
@@ -108,8 +155,10 @@ export type IMessageMessageKind =
   | "sticker"
   | "gif"
   | "contact"
+  | "calendar"
   | "location"
   | "payment"
+  | "link"
   | "system";
 
 export interface IMessageMessage {
@@ -130,4 +179,9 @@ export interface IMessageMessage {
   isSystem?: boolean;
   systemType?: string;
   systemText?: string;
+  linkPreview?: IMessageLinkPreview;
+  editHistory?: IMessageEditRecord[];
+  isEdited?: boolean;
+  isUnsent?: boolean;
 }
+

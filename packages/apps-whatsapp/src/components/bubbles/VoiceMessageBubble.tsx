@@ -6,6 +6,7 @@ import {
   WA_GREEN,
   WA_TEAL,
   WA_GRAY,
+  WA_WHITE,
   TIMESTAMP_SIZE,
 } from "./constants";
 
@@ -61,12 +62,12 @@ export const VoiceMessageBubble = memo(function VoiceMessageBubble({
           }}
         >
           {isPlaying ? (
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="#FFFFFF">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill={WA_WHITE}>
               <rect x="6" y="4" width="4" height="16" rx="1" />
               <rect x="14" y="4" width="4" height="16" rx="1" />
             </svg>
           ) : (
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="#FFFFFF">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill={WA_WHITE}>
               <path d="M8 5v14l11-7z" />
             </svg>
           )}

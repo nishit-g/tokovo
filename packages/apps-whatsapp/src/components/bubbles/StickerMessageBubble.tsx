@@ -1,7 +1,7 @@
 import React, { memo } from "react";
 import { Img, staticFile } from "remotion";
 import { DoubleCheckIcon } from "./shared";
-import { FONT_FAMILY, TIMESTAMP_SIZE } from "./constants";
+import { FONT_FAMILY, TIMESTAMP_SIZE, WA_WHITE } from "./constants";
 
 export interface StickerMessageBubbleProps {
   stickerUrl: string;
@@ -48,7 +48,7 @@ export const StickerMessageBubble = memo(function StickerMessageBubble({
         <span
           style={{
             fontSize: TIMESTAMP_SIZE,
-            color: "#FFFFFF",
+            color: WA_WHITE,
             fontFamily: FONT_FAMILY,
           }}
         >

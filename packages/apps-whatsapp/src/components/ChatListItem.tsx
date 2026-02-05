@@ -12,7 +12,9 @@ export interface ChatListItemProps {
   id: string;
   name: string;
   avatarUrl?: string;
+  groupAvatars?: string[];
   lastMessage?: string;
+  subtitle?: string;
   timestamp?: string;
   unreadCount?: number;
   status?: "sent" | "delivered" | "read";
@@ -142,7 +144,9 @@ const getMediaPrefix = (mediaType: ChatListItemProps["mediaType"]): string => {
 export const ChatListItem = memo(function ChatListItem({
   name,
   avatarUrl,
+  groupAvatars,
   lastMessage,
+  subtitle,
   timestamp,
   unreadCount = 0,
   status,
@@ -158,7 +162,14 @@ export const ChatListItem = memo(function ChatListItem({
 
   const buildMessagePreview = (): React.ReactNode => {
     if (isTyping) {
-      return <TypingDots />;
+      return (
+        <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+          <TypingDots />
+          <span style={{ color: whatsappColors.primary, fontWeight: 500 }}>
+            typing…
+          </span>
+        </span>
+      );
     }
 
     if (mediaType) {
@@ -227,22 +238,54 @@ export const ChatListItem = memo(function ChatListItem({
           </div>
         )}
 
-        <div
-          style={{
-            width: spacing.avatarSize,
-            height: spacing.avatarSize,
-            borderRadius: spacing.avatarRadius,
-            backgroundColor: "#E0E0E0",
-            overflow: "hidden",
-            flexShrink: 0,
-          }}
-        >
-          <Img
-            src={resolveAvatarWithFallback(avatarUrl, name)}
-            alt={name}
-            style={{ width: "100%", height: "100%", objectFit: "cover" }}
-          />
-        </div>
+        {groupAvatars && groupAvatars.length > 0 ? (
+          <div
+            style={{
+              width: spacing.avatarSize,
+              height: spacing.avatarSize,
+              borderRadius: spacing.avatarRadius,
+              backgroundColor: whatsappColors.avatarPlaceholder,
+              overflow: "hidden",
+              position: "relative",
+            }}
+          >
+            {groupAvatars.slice(0, 2).map((avatar, idx) => (
+              <Img
+                key={`${avatar}_${idx}`}
+                src={resolveAvatarWithFallback(avatar, name)}
+                alt={name}
+                style={{
+                  width: spacing.avatarSize * 0.7,
+                  height: spacing.avatarSize * 0.7,
+                  borderRadius: "50%",
+                  objectFit: "cover",
+                  position: "absolute",
+                  top: idx === 0 ? 0 : spacing.avatarSize * 0.3,
+                  left: idx === 0 ? 0 : spacing.avatarSize * 0.3,
+                  border: `2px solid ${whatsappColors.avatarBorder}`,
+                  backgroundColor: whatsappColors.avatarPlaceholder,
+                }}
+              />
+            ))}
+          </div>
+        ) : (
+          <div
+            style={{
+              width: spacing.avatarSize,
+              height: spacing.avatarSize,
+              borderRadius: spacing.avatarRadius,
+              backgroundColor: whatsappColors.avatarPlaceholder,
+              overflow: "hidden",
+              flexShrink: 0,
+            }}
+          >
+            <Img
+              src={resolveAvatarWithFallback(avatarUrl, name)}
+              alt={name}
+              style={{ width: "100%", height: "100%", objectFit: "cover" }}
+            />
+          </div>
+        )}
       </div>
 
       {/* Content Area */}
@@ -267,7 +310,7 @@ export const ChatListItem = memo(function ChatListItem({
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center",
-            marginBottom: 2,
+            marginBottom: subtitle ? 1 : 2,
           }}
         >
           <div
@@ -308,6 +351,21 @@ export const ChatListItem = memo(function ChatListItem({
           </div>
         </div>
 
+        {subtitle && (
+          <div
+            style={{
+              ...typography.caption,
+              color: whatsappColors.textTertiary,
+              marginBottom: 2,
+              whiteSpace: "nowrap",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+            }}
+          >
+            {subtitle}
+          </div>
+        )}
+
         {/* Bottom Row */}
         <div
           style={{
@@ -319,7 +377,7 @@ export const ChatListItem = memo(function ChatListItem({
           <div
             style={{
               ...typography.body,
-              color: whatsappColors.textSecondary,
+              color: hasUnread ? whatsappColors.textPrimary : whatsappColors.textSecondary,
               whiteSpace: "nowrap",
               overflow: "hidden",
               textOverflow: "ellipsis",
@@ -367,7 +425,7 @@ export const ChatListItem = memo(function ChatListItem({
                   backgroundColor: isMuted
                     ? whatsappColors.textSecondary
                     : whatsappColors.primary,
-                  color: "white",
+                  color: whatsappColors.unreadBadgeText,
                   borderRadius: spacing.badgeRadius,
                   minWidth: spacing.badgeMinWidth,
                   height: spacing.badgeHeight,

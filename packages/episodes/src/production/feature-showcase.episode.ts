@@ -54,12 +54,12 @@ export default defineEpisode({
           wa.span("4s", "5s").typing("me");
           wa.at("5s").send("This is a sent message ✅");
 
-          wa.at("7s").receiveImage("Demo", "/images/sample-photo.jpg", {
+          wa.at("7s").receiveImage("Demo", "/placeholders/media.svg", {
             caption: "Here's an image with caption 📸",
           });
-          wa.at("9s").sendImage("/images/reply-photo.jpg");
+          wa.at("9s").sendImage("/placeholders/media.svg");
 
-          wa.at("11s").receiveVideo("Demo", "/videos/sample-video.mp4", {
+          wa.at("11s").receiveVideo("Demo", "/placeholders/media.svg", {
             duration: 15,
             caption: "Video message 🎥",
           });
@@ -67,10 +67,10 @@ export default defineEpisode({
           wa.at("14s").receiveVoice("Demo", 8);
           wa.at("17s").sendVoice(5);
 
-          wa.at("20s").receiveGif("Demo", "/gifs/hello-wave.gif");
+          wa.at("20s").receiveGif("Demo", "/placeholders/media.svg");
 
-          wa.at("23s").receiveSticker("Demo", "/stickers/thumbs-up.webp");
-          wa.at("25s").sendSticker("/stickers/heart-eyes.webp");
+          wa.at("23s").receiveSticker("Demo", "/placeholders/media.svg");
+          wa.at("25s").sendSticker("/placeholders/media.svg");
 
           wa.at("28s").receiveDocument("Demo", {
             fileName: "Important_Report.pdf",
@@ -98,7 +98,7 @@ export default defineEpisode({
             longitude: -122.4194,
             locationName: "San Francisco",
             locationAddress: "California, USA",
-            mapThumbnailUrl: "/maps/sf-map.png",
+            mapThumbnailUrl: "/placeholders/map.svg",
           });
           wa.at("40s").sendLocation({
             latitude: 40.7128,

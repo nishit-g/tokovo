@@ -8,6 +8,7 @@
  */
 
 import React from "react";
+import { whatsappColors } from "./theme";
 
 // =============================================================================
 // TYPES
@@ -59,11 +60,11 @@ export const ReactionsBar: React.FC<ReactionsBarProps> = ({
         style={{
           display: "flex",
           gap: 2,
-          backgroundColor: "#FFFFFF",
+          backgroundColor: whatsappColors.bgPrimary,
           padding: compact ? "2px 4px" : "3px 6px",
           borderRadius: 20,
           boxShadow: "0 1px 2px rgba(0,0,0,0.15)",
-          border: "0.5px solid rgba(0,0,0,0.08)",
+          border: `0.5px solid ${whatsappColors.separatorLight}`,
         }}
       >
         {sorted.map((reaction, i) => (
@@ -102,7 +103,7 @@ const ReactionPill: React.FC<ReactionPillProps> = ({
       display: "flex",
       alignItems: "center",
       gap: compact ? 1 : 2,
-      backgroundColor: highlighted ? "rgba(37, 211, 102, 0.15)" : "transparent",
+      backgroundColor: highlighted ? whatsappColors.primaryGlow : "transparent",
       padding: compact ? "1px 2px" : "1px 3px",
       borderRadius: 10,
     }}
@@ -119,7 +120,7 @@ const ReactionPill: React.FC<ReactionPillProps> = ({
       <span
         style={{
           fontSize: compact ? 9 : 11,
-          color: "#667781",
+          color: whatsappColors.textSecondary,
           fontWeight: 500,
           fontFamily:
             "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif",
@@ -153,7 +154,7 @@ export const ReactionPicker: React.FC<ReactionPickerProps> = ({
       style={{
         display: "flex",
         gap: 4,
-        backgroundColor: "#FFFFFF",
+        backgroundColor: whatsappColors.bgPrimary,
         padding: "6px 8px",
         borderRadius: 20,
         boxShadow: "0 2px 8px rgba(0,0,0,0.15)",

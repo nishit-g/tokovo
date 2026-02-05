@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256" role="img" aria-label="App icon placeholder">
+  <defs>
+    <linearGradient id="iconBg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#E8EEF6" />
+      <stop offset="100%" stop-color="#D2DBE6" />
+    </linearGradient>
+  </defs>
+  <rect x="16" y="16" width="224" height="224" rx="56" fill="url(#iconBg)" stroke="#B7C4CF" stroke-width="2" />
+  <circle cx="128" cy="110" r="36" fill="#8FA2B4" />
+  <rect x="74" y="154" width="108" height="24" rx="12" fill="#9FB2C4" />
+  <text x="128" y="210" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="20" fill="#5E6B77">APP</text>
+</svg>

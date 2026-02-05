@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from "react";
 import { Img, Video, staticFile } from "remotion";
+import { whatsappColors } from "./theme";
 
 export interface MediaViewerProps {
   mediaUrl: string;
@@ -13,11 +14,11 @@ export interface MediaViewerProps {
 }
 
 const VIEWER_COLORS = {
-  background: "#000000",
-  textPrimary: "#FFFFFF",
-  textSecondary: "rgba(255, 255, 255, 0.7)",
-  iconColor: "#FFFFFF",
-  controlsBg: "rgba(0, 0, 0, 0.4)",
+  background: whatsappColors.mediaViewerBg,
+  textPrimary: whatsappColors.mediaViewerText,
+  textSecondary: whatsappColors.mediaViewerTextMuted,
+  iconColor: whatsappColors.mediaViewerText,
+  controlsBg: whatsappColors.mediaViewerControlsBg,
 };
 
 export const MediaViewer: React.FC<MediaViewerProps> = ({

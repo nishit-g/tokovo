@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="480" viewBox="0 0 720 480" role="img" aria-label="Media placeholder">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#EEF2F6" />
+      <stop offset="100%" stop-color="#DDE6EE" />
+    </linearGradient>
+  </defs>
+  <rect width="720" height="480" fill="url(#bg)" />
+  <rect x="40" y="40" width="640" height="400" rx="24" fill="#F7F9FB" stroke="#B7C4CF" stroke-width="2" />
+  <circle cx="220" cy="210" r="36" fill="#A5B4C2" />
+  <path d="M140 360 L260 250 L330 310 L430 210 L580 360 Z" fill="#C3D0DB" />
+  <text x="360" y="250" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="28" fill="#66737F">Media Placeholder</text>
+  <text x="360" y="285" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="14" fill="#7B8791">tokovo</text>
+</svg>

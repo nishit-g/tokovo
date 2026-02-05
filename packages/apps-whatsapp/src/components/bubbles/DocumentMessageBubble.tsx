@@ -1,7 +1,7 @@
 import React, { memo } from "react";
 import { Platform } from "@tokovo/core";
 import { MediaBubbleBase } from "./shared";
-import { FONT_FAMILY, WA_GRAY, MESSAGE_TEXT_SIZE } from "./constants";
+import { FONT_FAMILY, WA_GRAY, WA_BLACK, MESSAGE_TEXT_SIZE } from "./constants";
 
 export interface DocumentMessageBubbleProps {
   fileName: string;
@@ -82,7 +82,7 @@ export const DocumentMessageBubble = memo(function DocumentMessageBubble({
           <div
             style={{
               fontSize: MESSAGE_TEXT_SIZE,
-              color: "#000000",
+              color: WA_BLACK,
               fontFamily: FONT_FAMILY,
               overflow: "hidden",
               textOverflow: "ellipsis",

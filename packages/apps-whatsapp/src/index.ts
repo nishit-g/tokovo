@@ -73,6 +73,8 @@ export type {
   ImageOptions,
   TypingOptions,
 } from "./dsl";
+export { GroupBuilder } from "./dsl";
+export type { GroupBuilderOptions } from "./dsl";
 
 // =============================================================================
 // LAYOUT

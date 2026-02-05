@@ -12,7 +12,16 @@ import type { WhatsAppConversation } from "./conversation";
 
 export interface WhatsAppState {
   conversationId?: string;
-  currentScreen?: "main" | "chat" | "chats" | "profile" | string;
+  currentScreen?:
+    | "main"
+    | "chat"
+    | "chats"
+    | "status"
+    | "calls"
+    | "communities"
+    | "settings"
+    | "profile"
+    | string;
   currentConversationId?: string;
   viewMode?: "CHAT" | "LIST" | "TRANSITION";
   conversations?: Record<string, unknown>;

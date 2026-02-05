@@ -5,9 +5,11 @@ import {
   FONT_FAMILY,
   WA_TEAL,
   WA_GRAY,
+  WA_BLACK,
   BUBBLE_PADDING_H,
   MESSAGE_TEXT_SIZE,
 } from "./constants";
+import { whatsappColors } from "../theme";
 
 export interface LocationMessageBubbleProps {
   latitude: number;
@@ -48,7 +50,7 @@ export const LocationMessageBubble = memo(function LocationMessageBubble({
         style={{
           width: "100%",
           height: 140,
-          backgroundColor: "#E8E8E8",
+          backgroundColor: whatsappColors.bgSecondary,
           position: "relative",
           overflow: "hidden",
         }}
@@ -67,7 +69,7 @@ export const LocationMessageBubble = memo(function LocationMessageBubble({
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              backgroundColor: "#D4E4D4",
+              backgroundColor: whatsappColors.bgTertiary,
             }}
           >
             <svg width="48" height="48" viewBox="0 0 24 24" fill={WA_TEAL}>
@@ -84,7 +86,7 @@ export const LocationMessageBubble = memo(function LocationMessageBubble({
             transform: "translate(-50%, -100%)",
           }}
         >
-          <svg width="32" height="32" viewBox="0 0 24 24" fill="#EA4335">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill={whatsappColors.iosRed}>
             <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" />
           </svg>
         </div>
@@ -96,7 +98,7 @@ export const LocationMessageBubble = memo(function LocationMessageBubble({
             style={{
               fontSize: MESSAGE_TEXT_SIZE,
               fontWeight: 500,
-              color: "#000000",
+              color: WA_BLACK,
               fontFamily: FONT_FAMILY,
               marginBottom: 2,
             }}

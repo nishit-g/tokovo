@@ -35,7 +35,7 @@ export const Header: React.FC<HeaderProps> = ({
         alignItems: "center",
         paddingLeft: UI_CONSTANTS.HEADER_PADDING_X,
         paddingRight: UI_CONSTANTS.HEADER_PADDING_X,
-        borderBottom: `0.5px solid rgba(0,0,0,0.1)`,
+        borderBottom: `0.5px solid ${theme.colors.divider}`,
         backdropFilter: "blur(20px)",
         position: "relative",
         zIndex: 100,
@@ -64,7 +64,7 @@ export const Header: React.FC<HeaderProps> = ({
           width: UI_CONSTANTS.HEADER_AVATAR_SIZE,
           height: UI_CONSTANTS.HEADER_AVATAR_SIZE,
           borderRadius: "50%",
-          backgroundColor: "#ddd",
+          backgroundColor: theme.colors.divider,
           marginRight: UI_CONSTANTS.HEADER_AVATAR_MARGIN_RIGHT,
           overflow: "hidden",
           flexShrink: 0,
@@ -107,8 +107,8 @@ export const Header: React.FC<HeaderProps> = ({
       </div>
 
       <div style={{ display: "flex", gap: 24, paddingRight: 8 }}>
-        <Video size={24} color={theme.colors.headerText} strokeWidth={1.5} />
-        <Phone size={22} color={theme.colors.headerText} strokeWidth={1.5} />
+        <Video size={22} color={theme.colors.headerText} strokeWidth={1.7} />
+        <Phone size={20} color={theme.colors.headerText} strokeWidth={1.7} />
       </div>
     </div>
   );

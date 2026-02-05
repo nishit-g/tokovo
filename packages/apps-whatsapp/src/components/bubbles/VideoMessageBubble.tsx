@@ -10,6 +10,8 @@ import {
 import {
   FONT_FAMILY,
   WA_GREEN,
+  WA_WHITE,
+  WA_BLACK,
   BUBBLE_PADDING,
   BUBBLE_PADDING_H,
   TIMESTAMP_SIZE,
@@ -81,7 +83,7 @@ export const VideoMessageBubble = memo(function VideoMessageBubble({
               justifyContent: "center",
             }}
           >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="#FFFFFF">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill={WA_WHITE}>
               <path d="M8 5v14l11-7z" />
             </svg>
           </div>
@@ -100,13 +102,13 @@ export const VideoMessageBubble = memo(function VideoMessageBubble({
             borderRadius: 4,
           }}
         >
-          <svg width="8" height="8" viewBox="0 0 24 24" fill="#FFFFFF">
+          <svg width="8" height="8" viewBox="0 0 24 24" fill={WA_WHITE}>
             <path d="M8 6.82v10.36c0 .79.87 1.27 1.54.84l8.14-5.18a1 1 0 0 0 0-1.69l-8.14-5.17A.998.998 0 0 0 8 6.82z" />
           </svg>
           <span
             style={{
               fontSize: TIMESTAMP_SIZE,
-              color: "#FFFFFF",
+              color: WA_WHITE,
               fontFamily: FONT_FAMILY,
             }}
           >
@@ -146,7 +148,7 @@ export const VideoMessageBubble = memo(function VideoMessageBubble({
             style={{
               fontSize: MESSAGE_TEXT_SIZE,
               lineHeight: 1.3,
-              color: "#000000",
+              color: WA_BLACK,
               fontFamily: FONT_FAMILY,
             }}
           >

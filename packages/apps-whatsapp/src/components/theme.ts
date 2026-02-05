@@ -20,13 +20,15 @@ export const whatsappColors = {
   
   // Text colors
   textPrimary: "#000000",       // Main text
-  textSecondary: "#8E8E93",     // Timestamps, subtitles, inactive
-  textTertiary: "#667781",      // Even lighter text
+  textSecondary: "#667781",     // Timestamps, subtitles, inactive
+  textTertiary: "#A1A8AE",      // Even lighter text
   
   // Backgrounds
   bgPrimary: "#FFFFFF",         // Main background
-  bgSecondary: "#F2F2F7",       // Search bar, filter chips inactive
-  bgTertiary: "#E8E8ED",        // Filter chips active
+  bgSecondary: "#F6F7F9",       // Search bar, filter chips inactive
+  bgTertiary: "#E9EEF1",        // Filter chips active
+  bgElevated: "#FBFBFD",        // Header/Tab blur surface
+  bgList: "#F9FAFB",            // Chat list base
   bgChat: "#E5DDD5",            // Chat wallpaper
   
   // Bubbles
@@ -34,8 +36,25 @@ export const whatsappColors = {
   bubbleIncoming: "#FFFFFF",    // White bubble (received)
   
   // UI elements
-  separator: "#C6C6C8",         // Divider lines
-  separatorLight: "rgba(0,0,0,0.1)", // Lighter dividers
+  separator: "#E4E6EB",         // Divider lines
+  separatorLight: "rgba(0,0,0,0.06)", // Lighter dividers
+  separatorUltraLight: "rgba(0,0,0,0.04)",
+
+  // Surfaces
+  surfaceGlass: "rgba(251, 251, 253, 0.96)",
+
+  // Avatars
+  avatarPlaceholder: "#E0E0E0",
+  avatarBorder: "#FFFFFF",
+
+  // Accent shadows
+  primaryGlow: "rgba(37,211,102,0.24)",
+
+  // Media viewer
+  mediaViewerBg: "#000000",
+  mediaViewerText: "#FFFFFF",
+  mediaViewerTextMuted: "rgba(255,255,255,0.7)",
+  mediaViewerControlsBg: "rgba(0,0,0,0.4)",
   
   // iOS system colors
   iosBlue: "#007AFF",           // iOS default blue (NOT for WhatsApp accents)
@@ -45,6 +64,8 @@ export const whatsappColors = {
   // Tab bar
   tabInactive: "#8E8E93",       // Inactive tab icons/text
   tabActive: "#25D366",         // Active tab (GREEN, not blue!)
+  badgeMuted: "#98A1A8",        // Muted badge
+  unreadBadgeText: "#FFFFFF",
 } as const;
 
 // =============================================================================
@@ -113,15 +134,27 @@ export const typography = {
 
 export const spacing = {
   // Chat list
-  chatListItemHeight: 72,
+  chatListItemHeight: 78,
   avatarSize: 56,
   avatarMarginLeft: 16,
   contentMarginLeft: 12,  // Gap between avatar and content
   contentMarginRight: 16,
+  pagePaddingX: 16,
+  pagePaddingWide: 20,
+  headerActionGap: 20,
+  filterChipPaddingX: 14,
+  filterChipPaddingY: 6,
+  filterChipGap: 8,
+  searchPaddingX: 10,
+  searchIconGap: 8,
+  sectionGap: 16,
   
   // Tab bar
   tabBarHeight: 49,
   tabIconSize: 25,
+  tabPaddingTop: 6,
+  tabBadgeOffsetTop: -4,
+  tabBadgeOffsetRight: -8,
   
   // Header
   navBarHeight: 44,
@@ -135,7 +168,7 @@ export const spacing = {
   
   // Border radius
   avatarRadius: 28,           // Half of avatar size = circle
-  searchBarRadius: 10,
+  searchBarRadius: 12,
   filterChipRadius: 16,       // Pill shape
   badgeRadius: 10,            // Half of badge height = circle
 } as const;
@@ -182,3 +215,12 @@ export const whatsappIOSTheme = {
 } as const;
 
 export type WhatsAppIOSTheme = typeof whatsappIOSTheme;
+
+export const senderColors = [
+  "#1D9BF0",
+  "#00A884",
+  "#D93025",
+  "#9333EA",
+  "#F59E0B",
+  "#0EA5E9",
+] as const;

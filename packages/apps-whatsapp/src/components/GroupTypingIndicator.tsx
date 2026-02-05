@@ -10,6 +10,7 @@
  */
 
 import React from "react";
+import { whatsappColors, spacing, typography } from "./theme";
 
 export interface TypingMember {
     id: string;
@@ -29,7 +30,7 @@ const TypingDot: React.FC<{ delay: number }> = ({ delay: _delay }) => (
             width: 6,
             height: 6,
             borderRadius: "50%",
-            backgroundColor: "#8E8E93",
+            backgroundColor: whatsappColors.textSecondary,
             // Note: In Remotion, we'd use interpolate for animation
             // For static rendering, we just show the dot
             opacity: 0.7,
@@ -67,7 +68,7 @@ export const GroupTypingIndicator: React.FC<GroupTypingIndicatorProps> = ({
 
     return (
         <div style={{
-            padding: "8px 16px",
+            padding: `8px ${spacing.pagePaddingX}px`,
             display: "flex",
             alignItems: "center",
             gap: 8,
@@ -78,7 +79,7 @@ export const GroupTypingIndicator: React.FC<GroupTypingIndicatorProps> = ({
                 display: "flex",
                 gap: 3,
                 padding: "6px 10px",
-                backgroundColor: "#E5E5EA",
+                backgroundColor: whatsappColors.bgSecondary,
                 borderRadius: 12,
             }}>
                 <TypingDot delay={0} />
@@ -88,8 +89,8 @@ export const GroupTypingIndicator: React.FC<GroupTypingIndicatorProps> = ({
 
             {/* Typing Text */}
             <span style={{
-                fontSize: 12,
-                color: "#8E8E93",
+                fontSize: typography.caption.fontSize,
+                color: whatsappColors.textSecondary,
                 fontStyle: "italic",
             }}>
                 {typingText}
@@ -109,7 +110,7 @@ export const SimpleTypingIndicator: React.FC<{ isTyping: boolean }> = ({
 
     return (
         <div style={{
-            padding: "8px 16px",
+            padding: `8px ${spacing.pagePaddingX}px`,
             display: "flex",
             alignItems: "center",
         }}>
@@ -117,7 +118,7 @@ export const SimpleTypingIndicator: React.FC<{ isTyping: boolean }> = ({
                 display: "flex",
                 gap: 3,
                 padding: "8px 12px",
-                backgroundColor: "#E5E5EA",
+                backgroundColor: whatsappColors.bgSecondary,
                 borderRadius: 16,
             }}>
                 <TypingDot delay={0} />

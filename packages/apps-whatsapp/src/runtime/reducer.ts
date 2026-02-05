@@ -120,6 +120,9 @@ function addMessage(
     conversation.messagesById = {};
   }
   conversation.messagesById[message.id] = message;
+  if (typeof message.at === "number") {
+    conversation.lastMessageAt = message.at;
+  }
 }
 
 function getMessageById(

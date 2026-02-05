@@ -11,6 +11,7 @@ import {
   WhatsAppConversation,
   SystemMessage,
 } from "../../types";
+import { normalizeMessages } from "../../utils/messages";
 
 export interface ChatScreenProps {
   world: WorldState;
@@ -67,8 +68,41 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({
 
   const contactName = conversation?.name || "Unknown";
   const rawMessages = conversation?.messages || [];
+  const normalizedMessages = normalizeMessages(
+    world,
+    conversationId || "unknown",
+    rawMessages as unknown[],
+    deviceId,
+  );
+  const typingMembers = Object.entries(conversation?.typing ?? {})
+    .filter(([id, isTyping]) => isTyping && id !== "me")
+    .map(([id]) => id);
 
-  const messages = rawMessages.map((m): MessageData => {
+  const memberNames = conversation?.members?.map((m) => m.name) ?? [];
+  const memberCount = conversation?.members?.length ?? 0;
+
+  const status = (() => {
+    if (typingMembers.length > 0) {
+      const preview = typingMembers.slice(0, 2).join(", ");
+      const suffix = typingMembers.length > 2 ? "…" : "";
+      return `${preview}${suffix} typing…`;
+    }
+    if (conversation?.type === "group") {
+      if (conversation.description) return conversation.description;
+      if (memberCount > 0) return `${memberCount} members`;
+      if (memberNames.length > 0) return memberNames.slice(0, 3).join(", ");
+      return "Group chat";
+    }
+    return "online";
+  })();
+
+  const messages = normalizedMessages.map((m): MessageData => {
+    const senderName =
+      conversation?.type === "group" && m.from !== "me"
+        ? conversation?.members?.find((member) => member.id === m.from)?.name ??
+          m.senderName ??
+          m.from
+        : m.senderName;
     const base = {
       id: m.id,
       from: m.from,
@@ -77,6 +111,7 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({
       at: m.at,
       reactions: m.reactions,
       replyTo: m.replyTo,
+      senderName,
     };
 
     switch (m.type) {
@@ -175,7 +210,7 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({
       <DefaultHeader
         contactName={contactName}
         avatarUrl={conversation?.avatar}
-        status="online"
+        status={status}
         safeAreaTop={safeAreaTop}
       />
 

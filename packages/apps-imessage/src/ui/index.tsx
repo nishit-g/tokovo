@@ -1,11 +1,12 @@
 import React, { useEffect } from "react";
 import type { PluginViewProps } from "@tokovo/core";
-import { Header, InputBar, MessageBubble, TypingIndicator } from "../components";
+import { Header, InputBar, MessageBubble, TypingIndicator, ScreenEffect, SearchBar } from "../components";
 import { LAYOUT_CONSTANTS, computeMessageGap, iMessageSpacing } from "../config";
 import type { IMessageTheme } from "../config/imessage-theme";
 import type { IMessageConversation, IMessageMessage, IMessageState } from "../types";
 import { injectIMessageStyles } from "../styles";
 import { IMessageThemeProvider, useIMessageTheme } from "./ThemeContext";
+import type { ScreenEffectType } from "../components/ScreenEffect";
 
 type IMessageViewProps = PluginViewProps & {
   safeAreaInsets?: {
@@ -70,6 +71,8 @@ export const IMessageView: React.FC<IMessageViewProps> = (props) => {
         conversation={state.conversations?.[activeConversationId]}
         safeAreaTop={props.safeAreaInsets?.top}
         safeAreaBottom={props.safeAreaInsets?.bottom}
+        activeScreenEffect={state.activeScreenEffect as ScreenEffectType | undefined}
+        searchQuery={state.searchQuery}
       />
     );
   };
@@ -85,7 +88,9 @@ const ChatView: React.FC<{
   conversation?: IMessageConversation;
   safeAreaTop?: number;
   safeAreaBottom?: number;
-}> = ({ conversation, safeAreaTop, safeAreaBottom }) => {
+  activeScreenEffect?: ScreenEffectType;
+  searchQuery?: string;
+}> = ({ conversation, safeAreaTop, safeAreaBottom, activeScreenEffect, searchQuery }) => {
   const theme = useIMessageTheme();
 
   if (!conversation) {
@@ -122,6 +127,9 @@ const ChatView: React.FC<{
         theme={theme}
         safeAreaTop={safeAreaTop}
       />
+
+      {/* Search bar - visible when search is active */}
+      {searchQuery !== undefined && <SearchBar query={searchQuery} />}
 
       <div
         style={{
@@ -177,6 +185,9 @@ const ChatView: React.FC<{
       </div>
 
       <InputBar theme={theme} draft={conversation.draft} safeAreaBottom={safeAreaBottom} />
+
+      {/* Screen effect overlay */}
+      {activeScreenEffect && <ScreenEffect effect={activeScreenEffect} />}
     </div>
   );
 };

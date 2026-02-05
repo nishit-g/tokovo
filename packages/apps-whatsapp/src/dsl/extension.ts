@@ -29,7 +29,18 @@ export interface WhatsAppDslApi {
   react(messageId: string, emoji: string, from?: string): void;
 
   /** Navigate to a screen */
-  navigate(screen: "chats" | "chat" | "story", conversationId?: string): void;
+  navigate(
+    screen:
+      | "chats"
+      | "chat"
+      | "status"
+      | "calls"
+      | "communities"
+      | "settings"
+      | "profile"
+      | "story",
+    conversationId?: string,
+  ): void;
 
   /** Group chat operations */
   group: {
@@ -113,7 +124,15 @@ export const whatsappDsl: DslExtension<WhatsAppDslApi> = {
       },
 
       navigate: (
-        screen: "chats" | "chat" | "story",
+        screen:
+          | "chats"
+          | "chat"
+          | "status"
+          | "calls"
+          | "communities"
+          | "settings"
+          | "profile"
+          | "story",
         conversationId?: string,
       ) => {
         builder.ops.push({

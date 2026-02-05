@@ -84,7 +84,7 @@ export default defineEpisode({
           wa.span("19s", "20s").typing("me");
           wa.at("20s").send("uncle ne mujhe tamatar phenka tha 🍅");
 
-          wa.at("22s").receiveSticker("Rahul", "/stickers/crying-laugh.webp");
+          wa.at("22s").receiveSticker("Rahul", "/placeholders/media.svg");
 
           wa.span("24s", "27s").typing("them");
           wa.at("27s").receive("Rahul", "chod na wo sab");
@@ -108,7 +108,7 @@ export default defineEpisode({
             longitude: 72.8697,
             locationName: "Maggi Point Club",
             locationAddress: "Bandra West, Mumbai",
-            mapThumbnailUrl: "/maps/maggi-club.png",
+            mapThumbnailUrl: "/placeholders/map.svg",
           });
 
           wa.span("47s", "49s").typing("them");
@@ -156,15 +156,15 @@ export default defineEpisode({
 
           wa.at("81s").receive("Rahul", "LET'S GOOOO 🚀");
 
-          wa.at("83s").receiveGif("Rahul", "/gifs/excited-dance.gif");
+          wa.at("83s").receiveGif("Rahul", "/placeholders/media.svg");
 
-          wa.at("85s").receiveImage("Rahul", "/images/club-entrance.jpg", {
+          wa.at("85s").receiveImage("Rahul", "/placeholders/media.svg", {
             caption: "Entry ka photo 📸",
           });
 
           wa.span("87s", "88s").typing("me");
           wa.at("88s").send("5 min mein 👇");
-          wa.at("89s").sendImage("/images/thumbs-up.jpg");
+          wa.at("89s").sendImage("/placeholders/media.svg");
         },
       )
 

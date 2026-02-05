@@ -22,6 +22,7 @@ import type {
 } from "../schemas";
 import type { WhatsAppMessage } from "../types";
 import type { HandlerContext } from "./registry";
+import { formatFileSize } from "../utils/file-size";
 
 function buildMediaMessageId(
   ctx: HandlerContext,
@@ -34,6 +35,70 @@ function buildMediaMessageId(
   const fallbackIndex = ctx.conversation.messages.length;
   const orderSuffix = declarationOrder ?? fallbackIndex;
   return `msg_${e.at}_${from}_${kind}_${orderSuffix}`;
+}
+
+function bumpUnread(ctx: HandlerContext, from: string): void {
+  if (from === "me" || from === "system") return;
+  const appState = (ctx.draft as { appState?: { app_whatsapp?: { currentConversationId?: string } } })
+    .appState?.app_whatsapp;
+  if (appState?.currentConversationId && appState.currentConversationId === ctx.conversation.id) {
+    return;
+  }
+  ctx.conversation.unreadCount = (ctx.conversation.unreadCount ?? 0) + 1;
+}
+
+function inferFileType(fileName?: string, fallback?: string): string | undefined {
+  if (!fileName) return fallback;
+  const match = fileName.match(/\.([a-z0-9]+)$/i);
+  return match ? match[1] : fallback;
+}
+
+function normalizeContactPayload(payload: {
+  contactName?: string;
+  contactPhone?: string;
+  contactAvatar?: string;
+  contactAvatarUrl?: string;
+  name?: string;
+  phone?: string;
+  avatar?: string;
+}): {
+  contactName: string;
+  contactPhone?: string;
+  contactAvatarUrl?: string;
+} {
+  return {
+    contactName: payload.contactName ?? payload.name ?? "Unknown Contact",
+    contactPhone: payload.contactPhone ?? payload.phone,
+    contactAvatarUrl:
+      payload.contactAvatar ?? payload.contactAvatarUrl ?? payload.avatar,
+  };
+}
+
+function normalizeLocationPayload(payload: {
+  latitude?: number;
+  longitude?: number;
+  lat?: number;
+  lng?: number;
+  locationName?: string;
+  locationAddress?: string;
+  mapThumbnailUrl?: string;
+  name?: string;
+  label?: string;
+  address?: string;
+}): {
+  latitude: number;
+  longitude: number;
+  locationName?: string;
+  locationAddress?: string;
+  mapThumbnailUrl?: string;
+} {
+  return {
+    latitude: payload.latitude ?? payload.lat ?? 0,
+    longitude: payload.longitude ?? payload.lng ?? 0,
+    locationName: payload.locationName ?? payload.name ?? payload.label,
+    locationAddress: payload.locationAddress ?? payload.address,
+    mapThumbnailUrl: payload.mapThumbnailUrl,
+  };
 }
 
 let registered = false;
@@ -56,6 +121,7 @@ export function registerMediaHandlers(): void {
       at: e.at,
     };
     ctx.addMessage(msg);
+    bumpUnread(ctx, from);
   });
 
   registerHandler<ImageSentEvent>("ImageSent", (ctx, e) => {
@@ -89,6 +155,7 @@ export function registerMediaHandlers(): void {
       at: e.at,
     };
     ctx.addMessage(msg);
+    bumpUnread(ctx, from);
   });
 
   registerHandler<VideoSentEvent>("VideoSent", (ctx, e) => {
@@ -123,6 +190,7 @@ export function registerMediaHandlers(): void {
       at: e.at,
     };
     ctx.addMessage(msg);
+    bumpUnread(ctx, from);
   });
 
   registerHandler<VoiceSentEvent>("VoiceSent", (ctx, e) => {
@@ -154,6 +222,7 @@ export function registerMediaHandlers(): void {
       at: e.at,
     };
     ctx.addMessage(msg);
+    bumpUnread(ctx, from);
   });
 
   registerHandler<GifSentEvent>("GifSent", (ctx, e) => {
@@ -183,6 +252,7 @@ export function registerMediaHandlers(): void {
       at: e.at,
     };
     ctx.addMessage(msg);
+    bumpUnread(ctx, from);
   });
 
   registerHandler<StickerSentEvent>("StickerSent", (ctx, e) => {
@@ -202,31 +272,38 @@ export function registerMediaHandlers(): void {
   registerHandler<DocumentReceivedEvent>("DocumentReceived", (ctx, e) => {
     const payload = e.payload ?? {};
     const from = payload.from ?? e.from ?? "unknown";
+    const fileSize = formatFileSize(payload.fileSize) ?? "0 KB";
+    const fileName = payload.fileName ?? "Document";
+    const fileType = payload.fileType ?? inferFileType(fileName, "pdf");
     const msg: WhatsAppMessage = {
       id: buildMediaMessageId(ctx, e, from, "doc"),
       from,
       type: "document",
       documentUrl: payload.url,
-      fileName: payload.fileName ?? "Document",
-      fileSize: payload.fileSize,
-      fileType: payload.fileType ?? "pdf",
+      fileName,
+      fileSize,
+      fileType,
       timestamp: ctx.generateTimestamp(e.at),
       status: "delivered",
       at: e.at,
     };
     ctx.addMessage(msg);
+    bumpUnread(ctx, from);
   });
 
   registerHandler<DocumentSentEvent>("DocumentSent", (ctx, e) => {
     const payload = e.payload ?? {};
+    const fileSize = formatFileSize(payload.fileSize) ?? "0 KB";
+    const fileName = payload.fileName ?? "Document";
+    const fileType = payload.fileType ?? inferFileType(fileName, "pdf");
     const msg: WhatsAppMessage = {
       id: buildMediaMessageId(ctx, e, "me", "doc"),
       from: "me",
       type: "document",
       documentUrl: payload.url,
-      fileName: payload.fileName ?? "Document",
-      fileSize: payload.fileSize,
-      fileType: payload.fileType ?? "pdf",
+      fileName,
+      fileSize,
+      fileType,
       timestamp: ctx.generateTimestamp(e.at),
       status: "sent",
       at: e.at,
@@ -237,29 +314,32 @@ export function registerMediaHandlers(): void {
   registerHandler<ContactReceivedEvent>("ContactReceived", (ctx, e) => {
     const payload = e.payload ?? {};
     const from = payload.from ?? e.from ?? "unknown";
+    const normalized = normalizeContactPayload(payload);
     const msg: WhatsAppMessage = {
       id: buildMediaMessageId(ctx, e, from, "contact"),
       from,
       type: "contact",
-      contactName: payload.name,
-      contactPhone: payload.phone,
-      contactAvatarUrl: payload.avatar,
+      contactName: normalized.contactName,
+      contactPhone: normalized.contactPhone,
+      contactAvatarUrl: normalized.contactAvatarUrl,
       timestamp: ctx.generateTimestamp(e.at),
       status: "delivered",
       at: e.at,
     };
     ctx.addMessage(msg);
+    bumpUnread(ctx, from);
   });
 
   registerHandler<ContactSentEvent>("ContactSent", (ctx, e) => {
     const payload = e.payload ?? {};
+    const normalized = normalizeContactPayload(payload);
     const msg: WhatsAppMessage = {
       id: buildMediaMessageId(ctx, e, "me", "contact"),
       from: "me",
       type: "contact",
-      contactName: payload.name,
-      contactPhone: payload.phone,
-      contactAvatarUrl: payload.avatar,
+      contactName: normalized.contactName,
+      contactPhone: normalized.contactPhone,
+      contactAvatarUrl: normalized.contactAvatarUrl,
       timestamp: ctx.generateTimestamp(e.at),
       status: "sent",
       at: e.at,
@@ -270,33 +350,36 @@ export function registerMediaHandlers(): void {
   registerHandler<LocationReceivedEvent>("LocationReceived", (ctx, e) => {
     const payload = e.payload ?? {};
     const from = payload.from ?? e.from ?? "unknown";
+    const normalized = normalizeLocationPayload(payload);
     const msg: WhatsAppMessage = {
       id: buildMediaMessageId(ctx, e, from, "loc"),
       from,
       type: "location",
-      latitude: payload.lat,
-      longitude: payload.lng,
-      locationName: payload.name,
-      locationAddress: payload.address,
-      mapThumbnailUrl: payload.mapThumbnailUrl,
+      latitude: normalized.latitude,
+      longitude: normalized.longitude,
+      locationName: normalized.locationName,
+      locationAddress: normalized.locationAddress,
+      mapThumbnailUrl: normalized.mapThumbnailUrl,
       timestamp: ctx.generateTimestamp(e.at),
       status: "delivered",
       at: e.at,
     };
     ctx.addMessage(msg);
+    bumpUnread(ctx, from);
   });
 
   registerHandler<LocationSentEvent>("LocationSent", (ctx, e) => {
     const payload = e.payload ?? {};
+    const normalized = normalizeLocationPayload(payload);
     const msg: WhatsAppMessage = {
       id: buildMediaMessageId(ctx, e, "me", "loc"),
       from: "me",
       type: "location",
-      latitude: payload.lat,
-      longitude: payload.lng,
-      locationName: payload.name,
-      locationAddress: payload.address,
-      mapThumbnailUrl: payload.mapThumbnailUrl,
+      latitude: normalized.latitude,
+      longitude: normalized.longitude,
+      locationName: normalized.locationName,
+      locationAddress: normalized.locationAddress,
+      mapThumbnailUrl: normalized.mapThumbnailUrl,
       timestamp: ctx.generateTimestamp(e.at),
       status: "sent",
       at: e.at,

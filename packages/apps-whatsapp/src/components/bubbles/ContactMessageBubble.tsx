@@ -6,11 +6,13 @@ import {
   FONT_FAMILY,
   WA_TEAL,
   WA_GRAY,
+  WA_BLACK,
   BUBBLE_PADDING,
   BUBBLE_PADDING_H,
   TIMESTAMP_SIZE,
   MESSAGE_TEXT_SIZE,
 } from "./constants";
+import { whatsappColors } from "../theme";
 
 export interface ContactMessageBubbleProps {
   contactName: string;
@@ -73,14 +75,19 @@ export const ContactMessageBubble = memo(function ContactMessageBubble({
               width: 44,
               height: 44,
               borderRadius: "50%",
-              backgroundColor: "#DFE5E7",
+              backgroundColor: whatsappColors.bgSecondary,
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
               flexShrink: 0,
             }}
           >
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="#8696A0">
+            <svg
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill={whatsappColors.textSecondary}
+            >
               <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
             </svg>
           </div>
@@ -91,7 +98,7 @@ export const ContactMessageBubble = memo(function ContactMessageBubble({
             style={{
               fontSize: MESSAGE_TEXT_SIZE,
               fontWeight: 500,
-              color: "#000000",
+              color: WA_BLACK,
               fontFamily: FONT_FAMILY,
               overflow: "hidden",
               textOverflow: "ellipsis",
@@ -117,7 +124,7 @@ export const ContactMessageBubble = memo(function ContactMessageBubble({
 
       <div
         style={{
-          borderTop: "1px solid rgba(0,0,0,0.08)",
+          borderTop: `1px solid ${whatsappColors.separatorLight}`,
           padding: `${BUBBLE_PADDING}px ${BUBBLE_PADDING_H}px`,
           display: "flex",
           justifyContent: "space-between",

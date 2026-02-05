@@ -4,6 +4,7 @@ import {
   WA_TEAL,
   WA_READ_BLUE,
   WA_GRAY,
+  WA_WHITE,
   BUBBLE_RADIUS,
   BUBBLE_TAIL_RADIUS,
   BUBBLE_PADDING_H,
@@ -148,7 +149,7 @@ export const TimestampOverlay = memo(function TimestampOverlay({
       <span
         style={{
           fontSize: TIMESTAMP_SIZE,
-          color: "#FFFFFF",
+          color: WA_WHITE,
           fontFamily: FONT_FAMILY,
         }}
       >
@@ -170,14 +171,14 @@ export const DoubleCheckIcon = memo(function DoubleCheckIcon({
     <svg width="16" height="10" viewBox="0 0 16 10" fill="none">
       <path
         d="M1 5L4 8L10 2"
-        stroke={read ? WA_READ_BLUE : light ? "#FFFFFF" : WA_GRAY}
+        stroke={read ? WA_READ_BLUE : light ? WA_WHITE : WA_GRAY}
         strokeWidth="1.5"
         strokeLinecap="round"
         strokeLinejoin="round"
       />
       <path
         d="M5 5L8 8L14 2"
-        stroke={read ? WA_READ_BLUE : light ? "#FFFFFF" : WA_GRAY}
+        stroke={read ? WA_READ_BLUE : light ? WA_WHITE : WA_GRAY}
         strokeWidth="1.5"
         strokeLinecap="round"
         strokeLinejoin="round"

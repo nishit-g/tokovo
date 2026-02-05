@@ -1,9 +1,13 @@
+import { whatsappColors } from "../theme";
+
 export const FONT_FAMILY =
   "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif";
-export const WA_GREEN = "#25D366";
-export const WA_TEAL = "#128C7E";
-export const WA_READ_BLUE = "#53BDEB";
-export const WA_GRAY = "#8696A0";
+export const WA_GREEN = whatsappColors.primary;
+export const WA_TEAL = whatsappColors.primaryDark;
+export const WA_READ_BLUE = whatsappColors.readReceipt;
+export const WA_GRAY = whatsappColors.textSecondary;
+export const WA_WHITE = whatsappColors.unreadBadgeText;
+export const WA_BLACK = whatsappColors.textPrimary;
 
 export const BUBBLE_RADIUS = 18;
 export const BUBBLE_TAIL_RADIUS = 4;
@@ -13,6 +17,6 @@ export const TIMESTAMP_SIZE = 11;
 export const SENDER_NAME_SIZE = 13;
 export const MESSAGE_TEXT_SIZE = 16;
 
-export const BUBBLE_MY_COLOR = "#DCF8C6";
-export const BUBBLE_OTHER_COLOR = "#FFFFFF";
+export const BUBBLE_MY_COLOR = whatsappColors.bubbleOutgoing;
+export const BUBBLE_OTHER_COLOR = whatsappColors.bubbleIncoming;
 export const BUBBLE_SHADOW = "0 1px 0.5px rgba(0,0,0,0.13)";

@@ -42,6 +42,8 @@ export interface BaseMessage {
   isForwarded?: boolean;
   /** Original sender of the forwarded message */
   forwardedFrom?: string;
+  /** Sender display name for group chats */
+  senderName?: string;
 }
 
 // =============================================================================

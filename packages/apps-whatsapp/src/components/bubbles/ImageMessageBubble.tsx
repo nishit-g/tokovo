@@ -1,12 +1,13 @@
 import React, { memo } from "react";
 import { Img, staticFile } from "remotion";
 import { Platform } from "@tokovo/core";
-import { MediaBubbleBase, TimestampRow, TimestampOverlay } from "./shared";
+import { MediaBubbleBase } from "./shared";
 import {
   FONT_FAMILY,
   BUBBLE_PADDING,
   BUBBLE_PADDING_H,
   MESSAGE_TEXT_SIZE,
+  WA_BLACK,
 } from "./constants";
 
 export interface ImageMessageBubbleProps {
@@ -36,7 +37,6 @@ export const ImageMessageBubble = memo(function ImageMessageBubble({
       senderName={senderName}
       timestamp={timestamp}
       read={read}
-      overlayTimestamp={!caption}
       noPadding
     >
       <div style={{ position: "relative", overflow: "hidden" }}>
@@ -51,9 +51,6 @@ export const ImageMessageBubble = memo(function ImageMessageBubble({
           }}
           alt=""
         />
-        {!caption && (
-          <TimestampOverlay timestamp={timestamp} isMe={isMe} read={read} />
-        )}
       </div>
 
       {caption && (
@@ -62,13 +59,12 @@ export const ImageMessageBubble = memo(function ImageMessageBubble({
             style={{
               fontSize: MESSAGE_TEXT_SIZE,
               lineHeight: 1.3,
-              color: "#000000",
+              color: WA_BLACK,
               fontFamily: FONT_FAMILY,
             }}
           >
             {caption}
           </span>
-          <TimestampRow timestamp={timestamp} isMe={isMe} read={read} />
         </div>
       )}
     </MediaBubbleBase>

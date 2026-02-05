@@ -27,6 +27,22 @@ export {
   ChatListScreen,
   type ChatListScreenProps,
 } from "./screens/ChatListScreen";
+export {
+  StatusScreen,
+  type StatusScreenProps,
+} from "./screens/StatusScreen";
+export {
+  CommunitiesScreen,
+  type CommunitiesScreenProps,
+} from "./screens/CommunitiesScreen";
+export {
+  CallsScreen,
+  type CallsScreenProps,
+} from "./screens/CallsScreen";
+export {
+  ProfileScreen,
+  type ProfileScreenProps,
+} from "./screens/ProfileScreen";
 
 // Bubble Tail (extracted from iOSStatusBar)
 export { BubbleTail } from "./BubbleTail";

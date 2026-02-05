@@ -6,6 +6,7 @@ import { TabNavigation } from "../TabNavigation";
 import { ChatListItem } from "../ChatListItem";
 import { whatsappColors, spacing, typography } from "../theme";
 import { WhatsAppConversation, WhatsAppState } from "../../types";
+import { normalizeMessages } from "../../utils/messages";
 
 // =============================================================================
 // TYPES
@@ -170,6 +171,7 @@ export const ChatListScreen: React.FC<ChatListScreenProps> = ({
   height: _height,
 }) => {
   const [activeFilter, setActiveFilter] = useState<FilterType>("all");
+  const deviceId = Object.keys(world.devices || {})[0];
 
   // Calculate safe areas with sensible defaults
   const designWidth = 393;
@@ -191,13 +193,15 @@ export const ChatListScreen: React.FC<ChatListScreenProps> = ({
     if (a.isPinned && !b.isPinned) return -1;
     if (!a.isPinned && b.isPinned) return 1;
 
-    // Compare timestamps if available
     const aLastMsg = a.messages?.[a.messages.length - 1];
     const bLastMsg = b.messages?.[b.messages.length - 1];
-    const aTime = aLastMsg?.timestamp || "";
-    const bTime = bLastMsg?.timestamp || "";
+    const aTime = a.lastMessageAt ?? aLastMsg?.at ?? 0;
+    const bTime = b.lastMessageAt ?? bLastMsg?.at ?? 0;
 
-    return bTime.localeCompare(aTime);
+    if (aTime !== bTime) return bTime - aTime;
+    const aName = a.name ?? "";
+    const bName = b.name ?? "";
+    return aName.localeCompare(bName);
   });
 
   // Apply filters
@@ -232,7 +236,7 @@ export const ChatListScreen: React.FC<ChatListScreenProps> = ({
         flexDirection: "column",
         height: "100%",
         width: "100%",
-        backgroundColor: whatsappColors.bgPrimary,
+        backgroundColor: whatsappColors.bgList,
         position: "relative",
         fontFamily:
           "-apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro Display', sans-serif",
@@ -253,7 +257,7 @@ export const ChatListScreen: React.FC<ChatListScreenProps> = ({
           flex: 1,
           overflow: "auto",
           overflowX: "hidden",
-          backgroundColor: whatsappColors.bgPrimary,
+          backgroundColor: whatsappColors.bgList,
           paddingBottom: spacing.tabBarHeight + safeAreaBottom,
           WebkitOverflowScrolling: "touch",
         }}
@@ -267,12 +271,24 @@ export const ChatListScreen: React.FC<ChatListScreenProps> = ({
         {filteredConversations.length > 0 ? (
           <div>
             {filteredConversations.map((conv, i) => {
-              // Get last message
-              const rawMessages = conv.messages || [];
+              const normalizedMessages = normalizeMessages(
+                world,
+                conv.id,
+                (conv.messages || []) as unknown[],
+                deviceId,
+              );
+
               const lastMsg =
-                rawMessages && rawMessages.length > 0
-                  ? rawMessages[rawMessages.length - 1]
+                normalizedMessages.length > 0
+                  ? normalizedMessages[normalizedMessages.length - 1]
                   : null;
+              const lastRenderable =
+                [...normalizedMessages]
+                  .reverse()
+                  .find(
+                    (msg) =>
+                      msg.type !== "system" || msg.systemType !== "date_change",
+                  ) ?? lastMsg;
 
               // Determine media type
               let mediaType:
@@ -283,41 +299,103 @@ export const ChatListScreen: React.FC<ChatListScreenProps> = ({
                 | "gif"
                 | "sticker"
                 | null = null;
-              if (lastMsg?.imageUrl) mediaType = "photo";
-              else if (lastMsg?.videoUrl) mediaType = "video";
-              else if (lastMsg?.voiceUrl || lastMsg?.audioUrl)
+              if (lastRenderable?.type === "image" || lastRenderable?.imageUrl)
+                mediaType = "photo";
+              else if (lastRenderable?.type === "video" || lastRenderable?.videoUrl)
+                mediaType = "video";
+              else if (
+                lastRenderable?.type === "voice" ||
+                lastRenderable?.voiceUrl ||
+                lastRenderable?.audioUrl
+              )
                 mediaType = "voice";
-              else if (lastMsg?.fileUrl) mediaType = "document";
+              else if (lastRenderable?.type === "document" || lastRenderable?.documentUrl)
+                mediaType = "document";
+              else if (lastRenderable?.type === "gif" || lastRenderable?.gifUrl)
+                mediaType = "gif";
+              else if (
+                lastRenderable?.type === "sticker" ||
+                lastRenderable?.stickerUrl
+              )
+                mediaType = "sticker";
 
               // Determine sender name for groups
               let senderName: string | undefined;
-              if (conv.type === "group" && lastMsg) {
-                if (lastMsg.from === "me") {
+              if (conv.type === "group" && lastRenderable) {
+                if (lastRenderable.from === "me") {
                   senderName = "You";
-                } else if (lastMsg.senderName) {
-                  senderName = lastMsg.senderName;
-                } else if (lastMsg.from) {
+                } else if (lastRenderable.senderName) {
+                  senderName = lastRenderable.senderName;
+                } else if (lastRenderable.from) {
                   // Try to get name from members
                   const member = conv.members?.find(
-                    (m) => m.id === lastMsg.from,
+                    (m) => m.id === lastRenderable.from,
                   );
-                  senderName = member?.name || lastMsg.from;
+                  senderName = member?.name || lastRenderable.from;
                 }
-              } else if (lastMsg?.from === "me") {
+              } else if (lastRenderable?.from === "me") {
                 senderName = undefined; // Don't show "You:" for DMs
               }
 
+              const groupSubtitle =
+                conv.type === "group"
+                  ? conv.description ||
+                    (conv.members && conv.members.length > 0
+                      ? `${conv.members
+                          .map((m) => m.name)
+                          .filter(Boolean)
+                          .slice(0, 3)
+                          .join(", ")}${conv.members.length > 3 ? "…" : ""}`
+                      : undefined)
+                  : undefined;
+
               // Determine read status
               let status: "sent" | "delivered" | "read" | undefined;
-              if (lastMsg?.from === "me") {
-                if (lastMsg.readAt) status = "read";
-                else if (lastMsg.deliveredAt) status = "delivered";
+              if (lastRenderable?.from === "me") {
+                if (lastRenderable.status === "read") status = "read";
+                else if (lastRenderable.status === "delivered") status = "delivered";
+                else if (lastRenderable.status === "sent") status = "sent";
+                else if (lastRenderable.status === "sending") status = "sent";
+                else if (lastRenderable.readAt) status = "read";
+                else if (lastRenderable.deliveredAt) status = "delivered";
                 else status = "sent";
               }
 
               // Check if someone is typing
               const isTyping =
-                conv.typing && Object.values(conv.typing).some(Boolean);
+                conv.typing &&
+                Object.entries(conv.typing).some(
+                  ([id, typing]) => typing && id !== "me",
+                );
+
+              const lastMessagePreview = (() => {
+                if (!lastRenderable) return "No messages yet";
+                if (lastRenderable.text) return lastRenderable.text;
+                switch (lastRenderable.type) {
+                  case "contact":
+                    return "Contact card";
+                  case "location":
+                    return "Location";
+                  case "system":
+                    return lastRenderable.text ?? "System update";
+                  case "document":
+                    return lastRenderable.fileName
+                      ? `Document • ${lastRenderable.fileName}`
+                      : "Document";
+                  case "voice":
+                    return "Voice message";
+                  case "gif":
+                    return "GIF";
+                  case "sticker":
+                    return "Sticker";
+                  case "image":
+                    return "Photo";
+                  case "video":
+                    return "Video";
+                  default:
+                    return "Media";
+                }
+              })();
 
               return (
                 <ChatListItem
@@ -325,11 +403,15 @@ export const ChatListScreen: React.FC<ChatListScreenProps> = ({
                   id={conv.id}
                   name={conv.name || "Unknown"}
                   avatarUrl={conv.avatar}
-                  lastMessage={
-                    lastMsg?.text ||
-                    (mediaType ? undefined : lastMsg ? "Media" : "")
+                  groupAvatars={
+                    conv.type === "group"
+                      ? conv.members
+                          ?.map((m) => m.avatar)
+                          .filter((avatar): avatar is string => Boolean(avatar))
+                      : undefined
                   }
-                  timestamp={lastMsg?.timestamp || ""}
+                  lastMessage={lastMessagePreview}
+                  timestamp={lastRenderable?.timestamp || lastMsg?.timestamp || ""}
                   unreadCount={conv.unreadCount || 0}
                   status={status}
                   isGroup={conv.type === "group"}
@@ -340,6 +422,7 @@ export const ChatListScreen: React.FC<ChatListScreenProps> = ({
                   hasStatus={conv.hasStatus}
                   mediaType={mediaType}
                   senderName={senderName}
+                  subtitle={groupSubtitle}
                 />
               );
             })}

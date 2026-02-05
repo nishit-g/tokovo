@@ -132,6 +132,23 @@ export interface SetThemeModePayload {
   mode: IMessageThemeMode;
 }
 
+/** Unsend a message with poof animation */
+export interface MessageUnsendPayload {
+  conversationId: string;
+  messageId: string;
+}
+
+/** Search events */
+export interface SearchPayload {
+  query: string;
+}
+
+/** Screen effect trigger */
+export interface ScreenEffectPayload {
+  effect: "balloons" | "confetti" | "lasers" | "fireworks" | "celebration" | "echo" | "spotlight" | "love";
+  conversationId?: string;
+}
+
 export type IMessageEventMap = {
   IMESSAGE_CONVERSATION_CREATE: ConversationCreatePayload;
   IMESSAGE_CONVERSATION_UPDATE: ConversationUpdatePayload;
@@ -144,6 +161,7 @@ export type IMessageEventMap = {
   IMESSAGE_MESSAGE_RECEIVE: MessageReceivePayload;
   IMESSAGE_MESSAGE_EDIT: MessageEditPayload;
   IMESSAGE_MESSAGE_DELETE: MessageDeletePayload;
+  IMESSAGE_MESSAGE_UNSEND: MessageUnsendPayload;
   IMESSAGE_MESSAGE_STATUS_SET: MessageStatusPayload;
   IMESSAGE_TAPBACK_ADD: TapbackPayload;
   IMESSAGE_TAPBACK_REMOVE: TapbackPayload;
@@ -160,6 +178,9 @@ export type IMessageEventMap = {
   IMESSAGE_CLEAR_DRAFT: DraftPayload;
   IMESSAGE_OPEN_MEDIA: OpenMediaPayload;
   IMESSAGE_SET_THEME_MODE: SetThemeModePayload;
+  IMESSAGE_SEARCH_START: SearchPayload;
+  IMESSAGE_SEARCH_CLEAR: Record<string, never>;
+  IMESSAGE_SCREEN_EFFECT: ScreenEffectPayload;
 };
 
 export type IMessageEventType = keyof IMessageEventMap;
