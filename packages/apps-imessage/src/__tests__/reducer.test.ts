@@ -72,10 +72,9 @@ describe("iMessage Reducer", () => {
       payload: { conversationId: "c1", messageId: "m1", type: "heart" },
     });
 
-    const msg =
-      (reacted.appState?.app_imessage as IMessageState | undefined)?.conversations?.[
-        "c1"
-      ]?.messages[0];
+    const conv = (reacted.appState?.app_imessage as IMessageState | undefined)?.conversations?.["c1"];
+
+    const msg = conv?.messages[0];
     expect(msg?.tapbacks.length).toBe(1);
   });
 });

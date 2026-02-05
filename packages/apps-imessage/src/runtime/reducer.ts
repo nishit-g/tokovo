@@ -65,10 +65,9 @@ function getMessageById(
   messageId?: string,
 ): IMessageMessage | undefined {
   if (!messageId) return undefined;
-  return (
-    conversation.messagesById?.[messageId] ??
-    conversation.messages.find((m) => m.id === messageId)
-  );
+  // Use array find to get the actual message object that's in the messages array
+  // This ensures mutations are reflected when accessing via messages[]
+  return conversation.messages.find((m) => m.id === messageId);
 }
 
 function getMessageByRef(
@@ -360,6 +359,10 @@ export function iMessageReducer(draft: WorldState, event: TimelineEvent): void {
         getMessageById(conv, tap.messageId) ||
         getMessageByRef(conv, tap.messageRef);
       if (target) {
+        // Initialize tapbacks array if undefined
+        if (!target.tapbacks) {
+          target.tapbacks = [];
+        }
         const fromMe = tap.fromMe ?? true;
         target.tapbacks = target.tapbacks.filter(
           (t) => !(t.type === tap.type && t.fromMe === fromMe),
@@ -376,6 +379,10 @@ export function iMessageReducer(draft: WorldState, event: TimelineEvent): void {
         getMessageById(conv, tap.messageId) ||
         getMessageByRef(conv, tap.messageRef);
       if (target) {
+        // Initialize tapbacks array if undefined
+        if (!target.tapbacks) {
+          target.tapbacks = [];
+        }
         const fromMe = tap.fromMe ?? true;
         target.tapbacks = target.tapbacks.filter(
           (t) => !(t.type === tap.type && t.fromMe === fromMe),
