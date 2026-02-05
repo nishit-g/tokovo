@@ -5,10 +5,14 @@
   "type": "module",
   "scripts": {
     "build": "turbo run build",
-    "dev": "turbo run dev",
+    "build:video": "turbo run build --filter=video-runner...",
+    "dev": "turbo run dev --concurrency 15",
+    "dev:video": "pnpm build:video && pnpm --filter video-runner dev",
+    "watch:video": "turbo watch build --filter=video-runner...",
     "lint": "turbo run lint",
     "lint:check": "eslint . --max-warnings 0",
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
+    "typecheck": "turbo run typecheck",
     "create-plugin": "npx ts-node templates/scripts/create-plugin.ts",
     "create-episode": "npx ts-node templates/scripts/create-episode.ts",
     "validate": "pnpm --filter @tokovo/episodes validate"
@@ -16,18 +20,18 @@
   "devDependencies": {
     "@eslint/js": "^9.0.0",
     "@next/eslint-plugin-next": "^15.1.0",
-    "@turbo/gen": "^2.7.6",
-    "@types/node": "^20.0.0",
+    "@turbo/gen": "^2.8.3",
+    "@types/node": "^22.0.0",
     "eslint": "^9.0.0",
-    "prettier": "latest",
+    "prettier": "^3.5.0",
     "ts-node": "^10.9.0",
-    "turbo": "latest",
+    "turbo": "^2.8.3",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.0.0"
   },
-  "packageManager": "pnpm@9.0.0",
+  "packageManager": "pnpm@10.28.2",
   "engines": {
-    "node": ">=18"
+    "node": ">=20"
   },
   "pnpm": {
     "overrides": {

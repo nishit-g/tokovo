@@ -65,6 +65,7 @@ export type {
   VoiceScriptSegment,
   VoiceScriptDefinition,
   VoiceScheduleItem,
+  BackgroundConfigIR,
 } from "./episode-ir";
 
 export {

@@ -33,6 +33,7 @@ import {
   TrackEvent,
   VoiceScriptDefinition,
   VoiceScheduleItem,
+  BackgroundConfigIR,
 } from "@tokovo/ir";
 import type { CompilerContext, CompilerPlugin } from "@tokovo/compiler";
 import { parseTimeToFrames } from "./utils/time";
@@ -129,10 +130,11 @@ export class EpisodeBuilder {
   private _plugins: CompilerPlugin[] = [];
   private _voiceConfig:
     | {
-        script: VoiceScriptDefinition<string>;
-        schedule: VoiceScheduleItem<string>[];
-      }
+      script: VoiceScriptDefinition<string>;
+      schedule: VoiceScheduleItem<string>[];
+    }
     | undefined;
+  private _background?: BackgroundConfigIR;
 
   constructor(id: string, config: TrackEpisodeConfig) {
     this._id = id;
@@ -175,6 +177,27 @@ export class EpisodeBuilder {
    */
   director(style: DirectorStyle): this {
     this._director = style;
+    return this;
+  }
+
+  /**
+   * Set the background for the video canvas.
+   * Can be a preset ID ("ambient-night", "neon-city", etc.) or full config.
+   * 
+   * @example
+   * // Using preset
+   * .background("ambient-night")
+   * 
+   * @example
+   * // Using image
+   * .background({ type: "image", src: "/backgrounds/city.jpg", blur: 5 })
+   * 
+   * @example
+   * // Using video
+   * .background({ type: "video", src: "/backgrounds/loop.mp4", opacity: 0.8 })
+   */
+  background(config: BackgroundConfigIR): this {
+    this._background = config;
     return this;
   }
 
@@ -334,23 +357,24 @@ export class EpisodeBuilder {
       markers: this._markers,
       sections: this._sections,
       director: this._director,
+      background: this._background,
       voice: this._voiceConfig
         ? {
-            manifestPath: this._voiceConfig.script.manifestPath,
-            audioPath: this._voiceConfig.script.audioPath,
-            usePerSegmentControl: true,
-            segmentSchedule: this._voiceConfig.schedule,
-            durationMs: this._voiceConfig.script.durationMs,
-            segments: Object.values(this._voiceConfig.script.segments).map(
-              (seg) => ({
-                id: seg.id,
-                startMs: seg.startMs,
-                endMs: seg.endMs,
-                durationMs: seg.endMs - seg.startMs,
-                speaker: seg.speaker,
-              }),
-            ),
-          }
+          manifestPath: this._voiceConfig.script.manifestPath,
+          audioPath: this._voiceConfig.script.audioPath,
+          usePerSegmentControl: true,
+          segmentSchedule: this._voiceConfig.schedule,
+          durationMs: this._voiceConfig.script.durationMs,
+          segments: Object.values(this._voiceConfig.script.segments).map(
+            (seg) => ({
+              id: seg.id,
+              startMs: seg.startMs,
+              endMs: seg.endMs,
+              durationMs: seg.endMs - seg.startMs,
+              speaker: seg.speaker,
+            }),
+          ),
+        }
         : undefined,
     };
   }

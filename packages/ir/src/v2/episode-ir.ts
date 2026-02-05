@@ -137,6 +137,30 @@ export interface VoiceConfig {
 export type DirectorStyle = "ViralDramaV1" | "Cinematic" | "Documentary";
 
 // =============================================================================
+// BACKGROUND CONFIG (from @tokovo/background)
+// =============================================================================
+
+/**
+ * Background configuration for the episode.
+ * Can be a preset ID string or a full config object.
+ */
+export type BackgroundConfigIR =
+  | string // Preset ID like "ambient-night"
+  | {
+    type: "solid" | "gradient" | "image" | "video" | "particles" | "ambient";
+    color?: string;
+    gradient?: string;
+    src?: string;
+    preset?: string;
+    blur?: number;
+    opacity?: number;
+    scale?: number;
+    position?: "cover" | "contain" | "fill" | "center";
+    loop?: boolean;
+    playbackRate?: number;
+  };
+
+// =============================================================================
 // TRACK EPISODE IR
 // =============================================================================
 
@@ -182,6 +206,9 @@ export interface TrackEpisodeIR {
 
   /** Voice configuration for narration/dialogue */
   voice?: VoiceConfig;
+
+  /** Background configuration for the video canvas */
+  background?: BackgroundConfigIR;
 }
 
 // =============================================================================

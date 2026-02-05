@@ -1,5 +1,6 @@
 {
     "$schema": "https://turbo.build/schema.json",
+    "ui": "stream",
     "tasks": {
         "build": {
             "dependsOn": [
@@ -12,7 +13,19 @@
             ]
         },
         "lint": {},
+        "typecheck": {
+            "dependsOn": [
+                "^build"
+            ]
+        },
         "dev": {
+            "cache": false,
+            "persistent": true,
+            "dependsOn": [
+                "^build"
+            ]
+        },
+        "dev:video": {
             "cache": false,
             "persistent": true,
             "dependsOn": [

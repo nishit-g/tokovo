@@ -42,6 +42,7 @@ export default defineEpisode({
           network: "5G",
         },
       })
+      .background("neon-city")
 
       .track(
         "app_whatsapp",

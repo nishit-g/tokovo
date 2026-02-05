@@ -21,6 +21,7 @@ import {
   continueRender,
   staticFile,
 } from "remotion";
+import { BackgroundLayer } from "@tokovo/background";
 import {
   replayIncremental,
   createKeyframedEventIndex,
@@ -43,7 +44,7 @@ import {
   type VoicePlayEvent,
   voiceScheduleToSoundCues,
 } from "@tokovo/voice";
-import type { VoiceConfig } from "@tokovo/ir";
+import type { VoiceConfig, BackgroundConfigIR } from "@tokovo/ir";
 import { getDeviceProfile } from "@tokovo/devices";
 import {
   episodeRegistry,
@@ -154,6 +155,7 @@ const EpisodeRendererInner: React.FC<EpisodeRendererProps> = ({
     null,
   );
   const [voiceConfig, setVoiceConfig] = useState<VoiceConfig | null>(null);
+  const [backgroundConfig, setBackgroundConfig] = useState<BackgroundConfigIR | null>(null);
   const [error, setError] = useState<Error | null>(null);
 
   const config = useMemo(() => createConfig(), []);
@@ -169,6 +171,11 @@ const EpisodeRendererInner: React.FC<EpisodeRendererProps> = ({
         setEpisode(ep);
 
         const ir = ep.build();
+
+        // Store background config
+        if (ir.background) {
+          setBackgroundConfig(ir.background);
+        }
 
         if (ir.voice) {
           setVoiceConfig(ir.voice);
@@ -329,10 +336,13 @@ const EpisodeRendererInner: React.FC<EpisodeRendererProps> = ({
       (deviceId && worldWithVoice?.devices?.[deviceId]?.profileId) ||
       "iphone16";
     const profile = getDeviceProfile(rendererRegistries.devices, profileId);
-    const s = Math.min(
+    // Scale device to fit in canvas with some margin for background visibility
+    const fitScale = Math.min(
       fmt.width / profile.dimensions.width,
       fmt.height / profile.dimensions.height,
     );
+    // Reduce to 85% to show more background around the device
+    const s = fitScale * 0.85;
     return { scale: s };
   }, [episode, worldWithVoice]);
 
@@ -389,6 +399,13 @@ const EpisodeRendererInner: React.FC<EpisodeRendererProps> = ({
         alignItems: "center",
       }}
     >
+      {/* === BACKGROUND LAYER === */}
+      <BackgroundLayer
+        config={backgroundConfig as Parameters<typeof BackgroundLayer>[0]['config'] ?? "ambient-night"}
+        frame={frame}
+        fps={fps}
+      />
+
       <RendererRegistryProvider registries={rendererRegistries}>
         <AudioLayer world={worldWithVoice} t={frame} />
         {voiceManifest &&
