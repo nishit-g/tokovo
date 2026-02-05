@@ -60,6 +60,7 @@ export class IMessagePointBuilder {
     private _conversationId: string,
     private _events: IMessageTrackEvent[],
     private _getOrder: GetDeclarationOrder,
+    private _setConversationId?: (id: string) => void,
   ) { }
 
   private _push<T extends IMessageTrackEvent["type"]>(
@@ -109,6 +110,11 @@ export class IMessagePointBuilder {
 
   openConversation(conversationId: string) {
     this._push("IMESSAGE_CONVERSATION_OPEN", { conversationId });
+    // Update parent builder's conversationId for subsequent events
+    this._conversationId = conversationId;
+    if (this._setConversationId) {
+      this._setConversationId(conversationId);
+    }
   }
 
   sendMessage(input: SendMessageInput) {
@@ -318,6 +324,7 @@ export class IMessageTrackBuilder {
       this._conversationId,
       this._events,
       this._getOrder,
+      (id) => { this._conversationId = id; },
     );
   }
 
@@ -340,6 +347,7 @@ export class IMessageTrackBuilder {
       this._conversationId,
       this._events,
       this._getOrder,
+      (id) => { this._conversationId = id; },
     );
   }
 
