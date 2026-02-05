@@ -32,8 +32,27 @@ export default defineEpisode({
             avatar: "/avatars/totoro.jpg",
             hasStatus: true,
             initialMessages: [
+              {
+                from: "system",
+                type: "system",
+                systemType: "encryption_notice",
+                text:
+                  "Messages and calls are end-to-end encrypted. Only people in this chat can read, listen to, or share them.",
+              },
+              {
+                from: "system",
+                type: "system",
+                systemType: "date_change",
+                text: "Yesterday",
+              },
               { from: "Totoro", text: "It smells like rain 🌧️", timestamp: -5400 },
               { from: "Me", text: "Then the forest will sing.", timestamp: -5200 },
+              {
+                from: "Totoro",
+                type: "call_missed",
+                callType: "voice",
+                timestamp: -4100,
+              },
             ],
           },
           {

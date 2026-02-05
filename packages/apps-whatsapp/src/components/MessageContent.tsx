@@ -12,24 +12,26 @@ import {
 } from "./MediaBubbles";
 import { LinkPreview } from "./LinkPreview";
 import { DateSeparator } from "./DateSeparator";
+import { useTheme } from "../theme/context";
+import { CallMessageBubble } from "./bubbles/CallMessageBubble";
 
-const FONT_FAMILY =
-  "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif";
-
-const TextContent: React.FC<{ text: string }> = ({ text }) => (
-  <div
-    style={{
-      fontSize: 16,
-      lineHeight: "21px",
-      color: "var(--wa-text-primary)",
-      fontFamily: FONT_FAMILY,
-      wordWrap: "break-word",
-      whiteSpace: "pre-wrap",
-    }}
-  >
-    {text}
-  </div>
-);
+const TextContent: React.FC<{ text: string }> = ({ text }) => {
+  const theme = useTheme();
+  return (
+    <div
+      style={{
+        fontSize: theme.typography.messageFontSize,
+        lineHeight: `${theme.typography.messageLineHeight}px`,
+        color: "inherit",
+        fontFamily: theme.typography.fontFamily,
+        wordWrap: "break-word",
+        whiteSpace: "pre-wrap",
+      }}
+    >
+      {text}
+    </div>
+  );
+};
 
 const ImageContent: React.FC<{
   url: string;
@@ -162,24 +164,114 @@ interface SystemContentProps {
   text: string;
 }
 
-const SystemContent: React.FC<SystemContentProps> = ({ text }) => (
-  <div
-    style={{
-      alignSelf: "center",
-      backgroundColor: "var(--wa-system-message-bg)",
-      borderRadius: 8,
-      padding: "6px 12px",
-      fontSize: 12,
-      color: "var(--wa-system-message-text)",
-      marginBottom: 8,
-      marginTop: 8,
-      textAlign: "center",
-      maxWidth: "85%",
-      boxShadow: "0 1px 0.5px rgba(11, 20, 26, 0.13)",
-    }}
-  >
-    {text}
-  </div>
+const SystemContent: React.FC<SystemContentProps> = ({ text }) => {
+  const theme = useTheme();
+  const paddingY = Math.max(4, theme.spacing.messagePaddingVertical - 2);
+  const paddingX = Math.max(12, theme.spacing.messagePaddingHorizontal);
+  const radius = Math.max(10, theme.spacing.bubbleRadius - 8);
+  return (
+    <div
+      style={{
+        alignSelf: "center",
+        backgroundColor: theme.colors.systemMessageBg,
+        borderRadius: radius,
+        padding: `${paddingY}px ${paddingX}px`,
+        fontSize: theme.typography.systemMessageFontSize,
+        color: theme.colors.systemMessage,
+        marginBottom: Math.max(8, theme.spacing.sectionGap - 6),
+        marginTop: Math.max(8, theme.spacing.sectionGap - 6),
+        textAlign: "center",
+        maxWidth: "85%",
+        border: `0.5px solid ${theme.colors.systemMessageBorder}`,
+        boxShadow: theme.colors.systemMessageShadow,
+        fontFamily: theme.typography.fontFamily,
+      }}
+    >
+      {text}
+    </div>
+  );
+};
+
+const EncryptionNotice: React.FC<{ text?: string }> = ({ text }) => {
+  const theme = useTheme();
+  const paddingY = Math.max(8, theme.spacing.messagePaddingVertical);
+  const paddingX = Math.max(12, theme.spacing.messagePaddingHorizontal);
+  const radius = Math.max(10, theme.spacing.bubbleRadius - 8);
+  const message =
+    text && text.trim().length > 0
+      ? text
+      : "Messages and calls are end-to-end encrypted. Only people in this chat can read, listen to, or share them.";
+
+  return (
+    <div
+      style={{
+        alignSelf: "center",
+        backgroundColor: theme.colors.systemBannerBg,
+        borderRadius: radius,
+        padding: `${paddingY}px ${paddingX}px`,
+        marginBottom: Math.max(10, theme.spacing.sectionGap - 4),
+        marginTop: Math.max(10, theme.spacing.sectionGap - 4),
+        maxWidth: "88%",
+        border: `0.5px solid ${theme.colors.systemBannerBorder}`,
+        boxShadow: theme.colors.systemMessageShadow,
+        fontFamily: theme.typography.fontFamily,
+      }}
+    >
+      <div
+        style={{
+          display: "flex",
+          alignItems: "flex-start",
+          gap: 8,
+        }}
+      >
+        <svg
+          width="18"
+          height="18"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke={theme.colors.systemBannerIcon}
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          style={{ marginTop: 1, flexShrink: 0 }}
+        >
+          <rect x="3" y="11" width="18" height="10" rx="2" />
+          <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+        </svg>
+        <div
+          style={{
+            fontSize: theme.typography.systemMessageFontSize,
+            lineHeight: "18px",
+            color: theme.colors.systemBannerText,
+          }}
+        >
+          {message}{" "}
+          <span
+            style={{
+              color: theme.colors.systemBannerLink,
+              fontWeight: 600,
+            }}
+          >
+            Learn more
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const CallContent: React.FC<{
+  callType?: "voice" | "video";
+  duration?: number;
+  missed?: boolean;
+  isMe?: boolean;
+}> = ({ callType, duration, missed, isMe }) => (
+  <CallMessageBubble
+    callType={callType}
+    duration={duration}
+    missed={missed}
+    isMe={isMe}
+  />
 );
 
 export interface MessageContentProps {
@@ -195,6 +287,7 @@ export const MessageContent: React.FC<MessageContentProps> = ({
   timestamp,
   read = false,
 }) => {
+  const theme = useTheme();
   switch (message.type) {
     case "text":
       return <TextContent text={message.text} />;
@@ -307,7 +400,31 @@ export const MessageContent: React.FC<MessageContentProps> = ({
       if (message.systemType === "date_change") {
         return <DateSeparator text={message.text ?? "Today"} />;
       }
-      return <SystemContent text={message.text} />;
+      if (message.systemType === "encryption_notice") {
+        return <EncryptionNotice text={message.text} />;
+      }
+      return <SystemContent text={message.text ?? "System update"} />;
+
+    case "call":
+      return (
+        <CallContent
+          callType={message.callType}
+          duration={message.duration}
+          isMe={isMe}
+        />
+      );
+
+    case "call_missed":
+      return (
+        <CallContent
+          callType={message.callType}
+          missed
+          isMe={isMe}
+        />
+      );
+
+    case "screenshot_alert":
+      return <SystemContent text={message.text ?? "Screenshot taken"} />;
 
     case "deleted":
       return (
@@ -315,10 +432,10 @@ export const MessageContent: React.FC<MessageContentProps> = ({
           style={{
             fontSize: 14,
             lineHeight: "19px",
-            color: "var(--wa-text-secondary, #667781)",
-            fontFamily: FONT_FAMILY,
-            fontStyle: "italic",
+            color: theme.colors.timestamp,
             opacity: 0.8,
+            fontFamily: theme.typography.fontFamily,
+            fontStyle: "italic",
           }}
         >
           <span style={{ marginRight: 4 }}>🚫</span>

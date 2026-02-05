@@ -21,7 +21,7 @@ export const useMessageGrouping = (messages: MessageData[], ownerName: string = 
         let currentGroup: MessageGroup | null = null;
 
         messages.forEach((msg) => {
-            const isSystem = msg.type === "system";
+            const isSystem = msg.type === "system" || msg.type === "screenshot_alert";
             const isMe = msg.from === ownerName;
 
             // System messages always break groups and sit alone

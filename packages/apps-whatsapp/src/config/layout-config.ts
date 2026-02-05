@@ -25,6 +25,7 @@ export type MessageType =
     | "deleted"
     | "typing"
     | "screenshot_alert"
+    | "call"
     | "call_missed";
 
 export type MessageCategory = "text" | "media" | "audio" | "system" | "ephemeral";
@@ -188,6 +189,7 @@ const DEFAULT_TYPE_OVERRIDES: Record<MessageType, MessageTypeConfig> = {
     // Typing behaves like a sender run-break (e.g. interruption)
     typing: { category: "ephemeral", gapBefore: LAYOUT_CONSTANTS.GAP_RUN_BREAK, gapAfter: LAYOUT_CONSTANTS.GAP_RUN_BREAK },
     screenshot_alert: { category: "system", gapBefore: LAYOUT_CONSTANTS.GAP_SYSTEM, gapAfter: LAYOUT_CONSTANTS.GAP_SYSTEM },
+    call: { category: "system", gapBefore: LAYOUT_CONSTANTS.GAP_SYSTEM, gapAfter: LAYOUT_CONSTANTS.GAP_SYSTEM },
     call_missed: { category: "system", gapBefore: LAYOUT_CONSTANTS.GAP_SYSTEM, gapAfter: LAYOUT_CONSTANTS.GAP_SYSTEM },
 };
 
@@ -235,6 +237,10 @@ export const DEFAULT_LAYOUT_CONFIG: MessageLayoutConfig = {
         screenshot_alert: {
             height: { base: 80 },
             width: { maxPercent: 0.7, min: 250 },
+        },
+        call: {
+            height: { base: 120 },
+            width: { maxPercent: 0.6, min: 200 },
         },
         call_missed: {
             height: { base: 120 },

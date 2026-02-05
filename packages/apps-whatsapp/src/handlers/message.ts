@@ -63,6 +63,15 @@ export function registerMessageHandlers(): void {
       newMessage.caption = msgPayload.caption;
     } else if (msgType === "gif") {
       newMessage.gifUrl = msgPayload.gifUrl;
+    } else if (msgType === "system") {
+      newMessage.systemType =
+        payload.systemType ??
+        (msgPayload as { systemType?: string }).systemType;
+    } else if (msgType === "call" || msgType === "call_missed") {
+      newMessage.callType = payload.callType as WhatsAppMessage["callType"];
+      newMessage.duration =
+        (payload.callDuration as number | undefined) ??
+        (msgPayload.duration as number | undefined);
     }
 
     if (payload.replyTo) {
@@ -116,6 +125,15 @@ export function registerMessageHandlers(): void {
       newMessage.caption = payload.caption ?? msgPayload.caption;
     } else if (msgType === "gif") {
       newMessage.gifUrl = payload.url ?? msgPayload.gifUrl;
+    } else if (msgType === "system") {
+      newMessage.systemType =
+        payload.systemType ??
+        (msgPayload as { systemType?: string }).systemType;
+    } else if (msgType === "call" || msgType === "call_missed") {
+      newMessage.callType = payload.callType as WhatsAppMessage["callType"];
+      newMessage.duration =
+        (payload.callDuration as number | undefined) ??
+        (msgPayload.duration as number | undefined);
     }
 
     if (payload.replyTo) {

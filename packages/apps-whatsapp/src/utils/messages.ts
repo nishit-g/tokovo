@@ -66,6 +66,8 @@ export function normalizeMessage(
     (raw.contactName || raw.contactPhone ? "contact" : undefined) ??
     (raw.locationName || raw.latitude ? "location" : undefined) ??
     (raw.voice || raw.audio ? "voice" : undefined) ??
+    (raw.systemType ? "system" : undefined) ??
+    (raw.callType || raw.callDuration || raw.call ? "call" : undefined) ??
     "text";
 
   const id =
@@ -142,6 +144,29 @@ export function normalizeMessage(
       break;
     case "system":
       base.systemType = raw.systemType as WhatsAppMessage["systemType"];
+      base.text = raw.text as string | undefined;
+      break;
+    case "call": {
+      const callType =
+        (raw.callType as WhatsAppMessage["callType"]) ??
+        (raw.isVideo ? "video" : raw.isVoice ? "voice" : undefined);
+      base.callType = callType;
+      base.duration =
+        (raw.callDuration as number) ??
+        (raw.duration as number) ??
+        undefined;
+      base.text = raw.text as string | undefined;
+      break;
+    }
+    case "call_missed": {
+      const callType =
+        (raw.callType as WhatsAppMessage["callType"]) ??
+        (raw.isVideo ? "video" : raw.isVoice ? "voice" : undefined);
+      base.callType = callType;
+      base.text = raw.text as string | undefined;
+      break;
+    }
+    case "screenshot_alert":
       base.text = raw.text as string | undefined;
       break;
     case "link":

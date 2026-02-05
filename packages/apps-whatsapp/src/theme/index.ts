@@ -20,6 +20,22 @@ export interface WhatsAppColorPalette {
   accent: string;
   link: string;
   systemMessage: string;
+  systemMessageBg: string;
+  systemMessageBorder: string;
+  systemMessageShadow: string;
+  systemBannerBg: string;
+  systemBannerText: string;
+  systemBannerBorder: string;
+  systemBannerLink: string;
+  systemBannerIcon: string;
+  datePillBg: string;
+  datePillBorder: string;
+  datePillText: string;
+  callCardIconBgIncoming: string;
+  callCardIconBgOutgoing: string;
+  callCardIcon: string;
+  callCardMissed: string;
+  callCardSubtext: string;
   typingIndicator: string;
   unreadBadge: string;
   unreadBadgeText: string;
@@ -66,7 +82,7 @@ export interface WhatsAppTheme {
   safeArea: WhatsAppSafeArea;
 }
 
-const sharedColors: Partial<WhatsAppColorPalette> = {
+const sharedColors: WhatsAppColorPalette = {
   sentBubble: "#DCF8C6",
   receivedBubble: "#FFFFFF",
   sentBubbleText: "#000000",
@@ -74,8 +90,34 @@ const sharedColors: Partial<WhatsAppColorPalette> = {
   timestamp: "#667781",
   checkmark: "#667781",
   checkmarkRead: "#53BDEB",
+  background: "#FFFFFF",
+  chatBackground: "#E8E2DA",
+  headerBackground: "#F9FAFB",
+  headerText: "#0B0B0C",
+  inputBackground: "#FFFFFF",
+  inputText: "#000000",
+  inputPlaceholder: "#98A1A8",
+  divider: "#E4E6EB",
   accent: "#25D366",
   link: "#027EB5",
+  systemMessage: "#667781",
+  systemMessageBg: "rgba(255,255,255,0.92)",
+  systemMessageBorder: "rgba(0,0,0,0.06)",
+  systemMessageShadow: "0 1px 1.5px rgba(0,0,0,0.12)",
+  systemBannerBg: "#FFF3C4",
+  systemBannerText: "#6A5A00",
+  systemBannerBorder: "#F3DFA3",
+  systemBannerLink: "#027EB5",
+  systemBannerIcon: "#6A5A00",
+  datePillBg: "rgba(255,255,255,0.94)",
+  datePillBorder: "rgba(0,0,0,0.08)",
+  datePillText: "#5B6770",
+  callCardIconBgIncoming: "rgba(0,0,0,0.06)",
+  callCardIconBgOutgoing: "rgba(255,255,255,0.35)",
+  callCardIcon: "#0B0B0C",
+  callCardMissed: "#FF3B30",
+  callCardSubtext: "#667781",
+  typingIndicator: "#5B6770",
   unreadBadge: "#25D366",
   unreadBadgeText: "#FFFFFF",
   onlineStatus: "#25D366",
@@ -216,6 +258,22 @@ export const iosDarkTheme: WhatsAppTheme = {
     divider: "#2A3942",
     timestamp: "#8696A0",
     systemMessage: "#8696A0",
+    systemMessageBg: "rgba(31,44,52,0.78)",
+    systemMessageBorder: "rgba(255,255,255,0.08)",
+    systemMessageShadow: "0 1px 2px rgba(0,0,0,0.55)",
+    systemBannerBg: "#2B2A1E",
+    systemBannerText: "#F4E6B1",
+    systemBannerBorder: "#3A3828",
+    systemBannerLink: "#7BB4FF",
+    systemBannerIcon: "#F4E6B1",
+    datePillBg: "rgba(31,44,52,0.92)",
+    datePillBorder: "rgba(255,255,255,0.08)",
+    datePillText: "#8696A0",
+    callCardIconBgIncoming: "rgba(255,255,255,0.1)",
+    callCardIconBgOutgoing: "rgba(255,255,255,0.2)",
+    callCardIcon: "#E8F6FF",
+    callCardMissed: "#FF453A",
+    callCardSubtext: "#8696A0",
   },
 };
 
@@ -237,6 +295,22 @@ export const androidDarkTheme: WhatsAppTheme = {
     divider: "#2A3942",
     timestamp: "#8696A0",
     systemMessage: "#8696A0",
+    systemMessageBg: "rgba(31,44,52,0.78)",
+    systemMessageBorder: "rgba(255,255,255,0.08)",
+    systemMessageShadow: "0 1px 2px rgba(0,0,0,0.55)",
+    systemBannerBg: "#2B2A1E",
+    systemBannerText: "#F4E6B1",
+    systemBannerBorder: "#3A3828",
+    systemBannerLink: "#7BB4FF",
+    systemBannerIcon: "#F4E6B1",
+    datePillBg: "rgba(31,44,52,0.92)",
+    datePillBorder: "rgba(255,255,255,0.08)",
+    datePillText: "#8696A0",
+    callCardIconBgIncoming: "rgba(255,255,255,0.1)",
+    callCardIconBgOutgoing: "rgba(255,255,255,0.2)",
+    callCardIcon: "#E8F6FF",
+    callCardMissed: "#FF453A",
+    callCardSubtext: "#8696A0",
   },
 };
 
@@ -256,6 +330,22 @@ const GHIBLI_OVERRIDES: Partial<WhatsAppTheme> = {
     divider: "#D7C9B6",
     timestamp: "#8C7F6B",
     systemMessage: "#8C7F6B",
+    systemMessageBg: "rgba(255,250,242,0.94)",
+    systemMessageBorder: "#E4D7C4",
+    systemMessageShadow: "0 1px 2px rgba(75,59,41,0.12)",
+    systemBannerBg: "#F7E6BD",
+    systemBannerText: "#6A5739",
+    systemBannerBorder: "#E4D2A2",
+    systemBannerLink: "#3E7FA8",
+    systemBannerIcon: "#6A5739",
+    datePillBg: "rgba(255,250,242,0.96)",
+    datePillBorder: "#E4D7C4",
+    datePillText: "#8C7F6B",
+    callCardIconBgIncoming: "rgba(94,74,42,0.08)",
+    callCardIconBgOutgoing: "rgba(255,255,255,0.45)",
+    callCardIcon: "#2F2A24",
+    callCardMissed: "#C8625C",
+    callCardSubtext: "#8C7F6B",
     typingIndicator: "#8C7F6B",
     accent: "#6BAA7A",
     link: "#3E7FA8",
@@ -283,6 +373,22 @@ const CYBERPUNK_OVERRIDES: Partial<WhatsAppTheme> = {
     divider: "#1E2A3A",
     timestamp: "#7BB4FF",
     systemMessage: "#7BB4FF",
+    systemMessageBg: "rgba(15,19,38,0.92)",
+    systemMessageBorder: "rgba(0,245,255,0.2)",
+    systemMessageShadow: "0 1px 2px rgba(0,0,0,0.6)",
+    systemBannerBg: "#2C1C3C",
+    systemBannerText: "#F8E7FF",
+    systemBannerBorder: "#3D2C52",
+    systemBannerLink: "#FF2D95",
+    systemBannerIcon: "#FF2D95",
+    datePillBg: "rgba(18,23,43,0.92)",
+    datePillBorder: "#1E2A3A",
+    datePillText: "#7BB4FF",
+    callCardIconBgIncoming: "rgba(255,45,149,0.18)",
+    callCardIconBgOutgoing: "rgba(0,245,255,0.2)",
+    callCardIcon: "#E8F6FF",
+    callCardMissed: "#FF2D95",
+    callCardSubtext: "#7BB4FF",
     typingIndicator: "#7BB4FF",
     accent: "#00F5FF",
     link: "#FF2D95",

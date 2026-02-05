@@ -29,7 +29,7 @@ export const MessageBubble = memo(function MessageBubble({
 }: MessageBubbleProps) {
   const theme = useTheme();
 
-  const isSystem = message.type === "system";
+  const isSystem = message.type === "system" || message.type === "screenshot_alert";
   const isSticker = message.type === "sticker";
   const isSelfContainedMedia = [
     "voice",

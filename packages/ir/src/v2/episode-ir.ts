@@ -14,10 +14,14 @@ import type { TrackEvent } from "./track-event";
 
 export interface Message {
   from: string;
+  type?: string;
+  systemType?: string;
+  callType?: "voice" | "video";
   text?: string;
   image?: string;
   video?: string;
   voice?: string;
+  duration?: number;
   timestamp?: number; // Negative = before episode start
 }
 

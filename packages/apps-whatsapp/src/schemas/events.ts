@@ -59,10 +59,16 @@ export const MessageReceivedEventSchema = BaseEventSchema.extend({
           "location",
           "link",
           "system",
+          "call",
+          "call_missed",
+          "screenshot_alert",
         ])
         .optional(),
       messageId: z.string().optional(),
       replyTo: ReplyToSchema.optional(),
+      systemType: z.string().optional(),
+      callType: z.enum(["voice", "video"]).optional(),
+      callDuration: z.number().optional(),
     })
     .optional(),
   message: z
@@ -78,6 +84,7 @@ export const MessageReceivedEventSchema = BaseEventSchema.extend({
       thumbnailUrl: z.string().optional(),
       caption: z.string().optional(),
       duration: z.number().optional(),
+      systemType: z.string().optional(),
     })
     .optional(),
 });
@@ -100,6 +107,8 @@ export const MessageSentEventSchema = BaseEventSchema.extend({
           "contact",
           "location",
           "link",
+          "call",
+          "call_missed",
         ])
         .optional(),
       messageId: z.string().optional(),
@@ -107,6 +116,9 @@ export const MessageSentEventSchema = BaseEventSchema.extend({
       caption: z.string().optional(),
       durationSeconds: z.number().optional(),
       replyTo: ReplyToSchema.optional(),
+      systemType: z.string().optional(),
+      callType: z.enum(["voice", "video"]).optional(),
+      callDuration: z.number().optional(),
     })
     .optional(),
   message: z
@@ -122,6 +134,7 @@ export const MessageSentEventSchema = BaseEventSchema.extend({
       thumbnailUrl: z.string().optional(),
       caption: z.string().optional(),
       duration: z.number().optional(),
+      systemType: z.string().optional(),
     })
     .optional(),
 });

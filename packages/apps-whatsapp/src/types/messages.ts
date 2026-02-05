@@ -18,6 +18,7 @@ export type WhatsAppMessageType =
   | "link"
   | "deleted"
   | "sticker"
+  | "call"
   | "call_missed"
   | "screenshot_alert"
   | "document"
@@ -98,9 +99,26 @@ export interface SystemMessage extends BaseMessage {
     | "admin_change"
     | "group_created"
     | "group_name_changed"
-    | "date_change";
+    | "date_change"
+    | "encryption_notice";
   targetMember?: string;
   actorName?: string;
+}
+
+export interface CallMessage extends BaseMessage {
+  type: "call";
+  callType?: "voice" | "video";
+  duration?: number;
+}
+
+export interface MissedCallMessage extends BaseMessage {
+  type: "call_missed";
+  callType?: "voice" | "video";
+}
+
+export interface ScreenshotAlertMessage extends BaseMessage {
+  type: "screenshot_alert";
+  text?: string;
 }
 
 export interface DeletedMessage extends BaseMessage {
@@ -155,6 +173,9 @@ export type MessageData =
   | GifMessage
   | StickerMessage
   | SystemMessage
+  | CallMessage
+  | MissedCallMessage
+  | ScreenshotAlertMessage
   | DeletedMessage
   | LinkMessage
   | DocumentMessage
@@ -201,6 +222,7 @@ export interface WhatsAppMessage extends BaseMessage {
   stickerUrl?: string;
   caption?: string;
   duration?: number;
+  callType?: "voice" | "video";
   isPlaying?: boolean;
   playProgress?: number;
   edited?: boolean;

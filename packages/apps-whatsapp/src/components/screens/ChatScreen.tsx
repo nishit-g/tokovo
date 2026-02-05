@@ -187,6 +187,25 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({
           text: m.text ?? "",
           systemType: m.systemType as SystemMessage["systemType"],
         };
+      case "call":
+        return {
+          ...base,
+          type: "call" as const,
+          callType: m.callType as "voice" | "video" | undefined,
+          duration: m.duration,
+        };
+      case "call_missed":
+        return {
+          ...base,
+          type: "call_missed" as const,
+          callType: m.callType as "voice" | "video" | undefined,
+        };
+      case "screenshot_alert":
+        return {
+          ...base,
+          type: "screenshot_alert" as const,
+          text: m.text ?? "Screenshot taken",
+        };
       case "text":
       default:
         return { ...base, type: "text" as const, text: m.text || "" };

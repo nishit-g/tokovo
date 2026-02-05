@@ -36,6 +36,13 @@ export interface ImageOptions {
   height?: number;
 }
 
+export interface CallOptions {
+  callType?: "voice" | "video";
+  duration?: number;
+  missed?: boolean;
+  text?: string;
+}
+
 export interface TypingOptions {
   actor?: string;
 }
@@ -85,6 +92,36 @@ export class WhatsAppPointBuilder {
       silent: options.silent,
       typed: options.typed,
       charDelay: options.charDelay,
+    });
+  }
+
+  receiveCall(from: string, options: CallOptions = {}): void {
+    const messageType = options.missed ? "call_missed" : "call";
+    this._push("MESSAGE_RECEIVED", {
+      from,
+      text: options.text ?? "",
+      messageType,
+      callType: options.callType ?? "voice",
+      callDuration: options.duration,
+    });
+  }
+
+  sendCall(options: CallOptions = {}): void {
+    const messageType = options.missed ? "call_missed" : "call";
+    this._push("MESSAGE_SENT", {
+      text: options.text ?? "",
+      messageType,
+      callType: options.callType ?? "voice",
+      callDuration: options.duration,
+    });
+  }
+
+  encryptionNotice(text?: string): void {
+    this._push("MESSAGE_RECEIVED", {
+      from: "system",
+      text: text ?? "",
+      messageType: "system",
+      systemType: "encryption_notice",
     });
   }
 
@@ -637,6 +674,78 @@ export class WhatsAppTrackBuilder {
       _declarationOrder: this._getOrder(),
     });
     this._currentTime += 0.5 * this._fps;
+    return this;
+  }
+
+  receiveCall(
+    from: string,
+    options: CallOptions = {},
+  ): this {
+    const conversationId = this._currentConversation || this._conversationId;
+    const messageType = options.missed ? "call_missed" : "call";
+    this._events.push({
+      at: this._currentTime,
+      deviceId: this._deviceId,
+      kind: "APP",
+      appId: "app_whatsapp",
+      type: "MESSAGE_RECEIVED",
+      conversationId,
+      payload: {
+        conversationId,
+        from,
+        text: options.text ?? "",
+        messageType,
+        callType: options.callType ?? "voice",
+        callDuration: options.duration,
+      },
+      _declarationOrder: this._getOrder(),
+    });
+    this._currentTime += 0.5 * this._fps;
+    return this;
+  }
+
+  sendCall(options: CallOptions = {}): this {
+    const conversationId = this._currentConversation || this._conversationId;
+    const messageType = options.missed ? "call_missed" : "call";
+    this._events.push({
+      at: this._currentTime,
+      deviceId: this._deviceId,
+      kind: "APP",
+      appId: "app_whatsapp",
+      type: "MESSAGE_SENT",
+      conversationId,
+      payload: {
+        conversationId,
+        text: options.text ?? "",
+        messageType,
+        callType: options.callType ?? "voice",
+        callDuration: options.duration,
+      },
+      _declarationOrder: this._getOrder(),
+    });
+    this._currentTime += 0.5 * this._fps;
+    return this;
+  }
+
+  encryptionNotice(text?: string): this {
+    const conversationId = this._currentConversation || this._conversationId;
+    this._events.push({
+      at: this._currentTime,
+      deviceId: this._deviceId,
+      kind: "APP",
+      appId: "app_whatsapp",
+      type: "MESSAGE_RECEIVED",
+      conversationId,
+      payload: {
+        conversationId,
+        from: "system",
+        text: text ?? "",
+        messageType: "system",
+        systemType: "encryption_notice",
+      },
+      _declarationOrder: this._getOrder(),
+    });
+    this._currentTime += 0.4 * this._fps;
     return this;
   }
 

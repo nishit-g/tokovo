@@ -7,7 +7,7 @@
 
 import React from "react";
 import { Platform } from "@tokovo/core";
-import { whatsappColors, typography } from "./theme";
+import { useTheme } from "../theme/context";
 
 interface DateSeparatorProps {
     text: string;
@@ -18,28 +18,33 @@ export const DateSeparator: React.FC<DateSeparatorProps> = ({
     text = "Today",
     platform: _platform,
 }) => {
+    const theme = useTheme();
+    const paddingY = Math.max(10, theme.spacing.sectionGap - 4);
+    const pillPaddingX = Math.max(14, theme.spacing.messagePaddingHorizontal);
+    const pillRadius = Math.max(12, theme.spacing.bubbleRadius - 6);
     return (
         <div style={{
             display: "flex",
             justifyContent: "center",
             alignItems: "center",
-            padding: "16px 0",
+            padding: `${paddingY}px 0`,
         }}>
             <div
                 style={{
-                    backgroundColor: whatsappColors.surfaceGlass,
-                    padding: "6px 18px",
-                    borderRadius: 16,
-                    border: `0.5px solid ${whatsappColors.separatorLight}`,
-                    boxShadow: "0 1px 2px rgba(0,0,0,0.08)",
+                    backgroundColor: theme.colors.datePillBg,
+                    padding: "6px",
+                    paddingLeft: pillPaddingX,
+                    paddingRight: pillPaddingX,
+                    borderRadius: pillRadius,
+                    border: `0.5px solid ${theme.colors.datePillBorder}`,
+                    boxShadow: theme.colors.systemMessageShadow,
                 }}>
                 <span style={{
-                    fontSize: typography.caption.fontSize,
+                    fontSize: theme.typography.systemMessageFontSize,
                     fontWeight: 600,
-                    color: whatsappColors.textSecondary,
-                    fontFamily: "inherit",
-                    letterSpacing: 0.4,
-                    textTransform: "uppercase",
+                    color: theme.colors.datePillText,
+                    fontFamily: theme.typography.fontFamily,
+                    letterSpacing: 0,
                 }}>
                     {text}
                 </span>

@@ -174,6 +174,7 @@ export class LayoutCache {
       hash = hashMaybeString(hash, "stickerUrl", message.stickerUrl);
       hash = hashMaybeString(hash, "thumbnailUrl", message.thumbnailUrl);
       hash = hashMaybeNumber(hash, "duration", message.duration);
+      hash = hashMaybeString(hash, "callType", message.callType);
       hash = hashMaybeBoolean(hash, "isPlaying", message.isPlaying);
       hash = hashMaybeNumber(hash, "playProgress", message.playProgress);
       hash = hashMaybeString(hash, "fileName", message.fileName);

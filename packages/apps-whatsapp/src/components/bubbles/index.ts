@@ -8,3 +8,4 @@ export * from "./VoiceMessageBubble";
 export * from "./DocumentMessageBubble";
 export * from "./ContactMessageBubble";
 export * from "./LocationMessageBubble";
+export * from "./CallMessageBubble";

@@ -43,8 +43,40 @@ export default defineEpisode({
             unreadCount: 2,
             hasStatus: true,
             initialMessages: [
-              { from: "Alex", text: "Morning! deck is ready?", timestamp: -7200 },
-              { from: "Me", text: "Sending in a bit ✅", timestamp: -7100 },
+              {
+                from: "system",
+                type: "system",
+                systemType: "encryption_notice",
+                text:
+                  "Messages and calls are end-to-end encrypted. Only people in this chat can read, listen to, or share them.",
+              },
+              {
+                from: "system",
+                type: "system",
+                systemType: "date_change",
+                text: "Yesterday",
+              },
+              { from: "Alex", text: "Morning! deck is ready?", timestamp: -86400 },
+              { from: "Me", text: "Sending in a bit ✅", timestamp: -86000 },
+              {
+                from: "system",
+                type: "system",
+                systemType: "date_change",
+                text: "Today",
+              },
+              {
+                from: "Me",
+                type: "call",
+                callType: "voice",
+                duration: 32,
+                timestamp: -3600,
+              },
+              {
+                from: "Alex",
+                type: "call_missed",
+                callType: "voice",
+                timestamp: -3500,
+              },
             ],
           },
           {

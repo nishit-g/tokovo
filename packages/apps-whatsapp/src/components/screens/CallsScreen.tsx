@@ -50,15 +50,28 @@ export const CallsScreen: React.FC<CallsScreenProps> = ({
       deviceId,
     );
     const lastMessage = normalizedMessages[normalizedMessages.length - 1];
-    const isMissed = (conv.unreadCount || 0) > 0 && lastMessage?.from !== "me";
-    const isVideo = conv.type === "group";
+    const lastCall = [...normalizedMessages]
+      .reverse()
+      .find((msg) => msg.type === "call" || msg.type === "call_missed");
+    const isMissed =
+      lastCall?.type === "call_missed" ||
+      ((conv.unreadCount || 0) > 0 && lastMessage?.from !== "me");
+    const isVideo =
+      lastCall?.callType === "video" || conv.type === "group";
+    const directionLabel =
+      lastCall?.type === "call_missed"
+        ? "Missed"
+        : lastCall?.from === "me"
+          ? "Outgoing"
+          : "Incoming";
     return {
       id: conv.id,
       name: conv.name || "Unknown",
       avatar: conv.avatar,
-      time: lastMessage?.timestamp || "Today",
+      time: (lastCall ?? lastMessage)?.timestamp || "Today",
       missed: isMissed,
       video: isVideo,
+      direction: directionLabel,
     };
   });
 
@@ -137,7 +150,7 @@ export const CallsScreen: React.FC<CallsScreenProps> = ({
                 {entry.name}
               </div>
               <div style={{ ...typography.body, color: whatsappColors.textSecondary }}>
-                {entry.missed ? "Missed" : "Outgoing"} · {entry.time}
+                {(entry.missed ? "Missed" : entry.direction) ?? "Outgoing"} · {entry.time}
               </div>
             </div>
 

@@ -378,6 +378,16 @@ export const ChatListScreen: React.FC<ChatListScreenProps> = ({
                     return "Location";
                   case "system":
                     return lastRenderable.text ?? "System update";
+                  case "call":
+                    return lastRenderable.callType === "video"
+                      ? "Video call"
+                      : "Voice call";
+                  case "call_missed":
+                    return lastRenderable.callType === "video"
+                      ? "Missed video call"
+                      : "Missed voice call";
+                  case "screenshot_alert":
+                    return "Screenshot alert";
                   case "document":
                     return lastRenderable.fileName
                       ? `Document • ${lastRenderable.fileName}`

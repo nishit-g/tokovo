@@ -26,6 +26,9 @@ export interface MessageReceivedPayload {
   messageType?: WhatsAppMessageType;
   url?: string;
   caption?: string;
+  systemType?: string;
+  callType?: "voice" | "video";
+  callDuration?: number;
 }
 
 export interface MessageSentPayload {
@@ -39,6 +42,9 @@ export interface MessageSentPayload {
   url?: string;
   caption?: string;
   durationSeconds?: number;
+  systemType?: string;
+  callType?: "voice" | "video";
+  callDuration?: number;
 }
 
 export interface ImageReceivedPayload {

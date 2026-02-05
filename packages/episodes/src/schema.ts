@@ -308,7 +308,7 @@ export const AppEventSchema = z.discriminatedUnion("type", [
     from: z.string(),
     text: z.string().optional(),
     messageType: z
-      .enum(["text", "system", "call_missed", "screenshot_alert"])
+      .enum(["text", "system", "call", "call_missed", "screenshot_alert"])
       .optional(),
     metadata: MessageMetadataSchema.optional(),
   }),
@@ -479,6 +479,7 @@ export const MessageSchema = z.object({
       "system",
       "deleted",
       "screenshot_alert",
+      "call",
       "call_missed",
     ])
     .optional(),
@@ -496,6 +497,7 @@ export const MessageSchema = z.object({
   duration: z.number().optional(),
   isPlaying: z.boolean().optional(),
   playProgress: z.number().optional(),
+  callType: z.enum(["voice", "video"]).optional(),
 
   // Interactions
   reactions: z
@@ -521,7 +523,15 @@ export const MessageSchema = z.object({
 
   // System message fields
   systemType: z
-    .enum(["member_added", "member_removed", "admin_change", "group_created"])
+    .enum([
+      "member_added",
+      "member_removed",
+      "admin_change",
+      "group_created",
+      "group_name_changed",
+      "date_change",
+      "encryption_notice",
+    ])
     .optional(),
   targetMember: z.string().optional(),
   actorName: z.string().optional(),

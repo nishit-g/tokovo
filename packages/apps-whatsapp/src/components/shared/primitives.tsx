@@ -184,20 +184,24 @@ export const SystemMessage = React.memo(function SystemMessage({
   style,
 }: SystemMessageProps): React.ReactElement {
   const theme = useTheme();
+  const paddingY = Math.max(4, theme.spacing.messagePaddingVertical - 2);
+  const paddingX = Math.max(12, theme.spacing.messagePaddingHorizontal);
+  const radius = Math.max(10, theme.spacing.bubbleRadius - 8);
 
   return (
     <div
       style={{
-        backgroundColor: "rgba(255, 255, 255, 0.9)",
-        borderRadius: 8,
-        padding: "4px 12px",
+        backgroundColor: theme.colors.systemMessageBg,
+        borderRadius: radius,
+        padding: `${paddingY}px ${paddingX}px`,
+        border: `0.5px solid ${theme.colors.systemMessageBorder}`,
         fontSize: theme.typography.systemMessageFontSize,
         color: theme.colors.systemMessage,
         textAlign: "center",
-        margin: "8px auto",
+        margin: `${Math.max(8, theme.spacing.sectionGap - 6)}px auto`,
         maxWidth: "80%",
         fontFamily: theme.typography.fontFamily,
-        boxShadow: "0 1px 2px rgba(0,0,0,0.1)",
+        boxShadow: theme.colors.systemMessageShadow,
         ...style,
       }}
     >

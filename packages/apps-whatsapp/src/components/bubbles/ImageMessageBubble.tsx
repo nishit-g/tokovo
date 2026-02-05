@@ -38,6 +38,7 @@ export const ImageMessageBubble = memo(function ImageMessageBubble({
       timestamp={timestamp}
       read={read}
       noPadding
+      overlayTimestamp
     >
       <div style={{ position: "relative", overflow: "hidden" }}>
         <Img
