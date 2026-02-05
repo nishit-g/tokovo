@@ -2,18 +2,6 @@
 
 import { useState, useEffect } from 'react'
 
-// Marquee component for logo strip
-function Marquee({ children, className = '' }: { children: React.ReactNode; className?: string }) {
-    return (
-        <div className={`relative overflow-hidden ${className}`}>
-            <div className="flex animate-[marquee_30s_linear_infinite]">
-                {children}
-                {children}
-            </div>
-        </div>
-    )
-}
-
 export function LandingPage() {
     const [email, setEmail] = useState('')
     const [submitted, setSubmitted] = useState(false)
