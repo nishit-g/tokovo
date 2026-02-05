@@ -4,4 +4,4 @@
  * @module device-camera/lowering
  */
 
-export { cameraV2Lowering, CAMERA_EVENT_TYPES } from "./handler";
+export { cameraV2Lowering, CAMERA_EVENT_TYPES } from "./handler.js";

@@ -1,8 +1,8 @@
 import { describe, it, expect } from "vitest";
-import { CameraDirector } from "../director";
-import { BehaviorRegistry } from "../behaviors";
-import { CameraContextBuilder } from "../context";
-import type { CameraEvent } from "../types";
+import { CameraDirector } from "../director.js";
+import { BehaviorRegistry } from "../behaviors.js";
+import { CameraContextBuilder } from "../context.js";
+import type { CameraEvent } from "../types/index.js";
 
 describe("CameraDirector", () => {
   const createMessageEvent = (

@@ -1,10 +1,10 @@
-export * from "./types";
-export * from "./anchors";
+export * from "./types/index.js";
+export * from "./anchors/index.js";
 
-export { processActiveEffects, registerCameraProcessor } from "./processors";
-export type { EffectProcessor, EffectProcessorContext } from "./processors";
+export { processActiveEffects, registerCameraProcessor } from "./processors/index.js";
+export type { EffectProcessor, EffectProcessorContext } from "./processors/index.js";
 
-export { cameraReducer } from "./reducer";
+export { cameraReducer } from "./reducer/index.js";
 
 export {
   applyEasing,
@@ -13,22 +13,22 @@ export {
   clamp,
   getProgress,
   seededRandom,
-} from "./utils";
+} from "./utils/index.js";
 
-export { cameraV2Lowering, CAMERA_EVENT_TYPES } from "./lowering";
+export { cameraV2Lowering, CAMERA_EVENT_TYPES } from "./lowering/index.js";
 
-export { DeviceCameraPlugin, registerCameraPlugin } from "./plugin";
+export { DeviceCameraPlugin, registerCameraPlugin } from "./plugin.js";
 
-export { CameraDirector } from "./director/director";
+export { CameraDirector } from "./director/director.js";
 
-export { applyCameraEffects } from "./director/applier";
+export { applyCameraEffects } from "./director/applier.js";
 
 export {
   BehaviorRegistry,
   FLUID_TENNIS_CASUAL,
   FLUID_TENNIS_ENERGETIC,
   FLUID_TENNIS_DRAMATIC,
-} from "./director/behaviors";
+} from "./director/behaviors.js";
 
 export type {
   CameraEvent,
@@ -50,6 +50,6 @@ export type {
   CameraDirectorOptions,
   CameraDirectorResult,
   OverrideFunction,
-} from "./director/types";
+} from "./director/types.js";
 
-export type { FluidTennisConfig } from "./director/behaviors";
+export type { FluidTennisConfig } from "./director/behaviors.js";

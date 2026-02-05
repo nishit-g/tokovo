@@ -17,6 +17,7 @@ import {
   TokovoConfig,
   TokovoConfigType,
   type LayoutCacheStore,
+  type CameraTransform,
 } from "@tokovo/core";
 import { PluginManagerClass } from "@tokovo/react";
 import { AppSurface, TokovoProvider } from "@tokovo/react";
@@ -38,6 +39,7 @@ import { VisualDebugger } from "./VisualDebugger";
 import { DynamicIsland } from "./os";
 import { useLayoutEngine } from "./engines/useLayoutEngine";
 import { useCameraEngine } from "./engines/useCameraEngine";
+import type { CameraEngineOutput } from "./engines/useCameraEngine";
 import { AppErrorBoundary } from "./ErrorBoundary";
 import { RendererRegistryProvider, type RendererRegistries } from "./RegistryContext";
 
@@ -65,6 +67,16 @@ interface TokovoRendererProps {
   eventIndex?: EventIndex;
   pluginManager: PluginManagerClass;
   registries: RendererRegistries;
+  onCameraDebugFrame?: (frame: CameraDebugFrame) => void;
+  cameraDebugShowAllAnchors?: boolean;
+}
+
+export interface CameraDebugFrame {
+  t: number;
+  appId?: string;
+  deviceId: string;
+  transform: CameraTransform;
+  debugInfo?: CameraEngineOutput["debugInfo"];
 }
 
 function createLayoutCacheStore(scopeKey: string): LayoutCacheStore {
@@ -99,6 +111,8 @@ const TokovoRendererInner: React.FC<TokovoRendererProps> = ({
   focusDeviceId,
   eventIndex,
   pluginManager,
+  onCameraDebugFrame,
+  cameraDebugShowAllAnchors,
 }) => {
   const pm = pluginManager;
   const deviceRegistries = useDeviceRegistries();
@@ -148,6 +162,17 @@ const TokovoRendererInner: React.FC<TokovoRendererProps> = ({
   });
 
   const { cameraStyle, deviceStyle, transform, debugInfo } = cameraOutput;
+
+  React.useEffect(() => {
+    if (!debug || !onCameraDebugFrame) return;
+    onCameraDebugFrame({
+      t,
+      appId: appId ?? undefined,
+      deviceId,
+      transform,
+      debugInfo,
+    });
+  }, [debug, onCameraDebugFrame, t, appId, deviceId, transform, debugInfo]);
 
   // ==========================================================================
   // 3. HELPER: Find active heads-up notification
@@ -408,6 +433,7 @@ const TokovoRendererInner: React.FC<TokovoRendererProps> = ({
           t={t}
           transform={transform}
           debugInfo={debugInfo}
+          showAllAnchors={cameraDebugShowAllAnchors}
         />
       )}
     </div>

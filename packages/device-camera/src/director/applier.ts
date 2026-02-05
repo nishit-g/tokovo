@@ -5,7 +5,7 @@ import type {
   ShakeParams,
   ResetParams,
   ZoomParams,
-} from "./types";
+} from "./types.js";
 
 interface CameraPointBuilder {
   at(time: string): CameraPointBuilder;

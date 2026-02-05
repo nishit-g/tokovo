@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { createDefaultCameraState, createZoomEffect } from "./fixtures";
+import { createDefaultCameraState, createZoomEffect } from "./fixtures.js";
 
 describe("device-camera package", () => {
   it("fixtures should create valid camera state", () => {

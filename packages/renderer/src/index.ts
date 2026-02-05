@@ -9,6 +9,7 @@
 // CORE RENDERERS
 // ===========================================================================
 export { TokovoRenderer } from "./TokovoRenderer";
+export type { CameraDebugFrame } from "./TokovoRenderer";
 export { DeviceFrame } from "./DeviceFrame";
 export { MultiDeviceRenderer } from "./MultiDeviceRenderer";
 export { AudioLayer } from "./AudioLayer";

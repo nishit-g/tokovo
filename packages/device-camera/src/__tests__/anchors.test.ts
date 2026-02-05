@@ -9,15 +9,15 @@ import {
   getRegisteredAppIds,
   clearAnchorProviders,
   getProviderCount,
-} from "../anchors";
+} from "../anchors/index.js";
 import {
   resolveAnchorWithFallback,
   anchorToOrigin,
   calculateFillScale,
   resolveAnchorFully,
-} from "../anchors/resolver";
-import type { AnchorProvider, Rect, AnchorSnapshot } from "../anchors/types";
-import { DEFAULT_FRAMING } from "../anchors/types";
+} from "../anchors/resolver.js";
+import type { AnchorProvider, Rect, AnchorSnapshot } from "../anchors/types.js";
+import { DEFAULT_FRAMING } from "../anchors/types.js";
 import type { WorldState } from "@tokovo/core";
 
 describe("camera anchor system", () => {

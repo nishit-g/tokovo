@@ -21,7 +21,7 @@ import {
   CameraState,
   DEFAULT_CAMERA_STATE,
   EasingType,
-} from "../types";
+} from "../types/index.js";
 
 import type { ViewLayoutMode } from "@tokovo/core";
 

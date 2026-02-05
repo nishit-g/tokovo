@@ -24,10 +24,10 @@ import {
   WhipPanEffect,
   SpringConfig,
   SPRING_PRESETS,
-} from "../types";
-import { AnchorSnapshot } from "../anchors/types";
-import { resolveAnchorFully } from "../anchors/resolver";
-import { applyEasing, lerp, springValue, fbm } from "../utils";
+} from "../types/index.js";
+import { AnchorSnapshot } from "../anchors/types.js";
+import { resolveAnchorFully } from "../anchors/resolver.js";
+import { applyEasing, lerp, springValue, fbm } from "../utils/index.js";
 
 function resolveSpring(
   spring: SpringConfig | string | undefined,

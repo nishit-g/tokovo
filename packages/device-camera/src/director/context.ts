@@ -3,7 +3,7 @@ import type {
   CameraEvent,
   CameraEventType,
   MessageEventPayload,
-} from "./types";
+} from "./types.js";
 
 const BURST_THRESHOLD_MS = 2000;
 const FAST_RHYTHM_THRESHOLD_MS = 1500;

@@ -13,7 +13,8 @@ import { WhatsAppTrackBuilder } from "@tokovo/apps-whatsapp";
 import {
   CameraDirectorPlugin,
   AudioDirectorPlugin,
-  OSDirectorPlugin, KeyboardPlugin
+  OSDirectorPlugin,
+  KeyboardPlugin,
 } from "@tokovo/compiler";
 
 let orderCounter = 0;
@@ -170,7 +171,6 @@ export default defineEpisode({
           wa.at("89s").sendImage("/placeholders/media.svg");
         },
       )
-
       .use(new CameraDirectorPlugin())
       .use(new AudioDirectorPlugin({ mood: "chill", volume: 0.15 }))
       .use(
@@ -181,36 +181,13 @@ export default defineEpisode({
           updateInterval: "15s",
         }),
       )
-
-      .mark("spam", "1s")
-      .mark("plan_reveal", "9s")
-      .mark("police_flashback", "12s")
-      .mark("tamatar_incident", "20s")
-      .mark("sticker_reaction", "22s")
-      .mark("club_reveal", "40s")
-      .mark("location_share", "45s")
-      .mark("document_share", "50s")
-      .mark("500_rupay_shock", "55s")
-      .mark("voice_note", "58s")
-      .mark("contact_share", "67s")
-      .mark("message_forward", "72s")
-      .mark("message_edit", "77s")
-      .mark("reaction", "79s")
-      .mark("gif_celebration", "83s")
-      .mark("acceptance", "88s")
-
-      .section("wake_up", "0s", "5s")
-      .section("the_pitch", "5s", "29s")
-      .section("club_twist", "29s", "56s")
-      .section("media_showcase", "56s", "75s")
-      .section("giving_in", "75s", "90s").use(
+      .use(
         new KeyboardPlugin({
           onlyForSentMessages: true,
           defaultCharDelay: 3,
           excludeShortMessages: 3,
         }),
       )
-
 
       .build(),
 });

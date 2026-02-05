@@ -7,19 +7,71 @@ export const VisualDebugger: React.FC<{
   transform: CameraTransform;
   debugInfo?: {
     activeEffectType?: string;
+    activeEffectId?: string;
     requestedAnchor?: string;
     resolvedAnchor?: string;
     fallbackUsed: boolean;
     resolvedRect?: { x: number; y: number; width: number; height: number };
+    warnings: string[];
+    anchors?: Record<
+      string,
+      { x: number; y: number; width: number; height: number }
+    >;
+    effectTimeline: Array<{
+      id: string;
+      type: string;
+      startFrame: number;
+      endFrame: number;
+      anchorId?: string;
+    }>;
   };
-}> = ({ world, t, transform, debugInfo }) => {
+  showAllAnchors?: boolean;
+}> = ({ world, t, transform, debugInfo, showAllAnchors = false }) => {
   const activeApp =
     world.devices[world.camera.activeDeviceId]?.foregroundAppId || "Home";
   const requested = debugInfo?.requestedAnchor ?? "-";
   const resolved = debugInfo?.resolvedAnchor ?? "-";
+  const warnings = debugInfo?.warnings ?? [];
 
   return (
     <>
+      {showAllAnchors &&
+        debugInfo?.anchors &&
+        Object.entries(debugInfo.anchors).map(([name, rect]) => (
+          <React.Fragment key={name}>
+            <div
+              style={{
+                position: "absolute",
+                left: rect.x,
+                top: rect.y,
+                width: rect.width,
+                height: rect.height,
+                border: "1px dashed rgba(255,255,255,0.8)",
+                borderRadius: 6,
+                zIndex: 9996,
+                pointerEvents: "none",
+              }}
+            />
+            <div
+              style={{
+                position: "absolute",
+                left: rect.x,
+                top: Math.max(4, rect.y - 16),
+                background: "rgba(255,255,255,0.85)",
+                color: "#111",
+                fontFamily: "monospace",
+                fontSize: 10,
+                padding: "1px 4px",
+                borderRadius: 3,
+                zIndex: 9997,
+                pointerEvents: "none",
+              }}
+            >
+              {name}
+            </div>
+          </React.Fragment>
+        ))}
+
       {debugInfo?.resolvedRect && (
         <>
           <div
@@ -56,6 +108,36 @@ export const VisualDebugger: React.FC<{
             {debugInfo.fallbackUsed ? " (fallback)" : ""}
           </div>
         </>
+      )}
+
+      {warnings.length > 0 && (
+        <div
+          style={{
+            position: "absolute",
+            top: 16,
+            right: 16,
+            display: "flex",
+            gap: 6,
+            zIndex: 10000,
+            pointerEvents: "none",
+          }}
+        >
+          {warnings.map((warning) => (
+            <div
+              key={warning}
+              style={{
+                background: "rgba(255, 104, 104, 0.92)",
+                color: "#fff",
+                fontFamily: "monospace",
+                fontSize: 11,
+                borderRadius: 999,
+                padding: "4px 8px",
+              }}
+            >
+              {warning}
+            </div>
+          ))}
+        </div>
       )}
 
       <div
@@ -104,6 +186,9 @@ export const VisualDebugger: React.FC<{
           <strong>effect</strong>: {debugInfo?.activeEffectType ?? "-"}
         </div>
         <div>
+          <strong>effectId</strong>: {debugInfo?.activeEffectId ?? "-"}
+        </div>
+        <div>
           <strong>target</strong>: {requested}
         </div>
         <div>
@@ -111,6 +196,9 @@ export const VisualDebugger: React.FC<{
         </div>
         <div>
           <strong>fallback</strong>: {debugInfo?.fallbackUsed ? "yes" : "no"}
+        </div>
+        <div>
+          <strong>warnings</strong>: {warnings.length > 0 ? warnings.join(", ") : "-"}
         </div>
       </div>
     </>

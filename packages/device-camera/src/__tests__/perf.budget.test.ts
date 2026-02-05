@@ -1,6 +1,6 @@
 import { describe, expect, test } from "vitest";
-import { processActiveEffects } from "../processors";
-import type { CameraEffect } from "../types";
+import { processActiveEffects } from "../processors/index.js";
+import type { CameraEffect } from "../types/index.js";
 
 function percentile(values: number[], p: number): number {
   const sorted = [...values].sort((a, b) => a - b);

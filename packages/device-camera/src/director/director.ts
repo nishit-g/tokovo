@@ -1,5 +1,5 @@
-import { CameraContextBuilder } from "./context";
-import { BehaviorRegistry } from "./behaviors";
+import { CameraContextBuilder } from "./context.js";
+import { BehaviorRegistry } from "./behaviors.js";
 import type {
   BehaviorConfig,
   BehaviorFunction,
@@ -7,7 +7,7 @@ import type {
   CameraDirectorResult,
   CameraEffect,
   CameraEvent,
-} from "./types";
+} from "./types.js";
 
 export class CameraDirector {
   private readonly _registry: BehaviorRegistry;

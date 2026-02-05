@@ -6,7 +6,7 @@ import type {
   CameraEvent,
   MessageEventPayload,
   NotificationEventPayload,
-} from "./types";
+} from "./types.js";
 
 export interface FluidTennisConfig {
   readonly baseScale: number;

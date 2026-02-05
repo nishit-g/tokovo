@@ -8,8 +8,8 @@
  */
 
 import { describe, test, expect } from "vitest";
-import { cameraReducer } from "../reducer";
-import { createDefaultCameraState } from "./fixtures";
+import { cameraReducer } from "../reducer/index.js";
+import { createDefaultCameraState } from "./fixtures.js";
 import { DEFAULT_CAMERA_TRANSFORM as DEFAULT_TRANSFORM } from "@tokovo/core";
 
 describe("cameraReducer", () => {

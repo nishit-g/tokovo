@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { cameraV2Lowering } from "../lowering";
+import { cameraV2Lowering } from "../lowering/index.js";
 
 describe("cameraV2Lowering v1", () => {
   it("maps TRACK_START to canonical track params", () => {

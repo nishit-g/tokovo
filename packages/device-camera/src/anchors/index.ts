@@ -12,9 +12,9 @@ export type {
   ResolvedAnchor,
   AnchorProvider,
   SemanticAnchorId,
-} from "./types";
+} from "./types.js";
 
-export { DEFAULT_FRAMING, EMPTY_SNAPSHOT } from "./types";
+export { DEFAULT_FRAMING, EMPTY_SNAPSHOT } from "./types.js";
 
 // Resolver
 export {
@@ -23,13 +23,13 @@ export {
   calculateFillScale,
   resolveAnchorFully,
   isAnchorAvailable,
-} from "./resolver";
+} from "./resolver.js";
 
 export {
   getAnchorDiagnostics,
   resetAnchorDiagnostics,
   type AnchorDiagnosticsSnapshot,
-} from "./diagnostics";
+} from "./diagnostics.js";
 
 // Registry
-export * from "./registry";
+export * from "./registry.js";

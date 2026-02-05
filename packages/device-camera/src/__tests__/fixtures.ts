@@ -1,4 +1,4 @@
-import type { CameraState, ZoomEffect } from "../types";
+import type { CameraState, ZoomEffect } from "../types/index.js";
 
 export function createDefaultCameraState(): CameraState {
   return {

@@ -58,6 +58,12 @@ When enabled, the preview shows:
 - current requested/resolved anchor
 - a red box around the currently focused/tracked anchor
 - fallback indicator when anchor resolution falls back
+- app-level panel in `apps/video-runner` (top-left toggle) with per-frame trace data
+- `Show All Anchors` mode to render every anchor rect + label
+- warning badges for `fallback_used`, `dead_zone_active`, `velocity_clamped`, `anchor_snapshot_missing`
+- effect timeline strip (current frame cursor + active effect highlight)
+- `Export Trace JSON` for frame-by-frame camera diagnostics
+- `Copy Repro Packet` for bug reports (episode, frame, URL, nearby trace window)
 
 ## Multiple Devices vs Multiple Cameras
 

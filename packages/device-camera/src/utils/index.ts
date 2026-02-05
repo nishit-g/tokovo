@@ -6,8 +6,8 @@
  * @module device-camera/utils
  */
 
-import type { EasingType, SpringConfig } from "../types";
-import { SPRING_PRESETS } from "../types";
+import type { EasingType, SpringConfig } from "../types/index.js";
+import { SPRING_PRESETS } from "../types/index.js";
 
 // =============================================================================
 // EASING FUNCTIONS

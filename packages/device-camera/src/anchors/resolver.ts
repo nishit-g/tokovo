@@ -4,9 +4,9 @@
  * @module device-camera/anchors/resolver
  */
 
-import { Rect, ResolvedAnchor, AnchorSnapshot, AnchorFraming } from "./types";
+import { Rect, ResolvedAnchor, AnchorSnapshot, AnchorFraming } from "./types.js";
 import type { AnchorRegistryClass } from "@tokovo/core";
-import { recordFallback, recordUnresolved } from "./diagnostics";
+import { recordFallback, recordUnresolved } from "./diagnostics.js";
 
 // =============================================================================
 // FALLBACK CHAINS

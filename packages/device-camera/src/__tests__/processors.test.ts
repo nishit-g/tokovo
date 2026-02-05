@@ -1,5 +1,5 @@
 import { describe, test, expect } from "vitest";
-import { processActiveEffects } from "../processors";
+import { processActiveEffects } from "../processors/index.js";
 import { DEFAULT_CAMERA_TRANSFORM as DEFAULT_TRANSFORM } from "@tokovo/core";
 import type {
   CameraEffect,
@@ -15,7 +15,7 @@ import type {
   DutchTiltEffect,
   FlashEffect,
   WhipPanEffect,
-} from "../types";
+} from "../types/index.js";
 import type { CameraTransform } from "@tokovo/core";
 
 describe("camera processors", () => {
