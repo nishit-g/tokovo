@@ -1,15 +1,5 @@
-import { Hero } from '@/components/Hero'
-import { Features } from '@/components/Features'
-import { Showcase } from '@/components/Showcase'
-import { CallToAction } from '@/components/CallToAction'
+import { LandingPage } from '@/components/LandingPage'
 
 export default function Home() {
-  return (
-    <>
-      <Hero />
-      <Showcase />
-      <Features />
-      <CallToAction />
-    </>
-  )
+  return <LandingPage />
 }

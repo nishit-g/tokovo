@@ -3,6 +3,7 @@ import { Inter } from 'next/font/google'
 import clsx from 'clsx'
 
 import '@/styles/tailwind.css'
+import { SmoothScroll } from '@/components/SmoothScroll'
 
 const inter = Inter({
   subsets: ['latin'],
@@ -11,12 +12,8 @@ const inter = Inter({
 })
 
 export const metadata: Metadata = {
-  title: {
-    template: '%s - Tokovo Studio',
-    default: 'Tokovo Studio - Video Content as Code',
-  },
-  description:
-    'The programmatic video engine for studios and enterprises. Define content as code, render pixel-perfect social videos at scale.',
+  title: 'Tokovo — Video content, as code',
+  description: 'The programmatic video engine. Define phones, apps, and conversations in TypeScript. Render cinematic social videos at scale.',
 }
 
 export default function RootLayout({
@@ -25,8 +22,12 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en" className={clsx('bg-gray-950 antialiased', inter.variable)}>
-      <body className="min-h-screen bg-gray-950 text-white">{children}</body>
+    <html lang="en" className={clsx('bg-[#0a0a0a] antialiased', inter.variable)}>
+      <body className="min-h-screen bg-[#0a0a0a] text-white">
+        <SmoothScroll>
+          {children}
+        </SmoothScroll>
+      </body>
     </html>
   )
 }

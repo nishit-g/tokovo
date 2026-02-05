@@ -1,50 +1,51 @@
 'use client'
 
-import { useRef, useEffect, useState } from 'react'
+import { useRef, useState, useEffect } from 'react'
 import { motion, useScroll, useTransform, useSpring, useInView } from 'framer-motion'
-import { Button } from '@/components/Button'
 
-// Magnetic button effect
-function MagneticButton({ children, className }: { children: React.ReactNode; className?: string }) {
-  const ref = useRef<HTMLDivElement>(null)
-  const [position, setPosition] = useState({ x: 0, y: 0 })
+// Smooth number counter
+function Counter({ value, suffix = '' }: { value: number; suffix?: string }) {
+  const ref = useRef(null)
+  const isInView = useInView(ref, { once: true })
+  const [count, setCount] = useState(0)
 
-  const handleMouse = (e: React.MouseEvent) => {
-    const { clientX, clientY } = e
-    const { left, top, width, height } = ref.current!.getBoundingClientRect()
-    const x = (clientX - left - width / 2) * 0.3
-    const y = (clientY - top - height / 2) * 0.3
-    setPosition({ x, y })
-  }
+  useEffect(() => {
+    if (isInView) {
+      let start = 0
+      const end = value
+      const duration = 2000
+      const increment = end / (duration / 16)
 
-  const reset = () => setPosition({ x: 0, y: 0 })
+      const timer = setInterval(() => {
+        start += increment
+        if (start >= end) {
+          setCount(end)
+          clearInterval(timer)
+        } else {
+          setCount(Math.floor(start))
+        }
+      }, 16)
 
-  return (
-    <motion.div
-      ref={ref}
-      onMouseMove={handleMouse}
-      onMouseLeave={reset}
-      animate={{ x: position.x, y: position.y }}
-      transition={{ type: 'spring', stiffness: 150, damping: 15 }}
-      className={className}
-    >
-      {children}
-    </motion.div>
-  )
+      return () => clearInterval(timer)
+    }
+  }, [isInView, value])
+
+  return <span ref={ref}>{count.toLocaleString()}{suffix}</span>
 }
 
-// Reveal text animation
-function RevealText({ children, delay = 0 }: { children: string; delay?: number }) {
-  const ref = useRef(null)
-  const isInView = useInView(ref, { once: true, margin: '-100px' })
-
+// Text reveal animation
+function RevealText({ children, delay = 0 }: { children: React.ReactNode; delay?: number }) {
   return (
-    <span ref={ref} className="inline-block overflow-hidden">
+    <span className="inline-block overflow-hidden">
       <motion.span
         className="inline-block"
         initial={{ y: '100%' }}
-        animate={isInView ? { y: 0 } : { y: '100%' }}
-        transition={{ duration: 0.8, delay, ease: [0.22, 1, 0.36, 1] }}
+        animate={{ y: 0 }}
+        transition={{
+          duration: 1,
+          delay,
+          ease: [0.22, 1, 0.36, 1]
+        }}
       >
         {children}
       </motion.span>
@@ -52,226 +53,266 @@ function RevealText({ children, delay = 0 }: { children: string; delay?: number 
   )
 }
 
-// Floating phone mockup
-function PhoneMockup() {
-  const ref = useRef(null)
-  const { scrollYProgress } = useScroll({
-    target: ref,
-    offset: ['start end', 'end start'],
-  })
+// Magnetic hover effect for buttons
+function MagneticButton({ children, className, ...props }: React.ButtonHTMLAttributes<HTMLButtonElement> & { className?: string }) {
+  const ref = useRef<HTMLButtonElement>(null)
+  const [position, setPosition] = useState({ x: 0, y: 0 })
 
-  const y = useTransform(scrollYProgress, [0, 1], [100, -100])
-  const rotate = useTransform(scrollYProgress, [0, 1], [5, -5])
-  const springY = useSpring(y, { stiffness: 100, damping: 30 })
-  const springRotate = useSpring(rotate, { stiffness: 100, damping: 30 })
+  const handleMouse = (e: React.MouseEvent) => {
+    const { clientX, clientY } = e
+    const { left, top, width, height } = ref.current!.getBoundingClientRect()
+    const x = (clientX - left - width / 2) * 0.15
+    const y = (clientY - top - height / 2) * 0.15
+    setPosition({ x, y })
+  }
 
   return (
-    <motion.div
+    <motion.button
       ref={ref}
-      style={{ y: springY, rotateZ: springRotate }}
-      className="relative"
-    >
-      {/* Phone shell */}
-      <div className="relative w-[280px] rounded-[50px] bg-black p-[8px] shadow-2xl shadow-black/50">
-        <div className="overflow-hidden rounded-[42px] bg-[#1a1a1a]">
-          {/* Dynamic island */}
-          <div className="flex justify-center pt-3">
-            <div className="h-8 w-28 rounded-full bg-black" />
-          </div>
-
-          {/* Screen content */}
-          <div className="aspect-[9/16] bg-gradient-to-b from-[#111b21] to-[#0b1014]">
-            {/* WhatsApp header */}
-            <div className="flex items-center gap-3 bg-[#202c33] px-4 py-3">
-              <div className="h-10 w-10 rounded-full bg-gradient-to-br from-violet-500 to-fuchsia-500" />
-              <div>
-                <div className="h-3 w-20 rounded bg-white/30" />
-                <div className="mt-1.5 h-2 w-12 rounded bg-white/10" />
-              </div>
-            </div>
-
-            {/* Messages */}
-            <div className="space-y-3 p-4">
-              <motion.div
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.5 }}
-                className="w-3/4 rounded-2xl rounded-tl-md bg-[#202c33] p-3"
-              >
-                <div className="h-2 w-full rounded bg-white/20" />
-                <div className="mt-2 h-2 w-2/3 rounded bg-white/10" />
-              </motion.div>
-
-              <motion.div
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 1 }}
-                className="ml-auto w-2/3 rounded-2xl rounded-tr-md bg-[#005c4b] p-3"
-              >
-                <div className="h-2 w-full rounded bg-white/30" />
-              </motion.div>
-
-              <motion.div
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 1.5 }}
-                className="w-4/5 rounded-2xl rounded-tl-md bg-[#202c33] p-3"
-              >
-                <div className="h-2 w-full rounded bg-white/20" />
-                <div className="mt-2 h-2 w-1/2 rounded bg-white/10" />
-              </motion.div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Glow */}
-      <div className="absolute -inset-10 -z-10 rounded-full bg-cyan-500/20 blur-3xl" />
-    </motion.div>
+      onMouseMove={handleMouse}
+      onMouseLeave={() => setPosition({ x: 0, y: 0 })}
+      animate={{ x: position.x, y: position.y }}
+      transition={{ type: 'spring', stiffness: 150, damping: 15 }}
+      className={className}
+      {...props}
+    />
   )
 }
 
 export function Hero() {
   const [email, setEmail] = useState('')
   const [submitted, setSubmitted] = useState(false)
-  const containerRef = useRef(null)
+  const containerRef = useRef<HTMLDivElement>(null)
 
   const { scrollYProgress } = useScroll({
     target: containerRef,
     offset: ['start start', 'end start'],
   })
 
-  const opacity = useTransform(scrollYProgress, [0, 0.5], [1, 0])
-  const scale = useTransform(scrollYProgress, [0, 0.5], [1, 0.95])
+  const videoScale = useTransform(scrollYProgress, [0, 0.5], [1, 0.9])
+  const videoY = useTransform(scrollYProgress, [0, 0.5], [0, 50])
+  const videoSpringScale = useSpring(videoScale, { stiffness: 100, damping: 30 })
+  const videoSpringY = useSpring(videoY, { stiffness: 100, damping: 30 })
 
   return (
-    <section ref={containerRef} className="relative min-h-[200vh]">
-      {/* Fixed hero content */}
-      <motion.div
-        style={{ opacity, scale }}
-        className="sticky top-0 flex min-h-screen items-center overflow-hidden bg-black"
-      >
-        {/* Grid lines */}
-        <div className="absolute inset-0 opacity-[0.03]">
-          {Array.from({ length: 20 }).map((_, i) => (
-            <div
-              key={i}
-              className="absolute top-0 bottom-0 w-px bg-white"
-              style={{ left: `${(i / 20) * 100}%` }}
-            />
-          ))}
-        </div>
+    <div ref={containerRef} className="relative min-h-[200vh] bg-black">
+      {/* Gradient background */}
+      <div className="fixed inset-0 bg-[radial-gradient(ellipse_at_top,_rgba(255,255,255,0.03),_transparent_50%)]" />
 
-        <div className="relative z-10 mx-auto w-full max-w-[1800px] px-6 lg:px-12">
-          <div className="grid gap-12 lg:grid-cols-2 lg:gap-0 lg:items-center">
-            {/* Left: Typography */}
-            <div className="max-w-2xl">
-              {/* Eyebrow */}
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ duration: 1, delay: 0.2 }}
-                className="mb-8"
-              >
-                <span className="font-mono text-xs uppercase tracking-[0.3em] text-gray-500">
-                  Programmatic Video Engine
-                </span>
-              </motion.div>
-
-              {/* Main headline - massive, bold */}
-              <h1 className="text-[clamp(3rem,10vw,8rem)] font-bold leading-[0.85] tracking-[-0.04em] text-white">
-                <RevealText delay={0}>Video</RevealText>
-                <br />
-                <RevealText delay={0.1}>content,</RevealText>
-                <br />
-                <span className="bg-gradient-to-r from-cyan-400 to-emerald-400 bg-clip-text text-transparent">
-                  <RevealText delay={0.2}>as code.</RevealText>
-                </span>
-              </h1>
-
-              {/* Subtext */}
-              <motion.p
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.8, delay: 0.6 }}
-                className="mt-8 max-w-md text-lg text-gray-500 leading-relaxed"
-              >
-                Define phones, apps, and conversations in TypeScript.
-                Render cinematic social videos at scale.
-              </motion.p>
-
-              {/* Email form */}
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.8, delay: 0.8 }}
-                className="mt-12"
-              >
-                {!submitted ? (
-                  <form
-                    onSubmit={(e) => { e.preventDefault(); setSubmitted(true) }}
-                    className="flex flex-col gap-4 sm:flex-row sm:items-center"
-                  >
-                    <input
-                      type="email"
-                      required
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      placeholder="your@email.com"
-                      className="w-full sm:w-72 border-b-2 border-gray-800 bg-transparent py-4 text-white placeholder:text-gray-600 focus:border-cyan-500 focus:outline-none transition-colors"
-                    />
-                    <MagneticButton>
-                      <Button type="submit" color="cyan" className="rounded-full px-8 py-4">
-                        Request Access
-                      </Button>
-                    </MagneticButton>
-                  </form>
-                ) : (
-                  <motion.div
-                    initial={{ opacity: 0, scale: 0.9 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    className="flex items-center gap-3 text-emerald-400"
-                  >
-                    <svg className="h-6 w-6" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                    </svg>
-                    <span className="text-lg">You're in. We'll be in touch.</span>
-                  </motion.div>
-                )}
-              </motion.div>
-            </div>
-
-            {/* Right: Phone mockup */}
-            <motion.div
-              initial={{ opacity: 0, x: 100 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 1, delay: 0.4, ease: [0.22, 1, 0.36, 1] }}
-              className="flex justify-center lg:justify-end"
+      {/* Sticky hero */}
+      <div className="sticky top-0 flex min-h-screen flex-col">
+        {/* Header */}
+        <motion.header
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, delay: 0.5 }}
+          className="relative z-20 flex items-center justify-between px-8 py-8 lg:px-16"
+        >
+          <span className="text-lg font-medium tracking-tight text-white">
+            tokovo
+          </span>
+          <a
+            href="#access"
+            className="group flex items-center gap-2 text-sm text-white/50 transition-colors hover:text-white"
+          >
+            Request access
+            <svg
+              className="h-4 w-4 transition-transform group-hover:translate-x-1"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
             >
-              <PhoneMockup />
-            </motion.div>
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 8l4 4m0 0l-4 4m4-4H3" />
+            </svg>
+          </a>
+        </motion.header>
+
+        {/* Main content */}
+        <div className="relative z-10 flex flex-1 flex-col items-center justify-center px-6 pb-12">
+          {/* Eyebrow */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.8, delay: 0.2 }}
+          >
+            <span className="mb-6 inline-block rounded-full border border-white/10 bg-white/5 px-4 py-1.5 text-xs font-medium uppercase tracking-widest text-white/60">
+              For studios & enterprises
+            </span>
+          </motion.div>
+
+          {/* Headline */}
+          <h1 className="max-w-4xl text-center text-5xl font-bold leading-[1.1] tracking-tight text-white sm:text-6xl lg:text-7xl">
+            <RevealText delay={0.3}>Video content,</RevealText>
+            <br />
+            <span className="text-white/40">
+              <RevealText delay={0.4}>as code</RevealText>
+            </span>
+          </h1>
+
+          {/* Subtitle */}
+          <motion.p
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.7 }}
+            className="mt-6 max-w-xl text-center text-lg text-white/40"
+          >
+            Define phones, apps, and conversations in TypeScript.
+            Render cinematic social videos at scale.
+          </motion.p>
+
+          {/* Video container */}
+          <motion.div
+            initial={{ opacity: 0, y: 40 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 1, delay: 0.9, ease: [0.22, 1, 0.36, 1] }}
+            style={{ scale: videoSpringScale, y: videoSpringY }}
+            className="mt-16 w-full max-w-5xl"
+          >
+            <div className="group relative">
+              {/* Glow effect */}
+              <div className="absolute -inset-1 rounded-2xl bg-gradient-to-r from-white/10 via-white/5 to-white/10 opacity-0 blur-xl transition-opacity duration-500 group-hover:opacity-100" />
+
+              {/* Video frame */}
+              <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-black/50 backdrop-blur">
+                {/* Browser chrome */}
+                <div className="flex items-center gap-3 border-b border-white/5 bg-white/[0.02] px-4 py-3">
+                  <div className="flex gap-1.5">
+                    <div className="h-2.5 w-2.5 rounded-full bg-white/10" />
+                    <div className="h-2.5 w-2.5 rounded-full bg-white/10" />
+                    <div className="h-2.5 w-2.5 rounded-full bg-white/10" />
+                  </div>
+                  <div className="flex-1 text-center">
+                    <span className="text-xs text-white/20">tokovo.studio</span>
+                  </div>
+                </div>
+
+                {/* Video area */}
+                <div className="relative aspect-video bg-black">
+                  {/* Video placeholder - replace with actual video */}
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <motion.div
+                      className="flex flex-col items-center gap-4"
+                      whileHover={{ scale: 1.05 }}
+                      transition={{ type: 'spring', stiffness: 300 }}
+                    >
+                      <div className="flex h-20 w-20 items-center justify-center rounded-full bg-white/5 ring-1 ring-white/10 transition-colors hover:bg-white/10">
+                        <svg className="h-8 w-8 text-white/60" fill="currentColor" viewBox="0 0 24 24">
+                          <path d="M8 5v14l11-7z" />
+                        </svg>
+                      </div>
+                      <span className="text-sm text-white/30">Watch demo</span>
+                    </motion.div>
+                  </div>
+
+                  {/* 
+                    Replace placeholder with:
+                    <video 
+                      src="/demo.mp4" 
+                      autoPlay 
+                      loop 
+                      muted 
+                      playsInline
+                      className="h-full w-full object-cover"
+                    />
+                  */}
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        </div>
+      </div>
+
+      {/* Bottom section - scrolls into view */}
+      <div id="access" className="relative bg-black px-6 py-32">
+        <div className="mx-auto max-w-4xl">
+          {/* Stats */}
+          <motion.div
+            initial={{ opacity: 0, y: 40 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.8 }}
+            className="mb-24 grid grid-cols-3 gap-8 border-b border-white/5 pb-16"
+          >
+            <div className="text-center">
+              <div className="text-4xl font-bold text-white lg:text-5xl">
+                <Counter value={10} suffix="+" />
+              </div>
+              <div className="mt-2 text-sm text-white/30">Device models</div>
+            </div>
+            <div className="text-center">
+              <div className="text-4xl font-bold text-white lg:text-5xl">
+                <Counter value={5} />
+              </div>
+              <div className="mt-2 text-sm text-white/30">App simulators</div>
+            </div>
+            <div className="text-center">
+              <div className="text-4xl font-bold text-white lg:text-5xl">
+                <Counter value={4} suffix="K" />
+              </div>
+              <div className="mt-2 text-sm text-white/30">Max resolution</div>
+            </div>
+          </motion.div>
+
+          {/* CTA */}
+          <motion.div
+            initial={{ opacity: 0, y: 40 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.8, delay: 0.2 }}
+            className="text-center"
+          >
+            <h2 className="text-3xl font-bold text-white sm:text-4xl">
+              Ready to ship video at scale?
+            </h2>
+            <p className="mt-4 text-white/40">
+              Join the waitlist for early access.
+            </p>
+
+            <div className="mt-10 flex justify-center">
+              {!submitted ? (
+                <form
+                  onSubmit={(e) => { e.preventDefault(); setSubmitted(true) }}
+                  className="flex w-full max-w-md flex-col gap-3 sm:flex-row"
+                >
+                  <input
+                    type="email"
+                    required
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="your@email.com"
+                    className="flex-1 rounded-xl border border-white/10 bg-white/5 px-5 py-4 text-white placeholder:text-white/20 focus:border-white/20 focus:outline-none transition-colors"
+                  />
+                  <MagneticButton
+                    type="submit"
+                    className="rounded-xl bg-white px-8 py-4 font-medium text-black transition-colors hover:bg-white/90"
+                  >
+                    Request access
+                  </MagneticButton>
+                </form>
+              ) : (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  className="flex items-center gap-3 text-white"
+                >
+                  <svg className="h-5 w-5 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                  </svg>
+                  You're in. We'll be in touch.
+                </motion.div>
+              )}
+            </div>
+          </motion.div>
+
+          {/* Footer */}
+          <div className="mt-32 flex items-center justify-between border-t border-white/5 pt-8">
+            <span className="text-sm text-white/20">© {new Date().getFullYear()} Tokovo</span>
+            <a href="mailto:hello@tokovo.studio" className="text-sm text-white/20 hover:text-white/50 transition-colors">
+              Contact
+            </a>
           </div>
         </div>
-
-        {/* Scroll indicator */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 1.5 }}
-          className="absolute bottom-12 left-1/2 -translate-x-1/2"
-        >
-          <motion.div
-            animate={{ y: [0, 8, 0] }}
-            transition={{ duration: 1.5, repeat: Infinity }}
-            className="flex flex-col items-center gap-2 text-gray-600"
-          >
-            <span className="font-mono text-xs uppercase tracking-widest">Scroll</span>
-            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
-            </svg>
-          </motion.div>
-        </motion.div>
-      </motion.div>
-    </section>
+      </div>
+    </div>
   )
 }

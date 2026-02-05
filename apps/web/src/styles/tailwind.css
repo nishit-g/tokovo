@@ -2,82 +2,167 @@
 
 @plugin '@tailwindcss/forms';
 
+/* Import distinctive fonts */
+@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Space+Mono:wght@400;700&display=swap');
+
 @theme {
-  --text-*: initial;
-  --text-xs: 0.75rem;
-  --text-xs--line-height: 1rem;
-  --text-sm: 0.875rem;
-  --text-sm--line-height: 1.5rem;
-  --text-base: 1rem;
-  --text-base--line-height: 1.5rem;
-  --text-lg: 1.125rem;
-  --text-lg--line-height: 2rem;
-  --text-xl: 1.25rem;
-  --text-xl--line-height: 1.75rem;
-  --text-2xl: 1.5rem;
-  --text-2xl--line-height: 2rem;
-  --text-3xl: 2rem;
-  --text-3xl--line-height: 3rem;
-  --text-4xl: 2.5rem;
-  --text-4xl--line-height: 3rem;
-  --text-5xl: 3rem;
-  --text-5xl--line-height: 1;
-  --text-6xl: 3.75rem;
-  --text-6xl--line-height: 1;
-  --text-7xl: 4.5rem;
-  --text-7xl--line-height: 1;
-  --text-8xl: 6rem;
-  --text-8xl--line-height: 1;
-  --text-9xl: 8rem;
-  --text-9xl--line-height: 1;
+  /* Custom fonts - distinctive, not generic */
+  --font-serif: 'Instrument Serif', Georgia, serif;
+  --font-mono: 'Space Mono', monospace;
+  --font-sans: 'Space Mono', monospace;
 
-  --animate-fade-in: fade-in 0.5s linear forwards;
-  --animate-spin-slow: spin 4s linear infinite;
-  --animate-spin-slower: spin 6s linear infinite;
-  --animate-spin-reverse: spin-reverse 1s linear infinite;
-  --animate-spin-reverse-slow: spin-reverse 4s linear infinite;
-  --animate-spin-reverse-slower: spin-reverse 6s linear infinite;
+  /* Distinctive color palette - warm cream + ink black + copper accent */
+  --color-cream: #f5f0e8;
+  --color-ink: #0f0f0f;
+  --color-copper: #b87333;
+  --color-copper-light: #d4956a;
+  --color-stone: #8a8578;
+  --color-charcoal: #1a1a1a;
 
-  --radius-4xl: 2rem;
-  --radius-5xl: 2.5rem;
+  /* Typography scale */
+  --text-display: clamp(4rem, 12vw, 10rem);
+  --text-display--line-height: 0.9;
+  --text-display--letter-spacing: -0.03em;
 
-  --color-gray-50: oklch(0.985 0 0);
-  --color-gray-100: oklch(0.97 0 0);
-  --color-gray-200: oklch(0.922 0 0);
-  --color-gray-300: oklch(0.87 0 0);
-  --color-gray-400: oklch(0.708 0 0);
-  --color-gray-500: oklch(0.556 0 0);
-  --color-gray-600: oklch(0.439 0 0);
-  --color-gray-700: oklch(0.371 0 0);
-  --color-gray-800: oklch(0.269 0 0);
-  --color-gray-900: oklch(0.205 0 0);
-  --color-gray-950: oklch(0.145 0 0);
+  --text-headline: clamp(2rem, 5vw, 4rem);
+  --text-headline--line-height: 1.1;
 
-  --font-sans: var(--font-inter);
+  --text-body: 1rem;
+  --text-body--line-height: 1.7;
 
-  --container-2xl: 40rem;
+  --text-caption: 0.75rem;
+  --text-caption--line-height: 1.4;
+  --text-caption--letter-spacing: 0.15em;
+}
 
-  @keyframes fade-in {
-    from {
-      opacity: 0;
-    }
-    to {
-      opacity: 1;
-    }
+/* Selection */
+::selection {
+  background: rgba(184, 115, 51, 0.3);
+  color: #0f0f0f;
+}
+
+/* Smooth scrolling */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Hide scrollbar */
+body {
+  scrollbar-width: none;
+}
+
+body::-webkit-scrollbar {
+  display: none;
+}
+
+/* Noise texture overlay */
+.noise {
+  position: relative;
+}
+
+.noise::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+  opacity: 0.03;
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* Staggered reveal animations */
+@keyframes reveal-up {
+  from {
+    opacity: 0;
+    transform: translateY(40px);
   }
-  @keyframes spin-reverse {
-    to {
-      transform: rotate(-360deg);
-    }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 
-@theme inline {
-  --animate-marquee: marquee var(--marquee-duration) linear infinite;
-
-  @keyframes marquee {
-    100% {
-      transform: translateY(-50%);
-    }
+@keyframes reveal-fade {
+  from {
+    opacity: 0;
   }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes line-grow {
+  from {
+    transform: scaleX(0);
+  }
+
+  to {
+    transform: scaleX(1);
+  }
+}
+
+.reveal-up {
+  animation: reveal-up 1s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  opacity: 0;
+}
+
+.reveal-fade {
+  animation: reveal-fade 0.8s ease-out forwards;
+  opacity: 0;
+}
+
+.line-grow {
+  animation: line-grow 1.2s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  transform-origin: left;
+}
+
+/* Animation delays */
+.delay-1 {
+  animation-delay: 0.1s;
+}
+
+.delay-2 {
+  animation-delay: 0.2s;
+}
+
+.delay-3 {
+  animation-delay: 0.3s;
+}
+
+.delay-4 {
+  animation-delay: 0.4s;
+}
+
+.delay-5 {
+  animation-delay: 0.5s;
+}
+
+.delay-6 {
+  animation-delay: 0.6s;
+}
+
+.delay-7 {
+  animation-delay: 0.7s;
+}
+
+.delay-8 {
+  animation-delay: 0.8s;
+}
+
+.delay-9 {
+  animation-delay: 0.9s;
+}
+
+.delay-10 {
+  animation-delay: 1s;
+}
+
+.delay-12 {
+  animation-delay: 1.2s;
+}
+
+.delay-15 {
+  animation-delay: 1.5s;
 }
