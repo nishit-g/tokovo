@@ -1,7 +1,7 @@
 import { ChevronLeft, Video, Phone } from "lucide-react";
 import { Img } from "remotion";
 import { UI_CONSTANTS } from "../config/layout-config";
-import { useTheme } from "../theme/context";
+import { useTheme } from "../theme/ThemeContext";
 import { resolveAvatarWithFallback } from "../utils/avatar";
 
 export interface HeaderProps {

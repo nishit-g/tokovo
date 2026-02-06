@@ -21,6 +21,7 @@ import type {
   NotificationAdapter,
   PluginNotificationAdapter,
   PluginAnchorRegistry,
+  AnchorProvider,
   TokovoPluginContract,
   PluginViews,
   PluginReducer,
@@ -208,14 +209,26 @@ export class PluginManagerClass {
       this.registries.metadata.register(plugin.id, meta);
       cleanups.push(() => this.registries.metadata.unregister(plugin.id));
 
-      if (plugin.anchors && "providers" in plugin.anchors) {
+      if (plugin.anchorProvider) {
+        // Prefer full layout-aware anchor providers when available.
+        this.registries.anchors.register(
+          plugin.anchorProvider as unknown as AnchorProvider,
+        );
+        cleanups.push(() => this.registries.anchors.unregister(plugin.id));
+      } else if (plugin.anchors && "providers" in plugin.anchors) {
         const anchorRegistry = plugin.anchors as PluginAnchorRegistry;
         const defaultFraming = {
           anchorPoint: { x: 0.5, y: 0.5 },
           paddingPx: 50,
         };
+        // Merge framing keys from BOTH providers and framing. Many plugins only
+        // ship a `default` provider but define framing for many semantic anchors.
+        const framingKeys = new Set<string>([
+          ...Object.keys(anchorRegistry.providers ?? {}),
+          ...Object.keys(anchorRegistry.framing ?? {}),
+        ]);
         const mergedFraming = Object.fromEntries(
-          Object.keys(anchorRegistry.providers).map((anchorName) => [
+          Array.from(framingKeys).map((anchorName) => [
             anchorName,
             anchorRegistry.framing?.[anchorName] ?? defaultFraming,
           ]),

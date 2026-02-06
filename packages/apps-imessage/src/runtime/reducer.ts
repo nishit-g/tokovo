@@ -9,6 +9,25 @@ import type {
 } from "../types";
 import type { IMessageEventType, IMessageEventPayload } from "../types/events";
 
+function syncViewMode(state: IMessageState): void {
+  switch (state.currentScreen) {
+    case "chat":
+      state.viewMode = "CHAT";
+      state.conversationId = state.activeConversationId ?? undefined;
+      return;
+    case "info":
+    case "media":
+      state.viewMode = "FULLSCREEN";
+      state.conversationId = undefined;
+      return;
+    case "list":
+    default:
+      state.viewMode = "FEED";
+      state.conversationId = undefined;
+      return;
+  }
+}
+
 function asPayload<T extends IMessageEventType>(
   payload: Record<string, unknown>,
 ): IMessageEventPayload<T> {
@@ -21,13 +40,20 @@ function getAppState(draft: WorldState): IMessageState {
   }
   if (!draft.appState.app_imessage) {
     draft.appState.app_imessage = {
+      viewMode: "FEED",
+      conversationId: undefined,
       currentScreen: "list",
       activeConversationId: undefined,
       statusBarTheme: "dark",
       conversations: {},
     };
   }
-  return draft.appState.app_imessage as IMessageState;
+  const state = draft.appState.app_imessage as IMessageState;
+  state.viewMode ??= "FEED";
+  state.conversationId ??= undefined;
+  state.currentScreen ??= "list";
+  syncViewMode(state);
+  return state;
 }
 
 function ensureConversation(
@@ -242,6 +268,7 @@ export function iMessageReducer(draft: WorldState, event: TimelineEvent): void {
       state.activeConversationId = conversationId;
       const conv = ensureConversation(state, conversationId);
       conv.unreadCount = 0;
+      syncViewMode(state);
       break;
     }
     case "IMESSAGE_CONVERSATION_PIN": {
@@ -491,6 +518,7 @@ export function iMessageReducer(draft: WorldState, event: TimelineEvent): void {
       } else if (data.screen === "list") {
         state.activeConversationId = undefined;
       }
+      syncViewMode(state);
       break;
     }
     case "IMESSAGE_SET_DRAFT": {
@@ -510,6 +538,7 @@ export function iMessageReducer(draft: WorldState, event: TimelineEvent): void {
       if (!conversationId) return;
       state.currentScreen = "media";
       state.activeConversationId = conversationId;
+      syncViewMode(state);
       break;
     }
     case "IMESSAGE_SET_THEME_MODE": {

@@ -2,8 +2,7 @@
  * Root.tsx - Tokovo Video Runner Entry Point
  *
  * MINIMAL CONFIGURATION:
- * - Only auto-discovery from @tokovo/episodes
- * - All episodes defined through defineEpisode() appear automatically
+ * - Episodes are loaded explicitly from @tokovo/episodes catalogs
  * - Organized into folders: Production, Showcases, Tests
  *
  * @see docs-v2/EPISODE-ARCH.md
@@ -18,14 +17,22 @@ import {
   type FormatId,
 } from "@tokovo/episodes";
 import { EpisodeRenderer, calculateEpisodeMetadata } from "./EpisodeRenderer";
-import { getVideoRunnerRuntime } from "./runtime";
+import { VideoRunnerRuntimeProvider, useVideoRunnerRuntime } from "./RuntimeContext";
 
 // =============================================================================
 // MAIN COMPONENT
 // =============================================================================
 
 export const RemotionRoot: React.FC = () => {
-  const { episodeRegistry } = getVideoRunnerRuntime();
+  return (
+    <VideoRunnerRuntimeProvider>
+      <RemotionRootInner />
+    </VideoRunnerRuntimeProvider>
+  );
+};
+
+const RemotionRootInner: React.FC = () => {
+  const { episodeRegistry } = useVideoRunnerRuntime();
   const production = episodeRegistry.filter({ category: "production" });
   const showcases = episodeRegistry.filter({ category: "showcase" });
   const tests = episodeRegistry.filter({ category: "test" });

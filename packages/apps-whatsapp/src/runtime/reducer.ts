@@ -68,15 +68,23 @@ const APP_TYPE_TO_LEGACY_KIND: Record<string, string> = {
   VOICE_MESSAGE_RECEIVED: "VoiceMessageReceived",
 };
 
-let _handlers:
-  | ReturnType<typeof createWhatsAppHandlers>
-  | undefined;
+const HANDLERS = createWhatsAppHandlers();
 
-function getHandlers() {
-  if (!_handlers) {
-    _handlers = createWhatsAppHandlers();
+function syncViewMode(state: WhatsAppState): void {
+  state.currentScreen ??= "chats";
+
+  // Canonical mapping:
+  // - "chat" => CHAT + conversationId required
+  // - everything else => FEED
+  if (state.currentScreen === "chat") {
+    state.viewMode = "CHAT";
+    state.conversationId =
+      state.conversationId ?? state.currentConversationId ?? undefined;
+    return;
   }
-  return _handlers;
+
+  state.viewMode = "FEED";
+  state.conversationId = undefined;
 }
 
 function normalizeWhatsAppEvent(event: TimelineEvent): unknown {
@@ -104,9 +112,19 @@ function getAppState(draft: WorldState): WhatsAppState {
     draft.appState = {};
   }
   if (!draft.appState.app_whatsapp) {
-    draft.appState.app_whatsapp = { conversations: {} };
+    draft.appState.app_whatsapp = {
+      viewMode: "FEED",
+      currentScreen: "chats",
+      conversationId: undefined,
+      currentConversationId: undefined,
+      conversations: {},
+    };
   }
-  return draft.appState.app_whatsapp as WhatsAppState;
+  const state = draft.appState.app_whatsapp as WhatsAppState;
+  state.conversations ??= {};
+  state.viewMode ??= "FEED";
+  syncViewMode(state);
+  return state;
 }
 
 function getConversations(
@@ -321,7 +339,7 @@ export function whatsappReducer(draft: WorldState, event: TimelineEvent): void {
     return;
   }
 
-  const handler = getHandlers()[parsed.kind];
+  const handler = HANDLERS[parsed.kind];
   if (!handler) {
     return;
   }
@@ -331,6 +349,8 @@ export function whatsappReducer(draft: WorldState, event: TimelineEvent): void {
   // Some events (like NavigateScreen) don't require a conversationId
   // Handle them with a minimal context
   if (!conversationId) {
+    // Ensure app state exists so navigation handlers can mutate it.
+    getAppState(draft);
     const conversation: WhatsAppConversation = {
       id: "",
       messages: [],
@@ -344,6 +364,7 @@ export function whatsappReducer(draft: WorldState, event: TimelineEvent): void {
       generateTimestamp: (at) => generateTimestamp(at, draft, parsed.deviceId),
     };
     handler(ctx, parsed);
+    syncViewMode(getAppState(draft));
     return;
   }
 
@@ -366,4 +387,5 @@ export function whatsappReducer(draft: WorldState, event: TimelineEvent): void {
   };
 
   handler(ctx, parsed);
+  syncViewMode(getAppState(draft));
 }

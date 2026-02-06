@@ -48,6 +48,7 @@ export default defineEpisode({
         "app_whatsapp",
         () => new WhatsAppTrackBuilder(30, "phone", "netrunner_chat", getOrder),
         (wa) => {
+          wa.switchTo("netrunner_chat", 1);
           wa.at("1s").receive("V", "You jacked in yet, choom? 🔌");
 
           wa.at("3s").receive("V", "Got a gig. Big corpo. Bigger payout.");

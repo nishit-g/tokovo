@@ -1,4 +1,3 @@
-import { getGlobalWhatsAppHandlerRegistry } from "./registry";
 import type { MutableHandlerRegistry } from "./registry";
 import type {
   ImageReceivedEvent,
@@ -103,7 +102,7 @@ function normalizeLocationPayload(payload: {
 }
 
 export function registerMediaHandlers(
-  registry: MutableHandlerRegistry = getGlobalWhatsAppHandlerRegistry(),
+  registry: MutableHandlerRegistry,
 ): void {
   registry.registerHandler<ImageReceivedEvent>("ImageReceived", (ctx, e) => {
     const payload = e.payload ?? {};

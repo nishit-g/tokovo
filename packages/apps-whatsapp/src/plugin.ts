@@ -32,13 +32,14 @@ import { whatsappV2Lowering } from "./lowering";
 import { whatsappDsl, type WhatsAppDslApi } from "./dsl";
 
 // Layout Layer
-import { computeChatLayout } from "./layout";
+import { computeChatLayout, computeFeedLayout } from "./layout";
 
 // Assets
 import { whatsappAudioRules } from "./assets/audio-rules";
 
 // Camera
 import { WhatsAppBehavior } from "./camera";
+import { WhatsAppAnchorProvider } from "./anchors/provider";
 
 // =============================================================================
 // PLUGIN VIEWS
@@ -166,9 +167,13 @@ export const WhatsAppPluginV2: TokovoPluginContract<"app_whatsapp"> & {
   // === TIER B: Layouts ===
   layouts: [
     {
+      viewKind: "FEED",
+      computeLayout: computeFeedLayout,
+    },
+    {
       viewKind: "CHAT",
       computeLayout: computeChatLayout,
-    } as PluginLayoutStrategy,
+    },
   ],
 
   // === TIER B: Behaviors ===
@@ -178,7 +183,7 @@ export const WhatsAppPluginV2: TokovoPluginContract<"app_whatsapp"> & {
   dsl: whatsappDsl,
 
   // === Anchors ===
-  anchors: WhatsAppAnchors,
+  anchorProvider: WhatsAppAnchorProvider,
 };
 
 // =============================================================================
@@ -186,8 +191,6 @@ export const WhatsAppPluginV2: TokovoPluginContract<"app_whatsapp"> & {
 // =============================================================================
 
 export { WhatsAppPluginV2 as WhatsAppPlugin };
-
-import { WhatsAppAnchors } from "./runtime/adapters/anchors";
 
 const registeredManagers = new WeakSet<PluginManagerClass>();
 

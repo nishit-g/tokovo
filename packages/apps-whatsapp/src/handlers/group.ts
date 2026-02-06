@@ -1,4 +1,3 @@
-import { getGlobalWhatsAppHandlerRegistry } from "./registry";
 import type { MutableHandlerRegistry } from "./registry";
 import type {
   GroupMemberAddedEvent,
@@ -10,7 +9,7 @@ import type {
 import type { WhatsAppMessage } from "../types";
 
 export function registerGroupHandlers(
-  registry: MutableHandlerRegistry = getGlobalWhatsAppHandlerRegistry(),
+  registry: MutableHandlerRegistry,
 ): void {
   registry.registerHandler<GroupMemberAddedEvent>("GroupMemberAdded", (ctx, e) => {
     const addedBy = e.addedBy === "me" ? "You" : e.addedBy;

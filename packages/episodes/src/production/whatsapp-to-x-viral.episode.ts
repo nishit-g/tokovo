@@ -80,6 +80,7 @@ export default defineEpisode({
         "app_whatsapp",
         (getOrder) => new WhatsAppTrackBuilder(30, "phone", "dm_alert", getOrder),
         (wa) => {
+          wa.switchTo("dm_alert", 1);
           wa.at("0.8s").receive("Maya", "BRO check X NOW");
           wa.at("1.6s").receive("Maya", "your clip is blowing up");
           wa.at("2.3s").receive("Maya", "30k views in minutes");

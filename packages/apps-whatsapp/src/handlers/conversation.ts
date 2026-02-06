@@ -1,4 +1,3 @@
-import { getGlobalWhatsAppHandlerRegistry } from "./registry";
 import type { MutableHandlerRegistry } from "./registry";
 import type {
   PinConversationEvent,
@@ -14,7 +13,7 @@ import type {
 } from "../schemas";
 
 export function registerConversationHandlers(
-  registry: MutableHandlerRegistry = getGlobalWhatsAppHandlerRegistry(),
+  registry: MutableHandlerRegistry,
 ): void {
   registry.registerHandler<PinConversationEvent>("PinConversation", (ctx) => {
     ctx.conversation.isPinned = true;
@@ -54,6 +53,14 @@ export function registerConversationHandlers(
     const appState = ctx.draft.appState?.["app_whatsapp"];
     if (appState && typeof screen === "string") {
       (appState as { currentScreen?: string }).currentScreen = screen;
+      // Keep LayoutEngine invariants in sync.
+      (appState as { viewMode?: "CHAT" | "FEED" | "FULLSCREEN" | "TRANSITION" }).viewMode =
+        screen === "chat" ? "CHAT" : "FEED";
+      if (screen !== "chat") {
+        (appState as { conversationId?: string }).conversationId = undefined;
+        (appState as { currentConversationId?: string }).currentConversationId =
+          undefined;
+      }
     }
   });
 
@@ -63,6 +70,10 @@ export function registerConversationHandlers(
     if (appState && conversationId) {
       (appState as { currentConversationId?: string }).currentConversationId =
         conversationId;
+      (appState as { conversationId?: string }).conversationId = conversationId;
+      (appState as { currentScreen?: string }).currentScreen = "chat";
+      (appState as { viewMode?: "CHAT" | "FEED" | "FULLSCREEN" | "TRANSITION" }).viewMode =
+        "CHAT";
     }
   });
 

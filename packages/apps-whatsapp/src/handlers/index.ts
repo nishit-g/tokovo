@@ -1,4 +1,4 @@
-export { registerHandler, getHandler, type HandlerContext } from "./registry";
+export type { HandlerContext } from "./registry";
 
 import { registerMessageHandlers } from "./message";
 import { registerTypingHandlers } from "./typing";
@@ -18,7 +18,7 @@ export { registerGroupHandlers } from "./group";
 export { registerConversationHandlers } from "./conversation";
 
 export function registerAllWhatsAppHandlers(
-  registry?: MutableHandlerRegistry,
+  registry: MutableHandlerRegistry,
 ): void {
   registerMessageHandlers(registry);
   registerTypingHandlers(registry);

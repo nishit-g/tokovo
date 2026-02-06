@@ -52,6 +52,11 @@ export default defineEpisode({
 
         // === WHATSAPP TRACK ===
         .track("app_whatsapp", (getOrder) => new WhatsAppTrackBuilder(30, "phone", "dm_sarah", getOrder), wa => {
+            // This episode is a chat drama; switch to the conversation explicitly so
+            // the UI starts in the chat screen (not the chat list). Use frame=1 to
+            // avoid any frame-0 init ordering.
+            wa.switchTo("dm_sarah", 1);
+
             // Opening message
             wa.at("1s").receive("Sarah", "Hey baby! Are you free tonight? 💕");
 

@@ -45,6 +45,8 @@ export function computeChatLayout(
 ): ChatLayoutState {
   const { world, t, activeConversationId, viewportHeight, viewportWidth } = ctx;
   const config = layoutConfig;
+  const scale = viewportWidth / 393;
+  const px = (v: number) => v * scale;
 
   const appState = (world.appState?.["app_whatsapp"] || {}) as {
     conversations?: Record<string, unknown>;
@@ -237,15 +239,15 @@ export function computeChatLayout(
   // Ideally, the InputArea component itself should report this, but since we compute layout here:
   // We can define a "logical" input area anchor at the bottom of the viewport.
 
-  const INPUT_HEIGHT = UI_CONSTANTS.INPUT_MIN_HEIGHT;
+  const INPUT_HEIGHT = px(UI_CONSTANTS.INPUT_MIN_HEIGHT);
 
-  const safeAreaTop = ctx.safeAreaInsets?.top ?? 47;
-  const HEADER_HEIGHT = UI_CONSTANTS.HEADER_CONTENT_HEIGHT + safeAreaTop;
+  const safeAreaTop = ctx.safeAreaInsets?.top ?? 0;
+  const HEADER_HEIGHT = safeAreaTop + px(UI_CONSTANTS.HEADER_CONTENT_HEIGHT);
 
-  const PROFILE_SIZE = UI_CONSTANTS.HEADER_AVATAR_SIZE;
-  const PROFILE_X_OFFSET = 10 + (24 + 17) + 10;
+  const PROFILE_SIZE = px(UI_CONSTANTS.HEADER_AVATAR_SIZE);
+  const PROFILE_X_OFFSET = px(10 + (24 + 17) + 10);
   const PROFILE_Y_OFFSET =
-    safeAreaTop + (UI_CONSTANTS.HEADER_CONTENT_HEIGHT - PROFILE_SIZE) / 2;
+    safeAreaTop + (px(UI_CONSTANTS.HEADER_CONTENT_HEIGHT) - PROFILE_SIZE) / 2;
 
   const inputRect = {
     x: 0,

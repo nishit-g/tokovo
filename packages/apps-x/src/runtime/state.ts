@@ -1,3 +1,5 @@
+import type { ViewKind } from "@tokovo/core";
+
 export interface XUser {
   id: string;
   name: string;
@@ -109,6 +111,10 @@ export interface XRoute {
 export type XThemeMode = "dark" | "light" | "ghibli";
 
 export interface XState {
+  /** Required by the Tokovo LayoutEngine. */
+  viewMode: ViewKind;
+  /** Required when viewMode === "CHAT". */
+  conversationId?: string;
   users: XUser[];
   tweets: XTweet[];
   timeline: string[];
@@ -130,6 +136,8 @@ export interface XState {
 
 export function createXInitialState(): XState {
   return {
+    viewMode: "FEED",
+    conversationId: undefined,
     users: [],
     tweets: [],
     timeline: [],

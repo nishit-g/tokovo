@@ -43,6 +43,7 @@ export default defineEpisode({
         "app_whatsapp",
         (getOrder) => new WhatsAppTrackBuilder(30, "phone", "dm_jake", getOrder),
         (wa) => {
+          wa.switchTo("dm_jake", 1);
           wa.at("1s").receive("Jake", "good morning beautiful 😘");
           wa.span("3s", "4s").typing("me");
           wa.at("4s").send("morning babe! miss you");
@@ -57,6 +58,7 @@ export default defineEpisode({
         "app_whatsapp",
         (getOrder) => new WhatsAppTrackBuilder(30, "phone", "dm_sarah", getOrder),
         (wa) => {
+          wa.switchTo("dm_sarah", "12s");
           wa.at("12s").receive("Sarah", "hey");
           wa.at("13s").receive("Sarah", "are you free rn?");
           wa.span("14.5s", "15.5s").typing("me");
@@ -125,6 +127,7 @@ export default defineEpisode({
         "app_whatsapp",
         (getOrder) => new WhatsAppTrackBuilder(30, "phone", "dm_jake", getOrder),
         (wa) => {
+          wa.switchTo("dm_jake", "107s");
           wa.at("107s").send("Jake we need to talk");
           wa.span("109s", "110.5s").typing("them");
           wa.at("110.5s").receive("Jake", "hey! what's up babe");

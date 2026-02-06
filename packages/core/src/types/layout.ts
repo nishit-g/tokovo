@@ -181,6 +181,7 @@ export interface BaseLayoutState {
 export type LayoutState =
   | ChatLayoutState
   | FeedLayoutState
+  | FullscreenLayoutState
   | StoryLayoutState
   | LockscreenLayoutState
   | TransitionLayoutState;
@@ -241,6 +242,13 @@ export interface FeedLayoutMeta {
   firstVisibleItemId?: string;
   lastVisibleItemId?: string;
   focusedItemId?: string;
+}
+
+// Fullscreen Layout
+// Used for app-specific full-bleed screens (e.g. compose, info panes).
+export interface FullscreenLayoutState extends BaseLayoutState {
+  kind: "FULLSCREEN";
+  meta: Record<string, unknown>;
 }
 
 // Story Layout

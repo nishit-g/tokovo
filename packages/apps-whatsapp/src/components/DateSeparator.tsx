@@ -7,7 +7,7 @@
 
 import React from "react";
 import { Platform } from "@tokovo/core";
-import { useTheme } from "../theme/context";
+import { useTheme } from "../theme/ThemeContext";
 
 interface DateSeparatorProps {
     text: string;

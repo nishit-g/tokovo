@@ -2,28 +2,65 @@ import { z } from "zod";
 import type { TokovoPluginContract } from "@tokovo/core";
 import type { AppMetadata } from "../registries/metadata";
 
+const ViewKindSchema = z.enum([
+  "CHAT",
+  "FEED",
+  "STORY",
+  "LOCKSCREEN",
+  "HOMESCREEN",
+  "FULLSCREEN",
+  "TRANSITION",
+]);
+
 export const AppMetadataSchema = z.object({
   displayName: z.string(),
   themeColor: z.string().regex(/^#/, "Must be a hex color"),
   icon: z.string(),
   viewStrategy: z
-    .enum([
-      "CHAT",
-      "FEED",
-      "STORY",
-      "LOCKSCREEN",
-      "HOMESCREEN",
-      "FULLSCREEN",
-      "TRANSITION",
-    ])
+    .enum(ViewKindSchema.options)
     .optional(),
   designWidth: z.number().optional().default(393),
 }) as z.ZodType<Partial<AppMetadata> & { name?: string }>;
+
+const PluginLayoutStrategySchema = z.object({
+  viewKind: ViewKindSchema,
+  computeLayout: z.function(),
+  platforms: z.array(z.enum(["ios", "android"])).optional(),
+});
+
+const PluginAutoSoundRuleSchema = z.object({
+  match: z
+    .object({
+      kind: z.string(),
+      type: z.string().optional(),
+      appId: z.string().optional(),
+      from: z.union([z.string(), z.literal("*")]).optional(),
+    })
+    .passthrough(),
+  action: z.enum(["PLAY_ONE_SHOT", "START_LOOP", "STOP_SOUND"]),
+  sound: z.string().optional(),
+  stopId: z.string().optional(),
+  bus: z.enum(["voice", "sfx", "ui", "music", "master"]).optional(),
+  volume: z.number().optional(),
+  idTemplate: z.string().optional(),
+  duckMusic: z.boolean().optional(),
+  loop: z.boolean().optional(),
+  priority: z.number().optional(),
+});
+
+const AnchorProviderSchema = z
+  .object({
+    appId: z.string(),
+    getAnchors: z.function(),
+    framing: z.record(z.string(), z.unknown()).optional(),
+  })
+  .passthrough();
 
 export const TokovoPluginSchema = z.object({
   id: z.string().min(3),
   version: z.string(),
   displayName: z.string(),
+  reducer: z.function(),
   views: z
     .object({
       AppRoot: z.function().optional(),
@@ -39,6 +76,9 @@ export const TokovoPluginSchema = z.object({
     })
     .optional(),
   anchors: z.record(z.string(), z.unknown()).optional(),
+  anchorProvider: AnchorProviderSchema.optional(),
+  layouts: z.array(PluginLayoutStrategySchema).optional(),
+  audioRules: z.array(PluginAutoSoundRuleSchema).optional(),
 });
 
 export interface ValidationError {
@@ -149,7 +189,13 @@ export function validatePluginDetailed<AppId extends string>(
     });
   }
 
-  if (plugin.reducer && typeof plugin.reducer !== "function") {
+  if (!plugin.reducer) {
+    errors.push({
+      field: "reducer",
+      message: "Reducer is required",
+      suggestion: "Provide (draft, event) => void function",
+    });
+  } else if (typeof plugin.reducer !== "function") {
     errors.push({
       field: "reducer",
       message: "Reducer must be a function",
@@ -187,11 +233,17 @@ export function validatePluginDetailed<AppId extends string>(
           suggestion: `Rename to '${plugin.id}.${key}' or '${plugin.id}_${key}'`,
         });
       }
-      if (typeof path !== "string" || !path.startsWith("/")) {
+      if (typeof path !== "string" || path.length === 0) {
+        errors.push({
+          field: `assets.sounds.${key}`,
+          message: "Sound path must be a non-empty string",
+        });
+      } else if (path.startsWith("/")) {
         warnings.push({
           field: `assets.sounds.${key}`,
-          message: "Sound path should be absolute from public folder",
-          suggestion: "Use format: '/audio/plugin/sound.mp3'",
+          message:
+            "Sound paths should not start with '/'. getSoundPath() strips leading slashes but the canonical format is relative to the sounds folder.",
+          suggestion: `Use '${path.replace(/^\/+/, "")}'`,
         });
       }
     }
@@ -206,6 +258,26 @@ export function validatePluginDetailed<AppId extends string>(
         field: "anchors.providers",
         message:
           "Anchor providers should be an object mapping anchor IDs to provider functions",
+      });
+    }
+  }
+
+  if (plugin.anchorProvider) {
+    const provider = plugin.anchorProvider as unknown as {
+      appId?: unknown;
+      getAnchors?: unknown;
+    };
+    if (provider.appId !== plugin.id) {
+      warnings.push({
+        field: "anchorProvider.appId",
+        message: `Anchor provider appId should match plugin.id`,
+        suggestion: `Set anchorProvider.appId to '${plugin.id}'`,
+      });
+    }
+    if (typeof provider.getAnchors !== "function") {
+      errors.push({
+        field: "anchorProvider.getAnchors",
+        message: "Anchor provider must implement getAnchors(world, layout, deviceId, context?)",
       });
     }
   }

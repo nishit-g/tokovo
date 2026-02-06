@@ -12,7 +12,7 @@ import {
 } from "./MediaBubbles";
 import { LinkPreview } from "./LinkPreview";
 import { DateSeparator } from "./DateSeparator";
-import { useTheme } from "../theme/context";
+import { useTheme } from "../theme/ThemeContext";
 import { CallMessageBubble } from "./bubbles/CallMessageBubble";
 
 const TextContent: React.FC<{ text: string }> = ({ text }) => {

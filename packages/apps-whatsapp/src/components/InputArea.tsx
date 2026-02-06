@@ -1,7 +1,7 @@
 import React from "react";
 import { useCurrentFrame, useVideoConfig } from "remotion";
 import { Keyboard, Camera, Mic, Send } from "lucide-react";
-import { useTheme } from "../theme/context";
+import { useTheme } from "../theme/ThemeContext";
 import { whatsappColors } from "./theme";
 
 export const InputArea: React.FC<{

@@ -12,6 +12,8 @@
 import { RuntimeEvent } from "./runtime-event";
 import type { Platform } from "../tokens";
 import type { AnchorFraming } from "./anchor";
+import type { LayoutContext, LayoutState, ViewKind } from "./layout";
+import type { AnchorProvider } from "./anchor";
 // =============================================================================
 // LAYOUT CONSTANTS - App-specific UI metrics
 // =============================================================================
@@ -145,13 +147,13 @@ export interface LoweringHandler {
  */
 export interface PluginLayoutStrategy {
   /** View kind this strategy handles (e.g., "CHAT", "FEED") */
-  viewKind: string;
+  viewKind: ViewKind;
 
   /** Optional platform filter */
   platforms?: Platform[];
 
   /** Compute layout for the given context */
-  computeLayout: (ctx: unknown) => unknown;
+  computeLayout: (ctx: LayoutContext) => LayoutState;
 }
 
 // =============================================================================
@@ -294,6 +296,11 @@ export interface TokovoPluginContract<AppId extends string = string> {
 
   // === Camera Anchors ===
   anchors?: PluginAnchorRegistry;
+  /**
+   * Full anchor provider (layout-aware). Prefer this over `anchors` when you
+   * need semantic/layout-driven anchor rects (not just normalized bounds).
+   */
+  anchorProvider?: AnchorProvider;
 
   // === Notifications ===
   notificationAdapter?: PluginNotificationAdapter;

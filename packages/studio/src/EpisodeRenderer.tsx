@@ -7,7 +7,7 @@ import {
 } from "@tokovo/core";
 import { TokovoRenderer } from "@tokovo/renderer";
 import type { PreparedTrackEpisode } from "@tokovo/compiler";
-import { pluginManager, rendererRegistries, tokovoRegistries } from "./runtime";
+import { useStudioRuntime } from "./RuntimeContext";
 
 interface EpisodeRendererProps {
   episodeIR: PreparedTrackEpisode;
@@ -18,6 +18,7 @@ export function EpisodeRenderer({
   episodeIR,
   frame = 0,
 }: EpisodeRendererProps) {
+  const { pluginManager, rendererRegistries, tokovoRegistries } = useStudioRuntime();
   const config = useMemo(() => createConfig(), []);
   const keyframedEventIndex = useMemo(() => {
     if (!episodeIR) return null;

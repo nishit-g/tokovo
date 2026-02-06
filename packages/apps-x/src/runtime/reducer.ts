@@ -2,6 +2,25 @@ import type { WorldState, PluginReducer, RuntimeEvent } from "@tokovo/core";
 import type { XState, XTweet, XUser, XNotification, XDMThread, XDMMessage, XRoute } from "./state";
 import { createXInitialState } from "./state";
 
+function syncViewMode(state: XState): void {
+  // Canonical screen-to-view mapping (required by LayoutEngine).
+  // - compose: FULLSCREEN
+  // - DM thread: CHAT
+  // - everything else: FEED
+  if (state.currentScreen === "compose") {
+    state.viewMode = "FULLSCREEN";
+    state.conversationId = undefined;
+    return;
+  }
+  if (state.currentScreen === "thread") {
+    state.viewMode = "CHAT";
+    state.conversationId = state.activeThreadId ?? undefined;
+    return;
+  }
+  state.viewMode = "FEED";
+  state.conversationId = undefined;
+}
+
 function getAppState(draft: WorldState): XState {
   if (!draft.appState) {
     draft.appState = {};
@@ -27,6 +46,9 @@ function getAppState(draft: WorldState): XState {
   state.lastNavFrame ??= 0;
   state.statusBarTheme ??= "dark";
   state.themeMode ??= "dark";
+  state.viewMode ??= "FEED";
+  state.conversationId ??= undefined;
+  syncViewMode(state);
   return state;
 }
 
@@ -212,6 +234,7 @@ export const xReducer: PluginReducer<"app_x"> = (
       appState.activeUserId = payload.userId ?? appState.activeUserId;
       appState.activeThreadId = payload.threadId ?? appState.activeThreadId;
       appState.lastNavFrame = event.at;
+      syncViewMode(appState);
       break;
     }
     case "NAVIGATE_BACK": {
@@ -222,6 +245,7 @@ export const xReducer: PluginReducer<"app_x"> = (
         appState.activeUserId = previous.userId ?? null;
         appState.activeThreadId = previous.threadId ?? null;
         appState.lastNavFrame = event.at;
+        syncViewMode(appState);
       }
       break;
     }
@@ -238,6 +262,7 @@ export const xReducer: PluginReducer<"app_x"> = (
     case "SET_ACTIVE_THREAD": {
       const payload = event.payload as { threadId: string | null };
       appState.activeThreadId = payload.threadId;
+      syncViewMode(appState);
       break;
     }
     case "SET_COMPOSE_DRAFT": {

@@ -46,6 +46,7 @@ export default defineEpisode({
         "app_whatsapp",
         () => new WhatsAppTrackBuilder(30, "phone", "dm_fluid", getOrder),
         (wa) => {
+          wa.switchTo("dm_fluid", 1);
           wa.at("1s").receive("Alex", "Yo!");
           wa.at("2s").receive("Alex", "You coming to the party tonight?");
           wa.at("3s").receive("Alex", "Everyone's asking about you 😊");

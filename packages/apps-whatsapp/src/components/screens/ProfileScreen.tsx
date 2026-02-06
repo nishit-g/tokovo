@@ -23,15 +23,11 @@ export interface ProfileScreenProps {
 export const ProfileScreen: React.FC<ProfileScreenProps> = ({
   world,
   safeAreaInsets,
-  width,
-  height,
+  width: _width,
+  height: _height,
 }) => {
-  const designWidth = 393;
-  const targetWidth = width || 1179;
-  const scale = targetWidth / designWidth;
-
-  const physicalSafeTop = safeAreaInsets?.top ?? 177;
-  const safeAreaTop = physicalSafeTop / scale;
+  // TokovoRenderer already provides safeAreaInsets in design coordinates.
+  const safeAreaTop = safeAreaInsets?.top ?? 47;
 
   const appState = (world.appState?.["app_whatsapp"] || {}) as WhatsAppState;
   const conversations = (appState.conversations || {}) as Record<
@@ -54,8 +50,8 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
         world={world}
         conversationId={conversation.id}
         safeAreaInsets={safeAreaInsets}
-        width={width}
-        height={height}
+        width={_width}
+        height={_height}
       />
     );
   }

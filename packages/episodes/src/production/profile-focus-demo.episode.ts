@@ -56,6 +56,7 @@ export default defineEpisode({
             return new WhatsAppTrackBuilder(30, "phone", "dm_john", getOrder);
         }, wa => {
             // Initial conversation
+            wa.switchTo("dm_john", "0s");
             wa.at("0s").receive("John", "Hey! Check out my new profile pic! 📸");
             wa.at("2s").send("Looking good!");
         })

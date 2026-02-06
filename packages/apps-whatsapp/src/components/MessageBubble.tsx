@@ -2,7 +2,7 @@ import { memo } from "react";
 import { Check, CheckCheck } from "lucide-react";
 import { MessageContent } from "./MessageContent";
 import { MessageData } from "../types";
-import { useTheme } from "../theme/context";
+import { useTheme } from "../theme/ThemeContext";
 
 export interface MessageBubbleProps {
   message: MessageData;

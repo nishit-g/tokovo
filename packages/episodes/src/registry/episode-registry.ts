@@ -1,9 +1,9 @@
 /**
  * Episode Registry
- * 
- * Global singleton for auto-discovery of episodes.
- * Episodes register themselves via defineEpisode().
- * 
+ *
+ * Explicit registry used by runtimes (video-runner, studio, tests).
+ * Episodes are pure definitions; registration must be explicit.
+ *
  * @see docs-v2/EPISODE-ARCH.md
  */
 
@@ -101,11 +101,6 @@ export class EpisodeRegistry {
 }
 
 /**
- * Global episode registry singleton.
- */
-export const episodeRegistry = new EpisodeRegistry();
-
-/**
  * Create an explicit episode registry instance.
  * Prefer this for batch rendering or tests.
  */
@@ -117,10 +112,10 @@ export function createEpisodeRegistry(): EpisodeRegistry {
 }
 
 /**
- * Get a snapshot of the provided registry (or the global registry by default).
+ * Get a snapshot of the provided registry.
  */
 export function getEpisodeRegistrySnapshot(
-    registry: EpisodeRegistry = episodeRegistry,
+    registry: EpisodeRegistry,
 ): EpisodeDefinition[] {
     return registry.snapshot();
 }

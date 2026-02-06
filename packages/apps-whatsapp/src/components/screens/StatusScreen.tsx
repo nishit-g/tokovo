@@ -57,17 +57,11 @@ const StatusAvatar: React.FC<{
 export const StatusScreen: React.FC<StatusScreenProps> = ({
   world,
   safeAreaInsets,
-  width,
+  width: _width,
 }) => {
-  const designWidth = 393;
-  const targetWidth = width || 1179;
-  const scale = targetWidth / designWidth;
-
-  const physicalSafeTop = safeAreaInsets?.top ?? 177;
-  const physicalSafeBottom = safeAreaInsets?.bottom ?? 102;
-
-  const safeAreaTop = physicalSafeTop / scale;
-  const safeAreaBottom = physicalSafeBottom / scale;
+  // TokovoRenderer already provides safeAreaInsets in design coordinates.
+  const safeAreaTop = safeAreaInsets?.top ?? 47;
+  const safeAreaBottom = safeAreaInsets?.bottom ?? 34;
 
   const deviceId = Object.keys(world.devices || {})[0];
   const ownerName = world.devices?.[deviceId]?.ownerName || "You";

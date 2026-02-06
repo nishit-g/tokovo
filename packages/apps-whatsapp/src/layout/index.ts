@@ -3,3 +3,4 @@
  */
 
 export { computeChatLayout } from "./chat";
+export { computeFeedLayout } from "./feed";

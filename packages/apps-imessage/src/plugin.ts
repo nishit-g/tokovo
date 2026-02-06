@@ -3,10 +3,10 @@ import type { PluginManagerClass } from "@tokovo/react";
 import { IMESSAGE_APP_ID, IMESSAGE_DISPLAY_NAME, IMESSAGE_VERSION } from "./constants";
 import { iMessageReducer } from "./runtime/reducer";
 import { createIMessageInitialState } from "./runtime/initial-state";
-import { IMessageAnchors } from "./runtime/adapters/anchors";
 import { IMessageView } from "./ui";
 import { iMessageV2Lowering } from "./lowering";
 import { iMessageLayoutStrategies } from "./layout";
+import { IMessageAnchorProvider } from "./anchors/provider";
 
 const iMessageViews: PluginViews = {
   AppRoot: IMessageView,
@@ -102,7 +102,7 @@ export const IMessagePlugin: TokovoPluginContract<"app_imessage"> & {
   audioRules: iMessageAudioRules,
   v2Lowering: iMessageV2Lowering,
   layouts: iMessageLayoutStrategies,
-  anchors: IMessageAnchors,
+  anchorProvider: IMessageAnchorProvider,
 };
 
 const registeredManagers = new WeakSet<PluginManagerClass>();

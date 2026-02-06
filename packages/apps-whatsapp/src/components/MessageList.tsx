@@ -4,7 +4,7 @@ import { MessageBubble } from "./MessageBubble";
 import { useMessageGrouping } from "../hooks/useMessageGrouping";
 import { MessageData } from "../types";
 import { TypingIndicator } from "./TypingIndicator";
-import { useTheme } from "../theme/context";
+import { useTheme } from "../theme/ThemeContext";
 import { senderColors } from "./theme";
 
 interface MessageListProps {

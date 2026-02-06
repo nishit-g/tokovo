@@ -1,4 +1,4 @@
-import { xColors, xTypography, xSpacing } from "../components/tokens";
+import { xColors, xTypography, xSpacing } from "./tokens";
 
 export interface XThemeColors {
   background: string;

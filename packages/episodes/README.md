@@ -99,7 +99,7 @@ packages/episodes/src/
 
 ## Core Concepts
 
-### 1. `defineEpisode()` - Auto-Registration
+### 1. `defineEpisode()` - Pure Definition
 
 ```typescript
 import { defineEpisode } from "@tokovo/episodes";
@@ -111,12 +111,16 @@ export default defineEpisode({
 });
 ```
 
-When this file is imported, the episode is automatically registered with the global registry.
+`defineEpisode()` validates and returns a pure episode definition. Registration is explicit (your runtime decides what catalogs to load).
 
-### 2. Episode Registry
+### 2. Episode Registry (Explicit)
 
 ```typescript
-import { episodeRegistry } from "@tokovo/episodes";
+import productionEpisodes from "@tokovo/episodes/production";
+import { createEpisodeRegistry } from "@tokovo/episodes";
+
+const episodeRegistry = createEpisodeRegistry();
+productionEpisodes.forEach((ep) => episodeRegistry.register(ep));
 
 // Get all episodes
 const all = episodeRegistry.all();
@@ -272,7 +276,7 @@ Do NOT use V1 episodes in new code. Migrate them to V2 when needed.
 
 ```typescript
 // Registry
-export { episodeRegistry, EpisodeRegistry } from "./registry";
+export { EpisodeRegistry, createEpisodeRegistry, getEpisodeRegistrySnapshot } from "./registry";
 
 // Types
 export { defineEpisode } from "./types";

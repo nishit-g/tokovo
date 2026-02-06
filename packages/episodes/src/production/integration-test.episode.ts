@@ -61,6 +61,7 @@ export default defineEpisode({
           return new WhatsAppTrackBuilder(30, "phone", "dm_alice", getOrder);
         },
         (wa) => {
+          wa.switchTo("dm_alice", 1);
           wa.at("1s").receive(
             "Alice",
             "Hey! Are you coming to the party tonight? 🎉",

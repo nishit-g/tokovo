@@ -4,8 +4,8 @@
  * Provides dynamic theming throughout the iMessage UI components.
  */
 import React, { createContext, useContext } from "react";
-import type { IMessageTheme } from "../config/imessage-theme";
-import { getTheme } from "../config/imessage-theme";
+import type { IMessageTheme } from "../config/theme";
+import { getTheme } from "../config/theme";
 import type { IMessageThemeMode } from "../types/state";
 
 const ThemeContext = createContext<IMessageTheme>(getTheme("light"));

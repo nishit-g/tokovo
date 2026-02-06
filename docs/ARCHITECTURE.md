@@ -58,10 +58,6 @@ Two levels of caching:
 ## Episode Registry
 
 ```typescript
-// Global singleton (convenient for dev)
-import { episodeRegistry } from "@tokovo/episodes";
-
-// Explicit instance (required for batch rendering)
 import { createEpisodeRegistry } from "@tokovo/episodes";
 const registry = createEpisodeRegistry();
 

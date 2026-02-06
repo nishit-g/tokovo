@@ -234,6 +234,7 @@ export type {
   FeedLayoutState,
   FeedItemLayout,
   FeedLayoutMeta,
+  FullscreenLayoutState,
   StoryLayoutState,
   StoryItemLayout,
   LockscreenLayoutState,

@@ -3,12 +3,17 @@
  */
 
 import type { IMessageConversation } from "./conversation";
+import type { ViewKind } from "@tokovo/core";
 
 export type IMessageScreen = "list" | "chat" | "info" | "media";
 
 export type IMessageThemeMode = "light" | "dark";
 
 export interface IMessageState {
+  /** Required by the Tokovo LayoutEngine. */
+  viewMode: ViewKind;
+  /** Required when viewMode === "CHAT". */
+  conversationId?: string;
   currentScreen?: IMessageScreen;
   activeConversationId?: string;
   themeMode?: IMessageThemeMode;

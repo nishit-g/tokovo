@@ -4,7 +4,6 @@
  */
 export {
   EpisodeRegistry,
-  episodeRegistry,
   createEpisodeRegistry,
   getEpisodeRegistrySnapshot,
 } from "./episode-registry.js";

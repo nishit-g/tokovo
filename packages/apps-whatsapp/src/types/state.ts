@@ -5,6 +5,7 @@
  */
 
 import type { WhatsAppConversation } from "./conversation";
+import type { ViewKind } from "@tokovo/core";
 
 // =============================================================================
 // APP STATE
@@ -23,7 +24,8 @@ export interface WhatsAppState {
     | "profile"
     | string;
   currentConversationId?: string;
-  viewMode?: "CHAT" | "LIST" | "TRANSITION";
+  /** Required by the Tokovo LayoutEngine. */
+  viewMode: ViewKind;
   conversations?: Record<string, unknown>;
   statusBarTheme?:
     | "light"

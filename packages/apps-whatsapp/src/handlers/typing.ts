@@ -1,9 +1,8 @@
-import { getGlobalWhatsAppHandlerRegistry } from "./registry";
 import type { MutableHandlerRegistry } from "./registry";
 import type { TypingStartEvent, TypingEndEvent } from "../schemas";
 
 export function registerTypingHandlers(
-  registry: MutableHandlerRegistry = getGlobalWhatsAppHandlerRegistry(),
+  registry: MutableHandlerRegistry,
 ): void {
   registry.registerHandler<TypingStartEvent>("TypingStarted", (ctx, e) => {
     if (!ctx.conversation.typing) ctx.conversation.typing = {};

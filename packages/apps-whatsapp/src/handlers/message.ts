@@ -1,4 +1,3 @@
-import { getGlobalWhatsAppHandlerRegistry } from "./registry";
 import type { MutableHandlerRegistry } from "./registry";
 import type {
   MessageReceivedEvent,
@@ -21,7 +20,7 @@ function bumpUnread(ctx: { draft: unknown; conversation: { id: string; unreadCou
 }
 
 export function registerMessageHandlers(
-  registry: MutableHandlerRegistry = getGlobalWhatsAppHandlerRegistry(),
+  registry: MutableHandlerRegistry,
 ): void {
   registry.registerHandler<MessageReceivedEvent>("MessageReceived", (ctx, e) => {
     const payload = e.payload ?? {};

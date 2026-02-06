@@ -39,6 +39,7 @@ export default defineEpisode({
         "app_whatsapp",
         () => new WhatsAppTrackBuilder(30, "phone", "dm_breakup", getOrder),
         (wa) => {
+          wa.switchTo("dm_breakup", 1);
           wa.at("1s").receive("Alex", "Hey");
           wa.at("2s").receive("Alex", "We need to talk");
           wa.at("3s").receive("Alex", "Can we call?");

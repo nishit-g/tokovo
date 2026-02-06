@@ -2,18 +2,21 @@
  * WhatsApp Anchor Provider
  *
  * Extracts semantic anchors from layout state for camera focus.
+ * Source of truth is the WhatsApp plugin's layout semantic regions.
  */
 
-import {
+import type {
   AnchorProvider,
+  AnchorProviderContext,
   AnchorSnapshot,
+  ChatLayoutState,
   LayoutRect,
   LayoutState,
-  ChatLayoutState,
   SemanticLayoutState,
-  AnchorProviderContext,
   WorldState,
 } from "@tokovo/core";
+
+import { WhatsAppAnchors } from "../runtime/adapters/anchors";
 
 const APP_ID = "app_whatsapp";
 
@@ -38,7 +41,9 @@ function getViewportDimensions(
   return { width: 430, height: 932 };
 }
 
-function extractSemantic(layout: LayoutState | null | undefined): SemanticLayoutState | null {
+function extractSemantic(
+  layout: LayoutState | null | undefined,
+): SemanticLayoutState | null {
   if (!layout || typeof layout !== "object") return null;
   return (layout as LayoutState).semantic ?? null;
 }
@@ -80,63 +85,7 @@ function addContentAnchor(
 
 export const WhatsAppAnchorProvider: AnchorProvider = {
   appId: APP_ID,
-  framing: {
-    message: {
-      anchorPoint: { x: 0.5, y: 0.5 },
-      paddingPx: 40,
-      targetFill: 0.6,
-    },
-    message_me: {
-      anchorPoint: { x: 0.6, y: 0.5 },
-      paddingPx: 40,
-      targetFill: 0.6,
-    },
-    message_other: {
-      anchorPoint: { x: 0.4, y: 0.5 },
-      paddingPx: 40,
-      targetFill: 0.6,
-    },
-    lastMessage: {
-      anchorPoint: { x: 0.5, y: 0.5 },
-      paddingPx: 40,
-      targetFill: 0.6,
-    },
-    typingIndicator: {
-      anchorPoint: { x: 0.35, y: 0.5 },
-      paddingPx: 30,
-      targetFill: 0.3,
-    },
-    inputArea: {
-      anchorPoint: { x: 0.5, y: 0.8 },
-      paddingPx: 20,
-      targetFill: 0.9,
-    },
-    header: {
-      anchorPoint: { x: 0.5, y: 0.15 },
-      paddingPx: 10,
-      targetFill: 0.9,
-    },
-    profile: {
-      anchorPoint: { x: 0.2, y: 0.15 },
-      paddingPx: 50,
-      targetFill: 0.4,
-    },
-    content: {
-      anchorPoint: { x: 0.5, y: 0.5 },
-      paddingPx: 20,
-      targetFill: 0.8,
-    },
-    app: {
-      anchorPoint: { x: 0.5, y: 0.5 },
-      paddingPx: 0,
-      targetFill: 1.0,
-    },
-    device: {
-      anchorPoint: { x: 0.5, y: 0.5 },
-      paddingPx: 0,
-      targetFill: 1.0,
-    },
-  },
+  framing: WhatsAppAnchors.framing ?? {},
 
   getAnchors(
     world: WorldState,
@@ -191,3 +140,4 @@ export const WhatsAppAnchorProvider: AnchorProvider = {
     };
   },
 };
+

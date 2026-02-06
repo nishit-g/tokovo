@@ -16,14 +16,8 @@ import { registerNotificationPlugin } from "@tokovo/device-notifications";
 import { registerCameraPlugin } from "@tokovo/device-camera";
 import { registerKeyboardPlugin } from "@tokovo/device-keyboard";
 
-import productionEpisodes from "@tokovo/episodes/production";
-import showcaseEpisodes from "@tokovo/episodes/showcases";
-import testEpisodes from "@tokovo/episodes/tests";
-import {
-  createEpisodeRegistry,
-  type EpisodeRegistry,
-  type EpisodeDefinition,
-} from "@tokovo/episodes";
+import { type EpisodeRegistry } from "@tokovo/episodes";
+import { createVideoRunnerEpisodeRegistry } from "./episode-registry";
 
 export type VideoRunnerRuntime = {
   tokovoRegistries: TokovoRegistries;
@@ -35,15 +29,6 @@ export type VideoRunnerRuntime = {
   };
   episodeRegistry: EpisodeRegistry;
 };
-
-function registerEpisodeCatalog(
-  registry: EpisodeRegistry,
-  episodes: EpisodeDefinition[],
-): void {
-  for (const ep of episodes) {
-    registry.register(ep);
-  }
-}
 
 export function createVideoRunnerRuntime(): VideoRunnerRuntime {
   const tokovoRegistries = createTokovoRegistries();
@@ -64,10 +49,7 @@ export function createVideoRunnerRuntime(): VideoRunnerRuntime {
   registerKeyboardPlugin(tokovoRegistries.engine);
   registerBuiltInAnchorProviders(tokovoRegistries.plugins.anchors);
 
-  const episodeRegistry = createEpisodeRegistry();
-  registerEpisodeCatalog(episodeRegistry, productionEpisodes);
-  registerEpisodeCatalog(episodeRegistry, showcaseEpisodes);
-  registerEpisodeCatalog(episodeRegistry, testEpisodes);
+  const episodeRegistry = createVideoRunnerEpisodeRegistry();
 
   return {
     tokovoRegistries,
@@ -77,15 +59,3 @@ export function createVideoRunnerRuntime(): VideoRunnerRuntime {
     episodeRegistry,
   };
 }
-
-let _runtime: VideoRunnerRuntime | undefined;
-
-export function getVideoRunnerRuntime(): VideoRunnerRuntime {
-  if (!_runtime) _runtime = createVideoRunnerRuntime();
-  return _runtime;
-}
-
-export function resetVideoRunnerRuntimeForTesting(): void {
-  _runtime = undefined;
-}
-

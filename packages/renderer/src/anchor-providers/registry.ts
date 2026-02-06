@@ -2,7 +2,8 @@
  * Anchor Provider Registry
  *
  * Central registry for all anchor providers.
- * Providers self-register at module load time.
+ * Renderer registers only OS-level providers. App-specific providers must be
+ * provided by their app plugins.
  */
 
 import type {
@@ -13,19 +14,13 @@ import type {
 import type { WorldState } from "@tokovo/core";
 
 import { NotificationAnchorProvider } from "./notification";
-import { WhatsAppAnchorProvider } from "./whatsapp";
-import { XAnchorProvider } from "./x";
-import { IMessageAnchorProvider } from "./imessage";
 
 export function registerBuiltInAnchorProviders(
     registry: AnchorRegistryClass,
 ): void {
-    // Apps self-register when imported
-    // Only Notification provider is left here (for now)
+    // Renderer only provides OS-level anchor providers.
+    // App-specific anchor providers must come from the app plugins.
     registry.register(NotificationAnchorProvider);
-    registry.register(WhatsAppAnchorProvider);
-    registry.register(XAnchorProvider);
-    registry.register(IMessageAnchorProvider);
 }
 
 // =============================================================================

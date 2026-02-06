@@ -1,5 +1,10 @@
 import { TimelineDemo } from "./pages/TimelineDemo";
+import { StudioRuntimeProvider } from "./RuntimeContext";
 
 export function App() {
-  return <TimelineDemo />;
+  return (
+    <StudioRuntimeProvider>
+      <TimelineDemo />
+    </StudioRuntimeProvider>
+  );
 }

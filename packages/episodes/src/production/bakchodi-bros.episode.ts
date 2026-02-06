@@ -64,6 +64,7 @@ export default defineEpisode({
           return new WhatsAppTrackBuilder(30, "phone", "dm_rahul", getOrder);
         },
         (wa) => {
+          wa.switchTo("dm_rahul", 1);
           wa.at("1s").receive("Rahul", "bhai");
           wa.at("1.5s").receive("Rahul", "bhai");
           wa.at("2s").receive("Rahul", "BHAI");

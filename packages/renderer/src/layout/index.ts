@@ -68,6 +68,12 @@ export function computeLayout(
     switch (ctx.viewKind) {
         case "FEED":
             return computeFeedLayout(fullCtx);
+        case "FULLSCREEN":
+            return {
+                kind: "FULLSCREEN",
+                semantic: undefined,
+                meta: {},
+            };
         case "STORY":
             return computeStoryLayout(fullCtx);
         case "LOCKSCREEN":

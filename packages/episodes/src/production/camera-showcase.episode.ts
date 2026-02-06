@@ -50,6 +50,7 @@ export default defineEpisode({
           return new WhatsAppTrackBuilder(30, "phone", "dm_camera", getOrder);
         },
         (wa) => {
+          wa.switchTo("dm_camera", 1);
           wa.at("1s").receive("Demo", "Welcome to the Camera Showcase! 🎥");
           wa.at("3s").receive("Demo", "Let's see spring physics zoom...");
           wa.at("6s").receive("Demo", "Notice the bouncy, natural motion!");

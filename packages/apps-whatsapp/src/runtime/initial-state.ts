@@ -17,7 +17,7 @@ import type { WhatsAppState } from "../types";
 export function createWhatsAppInitialState(): WhatsAppState {
   return {
     currentScreen: "chats",
-    viewMode: "LIST",
+    viewMode: "FEED",
     conversationId: undefined,
   };
 }

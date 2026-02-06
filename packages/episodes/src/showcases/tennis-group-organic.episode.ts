@@ -50,6 +50,7 @@ export default defineEpisode({
         () =>
           new WhatsAppTrackBuilder(30, "phone", "group_weekend_tennis", getOrder),
         (wa) => {
+          wa.switchTo("group_weekend_tennis", 1);
           wa.at("1s").receive("Alex", "Court booked for Sunday 7am 🎾");
           wa.at("2.2s").receive("Nia", "I can bring balls + cones");
           wa.at("3.6s").receive("Jay", "Need one more doubles player");

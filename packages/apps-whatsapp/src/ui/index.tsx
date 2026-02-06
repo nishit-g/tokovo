@@ -1,7 +1,7 @@
 import React from "react";
 import { WorldState } from "@tokovo/core";
 import { injectWhatsAppStyles } from "../styles";
-import { WhatsAppThemeProvider } from "../theme/context";
+import { WhatsAppThemeProvider } from "../theme/ThemeContext";
 
 // Screens
 import { ChatScreen } from "../components/screens/ChatScreen";
@@ -10,6 +10,7 @@ import { StatusScreen } from "../components/screens/StatusScreen";
 import { CommunitiesScreen } from "../components/screens/CommunitiesScreen";
 import { CallsScreen } from "../components/screens/CallsScreen";
 import { ProfileScreen } from "../components/screens/ProfileScreen";
+import { SettingsScreen } from "../components/screens/SettingsScreen";
 
 import { WhatsAppState } from "../types";
 
@@ -46,19 +47,20 @@ export const WhatsappChatView: React.FC<WhatsappChatViewProps> = ({
 
   // 1. Resolve App State & Screen
   const appState = world.appState?.["app_whatsapp"] as WhatsAppState;
-  const currentScreen = appState?.currentScreen || "chat";
+  const currentScreen = appState?.currentScreen || "chats";
 
   // 2. Resolve Dimensions (Resolution Independence)
   // Receive logical dimensions from parent (TokovoRenderer's AppSurface)
   // If undefined, assume standard logical width (393)
   const activeWidth = width || 393;
-  const activeHeight = height || 2556;
+  const activeHeight = height || 852;
 
   // 3. Render Appropriate Screen
   // Strategy Pattern for Screen Navigation
   let activeScreenContent;
 
   switch (currentScreen) {
+    case "main":
     case "list":
     case "chats":
     case "chats-list":
@@ -94,6 +96,16 @@ export const WhatsappChatView: React.FC<WhatsappChatViewProps> = ({
     case "calls":
       activeScreenContent = (
         <CallsScreen
+          world={world}
+          width={activeWidth}
+          height={activeHeight}
+          safeAreaInsets={safeAreaInsets}
+        />
+      );
+      break;
+    case "settings":
+      activeScreenContent = (
+        <SettingsScreen
           world={world}
           width={activeWidth}
           height={activeHeight}

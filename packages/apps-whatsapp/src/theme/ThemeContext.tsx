@@ -40,6 +40,9 @@ export function ThemeProvider({
   );
 }
 
+// Canonical name used across other apps.
+export const WhatsAppThemeProvider = ThemeProvider;
+
 export function useTheme(): WhatsAppTheme {
   return useContext(ThemeContext).theme;
 }

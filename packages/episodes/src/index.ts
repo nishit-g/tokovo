@@ -1,10 +1,10 @@
 /**
  * @tokovo/episodes
  *
- * Enterprise episode management with auto-discovery.
+ * Enterprise episode management with explicit registration.
  *
  * @example
- * // Create episodes using defineEpisode (auto-registers)
+ * // Create episodes using defineEpisode (pure definition)
  * import { defineEpisode } from "@tokovo/episodes";
  *
  * export default defineEpisode({
@@ -13,18 +13,18 @@
  *     build: () => episode(...).build(),
  * });
  *
- * // Access all registered episodes
- * import { episodeRegistry } from "@tokovo/episodes";
- * const all = episodeRegistry.all();
+ * // Register episodes into a registry in your runtime
+ * import { createEpisodeRegistry } from "@tokovo/episodes";
+ * const registry = createEpisodeRegistry();
+ * registry.register(myEpisode);
  *
  * @see docs-v2/EPISODE-ARCH.md
  */
 
 // =============================================================================
-// REGISTRY (Auto-discovery)
+// REGISTRY
 // =============================================================================
 export {
-  episodeRegistry,
   EpisodeRegistry,
   createEpisodeRegistry,
   getEpisodeRegistrySnapshot,

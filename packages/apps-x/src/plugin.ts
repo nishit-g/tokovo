@@ -4,12 +4,40 @@ import { XView } from "./ui";
 import { xReducer } from "./runtime/reducer";
 import { xLowering } from "./lowering";
 import { xLayoutStrategies } from "./layout";
-import { xAnchors } from "./runtime/adapters/anchors";
 import { createXInitialState } from "./runtime/state";
+import { XAnchorProvider } from "./anchors/provider";
 
 const xViews: PluginViews = {
   AppRoot: XView,
 };
+
+const xAudioRules: NonNullable<TokovoPluginContract["audioRules"]> = [
+  {
+    match: { kind: "APP", appId: "app_x", type: "LIKE_TWEET" },
+    action: "PLAY_ONE_SHOT",
+    sound: "tap",
+    bus: "ui",
+  },
+  {
+    match: { kind: "APP", appId: "app_x", type: "BOOKMARK_TWEET" },
+    action: "PLAY_ONE_SHOT",
+    sound: "tap",
+    bus: "ui",
+  },
+  {
+    match: { kind: "APP", appId: "app_x", type: "SHARE_TWEET" },
+    action: "PLAY_ONE_SHOT",
+    sound: "tap",
+    bus: "ui",
+  },
+  {
+    match: { kind: "APP", appId: "app_x", type: "ADD_DM_MESSAGE" },
+    action: "PLAY_ONE_SHOT",
+    sound: "notification_soft",
+    bus: "ui",
+    duckMusic: true,
+  },
+];
 
 export const XPlugin: TokovoPluginContract<"app_x"> & {
   v2Lowering: typeof xLowering;
@@ -48,9 +76,10 @@ export const XPlugin: TokovoPluginContract<"app_x"> & {
     },
     designWidth: 393,
   },
+  audioRules: xAudioRules,
   v2Lowering: xLowering,
   layouts: xLayoutStrategies,
-  anchors: xAnchors,
+  anchorProvider: XAnchorProvider,
 };
 
 const registeredManagers = new WeakSet<PluginManagerClass>();

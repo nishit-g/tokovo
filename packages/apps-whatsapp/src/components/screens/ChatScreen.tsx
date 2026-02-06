@@ -4,7 +4,7 @@ import { KeyboardAwareView } from "@tokovo/react";
 import { Header as DefaultHeader } from "../Header";
 import { MessageList } from "../MessageList";
 import { InputArea as DefaultInputArea } from "../InputArea";
-import { useTheme } from "../../theme/context";
+import { useTheme } from "../../theme/ThemeContext";
 import {
   WhatsAppState,
   MessageData,
@@ -30,7 +30,7 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({
   world,
   deviceId,
   safeAreaInsets,
-  width,
+  width: _width,
   height: _height,
 }) => {
   const theme = useTheme();
@@ -212,15 +212,9 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({
     }
   });
 
-  const designWidth = 393;
-  const targetWidth = width || 1179;
-  const scale = targetWidth / designWidth;
-
-  const physicalSafeTop = safeAreaInsets?.top ?? 177;
-  const physicalSafeBottom = safeAreaInsets?.bottom ?? 102;
-
-  const safeAreaTop = physicalSafeTop / scale;
-  const safeAreaBottom = physicalSafeBottom / scale;
+  // TokovoRenderer already provides safeAreaInsets in design coordinates.
+  const safeAreaTop = safeAreaInsets?.top ?? 47;
+  const safeAreaBottom = safeAreaInsets?.bottom ?? 34;
   const bottomPadding =
     theme.spacing.inputAreaHeight + safeAreaBottom + 12;
 

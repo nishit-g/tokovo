@@ -17,7 +17,7 @@
  * return strategy?.computeLayout(ctx) ?? defaultLayout(ctx);
  */
 
-import type { Platform, LayoutContext, LayoutState } from "@tokovo/core";
+import type { Platform, LayoutContext, LayoutState, ViewKind } from "@tokovo/core";
 
 // Re-export types for convenience
 export type { LayoutContext, LayoutState };
@@ -34,7 +34,7 @@ export interface LayoutStrategy {
   appId: string;
 
   /** View kind (e.g., "CHAT", "FEED", "STORY") */
-  viewKind: string;
+  viewKind: ViewKind;
 
   /** Optional platform filter - if not set, applies to all platforms */
   platforms?: Platform[];
@@ -64,7 +64,7 @@ export class LayoutRegistryClass {
   /**
    * Get layout strategy for specific appId + viewKind.
    */
-  get(appId: string, viewKind: string): LayoutStrategy | undefined {
+  get(appId: string, viewKind: ViewKind): LayoutStrategy | undefined {
     return this.strategies.get(`${appId}:${viewKind}`);
   }
 
@@ -72,7 +72,7 @@ export class LayoutRegistryClass {
    * Get first layout strategy matching a viewKind (any app).
    * Useful for generic fallbacks.
    */
-  getByViewKind(viewKind: string): LayoutStrategy | undefined {
+  getByViewKind(viewKind: ViewKind): LayoutStrategy | undefined {
     for (const strategy of this.strategies.values()) {
       if (strategy.viewKind === viewKind) {
         return strategy;
@@ -84,7 +84,7 @@ export class LayoutRegistryClass {
   /**
    * Get all strategies for a viewKind.
    */
-  getAllForViewKind(viewKind: string): LayoutStrategy[] {
+  getAllForViewKind(viewKind: ViewKind): LayoutStrategy[] {
     return Array.from(this.strategies.values()).filter(
       (s) => s.viewKind === viewKind,
     );
@@ -102,7 +102,7 @@ export class LayoutRegistryClass {
   /**
    * Check if a strategy exists.
    */
-  has(appId: string, viewKind: string): boolean {
+  has(appId: string, viewKind: ViewKind): boolean {
     return this.strategies.has(`${appId}:${viewKind}`);
   }
 

@@ -79,6 +79,7 @@ export default defineEpisode({
         "app_whatsapp",
         (getOrder) => new WhatsAppTrackBuilder(30, "phone", "dm_launch", getOrder),
         (wa) => {
+          wa.switchTo("dm_launch", 1);
           wa.at("1s").receive("Ava", "Campaign thread is exploding 🔥");
           wa.at("2.3s").receive("Ava", "Can you jump to X and post the recap?");
           wa.span("3.6s", "4.8s").typing("me");

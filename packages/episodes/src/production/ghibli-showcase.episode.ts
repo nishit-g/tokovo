@@ -48,6 +48,7 @@ export default defineEpisode({
         "app_whatsapp",
         () => new WhatsAppTrackBuilder(30, "phone", "forest_spirits", getOrder),
         (wa) => {
+          wa.switchTo("forest_spirits", 1);
           wa.at("1s").receive("Totoro", "The forest is beautiful today! 🌸");
 
           wa.at("3s").receive(

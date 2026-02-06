@@ -94,6 +94,7 @@ export default defineEpisode({
           return new WhatsAppTrackBuilder(30, "phone", "dm_alex", getOrder);
         },
         (wa) => {
+          wa.switchTo("dm_alex", 1);
           // Opening - match voice segment 1 timing
           wa.at("3s").receive("Alex", "Hey...");
           wa.at("4s").receive("Alex", "We need to talk.");

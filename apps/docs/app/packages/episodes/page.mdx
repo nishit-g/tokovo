@@ -297,12 +297,11 @@ function MyComposition() {
 ### Access Episode Metadata
 
 ```typescript
-import { episodeRegistry } from "@tokovo/episodes";
+import productionEpisodes from "@tokovo/episodes/production";
+import { createEpisodeRegistry } from "@tokovo/episodes";
 
-// Get all production episodes
-const productionEpisodes = episodeRegistry.filter({
-  category: "production",
-});
+const episodeRegistry = createEpisodeRegistry();
+productionEpisodes.forEach((ep) => episodeRegistry.register(ep));
 
 // Get specific episode
 const episode = episodeRegistry.get("bakchodi-bros");

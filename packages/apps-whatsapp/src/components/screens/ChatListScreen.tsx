@@ -167,22 +167,15 @@ const EmptyState: React.FC<{ filter: FilterType }> = ({ filter }) => {
 export const ChatListScreen: React.FC<ChatListScreenProps> = ({
   world,
   safeAreaInsets,
-  width,
+  width: _width,
   height: _height,
 }) => {
   const [activeFilter, setActiveFilter] = useState<FilterType>("all");
   const deviceId = Object.keys(world.devices || {})[0];
 
-  // Calculate safe areas with sensible defaults
-  const designWidth = 393;
-  const targetWidth = width || 1179;
-  const scale = targetWidth / designWidth;
-
-  const physicalSafeTop = safeAreaInsets?.top ?? 177;
-  const physicalSafeBottom = safeAreaInsets?.bottom ?? 102;
-
-  const safeAreaTop = physicalSafeTop / scale;
-  const safeAreaBottom = physicalSafeBottom / scale;
+  // TokovoRenderer already provides safeAreaInsets in design coordinates.
+  const safeAreaTop = safeAreaInsets?.top ?? 47;
+  const safeAreaBottom = safeAreaInsets?.bottom ?? 34;
 
   // Extract app state and conversations
   const appState = (world.appState?.["app_whatsapp"] || {}) as WhatsAppState;

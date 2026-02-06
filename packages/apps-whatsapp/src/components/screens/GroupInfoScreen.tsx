@@ -182,15 +182,11 @@ export const GroupInfoScreen: React.FC<GroupInfoScreenProps> = ({
   world,
   conversationId,
   safeAreaInsets,
-  width,
+  width: _width,
   height: _height,
 }) => {
-  const designWidth = 393;
-  const targetWidth = width || 1179;
-  const scale = targetWidth / designWidth;
-
-  const physicalSafeTop = safeAreaInsets?.top ?? 177;
-  const safeAreaTop = physicalSafeTop / scale;
+  // TokovoRenderer already provides safeAreaInsets in design coordinates.
+  const safeAreaTop = safeAreaInsets?.top ?? 47;
 
   const appState = world.appState?.["app_whatsapp"] as
     | {
