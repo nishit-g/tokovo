@@ -1,4 +1,5 @@
-import { registerHandler } from "./registry";
+import { getGlobalWhatsAppHandlerRegistry } from "./registry";
+import type { MutableHandlerRegistry } from "./registry";
 import type {
   ImageReceivedEvent,
   ImageSentEvent,
@@ -101,13 +102,10 @@ function normalizeLocationPayload(payload: {
   };
 }
 
-let registered = false;
-
-export function registerMediaHandlers(): void {
-  if (registered) return;
-  registered = true;
-
-  registerHandler<ImageReceivedEvent>("ImageReceived", (ctx, e) => {
+export function registerMediaHandlers(
+  registry: MutableHandlerRegistry = getGlobalWhatsAppHandlerRegistry(),
+): void {
+  registry.registerHandler<ImageReceivedEvent>("ImageReceived", (ctx, e) => {
     const payload = e.payload ?? {};
     const from = payload.from ?? e.from ?? "unknown";
     const msg: WhatsAppMessage = {
@@ -124,7 +122,7 @@ export function registerMediaHandlers(): void {
     bumpUnread(ctx, from);
   });
 
-  registerHandler<ImageSentEvent>("ImageSent", (ctx, e) => {
+  registry.registerHandler<ImageSentEvent>("ImageSent", (ctx, e) => {
     const payload = e.payload ?? {};
     const msg: WhatsAppMessage = {
       id: buildMediaMessageId(ctx, e, "me", "img"),
@@ -139,7 +137,7 @@ export function registerMediaHandlers(): void {
     ctx.addMessage(msg);
   });
 
-  registerHandler<VideoReceivedEvent>("VideoReceived", (ctx, e) => {
+  registry.registerHandler<VideoReceivedEvent>("VideoReceived", (ctx, e) => {
     const payload = e.payload ?? {};
     const from = payload.from ?? e.from ?? "unknown";
     const msg: WhatsAppMessage = {
@@ -158,7 +156,7 @@ export function registerMediaHandlers(): void {
     bumpUnread(ctx, from);
   });
 
-  registerHandler<VideoSentEvent>("VideoSent", (ctx, e) => {
+  registry.registerHandler<VideoSentEvent>("VideoSent", (ctx, e) => {
     const payload = e.payload ?? {};
     const msg: WhatsAppMessage = {
       id: buildMediaMessageId(ctx, e, "me", "vid"),
@@ -175,7 +173,7 @@ export function registerMediaHandlers(): void {
     ctx.addMessage(msg);
   });
 
-  registerHandler<VoiceReceivedEvent>("VoiceReceived", (ctx, e) => {
+  registry.registerHandler<VoiceReceivedEvent>("VoiceReceived", (ctx, e) => {
     const payload = e.payload ?? {};
     const from = payload.from ?? e.from ?? "unknown";
     const msg: WhatsAppMessage = {
@@ -193,7 +191,7 @@ export function registerMediaHandlers(): void {
     bumpUnread(ctx, from);
   });
 
-  registerHandler<VoiceSentEvent>("VoiceSent", (ctx, e) => {
+  registry.registerHandler<VoiceSentEvent>("VoiceSent", (ctx, e) => {
     const payload = e.payload ?? {};
     const msg: WhatsAppMessage = {
       id: buildMediaMessageId(ctx, e, "me", "voice"),
@@ -209,7 +207,7 @@ export function registerMediaHandlers(): void {
     ctx.addMessage(msg);
   });
 
-  registerHandler<GifReceivedEvent>("GifReceived", (ctx, e) => {
+  registry.registerHandler<GifReceivedEvent>("GifReceived", (ctx, e) => {
     const payload = e.payload ?? {};
     const from = payload.from ?? e.from ?? "unknown";
     const msg: WhatsAppMessage = {
@@ -225,7 +223,7 @@ export function registerMediaHandlers(): void {
     bumpUnread(ctx, from);
   });
 
-  registerHandler<GifSentEvent>("GifSent", (ctx, e) => {
+  registry.registerHandler<GifSentEvent>("GifSent", (ctx, e) => {
     const payload = e.payload ?? {};
     const msg: WhatsAppMessage = {
       id: buildMediaMessageId(ctx, e, "me", "gif"),
@@ -239,7 +237,7 @@ export function registerMediaHandlers(): void {
     ctx.addMessage(msg);
   });
 
-  registerHandler<StickerReceivedEvent>("StickerReceived", (ctx, e) => {
+  registry.registerHandler<StickerReceivedEvent>("StickerReceived", (ctx, e) => {
     const payload = e.payload ?? {};
     const from = payload.from ?? e.from ?? "unknown";
     const msg: WhatsAppMessage = {
@@ -255,7 +253,7 @@ export function registerMediaHandlers(): void {
     bumpUnread(ctx, from);
   });
 
-  registerHandler<StickerSentEvent>("StickerSent", (ctx, e) => {
+  registry.registerHandler<StickerSentEvent>("StickerSent", (ctx, e) => {
     const payload = e.payload ?? {};
     const msg: WhatsAppMessage = {
       id: buildMediaMessageId(ctx, e, "me", "sticker"),
@@ -269,7 +267,9 @@ export function registerMediaHandlers(): void {
     ctx.addMessage(msg);
   });
 
-  registerHandler<DocumentReceivedEvent>("DocumentReceived", (ctx, e) => {
+  registry.registerHandler<DocumentReceivedEvent>(
+    "DocumentReceived",
+    (ctx, e) => {
     const payload = e.payload ?? {};
     const from = payload.from ?? e.from ?? "unknown";
     const fileSize = formatFileSize(payload.fileSize) ?? "0 KB";
@@ -291,7 +291,7 @@ export function registerMediaHandlers(): void {
     bumpUnread(ctx, from);
   });
 
-  registerHandler<DocumentSentEvent>("DocumentSent", (ctx, e) => {
+  registry.registerHandler<DocumentSentEvent>("DocumentSent", (ctx, e) => {
     const payload = e.payload ?? {};
     const fileSize = formatFileSize(payload.fileSize) ?? "0 KB";
     const fileName = payload.fileName ?? "Document";
@@ -311,7 +311,7 @@ export function registerMediaHandlers(): void {
     ctx.addMessage(msg);
   });
 
-  registerHandler<ContactReceivedEvent>("ContactReceived", (ctx, e) => {
+  registry.registerHandler<ContactReceivedEvent>("ContactReceived", (ctx, e) => {
     const payload = e.payload ?? {};
     const from = payload.from ?? e.from ?? "unknown";
     const normalized = normalizeContactPayload(payload);
@@ -330,7 +330,7 @@ export function registerMediaHandlers(): void {
     bumpUnread(ctx, from);
   });
 
-  registerHandler<ContactSentEvent>("ContactSent", (ctx, e) => {
+  registry.registerHandler<ContactSentEvent>("ContactSent", (ctx, e) => {
     const payload = e.payload ?? {};
     const normalized = normalizeContactPayload(payload);
     const msg: WhatsAppMessage = {
@@ -347,7 +347,7 @@ export function registerMediaHandlers(): void {
     ctx.addMessage(msg);
   });
 
-  registerHandler<LocationReceivedEvent>("LocationReceived", (ctx, e) => {
+  registry.registerHandler<LocationReceivedEvent>("LocationReceived", (ctx, e) => {
     const payload = e.payload ?? {};
     const from = payload.from ?? e.from ?? "unknown";
     const normalized = normalizeLocationPayload(payload);
@@ -368,7 +368,7 @@ export function registerMediaHandlers(): void {
     bumpUnread(ctx, from);
   });
 
-  registerHandler<LocationSentEvent>("LocationSent", (ctx, e) => {
+  registry.registerHandler<LocationSentEvent>("LocationSent", (ctx, e) => {
     const payload = e.payload ?? {};
     const normalized = normalizeLocationPayload(payload);
     const msg: WhatsAppMessage = {
@@ -387,7 +387,7 @@ export function registerMediaHandlers(): void {
     ctx.addMessage(msg);
   });
 
-  registerHandler<VoicePlayEvent>("VoicePlay", (ctx, e) => {
+  registry.registerHandler<VoicePlayEvent>("VoicePlay", (ctx, e) => {
     const payload = e.payload ?? {};
 
     let targetMsg = payload.messageId
@@ -409,7 +409,7 @@ export function registerMediaHandlers(): void {
     }
   });
 
-  registerHandler<VoicePauseEvent>("VoicePause", (ctx, e) => {
+  registry.registerHandler<VoicePauseEvent>("VoicePause", (ctx, e) => {
     const payload = e.payload ?? {};
 
     let targetMsg = payload.messageId
@@ -426,7 +426,7 @@ export function registerMediaHandlers(): void {
     }
   });
 
-  registerHandler<VoiceMessageReceivedEvent>(
+  registry.registerHandler<VoiceMessageReceivedEvent>(
     "VoiceMessageReceived",
     (ctx, e) => {
       const msg: WhatsAppMessage = {

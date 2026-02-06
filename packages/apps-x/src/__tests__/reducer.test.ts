@@ -38,7 +38,8 @@ describe("X Reducer", () => {
       },
     });
 
-    const appState = getXState(nextState)!;
+    const appState = getXState(nextState);
+    if (!appState) throw new Error("Missing X app state after reducer run");
     expect(appState.users).toHaveLength(1);
     expect(appState.users[0].handle).toBe("alex");
   });
@@ -58,7 +59,8 @@ describe("X Reducer", () => {
       },
     });
 
-    const appState = getXState(nextState)!;
+    const appState = getXState(nextState);
+    if (!appState) throw new Error("Missing X app state after reducer run");
     expect(appState.tweets).toHaveLength(1);
     expect(appState.timeline[0]).toBe("tw-1");
   });
@@ -86,7 +88,8 @@ describe("X Reducer", () => {
       payload: { tweetId: "tw-1", userId: "u2" },
     });
 
-    const appState = getXState(liked)!;
+    const appState = getXState(liked);
+    if (!appState) throw new Error("Missing X app state after reducer run");
     expect(appState.tweets[0].likeCount).toBe(1);
   });
 });

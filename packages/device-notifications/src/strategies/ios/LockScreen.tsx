@@ -6,7 +6,7 @@ export const IOSLockScreen: React.FC<NotificationLockScreenProps> = ({
   tokens,
   scale,
 }) => {
-  const { lockScreen, icon, text, typography, animation } = tokens;
+  const { lockScreen, icon, text, typography } = tokens;
   const maxVisible = lockScreen.maxVisible;
 
   const visibleNotifications = notifications.slice(0, maxVisible);

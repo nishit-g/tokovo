@@ -6,7 +6,15 @@ export default tseslint.config(
   eslint.configs.recommended,
   ...tseslint.configs.strict,
   {
-    ignores: ["**/node_modules/**", "**/dist/**", "**/.turbo/**", "**/docs/**"],
+    ignores: [
+      "**/node_modules/**",
+      "**/dist/**",
+      "**/.turbo/**",
+      "**/.next/**",
+      "**/out/**",
+      "**/coverage/**",
+      "**/docs/**",
+    ],
   },
   {
     files: ["**/*.ts", "**/*.tsx"],
@@ -88,7 +96,43 @@ export default tseslint.config(
     },
   },
   {
+    files: [
+      "**/next.config.js",
+      "**/postcss.config.js",
+      "**/prettier.config.js",
+      "**/*.config.cjs",
+    ],
+    languageOptions: {
+      sourceType: "commonjs",
+      globals: {
+        module: "readonly",
+        require: "readonly",
+        __dirname: "readonly",
+        __filename: "readonly",
+        process: "readonly",
+      },
+    },
+    rules: {
+      "no-undef": "off",
+    },
+  },
+  {
+    files: ["**/next-env.d.ts"],
+    rules: {
+      "@typescript-eslint/triple-slash-reference": "off",
+    },
+  },
+  {
     files: ["apps/docs/**/*.{js,jsx,ts,tsx}"],
+    plugins: {
+      "@next/next": nextPlugin,
+    },
+    rules: {
+      ...nextPlugin.configs["core-web-vitals"].rules,
+    },
+  },
+  {
+    files: ["apps/web/**/*.{js,jsx,ts,tsx}"],
     plugins: {
       "@next/next": nextPlugin,
     },

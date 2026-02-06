@@ -55,7 +55,7 @@ function hashField(
     key: string,
     value: string | number | boolean | undefined | null,
 ): number {
-    let next = hashString(hash, key);
+    const next = hashString(hash, key);
     if (value === undefined || value === null) {
         return hashString(next, "<nil>");
     }

@@ -40,6 +40,10 @@ export const Profile: React.FC<ProfileProps> = ({ world }) => {
   const tweets = getTimelineTweets(world).filter(
     (tweet) => tweet.authorId === activeUser?.id
   );
+  const referenceNowMs = tweets.reduce(
+    (max, tweet) => Math.max(max, tweet.createdAt),
+    0,
+  );
 
   if (!activeUser) {
     return (
@@ -317,7 +321,7 @@ export const Profile: React.FC<ProfileProps> = ({ world }) => {
                     <span
                       style={{ fontSize: 15, color: theme.colors.textSecondary }}
                     >
-                      {formatTimestamp(tweet.createdAt)}
+                      {formatTimestamp(tweet.createdAt, { nowMs: referenceNowMs })}
                     </span>
                   </div>
                   <div

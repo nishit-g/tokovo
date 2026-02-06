@@ -127,6 +127,10 @@ export const Notifications: React.FC<NotificationsProps> = ({ world }) => {
   const users = state?.users ?? [];
   const tweets = state?.tweets ?? [];
   const tab = state?.notificationsTab ?? "all";
+  const referenceNowMs = notifications.reduce(
+    (max, notification) => Math.max(max, notification.createdAt),
+    0,
+  );
 
   const getUser = (id: string | undefined) => users.find((u) => u.id === id);
   const getTweet = (id: string | undefined) => tweets.find((t) => t.id === id);
@@ -291,7 +295,7 @@ export const Notifications: React.FC<NotificationsProps> = ({ world }) => {
                         color: theme.colors.textMuted,
                       }}
                     >
-                      {formatTimestamp(notification.createdAt)}
+                      {formatTimestamp(notification.createdAt, { nowMs: referenceNowMs })}
                     </div>
                   )}
                 </div>

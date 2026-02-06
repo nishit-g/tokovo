@@ -1,9 +1,9 @@
+/* Import distinctive fonts */
+@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Space+Mono:wght@400;700&display=swap');
+
 @import 'tailwindcss';
 
 @plugin '@tailwindcss/forms';
-
-/* Import distinctive fonts */
-@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Space+Mono:wght@400;700&display=swap');
 
 @theme {
   /* Custom fonts - distinctive, not generic */

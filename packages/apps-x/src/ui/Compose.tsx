@@ -3,7 +3,7 @@ import type { WorldState } from "@tokovo/core";
 import { useXTheme } from "./ThemeContext";
 import { getXState } from "../runtime/selectors";
 import { AppShell } from "./AppShell";
-import { Avatar, XIcon } from "./components";
+import { Avatar } from "./components";
 import { ScreenTransition } from "./ScreenTransition";
 import { BottomNav } from "./BottomNav";
 

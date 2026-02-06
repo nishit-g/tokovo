@@ -4,7 +4,6 @@
 
 import React from "react";
 import { useIMessageTheme } from "../ui/ThemeContext";
-import { iMessageSpacing } from "../config/tokens";
 import type { IMessageTapbackType } from "../types";
 
 interface LongPressMenuProps {
@@ -28,14 +27,13 @@ const TAPBACK_ICONS: Record<IMessageTapbackType, string> = {
 
 export const LongPressMenu: React.FC<LongPressMenuProps> = ({
     isVisible,
-    position,
     onTapback,
     onReply,
     onCopy,
     onForward,
     onDelete,
 }) => {
-    const theme = useIMessageTheme();
+    useIMessageTheme();
 
     if (!isVisible) return null;
 

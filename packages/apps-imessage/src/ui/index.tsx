@@ -1,8 +1,7 @@
 import React, { useEffect } from "react";
 import type { PluginViewProps } from "@tokovo/core";
 import { Header, InputBar, MessageBubble, TypingIndicator, ScreenEffect, SearchBar } from "../components";
-import { LAYOUT_CONSTANTS, computeMessageGap, iMessageSpacing } from "../config";
-import type { IMessageTheme } from "../config/imessage-theme";
+import { computeMessageGap, iMessageSpacing } from "../config";
 import type { IMessageConversation, IMessageMessage, IMessageState } from "../types";
 import { injectIMessageStyles } from "../styles";
 import { IMessageThemeProvider, useIMessageTheme } from "./ThemeContext";

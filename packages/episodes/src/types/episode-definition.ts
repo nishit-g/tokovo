@@ -8,7 +8,6 @@
 
 import { z } from "zod";
 import {
-  episodeRegistry,
   type EpisodeRegistry,
 } from "../registry/episode-registry.js";
 import type { TrackEpisodeIR } from "@tokovo/ir";
@@ -218,9 +217,11 @@ export function defineEpisode(
     throw new Error(`Invalid episode definition: ${result.error.message}`);
   }
 
-  // Auto-register with provided registry (or global registry by default)
-  const registry = options?.registry ?? episodeRegistry;
-  registry.register(definition);
+  // Enterprise rule: definitions are pure by default.
+  // Registration must be explicit via `options.registry` (e.g., app/runtime boot).
+  if (options?.registry) {
+    options.registry.register(definition);
+  }
 
   return definition;
 }

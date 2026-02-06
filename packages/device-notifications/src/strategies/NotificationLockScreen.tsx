@@ -5,14 +5,12 @@ export const NotificationLockScreen: React.FC<NotificationLockScreenProps> = ({
   notifications,
   tokens,
   scale,
-  fps = 30,
+  fps: _fps = 30,
 }) => {
   const { lockScreen, icon, text, typography, animation, platform } = tokens;
   const maxVisible = lockScreen.maxVisible;
 
   const visibleNotifications = notifications.slice(0, maxVisible);
-  const durationSeconds = animation.enterDuration / fps;
-
   const getTransformForItem = (
     animationState: string,
     animationProgress: number,

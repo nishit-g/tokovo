@@ -48,13 +48,12 @@ import {
 import type { VoiceConfig, BackgroundConfigIR } from "@tokovo/ir";
 import { getDeviceProfile } from "@tokovo/devices";
 import {
-  episodeRegistry,
   getFormat,
   type EpisodeDefinition,
   type FormatId,
 } from "@tokovo/episodes";
 import { ErrorBoundary } from "./ErrorBoundary";
-import { pluginManager, rendererRegistries, tokovoRegistries } from "./runtime";
+import { getVideoRunnerRuntime } from "./runtime";
 
 const CAMERA_DEBUG_ENABLED = process.env.TOKOVO_CAMERA_DEBUG === "1";
 const MAX_DEBUG_TRACE_FRAMES = 5000;
@@ -82,6 +81,7 @@ export async function calculateEpisodeMetadata({
 }: {
   props: EpisodeRendererProps;
 }) {
+  const { episodeRegistry } = getVideoRunnerRuntime();
   const episode = episodeRegistry.get(props.episodeId);
   if (!episode) {
     console.warn(
@@ -108,6 +108,7 @@ export async function calculateEpisodeMetadata({
 // =============================================================================
 
 function resolvePlugins(appIds: string[]) {
+  const { pluginManager } = getVideoRunnerRuntime();
   const missing: string[] = [];
   const plugins = appIds
     .map((appId) => {
@@ -152,6 +153,8 @@ export const EpisodeRenderer: React.FC<EpisodeRendererProps> = ({
 const EpisodeRendererInner: React.FC<EpisodeRendererProps> = ({
   episodeId,
 }) => {
+  const { episodeRegistry, pluginManager, rendererRegistries, tokovoRegistries } =
+    getVideoRunnerRuntime();
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
   const [handle] = useState(() => delayRender(`Loading episode: ${episodeId}`));

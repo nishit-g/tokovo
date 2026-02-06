@@ -15,6 +15,11 @@ export const Messages: React.FC<MessagesProps> = ({ world }) => {
   const theme = useXTheme();
   const state = getXState(world);
   const threads = getDMThreads(world);
+  const referenceNowMs =
+    (state?.dmMessages ?? []).reduce(
+      (max, message) => Math.max(max, message.createdAt),
+      0,
+    );
 
   const getUserName = (id: string) =>
     state?.users.find((u) => u.id === id)?.name ?? "Unknown";
@@ -240,7 +245,7 @@ export const Messages: React.FC<MessagesProps> = ({ world }) => {
                       }}
                     >
                       {lastMessage?.createdAt
-                        ? formatTimestamp(lastMessage.createdAt)
+                        ? formatTimestamp(lastMessage.createdAt, { nowMs: referenceNowMs })
                         : ""}
                     </span>
                   </div>

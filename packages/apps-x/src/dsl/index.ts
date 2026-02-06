@@ -335,15 +335,21 @@ export class XTrackBuilder {
     const point = this.at(time);
     data.users?.forEach((user) => point.createUser(user));
     data.follows?.forEach((pair) => point.followUser(pair.followerId, pair.followingId));
-    data.currentUserId && point.setCurrentUser(data.currentUserId);
+    if (data.currentUserId) {
+      point.setCurrentUser(data.currentUserId);
+    }
     data.tweets?.forEach((tweet) => point.postTweet(tweet));
     data.replies?.forEach((reply) => point.replyTweet(reply));
     data.quotes?.forEach((quote) => point.quoteTweet(quote));
     data.notifications?.forEach((note) => point.addNotification(note));
     data.threads?.forEach((thread) => point.createThread(thread.participantIds, thread.id));
     data.messages?.forEach((message) => point.sendMessage(message));
-    data.composeDraft && point.setComposeDraft(data.composeDraft);
-    data.notificationsTab && point.setNotificationsTab(data.notificationsTab);
+    if (data.composeDraft !== undefined) {
+      point.setComposeDraft(data.composeDraft);
+    }
+    if (data.notificationsTab !== undefined) {
+      point.setNotificationsTab(data.notificationsTab);
+    }
     if (data.screen) {
       point.navigate(data.screen, {
         tweetId: data.activeTweetId,

@@ -178,8 +178,8 @@ async function runLint(scanRoot: string): Promise<LintResult> {
 
 function printFindings(result: LintResult): void {
   if (result.findings.length === 0) {
-    console.log(
-      `tokovo-camera lint: PASS (${result.scannedFiles} episode files scanned)`,
+    process.stdout.write(
+      `tokovo-camera lint: PASS (${result.scannedFiles} episode files scanned)\n`,
     );
     return;
   }
@@ -204,18 +204,18 @@ async function runDoctor(cameraSrcRoot: string): Promise<void> {
     /from\s+["']@tokovo\/apps-/.test(entry.source),
   );
 
-  console.log("tokovo-camera doctor");
-  console.log(`- camera source files: ${files.length}`);
-  console.log(
-    `- anti-coupling: ${couplingViolations.length === 0 ? "PASS" : "FAIL"}`,
+  process.stdout.write("tokovo-camera doctor\n");
+  process.stdout.write(`- camera source files: ${files.length}\n`);
+  process.stdout.write(
+    `- anti-coupling: ${couplingViolations.length === 0 ? "PASS" : "FAIL"}\n`,
   );
   if (couplingViolations.length > 0) {
     for (const violation of couplingViolations) {
-      console.log(`  - ${violation.file}`);
+      process.stdout.write(`  - ${violation.file}\n`);
     }
     process.exitCode = 1;
   }
-  console.log(`- known anchors: ${Array.from(VALID_ANCHORS).join(", ")}`);
+  process.stdout.write(`- known anchors: ${Array.from(VALID_ANCHORS).join(", ")}\n`);
 }
 
 async function runPreview(file: string): Promise<void> {
@@ -230,20 +230,20 @@ async function runPreview(file: string): Promise<void> {
   );
   const resetCalls = Array.from(source.matchAll(/cam\.at\(([^)]+)\)\.reset\(/g));
 
-  console.log(`tokovo-camera preview: ${file}`);
-  console.log(`- focus events: ${focusCalls.length}`);
+  process.stdout.write(`tokovo-camera preview: ${file}\n`);
+  process.stdout.write(`- focus events: ${focusCalls.length}\n`);
   for (const m of focusCalls) {
-    console.log(`  - at=${m[1].trim()} anchor=${m[2]}`);
+    process.stdout.write(`  - at=${m[1].trim()} anchor=${m[2]}\n`);
   }
-  console.log(`- track spans: ${trackCalls.length}`);
+  process.stdout.write(`- track spans: ${trackCalls.length}\n`);
   for (const m of trackCalls) {
-    console.log(
-      `  - start=${m[1].trim()} end=${m[2].trim()} mode=${m[3]} anchor=${m[4]}`,
+    process.stdout.write(
+      `  - start=${m[1].trim()} end=${m[2].trim()} mode=${m[3]} anchor=${m[4]}\n`,
     );
   }
-  console.log(`- reset events: ${resetCalls.length}`);
+  process.stdout.write(`- reset events: ${resetCalls.length}\n`);
   for (const m of resetCalls) {
-    console.log(`  - at=${m[1].trim()}`);
+    process.stdout.write(`  - at=${m[1].trim()}\n`);
   }
 }
 
@@ -268,7 +268,9 @@ async function runMigrate(scanRoot: string): Promise<void> {
       changed += 1;
     }
   }
-  console.log(`tokovo-camera migrate-v1: updated ${changed}/${files.length} files`);
+  process.stdout.write(
+    `tokovo-camera migrate-v1: updated ${changed}/${files.length} files\n`,
+  );
 }
 
 async function main(): Promise<void> {
@@ -307,8 +309,8 @@ async function main(): Promise<void> {
     return;
   }
 
-  console.log(
-    "Usage: tokovo-camera <lint|doctor|preview|migrate-v1> [path-or-file]",
+  process.stderr.write(
+    "Usage: tokovo-camera <lint|doctor|preview|migrate-v1> [path-or-file]\n",
   );
   process.exit(1);
 }

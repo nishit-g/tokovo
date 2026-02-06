@@ -4,7 +4,6 @@
  */
 
 import React, { useEffect, useState } from "react";
-import { useIMessageTheme } from "../ui/ThemeContext";
 
 export type ScreenEffectType =
     | "balloons"
@@ -34,7 +33,6 @@ const EFFECT_DURATION: Record<ScreenEffectType, number> = {
 
 export const ScreenEffect: React.FC<ScreenEffectProps> = ({ effect, onComplete }) => {
     const [isActive, setIsActive] = useState(true);
-    const theme = useIMessageTheme();
 
     useEffect(() => {
         const timer = setTimeout(() => {
@@ -80,15 +78,20 @@ export const ScreenEffect: React.FC<ScreenEffectProps> = ({ effect, onComplete }
     return <div style={baseStyle}>{renderEffect()}</div>;
 };
 
+function deterministicUnit(index: number, salt: number): number {
+    const x = Math.sin(index * 12.9898 + salt * 78.233) * 43758.5453123;
+    return x - Math.floor(x);
+}
+
 // Balloons - rising balloons from bottom
 const BalloonsEffect: React.FC = () => {
     const balloonColors = ["#FF6B6B", "#4ECDC4", "#45B7D1", "#96CEB4", "#FFEAA7", "#DDA0DD", "#FF69B4"];
     const balloons = Array.from({ length: 15 }, (_, i) => ({
         id: i,
         color: balloonColors[i % balloonColors.length],
-        left: `${5 + Math.random() * 90}%`,
-        delay: Math.random() * 1.5,
-        size: 40 + Math.random() * 30,
+        left: `${5 + deterministicUnit(i, 1) * 90}%`,
+        delay: deterministicUnit(i, 2) * 1.5,
+        size: 40 + deterministicUnit(i, 3) * 30,
     }));
 
     return (
@@ -144,10 +147,10 @@ const ConfettiEffect: React.FC = () => {
     const pieces = Array.from({ length: 60 }, (_, i) => ({
         id: i,
         color: colors[i % colors.length],
-        left: `${Math.random() * 100}%`,
-        delay: Math.random() * 2,
-        rotation: Math.random() * 360,
-        size: 8 + Math.random() * 8,
+        left: `${deterministicUnit(i, 4) * 100}%`,
+        delay: deterministicUnit(i, 5) * 2,
+        rotation: deterministicUnit(i, 6) * 360,
+        size: 8 + deterministicUnit(i, 7) * 8,
     }));
 
     return (
@@ -290,9 +293,9 @@ const SpotlightEffect: React.FC = () => (
 const LoveEffect: React.FC = () => {
     const hearts = Array.from({ length: 20 }, (_, i) => ({
         id: i,
-        left: `${Math.random() * 100}%`,
-        delay: Math.random() * 2,
-        size: 15 + Math.random() * 20,
+        left: `${deterministicUnit(i, 8) * 100}%`,
+        delay: deterministicUnit(i, 9) * 2,
+        size: 15 + deterministicUnit(i, 10) * 20,
     }));
 
     return (

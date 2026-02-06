@@ -21,7 +21,7 @@ function resolveBaseTime(world: WorldState, deviceId?: string): Date {
   if (typeof clock === "number") {
     return new Date(clock);
   }
-  return new Date();
+  return new Date(0);
 }
 
 function formatTimestamp(
@@ -41,7 +41,7 @@ function formatTimestamp(
     return formatTime(new Date(value * 1000));
   }
 
-  const base = baseTime ?? new Date();
+  const base = baseTime ?? new Date(0);
   return formatTime(new Date(base.getTime() + value * 1000));
 }
 

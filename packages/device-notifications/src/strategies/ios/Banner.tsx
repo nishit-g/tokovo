@@ -8,7 +8,7 @@ export const IOSBanner: React.FC<NotificationBannerProps> = ({
   animationProgress,
   tokens,
   scale,
-  fps = 30,
+  fps: _fps = 30,
   stackIndex = 0,
   stackOffset = 0,
   renderIcon,
@@ -19,7 +19,7 @@ export const IOSBanner: React.FC<NotificationBannerProps> = ({
   onDismiss: _onDismiss,
 }) => {
   const { ir } = notification;
-  const { banner, icon, text, typography, animation } = tokens;
+  const { banner, icon, text, typography } = tokens;
 
   const baseTop = banner.margin.top * scale;
   const stackedTop = baseTop + stackOffset * scale;

@@ -6,7 +6,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import type { WorldState, LayoutState } from "@tokovo/core";
+import type { WorldState } from "@tokovo/core";
 
 // Mock the registry context
 const mockRegistries = {
@@ -90,7 +90,6 @@ describe("LayoutEngine", () => {
     describe("Determinism", () => {
         it("produces identical output for identical inputs", () => {
             const world = createTestWorld();
-            const t = 60;
 
             // Simulate two calls with same inputs
             // In real usage, useLayoutEngine would be called, but we test the logic

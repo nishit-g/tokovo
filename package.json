@@ -17,8 +17,10 @@
     "lint:check": "eslint . --max-warnings 0",
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
     "typecheck": "turbo run typecheck",
-    "create-plugin": "npx ts-node templates/scripts/create-plugin.ts",
-    "create-episode": "npx ts-node templates/scripts/create-episode.ts",
+    "create-plugin": "pnpm turbo gen plugin",
+    "create-episode": "pnpm turbo gen episode",
+    "test": "pnpm -r test",
+    "ci": "pnpm lint && pnpm typecheck && pnpm test && pnpm build",
     "validate": "pnpm --filter @tokovo/episodes validate"
   },
   "devDependencies": {

@@ -2,7 +2,7 @@
  * Swipeable Message Wrapper - Swipe gestures for reply, delete, pin
  */
 
-import React, { useState } from "react";
+import React from "react";
 import { useIMessageTheme } from "../ui/ThemeContext";
 
 interface SwipeableMessageProps {
@@ -14,13 +14,10 @@ interface SwipeableMessageProps {
 
 export const SwipeableMessage: React.FC<SwipeableMessageProps> = ({
     children,
-    onSwipeReply,
-    onSwipeDelete,
-    messageId,
 }) => {
     const theme = useIMessageTheme();
-    const [swipeOffset, setSwipeOffset] = useState(0);
-    const [isReplyHinted, setIsReplyHinted] = useState(false);
+    const swipeOffset = 0;
+    const isReplyHinted = false;
 
     const containerStyle: React.CSSProperties = {
         position: "relative",

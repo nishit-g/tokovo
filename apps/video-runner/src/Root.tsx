@@ -12,30 +12,20 @@
 import React from "react";
 import { Composition, Folder } from "remotion";
 import { z } from "zod";
-import "./runtime";
 import {
-  episodeRegistry,
   getFormat,
   type EpisodeDefinition,
   type FormatId,
 } from "@tokovo/episodes";
 import { EpisodeRenderer, calculateEpisodeMetadata } from "./EpisodeRenderer";
-
-// =============================================================================
-// EPISODE IMPORTS (side-effect: auto-registers with registry)
-// =============================================================================
-
-// Auto-load all production episodes
-import "@tokovo/episodes/production";
-
-// Auto-load all showcase episodes
-import "@tokovo/episodes/showcases";
+import { getVideoRunnerRuntime } from "./runtime";
 
 // =============================================================================
 // MAIN COMPONENT
 // =============================================================================
 
 export const RemotionRoot: React.FC = () => {
+  const { episodeRegistry } = getVideoRunnerRuntime();
   const production = episodeRegistry.filter({ category: "production" });
   const showcases = episodeRegistry.filter({ category: "showcase" });
   const tests = episodeRegistry.filter({ category: "test" });

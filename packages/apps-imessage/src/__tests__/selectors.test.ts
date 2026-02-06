@@ -19,7 +19,10 @@ function createTestWorldState(): WorldState {
 describe("iMessage selectors", () => {
   it("selectActiveConversation returns active conversation", () => {
     const state = createTestWorldState();
-    (state.appState!.app_imessage as IMessageState).conversations = {
+    if (!state.appState?.app_imessage) {
+      throw new Error("Missing iMessage state in test world");
+    }
+    (state.appState.app_imessage as IMessageState).conversations = {
       c1: {
         id: "c1",
         transport: "imessage",
@@ -29,7 +32,7 @@ describe("iMessage selectors", () => {
         unreadCount: 0,
       },
     } as any;
-    (state.appState!.app_imessage as IMessageState).activeConversationId = "c1";
+    (state.appState.app_imessage as IMessageState).activeConversationId = "c1";
 
     const conv = selectActiveConversation(state);
     expect(conv?.id).toBe("c1");

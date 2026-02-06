@@ -1,4 +1,5 @@
-import { registerHandler } from "./registry";
+import { getGlobalWhatsAppHandlerRegistry } from "./registry";
+import type { MutableHandlerRegistry } from "./registry";
 import type {
   MessageReceivedEvent,
   MessageSentEvent,
@@ -8,8 +9,6 @@ import type {
   MessageForwardedEvent,
 } from "../schemas";
 import type { WhatsAppMessage, WhatsAppMessageType } from "../types";
-
-let registered = false;
 
 function bumpUnread(ctx: { draft: unknown; conversation: { id: string; unreadCount?: number } }, from: string): void {
   if (from === "me" || from === "system") return;
@@ -21,11 +20,10 @@ function bumpUnread(ctx: { draft: unknown; conversation: { id: string; unreadCou
   ctx.conversation.unreadCount = (ctx.conversation.unreadCount ?? 0) + 1;
 }
 
-export function registerMessageHandlers(): void {
-  if (registered) return;
-  registered = true;
-
-  registerHandler<MessageReceivedEvent>("MessageReceived", (ctx, e) => {
+export function registerMessageHandlers(
+  registry: MutableHandlerRegistry = getGlobalWhatsAppHandlerRegistry(),
+): void {
+  registry.registerHandler<MessageReceivedEvent>("MessageReceived", (ctx, e) => {
     const payload = e.payload ?? {};
     const msgPayload = e.message ?? {};
 
@@ -88,7 +86,7 @@ export function registerMessageHandlers(): void {
     bumpUnread(ctx, fromUser);
   });
 
-  registerHandler<MessageSentEvent>("MessageSent", (ctx, e) => {
+  registry.registerHandler<MessageSentEvent>("MessageSent", (ctx, e) => {
     const payload = e.payload ?? {};
     const msgPayload = e.message ?? {};
 
@@ -149,14 +147,14 @@ export function registerMessageHandlers(): void {
     ctx.addMessage(newMessage);
   });
 
-  registerHandler<MessageReadEvent>("MessageRead", (ctx, e) => {
+  registry.registerHandler<MessageReadEvent>("MessageRead", (ctx, e) => {
     const msg = ctx.getMessageById(e.messageId);
     if (msg) {
       msg.status = "read";
     }
   });
 
-  registerHandler<MessageDeletedEvent>("MessageDeleted", (ctx, e) => {
+  registry.registerHandler<MessageDeletedEvent>("MessageDeleted", (ctx, e) => {
     const payload = e.payload ?? {};
     const messages = ctx.conversation.messages;
 
@@ -193,7 +191,7 @@ export function registerMessageHandlers(): void {
     }
   });
 
-  registerHandler<MessageEditedEvent>("MessageEdited", (ctx, e) => {
+  registry.registerHandler<MessageEditedEvent>("MessageEdited", (ctx, e) => {
     const payload = e.payload;
     if (!payload) return;
 
@@ -228,7 +226,7 @@ export function registerMessageHandlers(): void {
     }
   });
 
-  registerHandler<MessageForwardedEvent>("MessageForwarded", (ctx, e) => {
+  registry.registerHandler<MessageForwardedEvent>("MessageForwarded", (ctx, e) => {
     const payload = e.payload ?? {};
     const messages = ctx.conversation.messages;
 

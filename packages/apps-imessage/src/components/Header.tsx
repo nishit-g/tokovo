@@ -30,7 +30,7 @@ export const Header: React.FC<HeaderProps> = ({
   const contextTheme = useIMessageTheme();
   const theme = propTheme ?? contextTheme;
 
-  const { colors, typography } = theme;
+  const { colors } = theme;
   const topInset = safeAreaTop ?? iMessageSpacing.safeAreaTop;
   const headerHeight = topInset + 44; // 44pt is iOS standard nav height
 

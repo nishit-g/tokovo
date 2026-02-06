@@ -10,7 +10,6 @@ import {
   XIcon,
   ActionButton,
   formatTimestamp as formatRelative,
-  TabButton,
 } from "./components";
 import { ScreenTransition } from "./ScreenTransition";
 import { BottomNav } from "./BottomNav";

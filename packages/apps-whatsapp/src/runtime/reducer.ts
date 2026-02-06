@@ -10,9 +10,8 @@ import {
   type CustomEvent,
 } from "../schemas";
 import {
-  getHandler,
   type HandlerContext,
-  registerAllWhatsAppHandlers,
+  createWhatsAppHandlers,
 } from "../handlers";
 import {
   GROUP_EVENT_TYPES,
@@ -21,8 +20,6 @@ import {
   isGroupMemberRemovePayload,
   isGroupAdminChangePayload,
 } from "../ir/group-ops";
-
-registerAllWhatsAppHandlers();
 
 const APP_TYPE_TO_LEGACY_KIND: Record<string, string> = {
   MESSAGE_RECEIVED: "MessageReceived",
@@ -70,6 +67,17 @@ const APP_TYPE_TO_LEGACY_KIND: Record<string, string> = {
   MESSAGE_READ: "MessageRead",
   VOICE_MESSAGE_RECEIVED: "VoiceMessageReceived",
 };
+
+let _handlers:
+  | ReturnType<typeof createWhatsAppHandlers>
+  | undefined;
+
+function getHandlers() {
+  if (!_handlers) {
+    _handlers = createWhatsAppHandlers();
+  }
+  return _handlers;
+}
 
 function normalizeWhatsAppEvent(event: TimelineEvent): unknown {
   if (event.kind !== "APP") return event;
@@ -313,7 +321,7 @@ export function whatsappReducer(draft: WorldState, event: TimelineEvent): void {
     return;
   }
 
-  const handler = getHandler(parsed.kind);
+  const handler = getHandlers()[parsed.kind];
   if (!handler) {
     return;
   }

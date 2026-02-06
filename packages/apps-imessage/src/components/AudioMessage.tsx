@@ -18,7 +18,7 @@ export const AudioMessage: React.FC<AudioMessageProps> = ({ attachment, fromMe }
     const theme = useIMessageTheme();
     const { colors } = theme;
     const [isPlaying, setIsPlaying] = useState(false);
-    const [progress, setProgress] = useState(0);
+    const progress = 0;
 
     const formatDuration = (seconds: number): string => {
         const mins = Math.floor(seconds / 60);
@@ -26,8 +26,15 @@ export const AudioMessage: React.FC<AudioMessageProps> = ({ attachment, fromMe }
         return `${mins}:${secs.toString().padStart(2, "0")}`;
     };
 
-    // Generate default waveform if not provided
-    const waveform = attachment.waveform || Array.from({ length: 40 }, () => 0.2 + Math.random() * 0.8);
+    // Generate deterministic fallback waveform if not provided
+    const seed = Math.max(1, Math.floor(attachment.duration * 100));
+    const waveform =
+        attachment.waveform ||
+        Array.from({ length: 40 }, (_, i) => {
+            const x = Math.sin((i + 1) * 12.9898 + seed * 78.233) * 43758.5453123;
+            const unit = x - Math.floor(x);
+            return 0.2 + unit * 0.8;
+        });
 
     // Color derivations
     const playButtonBg = fromMe ? colors.bubble.iMessage : iOS_COLORS.blue;

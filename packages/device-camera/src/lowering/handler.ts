@@ -160,7 +160,7 @@ export function cameraV2Lowering(
     // =================================================================
     // TRACK_START → track (processor registered as 'track')
     // =================================================================
-    case "TRACK_START":
+    case "TRACK_START": {
       const presetName = (payload?.preset as string | undefined) ?? "cinematic";
       const preset = TRACK_PRESETS[presetName] ?? TRACK_PRESETS.cinematic;
       return [
@@ -179,6 +179,7 @@ export function cameraV2Lowering(
             preset.predictiveLookaheadFrames,
         },
       ];
+    }
     case "TRACK_END":
       return [];
 

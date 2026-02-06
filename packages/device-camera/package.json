@@ -12,7 +12,7 @@
     "build": "tsc",
     "dev": "tsc --watch",
     "lint": "eslint src --ext .ts,.tsx",
-    "test": "vitest",
+    "test": "vitest run",
     "camera:lint": "node ./dist/cli.js lint",
     "camera:doctor": "node ./dist/cli.js doctor",
     "camera:preview": "node ./dist/cli.js preview",

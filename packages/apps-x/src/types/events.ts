@@ -118,7 +118,7 @@ export interface TweetBasePayload {
   shareCount?: number;
 }
 
-export interface TweetCreatePayload extends TweetBasePayload { }
+export type TweetCreatePayload = TweetBasePayload;
 
 export interface TweetReplyPayload extends TweetBasePayload {
   replyToId: string;

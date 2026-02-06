@@ -22,7 +22,7 @@ export const InputBar: React.FC<InputBarProps> = ({
 }) => {
   const contextTheme = useIMessageTheme();
   const theme = propTheme ?? contextTheme;
-  const { colors, typography } = theme;
+  const { colors } = theme;
   const bottomInset = safeAreaBottom ?? iMessageSpacing.safeAreaBottom;
 
   const hasDraft = draft.length > 0;

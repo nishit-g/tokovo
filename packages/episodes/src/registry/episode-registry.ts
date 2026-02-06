@@ -15,7 +15,12 @@ import type { EpisodeDefinition } from "../types/episode-definition.js";
  * Manages all registered episodes with filtering capabilities.
  */
 export class EpisodeRegistry {
+    private debug: boolean;
     private episodes: Map<string, EpisodeDefinition> = new Map();
+
+    constructor(opts?: { debug?: boolean }) {
+        this.debug = opts?.debug ?? false;
+    }
 
     /**
      * Register an episode.
@@ -23,10 +28,14 @@ export class EpisodeRegistry {
      */
     register(episode: EpisodeDefinition): void {
         if (this.episodes.has(episode.meta.id)) {
-            console.warn(`[EpisodeRegistry] Overwriting: ${episode.meta.id}`);
+            if (this.debug) {
+                console.warn(`[EpisodeRegistry] Overwriting: ${episode.meta.id}`);
+            }
         }
         this.episodes.set(episode.meta.id, episode);
-        console.warn(`[EpisodeRegistry] ✓ Registered: ${episode.meta.id}`);
+        if (this.debug) {
+            console.warn(`[EpisodeRegistry] ✓ Registered: ${episode.meta.id}`);
+        }
     }
 
     /**
@@ -101,7 +110,10 @@ export const episodeRegistry = new EpisodeRegistry();
  * Prefer this for batch rendering or tests.
  */
 export function createEpisodeRegistry(): EpisodeRegistry {
-    return new EpisodeRegistry();
+    const debug =
+        typeof process !== "undefined" &&
+        process.env?.TOKOVO_EPISODE_REGISTRY_DEBUG === "1";
+    return new EpisodeRegistry({ debug });
 }
 
 /**

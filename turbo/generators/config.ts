@@ -56,4 +56,119 @@ export default function generator(plop: PlopTypes.NodePlopAPI): void {
       ];
     },
   });
+
+  plop.setGenerator("episode", {
+    description: "Create a new Tokovo episode definition (defineEpisode)",
+    prompts: [
+      {
+        type: "input",
+        name: "id",
+        message: "Episode id (lowercase, hyphens):",
+        validate: (input) =>
+          /^[a-z][a-z0-9-]*$/.test(input) ||
+          "Must be lowercase with hyphens only",
+      },
+      {
+        type: "input",
+        name: "title",
+        message: "Title:",
+        validate: (input) => input.length > 0 || "Required",
+      },
+      {
+        type: "input",
+        name: "description",
+        message: "Description (optional):",
+      },
+      {
+        type: "list",
+        name: "category",
+        message: "Category:",
+        choices: ["production", "showcase", "test"],
+        default: "production",
+      },
+      {
+        type: "input",
+        name: "appId",
+        message: "Primary appId (e.g., app_whatsapp):",
+        default: "app_whatsapp",
+        validate: (input) =>
+          /^app_[a-z0-9_]+$/.test(input) || "Must look like app_whatsapp",
+      },
+      {
+        type: "input",
+        name: "format",
+        message: "Format id (e.g., 1080x1920):",
+        default: "1080x1920",
+      },
+      {
+        type: "input",
+        name: "fps",
+        message: "FPS:",
+        default: "30",
+        validate: (input) =>
+          Number.isFinite(Number(input)) && Number(input) > 0
+            ? true
+            : "Must be a positive number",
+      },
+      {
+        type: "input",
+        name: "durationSeconds",
+        message: "Duration (seconds):",
+        default: "10",
+        validate: (input) =>
+          Number.isFinite(Number(input)) && Number(input) > 0
+            ? true
+            : "Must be a positive number",
+      },
+    ],
+    actions: (answers) => {
+      if (!answers) return [];
+
+      const category = String(answers.category);
+      const folder =
+        category === "production"
+          ? "production"
+          : category === "showcase"
+            ? "showcases"
+            : "tests";
+
+      const fps = Number(answers.fps);
+      const durationSeconds = Number(answers.durationSeconds);
+      const durationInFrames = Math.round(durationSeconds * fps);
+
+      const data = {
+        ...answers,
+        fps,
+        durationSeconds,
+        durationInFrames,
+        folder,
+      };
+
+      const indexPath = `{{ turbo.paths.root }}/packages/episodes/src/${folder}/index.ts`;
+      const episodeRelPath = `{{ turbo.paths.root }}/packages/episodes/src/${folder}/${answers.id}.episode.ts`;
+
+      return [
+        {
+          type: "add",
+          path: episodeRelPath,
+          templateFile: "templates/episode/basic.episode.ts.hbs",
+          data,
+        },
+        {
+          type: "modify",
+          path: indexPath,
+          pattern: /\/\/ plop:episode-import/u,
+          template: `import {{ camelCase id }} from "./{{ id }}.episode";\n// plop:episode-import`,
+          data,
+        },
+        {
+          type: "modify",
+          path: indexPath,
+          pattern: /\/\/ plop:episode-entry/u,
+          template: `  {{ camelCase id }},\n  // plop:episode-entry`,
+          data,
+        },
+      ];
+    },
+  });
 }

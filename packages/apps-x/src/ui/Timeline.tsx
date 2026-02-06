@@ -44,7 +44,8 @@ const TweetCard: React.FC<{
   author: { name: string; handle: string; verified?: "blue" | "gold" | "grey" | null } | undefined;
   liked: boolean;
   theme: ReturnType<typeof getXTheme>;
-}> = ({ tweet, author, liked, theme }) => {
+  nowMs: number;
+}> = ({ tweet, author, liked, theme, nowMs }) => {
   return (
     <div
       style={{
@@ -93,7 +94,7 @@ const TweetCard: React.FC<{
               color: theme.colors.textSecondary,
             }}
           >
-            {formatTimestamp(tweet.createdAt)}
+            {formatTimestamp(tweet.createdAt, { nowMs })}
           </span>
           <div style={{ marginLeft: "auto" }}>
             <XIcon name="more" size={18} color={theme.colors.textSecondary} />
@@ -202,7 +203,10 @@ const TweetCard: React.FC<{
         )}
 
         {/* Poll */}
-        {tweet.poll && (
+        {tweet.poll && (() => {
+          const poll = tweet.poll;
+          const totalVotes = poll.totalVotes || 1;
+          return (
           <div
             style={{
               marginTop: 12,
@@ -211,9 +215,8 @@ const TweetCard: React.FC<{
               gap: 8,
             }}
           >
-            {tweet.poll.options.map((opt) => {
-              const total = tweet.poll!.totalVotes || 1;
-              const percent = Math.round((opt.votes / total) * 100);
+            {poll.options.map((opt) => {
+              const percent = Math.round((opt.votes / totalVotes) * 100);
               return (
                 <div
                   key={opt.label}
@@ -253,10 +256,11 @@ const TweetCard: React.FC<{
               );
             })}
             <div style={{ fontSize: 13, color: theme.colors.textSecondary }}>
-              {tweet.poll.totalVotes} votes
+              {poll.totalVotes} votes
             </div>
           </div>
-        )}
+          );
+        })()}
 
         {/* Action Row */}
         <div
@@ -285,6 +289,10 @@ export const Timeline: React.FC<TimelineProps> = ({ world }) => {
   const theme = useXTheme();
   const state = getXState(world);
   const tweets = getTimelineTweets(world);
+  const referenceNowMs = tweets.reduce(
+    (max, tweet) => Math.max(max, tweet.createdAt),
+    0,
+  );
   const users = state?.users ?? [];
   const currentUserId = state?.currentUserId ?? null;
 
@@ -351,6 +359,7 @@ export const Timeline: React.FC<TimelineProps> = ({ world }) => {
                 author={author}
                 liked={liked}
                 theme={theme}
+                nowMs={referenceNowMs}
               />
             );
           })}

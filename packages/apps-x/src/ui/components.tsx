@@ -302,13 +302,22 @@ export const ActionButton: React.FC<{
 // FORMATTED TIMESTAMP
 // =============================================================================
 
-export const formatTimestamp = (value: number | Date): string => {
+export const formatTimestamp = (
+  value: number | Date,
+  opts?: { nowMs?: number },
+): string => {
   const date = typeof value === "number"
     ? (value > 1_000_000_000_000 ? new Date(value) : new Date(value * 1000))
     : value;
 
-  const now = new Date();
-  const diff = now.getTime() - date.getTime();
+  const fallbackNowMs =
+    typeof value === "number"
+      ? value > 1_000_000_000_000
+        ? value
+        : value * 1000
+      : value.getTime();
+  const nowMs = opts?.nowMs ?? fallbackNowMs;
+  const diff = Math.max(0, nowMs - date.getTime());
   const seconds = Math.floor(diff / 1000);
   const minutes = Math.floor(seconds / 60);
   const hours = Math.floor(minutes / 60);

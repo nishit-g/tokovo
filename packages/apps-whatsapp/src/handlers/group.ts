@@ -1,4 +1,5 @@
-import { registerHandler } from "./registry";
+import { getGlobalWhatsAppHandlerRegistry } from "./registry";
+import type { MutableHandlerRegistry } from "./registry";
 import type {
   GroupMemberAddedEvent,
   GroupMemberRemovedEvent,
@@ -8,13 +9,10 @@ import type {
 } from "../schemas";
 import type { WhatsAppMessage } from "../types";
 
-let registered = false;
-
-export function registerGroupHandlers(): void {
-  if (registered) return;
-  registered = true;
-
-  registerHandler<GroupMemberAddedEvent>("GroupMemberAdded", (ctx, e) => {
+export function registerGroupHandlers(
+  registry: MutableHandlerRegistry = getGlobalWhatsAppHandlerRegistry(),
+): void {
+  registry.registerHandler<GroupMemberAddedEvent>("GroupMemberAdded", (ctx, e) => {
     const addedBy = e.addedBy === "me" ? "You" : e.addedBy;
     const msg: WhatsAppMessage = {
       id: `sys_${e.at}_added_${e.memberId}`,
@@ -35,7 +33,9 @@ export function registerGroupHandlers(): void {
     });
   });
 
-  registerHandler<GroupMemberRemovedEvent>("GroupMemberRemoved", (ctx, e) => {
+  registry.registerHandler<GroupMemberRemovedEvent>(
+    "GroupMemberRemoved",
+    (ctx, e) => {
     const removedBy = e.removedBy === "me" ? "You" : e.removedBy;
     const msg: WhatsAppMessage = {
       id: `sys_${e.at}_removed_${e.memberId}`,
@@ -56,7 +56,7 @@ export function registerGroupHandlers(): void {
     }
   });
 
-  registerHandler<DateSeparatorEvent>("DateSeparator", (ctx, e) => {
+  registry.registerHandler<DateSeparatorEvent>("DateSeparator", (ctx, e) => {
     const payload = e.payload ?? {};
     const msg: WhatsAppMessage = {
       id: `sep_${e.at}_date`,
@@ -69,7 +69,7 @@ export function registerGroupHandlers(): void {
     ctx.addMessage(msg);
   });
 
-  registerHandler<ReactEvent>("React", (ctx, e) => {
+  registry.registerHandler<ReactEvent>("React", (ctx, e) => {
     const payload = e.payload ?? {};
     const emoji = payload.emoji ?? "❤️";
     const messages = ctx.conversation.messages;
@@ -114,7 +114,7 @@ export function registerGroupHandlers(): void {
     }
   });
 
-  registerHandler<ReactionAddedEvent>("ReactionAdded", (ctx, e) => {
+  registry.registerHandler<ReactionAddedEvent>("ReactionAdded", (ctx, e) => {
     const msg = ctx.getMessageById(e.messageId);
     if (msg) {
       if (!msg.reactions) {

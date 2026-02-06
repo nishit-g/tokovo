@@ -20,6 +20,10 @@ export const MessageThread: React.FC<MessageThreadProps> = ({ world }) => {
   const state = getXState(world);
   const thread = getActiveThread(world);
   const messages = getThreadMessages(world, thread?.id ?? null);
+  const referenceNowMs = messages.reduce(
+    (max, message) => Math.max(max, message.createdAt),
+    0,
+  );
 
   const getUser = (id: string) => state?.users.find((u) => u.id === id);
 
@@ -189,7 +193,7 @@ export const MessageThread: React.FC<MessageThreadProps> = ({ world }) => {
                       marginBottom: 8,
                     }}
                   >
-                    {formatTimestamp(message.createdAt)}
+                    {formatTimestamp(message.createdAt, { nowMs: referenceNowMs })}
                   </div>
                 )}
                 <div
