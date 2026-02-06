@@ -23,6 +23,11 @@ const FALLBACK_CHAINS: Record<string, string[]> = {
   header: ["header", "app", "device"],
   content: ["content", "app", "device"],
   app: ["app", "device"],
+  device: ["device"],
+  keyboard: ["keyboard", "app", "device"],
+  dynamicIsland: ["dynamicIsland", "header", "app", "device"],
+  headsUpNotification: ["headsUpNotification", "notification_banner", "header", "app", "device"],
+  notification_banner: ["notification_banner", "headsUpNotification", "header", "app", "device"],
   notification: ["notification", "header", "app"],
 };
 

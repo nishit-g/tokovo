@@ -6,3 +6,4 @@
  */
 
 export * from "./registry.js";
+export * from "./device-provider.js";

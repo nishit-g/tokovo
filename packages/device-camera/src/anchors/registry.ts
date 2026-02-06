@@ -21,7 +21,7 @@ import type {
 } from "@tokovo/core";
 
 // Re-export registry class/factory from core
-import { createAnchorRegistry } from "@tokovo/core";
+import { createAnchorRegistry, DeviceAnchorProvider } from "@tokovo/core";
 export { createAnchorRegistry };
 export type { AnchorRegistryClass };
 
@@ -31,6 +31,8 @@ export type { AnchorProvider, AnchorSnapshot, AnchorFraming, Rect } from "@tokov
 export { DEFAULT_FRAMING, EMPTY_SNAPSHOT } from "@tokovo/core";
 
 const defaultRegistry = createAnchorRegistry();
+// Official device-owned anchors must always be present (device/app/keyboard/...).
+defaultRegistry.register(DeviceAnchorProvider);
 
 export function registerAnchorProvider(provider: AnchorProvider): void {
   defaultRegistry.register(provider);
@@ -58,6 +60,8 @@ export function getProviderCount(): number {
 
 export function clearAnchorProviders(): void {
   defaultRegistry.clear();
+  // Re-register device-owned anchors after clear (tests rely on clear()).
+  defaultRegistry.register(DeviceAnchorProvider);
 }
 
 type WorldState = import("@tokovo/core").WorldState;

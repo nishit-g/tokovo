@@ -62,10 +62,36 @@ export class AnchorRegistryClass {
     context?: AnchorProviderContext,
   ): AnchorSnapshot {
     const provider = this.providerRegistry.get(appId);
-    if (!provider) {
-      return EMPTY_SNAPSHOT;
+    const base = provider?.getAnchors(world, layout, deviceId, context) ?? EMPTY_SNAPSHOT;
+
+    // Merge device-owned anchors into *every* snapshot, so camera semantics are
+    // consistent and not coupled to individual apps.
+    //
+    // Device anchors are registered under `app_device` by convention.
+    if (appId !== "app_device") {
+      const deviceProvider = this.providerRegistry.get("app_device");
+      if (deviceProvider) {
+        const deviceSnapshot = deviceProvider.getAnchors(
+          world,
+          layout,
+          deviceId,
+          context,
+        );
+        return {
+          ...base,
+          anchors: {
+            ...(base.anchors ?? {}),
+            // Device anchors win (authoritative) to prevent app-specific drift.
+            ...(deviceSnapshot.anchors ?? {}),
+          },
+          // Preserve requested identity for consumers (camera/debugging)
+          appId,
+          deviceId,
+        };
+      }
     }
-    return provider.getAnchors(world, layout, deviceId, context);
+
+    return base;
   }
 
   getFraming(appId: string, anchorId: string): AnchorFraming {

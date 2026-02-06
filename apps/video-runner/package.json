@@ -7,6 +7,7 @@
     "dev": "npx remotion studio",
     "build": "tsc -p tsconfig.json",
     "upgrade": "remotion upgrade",
+    "pretest": "pnpm --filter @tokovo/episodes build",
     "test": "vitest run && pnpm run lint",
     "lint": "eslint src"
   },

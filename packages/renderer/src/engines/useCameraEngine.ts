@@ -176,6 +176,16 @@ export function useCameraEngine(input: CameraEngineInput): CameraEngineOutput {
         deviceId,
         anchorContext,
       );
+    } else {
+      // Lockscreen / homescreen still need device-level anchors for camera effects.
+      anchorSnapshot = getAnchorsForApp(
+        registries.plugins.anchors,
+        "app_device",
+        world,
+        layout,
+        deviceId,
+        anchorContext,
+      );
     }
 
     // =====================================================================

@@ -116,12 +116,14 @@ describe("camera anchor system", () => {
   });
 
   describe("getAnchorsForApp", () => {
-    test("returns empty snapshot when provider not found", () => {
+    test("returns device-owned anchors even when app provider not found", () => {
       const result = getAnchorsForApp("nonexistent", {} as WorldState, {}, "dev1");
 
-      expect(result.anchors).toEqual({});
-      expect(result.deviceId).toBe("");
-      expect(result.appId).toBe("");
+      // Device-owned anchors are merged into every snapshot (official v1 behavior).
+      expect(result.deviceId).toBe("dev1");
+      expect(result.appId).toBe("nonexistent");
+      expect(result.anchors.device).toBeTruthy();
+      expect(result.anchors.app).toBeTruthy();
     });
 
     test("calls provider getAnchors and returns snapshot", () => {
@@ -149,7 +151,11 @@ describe("camera anchor system", () => {
         "device1",
       );
 
-      expect(result.anchors).toEqual(mockAnchors);
+      // App anchors are preserved, and device-owned anchors are always present.
+      expect(result.anchors.lastMessage).toEqual(mockAnchors.lastMessage);
+      expect(result.anchors.inputArea).toEqual(mockAnchors.inputArea);
+      expect(result.anchors.device).toBeTruthy();
+      expect(result.anchors.app).toBeTruthy();
       expect(result.deviceId).toBe("device1");
       expect(result.appId).toBe("test_app");
     });
@@ -208,7 +214,8 @@ describe("camera anchor system", () => {
 
   describe("registry utilities", () => {
     test("getRegisteredAppIds returns empty array initially", () => {
-      expect(getRegisteredAppIds()).toEqual([]);
+      // Device-owned anchors are always registered.
+      expect(getRegisteredAppIds()).toEqual(["app_device"]);
     });
 
     test("getRegisteredAppIds returns all registered app IDs", () => {
@@ -229,11 +236,12 @@ describe("camera anchor system", () => {
       const appIds = getRegisteredAppIds();
       expect(appIds).toContain("app1");
       expect(appIds).toContain("app2");
-      expect(appIds).toHaveLength(2);
+      expect(appIds).toHaveLength(3);
     });
 
     test("getProviderCount returns correct count", () => {
-      expect(getProviderCount()).toBe(0);
+      // Device-owned anchors are always registered.
+      expect(getProviderCount()).toBe(1);
 
       const provider1: AnchorProvider = {
         appId: "app1",
@@ -241,7 +249,7 @@ describe("camera anchor system", () => {
         getAnchors: () => ({ anchors: {}, deviceId: "", appId: "app1" }),
       };
       registerAnchorProvider(provider1);
-      expect(getProviderCount()).toBe(1);
+      expect(getProviderCount()).toBe(2);
 
       const provider2: AnchorProvider = {
         appId: "app2",
@@ -249,7 +257,7 @@ describe("camera anchor system", () => {
         getAnchors: () => ({ anchors: {}, deviceId: "", appId: "app2" }),
       };
       registerAnchorProvider(provider2);
-      expect(getProviderCount()).toBe(2);
+      expect(getProviderCount()).toBe(3);
     });
 
     test("clearAnchorProviders removes all providers", () => {
@@ -266,11 +274,12 @@ describe("camera anchor system", () => {
 
       registerAnchorProvider(provider1);
       registerAnchorProvider(provider2);
-      expect(getProviderCount()).toBe(2);
+      expect(getProviderCount()).toBe(3);
 
       clearAnchorProviders();
-      expect(getProviderCount()).toBe(0);
-      expect(getRegisteredAppIds()).toEqual([]);
+      // Device-owned anchors are re-registered after clear().
+      expect(getProviderCount()).toBe(1);
+      expect(getRegisteredAppIds()).toEqual(["app_device"]);
     });
   });
 

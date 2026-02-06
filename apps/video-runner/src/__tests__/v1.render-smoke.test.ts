@@ -115,6 +115,7 @@ describe("v1 render smoke", () => {
     "lockscreen-bait-unlock-switch-showcase",
     "parallel-timeline-split-screen-showcase",
     "v2-device-baseline",
+    "v2-enterprise-long-showcase",
     "v2-whatsapp-group-roast-baseline",
     "v2-x-roast-thread-baseline",
   ] as const;
