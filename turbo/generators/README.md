@@ -68,7 +68,7 @@ packages/apps-{name}/
 
 ### Step 1: Add to Video Runner (or your app entry point)
 
-Edit `apps/video-runner/src/runtime.ts` (after other plugin imports/registrations):
+Edit `apps/video-runner/src/runtime.ts` inside `createVideoRunnerRuntime()` (after other plugin imports/registrations):
 
 ```typescript
 import { register{{ pascalCase name }}Plugin } from "@tokovo/apps-{{ name }}"; // Add this import
@@ -120,7 +120,7 @@ After generating a plugin with `turbo gen plugin`, you MUST manually register it
 
 1. Open `apps/video-runner/src/runtime.ts`
 2. Add import: `import { register{{ pascalCase name }}Plugin } from "@tokovo/apps-{{ name }}";`
-3. Add call after other registrations: `register{{ pascalCase name }}Plugin(pluginManager);`
+3. Add call inside `createVideoRunnerRuntime()` after other registrations: `register{{ pascalCase name }}Plugin(pluginManager);`
 4. Restart dev server
 
 **Without this step, episodes using the plugin will fail with "Plugin not registered" error.**

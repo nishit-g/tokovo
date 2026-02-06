@@ -19,9 +19,9 @@ const iMessageViews: PluginViews = {
 
 const iMessageAssets = {
   sounds: {
-    "app_imessage.message_in": "plugins/whatsapp/received.wav",
-    "app_imessage.message_out": "plugins/whatsapp/sent.wav",
-    "app_imessage.typing_loop": "plugins/whatsapp/typing_loop.wav",
+    "app_imessage.message_in": "plugins/imessage/received.wav",
+    "app_imessage.message_out": "plugins/imessage/sent.wav",
+    "app_imessage.typing_loop": "plugins/imessage/typing_loop.wav",
   },
   icons: {
     app_icon: "/icons/imessage.svg",

@@ -40,7 +40,14 @@ export const XPlugin: TokovoPluginContract<"app_x"> & {
     "ADD_DM_THREAD",
     "ADD_DM_MESSAGE",
     "NAVIGATE_BACK",
+    "SET_THEME_MODE",
   ] as const,
+  assets: {
+    icons: {
+      app_icon: "/icons/x.svg",
+    },
+    designWidth: 393,
+  },
   v2Lowering: xLowering,
   layouts: xLayoutStrategies,
   anchors: xAnchors,

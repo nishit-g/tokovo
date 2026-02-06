@@ -207,17 +207,21 @@ interface CustomFormat {
 
 ## Video-Runner Integration
 
-The `video-runner` app automatically loads episodes:
+The `video-runner` app loads episode catalogs and registers them explicitly (no import-time side effects):
 
 ```typescript
-// apps/video-runner/src/Root.tsx
+// apps/video-runner/src/runtime.ts
+import productionEpisodes from "@tokovo/episodes/production";
+import showcaseEpisodes from "@tokovo/episodes/showcases";
+import testEpisodes from "@tokovo/episodes/tests";
+import { createEpisodeRegistry } from "@tokovo/episodes";
 
-// Import episode folders (side-effect: auto-registers)
-import "@tokovo/episodes/production";
-import "@tokovo/episodes/showcases";
-import "@tokovo/episodes/tests";
+const episodeRegistry = createEpisodeRegistry();
+for (const ep of [...productionEpisodes, ...showcaseEpisodes, ...testEpisodes]) {
+  episodeRegistry.register(ep);
+}
 
-// Registry now contains all episodes
+// Then Root.tsx can read from the registry
 const production = episodeRegistry.filter({ category: "production" });
 ```
 
