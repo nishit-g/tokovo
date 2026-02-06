@@ -548,7 +548,8 @@ export class IMessageTrackBuilder {
 export function createIMessageTrackBuilder(
   fps: number,
   deviceId: string,
+  conversationId: string,
   getOrder: GetDeclarationOrder,
 ) {
-  return new IMessageTrackBuilder(fps, deviceId, "", getOrder);
+  return new IMessageTrackBuilder(fps, deviceId, conversationId, getOrder);
 }

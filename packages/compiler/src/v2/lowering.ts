@@ -362,6 +362,7 @@ function lowerDeviceEvent(event: TrackEvent): RuntimeEvent[] {
     at: e.at as number,
     kind: "DEVICE" as const,
     deviceId: (e.deviceId as string) ?? "device_1",
+    silent: (e.silent as boolean | undefined) === true ? true : undefined,
   };
 
   const type = e.type as string;
@@ -378,7 +379,10 @@ function lowerDeviceEvent(event: TrackEvent): RuntimeEvent[] {
         {
           ...base,
           type: "OPEN_APP",
-          payload: { appId: (p.appId ?? e.appId) as string },
+          payload: {
+            appId: (p.appId ?? e.appId) as string,
+            transition: (p.transition ?? e.transition) as unknown,
+          },
         } as DeviceRuntimeEvent,
       ];
 
@@ -386,7 +390,15 @@ function lowerDeviceEvent(event: TrackEvent): RuntimeEvent[] {
       return [{ ...base, type: "CLOSE_APP", payload: {} } as DeviceRuntimeEvent];
 
     case "GO_HOME":
-      return [{ ...base, type: "GO_HOME", payload: {} } as DeviceRuntimeEvent];
+      return [
+        {
+          ...base,
+          type: "GO_HOME",
+          payload: {
+            transition: (p.transition ?? e.transition) as unknown,
+          },
+        } as DeviceRuntimeEvent,
+      ];
 
     case "SET_BADGE":
       return [
@@ -441,6 +453,18 @@ function lowerDeviceEvent(event: TrackEvent): RuntimeEvent[] {
           payload: {
             visible: Boolean(p.visible ?? e.visible ?? false),
             mode: (p.mode ?? e.mode ?? "idle") as string,
+          },
+        } as DeviceRuntimeEvent,
+      ];
+
+    case "SET_SCREEN_RECORDING":
+      return [
+        {
+          ...base,
+          type: "SET_SCREEN_RECORDING",
+          payload: {
+            enabled: Boolean(p.enabled ?? e.enabled ?? false),
+            mode: (p.mode ?? e.mode) as "minimal" | "compact" | undefined,
           },
         } as DeviceRuntimeEvent,
       ];
@@ -610,7 +634,7 @@ function lowerDeviceEvent(event: TrackEvent): RuntimeEvent[] {
         {
           ...base,
           type: "KEYBOARD_SHOW",
-          payload: { returnKeyType: e.returnKeyType },
+          payload: { returnKeyType: (p.returnKeyType ?? e.returnKeyType) as string | undefined },
         } as DeviceRuntimeEvent,
       ];
 
@@ -628,7 +652,10 @@ function lowerDeviceEvent(event: TrackEvent): RuntimeEvent[] {
         {
           ...base,
           type: "KEYBOARD_KEY_PRESS",
-          payload: { key: e.key, duration: e.duration },
+          payload: {
+            key: (p.key ?? e.key) as string,
+            duration: (p.duration ?? e.duration) as number | undefined,
+          },
         } as DeviceRuntimeEvent,
       ];
 
@@ -637,7 +664,10 @@ function lowerDeviceEvent(event: TrackEvent): RuntimeEvent[] {
         {
           ...base,
           type: "KEYBOARD_TYPE",
-          payload: { text: e.text, speed: e.speed },
+          payload: {
+            text: (p.text ?? e.text) as string,
+            speed: (p.speed ?? e.speed) as string | undefined,
+          },
         } as DeviceRuntimeEvent,
       ];
 
@@ -655,7 +685,7 @@ function lowerDeviceEvent(event: TrackEvent): RuntimeEvent[] {
         {
           ...base,
           type: "KEYBOARD_SET_SUGGESTIONS",
-          payload: { suggestions: e.suggestions },
+          payload: { suggestions: (p.suggestions ?? e.suggestions) as string[] },
         } as DeviceRuntimeEvent,
       ];
 
@@ -664,7 +694,7 @@ function lowerDeviceEvent(event: TrackEvent): RuntimeEvent[] {
         {
           ...base,
           type: "KEYBOARD_TAP_SUGGESTION",
-          payload: { index: e.index },
+          payload: { index: Number(p.index ?? e.index ?? 0) },
         } as DeviceRuntimeEvent,
       ];
 

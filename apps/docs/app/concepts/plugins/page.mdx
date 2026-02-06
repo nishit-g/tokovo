@@ -507,13 +507,12 @@ The TokovoPluginContract supports **four tiers** of functionality:
 **Example**: Plugins that add a track builder
 
 ```typescript
-import { episode } from "@tokovo/dsl";
-import { WhatsAppTrackBuilder } from "@tokovo/apps-whatsapp";
+import { episode } from "@tokovo/creator";
 
-// Track builder usage
+// Track builder usage (sugar removes getOrder/factory ceremony)
 episode("demo", { fps: 30, duration: "5s" })
   .device("phone", "iphone16", { app: "app_whatsapp" })
-  .track("app_whatsapp", (getOrder) => new WhatsAppTrackBuilder(30, "phone", getOrder), (wa) => {
+  .whatsapp("phone", "dm_me", (wa) => {
     wa.at("1s").send("Hello!");
   })
   .build();

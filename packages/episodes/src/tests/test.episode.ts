@@ -46,7 +46,7 @@ conversations: [
 () => new WhatsAppTrackBuilder(30, "phone", "dm_contact", getOrder),
 wa => {
 // Add your WhatsApp events here:
-wa.switchTo("dm_contact", 1);
+wa.switchTo("dm_contact", "0s");
 wa.at("1s").receive("Contact", "Hello! 👋");
 wa.span("3s", "5s").typing("me");
 wa.at("5s").send("Hi there! How are you?");

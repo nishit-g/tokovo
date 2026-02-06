@@ -55,6 +55,12 @@ export interface CameraEngineInput {
 
   /** Event index for signal extraction */
   eventIndex?: EventIndex;
+
+  /**
+   * If true, the renderer must not apply any camera transforms.
+   * Used in multi-device layouts where only the active device should be camera-driven.
+   */
+  disabled?: boolean;
 }
 
 export interface CameraEngineOutput {
@@ -118,7 +124,7 @@ export interface CameraEngineOutput {
 type CameraEffect = Parameters<typeof processActiveEffects>[1][number];
 
 export function useCameraEngine(input: CameraEngineInput): CameraEngineOutput {
-  const { world, t, layoutOutput, eventIndex } = input;
+  const { world, t, layoutOutput, eventIndex, disabled } = input;
   const registries = useRendererRegistries();
 
   return useMemo(() => {
@@ -128,6 +134,20 @@ export function useCameraEngine(input: CameraEngineInput): CameraEngineOutput {
       width: profile.dimensions.width,
       height: profile.dimensions.height,
     };
+
+    if (disabled) {
+      const transform = { ...DEFAULT_TRANSFORM };
+      return {
+        transform,
+        cameraStyle: buildCameraCSS(transform, viewport),
+        deviceStyle: buildDeviceCSS(layout),
+        debugInfo: {
+          fallbackUsed: false,
+          warnings: ["camera_disabled"],
+          effectTimeline: [],
+        },
+      };
+    }
 
     // =====================================================================
     // 1. GET ANCHOR SNAPSHOT

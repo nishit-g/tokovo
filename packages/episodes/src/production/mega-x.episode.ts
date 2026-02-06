@@ -1,7 +1,6 @@
 import { defineEpisode } from "@tokovo/episodes";
 import { episode } from "@tokovo/dsl";
 import { XTrackBuilder } from "@tokovo/apps-x";
-import { KeyboardTrackBuilder } from "@tokovo/device-keyboard";
 
 export default defineEpisode({
   meta: {
@@ -199,17 +198,13 @@ export default defineEpisode({
           x.at("16.5s").navigate("timeline");
         },
       )
-      .track(
-        "device_keyboard",
-        (getOrder) => new KeyboardTrackBuilder(30, "phone", getOrder),
-        (keyboard) => {
-          keyboard.show("7.15s", { returnKeyType: "send" });
-          keyboard.type("Drafting a post about clean feeds...", "7.2s", {
-            speed: "natural",
-          });
-          keyboard.hide("8.1s");
-        },
-      )
+      .deviceTrack("phone", (d) => {
+        d.at("7.15s").keyboardShow({ returnKeyType: "send" });
+        d.at("7.2s").keyboardType("Drafting a post about clean feeds...", {
+          speed: "natural",
+        });
+        d.at("8.1s").keyboardHide();
+      })
       .camera((cam) => {
         cam.at("0s").focus("timeline_header", { scale: 1.06, duration: "0.5s" });
         cam.at("2s").focus("tweet_card", { scale: 1.1, duration: "0.6s" });

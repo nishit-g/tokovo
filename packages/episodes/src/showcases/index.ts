@@ -15,6 +15,8 @@ import cameraDirectorFull from "./camera-director-full.episode.js";
 import megaCameraDirector from "./mega-camera-director.episode.js";
 import megaCameraShowcase from "./mega-camera-showcase.episode.js";
 import iMessageDemo from "./imessage-demo.episode.js";
+import lockscreenBaitUnlockSwitchShowcase from "./lockscreen-bait-unlock-switch-showcase.episode.js";
+import parallelTimelineSplitScreenShowcase from "./parallel-timeline-split-screen-showcase.episode.js";
 import tennisCasual from "./tennis-casual.episode.js";
 import tennisDramatic from "./tennis-dramatic.episode.js";
 import tennisEnergetic from "./tennis-energetic.episode.js";
@@ -28,6 +30,8 @@ export const showcaseEpisodes: EpisodeDefinition[] = [
   megaCameraDirector,
   megaCameraShowcase,
   iMessageDemo,
+  lockscreenBaitUnlockSwitchShowcase,
+  parallelTimelineSplitScreenShowcase,
   tennisCasual,
   tennisDramatic,
   tennisEnergetic,
@@ -44,6 +48,8 @@ export {
   megaCameraDirector,
   megaCameraShowcase,
   iMessageDemo,
+  lockscreenBaitUnlockSwitchShowcase,
+  parallelTimelineSplitScreenShowcase,
   tennisCasual,
   tennisDramatic,
   tennisEnergetic,

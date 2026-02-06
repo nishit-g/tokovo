@@ -15,6 +15,7 @@ interface KeyboardKeyPressPayload {
 interface KeyboardTypePayload {
   text: string;
   charDelay?: number;
+  speed?: "slow" | "natural" | "fast" | (string & {});
 }
 
 interface KeyboardSetSuggestionsPayload {
@@ -144,7 +145,11 @@ export function keyboardReducer(
 
       case "KEYBOARD_TYPE": {
         if (!isTypePayload(event.payload)) break;
-        const { text, charDelay = 3 } = event.payload;
+        const { text } = event.payload;
+        const charDelay =
+          event.payload.charDelay ??
+          speedToCharDelay(event.payload.speed) ??
+          3;
 
         draft.typingAnimation = {
           text,
@@ -191,4 +196,20 @@ export function keyboardReducer(
       (kp) => currentFrame < kp.startFrame + kp.duration,
     );
   });
+}
+
+function speedToCharDelay(
+  speed: KeyboardTypePayload["speed"] | undefined,
+): number | undefined {
+  if (!speed) return undefined;
+  switch (speed) {
+    case "fast":
+      return 1;
+    case "natural":
+      return 3;
+    case "slow":
+      return 6;
+    default:
+      return undefined;
+  }
 }

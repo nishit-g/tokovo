@@ -228,6 +228,7 @@ const SingleDeviceLayout: React.FC<LayoutProps & { deviceId: string }> = ({
                     fps={fps}
                     debug={debug}
                     focusDeviceId={deviceId}
+                    disableCamera={deviceId !== world.camera.activeDeviceId}
                     pluginManager={pluginManager}
                     registries={registries}
                 />
@@ -537,16 +538,6 @@ const DevicePane: React.FC<{
     const scaleY = paneHeight / profile.dimensions.height;
     const scale = Math.min(scaleX, scaleY) * 0.9; // 90% to add some padding
 
-    // Create a world view focused on this specific device
-    const deviceWorld: WorldState = {
-        ...world,
-        camera: {
-            ...world.camera,
-            activeDeviceId: deviceId,
-            layout: { mode: "SINGLE", primaryDeviceId: deviceId },
-        },
-    };
-
     return (
         <div
             style={{
@@ -561,11 +552,12 @@ const DevicePane: React.FC<{
         >
             <div style={{ transform: `scale(${scale})`, transformOrigin: "center center" }}>
                 <TokovoRenderer
-                    world={deviceWorld}
+                    world={world}
                     t={t}
                     fps={fps}
                     debug={debug}
                     focusDeviceId={deviceId}
+                    disableCamera={deviceId !== world.camera.activeDeviceId}
                     pluginManager={pluginManager}
                     registries={registries}
                 />
@@ -609,16 +601,6 @@ const DevicePaneFit: React.FC<{
     const scaleY = paneHeight / profile.dimensions.height;
     const scale = Math.min(scaleX, scaleY);
 
-    // Create a world view focused on this specific device
-    const deviceWorld: WorldState = {
-        ...world,
-        camera: {
-            ...world.camera,
-            activeDeviceId: deviceId,
-            layout: { mode: "SINGLE", primaryDeviceId: deviceId },
-        },
-    };
-
     return (
         <div
             style={{
@@ -633,11 +615,12 @@ const DevicePaneFit: React.FC<{
         >
             <div style={{ transform: `scale(${scale})`, transformOrigin: "center center" }}>
                 <TokovoRenderer
-                    world={deviceWorld}
+                    world={world}
                     t={t}
                     fps={fps}
                     debug={debug}
                     focusDeviceId={deviceId}
+                    disableCamera={deviceId !== world.camera.activeDeviceId}
                     pluginManager={pluginManager}
                     registries={registries}
                 />

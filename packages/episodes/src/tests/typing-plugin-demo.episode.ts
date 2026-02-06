@@ -32,7 +32,7 @@ export default defineEpisode({
         "app_whatsapp",
         () => new WhatsAppTrackBuilder(30, "phone", "dm_sarah", getOrder),
         (wa) => {
-          wa.switchTo("dm_sarah", 1);
+          wa.switchTo("dm_sarah", "0s");
           wa.at("2s").receive("Sarah", "Hey!");
           wa.at("4s").send("Hey back!");
           wa.at("7s").receive("Sarah", "How are you doing today?");

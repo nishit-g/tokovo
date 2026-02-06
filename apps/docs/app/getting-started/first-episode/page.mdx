@@ -26,7 +26,7 @@ Every Tokovo episode follows a structured pattern. Here's the complete anatomy:
 │    │         .at("2s").focus("app_whatsapp:message")            │
 │    │         .at("5s").zoom(1.5)                        │
 │    │                                                    │
-│    └── .track("app_whatsapp", factory, callback)       │
+│    └── .whatsapp("phone", "dm_alice", callback)        │
 │          │                                              │
 │          └── App events                                 │
 │              .at("1s").receive("Alice", "Hey!")        │
@@ -65,10 +65,12 @@ episode("episode-id", {
 Episodes use a **fluent API** - each method returns `this`, allowing you to chain methods:
 
 ```typescript
+import { episode } from "@tokovo/creator";
+
 episode("demo", { fps: 30, duration: "30s" })
   .device("phone", "iphone16", { ... })
   .camera((cam) => { ... })
-  .track("app_whatsapp", factory, (wa) => { ... })
+  .whatsapp("phone", "dm_alice", (wa) => { ... })
   .build(); // Always end with .build()
 ```
 
@@ -77,7 +79,7 @@ episode("demo", { fps: 30, duration: "30s" })
 Every episode needs:
 
 1. **At least one `.device()`** - What phone to render
-2. **At least one `.track()`** - What happens in the app
+2. **At least one app track** (`.whatsapp()`, `.imessage()`, `.x()`, or low-level `.track()`) - What happens in the app
 3. **`.build()`** at the end - Finalizes the episode
 
 ### Optional Methods

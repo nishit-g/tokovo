@@ -49,7 +49,7 @@ export default defineEpisode({
           return new WhatsAppTrackBuilder(30, "phone", "dm_demo", getOrder);
         },
         (wa) => {
-          wa.switchTo("dm_demo", 1);
+          wa.switchTo("dm_demo", "0s");
           wa.at("1s").receive("Demo", "Welcome to the feature showcase! 👋");
 
           wa.at("3s").receive("Demo", "Let's start with basic messages...");

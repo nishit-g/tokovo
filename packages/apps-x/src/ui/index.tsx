@@ -11,7 +11,7 @@ import { Notifications } from "./Notifications.js";
 import { Messages } from "./Messages.js";
 import { MessageThread } from "./MessageThread.js";
 
-export const XView: React.FC<PluginViewProps> = ({ world }) => {
+export const XView: React.FC<PluginViewProps> = ({ world, deviceId, t }) => {
   const appState = world.appState?.["app_x"] as XState | undefined;
   const screen = appState?.currentScreen ?? "timeline";
   const themeMode = getThemeMode(world);
@@ -21,7 +21,7 @@ export const XView: React.FC<PluginViewProps> = ({ world }) => {
       case "tweet":
         return <TweetDetail world={world} />;
       case "compose":
-        return <Compose world={world} />;
+        return <Compose world={world} deviceId={deviceId} t={t} />;
       case "profile":
         return <Profile world={world} />;
       case "notifications":

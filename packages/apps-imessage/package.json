@@ -9,6 +9,7 @@
   "dependencies": {
     "@tokovo/core": "workspace:*",
     "@tokovo/dsl": "workspace:*",
+    "@tokovo/device-keyboard": "workspace:*",
     "@tokovo/ir": "workspace:*",
     "@tokovo/react": "workspace:*",
     "react": "18.3.1",

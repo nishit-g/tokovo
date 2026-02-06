@@ -16,6 +16,13 @@ import { parseTimeToFrames, parseDurationToFrames } from "./utils/time.js";
 
 type GetDeclarationOrder = () => number;
 
+export type CameraTarget =
+    | string
+    | {
+        deviceId: string;
+        anchorId: string;
+    };
+
 export interface CameraSetOptions {
     x?: number;
     y?: number;
@@ -98,6 +105,14 @@ export interface CameraWhipPanOptions {
     direction: "left" | "right" | "up" | "down";
     blur?: number;
     duration?: string | number;
+}
+
+export interface CameraLayoutOptions {
+    mode: "SINGLE" | "SPLIT_HORIZONTAL" | "SPLIT_VERTICAL" | "PIP" | "split";
+    primaryDeviceId: string;
+    secondaryDeviceId?: string;
+    pipPosition?: "top-left" | "top-right" | "bottom-left" | "bottom-right";
+    pipScale?: number;
 }
 
 // =============================================================================
@@ -244,7 +259,9 @@ export class CameraPointBuilder {
     /**
      * Focus on an anchor.
      */
-    focus(anchorId: string, options: CameraFocusOptions = {}): void {
+    focus(target: CameraTarget, options: CameraFocusOptions = {}): void {
+        const anchorId = typeof target === "string" ? target : target.anchorId;
+        const deviceId = typeof target === "string" ? undefined : target.deviceId;
         const duration = options.duration
             ? parseDurationToFrames(options.duration, this._fps)
             : 0;
@@ -252,6 +269,7 @@ export class CameraPointBuilder {
         this._events.push({
             at: this._frame,
             duration: duration || undefined,
+            deviceId,
             kind: "CAMERA",
             type: "FOCUS",
             payload: {
@@ -259,6 +277,25 @@ export class CameraPointBuilder {
                 scale: options.scale,
                 padding: options.padding,
                 easing: options.easing,
+            },
+            _declarationOrder: this._getOrder(),
+        });
+    }
+
+    /**
+     * Set multi-device layout mode (SINGLE / SPLIT / PIP).
+     */
+    layout(options: CameraLayoutOptions): void {
+        this._events.push({
+            at: this._frame,
+            kind: "CAMERA",
+            type: "LAYOUT",
+            payload: {
+                mode: options.mode,
+                primaryDeviceId: options.primaryDeviceId,
+                secondaryDeviceId: options.secondaryDeviceId,
+                pipPosition: options.pipPosition,
+                pipScale: options.pipScale,
             },
             _declarationOrder: this._getOrder(),
         });
@@ -431,11 +468,14 @@ export class CameraSpanBuilder {
     /**
      * Track an anchor continuously.
      */
-    track(anchorId: string, options: CameraTrackOptions = {}): void {
+    track(target: CameraTarget, options: CameraTrackOptions = {}): void {
+        const anchorId = typeof target === "string" ? target : target.anchorId;
+        const deviceId = typeof target === "string" ? undefined : target.deviceId;
         this._events.push(
             {
                 at: this._startFrame,
                 duration: this._endFrame - this._startFrame,
+                deviceId,
                 kind: "CAMERA",
                 type: "TRACK_START",
                 payload: {

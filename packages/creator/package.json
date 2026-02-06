@@ -1,0 +1,27 @@
+{
+  "name": "@tokovo/creator",
+  "version": "0.0.0",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "lint": "eslint . --ext .ts,.tsx",
+    "test": "vitest run --passWithNoTests",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "@tokovo/dsl": "workspace:*",
+    "@tokovo/apps-whatsapp": "workspace:*",
+    "@tokovo/apps-imessage": "workspace:*",
+    "@tokovo/apps-x": "workspace:*",
+    "@tokovo/ir": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.0.0",
+    "vitest": "^1.0.0"
+  }
+}

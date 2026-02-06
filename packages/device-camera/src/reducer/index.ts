@@ -55,6 +55,16 @@ export function cameraReducer(
     draft.camera = { ...DEFAULT_CAMERA_STATE };
   }
 
+  // If a camera event targets a specific device, make it active deterministically.
+  // This is critical for multi-device episodes (split/PIP) to avoid flakiness.
+  const targetDeviceId = event.deviceId as string | undefined;
+  if (targetDeviceId) {
+    draft.camera.activeDeviceId = targetDeviceId;
+    if (draft.camera.layout) {
+      draft.camera.layout.primaryDeviceId = targetDeviceId;
+    }
+  }
+
   const at = event.at;
   const duration = (event.duration as number) ?? 30;
   const easing = (event.easing as EasingType) ?? "ease-out";

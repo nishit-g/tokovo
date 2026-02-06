@@ -135,6 +135,13 @@ export interface CameraPayloads {
     direction: "left" | "right" | "up" | "down";
     blur?: number;
   };
+  LAYOUT: {
+    mode: "SINGLE" | "SPLIT_HORIZONTAL" | "SPLIT_VERTICAL" | "PIP" | "split";
+    primaryDeviceId: string;
+    secondaryDeviceId?: string;
+    pipPosition?: "top-left" | "top-right" | "bottom-left" | "bottom-right";
+    pipScale?: number;
+  };
 }
 
 // =============================================================================
@@ -265,9 +272,22 @@ export interface DevicePayloads {
   UNLOCK: Record<string, never>;
   OPEN_APP: {
     appId: string;
+    transition?: {
+      durationFrames?: number;
+      style?: string;
+      originX?: number;
+      originY?: number;
+    };
   };
   CLOSE_APP: Record<string, never>;
-  GO_HOME: Record<string, never>;
+  GO_HOME: {
+    transition?: {
+      durationFrames?: number;
+      style?: string;
+      originX?: number;
+      originY?: number;
+    };
+  };
   NOTIFICATION_SHOW: {
     kind?: "show";
     id: string;
@@ -275,6 +295,11 @@ export interface DevicePayloads {
     title: string;
     body: string;
     icon?: string;
+    preview?: {
+      kind: "text" | "image" | "video";
+      value: string;
+      aspectRatio?: number;
+    };
     mode?: "headsup" | "lockscreen" | "both";
     priority?:
       | "HIGH"
@@ -344,6 +369,11 @@ export interface DevicePayloads {
   };
   KEYBOARD_TAP_SUGGESTION: {
     index: number;
+  };
+
+  SET_SCREEN_RECORDING: {
+    enabled: boolean;
+    mode?: "minimal" | "compact";
   };
 }
 

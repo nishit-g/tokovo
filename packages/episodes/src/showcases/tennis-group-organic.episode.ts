@@ -1,10 +1,6 @@
 import { defineEpisode } from "../types/episode-definition.js";
 import { episode } from "@tokovo/dsl";
 import { WhatsAppTrackBuilder } from "@tokovo/apps-whatsapp";
-import { NotificationTrackBuilder } from "@tokovo/device-notifications";
-
-let orderCounter = 0;
-const getOrder = () => orderCounter++;
 
 export default defineEpisode({
   meta: {
@@ -47,10 +43,10 @@ export default defineEpisode({
       })
       .track(
         "app_whatsapp",
-        () =>
+        (getOrder) =>
           new WhatsAppTrackBuilder(30, "phone", "group_weekend_tennis", getOrder),
         (wa) => {
-          wa.switchTo("group_weekend_tennis", 1);
+          wa.switchTo("group_weekend_tennis", "0s");
           wa.at("1s").receive("Alex", "Court booked for Sunday 7am 🎾");
           wa.at("2.2s").receive("Nia", "I can bring balls + cones");
           wa.at("3.6s").receive("Jay", "Need one more doubles player");
@@ -71,20 +67,16 @@ export default defineEpisode({
           wa.at("29.4s").receive("Nia", "See you all Sunday 👊");
         },
       )
-      .track(
-        "notifications",
-        () => new NotificationTrackBuilder(30, "phone", getOrder),
-        (notif) => {
-          notif.at("9.4s").show({
-            id: "calendar-tennis",
-            appId: "Calendar",
-            title: "Tennis Practice",
-            body: "Sunday 7:00 AM",
-            mode: "headsup",
-          });
-          notif.at("10.8s").dismiss("calendar-tennis");
-        },
-      )
+      .deviceTrack("phone", (d) => {
+        d.at("9.4s").notificationShow({
+          id: "calendar-tennis",
+          appId: "Calendar",
+          title: "Tennis Practice",
+          body: "Sunday 7:00 AM",
+          mode: "headsup",
+        });
+        d.at("10.8s").notificationDismiss("calendar-tennis");
+      })
       .camera((cam) => {
         cam.at("0s").focus("device", { scale: 1, duration: "0.5s" });
         cam.span("1s", "31s").trackCinematic("lastMessage", { scale: 1.12, smoothing: 0.2 });

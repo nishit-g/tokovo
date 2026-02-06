@@ -25,21 +25,17 @@ registerKeyboardPlugin(registries.engine); // Call once at init
 
 ```typescript
 import { episode } from "@tokovo/dsl";
-import { KeyboardTrackBuilder } from "@tokovo/device-keyboard";
 
 episode("keyboard-demo", { fps: 30, duration: "5s" })
   .device("main_phone", "iphone16", { app: "app_whatsapp" })
-  .track(
-    "keyboard",
-    (getOrder) => new KeyboardTrackBuilder(30, "main_phone", getOrder),
-    (keyboard) => {
-      keyboard
-        .show("1s")
-        .type("Hello world", "2s", { speed: "natural" })
-        .hide("4s");
-    },
-  );
+  .deviceTrack("main_phone", (d) => {
+    d.at("1s").keyboardShow({ returnKeyType: "send" });
+    d.at("2s").keyboardType("Hello world", { speed: "natural" });
+    d.at("4s").keyboardHide();
+  });
 ```
+
+**Note:** `KeyboardTrackBuilder` still exists, but for v2 episodes we recommend `.deviceTrack(deviceId, ...)` as the canonical authoring surface.
 
 ### 3. Auto-Typing with `typed: true`
 

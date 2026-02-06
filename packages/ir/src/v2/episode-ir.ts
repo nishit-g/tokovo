@@ -56,6 +56,19 @@ export interface DeviceConfig {
   os?: OSConfig;
   /** UI theme/strategy to use (e.g., "whatsapp-ghibli") */
   theme?: string;
+  /** Start the device locked at frame 0 */
+  locked?: boolean;
+  /** Apps installed on the home screen (deterministic icon layout) */
+  installedApps?: string[];
+  /** Optional home screen layout override */
+  homeScreen?: {
+    preset?: "ios-default" | "android-default";
+    dock?: string[];
+    pages?: string[][];
+    wallpaper?: string;
+  };
+  /** Start with screen recording indicator enabled */
+  screenRecording?: boolean;
 }
 
 // =============================================================================

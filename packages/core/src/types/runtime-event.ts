@@ -90,6 +90,7 @@ export type DeviceEventType =
   | "OPEN_APP"
   | "CLOSE_APP"
   | "GO_HOME"
+  | "SET_SCREEN_RECORDING"
   | "SHOW_NOTIFICATION"
   | "DISMISS_NOTIFICATION"
   | "TAP_NOTIFICATION"
@@ -125,6 +126,11 @@ export interface SetBadgePayload {
 export interface SetDynamicIslandPayload {
   visible: boolean;
   mode?: "idle" | "minimal" | "compact" | "expanded";
+}
+
+export interface SetScreenRecordingPayload {
+  enabled: boolean;
+  mode?: "minimal" | "compact";
 }
 
 export interface IncomingCallPayload {
@@ -170,6 +176,10 @@ export type SetDynamicIslandEvent = BaseDeviceRuntimeEvent<
   "SET_DYNAMIC_ISLAND",
   SetDynamicIslandPayload
 >;
+export type SetScreenRecordingEvent = BaseDeviceRuntimeEvent<
+  "SET_SCREEN_RECORDING",
+  SetScreenRecordingPayload
+>;
 export type IncomingCallEvent = BaseDeviceRuntimeEvent<
   "INCOMING_CALL",
   IncomingCallPayload
@@ -200,6 +210,7 @@ export type DeviceRuntimeEvent =
   | OpenAppEvent
   | CloseAppEvent
   | GoHomeEvent
+  | SetScreenRecordingEvent
   | SetBadgeEvent
   | SetDynamicIslandEvent
   | IncomingCallEvent
@@ -218,7 +229,22 @@ export type DeviceRuntimeEvent =
   | BaseDeviceRuntimeEvent<"KEYBOARD_SHOW", { returnKeyType?: string }>
   | BaseDeviceRuntimeEvent<"KEYBOARD_HIDE">
   | BaseDeviceRuntimeEvent<"KEYBOARD_KEY_PRESS", { key: string }>
-  | BaseDeviceRuntimeEvent<"KEYBOARD_TYPE", { text: string; speed?: string }>
+  | BaseDeviceRuntimeEvent<
+      "KEYBOARD_TYPE",
+      {
+        text: string;
+        /**
+         * Preferred authoring option (v2 IR / deviceTrack):
+         * "slow" | "natural" | "fast" (or custom).
+         */
+        speed?: string;
+        /**
+         * Back-compat + low-level control:
+         * frames-per-character used by the keyboard typing animation.
+         */
+        charDelay?: number;
+      }
+    >
   | BaseDeviceRuntimeEvent<"KEYBOARD_CLEAR">
   | BaseDeviceRuntimeEvent<
       "KEYBOARD_SET_SUGGESTIONS",

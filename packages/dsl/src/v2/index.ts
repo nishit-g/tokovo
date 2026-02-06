@@ -26,6 +26,8 @@ export type {
   CameraDutchTiltOptions,
   CameraFlashOptions,
   CameraWhipPanOptions,
+  CameraLayoutOptions,
+  CameraTarget,
 } from "./camera-track.js";
 
 export {
@@ -47,6 +49,14 @@ export type {
   NetworkOptions,
   NotificationOptions,
 } from "./os-track.js";
+
+export { DeviceTrackBuilderV2, DevicePointBuilderV2 } from "./device-track.js";
+export type {
+  DeviceEventMetaOptions,
+  SfxOverride,
+  TransitionOptions,
+  NotificationShowOptions,
+} from "./device-track.js";
 
 export {
   parseTimeToFrames,

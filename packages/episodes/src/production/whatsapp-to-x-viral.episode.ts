@@ -2,42 +2,6 @@ import { defineEpisode } from "../types/episode-definition.js";
 import { episode } from "@tokovo/dsl";
 import { WhatsAppTrackBuilder } from "@tokovo/apps-whatsapp";
 import { XTrackBuilder } from "@tokovo/apps-x";
-import { NotificationTrackBuilder } from "@tokovo/device-notifications";
-import type { TrackEvent } from "@tokovo/ir";
-
-class InlineDeviceTrackBuilder {
-  _events: TrackEvent[] = [];
-  constructor(
-    private _fps: number,
-    private _deviceId: string,
-    private _getOrder: () => number,
-  ) {}
-  at(time: string | number) {
-    const frame =
-      typeof time === "number"
-        ? Math.round(time)
-        : time.trim().endsWith("ms")
-          ? Math.round((parseFloat(time) / 1000) * this._fps)
-          : time.trim().endsWith("s")
-            ? Math.round(parseFloat(time) * this._fps)
-            : Math.round(parseFloat(time));
-    return {
-      openApp: (appId: string) => {
-        this._events.push({
-          kind: "DEVICE",
-          type: "OPEN_APP",
-          deviceId: this._deviceId,
-          payload: { appId },
-          at: frame,
-          _declarationOrder: this._getOrder(),
-        } as unknown as TrackEvent);
-      },
-    };
-  }
-  span(start: string | number, _end: string | number) {
-    return this.at(start);
-  }
-}
 
 export default defineEpisode({
   meta: {
@@ -80,35 +44,13 @@ export default defineEpisode({
         "app_whatsapp",
         (getOrder) => new WhatsAppTrackBuilder(30, "phone", "dm_alert", getOrder),
         (wa) => {
-          wa.switchTo("dm_alert", 1);
+          wa.switchTo("dm_alert", "0s");
           wa.at("0.8s").receive("Maya", "BRO check X NOW");
           wa.at("1.6s").receive("Maya", "your clip is blowing up");
           wa.at("2.3s").receive("Maya", "30k views in minutes");
           wa.span("3.1s", "3.9s").typing("me");
           wa.at("4s").send("Switching. Posting follow-up.");
           wa.at("4.9s").receive("Maya", "PIN IT FAST ⚡");
-        },
-      )
-      .track(
-        "notifications",
-        (getOrder) => new NotificationTrackBuilder(30, "phone", getOrder),
-        (notif) => {
-          notif.at("2.8s").show({
-            id: "x-mention-1",
-            appId: "X",
-            title: "New mention spike",
-            body: "+124 mentions in 60s",
-            mode: "headsup",
-          });
-          notif.at("3.7s").dismiss("x-mention-1");
-          notif.at("12.2s").show({
-            id: "x-repost-1",
-            appId: "X",
-            title: "Repost wave",
-            body: "Top creator reposted your thread",
-            mode: "headsup",
-          });
-          notif.at("13s").dismiss("x-repost-1");
         },
       )
       .track(
@@ -234,13 +176,29 @@ export default defineEpisode({
           x.at("18.5s").navigate("timeline");
         },
       )
-      .track(
-        "device",
-        (getOrder) => new InlineDeviceTrackBuilder(30, "phone", getOrder),
-        (device: InlineDeviceTrackBuilder) => {
-          device.at("6s").openApp("app_x");
-        },
-      )
+      .deviceTrack("phone", (d) => {
+        d.at("2.8s").notificationShow({
+          id: "x-mention-1",
+          appId: "app_x",
+          title: "New mention spike",
+          body: "+124 mentions in 60s",
+          mode: "headsup",
+        });
+        d.at("3.7s").notificationDismiss("x-mention-1");
+
+        d.at("6s").openApp("app_x", {
+          transition: { durationFrames: 18, style: "iosZoom" },
+        });
+
+        d.at("12.2s").notificationShow({
+          id: "x-repost-1",
+          appId: "app_x",
+          title: "Repost wave",
+          body: "Top creator reposted your thread",
+          mode: "headsup",
+        });
+        d.at("13s").notificationDismiss("x-repost-1");
+      })
       .camera((cam) => {
         cam.at("0s").focus("device", { scale: 1, duration: "0.35s" });
         cam.span("0.8s", "5.8s").trackCinematic("lastMessage", { scale: 1.15, smoothing: 0.16 });

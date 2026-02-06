@@ -28,6 +28,17 @@ export const DeviceConfigSchema = z.object({
   conversations: z.array(ConversationConfigSchema).optional(),
   os: OSConfigSchema.optional(),
   theme: z.string().optional(),
+  locked: z.boolean().optional(),
+  installedApps: z.array(z.string()).optional(),
+  homeScreen: z
+    .object({
+      preset: z.enum(["ios-default", "android-default"]).optional(),
+      dock: z.array(z.string()).optional(),
+      pages: z.array(z.array(z.string())).optional(),
+      wallpaper: z.string().optional(),
+    })
+    .optional(),
+  screenRecording: z.boolean().optional(),
 });
 
 export const MarkerSchema = z.object({

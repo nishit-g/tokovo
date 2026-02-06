@@ -45,7 +45,7 @@ export default defineEpisode({
         "app_whatsapp",
         () => new WhatsAppTrackBuilder(30, "phone", "dm_friend", getOrder),
         (wa: WhatsAppTrackBuilder) => {
-          wa.switchTo("dm_friend", 1);
+          wa.switchTo("dm_friend", "0s");
           wa.at("1s").receive("Friend", "Hey! What's up?");
           wa.at("3s").send("Not much, just testing!", { typed: true });
           wa.at("8s").receive("Friend", "Cool! How's Tokovo?");

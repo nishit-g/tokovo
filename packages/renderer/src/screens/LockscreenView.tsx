@@ -3,11 +3,12 @@ import { LayoutState, LockscreenLayoutState, Notification } from "@tokovo/core";
 import { useRendererRegistries } from "../RegistryContext.js";
 
 /**
- * iOS 17/18 Lockscreen View
- * - Ultra-thin clock (font-weight: 100)
- * - Single-line date
- * - Notifications stacked at bottom
- * - App logo icons in notifications
+ * iOS "26" concept locksreen (Tokovo)
+ *
+ * Goals:
+ * - Deterministic, readable, and cinematic at 1080x1920 renders
+ * - Single source of truth: `device.notifications`
+ * - High-fidelity glass + depth without external assets/fonts
  */
 
 // APP_LOGOS Removed. Using AppMetadataRegistry.
@@ -50,39 +51,55 @@ export const LockscreenView: React.FC<LockscreenViewProps> = ({
         left: 0,
         right: 0,
         bottom: 0,
-        background: "linear-gradient(180deg, #000000 0%, #1C1C1E 100%)",
+        background: [
+          "radial-gradient(1200px 900px at 20% 15%, rgba(120, 180, 255, 0.22) 0%, rgba(0,0,0,0) 55%)",
+          "radial-gradient(1100px 800px at 85% 30%, rgba(255, 120, 200, 0.14) 0%, rgba(0,0,0,0) 60%)",
+          "linear-gradient(180deg, #050507 0%, #121218 55%, #08080b 100%)",
+        ].join(", "),
         display: "flex",
         flexDirection: "column",
         fontFamily:
           "-apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif",
         color: "white",
+        overflow: "hidden",
       }}
     >
-      {/* Time Display - iOS 17 style ultra-thin */}
+      {/* Subtle grain for depth (deterministic) */}
       <div
         style={{
-          marginTop: 300,
-          textAlign: "center",
+          position: "absolute",
+          inset: 0,
+          backgroundImage:
+            "repeating-linear-gradient(0deg, rgba(255,255,255,0.035) 0px, rgba(255,255,255,0.035) 1px, rgba(0,0,0,0) 2px, rgba(0,0,0,0) 4px)",
+          opacity: 0.08,
+          mixBlendMode: "overlay",
+          pointerEvents: "none",
         }}
       >
+      </div>
+
+      {/* Time block */}
+      <div style={{ marginTop: 168, textAlign: "center" }}>
         <div
           style={{
-            fontSize: 300,
-            fontWeight: 100, // Ultra-thin
-            letterSpacing: -12,
-            lineHeight: 0.9,
+            fontSize: 208,
+            fontWeight: 200,
+            letterSpacing: -8,
+            lineHeight: 0.92,
             fontVariantNumeric: "tabular-nums",
+            textShadow: "0 22px 70px rgba(0,0,0,0.55)",
           }}
         >
           {displayTime}
         </div>
         <div
           style={{
-            marginTop: 12,
-            fontSize: 54,
-            fontWeight: 500,
-            opacity: 0.9,
-            letterSpacing: 0,
+            marginTop: 16,
+            fontSize: 44,
+            fontWeight: 600,
+            opacity: 0.92,
+            letterSpacing: -0.2,
+            textShadow: "0 16px 50px rgba(0,0,0,0.45)",
           }}
         >
           {displayDate}
@@ -92,17 +109,17 @@ export const LockscreenView: React.FC<LockscreenViewProps> = ({
       {/* Spacer */}
       <div style={{ flex: 1 }} />
 
-      {/* iOS 16+ Notifications - Bottom Stack */}
+      {/* Notifications stack */}
       {activeNotifications.length > 0 && (
         <div
           style={{
-            paddingBottom: 270,
-            paddingLeft: 48,
-            paddingRight: 48,
+            paddingBottom: 250,
+            paddingLeft: 42,
+            paddingRight: 42,
           }}
         >
           {activeNotifications
-            .slice(-3)
+            .slice(-4)
             .reverse()
             .map((notification, index) => {
               const nl = lockscreenLayout?.notificationLayouts.find(
@@ -110,18 +127,19 @@ export const LockscreenView: React.FC<LockscreenViewProps> = ({
               );
               const opacity = nl?.opacity ?? 1;
               const translateY = nl?.translateY ?? 0;
-              const stackOffset = index * 15;
-              const stackScale = 1 - index * 0.02;
+              const stackOffset = index * 12;
+              const stackScale = 1 - index * 0.018;
 
               return (
                 <div
                   key={notification.id}
                   style={{
-                    marginBottom: index === 0 ? 0 : -120,
+                    marginBottom: index === 0 ? 0 : -110,
                     opacity: opacity * (1 - index * 0.2),
                     transform: `translateY(${translateY + stackOffset}px) scale(${stackScale})`,
                     transformOrigin: "bottom center",
                     zIndex: 10 - index,
+                    filter: index === 0 ? "none" : "saturate(0.92)",
                   }}
                 >
                   <NotificationCard notification={notification} />
@@ -129,16 +147,17 @@ export const LockscreenView: React.FC<LockscreenViewProps> = ({
               );
             })}
 
-          {activeNotifications.length > 3 && (
+          {activeNotifications.length > 4 && (
             <div
               style={{
                 textAlign: "center",
-                marginTop: 30,
-                fontSize: 36,
-                opacity: 0.5,
+                marginTop: 26,
+                fontSize: 30,
+                opacity: 0.55,
+                fontWeight: 600,
               }}
             >
-              +{activeNotifications.length - 3} more
+              +{activeNotifications.length - 4} more
             </div>
           )}
         </div>
@@ -170,13 +189,14 @@ export const LockscreenView: React.FC<LockscreenViewProps> = ({
       <div
         style={{
           position: "absolute",
-          bottom: 24,
+          bottom: 26,
           left: "50%",
           transform: "translateX(-50%)",
-          width: 405,
-          height: 15,
-          backgroundColor: "rgba(255, 255, 255, 0.5)",
-          borderRadius: 15,
+          width: 380,
+          height: 12,
+          backgroundColor: "rgba(255, 255, 255, 0.46)",
+          borderRadius: 999,
+          boxShadow: "0 10px 30px rgba(0,0,0,0.35)",
         }}
       />
     </div>
@@ -194,8 +214,11 @@ const LockscreenButton: React.FC<{ icon: "flashlight" | "camera" }> = ({
       width: 150,
       height: 150,
       borderRadius: "50%",
-      backgroundColor: "rgba(255, 255, 255, 0.2)",
-      backdropFilter: "blur(20px)",
+      backgroundColor: "rgba(255, 255, 255, 0.14)",
+      backdropFilter: "blur(28px)",
+      WebkitBackdropFilter: "blur(28px)",
+      border: "1px solid rgba(255, 255, 255, 0.16)",
+      boxShadow: "0 18px 60px rgba(0,0,0,0.55)",
       display: "flex",
       alignItems: "center",
       justifyContent: "center",
@@ -264,12 +287,15 @@ const NotificationCard: React.FC<{
   return (
     <div
       style={{
-        backgroundColor: "rgba(40, 40, 40, 0.8)",
-        backdropFilter: "blur(60px)",
-        WebkitBackdropFilter: "blur(60px)",
-        borderRadius: 54,
-        padding: "36px 42px",
+        background:
+          "linear-gradient(180deg, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0.07) 100%)",
+        backdropFilter: "blur(70px) saturate(1.25)",
+        WebkitBackdropFilter: "blur(70px) saturate(1.25)",
+        borderRadius: 50,
+        padding: "32px 38px",
         color: "white",
+        border: "1px solid rgba(255,255,255,0.12)",
+        boxShadow: "0 26px 90px rgba(0,0,0,0.55)",
       }}
     >
       {/* Header */}
@@ -278,30 +304,30 @@ const NotificationCard: React.FC<{
           display: "flex",
           alignItems: "center",
           gap: 18,
-          marginBottom: 15,
+          marginBottom: 14,
         }}
       >
         {appIcon}
         <span
           style={{
-            fontSize: 30,
-            opacity: 0.6,
+            fontSize: 28,
+            opacity: 0.66,
             fontWeight: 600,
-            letterSpacing: 1.5,
+            letterSpacing: 1.3,
           }}
         >
           {appName.toUpperCase()}
         </span>
-        <span style={{ marginLeft: "auto", fontSize: 27, opacity: 0.4 }}>
+        <span style={{ marginLeft: "auto", fontSize: 26, opacity: 0.42 }}>
           now
         </span>
       </div>
 
       {/* Content */}
-      <div style={{ fontSize: 45, fontWeight: 600, marginBottom: 9 }}>
+      <div style={{ fontSize: 42, fontWeight: 700, marginBottom: 10 }}>
         {ir.title}
       </div>
-      <div style={{ fontSize: 42, opacity: 0.9, lineHeight: 1.35 }}>
+      <div style={{ fontSize: 40, opacity: 0.92, lineHeight: 1.32 }}>
         {ir.body}
       </div>
     </div>

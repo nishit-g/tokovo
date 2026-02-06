@@ -16,6 +16,7 @@ import type {
   TokovoPlugin,
   DeviceState,
   TokovoConfigType,
+  AutoSoundRule,
 } from "@tokovo/core";
 import { DEFAULT_CAMERA_STATE, DEFAULT_AUDIO_STATE } from "@tokovo/core";
 import {
@@ -93,6 +94,13 @@ export function prepareTrackEpisode(
 
   // Build initial world state from device configs
   const initialWorld = buildInitialWorld(ir);
+  initialWorld.audio = {
+    ...initialWorld.audio,
+    autoSoundRules: [
+      ...DEFAULT_DEVICE_SFX_RULES,
+      ...plugins.flatMap((p) => p.audioRules ?? []),
+    ] as AutoSoundRule[],
+  };
 
   if (shouldValidate) {
     const runtimeIssues = validateV1RuntimeEpisode(sortedEvents);
@@ -176,12 +184,17 @@ export function prepareTrackEpisode(
 function buildInitialWorld(ir: TrackEpisodeIR): WorldState {
   const devices: Record<string, DeviceState> = {};
   for (const device of ir.devices) {
+    const platform = device.profile.includes("pixel") ? "android" : "ios";
+    const installedApps = device.installedApps ?? [];
+    const hasHomeScreen =
+      Boolean(device.homeScreen) || installedApps.length > 0;
+
     devices[device.id] = {
       id: device.id,
       profileId: device.profile,
       foregroundAppId: device.app,
-      isLocked: false,
-      platform: device.profile.includes("pixel") ? "android" : "ios",
+      isLocked: device.locked ?? false,
+      platform,
       appTheme: device.theme,
       notifications: [],
       keyboard: {
@@ -196,6 +209,18 @@ function buildInitialWorld(ir: TrackEpisodeIR): WorldState {
         suggestions: [],
         activeSuggestionIndex: null,
       },
+      homeScreen: hasHomeScreen
+        ? buildHomeScreenConfig({
+            platform,
+            installedApps: installedApps.length > 0 ? installedApps : [device.app],
+            wallpaper: device.homeScreen?.wallpaper,
+            dock: device.homeScreen?.dock,
+            pages: device.homeScreen?.pages,
+          })
+        : undefined,
+      dynamicIsland: device.screenRecording
+        ? { visible: true, mode: "compact", activeContent: "recording" }
+        : undefined,
     } as DeviceState;
   }
 
@@ -244,4 +269,67 @@ function buildInitialWorld(ir: TrackEpisodeIR): WorldState {
   };
 
   return worldState;
+}
+
+const DEFAULT_DEVICE_SFX_RULES: AutoSoundRule[] = [
+  { match: { kind: "DEVICE", type: "LOCK" }, action: "PLAY_ONE_SHOT", sound: "lock", bus: "sfx" },
+  { match: { kind: "DEVICE", type: "UNLOCK" }, action: "PLAY_ONE_SHOT", sound: "unlock", bus: "sfx" },
+  { match: { kind: "DEVICE", type: "OPEN_APP" }, action: "PLAY_ONE_SHOT", sound: "tap", bus: "ui" },
+  { match: { kind: "DEVICE", type: "GO_HOME" }, action: "PLAY_ONE_SHOT", sound: "tap", bus: "ui" },
+];
+
+function buildHomeScreenConfig(input: {
+  platform: "ios" | "android";
+  installedApps: string[];
+  wallpaper?: string;
+  dock?: string[];
+  pages?: string[][];
+}): import("@tokovo/core").HomeScreenConfig {
+  const iconFor = (appId: string): { label: string; icon: string } => {
+    switch (appId) {
+      case "app_whatsapp":
+        return { label: "WhatsApp", icon: "💬" };
+      case "app_x":
+        return { label: "X", icon: "𝕏" };
+      case "app_imessage":
+        return { label: "Messages", icon: "💬" };
+      case "app_camera":
+        return { label: "Camera", icon: "📷" };
+      default:
+        return { label: appId.replace(/^app_/, ""), icon: "⬛️" };
+    }
+  };
+
+  const uniq = (xs: string[]) => Array.from(new Set(xs.filter(Boolean)));
+  const installed = uniq(input.installedApps);
+
+  const dockIds =
+    input.dock && input.dock.length > 0
+      ? uniq(input.dock)
+      : installed.slice(0, input.platform === "android" ? 5 : 4);
+
+  const pageIds = (() => {
+    if (input.pages && input.pages.length > 0) return input.pages.map(uniq);
+    const remaining = installed.filter((id) => !dockIds.includes(id));
+    const pageSize = input.platform === "android" ? 30 : 24;
+    const pages: string[][] = [];
+    for (let i = 0; i < remaining.length; i += pageSize) {
+      pages.push(remaining.slice(i, i + pageSize));
+    }
+    return pages.length > 0 ? pages : [[]];
+  })();
+
+  return {
+    wallpaper: input.wallpaper,
+    dock: dockIds.map((appId) => {
+      const { label, icon } = iconFor(appId);
+      return { appId, label, icon };
+    }),
+    pages: pageIds.map((apps) => ({
+      apps: apps.map((appId) => {
+        const { label, icon } = iconFor(appId);
+        return { appId, label, icon };
+      }),
+    })),
+  };
 }

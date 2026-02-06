@@ -269,6 +269,21 @@ export interface DeviceState {
 
   // App UI theme/strategy (e.g., "whatsapp-ghibli")
   appTheme?: string;
+
+  /**
+   * Deterministic device-level transitions authored by DEVICE events.
+   * Renderer uses this as state-only input (no hidden timers/global singletons).
+   */
+  transition?: DeviceTransitionState;
+}
+
+export interface DeviceTransitionState {
+  kind: "unlock" | "openApp" | "goHome";
+  startFrame: number;
+  durationFrames: number;
+  style?: "faceIdSwipe" | "iosZoom" | (string & {});
+  originX?: number;
+  originY?: number;
 }
 
 // =============================================================================

@@ -34,29 +34,25 @@ Compare these two approaches to creating the same episode:
 ### DSL (TypeScript)
 
 ```typescript
-import { episode } from "@tokovo/dsl";
-import { WhatsAppTrackBuilder } from "@tokovo/apps-whatsapp";
+import { episode } from "@tokovo/creator";
 
 episode("story", { fps: 30, duration: "10s" })
   .device("phone", "iphone16", {
     app: "app_whatsapp",
     conversations: [{ id: "dm_alice", name: "Alice" }],
   })
-  .track(
-    "app_whatsapp",
-    (getOrder) => new WhatsAppTrackBuilder(30, "phone", "dm_alice", getOrder),
-    (wa) => {
-      wa.at("1s").receive("Alice", "Hey!");
-      wa.at("3s").send("Hi there!");
-    },
-  )
+  .whatsapp("phone", "dm_alice", (wa) => {
+    wa.at("1s").receive("Alice", "Hey!");
+    // Auto-keyboard typing (WhatsApp + iMessage + X support typed sends)
+    wa.at("3s").send("Hi there!", { typed: true, charDelay: 2 });
+  })
   .camera((cam) => {
     cam.at("1s").animate({ scale: 1.2, duration: "0.5s" });
   })
   .build();
 ```
 
-**Tip:** Prefer the `(getOrder) => new TrackBuilder(...)` factory signature. It uses the episode’s central ordering counter, so you don’t need manual `order++` bookkeeping across tracks.
+**Tip:** `@tokovo/creator` is a thin wrapper on top of `@tokovo/dsl` that adds sugar helpers (`.whatsapp()`, `.imessage()`, `.x()`) while keeping `.track()` as an escape hatch.
 
 ### Raw IR (JSON)
 
@@ -792,7 +788,68 @@ noti.at("5s").tap(id);
 noti.at("10s").clearAll();
 ```
 
-**See app-specific documentation for complete API.**
+**Legacy.** For v2 episodes, prefer `.deviceTrack(deviceId, ...)` (built into `@tokovo/dsl`) which emits device + notification + keyboard events from one canonical surface.
+
+### Device Track (Recommended)
+
+```typescript
+import { episode } from "@tokovo/dsl";
+
+episode("device-demo", { fps: 30, duration: "20s" })
+  .device("phone", "iphone16", {
+    app: "app_whatsapp",
+    locked: true,
+    screenRecording: true,
+    installedApps: ["app_whatsapp", "app_x"],
+  })
+  .deviceTrack("phone", (d) => {
+    // Lockscreen → Unlock (auto FaceID+swipe transition)
+    d.at("0.6s").notificationShow({
+      id: "bait",
+      appId: "app_whatsapp",
+      title: "Mina",
+      body: "You were right.",
+      mode: "lockscreen",
+      priority: "high",
+    });
+    d.at("2.0s").unlock();
+
+    // Manual app switching (opt-in transitions)
+    d.at("5.0s").openApp("app_x", {
+      transition: { durationFrames: 18, style: "iosZoom" },
+    });
+
+    // Keyboard primitives
+    d.at("7.0s").keyboardShow({ returnKeyType: "send" });
+    d.at("7.1s").keyboardType("posting receipts...", { speed: "natural" });
+    d.at("8.2s").keyboardHide();
+
+    // Screen recording indicator (Dynamic Island)
+    d.at("0s").screenRecording(true, { mode: "compact" });
+  })
+  .build();
+```
+
+#### Multi-Device Camera Targeting
+
+Camera targets can be either a plain anchor ID (single-device) or a structured `{ deviceId, anchorId }` (multi-device). In split/PIP layouts, only the active device receives camera transforms.
+
+```ts
+episode("multi", { fps: 30, duration: "10s" })
+  .device("left", "iphone16", { app: "app_whatsapp" })
+  .device("right", "iphone16", { app: "app_x" })
+  .camera((cam) => {
+    cam.at("0s").layout({
+      mode: "SPLIT_HORIZONTAL",
+      primaryDeviceId: "left",
+      secondaryDeviceId: "right",
+    });
+
+    cam.at("1s").focus({ deviceId: "left", anchorId: "lastMessage" }, { scale: 1.12 });
+    cam.at("3s").focus({ deviceId: "right", anchorId: "tweet_card" }, { scale: 1.12 });
+  })
+  .build();
+```
 
 ---
 

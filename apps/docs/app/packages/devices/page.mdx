@@ -78,20 +78,21 @@ Each device profile includes:
 
 ```typescript
 import { episode } from "@tokovo/dsl";
-import { DeviceTrackBuilder } from "@tokovo/devices";
 
 episode("demo", { fps: 30, duration: "10s" })
-  .device("phone", "iphone16", { app: "app_whatsapp" })
-  .track(
-    "devices",
-    (getOrder) => new DeviceTrackBuilder(30, "phone", getOrder),
-    (device) => {
-      // Device profile automatically applied
-      device.at("1s").unlock();
-      device.at("2s").openApp("app_whatsapp");
-    },
-  );
+  .device("phone", "iphone16", {
+    app: "app_whatsapp",
+    locked: true,
+    installedApps: ["app_whatsapp", "app_x"],
+    screenRecording: true,
+  })
+  .deviceTrack("phone", (d) => {
+    d.at("1s").unlock();
+    d.at("2s").openApp("app_whatsapp");
+  });
 ```
+
+**Note:** `DeviceTrackBuilder` still exists in `@tokovo/devices`, but for v2 episodes we recommend `.deviceTrack(deviceId, ...)` from `@tokovo/dsl` as the canonical creator DX.
 
 ### Multiple Devices
 
@@ -100,20 +101,12 @@ episode("demo", { fps: 30, duration: "10s" })
 episode("multi-device", { fps: 30, duration: "15s" })
   .device("alice", "iphone16", { app: "app_whatsapp" })
   .device("bob", "pixel", { app: "app_whatsapp" })
-  .track(
-    "devices",
-    (getOrder) => new DeviceTrackBuilder(30, "alice", getOrder),
-    (device) => {
-      device.at("1s").unlock();
-    },
-  )
-  .track(
-    "devices",
-    (getOrder) => new DeviceTrackBuilder(30, "bob", getOrder),
-    (device) => {
-      device.at("2s").unlock();
-    },
-  );
+  .deviceTrack("alice", (d) => {
+    d.at("1s").unlock();
+  })
+  .deviceTrack("bob", (d) => {
+    d.at("2s").unlock();
+  });
 ```
 
 ## Device Registry API
@@ -419,17 +412,11 @@ registries.devices.register("myphone", MyPhoneProfile);
 ### 3. Use in Episodes
 
 ```typescript
-import { DeviceTrackBuilder } from "@tokovo/devices";
-
 episode("demo", { fps: 30, duration: "10s" })
   .device("phone", "myphone", { app: "app_whatsapp" })
-  .track(
-    "devices",
-    (getOrder) => new DeviceTrackBuilder(30, "phone", getOrder),
-    (device) => {
-      device.at("1s").unlock();
-    },
-  );
+  .deviceTrack("phone", (d) => {
+    d.at("1s").unlock();
+  });
 ```
 
 ## Platform Strategies
@@ -510,38 +497,26 @@ import type {
 
 ```typescript
 import { episode } from "@tokovo/dsl";
-import { DeviceTrackBuilder } from "@tokovo/devices";
 
 episode("phone-demo", { fps: 30, duration: "30s" })
   .device("phone", "iphone16", { app: "app_whatsapp" })
-  .track(
-    "devices",
-    (getOrder) => new DeviceTrackBuilder(30, "phone", getOrder),
-    (device) => {
-      // Initial state
-      device.at("0s").setBattery(85, true);
-      device.at("0s").setNetwork("5g", 4);
+  .os((os) => {
+    // Initial state (OS track)
+    os.at("0s").battery(85, { charging: true });
+    os.at("0s").network("5G", { strength: 4 });
+  })
+  .deviceTrack("phone", (d) => {
+    // Unlock and open app
+    d.at("2s").unlock();
+    d.at("3s").openApp("app_whatsapp", {
+      transition: { durationFrames: 18, style: "iosZoom" },
+    });
 
-      // Unlock and open app
-      device.at("2s").unlock();
-      device.at("3s").openApp("app_whatsapp");
-
-      // Background music
-      device.at("5s").startBackgroundApp({
-        appId: "app_music",
-        indicator: "music",
-        label: "Summer Vibes",
-      });
-
-      // Incoming call
-      device.at("15s").incomingCall({
-        callerId: "555-0123",
-        callerName: "Alice",
-      });
-      device.at("18s").answerCall();
-      device.at("28s").endCall();
-    },
-  );
+    // Background activity indicator (Dynamic Island)
+    // If you want a music/call indicator, use the DevicesPlugin runtime events.
+    // For v1 creator DX, screen recording is first-class:
+    d.at("5s").screenRecording(true, { mode: "compact" });
+  });
 ```
 
 ---

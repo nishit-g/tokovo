@@ -1,9 +1,5 @@
 import { defineEpisode } from "../types/episode-definition.js";
 import { episode } from "@tokovo/dsl";
-import { KeyboardTrackBuilder } from "@tokovo/device-keyboard";
-
-let orderCounter = 0;
-const getOrder = () => orderCounter++;
 
 export default defineEpisode({
   meta: {
@@ -33,27 +29,16 @@ export default defineEpisode({
         },
       })
       .background({ type: "image", src: "/backgrounds/dark-studio.png" })
-
-      .track(
-        "device_keyboard",
-        () => new KeyboardTrackBuilder(30, "phone", getOrder),
-        (keyboard) => {
-          keyboard.show("1s", { returnKeyType: "send" });
-
-          keyboard.type("Hello world!", "2s", { speed: "natural" });
-
-          keyboard.pressReturn("5s");
-
-          keyboard.clear("5.5s");
-
-          keyboard.type("This is a typing demo", "6s", { speed: "fast" });
-
-          keyboard.suggest(["Amazing!", "Great!", "Cool!"], "9s");
-          keyboard.tapSuggestion(0, "10s");
-
-          keyboard.hide("13s");
-        },
-      )
+      .deviceTrack("phone", (d) => {
+        d.at("1s").keyboardShow({ returnKeyType: "send" });
+        d.at("2s").keyboardType("Hello world!", { speed: "natural" });
+        d.at("5s").keyboardKeyPress("return");
+        d.at("5.5s").keyboardClear();
+        d.at("6s").keyboardType("This is a typing demo", { speed: "fast" });
+        d.at("9s").keyboardSetSuggestions(["Amazing!", "Great!", "Cool!"]);
+        d.at("10s").keyboardTapSuggestion(0);
+        d.at("13s").keyboardHide();
+      })
 
       .camera((_cam) => {
         // cam.at("0s").set({ scale: 1 });

@@ -1,9 +1,5 @@
 import { defineEpisode } from "../types/episode-definition.js";
 import { episode } from "@tokovo/dsl";
-import { NotificationTrackBuilder } from "@tokovo/device-notifications";
-
-let orderCounter = 0;
-const getOrder = () => orderCounter++;
 
 export default defineEpisode({
   meta: {
@@ -42,17 +38,13 @@ export default defineEpisode({
         },
       })
       .background({ type: "image", src: "/backgrounds/dark-studio.png" })
-
-      .track(
-        "device_notifications",
-        () => new NotificationTrackBuilder(30, "phone", getOrder),
-        (notif) => {
+      .deviceTrack("phone", (d) => {
           // ═══════════════════════════════════════════════════════════════
           // SECTION 1: Basic Notification Flow
           // Shows: Single notification → dismiss
           // ═══════════════════════════════════════════════════════════════
 
-          notif.at("1s").show({
+          d.at("1s").notificationShow({
             id: "wa_alex_1",
             appId: "app_whatsapp",
             title: "Alex",
@@ -62,14 +54,14 @@ export default defineEpisode({
             threadKey: "chat_alex",
           });
 
-          notif.at("3.5s").dismiss("wa_alex_1");
+          d.at("3.5s").notificationDismiss("wa_alex_1");
 
           // ═══════════════════════════════════════════════════════════════
           // SECTION 2: Stacking Demo (Newest On Top)
           // Shows: Multiple notifications stack with newest appearing on top
           // ═══════════════════════════════════════════════════════════════
 
-          notif.at("5s").show({
+          d.at("5s").notificationShow({
             id: "wa_group_1",
             appId: "app_whatsapp",
             title: "Work Group",
@@ -80,7 +72,7 @@ export default defineEpisode({
             groupKey: "work_group",
           });
 
-          notif.at("6s").show({
+          d.at("6s").notificationShow({
             id: "wa_sarah_1",
             appId: "app_whatsapp",
             title: "Sarah",
@@ -90,7 +82,7 @@ export default defineEpisode({
             threadKey: "chat_sarah",
           });
 
-          notif.at("7s").show({
+          d.at("7s").notificationShow({
             id: "wa_mom_1",
             appId: "app_whatsapp",
             title: "Mom ❤️",
@@ -105,22 +97,22 @@ export default defineEpisode({
           // Shows: User taps notification → opens app → clears notification
           // ═══════════════════════════════════════════════════════════════
 
-          notif.at("9s").tap("wa_mom_1");
+          d.at("9s").notificationTap("wa_mom_1");
 
           // ═══════════════════════════════════════════════════════════════
           // SECTION 4: Swipe Dismiss
           // Shows: User swipes to dismiss notifications
           // ═══════════════════════════════════════════════════════════════
 
-          notif.at("10.5s").swipe("wa_sarah_1", "right");
-          notif.at("11s").swipe("wa_group_1", "right");
+          d.at("10.5s").notificationSwipe("wa_sarah_1", "right");
+          d.at("11s").notificationSwipe("wa_group_1", "right");
 
           // ═══════════════════════════════════════════════════════════════
           // SECTION 5: Priority Levels
           // Shows: Critical (Uber), High (Calendar), Default (Instagram)
           // ═══════════════════════════════════════════════════════════════
 
-          notif.at("13s").show({
+          d.at("13s").notificationShow({
             id: "uber_1",
             appId: "Uber",
             title: "Your ride is arriving!",
@@ -129,7 +121,7 @@ export default defineEpisode({
             priority: "critical",
           });
 
-          notif.at("14s").show({
+          d.at("14s").notificationShow({
             id: "calendar_1",
             appId: "Calendar",
             title: "Meeting in 10 minutes",
@@ -142,7 +134,7 @@ export default defineEpisode({
             ],
           });
 
-          notif.at("15s").show({
+          d.at("15s").notificationShow({
             id: "instagram_1",
             appId: "Instagram",
             title: "New follower",
@@ -151,16 +143,16 @@ export default defineEpisode({
             priority: "default",
           });
 
-          notif.at("18s").dismiss("uber_1");
-          notif.at("18.5s").tap("calendar_1");
-          notif.at("19s").swipe("instagram_1", "right");
+          d.at("18s").notificationDismiss("uber_1");
+          d.at("18.5s").notificationTap("calendar_1");
+          d.at("19s").notificationSwipe("instagram_1", "right");
 
           // ═══════════════════════════════════════════════════════════════
           // SECTION 6: Grouped Notifications (Email)
           // Shows: Multiple emails grouped under same groupKey
           // ═══════════════════════════════════════════════════════════════
 
-          notif.at("21s").show({
+          d.at("21s").notificationShow({
             id: "mail_1",
             appId: "Mail",
             title: "boss@company.com",
@@ -169,7 +161,7 @@ export default defineEpisode({
             groupKey: "inbox",
           });
 
-          notif.at("22s").show({
+          d.at("22s").notificationShow({
             id: "mail_2",
             appId: "Mail",
             title: "team@company.com",
@@ -178,7 +170,7 @@ export default defineEpisode({
             groupKey: "inbox",
           });
 
-          notif.at("23s").show({
+          d.at("23s").notificationShow({
             id: "mail_3",
             appId: "Mail",
             title: "hr@company.com",
@@ -192,7 +184,7 @@ export default defineEpisode({
           // Shows: Notification with reply capability
           // ═══════════════════════════════════════════════════════════════
 
-          notif.at("25s").show({
+          d.at("25s").notificationShow({
             id: "wa_alex_2",
             appId: "app_whatsapp",
             title: "Alex",
@@ -212,9 +204,8 @@ export default defineEpisode({
           // Shows: All notifications dismissed at once
           // ═══════════════════════════════════════════════════════════════
 
-          notif.at("29s").clearAll();
-        },
-      )
+          d.at("29s").notificationClearAll();
+      })
 
       .build(),
 });

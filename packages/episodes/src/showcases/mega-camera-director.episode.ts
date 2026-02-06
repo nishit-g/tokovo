@@ -1,7 +1,6 @@
 import { defineEpisode } from "../types/episode-definition.js";
 import { episode } from "@tokovo/dsl";
 import { WhatsAppTrackBuilder } from "@tokovo/apps-whatsapp";
-import { NotificationTrackBuilder } from "@tokovo/device-notifications";
 import { CameraDirectorPlugin } from "@tokovo/compiler";
 
 export default defineEpisode({
@@ -41,7 +40,7 @@ export default defineEpisode({
         "app_whatsapp",
         (getOrder) => new WhatsAppTrackBuilder(30, "phone", "dm_sarah", getOrder),
         (wa) => {
-          wa.switchTo("dm_sarah", 1);
+          wa.switchTo("dm_sarah", "0s");
           wa.at("1s").receive("Sarah", "OMG");
           wa.at("1.5s").receive("Sarah", "You won't believe this");
           wa.at("2s").receive("Sarah", "I just saw Jake");
@@ -86,29 +85,25 @@ export default defineEpisode({
         },
       )
 
-      .track(
-        "notifications",
-        (getOrder) => new NotificationTrackBuilder(30, "phone", getOrder),
-        (notif) => {
-          notif.at("11.5s").show({
-            id: "mom-dinner",
-            appId: "Messages",
-            title: "Mom",
-            body: "Dinner reminder! 7pm tonight",
-            mode: "headsup",
-          });
-          notif.at("13s").dismiss("mom-dinner");
+      .deviceTrack("phone", (d) => {
+        d.at("11.5s").notificationShow({
+          id: "mom-dinner",
+          appId: "Messages",
+          title: "Mom",
+          body: "Dinner reminder! 7pm tonight",
+          mode: "headsup",
+        });
+        d.at("13s").notificationDismiss("mom-dinner");
 
-          notif.at("28s").show({
-            id: "jake-tag",
-            appId: "Instagram",
-            title: "jake_wilson tagged you",
-            body: "in a photo",
-            mode: "headsup",
-          });
-          notif.at("29.5s").dismiss("jake-tag");
-        },
-      )
+        d.at("28s").notificationShow({
+          id: "jake-tag",
+          appId: "Instagram",
+          title: "jake_wilson tagged you",
+          body: "in a photo",
+          mode: "headsup",
+        });
+        d.at("29.5s").notificationDismiss("jake-tag");
+      })
 
       .use(new CameraDirectorPlugin({ debug: true }))
 

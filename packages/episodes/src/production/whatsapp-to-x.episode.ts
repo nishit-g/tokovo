@@ -2,41 +2,6 @@ import { defineEpisode } from "../types/episode-definition.js";
 import { episode } from "@tokovo/dsl";
 import { WhatsAppTrackBuilder } from "@tokovo/apps-whatsapp";
 import { XTrackBuilder } from "@tokovo/apps-x";
-import type { TrackEvent } from "@tokovo/ir";
-
-class InlineDeviceTrackBuilder {
-  _events: TrackEvent[] = [];
-  constructor(
-    private _fps: number,
-    private _deviceId: string,
-    private _getOrder: () => number,
-  ) {}
-  at(time: string | number) {
-    const frame =
-      typeof time === "number"
-        ? Math.round(time)
-        : time.trim().endsWith("ms")
-          ? Math.round((parseFloat(time) / 1000) * this._fps)
-          : time.trim().endsWith("s")
-            ? Math.round(parseFloat(time) * this._fps)
-            : Math.round(parseFloat(time));
-    return {
-      openApp: (appId: string) => {
-        this._events.push({
-          kind: "DEVICE",
-          type: "OPEN_APP",
-          deviceId: this._deviceId,
-          payload: { appId },
-          at: frame,
-          _declarationOrder: this._getOrder(),
-        } as unknown as TrackEvent);
-      },
-    };
-  }
-  span(start: string | number, _end: string | number) {
-    return this.at(start);
-  }
-}
 
 export default defineEpisode({
   meta: {
@@ -79,7 +44,7 @@ export default defineEpisode({
         "app_whatsapp",
         (getOrder) => new WhatsAppTrackBuilder(30, "phone", "dm_launch", getOrder),
         (wa) => {
-          wa.switchTo("dm_launch", 1);
+          wa.switchTo("dm_launch", "0s");
           wa.at("1s").receive("Ava", "Campaign thread is exploding 🔥");
           wa.at("2.3s").receive("Ava", "Can you jump to X and post the recap?");
           wa.span("3.6s", "4.8s").typing("me");
@@ -213,13 +178,11 @@ export default defineEpisode({
           x.at("24.8s").navigate("timeline");
         },
       )
-      .track(
-        "device",
-        (getOrder) => new InlineDeviceTrackBuilder(30, "phone", getOrder),
-        (device: InlineDeviceTrackBuilder) => {
-          device.at("10.8s").openApp("app_x");
-        },
-      )
+      .deviceTrack("phone", (d) => {
+        d.at("10.8s").openApp("app_x", {
+          transition: { durationFrames: 18, style: "iosZoom" },
+        });
+      })
       .camera((cam) => {
         cam.at("0s").focus("device", { scale: 1, duration: "0.5s" });
         cam.span("1s", "10.6s").trackCinematic("lastMessage", { scale: 1.12, smoothing: 0.2 });

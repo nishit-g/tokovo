@@ -1,5 +1,6 @@
 import React from "react";
 import type { WorldState } from "@tokovo/core";
+import { getTypedTextProgress } from "@tokovo/device-keyboard";
 import { useXTheme } from "./ThemeContext.js";
 import { getXState } from "../runtime/selectors.js";
 import { AppShell } from "./AppShell.js";
@@ -9,12 +10,22 @@ import { BottomNav } from "./BottomNav.js";
 
 interface ComposeProps {
   world: WorldState;
+  deviceId?: string;
+  t?: number;
 }
 
-export const Compose: React.FC<ComposeProps> = ({ world }) => {
+export const Compose: React.FC<ComposeProps> = ({ world, deviceId, t }) => {
   const theme = useXTheme();
   const state = getXState(world);
   const draft = state?.composeDraft ?? "";
+  const focusedDevice =
+    (deviceId && world.devices?.[deviceId]) ||
+    world.devices?.[Object.keys(world.devices ?? {})[0]];
+  const keyboard = focusedDevice?.keyboard;
+  const typedDraft =
+    keyboard?.visible && keyboard.typingAnimation
+      ? getTypedTextProgress(keyboard, t ?? 0)
+      : draft;
 
   return (
     <AppShell>
@@ -59,7 +70,7 @@ export const Compose: React.FC<ComposeProps> = ({ world }) => {
             <Avatar size={theme.spacing.avatarSize} />
             <div style={{ flex: 1 }}>
               <div style={{ fontSize: 15, lineHeight: 1.5, minHeight: 120 }}>
-                {draft || "What's happening?"}
+                {typedDraft || "What's happening?"}
               </div>
               <div
                 style={{
@@ -71,7 +82,7 @@ export const Compose: React.FC<ComposeProps> = ({ world }) => {
                   fontSize: 12,
                 }}
               >
-                <span>{draft.length}/280</span>
+                <span>{typedDraft.length}/280</span>
                 <span style={{ color: theme.colors.accent }}>Everyone can reply</span>
               </div>
             </div>

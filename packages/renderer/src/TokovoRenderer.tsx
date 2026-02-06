@@ -42,6 +42,8 @@ import { useCameraEngine } from "./engines/useCameraEngine.js";
 import type { CameraEngineOutput } from "./engines/useCameraEngine.js";
 import { AppErrorBoundary } from "./ErrorBoundary.js";
 import { RendererRegistryProvider, type RendererRegistries } from "./RegistryContext.js";
+import { AppTransition, UnlockTransition } from "./AppTransition.js";
+import { computeLockscreenLayout } from "./layout/strategies/lockscreen.js";
 
 const log = createScopedLogger("renderer");
 
@@ -67,6 +69,11 @@ interface TokovoRendererProps {
   eventIndex?: EventIndex;
   pluginManager: PluginManagerClass;
   registries: RendererRegistries;
+  /**
+   * In multi-device layouts, only the active device should apply camera transforms.
+   * Non-active devices must render with an identity transform to avoid flakiness.
+   */
+  disableCamera?: boolean;
   onCameraDebugFrame?: (frame: CameraDebugFrame) => void;
   cameraDebugShowAllAnchors?: boolean;
 }
@@ -111,6 +118,7 @@ const TokovoRendererInner: React.FC<TokovoRendererProps> = ({
   focusDeviceId,
   eventIndex,
   pluginManager,
+  disableCamera = false,
   onCameraDebugFrame,
   cameraDebugShowAllAnchors,
 }) => {
@@ -159,6 +167,7 @@ const TokovoRendererInner: React.FC<TokovoRendererProps> = ({
     t,
     layoutOutput,
     eventIndex,
+    disabled: disableCamera,
   });
 
   const { cameraStyle, deviceStyle, transform, debugInfo } = cameraOutput;
@@ -209,6 +218,38 @@ const TokovoRendererInner: React.FC<TokovoRendererProps> = ({
 
   const hasActiveCall = device.call && device.call.status !== "ended";
 
+  const transition = (device as unknown as { transition?: unknown }).transition as
+    | {
+        kind: "unlock" | "openApp" | "goHome";
+        startFrame: number;
+        durationFrames: number;
+        style?: string;
+        originX?: number;
+        originY?: number;
+      }
+    | undefined;
+
+  const transitionProgress =
+    transition && transition.durationFrames > 0
+      ? Math.max(
+          0,
+          Math.min(
+            1,
+            (t - transition.startFrame) / transition.durationFrames,
+          ),
+        )
+      : undefined;
+
+  const isUnlockTransitionActive =
+    transition?.kind === "unlock" &&
+    transitionProgress !== undefined &&
+    transitionProgress < 1;
+
+  const isAppTransitionActive =
+    (transition?.kind === "openApp" || transition?.kind === "goHome") &&
+    transitionProgress !== undefined &&
+    transitionProgress < 1;
+
   if (debug && device.call) {
     log.debug(`Frame ${t} CALL STATE`, { call: device.call });
   }
@@ -253,6 +294,26 @@ const TokovoRendererInner: React.FC<TokovoRendererProps> = ({
   const StatusBarStrategy =
     deviceRegistries.statusBars.getWithFallback(variant, "ios");
 
+  const lockscreenLayoutForUnlock = React.useMemo(() => {
+    if (!isUnlockTransitionActive) return undefined;
+    return computeLockscreenLayout({
+      world,
+      t,
+      activeDeviceId: deviceId,
+      activeAppId: "lockscreen",
+      viewKind: "LOCKSCREEN",
+      viewportWidth: profile.dimensions.width,
+      viewportHeight: profile.dimensions.height,
+      safeAreaInsets: {
+        top: profile.camera?.safeAreaTop ?? 0,
+        bottom: profile.camera?.safeAreaBottom ?? 0,
+        left: 0,
+        right: 0,
+      },
+      config: config as unknown as Partial<import("@tokovo/core").LayoutConfig>,
+    } as unknown as import("@tokovo/core").LayoutContext);
+  }, [isUnlockTransitionActive, world, t, deviceId, profile, config]);
+
   return (
     <div
       style={{
@@ -281,89 +342,120 @@ const TokovoRendererInner: React.FC<TokovoRendererProps> = ({
             {/* LAYER 1: APP VIEW                                                        */}
             {/* ========================================================================= */}
             {(() => {
+              let baseContent: React.ReactNode;
+
               // Active App (Unlocked)
               if (AppView && !device.isLocked) {
                 if (!appId) {
-                  return <div style={{ flex: 1, backgroundColor: "black" }} />;
-                }
+                  baseContent = <div style={{ flex: 1, backgroundColor: "black" }} />;
+                } else {
+                  const pluginAssets = pm.get(appId)?.assets;
+                  const designWidth = pluginAssets?.designWidth || 393;
+                  const scale = profile.dimensions.width / designWidth;
 
-                const pluginAssets = pm.get(appId)?.assets;
-                const designWidth = pluginAssets?.designWidth || 393;
-
-                const scale = profile.dimensions.width / designWidth;
-
-                return (
-                  <AppErrorBoundary appId={appId}>
-                    <AppSurface
-                      designWidth={designWidth}
-                      targetWidth={profile.dimensions.width}
-                      targetHeight={profile.dimensions.height}
-                      backgroundColor={undefined}
-                    >
-                      <TokovoProvider
-                        world={world}
-                        deviceId={deviceId}
-                        appId={appId}
-                        t={t}
-                        layout={layout}
-                        platform={variant}
-                        safeAreaInsets={{
-                          top: (profile.camera?.safeAreaTop || 0) / scale,
-                          bottom: (profile.camera?.safeAreaBottom || 0) / scale,
-                          left: 0,
-                          right: 0,
-                        }}
-                        keyboardHeight={
-                          device.keyboard?.visible
-                            ? getKeyboardHeight(3) / scale
-                            : 0
-                        }
+                  baseContent = (
+                    <AppErrorBoundary appId={appId}>
+                      <AppSurface
+                        designWidth={designWidth}
+                        targetWidth={profile.dimensions.width}
+                        targetHeight={profile.dimensions.height}
+                        backgroundColor={undefined}
                       >
-                        <AppView
+                        <TokovoProvider
                           world={world}
+                          deviceId={deviceId}
+                          appId={appId}
                           t={t}
                           layout={layout}
                           platform={variant}
-                          deviceId={deviceId}
                           safeAreaInsets={{
                             top: (profile.camera?.safeAreaTop || 0) / scale,
-                            bottom:
-                              (profile.camera?.safeAreaBottom || 0) / scale,
+                            bottom: (profile.camera?.safeAreaBottom || 0) / scale,
                             left: 0,
                             right: 0,
                           }}
-                        />
-                      </TokovoProvider>
-                    </AppSurface>
-                  </AppErrorBoundary>
+                          keyboardHeight={
+                            device.keyboard?.visible ? getKeyboardHeight(3) / scale : 0
+                          }
+                        >
+                          <AppView
+                            world={world}
+                            t={t}
+                            layout={layout}
+                            platform={variant}
+                            deviceId={deviceId}
+                            safeAreaInsets={{
+                              top: (profile.camera?.safeAreaTop || 0) / scale,
+                              bottom: (profile.camera?.safeAreaBottom || 0) / scale,
+                              left: 0,
+                              right: 0,
+                            }}
+                          />
+                        </TokovoProvider>
+                      </AppSurface>
+                    </AppErrorBoundary>
+                  );
+                }
+              } else if (!device.isLocked && device.homeScreen) {
+                // System: Home
+                baseContent = (
+                  <HomeScreenView config={device.homeScreen} variant={variant} />
                 );
-              }
-
-              // C. Valid System States (Lockscreen / Home)
-              if (!device.isLocked && device.homeScreen) {
-                return (
-                  <HomeScreenView
-                    config={device.homeScreen}
-                    variant={variant}
-                  />
-                );
-              }
-
-              if (device.isLocked) {
-                return (
+              } else if (device.isLocked) {
+                // System: Lockscreen
+                baseContent = (
                   <LockscreenView
-                    notifications={device.os?.notifications || []}
+                    notifications={device.notifications || []}
                     layout={layout}
                     variant={variant}
                     timestampMs={device.os?.clock}
-                    // TODO: Pass Metadata Registry for icon lookup?
-                    // LockscreenView already uses it (Step 642).
                   />
+                );
+              } else {
+                baseContent = <div style={{ flex: 1, backgroundColor: "black" }} />;
+              }
+
+              // Manual app transitions (open/goHome)
+              if (isAppTransitionActive && transitionProgress !== undefined) {
+                baseContent = (
+                  <AppTransition
+                    isOpening={transition?.kind === "openApp"}
+                    isClosing={transition?.kind === "goHome"}
+                    progress={transitionProgress}
+                    originX={transition?.originX}
+                    originY={transition?.originY}
+                  >
+                    {baseContent}
+                  </AppTransition>
                 );
               }
 
-              // D. Blank Screen
-              return <div style={{ flex: 1, backgroundColor: "black" }} />;
+              // Auto unlock transition
+              if (isUnlockTransitionActive && transitionProgress !== undefined) {
+                const phase = transitionProgress < 0.7 ? "face_id" : "unlocking";
+                const p =
+                  transitionProgress < 0.7
+                    ? transitionProgress / 0.7
+                    : (transitionProgress - 0.7) / 0.3;
+
+                baseContent = (
+                  <div style={{ position: "relative", width: "100%", height: "100%" }}>
+                    <LockscreenView
+                      notifications={device.notifications || []}
+                      layout={lockscreenLayoutForUnlock}
+                      variant={variant}
+                      timestampMs={device.os?.clock}
+                    />
+                    <div style={{ position: "absolute", inset: 0 }}>
+                      <UnlockTransition phase={phase} progress={p}>
+                        {baseContent}
+                      </UnlockTransition>
+                    </div>
+                  </div>
+                );
+              }
+
+              return baseContent;
             })()}
 
             {/* ========================================================================= */}
@@ -371,11 +463,13 @@ const TokovoRendererInner: React.FC<TokovoRendererProps> = ({
             {/* ========================================================================= */}
 
             {/* Lockscreen Notification Overlay */}
-            <NotificationOverlay
-              notifications={device.notifications || []}
-              variant={variant}
-              layout={layout}
-            />
+            {!device.isLocked && !isUnlockTransitionActive && (
+              <NotificationOverlay
+                notifications={device.notifications || []}
+                variant={variant}
+                layout={layout}
+              />
+            )}
 
             {/* Heads-Up Notifications (Stacked) */}
             {!hasActiveCall &&

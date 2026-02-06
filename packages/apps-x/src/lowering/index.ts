@@ -17,6 +17,10 @@ function getTimestamp(event: TrackEvent, override?: number): number {
   return typeof override === "number" ? override : event.at;
 }
 
+function clampFrame(frame: number): number {
+  return Math.max(0, Math.round(frame));
+}
+
 function createRuntimeEvent(
   event: TrackEvent,
   type: string,
@@ -32,9 +36,81 @@ function createRuntimeEvent(
   };
 }
 
+function expandTypedText(params: {
+  at: number;
+  deviceId: string;
+  text: string;
+  charDelay?: number;
+  returnKeyType?: string;
+  after: () => RuntimeEvent[];
+  clearDraftEvents?: () => RuntimeEvent[];
+}): RuntimeEvent[] {
+  const {
+    at,
+    deviceId,
+    text,
+    charDelay = 2,
+    returnKeyType = "send",
+    after,
+    clearDraftEvents,
+  } = params;
+
+  if (!text) return after();
+
+  const typeDuration = text.length * charDelay;
+  const keyboardShowAt = clampFrame(at - typeDuration - 20);
+  const typeStartAt = clampFrame(at - typeDuration - 5);
+  const returnPressAt = clampFrame(at - 3);
+  const keyboardHideAt = clampFrame(at + 15);
+
+  const result: RuntimeEvent[] = [];
+
+  result.push({
+    at: keyboardShowAt,
+    kind: "DEVICE",
+    type: "KEYBOARD_SHOW",
+    deviceId,
+    payload: { returnKeyType },
+  } as unknown as RuntimeEvent);
+
+  result.push({
+    at: typeStartAt,
+    kind: "DEVICE",
+    type: "KEYBOARD_TYPE",
+    deviceId,
+    payload: { text, charDelay },
+  } as unknown as RuntimeEvent);
+
+  result.push({
+    at: returnPressAt,
+    kind: "DEVICE",
+    type: "KEYBOARD_KEY_PRESS",
+    deviceId,
+    payload: { key: "return", duration: 4 },
+  } as unknown as RuntimeEvent);
+
+  result.push(...after());
+
+  if (clearDraftEvents) {
+    result.push(...clearDraftEvents());
+  }
+
+  result.push({
+    at: keyboardHideAt,
+    kind: "DEVICE",
+    type: "KEYBOARD_HIDE",
+    deviceId,
+    payload: {},
+  } as unknown as RuntimeEvent);
+
+  return result;
+}
+
 export const xLowering: XLoweringHandler = {
   lower: (event: TrackEvent): RuntimeEvent[] => {
     if (!isXTrackEvent(event)) return [];
+    const deviceId = (event as { deviceId?: string }).deviceId;
+    if (!deviceId) return [];
 
     switch (event.type) {
       case "USER_CREATE":
@@ -61,6 +137,39 @@ export const xLowering: XLoweringHandler = {
       case "UNFOLLOW_USER":
         return [createRuntimeEvent(event, "UNFOLLOW_USER", event.payload)];
       case "TWEET_CREATE":
+        if (event.payload?.typed) {
+          const text = event.payload.text ?? "";
+          return expandTypedText({
+            at: event.at,
+            deviceId,
+            text,
+            charDelay: event.payload.charDelay,
+            returnKeyType: "send",
+            after: () => [
+              // Keep compose draft in sync so app UI can show text even if keyboard is hidden.
+              createRuntimeEvent(event, "SET_COMPOSE_DRAFT", { text }),
+              createRuntimeEvent(event, "ADD_TWEET", {
+                id: event.payload.id ?? `tw-${event.at}-${event._declarationOrder ?? 0}`,
+                authorId: event.payload.authorId,
+                text,
+                createdAt: getTimestamp(event, event.payload.createdAt),
+                media: event.payload.media,
+                linkPreview: event.payload.linkPreview,
+                poll: event.payload.poll,
+                hashtags: event.payload.hashtags ?? [],
+                mentions: event.payload.mentions ?? [],
+                quoteTweetId: event.payload.quoteTweetId,
+                viewCount: event.payload.viewCount ?? 0,
+                bookmarkCount: event.payload.bookmarkCount ?? 0,
+                shareCount: event.payload.shareCount ?? 0,
+              }),
+            ],
+            clearDraftEvents: () => [
+              createRuntimeEvent(event, "SET_COMPOSE_DRAFT", { text: "" }),
+            ],
+          });
+        }
+
         return [
           createRuntimeEvent(event, "ADD_TWEET", {
             id: event.payload.id ?? `tw-${event.at}-${event._declarationOrder ?? 0}`,
@@ -202,6 +311,26 @@ export const xLowering: XLoweringHandler = {
           }),
         ];
       case "DM_SEND":
+        if (event.payload?.typed) {
+          const text = event.payload.text ?? "";
+          return expandTypedText({
+            at: event.at,
+            deviceId,
+            text,
+            charDelay: event.payload.charDelay,
+            returnKeyType: "send",
+            after: () => [
+              createRuntimeEvent(event, "ADD_DM_MESSAGE", {
+                id: event.payload.id ?? `msg-${event.at}-${event._declarationOrder ?? 0}`,
+                threadId: event.payload.threadId,
+                senderId: event.payload.senderId,
+                text,
+                createdAt: getTimestamp(event, event.payload.createdAt),
+              }),
+            ],
+          });
+        }
+
         return [
           createRuntimeEvent(event, "ADD_DM_MESSAGE", {
             id: event.payload.id ?? `msg-${event.at}-${event._declarationOrder ?? 0}`,

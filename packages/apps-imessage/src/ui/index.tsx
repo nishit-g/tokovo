@@ -1,5 +1,6 @@
 import React, { useEffect } from "react";
 import type { PluginViewProps } from "@tokovo/core";
+import { getTypedTextProgress } from "@tokovo/device-keyboard";
 import { Header, InputBar, MessageBubble, TypingIndicator, ScreenEffect, SearchBar } from "../components/index.js";
 import { computeMessageGap, iMessageSpacing } from "../config/index.js";
 import type { IMessageConversation, IMessageMessage, IMessageState } from "../types/index.js";
@@ -67,6 +68,9 @@ export const IMessageView: React.FC<IMessageViewProps> = (props) => {
 
     return (
       <ChatView
+        world={world}
+        deviceId={props.deviceId}
+        t={props.t}
         conversation={state.conversations?.[activeConversationId]}
         safeAreaTop={props.safeAreaInsets?.top}
         safeAreaBottom={props.safeAreaInsets?.bottom}
@@ -84,17 +88,29 @@ export const IMessageView: React.FC<IMessageViewProps> = (props) => {
 };
 
 const ChatView: React.FC<{
+  world: PluginViewProps["world"];
+  deviceId?: string;
+  t?: number;
   conversation?: IMessageConversation;
   safeAreaTop?: number;
   safeAreaBottom?: number;
   activeScreenEffect?: ScreenEffectType;
   searchQuery?: string;
-}> = ({ conversation, safeAreaTop, safeAreaBottom, activeScreenEffect, searchQuery }) => {
+}> = ({ world, deviceId, t, conversation, safeAreaTop, safeAreaBottom, activeScreenEffect, searchQuery }) => {
   const theme = useIMessageTheme();
 
   if (!conversation) {
     return <EmptyState />;
   }
+
+  const focusedDevice =
+    (deviceId && world.devices?.[deviceId]) ||
+    world.devices?.[Object.keys(world.devices ?? {})[0]];
+  const keyboard = focusedDevice?.keyboard;
+  const draftText =
+    keyboard?.visible && keyboard.typingAnimation
+      ? getTypedTextProgress(keyboard, t ?? 0)
+      : (conversation.draft ?? "");
 
   const messages = conversation.messages ?? [];
   const lastOutgoingId = (() => {
@@ -183,7 +199,7 @@ const ChatView: React.FC<{
         {typingUsers.length > 0 && <TypingIndicator theme={theme} />}
       </div>
 
-      <InputBar theme={theme} draft={conversation.draft} safeAreaBottom={safeAreaBottom} />
+      <InputBar theme={theme} draft={draftText} safeAreaBottom={safeAreaBottom} />
 
       {/* Screen effect overlay */}
       {activeScreenEffect && <ScreenEffect effect={activeScreenEffect} />}

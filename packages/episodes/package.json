@@ -19,6 +19,10 @@
       "types": "./dist/showcases/index.d.ts",
       "default": "./dist/showcases/index.js"
     },
+    "./v2": {
+      "types": "./dist/v2/index.d.ts",
+      "default": "./dist/v2/index.js"
+    },
     "./tests": {
       "types": "./dist/tests/index.d.ts",
       "default": "./dist/tests/index.js"
@@ -34,6 +38,7 @@
     "validate": "tsx src/cli.ts"
   },
   "dependencies": {
+    "@tokovo/creator": "workspace:*",
     "@tokovo/dsl": "workspace:*",
     "@tokovo/ir": "workspace:*",
     "@tokovo/compiler": "workspace:*",

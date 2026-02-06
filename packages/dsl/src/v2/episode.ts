@@ -40,6 +40,7 @@ import { parseTimeToFrames } from "./utils/time.js";
 import { CameraTrackBuilder } from "./camera-track.js";
 import { AudioTrackBuilder } from "./audio-track.js";
 import { OSTrackBuilder } from "./os-track.js";
+import { DeviceTrackBuilderV2 } from "./device-track.js";
 
 // =============================================================================
 // TYPES
@@ -51,6 +52,19 @@ export interface DeviceOptions {
   os?: OSConfig;
   /** UI theme/strategy to use (e.g., "whatsapp-ghibli") */
   theme?: string;
+  /** Start locked at frame 0 */
+  locked?: boolean;
+  /** Apps installed on the home screen (deterministic icon layout) */
+  installedApps?: string[];
+  /** Optional home screen layout override */
+  homeScreen?: {
+    preset?: "ios-default" | "android-default";
+    dock?: string[];
+    pages?: string[][];
+    wallpaper?: string;
+  };
+  /** Start with screen recording indicator enabled */
+  screenRecording?: boolean;
 }
 
 export interface TrackBuilder {
@@ -168,6 +182,10 @@ export class EpisodeBuilder {
       conversations: options.conversations,
       os: options.os,
       theme: options.theme,
+      locked: options.locked,
+      installedApps: options.installedApps,
+      homeScreen: options.homeScreen,
+      screenRecording: options.screenRecording,
     });
     return this;
   }
@@ -233,6 +251,22 @@ export class EpisodeBuilder {
   os(fn: TrackFn<OSTrackBuilder>): this {
     const builder = new OSTrackBuilder(
       this._fps,
+      () => this._declarationOrder++,
+    );
+    fn(builder);
+    this._events.push(...builder._events);
+    return this;
+  }
+
+  /**
+   * Add a first-class device track for a specific device.
+   * This is the canonical authoring surface for lock/unlock, app switching,
+   * notifications, keyboard, badges, screen recording, etc.
+   */
+  deviceTrack(deviceId: string, fn: TrackFn<DeviceTrackBuilderV2>): this {
+    const builder = new DeviceTrackBuilderV2(
+      this._fps,
+      deviceId,
       () => this._declarationOrder++,
     );
     fn(builder);

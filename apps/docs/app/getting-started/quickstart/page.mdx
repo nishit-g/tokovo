@@ -177,7 +177,11 @@ config: {
 ### WhatsApp Track
 
 ```typescript
-.track("app_whatsapp", () => new WhatsAppTrackBuilder(...), (wa) => {
+import { episode } from "@tokovo/creator";
+
+// ...
+
+.whatsapp("phone", "dm_alice", (wa) => {
   wa.at("1s").receive("Alice", "Hey!");
   wa.at("3s").receive("Alice", "How are you?");
   wa.at("5s").receive("Alice", "Want to grab coffee?");

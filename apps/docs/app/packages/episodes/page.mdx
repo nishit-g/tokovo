@@ -176,7 +176,7 @@ const worldState = runEpisode(trackDemoV2, 675, {
 
 **What it demonstrates:**
 
-- NotificationTrackBuilder DSL
+- Device track notification primitives (recommended)
 - WhatsApp notifications with heads-up display
 - Notification dismiss/tap flows
 - Dynamic Island integration
@@ -195,10 +195,8 @@ const worldState = runEpisode(trackDemoV2, 675, {
 - Clear all notifications
 
 ```typescript
-.track("notifications", () => {
-  return new NotificationTrackBuilder(30, "phone", getOrder);
-}, noti => {
-  noti.at("1s").show({
+.deviceTrack("phone", (d) => {
+  d.at("1s").notificationShow({
     id: "notif_1",
     appId: "app_whatsapp",
     title: "Alex 👋",
@@ -207,8 +205,8 @@ const worldState = runEpisode(trackDemoV2, 675, {
     preview: { kind: "text", value: "Hey! Are you free tonight?" }
   });
 
-  noti.at("6s").dismiss("notif_1");
-  noti.at("8s").tap("notif_2");
+  d.at("6s").notificationDismiss("notif_1");
+  d.at("8s").notificationTap("notif_2");
 })
 ```
 

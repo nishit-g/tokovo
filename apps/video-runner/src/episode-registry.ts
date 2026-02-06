@@ -1,5 +1,6 @@
 import productionEpisodes from "@tokovo/episodes/production";
 import showcaseEpisodes from "@tokovo/episodes/showcases";
+import v2Episodes from "@tokovo/episodes/v2";
 import testEpisodes from "@tokovo/episodes/tests";
 import {
   createEpisodeRegistry,
@@ -20,7 +21,7 @@ export function createVideoRunnerEpisodeRegistry(): EpisodeRegistry {
   const registry = createEpisodeRegistry();
   registerEpisodeCatalog(registry, productionEpisodes);
   registerEpisodeCatalog(registry, showcaseEpisodes);
+  registerEpisodeCatalog(registry, v2Episodes);
   registerEpisodeCatalog(registry, testEpisodes);
   return registry;
 }
-

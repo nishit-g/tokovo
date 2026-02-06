@@ -88,6 +88,7 @@ export type CameraTrackEvent = TrackEventBase & {
     | { type: "DUTCH_TILT"; payload: CameraPayloads["DUTCH_TILT"] }
     | { type: "FLASH"; payload: CameraPayloads["FLASH"] }
     | { type: "WHIP_PAN"; payload: CameraPayloads["WHIP_PAN"] }
+    | { type: "LAYOUT"; payload: CameraPayloads["LAYOUT"] }
   );
 
 /**
@@ -217,6 +218,10 @@ export type DeviceTrackEvent = TrackEventBase & {
     | {
         type: "KEYBOARD_TAP_SUGGESTION";
         payload: DevicePayloads["KEYBOARD_TAP_SUGGESTION"];
+      }
+    | {
+        type: "SET_SCREEN_RECORDING";
+        payload: DevicePayloads["SET_SCREEN_RECORDING"];
       }
   );
 

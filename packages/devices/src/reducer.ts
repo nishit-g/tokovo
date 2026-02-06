@@ -48,15 +48,41 @@ export function deviceReducer(
       // --- Lock/Unlock ---
       case "LOCK":
         device.isLocked = true;
+        device.transition = undefined;
         break;
       case "UNLOCK":
         device.isLocked = false;
+        device.transition = {
+          kind: "unlock",
+          startFrame: event.at,
+          durationFrames: 45, // 1.5s @ 30fps (deterministic default)
+          style: "faceIdSwipe",
+        };
         break;
 
       // --- App Management ---
       case "OPEN_APP": {
         const e = event as OpenAppEvent;
         device.foregroundAppId = e.payload?.appId;
+        const transition = (e.payload as unknown as { transition?: unknown })
+          ?.transition as
+          | {
+              durationFrames?: number;
+              style?: string;
+              originX?: number;
+              originY?: number;
+            }
+          | undefined;
+        if (transition) {
+          device.transition = {
+            kind: "openApp",
+            startFrame: event.at,
+            durationFrames: transition.durationFrames ?? 18,
+            style: (transition.style ?? "iosZoom") as "iosZoom",
+            originX: transition.originX,
+            originY: transition.originY,
+          };
+        }
         break;
       }
       case "CLOSE_APP":
@@ -64,6 +90,28 @@ export function deviceReducer(
         break;
       case "GO_HOME":
         device.foregroundAppId = undefined;
+        {
+          const transition = (event as unknown as {
+            payload?: { transition?: unknown };
+          }).payload?.transition as
+            | {
+                durationFrames?: number;
+                style?: string;
+                originX?: number;
+                originY?: number;
+              }
+            | undefined;
+          if (transition) {
+            device.transition = {
+              kind: "goHome",
+              startFrame: event.at,
+              durationFrames: transition.durationFrames ?? 18,
+              style: (transition.style ?? "iosZoom") as "iosZoom",
+              originX: transition.originX,
+              originY: transition.originY,
+            };
+          }
+        }
         break;
 
       // --- Badge ---
@@ -108,6 +156,29 @@ export function deviceReducer(
           device.dynamicIsland = { ...DEFAULT_DYNAMIC_ISLAND };
         device.dynamicIsland.visible = e.payload?.visible ?? true;
         if (e.payload?.mode) device.dynamicIsland.mode = e.payload.mode;
+        break;
+      }
+
+      case "SET_SCREEN_RECORDING": {
+        const enabled = Boolean(
+          (event as unknown as { payload?: { enabled?: unknown } }).payload
+            ?.enabled ?? false,
+        );
+        const mode = (event as unknown as { payload?: { mode?: unknown } })
+          .payload?.mode as "minimal" | "compact" | undefined;
+        if (!device.dynamicIsland)
+          device.dynamicIsland = { ...DEFAULT_DYNAMIC_ISLAND };
+        if (enabled) {
+          device.dynamicIsland.visible = true;
+          device.dynamicIsland.activeContent = "recording";
+          device.dynamicIsland.mode = mode ?? "compact";
+        } else {
+          // Only clear recording content; leave other system content alone.
+          if (device.dynamicIsland.activeContent === "recording") {
+            device.dynamicIsland.activeContent = null;
+            device.dynamicIsland.mode = "idle";
+          }
+        }
         break;
       }
 

@@ -15,12 +15,8 @@
 import { defineEpisode } from "../types/episode-definition.js";
 import { episode } from "@tokovo/dsl";
 import { WhatsAppTrackBuilder } from "@tokovo/apps-whatsapp";
-import { NotificationTrackBuilder } from "@tokovo/device-notifications";
 import { drama_example } from "@tokovo/voice";
 import { KeyboardPlugin } from "@tokovo/compiler";
-
-let orderCounter = 0;
-const getOrder = () => orderCounter++;
 
 export default defineEpisode({
   meta: {
@@ -90,11 +86,9 @@ export default defineEpisode({
       // ============================================
       .track(
         "app_whatsapp",
-        () => {
-          return new WhatsAppTrackBuilder(30, "phone", "dm_alex", getOrder);
-        },
+        (getOrder) => new WhatsAppTrackBuilder(30, "phone", "dm_alex", getOrder),
         (wa) => {
-          wa.switchTo("dm_alex", 1);
+          wa.switchTo("dm_alex", "0s");
           // Opening - match voice segment 1 timing
           wa.at("3s").receive("Alex", "Hey...");
           wa.at("4s").receive("Alex", "We need to talk.");
@@ -170,80 +164,76 @@ export default defineEpisode({
       // ============================================
       // NOTIFICATIONS - Using NotificationTrackBuilder
       // ============================================
-      .track(
-        "device_notifications",
-        () => new NotificationTrackBuilder(30, "phone", getOrder),
-        (notif) => {
-          notif.at("7s").show({
-            id: "notif_instagram",
-            appId: "Instagram",
-            title: "Instagram",
-            body: "sarah_j liked your story",
-            icon: "/placeholders/app-icon.svg",
-            priority: "default",
-          });
-          notif.at("9s").swipe("notif_instagram", "right");
+      .deviceTrack("phone", (d) => {
+        d.at("7s").notificationShow({
+          id: "notif_instagram",
+          appId: "Instagram",
+          title: "Instagram",
+          body: "sarah_j liked your story",
+          icon: "/placeholders/app-icon.svg",
+          priority: "default",
+        });
+        d.at("9s").notificationSwipe("notif_instagram", "right");
 
-          notif.at("15s").show({
-            id: "notif_twitter",
-            appId: "Twitter",
-            title: "Twitter",
-            body: "@mikejones mentioned you in a tweet",
-            icon: "/placeholders/app-icon.svg",
-            priority: "default",
-          });
-          notif.at("17s").swipe("notif_twitter", "right");
+        d.at("15s").notificationShow({
+          id: "notif_twitter",
+          appId: "Twitter",
+          title: "Twitter",
+          body: "@mikejones mentioned you in a tweet",
+          icon: "/placeholders/app-icon.svg",
+          priority: "default",
+        });
+        d.at("17s").notificationSwipe("notif_twitter", "right");
 
-          notif.at("22s").show({
-            id: "notif_wa_alex",
-            appId: "app_whatsapp",
-            title: "Alex 💔",
-            body: "Image",
-            icon: "/placeholders/app-icon.svg",
-            priority: "high",
-          });
-          notif.at("25s").dismiss("notif_wa_alex");
+        d.at("22s").notificationShow({
+          id: "notif_wa_alex",
+          appId: "app_whatsapp",
+          title: "Alex 💔",
+          body: "Image",
+          icon: "/placeholders/app-icon.svg",
+          priority: "high",
+        });
+        d.at("25s").notificationDismiss("notif_wa_alex");
 
-          notif.at("28s").show({
-            id: "notif_unknown",
-            appId: "app_whatsapp",
-            title: "Unknown Number",
-            body: "He found out.",
-            icon: "/placeholders/app-icon.svg",
-            priority: "high",
-          });
-          notif.at("32s").dismiss("notif_unknown");
+        d.at("28s").notificationShow({
+          id: "notif_unknown",
+          appId: "app_whatsapp",
+          title: "Unknown Number",
+          body: "He found out.",
+          icon: "/placeholders/app-icon.svg",
+          priority: "high",
+        });
+        d.at("32s").notificationDismiss("notif_unknown");
 
-          notif.at("38s").show({
-            id: "notif_email",
-            appId: "Gmail",
-            title: "Gmail",
-            body: "Your flight is confirmed for tomorrow",
-            icon: "/placeholders/app-icon.svg",
-            priority: "default",
-          });
-          notif.at("41s").swipe("notif_email", "right");
+        d.at("38s").notificationShow({
+          id: "notif_email",
+          appId: "Gmail",
+          title: "Gmail",
+          body: "Your flight is confirmed for tomorrow",
+          icon: "/placeholders/app-icon.svg",
+          priority: "default",
+        });
+        d.at("41s").notificationSwipe("notif_email", "right");
 
-          notif.at("47s").show({
-            id: "notif_wa_goodbye",
-            appId: "app_whatsapp",
-            title: "Alex 💔",
-            body: "Goodbye.",
-            icon: "/placeholders/app-icon.svg",
-            priority: "high",
-          });
-          notif.at("50s").dismiss("notif_wa_goodbye");
+        d.at("47s").notificationShow({
+          id: "notif_wa_goodbye",
+          appId: "app_whatsapp",
+          title: "Alex 💔",
+          body: "Goodbye.",
+          icon: "/placeholders/app-icon.svg",
+          priority: "high",
+        });
+        d.at("50s").notificationDismiss("notif_wa_goodbye");
 
-          notif.at("55s").show({
-            id: "notif_battery",
-            appId: "System",
-            title: "Low Battery",
-            body: "26% remaining. Connect to power.",
-            icon: "/placeholders/app-icon.svg",
-            priority: "critical",
-          });
-        },
-      )
+        d.at("55s").notificationShow({
+          id: "notif_battery",
+          appId: "System",
+          title: "Low Battery",
+          body: "26% remaining. Connect to power.",
+          icon: "/placeholders/app-icon.svg",
+          priority: "critical",
+        });
+      })
 
       // ============================================
       // OS LAYER - System Updates (no notifications)

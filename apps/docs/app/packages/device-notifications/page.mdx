@@ -25,32 +25,29 @@ pnpm add @tokovo/device-notifications
 ## Quick Start
 
 ```typescript
-import { NotificationTrackBuilder } from "@tokovo/device-notifications";
 import { episode } from "@tokovo/dsl";
 
 episode("story", { fps: 30, duration: "10s" })
   .device("phone", "iphone16", {
     app: "app_whatsapp",
   })
-  .track(
-    "notifications",
-    (getOrder) => new NotificationTrackBuilder(30, "phone", getOrder),
-    (noti) => {
-      noti.at("2s").show({
-        id: "notif_1",
-        appId: "app_whatsapp",
-        title: "Alice",
-        body: "Hey! Are you free tonight?",
-        mode: "headsup",
-        priority: "high",
-      });
+  .deviceTrack("phone", (d) => {
+    d.at("2s").notificationShow({
+      id: "notif_1",
+      appId: "app_whatsapp",
+      title: "Alice",
+      body: "Hey! Are you free tonight?",
+      mode: "headsup",
+      priority: "high",
+    });
 
-      noti.at("5s").tap("notif_1");
-      noti.at("8s").dismiss("notif_1");
-    },
-  )
+    d.at("5s").notificationTap("notif_1");
+    d.at("8s").notificationDismiss("notif_1");
+  })
   .build();
 ```
+
+**Note:** `NotificationTrackBuilder` still exists, but for v2 episodes we recommend using `.deviceTrack(deviceId, ...)` so device, notification, and keyboard authoring lives in one canonical DSL surface.
 
 ---
 
