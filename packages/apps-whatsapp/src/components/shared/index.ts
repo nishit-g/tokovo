@@ -5,4 +5,4 @@ export {
   Avatar,
   SystemMessage,
   UnreadBadge,
-} from "./primitives";
+} from "./primitives.js";

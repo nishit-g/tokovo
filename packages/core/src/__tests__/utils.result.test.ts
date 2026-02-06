@@ -13,7 +13,7 @@ import {
   tryCatchAsync,
   createTokovoError,
   ErrorCodes,
-} from "../utils/result";
+} from "../utils/result.js";
 
 describe("result utilities", () => {
   it("handles Ok/Err and type guards", () => {

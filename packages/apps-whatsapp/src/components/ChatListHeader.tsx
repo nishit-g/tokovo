@@ -1,6 +1,6 @@
 import React from "react";
-import { CameraFillIcon, ComposeIcon, SearchIcon } from "./Icons";
-import { whatsappColors, typography, spacing } from "./theme";
+import { CameraFillIcon, ComposeIcon, SearchIcon } from "./Icons.js";
+import { whatsappColors, typography, spacing } from "./theme.js";
 
 // =============================================================================
 // TYPES

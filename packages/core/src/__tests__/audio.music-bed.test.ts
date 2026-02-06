@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { MusicBed } from "../types/audio";
+import type { MusicBed } from "../types/audio.js";
 import {
   computeCrossfade,
   createMusicBed,
@@ -8,7 +8,7 @@ import {
   createCalmMusicBed,
   getMusicByMood,
   suggestMood,
-} from "../audio/music-bed";
+} from "../audio/music-bed.js";
 
 describe("music bed helpers", () => {
   it("computes crossfade when only incoming is present", () => {

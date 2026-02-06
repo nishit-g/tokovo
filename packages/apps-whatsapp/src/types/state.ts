@@ -4,7 +4,7 @@
  * Plugin state and world state helpers.
  */
 
-import type { WhatsAppConversation } from "./conversation";
+import type { WhatsAppConversation } from "./conversation.js";
 import type { ViewKind } from "@tokovo/core";
 
 // =============================================================================

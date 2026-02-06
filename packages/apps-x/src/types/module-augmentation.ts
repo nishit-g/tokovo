@@ -1,5 +1,5 @@
-import type { XTrackEvent, XEventKind } from "./events";
-import type { XState } from "../runtime/state";
+import type { XTrackEvent, XEventKind } from "./events.js";
+import type { XState } from "../runtime/state.js";
 
 declare module "@tokovo/ir" {
   interface AppTrackEventRegistry {

@@ -4,6 +4,6 @@
  * @description Components that display on top of the main app view.
  */
 
-export { NotificationOverlay } from "./NotificationOverlay";
-export { CallOverlay } from "./CallOverlay";
-export { TouchOverlay } from "./TouchOverlay";
+export { NotificationOverlay } from "./NotificationOverlay.js";
+export { CallOverlay } from "./CallOverlay.js";
+export { TouchOverlay } from "./TouchOverlay.js";

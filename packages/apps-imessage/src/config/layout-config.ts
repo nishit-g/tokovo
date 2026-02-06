@@ -1,4 +1,4 @@
-import type { IMessageMessage } from "../types";
+import type { IMessageMessage } from "../types/index.js";
 
 export const LAYOUT_CONFIG = {
   GAP_MINIMAL: 2,

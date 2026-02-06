@@ -5,13 +5,13 @@
  * Uses device-camera reducer for effect processing.
  */
 
-import type { WorldState, ViewLayoutMode, PIPPosition } from "../../types";
-import type { CameraEvent, HandlerContext } from "./types";
+import type { WorldState, ViewLayoutMode, PIPPosition } from "../../types.js";
+import type { CameraEvent, HandlerContext } from "./types.js";
 import {
   DEFAULT_BASE_CAMERA_STATE as DEFAULT_BASE_CAMERA_STATE,
   DEFAULT_CAMERA_TRANSFORM,
-} from "../../types";
-import type { ReducerRegistryClass } from "../registry";
+} from "../../types.js";
+import type { ReducerRegistryClass } from "../registry.js";
 
 interface CameraEventPayload {
   view?: { type: string; appId?: string };

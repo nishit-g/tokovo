@@ -23,14 +23,14 @@
 // TYPES
 // =============================================================================
 
-export * from "./types";
-export type { FrameProps, FrameComponent } from "./registries";
+export * from "./types.js";
+export type { FrameProps, FrameComponent } from "./registries/index.js";
 export type {
   StatusBarStrategyProps,
   StatusBarStrategyComponent,
   StatusBarNotificationIcon,
-} from "./registries";
-export type { DeviceTrackEvent, DeviceEventType } from "./ir";
+} from "./registries/index.js";
+export type { DeviceTrackEvent, DeviceEventType } from "./ir/index.js";
 
 // =============================================================================
 // REGISTRIES
@@ -45,66 +45,66 @@ export {
   FrameRegistryClass,
   StatusBarStrategyRegistryClass,
   type DeviceRegistries,
-} from "./registries";
+} from "./registries/index.js";
 
 export {
   DeviceRegistryProvider,
   useDeviceRegistries,
-} from "./DeviceRegistryContext";
+} from "./DeviceRegistryContext.js";
 
 export {
   createDeviceShellRegistry,
   DeviceShellRegistryClass,
-} from "./registry";
+} from "./registry.js";
 
 // =============================================================================
 // DSL
 // =============================================================================
 
-export { DeviceTrackBuilder, DevicePointBuilder } from "./dsl";
+export { DeviceTrackBuilder, DevicePointBuilder } from "./dsl/index.js";
 
 // =============================================================================
 // IR
 // =============================================================================
 
-export { isDeviceEvent } from "./ir";
+export { isDeviceEvent } from "./ir/index.js";
 
 // =============================================================================
 // LOWERING
 // =============================================================================
 
-export { deviceV2Lowering, DEVICE_EVENT_TYPES } from "./lowering";
+export { deviceV2Lowering, DEVICE_EVENT_TYPES } from "./lowering/index.js";
 
 // =============================================================================
 // REDUCER
 // =============================================================================
 
-export { deviceReducer } from "./reducer";
+export { deviceReducer } from "./reducer.js";
 
 // =============================================================================
 // VIEWS
 // =============================================================================
 
-export { StatusBar, DarkStatusBar, LightStatusBar } from "./StatusBar";
+export { StatusBar, DarkStatusBar, LightStatusBar } from "./StatusBar.js";
 
 // =============================================================================
 // STRATEGIES
 // =============================================================================
 
-export { IOSStatusBarStrategy, AndroidStatusBarStrategy } from "./strategies";
+export { IOSStatusBarStrategy, AndroidStatusBarStrategy } from "./strategies/index.js";
 
 // =============================================================================
 // DEVICE PROFILES
 // =============================================================================
 
-export { iPhone16Profile } from "./iphone16/profile";
-export { PixelProfile } from "./pixel/profile";
+export { iPhone16Profile } from "./iphone16/profile.js";
+export { PixelProfile } from "./pixel/profile.js";
 
 // =============================================================================
 // KEYBOARDS (Legacy export)
 // =============================================================================
 
-export * from "./keyboards";
+export * from "./keyboards/index.js";
 
 // =============================================================================
 // PLUGIN
@@ -114,14 +114,14 @@ export {
   DevicesPlugin,
   registerDevicesPlugin,
   type DevicesPluginContract,
-} from "./plugin";
+} from "./plugin.js";
 
 // =============================================================================
 // DYNAMIC LOOKUP HELPER
 // =============================================================================
 
-import type { DeviceRegistries } from "./registries";
-import type { DeviceProfile } from "./types";
+import type { DeviceRegistries } from "./registries/index.js";
+import type { DeviceProfile } from "./types.js";
 
 /**
  * Get device profile by ID

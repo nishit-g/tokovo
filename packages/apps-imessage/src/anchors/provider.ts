@@ -8,8 +8,8 @@ import type {
   WorldState,
 } from "@tokovo/core";
 
-import type { IMessageState } from "../types";
-import { IMessageAnchors } from "../runtime/adapters/anchors";
+import type { IMessageState } from "../types/index.js";
+import { IMessageAnchors } from "../runtime/adapters/anchors.js";
 
 const APP_ID = "app_imessage";
 

@@ -11,7 +11,7 @@ import type {
   TweetReplyPayload,
   TweetQuotePayload,
   TweetRepostPayload,
-} from "../types";
+} from "../types/index.js";
 
 type GetDeclarationOrder = () => number;
 

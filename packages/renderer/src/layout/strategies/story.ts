@@ -1,4 +1,4 @@
-import { LayoutContext, StoryLayoutState, StoryItemLayout } from "../types";
+import { LayoutContext, StoryLayoutState, StoryItemLayout } from "../types.js";
 
 interface StoryUser {
   username: string;

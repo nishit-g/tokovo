@@ -1,5 +1,5 @@
 import type { EngineRegistries } from "@tokovo/core";
-import { applyNotificationEvent } from "./runtime/reducer";
+import { applyNotificationEvent } from "./runtime/reducer.js";
 
 const DEBUG = process.env.NODE_ENV === "development";
 const registeredEngines = new WeakSet<EngineRegistries>();

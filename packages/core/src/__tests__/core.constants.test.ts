@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { getAppConfig } from "../apps-config";
+import { getAppConfig } from "../apps-config.js";
 import {
   TIMING,
   LAYOUT,
@@ -9,8 +9,8 @@ import {
   secondsToFrames,
   framesToSeconds,
   DURATION_FRAMES,
-} from "../constants";
-import { iOSTokens, androidTokens } from "../tokens";
+} from "../constants.js";
+import { iOSTokens, androidTokens } from "../tokens.js";
 
 describe("core constants and tokens", () => {
   it("returns homescreen configs by platform", () => {

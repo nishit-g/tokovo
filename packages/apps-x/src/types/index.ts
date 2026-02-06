@@ -29,6 +29,6 @@ export type {
   NotificationAddPayload,
   DMThreadCreatePayload,
   DMSendPayload,
-} from "./events";
+} from "./events.js";
 
-import "./module-augmentation";
+import "./module-augmentation.js";

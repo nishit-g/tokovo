@@ -1,4 +1,4 @@
-import { LayoutContext, TransitionLayoutState } from "../types";
+import { LayoutContext, TransitionLayoutState } from "../types.js";
 
 export function computeTransitionLayout(
   ctx: LayoutContext,

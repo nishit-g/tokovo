@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import { produce } from "immer";
 import type { WorldState, RuntimeEvent } from "@tokovo/core";
 import { DEFAULT_AUDIO_STATE, DEFAULT_BASE_CAMERA_STATE } from "@tokovo/core";
-import { whatsappReducer, createWhatsAppInitialState } from "../runtime";
+import { whatsappReducer, createWhatsAppInitialState } from "../runtime/index.js";
 
 function createTestWorldState(): WorldState {
   return {

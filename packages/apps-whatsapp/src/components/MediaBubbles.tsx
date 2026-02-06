@@ -15,4 +15,4 @@ export {
   type ContactMessageBubbleProps,
   LocationMessageBubble,
   type LocationMessageBubbleProps,
-} from "./bubbles";
+} from "./bubbles/index.js";

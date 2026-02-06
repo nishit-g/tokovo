@@ -5,8 +5,8 @@ import type {
   SemanticRegion,
 } from "@tokovo/core";
 
-import type { WhatsAppState } from "../types";
-import { waSpacing } from "../config/tokens";
+import type { WhatsAppState } from "../types/index.js";
+import { waSpacing } from "../config/tokens.js";
 
 const DESIGN_WIDTH = 393;
 

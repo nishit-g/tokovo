@@ -5,7 +5,7 @@
  * Paths should be relative to the public/ folder.
  */
 
-import { createRegistry } from "./factory";
+import { createRegistry } from "./factory.js";
 
 export interface SoundRegistryAPI {
   register(key: string, path: string): void;

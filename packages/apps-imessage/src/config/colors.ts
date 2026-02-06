@@ -1,7 +1,7 @@
 /**
  * iMessage Color Palette
  */
-import { SCALE_FACTOR } from "../constants";
+import { SCALE_FACTOR } from "../constants.js";
 
 export const iOS_COLORS = {
   blue: "#007AFF",

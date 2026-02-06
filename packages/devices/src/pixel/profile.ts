@@ -1,4 +1,4 @@
-import { DeviceProfile, CameraDeviceConfig } from "../types";
+import { DeviceProfile, CameraDeviceConfig } from "../types.js";
 
 /**
  * Pixel camera configuration

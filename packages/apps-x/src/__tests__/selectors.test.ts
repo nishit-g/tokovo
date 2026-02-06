@@ -3,8 +3,8 @@ import {
   getXState,
   getTimelineTweets,
   getActiveTweet,
-} from "../runtime/selectors";
-import { createXInitialState, type XTweet } from "../runtime/state";
+} from "../runtime/selectors.js";
+import { createXInitialState, type XTweet } from "../runtime/state.js";
 import type { WorldState } from "@tokovo/core";
 import { DEFAULT_AUDIO_STATE, DEFAULT_BASE_CAMERA_STATE } from "@tokovo/core";
 

@@ -1,10 +1,10 @@
 import { describe, expect, it, vi } from "vitest";
-import type { TimelineEvent, WorldState } from "../types";
+import type { TimelineEvent, WorldState } from "../types.js";
 import {
   createMiddlewareRegistry,
   builtInMiddlewares,
   useMiddleware,
-} from "../engine/middleware";
+} from "../engine/middleware.js";
 
 describe("MiddlewareRegistry", () => {
   it("executes middleware in order and calls core handler", () => {

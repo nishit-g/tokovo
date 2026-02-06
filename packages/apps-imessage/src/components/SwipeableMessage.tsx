@@ -3,7 +3,7 @@
  */
 
 import React from "react";
-import { useIMessageTheme } from "../ui/ThemeContext";
+import { useIMessageTheme } from "../ui/ThemeContext.js";
 
 interface SwipeableMessageProps {
     children: React.ReactNode;

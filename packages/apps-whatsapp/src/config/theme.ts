@@ -4,5 +4,5 @@
  * Canonical import path to match other app plugins.
  */
 
-export * from "../theme";
-export * from "../theme/ThemeContext";
+export * from "../theme/index.js";
+export * from "../theme/ThemeContext.js";

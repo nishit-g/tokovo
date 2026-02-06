@@ -1,6 +1,6 @@
 import React from "react";
 import { LayoutState, LockscreenLayoutState, Notification } from "@tokovo/core";
-import { useRendererRegistries } from "../RegistryContext";
+import { useRendererRegistries } from "../RegistryContext.js";
 
 /**
  * iOS 17/18 Lockscreen View

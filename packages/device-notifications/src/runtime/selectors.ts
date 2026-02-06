@@ -1,5 +1,5 @@
 import type { NotificationInstance, DeviceState } from "@tokovo/core";
-import type { NotificationTokens } from "../tokens/types";
+import type { NotificationTokens } from "../tokens/types.js";
 
 const DEFAULT_FPS = 30;
 

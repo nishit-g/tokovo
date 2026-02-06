@@ -1,12 +1,12 @@
 import type { TokovoPluginContract, PluginViews, PluginReducer } from "@tokovo/core";
 import type { PluginManagerClass } from "@tokovo/react";
-import { IMESSAGE_APP_ID, IMESSAGE_DISPLAY_NAME, IMESSAGE_VERSION } from "./constants";
-import { iMessageReducer } from "./runtime/reducer";
-import { createIMessageInitialState } from "./runtime/initial-state";
-import { IMessageView } from "./ui";
-import { iMessageV2Lowering } from "./lowering";
-import { iMessageLayoutStrategies } from "./layout";
-import { IMessageAnchorProvider } from "./anchors/provider";
+import { IMESSAGE_APP_ID, IMESSAGE_DISPLAY_NAME, IMESSAGE_VERSION } from "./constants.js";
+import { iMessageReducer } from "./runtime/reducer.js";
+import { createIMessageInitialState } from "./runtime/initial-state.js";
+import { IMessageView } from "./ui/index.js";
+import { iMessageV2Lowering } from "./lowering/index.js";
+import { iMessageLayoutStrategies } from "./layout/index.js";
+import { IMessageAnchorProvider } from "./anchors/provider.js";
 
 const iMessageViews: PluginViews = {
   AppRoot: IMessageView,

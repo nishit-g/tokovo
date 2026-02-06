@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { createTokovoRegistries, PluginManagerClass } from "../index";
+import { createTokovoRegistries, PluginManagerClass } from "../index.js";
 import type { TokovoPluginContract, WorldState } from "@tokovo/core";
 
 describe("Plugin anchors framing registration", () => {

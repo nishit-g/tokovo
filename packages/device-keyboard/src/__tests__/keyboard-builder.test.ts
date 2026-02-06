@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { KeyboardTrackBuilder } from "../dsl/keyboard-builder";
+import { KeyboardTrackBuilder } from "../dsl/keyboard-builder.js";
 
 function buildEvents(seed: number | string) {
   let order = 0;

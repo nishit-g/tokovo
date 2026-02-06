@@ -1,4 +1,4 @@
-import type { IMessageState } from "../types";
+import type { IMessageState } from "../types/index.js";
 
 export function createIMessageInitialState(): IMessageState {
   return {

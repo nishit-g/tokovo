@@ -36,10 +36,10 @@ import {
   BackgroundConfigIR,
 } from "@tokovo/ir";
 import type { CompilerContext, CompilerPlugin } from "@tokovo/compiler";
-import { parseTimeToFrames } from "./utils/time";
-import { CameraTrackBuilder } from "./camera-track";
-import { AudioTrackBuilder } from "./audio-track";
-import { OSTrackBuilder } from "./os-track";
+import { parseTimeToFrames } from "./utils/time.js";
+import { CameraTrackBuilder } from "./camera-track.js";
+import { AudioTrackBuilder } from "./audio-track.js";
+import { OSTrackBuilder } from "./os-track.js";
 
 // =============================================================================
 // TYPES

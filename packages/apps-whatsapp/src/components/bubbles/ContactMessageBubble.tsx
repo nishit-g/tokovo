@@ -1,7 +1,7 @@
 import React, { memo } from "react";
 import { Img, staticFile } from "remotion";
 import { Platform } from "@tokovo/core";
-import { MediaBubbleBase, DoubleCheckIcon } from "./shared";
+import { MediaBubbleBase, DoubleCheckIcon } from "./shared.js";
 import {
   FONT_FAMILY,
   WA_TEAL,
@@ -11,8 +11,8 @@ import {
   BUBBLE_PADDING_H,
   TIMESTAMP_SIZE,
   MESSAGE_TEXT_SIZE,
-} from "./constants";
-import { whatsappColors } from "../theme";
+} from "./constants.js";
+import { whatsappColors } from "../theme.js";
 
 export interface ContactMessageBubbleProps {
   contactName: string;

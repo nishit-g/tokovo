@@ -27,9 +27,9 @@ import type {
   PluginReducer,
 } from "@tokovo/core";
 import { createScopedLogger } from "@tokovo/core";
-import type { AppMetadata } from "../registries/metadata";
-import { validatePlugin } from "../utils/validation";
-import type { PluginRegistries } from "./registries";
+import type { AppMetadata } from "../registries/metadata.js";
+import { validatePlugin } from "../utils/validation.js";
+import type { PluginRegistries } from "./registries.js";
 
 const log = createScopedLogger("plugin");
 

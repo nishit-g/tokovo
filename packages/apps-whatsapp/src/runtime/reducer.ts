@@ -1,25 +1,25 @@
-import { WHATSAPP_APP_ID } from "../constants";
+import { WHATSAPP_APP_ID } from "../constants.js";
 import { TimelineEvent, WorldState } from "@tokovo/core";
 import {
   WhatsAppMessage,
   WhatsAppConversation,
   WhatsAppState,
-} from "../types";
+} from "../types/index.js";
 import {
   parseWhatsAppEvent,
   type CustomEvent,
-} from "../schemas";
+} from "../schemas/index.js";
 import {
   type HandlerContext,
   createWhatsAppHandlers,
-} from "../handlers";
+} from "../handlers/index.js";
 import {
   GROUP_EVENT_TYPES,
   isWhatsAppGroupEvent,
   isGroupMemberAddPayload,
   isGroupMemberRemovePayload,
   isGroupAdminChangePayload,
-} from "../ir/group-ops";
+} from "../ir/group-ops.js";
 
 const APP_TYPE_TO_LEGACY_KIND: Record<string, string> = {
   MESSAGE_RECEIVED: "MessageReceived",

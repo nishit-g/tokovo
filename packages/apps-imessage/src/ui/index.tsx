@@ -1,11 +1,11 @@
 import React, { useEffect } from "react";
 import type { PluginViewProps } from "@tokovo/core";
-import { Header, InputBar, MessageBubble, TypingIndicator, ScreenEffect, SearchBar } from "../components";
-import { computeMessageGap, iMessageSpacing } from "../config";
-import type { IMessageConversation, IMessageMessage, IMessageState } from "../types";
-import { injectIMessageStyles } from "../styles";
-import { IMessageThemeProvider, useIMessageTheme } from "./ThemeContext";
-import type { ScreenEffectType } from "../components/ScreenEffect";
+import { Header, InputBar, MessageBubble, TypingIndicator, ScreenEffect, SearchBar } from "../components/index.js";
+import { computeMessageGap, iMessageSpacing } from "../config/index.js";
+import type { IMessageConversation, IMessageMessage, IMessageState } from "../types/index.js";
+import { injectIMessageStyles } from "../styles.js";
+import { IMessageThemeProvider, useIMessageTheme } from "./ThemeContext.js";
+import type { ScreenEffectType } from "../components/ScreenEffect.js";
 
 type IMessageViewProps = PluginViewProps & {
   safeAreaInsets?: {

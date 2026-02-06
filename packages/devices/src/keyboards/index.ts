@@ -1,4 +1,4 @@
 /**
  * Keyboards barrel export
  */
-export { IOSKeyboard } from "./IOSKeyboard";
+export { IOSKeyboard } from "./IOSKeyboard.js";

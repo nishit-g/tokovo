@@ -8,10 +8,10 @@
 // =============================================================================
 // TYPES - All type definitions (includes camera types from device-camera)
 // =============================================================================
-export * from "./types";
-export type { ViewLayoutMode, PIPPosition } from "./types";
-export type { BaseCameraState as CameraState } from "./types";
-export { DEFAULT_BASE_CAMERA_STATE as DEFAULT_CAMERA_STATE } from "./types";
+export * from "./types.js";
+export type { ViewLayoutMode, PIPPosition } from "./types.js";
+export type { BaseCameraState as CameraState } from "./types.js";
+export { DEFAULT_BASE_CAMERA_STATE as DEFAULT_CAMERA_STATE } from "./types.js";
 // Note: types/index.ts exists but is NOT exported here to avoid duplicate exports.
 // types.ts re-exports needed types from types/layout.ts for compatibility.
 
@@ -29,7 +29,7 @@ export {
   invalidateCacheAfter,
   clearStateCache,
   handleAutoSounds,
-} from "./engine";
+} from "./engine.js";
 export type {
   ReplayContext,
   PluginError,
@@ -38,28 +38,28 @@ export type {
   FeatureReducer,
   StateCache,
   KeyframedEventIndex,
-} from "./engine";
-export { createReducerRegistry } from "./engine/registry";
-export type { ReducerRegistryClass } from "./engine/registry";
-export { EngineConfig } from "./engine/config";
-export { EngineLogger } from "./engine/logger";
+} from "./engine.js";
+export { createReducerRegistry } from "./engine/registry.js";
+export type { ReducerRegistryClass } from "./engine/registry.js";
+export { EngineConfig } from "./engine/config.js";
+export { EngineLogger } from "./engine/logger.js";
 
 // =============================================================================
 // ANCHOR REGISTRY - Anchor registration and resolution
 // =============================================================================
-export { AnchorRegistryClass, createAnchorRegistry } from "./anchors/registry";
+export { AnchorRegistryClass, createAnchorRegistry } from "./anchors/registry.js";
 
 export type {
   AnchorProvider,
   AnchorSnapshot,
   AnchorFraming,
   Rect,
-} from "./anchors/registry";
+} from "./anchors/registry.js";
 
 // =============================================================================
 // AUDIO - Sound system
 // =============================================================================
-export * from "./audio";
+export * from "./audio/index.js";
 
 // =============================================================================
 // REGISTRIES - All registration systems
@@ -69,19 +69,19 @@ export {
   createRegistry,
   createSoundRegistry,
   createBehaviorRegistry,
-} from "./registries";
+} from "./registries/index.js";
 export type {
   Registry,
   SoundRegistryAPI,
   CameraIntent,
   AppBehavior,
   BehaviorRegistryAPI,
-} from "./registries";
+} from "./registries/index.js";
 
 // =============================================================================
 // NOTIFICATIONS - Notification system
 // =============================================================================
-export * from "./notifications";
+export * from "./notifications/index.js";
 
 // =============================================================================
 // PLUGIN - Plugin system
@@ -103,7 +103,7 @@ export type {
   PluginViewProps,
   PluginViewComponent,
   UIComponent,
-} from "./types/plugin-contract";
+} from "./types/plugin-contract.js";
 
 /** TokovoPlugin is an alias for TokovoPluginContract<string> for convenience */
 export type TokovoPlugin = import("./types/plugin-contract").TokovoPluginContract<string>;
@@ -111,19 +111,19 @@ export type TokovoPlugin = import("./types/plugin-contract").TokovoPluginContrac
 // =============================================================================
 // UTILS - Utilities
 // =============================================================================
-export * from "./utils";
+export * from "./utils/index.js";
 
 // =============================================================================
 // ANCHORS - Semantic positioning
 // =============================================================================
-export * from "./anchors";
+export * from "./anchors/index.js";
 
 // =============================================================================
 // CONSTANTS & TOKENS
 // Note: constants.ts may export Platform, so be careful
 // =============================================================================
-export * from "./constants";
-export * from "./tokens";
+export * from "./constants.js";
+export * from "./tokens.js";
 
 // =============================================================================
 // EPISODE PREPARATION
@@ -133,13 +133,13 @@ export {
   deriveInitialWorld,
   prepareEpisode,
   runEpisode,
-} from "./prepare";
-export type { EpisodeDefinition, RunOptions } from "./prepare";
+} from "./prepare/index.js";
+export type { EpisodeDefinition, RunOptions } from "./prepare/index.js";
 export type {
   CompiledEpisode,
   PrepareOptions,
   AssetManifest,
-} from "./prepare";
+} from "./prepare/index.js";
 export type {
   RuntimeEvent,
   AppRuntimeEvent,
@@ -147,7 +147,7 @@ export type {
   CameraRuntimeEvent,
   AudioRuntimeEvent,
   KeyboardRuntimeEvent,
-} from "./prepare";
+} from "./prepare/index.js";
 
 // Note: Legacy container removed in favor of engine + plugin scoped registries.
 
@@ -155,18 +155,20 @@ export type {
 // LOGGER - Structured logging for debugging AI-generated content
 // =============================================================================
 export {
-  logger,
+  getLogger,
+  setLogger,
+  createLogger,
   createScopedLogger,
   LogCollector,
   TokovoLogger,
-} from "./logger";
+} from "./logger/index.js";
 export type {
   LogLevel,
   LogComponent,
   LogEntry,
   LogSubscriber,
   LoggerConfig,
-} from "./logger";
+} from "./logger/index.js";
 
 // =============================================================================
 // VALIDATION - Enterprise validation utilities for AI input
@@ -181,14 +183,14 @@ export {
   validateWithPartialSuccess,
   ValidationError,
   assertValid,
-} from "./validation";
+} from "./validation/index.js";
 export type {
   ValidationSeverity,
   ValidationIssue,
   ValidationResult,
   BatchValidationResult,
   PartialValidationResult,
-} from "./validation";
+} from "./validation/index.js";
 
 // =============================================================================
 // CONFIG - Centralized configuration
@@ -204,11 +206,11 @@ export {
   getNotificationsConfig,
   getCameraConfig,
   isDebugEnabled,
-} from "./config";
-export type { TokovoConfigType } from "./config";
+} from "./config/index.js";
+export type { TokovoConfigType } from "./config/index.js";
 
 // =============================================================================
 // ENGINE FACADE - Unified engine initialization and control
 // =============================================================================
-export { createEngine, createEngineRegistries } from "./engine/index";
-export type { EngineRegistries } from "./engine/index";
+export { createEngine, createEngineRegistries } from "./engine/index.js";
+export type { EngineRegistries } from "./engine/index.js";

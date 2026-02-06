@@ -19,7 +19,7 @@ export {
   createVoiceSoundCue,
   type BusState,
   type MixerContext,
-} from "./mixer";
+} from "./mixer.js";
 
 // Policies
 export {
@@ -33,7 +33,7 @@ export {
   PRIORITY_LEVELS,
   type PolicyConfig,
   type PolicyResult,
-} from "./policies";
+} from "./policies.js";
 
 // Auto-Sound
 export {
@@ -43,7 +43,7 @@ export {
   type AutoSoundAction,
   type AudioInstruction,
   type AutoSoundRegistryClass,
-} from "./auto-sound";
+} from "./auto-sound.js";
 
 // Music Bed
 export {
@@ -56,7 +56,7 @@ export {
   suggestMood,
   type CrossfadeState,
   type CrossfadeResult,
-} from "./music-bed";
+} from "./music-bed.js";
 
 // Sound paths
-export { getSoundPath, registerBuiltInSounds } from "./sounds";
+export { getSoundPath, registerBuiltInSounds } from "./sounds.js";

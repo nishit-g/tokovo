@@ -1,6 +1,6 @@
-import type { WhatsAppTrackEvent } from "./events";
-import type { WhatsAppState } from "./state";
-import type { WhatsAppEventKind } from "../schemas/events";
+import type { WhatsAppTrackEvent } from "./events.js";
+import type { WhatsAppState } from "./state.js";
+import type { WhatsAppEventKind } from "../schemas/events.js";
 
 declare module "@tokovo/ir" {
   interface AppTrackEventRegistry {

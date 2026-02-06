@@ -1,6 +1,6 @@
 import { describe, expect, it, vi, afterEach } from "vitest";
-import type { WorldState, TimelineEvent } from "../types";
-import { createLifecycleManager, defineLifecycle } from "../engine/lifecycle";
+import type { WorldState, TimelineEvent } from "../types.js";
+import { createLifecycleManager, defineLifecycle } from "../engine/lifecycle.js";
 
 const world = {
   devices: {},

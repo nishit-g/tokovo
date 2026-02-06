@@ -9,11 +9,11 @@
  * @see docs/FUCKING_MESS.md Section 6
  */
 
-import { RuntimeEvent } from "./runtime-event";
-import type { Platform } from "../tokens";
-import type { AnchorFraming } from "./anchor";
-import type { LayoutContext, LayoutState, ViewKind } from "./layout";
-import type { AnchorProvider } from "./anchor";
+import { RuntimeEvent } from "./runtime-event.js";
+import type { Platform } from "../tokens.js";
+import type { AnchorFraming } from "./anchor.js";
+import type { LayoutContext, LayoutState, ViewKind } from "./layout.js";
+import type { AnchorProvider } from "./anchor.js";
 // =============================================================================
 // LAYOUT CONSTANTS - App-specific UI metrics
 // =============================================================================

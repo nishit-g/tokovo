@@ -199,6 +199,14 @@ function buildInitialWorld(ir: TrackEpisodeIR): WorldState;
 - Camera state (activeDeviceId, transform)
 - Audio state (empty buses)
 
+**Important invariants (v1):**
+
+- `viewMode` must be present for app plugins that participate in layout/anchors.
+- When `viewMode === "CHAT"`, the app state must also have a `conversationId`.
+
+Tokovo's v1 authoring validation (enabled in `video-runner`) fails fast if an
+episode emits chat message events without ever opening a conversation first.
+
 ### 6. **Prepare Metadata**
 
 Markers and sections are extracted for navigation:

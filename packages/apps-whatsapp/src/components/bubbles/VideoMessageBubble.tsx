@@ -6,7 +6,7 @@ import {
   TimestampRow,
   TimestampOverlay,
   formatDuration,
-} from "./shared";
+} from "./shared.js";
 import {
   FONT_FAMILY,
   WA_GREEN,
@@ -16,7 +16,7 @@ import {
   BUBBLE_PADDING_H,
   TIMESTAMP_SIZE,
   MESSAGE_TEXT_SIZE,
-} from "./constants";
+} from "./constants.js";
 
 export interface VideoMessageBubbleProps {
   thumbnailUrl: string;

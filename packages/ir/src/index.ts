@@ -9,5 +9,5 @@
  * - Payloads: Strongly-typed payload maps
  */
 
-export * from "./trace";
-export * from "./v2";
+export * from "./trace.js";
+export * from "./v2/index.js";

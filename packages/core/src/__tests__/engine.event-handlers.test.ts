@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
-import type { TimelineEvent, WorldState } from "../types";
+import type { TimelineEvent, WorldState } from "../types.js";
 import {
   createEventHandlerRegistry,
   registerEventHandler,
   defineEventHandler,
-} from "../engine/event-handlers";
+} from "../engine/event-handlers.js";
 
 describe("EventHandlerRegistry", () => {
   it("registers handlers with priority order", () => {

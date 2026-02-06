@@ -1,5 +1,5 @@
 import type { LayoutCacheStore, LayoutRect } from "@tokovo/core";
-import type { WhatsAppConversation, WhatsAppMessage } from "../types";
+import type { WhatsAppConversation, WhatsAppMessage } from "../types/index.js";
 import {
   DEFAULT_LAYOUT_CONFIG,
   calculateBubbleWidth,
@@ -12,7 +12,7 @@ import {
   type MessageForHeight,
   type MessageType,
   type GapContext,
-} from "../config";
+} from "../config/index.js";
 
 export interface LayoutCacheConfig {
   maxEntries: number;

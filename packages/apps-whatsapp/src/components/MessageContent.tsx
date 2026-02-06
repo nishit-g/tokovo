@@ -1,5 +1,5 @@
 import React from "react";
-import { MessageData, LinkPreviewData } from "../types";
+import { MessageData, LinkPreviewData } from "../types/index.js";
 import {
   VoiceMessageBubble,
   ImageMessageBubble,
@@ -9,11 +9,11 @@ import {
   DocumentMessageBubble,
   ContactMessageBubble,
   LocationMessageBubble,
-} from "./MediaBubbles";
-import { LinkPreview } from "./LinkPreview";
-import { DateSeparator } from "./DateSeparator";
-import { useTheme } from "../theme/ThemeContext";
-import { CallMessageBubble } from "./bubbles/CallMessageBubble";
+} from "./MediaBubbles.js";
+import { LinkPreview } from "./LinkPreview.js";
+import { DateSeparator } from "./DateSeparator.js";
+import { useTheme } from "../theme/ThemeContext.js";
+import { CallMessageBubble } from "./bubbles/CallMessageBubble.js";
 
 const TextContent: React.FC<{ text: string }> = ({ text }) => {
   const theme = useTheme();

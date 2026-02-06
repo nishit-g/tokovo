@@ -1,11 +1,11 @@
 import type { TokovoPluginContract, PluginViews } from "@tokovo/core";
 import type { PluginManagerClass } from "@tokovo/react";
-import { XView } from "./ui";
-import { xReducer } from "./runtime/reducer";
-import { xLowering } from "./lowering";
-import { xLayoutStrategies } from "./layout";
-import { createXInitialState } from "./runtime/state";
-import { XAnchorProvider } from "./anchors/provider";
+import { XView } from "./ui/index.js";
+import { xReducer } from "./runtime/reducer.js";
+import { xLowering } from "./lowering/index.js";
+import { xLayoutStrategies } from "./layout/index.js";
+import { createXInitialState } from "./runtime/state.js";
+import { XAnchorProvider } from "./anchors/provider.js";
 
 const xViews: PluginViews = {
   AppRoot: XView,

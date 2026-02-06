@@ -5,4 +5,4 @@
  * camera focus/track operations.
  */
 
-export * from "./registry";
+export * from "./registry.js";

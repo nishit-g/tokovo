@@ -11,18 +11,18 @@
  * - Auto-sounds: Derived audio from semantic events
  */
 
-import type { WorldState, TimelineEvent, AudioState } from "../../types";
-import type { HandlerContext, AudioEvent } from "./types";
+import type { WorldState, TimelineEvent, AudioState } from "../../types.js";
+import type { HandlerContext, AudioEvent } from "./types.js";
 import {
   DEFAULT_BUS_CONFIG,
   SoundCue,
   AudioBus,
-} from "../../types/audio";
-import { deriveAudioInstructions, AutoSoundRule } from "../../audio/auto-sound";
+} from "../../types/audio.js";
+import { deriveAudioInstructions, AutoSoundRule } from "../../audio/auto-sound.js";
 import {
   checkAllPoliciesPure,
   cleanupRecentSounds,
-} from "../../audio/policies";
+} from "../../audio/policies.js";
 
 // =============================================================================
 // CONSTANTS

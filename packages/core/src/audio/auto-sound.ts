@@ -5,8 +5,8 @@
  * This is what makes the audio feel "automatic" and cinematic.
  */
 
-import { TimelineEvent, SoundCue, AudioBus } from "../types";
-import { createSoundCue, createUISoundCue } from "./mixer";
+import { TimelineEvent, SoundCue, AudioBus } from "../types.js";
+import { createSoundCue, createUISoundCue } from "./mixer.js";
 
 // =============================================================================
 // TYPE GUARDS FOR EVENT PROPERTIES

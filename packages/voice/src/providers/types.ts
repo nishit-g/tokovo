@@ -1,4 +1,4 @@
-import { VoiceScript } from "../types/script";
+import { VoiceScript } from "../types/script.js";
 
 export interface DialogueInput {
   text: string;

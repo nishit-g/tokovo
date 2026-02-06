@@ -1,15 +1,15 @@
 import React from "react";
 import type { PluginViewProps } from "@tokovo/core";
-import type { XState } from "../runtime/state";
-import { getThemeMode } from "../runtime/selectors";
-import { XThemeProvider } from "./ThemeContext";
-import { Timeline } from "./Timeline";
-import { TweetDetail } from "./TweetDetail";
-import { Compose } from "./Compose";
-import { Profile } from "./Profile";
-import { Notifications } from "./Notifications";
-import { Messages } from "./Messages";
-import { MessageThread } from "./MessageThread";
+import type { XState } from "../runtime/state.js";
+import { getThemeMode } from "../runtime/selectors.js";
+import { XThemeProvider } from "./ThemeContext.js";
+import { Timeline } from "./Timeline.js";
+import { TweetDetail } from "./TweetDetail.js";
+import { Compose } from "./Compose.js";
+import { Profile } from "./Profile.js";
+import { Notifications } from "./Notifications.js";
+import { Messages } from "./Messages.js";
+import { MessageThread } from "./MessageThread.js";
 
 export const XView: React.FC<PluginViewProps> = ({ world }) => {
   const appState = world.appState?.["app_x"] as XState | undefined;

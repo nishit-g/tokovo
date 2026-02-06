@@ -1,4 +1,4 @@
-import { LayoutContext, FeedLayoutState, FeedItemLayout } from "../types";
+import { LayoutContext, FeedLayoutState, FeedItemLayout } from "../types.js";
 
 interface FeedPost {
   id: string;

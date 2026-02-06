@@ -5,7 +5,7 @@
  * Each guard narrows the TimelineEvent type to a specific variant.
  */
 
-import { TimelineEvent } from "../types";
+import { TimelineEvent } from "../types.js";
 
 // =============================================================================
 // DEVICE EVENT GUARDS

@@ -1,6 +1,6 @@
 import type { ComponentType } from "react";
-import type { FrameComponent } from "./registries/frame-registry";
-import type { StatusBarStrategyComponent } from "./registries/statusbar-registry";
+import type { FrameComponent } from "./registries/frame-registry.js";
+import type { StatusBarStrategyComponent } from "./registries/statusbar-registry.js";
 
 /**
  * Camera motion speed configuration

@@ -1,8 +1,8 @@
 import React, { memo } from "react";
 import { Img, useCurrentFrame, interpolate } from "remotion";
-import { DoubleCheckIcon, MutedIcon, PinIcon } from "./Icons";
-import { whatsappColors, typography, spacing } from "./theme";
-import { resolveAvatarWithFallback } from "../utils/avatar";
+import { DoubleCheckIcon, MutedIcon, PinIcon } from "./Icons.js";
+import { whatsappColors, typography, spacing } from "./theme.js";
+import { resolveAvatarWithFallback } from "../utils/avatar.js";
 
 // =============================================================================
 // TYPES

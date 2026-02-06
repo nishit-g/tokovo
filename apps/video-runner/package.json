@@ -7,7 +7,7 @@
     "dev": "npx remotion studio",
     "build": "tsc -p tsconfig.json",
     "upgrade": "remotion upgrade",
-    "test": "eslint src",
+    "test": "vitest run && pnpm run lint",
     "lint": "eslint src"
   },
   "dependencies": {
@@ -38,6 +38,7 @@
     "@types/web": "^0.0.61",
     "eslint": "^9.0.0",
     "prettier": "^3.0.0",
-    "typescript": "^5.0.0"
+    "typescript": "^5.0.0",
+    "vitest": "^1.0.0"
   }
 }

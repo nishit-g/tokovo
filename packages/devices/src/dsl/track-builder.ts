@@ -14,7 +14,7 @@
  * ```
  */
 
-import type { DeviceTrackEvent, DeviceEventType } from "../ir/device-event";
+import type { DeviceTrackEvent, DeviceEventType } from "../ir/device-event.js";
 
 // =============================================================================
 // TYPES

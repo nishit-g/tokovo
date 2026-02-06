@@ -310,7 +310,7 @@ const EpisodeRendererInner: React.FC<EpisodeRendererProps> = ({
         const plugins = resolvePlugins(pluginManager, ep.config.apps);
         const result = prepareTrackEpisode(ir, plugins, {
           config,
-          validate: false,
+          validate: true,
           log: false,
         });
 

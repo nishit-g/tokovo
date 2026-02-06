@@ -1,4 +1,4 @@
-import type { WorldState, TimelineEvent } from "../types";
+import type { WorldState, TimelineEvent } from "../types.js";
 
 export interface StateCache {
   keyframeStates: Map<number, WorldState>;

@@ -6,8 +6,8 @@
  */
 
 // Preparation
-export { prepareTrackEpisode } from "./prepare";
-export type { PreparedTrackEpisode } from "./prepare";
+export { prepareTrackEpisode } from "./prepare.js";
+export type { PreparedTrackEpisode } from "./prepare.js";
 
 // Lowering
 export {
@@ -15,5 +15,5 @@ export {
     lowerTrackEvents,
     lowerEpisode,
     createLoweringContext,
-} from "./lowering";
-export type { PluginLowering, LoweringContext } from "./lowering";
+} from "./lowering.js";
+export type { PluginLowering, LoweringContext } from "./lowering.js";

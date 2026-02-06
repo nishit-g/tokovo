@@ -7,7 +7,7 @@
  * - Crossfade between tracks with configurable easing
  */
 
-import { MusicBed, CrossfadeCurve, MoodTag } from "../types/audio";
+import { MusicBed, CrossfadeCurve, MoodTag } from "../types/audio.js";
 
 // =============================================================================
 // CONSTANTS

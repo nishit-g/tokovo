@@ -14,7 +14,6 @@ const meta = {
   renderer: "@tokovo/renderer",
   react: "@tokovo/react",
   episodes: "@tokovo/episodes",
-  studio: "@tokovo/studio",
 };
 
 export default meta;

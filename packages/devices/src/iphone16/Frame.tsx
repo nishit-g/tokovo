@@ -1,5 +1,5 @@
 import React, { useMemo } from "react";
-import { iPhone16Profile, iPhone16Constants } from "./profile";
+import { iPhone16Profile, iPhone16Constants } from "./profile.js";
 
 interface FrameProps {
   children: React.ReactNode;

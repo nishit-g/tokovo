@@ -13,7 +13,7 @@ import type {
 } from "@tokovo/core";
 import type { WorldState } from "@tokovo/core";
 
-import { NotificationAnchorProvider } from "./notification";
+import { NotificationAnchorProvider } from "./notification.js";
 
 export function registerBuiltInAnchorProviders(
     registry: AnchorRegistryClass,
@@ -22,6 +22,9 @@ export function registerBuiltInAnchorProviders(
     // App-specific anchor providers must come from the app plugins.
     registry.register(NotificationAnchorProvider);
 }
+
+// Best-in-class naming: make it hard to accidentally re-add app providers here.
+export const registerOSAnchorProviders = registerBuiltInAnchorProviders;
 
 // =============================================================================
 // ANCHOR EXTRACTION

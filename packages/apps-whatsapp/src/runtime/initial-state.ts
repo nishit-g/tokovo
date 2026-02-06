@@ -4,7 +4,7 @@
  * Creates the initial state for the WhatsApp plugin.
  */
 
-import type { WhatsAppState } from "../types";
+import type { WhatsAppState } from "../types/index.js";
 
 // =============================================================================
 // INITIAL STATE FACTORY

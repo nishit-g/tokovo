@@ -4,7 +4,7 @@ import React, {
   type CSSProperties,
   type ReactNode,
 } from "react";
-import { useKeyboardHeight } from "./TokovoContext";
+import { useKeyboardHeight } from "./TokovoContext.js";
 
 export interface UseKeyboardAwareContainerOptions {
   autoScroll?: boolean;

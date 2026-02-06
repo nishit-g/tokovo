@@ -1,11 +1,11 @@
 import { describe, expect, it, vi } from "vitest";
-import { EngineConfig } from "../engine/config";
-import { EngineLogger, AudioLogger } from "../engine/logger";
+import { EngineConfig } from "../engine/config.js";
+import { EngineLogger, AudioLogger } from "../engine/logger.js";
 import {
   SnapshotCache,
   runWithSnapshot,
-} from "../engine/snapshot-cache";
-import type { WorldState } from "../types";
+} from "../engine/snapshot-cache.js";
+import type { WorldState } from "../types.js";
 
 const baseWorld = {
   devices: {},

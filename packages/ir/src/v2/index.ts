@@ -22,7 +22,7 @@ export type {
   SystemTrackId,
   AppId,
   AllTrackId,
-} from "./payloads";
+} from "./payloads.js";
 
 // Track Events
 export type {
@@ -37,7 +37,7 @@ export type {
   DeviceTrackEvent,
   SystemTrackEvent,
   TrackEvent,
-} from "./track-event";
+} from "./track-event.js";
 
 export {
   isCameraEvent,
@@ -48,7 +48,7 @@ export {
   isAppEvent,
   isCallEvent,
   isDeviceEvent,
-} from "./track-event";
+} from "./track-event.js";
 
 // Episode IR
 export type {
@@ -66,7 +66,7 @@ export type {
   VoiceScriptDefinition,
   VoiceScheduleItem,
   BackgroundConfigIR,
-} from "./episode-ir";
+} from "./episode-ir.js";
 
 export {
   TrackEpisodeIRSchema,
@@ -76,6 +76,6 @@ export {
   VoiceSegmentScheduleSchema,
   validateTrackEpisodeIR,
   safeValidateTrackEpisodeIR,
-} from "./schemas";
+} from "./schemas.js";
 
-export type { ValidatedTrackEpisodeIR } from "./schemas";
+export type { ValidatedTrackEpisodeIR } from "./schemas.js";

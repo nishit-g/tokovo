@@ -1,4 +1,4 @@
-import { keyboardSpacing } from "./tokens";
+import { keyboardSpacing } from "./tokens.js";
 
 export interface SpecialKeyConfig {
   width: number;

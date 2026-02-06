@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import type { SoundCue } from "../types";
+import type { SoundCue } from "../types.js";
 import {
   DEFAULT_POLICY_CONFIG,
   checkSpamPure,
@@ -11,8 +11,8 @@ import {
   shouldInterrupt,
   checkAllPoliciesPure,
   checkAllPolicies,
-} from "../audio/policies";
-import { AudioLogger } from "../engine/logger";
+} from "../audio/policies.js";
+import { AudioLogger } from "../engine/logger.js";
 
 describe("audio policies", () => {
   it("checks spam with pure function", () => {

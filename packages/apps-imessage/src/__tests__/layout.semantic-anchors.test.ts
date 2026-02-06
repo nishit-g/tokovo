@@ -1,9 +1,9 @@
 import { describe, it, expect } from "vitest";
 import type { LayoutContext, ViewKind, WorldState } from "@tokovo/core";
 import { DEFAULT_AUDIO_STATE, DEFAULT_BASE_CAMERA_STATE } from "@tokovo/core";
-import { iMessageLayoutStrategies } from "../layout";
-import { createIMessageInitialState } from "../runtime/initial-state";
-import type { IMessageScreen } from "../types/state";
+import { iMessageLayoutStrategies } from "../layout/index.js";
+import { createIMessageInitialState } from "../runtime/initial-state.js";
+import type { IMessageScreen } from "../types/state.js";
 
 function computeLayoutFor(screen: IMessageScreen, viewKind: ViewKind) {
   const appState = { ...createIMessageInitialState(), currentScreen: screen, viewMode: viewKind };

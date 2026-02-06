@@ -8,8 +8,8 @@
  */
 import React from "react";
 import { useSafeAreaInsets } from "@tokovo/react";
-import { useIMessageTheme } from "./ThemeContext";
-import { injectIMessageStyles } from "../styles";
+import { useIMessageTheme } from "./ThemeContext.js";
+import { injectIMessageStyles } from "../styles.js";
 
 interface AppShellProps {
     children: React.ReactNode;

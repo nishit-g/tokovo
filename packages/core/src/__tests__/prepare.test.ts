@@ -1,9 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
-import type { TokovoPluginContract } from "../types/plugin-contract";
-import type { CompiledEpisode } from "../types/compiled-episode";
-import { prepareTestUtils } from "../testing";
-import { createEngineRegistries } from "../engine/registries";
-import { createConfig } from "../config";
+import type { TokovoPluginContract } from "../types/plugin-contract.js";
+import type { CompiledEpisode } from "../types/compiled-episode.js";
+import { prepareTestUtils } from "../testing.js";
+import { createEngineRegistries } from "../engine/registries.js";
+import { createConfig } from "../config/index.js";
 
 const baseInput = {
   episodeId: "ep1",

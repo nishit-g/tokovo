@@ -134,7 +134,7 @@ export interface WhatsAppTheme {
 // iOS WHATSAPP LIGHT THEME
 // =============================================================================
 
-import { LAYOUT_CONSTANTS } from "./layout-config";
+import { LAYOUT_CONSTANTS } from "./layout-config.js";
 
 // ... (existing code)
 

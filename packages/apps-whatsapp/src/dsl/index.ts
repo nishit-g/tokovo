@@ -8,7 +8,7 @@
  */
 
 // b.use() Extension (Legacy beat DSL)
-export { whatsappDsl, type WhatsAppDslApi } from "./extension";
+export { whatsappDsl, type WhatsAppDslApi } from "./extension.js";
 
 // V2 Track Builder
 export {
@@ -20,7 +20,7 @@ export {
     type SendOptions,
     type ImageOptions,
     type TypingOptions,
-} from "./track-builder";
+} from "./track-builder.js";
 
 // Group Builder
-export * from "./group-builder";
+export * from "./group-builder.js";

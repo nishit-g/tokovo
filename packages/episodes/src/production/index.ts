@@ -12,28 +12,28 @@
 
 import type { EpisodeDefinition } from "../types/episode-definition.js";
 
-import trackDemo from "./track-demo.episode";
-import bakchodiBros from "./bakchodi-bros.episode";
-import notificationDemo from "./notification-demo.episode";
-import profileFocusDemo from "./profile-focus-demo.episode";
-import cheatingExposed from "./cheating-exposed.episode";
-import featureShowcase from "./feature-showcase.episode";
-import ghibliShowcase from "./ghibli-showcase.episode";
-import cyberpunkShowcase from "./cyberpunk-showcase.episode";
-import cameraShowcase from "./camera-showcase.episode";
-import whtEpi from "./wht-epi.episode";
-import keyboardDemo from "./keyboard-demo.episode";
-import typedMessageDemo from "./typed-message-demo.episode";
-import cheatingExposedNewDx from "./cheating-exposed-new-dx.episode";
-import voiceDemo from "./voice-demo.episode";
-import megaX from "./mega-x.episode";
-import megaWhatsapp from "./mega-whatsapp.episode";
-import megaMegaWhatsapp from "./mega-mega-whatsapp.episode";
-import whatsappGhibli from "./whatsapp-ghibli.episode";
-import whatsappToX from "./whatsapp-to-x.episode";
-import whatsappToXViral from "./whatsapp-to-x-viral.episode";
-import xAnchorTour from "./x-anchor-tour.episode";
-import iMessageAnchorTour from "./imessage-anchor-tour.episode";
+import trackDemo from "./track-demo.episode.js";
+import bakchodiBros from "./bakchodi-bros.episode.js";
+import notificationDemo from "./notification-demo.episode.js";
+import profileFocusDemo from "./profile-focus-demo.episode.js";
+import cheatingExposed from "./cheating-exposed.episode.js";
+import featureShowcase from "./feature-showcase.episode.js";
+import ghibliShowcase from "./ghibli-showcase.episode.js";
+import cyberpunkShowcase from "./cyberpunk-showcase.episode.js";
+import cameraShowcase from "./camera-showcase.episode.js";
+import whtEpi from "./wht-epi.episode.js";
+import keyboardDemo from "./keyboard-demo.episode.js";
+import typedMessageDemo from "./typed-message-demo.episode.js";
+import cheatingExposedNewDx from "./cheating-exposed-new-dx.episode.js";
+import voiceDemo from "./voice-demo.episode.js";
+import megaX from "./mega-x.episode.js";
+import megaWhatsapp from "./mega-whatsapp.episode.js";
+import megaMegaWhatsapp from "./mega-mega-whatsapp.episode.js";
+import whatsappGhibli from "./whatsapp-ghibli.episode.js";
+import whatsappToX from "./whatsapp-to-x.episode.js";
+import whatsappToXViral from "./whatsapp-to-x-viral.episode.js";
+import xAnchorTour from "./x-anchor-tour.episode.js";
+import iMessageAnchorTour from "./imessage-anchor-tour.episode.js";
 // plop:episode-import
 
 export const productionEpisodes: EpisodeDefinition[] = [

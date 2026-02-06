@@ -1,3 +1,3 @@
-export * from "./providers";
-export * from "./generate";
-export * from "./cache";
+export * from "./providers/index.js";
+export * from "./generate/index.js";
+export * from "./cache/index.js";

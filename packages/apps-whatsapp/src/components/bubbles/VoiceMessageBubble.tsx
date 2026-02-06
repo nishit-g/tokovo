@@ -1,6 +1,6 @@
 import React, { memo } from "react";
 import { Platform } from "@tokovo/core";
-import { MediaBubbleBase, DoubleCheckIcon, formatDuration } from "./shared";
+import { MediaBubbleBase, DoubleCheckIcon, formatDuration } from "./shared.js";
 import {
   FONT_FAMILY,
   WA_GREEN,
@@ -8,7 +8,7 @@ import {
   WA_GRAY,
   WA_WHITE,
   TIMESTAMP_SIZE,
-} from "./constants";
+} from "./constants.js";
 
 export interface VoiceMessageBubbleProps {
   duration: number;

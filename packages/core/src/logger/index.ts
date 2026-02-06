@@ -11,14 +11,14 @@
  * - JSON serializable for external tools
  *
  * Usage:
- *   import { logger, LogCollector } from '@tokovo/core';
+ *   import { getLogger, LogCollector } from '@tokovo/core';
  *
  *   // Basic logging
- *   logger.info('engine', 'Replay started', { frame: 0 });
+ *   getLogger().info('engine', 'Replay started', { frame: 0 });
  *
  *   // Collect logs for debugging
  *   const collector = new LogCollector();
- *   logger.addSubscriber(collector);
+ *   getLogger().addSubscriber(collector);
  *   // ... render ...
  *   const logs = collector.flush();
  */
@@ -441,17 +441,33 @@ export class LogCollector implements LogSubscriber {
 }
 
 // =============================================================================
-// SINGLETON INSTANCE
+// DEFAULT LOGGER (OVERRIDABLE)
 // =============================================================================
 
+let defaultLogger: TokovoLogger | null = null;
+
 /**
- * Global logger instance.
- *
- * For most use cases, use this directly:
- *   import { logger } from '@tokovo/core';
- *   logger.info('engine', 'Event processed', { kind: 'DEVICE' });
+ * Returns the default logger instance. Consumers can override via `setLogger()`
+ * for test isolation or embedding multiple Tokovo runtimes.
  */
-export const logger = new TokovoLogger();
+export function getLogger(): TokovoLogger {
+  defaultLogger ??= new TokovoLogger();
+  return defaultLogger;
+}
+
+/**
+ * Override the default logger instance.
+ */
+export function setLogger(logger: TokovoLogger): void {
+  defaultLogger = logger;
+}
+
+/**
+ * Create a new isolated logger instance (does not affect the default logger).
+ */
+export function createLogger(): TokovoLogger {
+  return new TokovoLogger();
+}
 
 /**
  * Create a scoped logger for a specific component.
@@ -461,7 +477,10 @@ export const logger = new TokovoLogger();
  *   const log = createScopedLogger('engine');
  *   log.info('Event processed', { kind: 'DEVICE' });
  */
-export function createScopedLogger(component: LogComponent) {
+export function createScopedLogger(
+  component: LogComponent,
+  logger: TokovoLogger = getLogger(),
+) {
   return {
     debug: (message: string, data?: Record<string, unknown>) =>
       logger.debug(component, message, data),
@@ -483,22 +502,8 @@ export function createScopedLogger(component: LogComponent) {
   };
 }
 
-// =============================================================================
-// BROWSER RUNTIME TOGGLE (dev convenience)
-// =============================================================================
-
-if (isBrowser) {
-  // Allow runtime toggle from browser console
-  (window as unknown as Record<string, unknown>).__TOKOVO_LOGGER = {
-    enable: () => logger.enableConsole(),
-    disable: () => logger.disableConsole(),
-    setLevel: (level: LogLevel) => logger.setLevel(level),
-    debug: () => logger.setLevel("debug"),
-    info: () => logger.setLevel("info"),
-    warn: () => logger.setLevel("warn"),
-    error: () => logger.setLevel("error"),
-  };
-}
+// Note: no global window mutation here. If an app wants a console toggle,
+// it can explicitly expose `getLogger()` on window in its own entrypoint.
 
 // =============================================================================
 // EXPORTS

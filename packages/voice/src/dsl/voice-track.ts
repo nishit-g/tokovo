@@ -1,4 +1,4 @@
-import { VoiceManifest, VoiceSegment } from "../types/manifest";
+import { VoiceManifest, VoiceSegment } from "../types/manifest.js";
 
 export interface VoicePlayEvent {
   kind: "voice";

@@ -1,4 +1,4 @@
-import { xColors, xTypography, xSpacing } from "./tokens";
+import { xColors, xTypography, xSpacing } from "./tokens.js";
 
 export interface XThemeColors {
   background: string;

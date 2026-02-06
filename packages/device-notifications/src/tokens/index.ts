@@ -4,20 +4,20 @@ export type {
   NotificationTokensConfig,
   SafeAreaInsets,
   DeviceAwareTokensOptions,
-} from "./types";
-export { iosNotificationTokens, getIOSNotificationTokens } from "./ios";
+} from "./types.js";
+export { iosNotificationTokens, getIOSNotificationTokens } from "./ios.js";
 export {
   androidNotificationTokens,
   getAndroidNotificationTokens,
-} from "./android";
+} from "./android.js";
 
-import { getIOSNotificationTokens } from "./ios";
-import { getAndroidNotificationTokens } from "./android";
+import { getIOSNotificationTokens } from "./ios.js";
+import { getAndroidNotificationTokens } from "./android.js";
 import type {
   NotificationTokens,
   NotificationTheme,
   DeviceAwareTokensOptions,
-} from "./types";
+} from "./types.js";
 
 export type Platform = "ios" | "android";
 

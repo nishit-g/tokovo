@@ -1,7 +1,8 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
-import { logger, LogCollector, createScopedLogger } from "../logger";
+import { getLogger, LogCollector, createScopedLogger } from "../logger/index.js";
 
 describe("logger (browser)", () => {
+  const logger = getLogger();
   beforeEach(() => {
     logger.configure({
       minLevel: "debug",
@@ -117,6 +118,8 @@ describe("logger (browser)", () => {
   it("exposes browser logger toggle", () => {
     const globalLogger = (window as unknown as { __TOKOVO_LOGGER?: unknown })
       .__TOKOVO_LOGGER;
-    expect(globalLogger).toBeDefined();
+    // Core no longer mutates the window/global scope. Apps may expose logger
+    // explicitly if they want a console toggle.
+    expect(globalLogger).toBeUndefined();
   });
 });

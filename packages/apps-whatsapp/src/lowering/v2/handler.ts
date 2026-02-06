@@ -1,6 +1,6 @@
 import type { TrackEvent } from "@tokovo/ir";
 import type { RuntimeEvent } from "@tokovo/core";
-import type { WhatsAppTrackEvent, WhatsAppEventType } from "../../types/events";
+import type { WhatsAppTrackEvent, WhatsAppEventType } from "../../types/events.js";
 
 export interface V2LoweringHandler {
   lower: (event: TrackEvent) => RuntimeEvent[];

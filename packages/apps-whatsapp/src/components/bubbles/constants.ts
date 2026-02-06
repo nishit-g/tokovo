@@ -1,4 +1,4 @@
-import { whatsappColors } from "../theme";
+import { whatsappColors } from "../theme.js";
 
 export const FONT_FAMILY =
   "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif";

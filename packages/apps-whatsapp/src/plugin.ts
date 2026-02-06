@@ -11,7 +11,7 @@
 
 import type { PluginReducer } from "@tokovo/core";
 import type { PluginManagerClass } from "@tokovo/react";
-import { WHATSAPP_APP_ID } from "./constants";
+import { WHATSAPP_APP_ID } from "./constants.js";
 import type {
   TokovoPluginContract,
   PluginViews,
@@ -19,27 +19,27 @@ import type {
 } from "@tokovo/core";
 
 // Runtime Layer
-import { whatsappReducer } from "./runtime/reducer";
-import { createWhatsAppInitialState } from "./runtime/initial-state";
+import { whatsappReducer } from "./runtime/reducer.js";
+import { createWhatsAppInitialState } from "./runtime/initial-state.js";
 
 // Views Layer
-import { WhatsappChatView } from "./ui";
+import { WhatsappChatView } from "./ui/index.js";
 
 // Lowering Layer (V2 is default)
-import { whatsappV2Lowering } from "./lowering";
+import { whatsappV2Lowering } from "./lowering/index.js";
 
 // DSL Layer
-import { whatsappDsl, type WhatsAppDslApi } from "./dsl";
+import { whatsappDsl, type WhatsAppDslApi } from "./dsl/index.js";
 
 // Layout Layer
-import { computeChatLayout, computeFeedLayout } from "./layout";
+import { computeChatLayout, computeFeedLayout } from "./layout/index.js";
 
 // Assets
-import { whatsappAudioRules } from "./assets/audio-rules";
+import { whatsappAudioRules } from "./assets/audio-rules.js";
 
 // Camera
-import { WhatsAppBehavior } from "./camera";
-import { WhatsAppAnchorProvider } from "./anchors/provider";
+import { WhatsAppBehavior } from "./camera/index.js";
+import { WhatsAppAnchorProvider } from "./anchors/provider.js";
 
 // =============================================================================
 // PLUGIN VIEWS
@@ -73,6 +73,7 @@ const whatsappAssets = {
   icons: {
     app_icon: "/icons/whatsapp.svg",
   },
+  designWidth: 393,
 };
 
 // =============================================================================
@@ -80,22 +81,17 @@ const whatsappAssets = {
 // =============================================================================
 
 export const WhatsAppPluginV2: TokovoPluginContract<"app_whatsapp"> & {
-  appView: typeof WhatsappChatView;
-  name: string;
   v2Lowering: typeof whatsappV2Lowering;
   behaviors: typeof WhatsAppBehavior;
-  sounds: Record<string, string>;
 } = {
   // === TIER A: Identity ===
   id: WHATSAPP_APP_ID as "app_whatsapp",
   version: "2.0.0",
   displayName: "WhatsApp",
-  name: "WhatsApp",
 
   // === TIER A: Runtime ===
   reducer: whatsappReducer as PluginReducer<"app_whatsapp">,
   views: whatsappViews,
-  appView: WhatsappChatView,
   createInitialState: createWhatsAppInitialState,
 
   // === TIER A: Event Routing ===
@@ -143,19 +139,6 @@ export const WhatsAppPluginV2: TokovoPluginContract<"app_whatsapp"> & {
     "SetDraft",
     "VoiceMessageReceived",
   ] as const,
-
-  // === SOUNDS (for SoundRegistry via PluginManager) ===
-  sounds: {
-    "app_whatsapp.message_in": "plugins/whatsapp/received.wav",
-    "app_whatsapp.message_out": "plugins/whatsapp/sent.wav",
-    "app_whatsapp.typing_loop": "plugins/whatsapp/typing_loop.wav",
-    "app_whatsapp.call_ringtone": "plugins/whatsapp/call_ringtone.wav",
-    "app_whatsapp.call_outgoing": "plugins/whatsapp/call_outgoing.wav",
-    "app_whatsapp.call_end": "plugins/whatsapp/call_end.wav",
-    "app_whatsapp.ptt_start": "plugins/whatsapp/ptt_start.wav",
-    "app_whatsapp.ptt_send": "plugins/whatsapp/ptt_send.wav",
-    "app_whatsapp.ptt_cancel": "plugins/whatsapp/ptt_cancel.wav",
-  },
 
   // === TIER A: Assets ===
   assets: whatsappAssets,

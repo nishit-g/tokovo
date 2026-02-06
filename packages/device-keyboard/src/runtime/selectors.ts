@@ -1,5 +1,5 @@
-import type { KeyboardState } from "./state";
-import { keyboardSpacing } from "../ui/tokens";
+import type { KeyboardState } from "./state.js";
+import { keyboardSpacing } from "../ui/tokens.js";
 
 export function isKeyboardVisible(state: KeyboardState): boolean {
   return state.visible;

@@ -33,12 +33,12 @@ export {
   assertPluginSchema,
   type ParsedPluginContract,
   type PluginValidationResult,
-} from "./schemas";
+} from "./schemas.js";
 
-export * from "./plugin";
+export * from "./plugin.js";
 export {
   PluginRouterClass,
   createPluginRouter,
   type PluginAccessor,
-} from "./router";
-export { createPluginRegistries, type PluginRegistries } from "./registries";
+} from "./router.js";
+export { createPluginRegistries, type PluginRegistries } from "./registries.js";

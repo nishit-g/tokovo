@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
-import { getSoundPath } from "../audio/sounds";
-import { createSoundRegistry } from "../registries/sound";
-import { AudioLogger } from "../engine/logger";
+import { getSoundPath } from "../audio/sounds.js";
+import { createSoundRegistry } from "../registries/sound.js";
+import { AudioLogger } from "../engine/logger.js";
 
 describe("audio sounds", () => {
   it("resolves sound paths with fallbacks", () => {

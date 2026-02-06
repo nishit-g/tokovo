@@ -4,7 +4,7 @@ import {
   t,
   type Locale,
   type WhatsAppStrings,
-} from "./translations";
+} from "./translations.js";
 
 interface I18nContextValue {
   locale: Locale;

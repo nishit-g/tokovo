@@ -9,19 +9,19 @@ export type {
   DynamicIslandState,
   DynamicIslandMode,
   DynamicIslandContent,
-} from "./runtime/state";
+} from "./runtime/state.js";
 export {
   IOS_NOTIFICATION_POLICY,
   ANDROID_NOTIFICATION_POLICY,
   DEFAULT_NOTIFICATION_CENTER,
   DEFAULT_DYNAMIC_ISLAND,
-} from "./runtime/state";
+} from "./runtime/state.js";
 
 export {
   notificationReducer,
   applyNotificationEvent,
   DEFAULT_POLICY,
-} from "./runtime/reducer";
+} from "./runtime/reducer.js";
 export type {
   NotificationPolicy,
   ShowPayload,
@@ -34,7 +34,7 @@ export type {
   NotificationPayload,
   NotificationEvent,
   NotificationMode,
-} from "./runtime/reducer";
+} from "./runtime/reducer.js";
 
 export {
   createSelectors,
@@ -44,14 +44,14 @@ export {
   getNotifications,
   getNotificationById,
   getGroupedNotifications,
-} from "./runtime/selectors";
+} from "./runtime/selectors.js";
 export type {
   AnimationState,
   NotificationAnimationInfo,
   StackedNotificationInfo,
-} from "./runtime/selectors";
+} from "./runtime/selectors.js";
 
-export { NotificationTrackBuilder } from "./dsl/builder";
+export { NotificationTrackBuilder } from "./dsl/builder.js";
 export type {
   ShowOptions,
   NotificationDSLEvent,
@@ -62,11 +62,11 @@ export type {
   NotificationReplyEvent,
   NotificationClearAllEvent,
   DynamicIslandEvent,
-} from "./dsl/builder";
+} from "./dsl/builder.js";
 
-export * from "./tokens";
-export * from "./strategies";
+export * from "./tokens/index.js";
+export * from "./strategies/index.js";
 
-export { useNotificationAnimation } from "./hooks/useNotificationAnimation";
+export { useNotificationAnimation } from "./hooks/useNotificationAnimation.js";
 
-export { registerNotificationPlugin } from "./plugin";
+export { registerNotificationPlugin } from "./plugin.js";

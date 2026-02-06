@@ -9,7 +9,7 @@ import type {
   WhatsAppConversation,
   WhatsAppState,
   WhatsAppMessage,
-} from "../types";
+} from "../types/index.js";
 
 // =============================================================================
 // STATE SELECTORS

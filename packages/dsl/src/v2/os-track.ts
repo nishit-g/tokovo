@@ -8,7 +8,7 @@
  */
 
 import { OSTrackEvent } from "@tokovo/ir";
-import { parseTimeToFrames } from "./utils/time";
+import { parseTimeToFrames } from "./utils/time.js";
 
 // =============================================================================
 // TYPES

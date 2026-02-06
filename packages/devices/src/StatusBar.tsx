@@ -15,9 +15,9 @@
 
 import React from "react";
 import type { DeviceOSState, ResolvedStatusBarTheme } from "@tokovo/core";
-import { type StatusBarNotificationIcon } from "./registries";
-import { useDeviceRegistries } from "./DeviceRegistryContext";
-import { IOSStatusBarStrategy } from "./strategies/IOSStatusBarStrategy";
+import { type StatusBarNotificationIcon } from "./registries/index.js";
+import { useDeviceRegistries } from "./DeviceRegistryContext.js";
+import { IOSStatusBarStrategy } from "./strategies/IOSStatusBarStrategy.js";
 
 // =============================================================================
 // PROPS

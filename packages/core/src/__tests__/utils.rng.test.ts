@@ -6,7 +6,7 @@ import {
   hashBasedId,
   resetIdCounter,
   seedFromString,
-} from "../utils/rng";
+} from "../utils/rng.js";
 
 describe("rng utilities", () => {
   it("produces deterministic sequences", () => {

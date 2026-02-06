@@ -1,6 +1,6 @@
 import React, { memo } from "react";
 import { Img, staticFile } from "remotion";
-import { MediaBubbleBase, TimestampRow } from "./shared";
+import { MediaBubbleBase, TimestampRow } from "./shared.js";
 import {
   FONT_FAMILY,
   WA_TEAL,
@@ -8,8 +8,8 @@ import {
   WA_BLACK,
   BUBBLE_PADDING_H,
   MESSAGE_TEXT_SIZE,
-} from "./constants";
-import { whatsappColors } from "../theme";
+} from "./constants.js";
+import { whatsappColors } from "../theme.js";
 
 export interface LocationMessageBubbleProps {
   latitude: number;

@@ -4,10 +4,10 @@
  */
 
 import React from "react";
-import { useIMessageTheme } from "../ui/ThemeContext";
-import { iMessageSpacing, iMessageTypography } from "../config/tokens";
-import { iOS_COLORS } from "../config/colors";
-import type { CalendarAttachment } from "../types";
+import { useIMessageTheme } from "../ui/ThemeContext.js";
+import { iMessageSpacing, iMessageTypography } from "../config/tokens.js";
+import { iOS_COLORS } from "../config/colors.js";
+import type { CalendarAttachment } from "../types/index.js";
 
 interface CalendarCardProps {
     event: CalendarAttachment;

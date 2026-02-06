@@ -23,7 +23,7 @@ import {
   type WidgetRegistryClass,
   createIconRegistry,
   type IconRegistryAPI,
-} from "../registries";
+} from "../registries/index.js";
 
 export interface PluginRegistries {
   reducers: ReducerRegistryClass;

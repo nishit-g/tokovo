@@ -1,6 +1,6 @@
 
 import React from "react";
-import { PixelProfile } from "./profile";
+import { PixelProfile } from "./profile.js";
 
 export const PixelFrame: React.FC<{ children: React.ReactNode; statusBar?: React.ReactNode }> = ({ children, statusBar }) => {
     const { width, height } = PixelProfile.dimensions;

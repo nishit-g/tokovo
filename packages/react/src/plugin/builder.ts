@@ -4,7 +4,7 @@ import type {
   PluginReducer,
   EngineRegistries,
 } from "@tokovo/core";
-import { PluginManagerClass } from "./plugin";
+import { PluginManagerClass } from "./plugin.js";
 import { createScopedLogger } from "@tokovo/core";
 
 // Define types locally that aren't exported from core

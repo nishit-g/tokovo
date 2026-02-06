@@ -1,6 +1,12 @@
 import type { WorldState, PluginReducer, RuntimeEvent } from "@tokovo/core";
-import type { XState, XTweet, XUser, XNotification, XDMThread, XDMMessage, XRoute } from "./state";
-import { createXInitialState } from "./state";
+import type { XState, XTweet, XUser, XNotification, XDMThread, XDMMessage, XRoute } from "./state.js";
+import { createXInitialState } from "./state.js";
+
+function ensureMutableArray<T>(value: T[] | undefined | null): T[] {
+  if (!Array.isArray(value)) return [];
+  // Some seed payloads may carry frozen arrays. Avoid runtime reducer crashes.
+  return Object.isExtensible(value) ? value : [...value];
+}
 
 function syncViewMode(state: XState): void {
   // Canonical screen-to-view mapping (required by LayoutEngine).
@@ -29,12 +35,12 @@ function getAppState(draft: WorldState): XState {
     draft.appState["app_x"] = createXInitialState();
   }
   const state = draft.appState["app_x"] as XState;
-  state.users ??= [];
-  state.tweets ??= [];
-  state.timeline ??= [];
-  state.notifications ??= [];
-  state.dmThreads ??= [];
-  state.dmMessages ??= [];
+  state.users = ensureMutableArray(state.users);
+  state.tweets = ensureMutableArray(state.tweets);
+  state.timeline = ensureMutableArray(state.timeline);
+  state.notifications = ensureMutableArray(state.notifications);
+  state.dmThreads = ensureMutableArray(state.dmThreads);
+  state.dmMessages = ensureMutableArray(state.dmMessages);
   state.composeDraft ??= "";
   state.currentScreen ??= "timeline";
   state.activeTweetId ??= null;
@@ -61,8 +67,12 @@ function ensureUserDefaults(payload: Partial<XUser>): XUser {
     avatarUrl: payload.avatarUrl,
     followers: payload.followers ?? 0,
     following: payload.following ?? 0,
-    followerIds: payload.followerIds ?? [],
-    followingIds: payload.followingIds ?? [],
+    followerIds: Array.isArray(payload.followerIds)
+      ? [...payload.followerIds]
+      : [],
+    followingIds: Array.isArray(payload.followingIds)
+      ? [...payload.followingIds]
+      : [],
     verified: payload.verified ?? null,
   };
 }
@@ -155,12 +165,12 @@ export const xReducer: PluginReducer<"app_x"> = (
         media: payload.media,
         linkPreview: payload.linkPreview,
         poll: payload.poll,
-        hashtags: payload.hashtags ?? [],
-        mentions: payload.mentions ?? [],
+        hashtags: Array.isArray(payload.hashtags) ? [...payload.hashtags] : [],
+        mentions: Array.isArray(payload.mentions) ? [...payload.mentions] : [],
         likeCount: payload.likeCount ?? 0,
         repostCount: payload.repostCount ?? 0,
-        replyIds: payload.replyIds ?? [],
-        likedBy: payload.likedBy ?? [],
+        replyIds: Array.isArray(payload.replyIds) ? [...payload.replyIds] : [],
+        likedBy: Array.isArray(payload.likedBy) ? [...payload.likedBy] : [],
         viewCount: payload.viewCount ?? 0,
         bookmarkCount: payload.bookmarkCount ?? 0,
         shareCount: payload.shareCount ?? 0,
@@ -286,16 +296,23 @@ export const xReducer: PluginReducer<"app_x"> = (
       if (!exists) {
         appState.dmThreads.push({
           ...payload,
-          messageIds: payload.messageIds ?? [],
+          // Payload arrays can be frozen (seed data). Clone to keep reducer safe.
+          participantIds: Array.isArray(payload.participantIds)
+            ? [...payload.participantIds]
+            : [],
+          messageIds: Array.isArray(payload.messageIds) ? [...payload.messageIds] : [],
         });
       }
       break;
     }
     case "ADD_DM_MESSAGE": {
       const payload = event.payload as XDMMessage;
+      // Defensive: some upstream seed data / previous frames may contain frozen arrays.
+      appState.dmMessages = ensureMutableArray(appState.dmMessages);
       appState.dmMessages.push(payload);
       const thread = appState.dmThreads.find((t) => t.id === payload.threadId);
       if (thread) {
+        thread.messageIds = ensureMutableArray(thread.messageIds);
         thread.messageIds.push(payload.id);
       }
       break;

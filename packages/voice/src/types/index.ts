@@ -1,3 +1,3 @@
-export * from "./script";
-export * from "./manifest";
-export * from "./script-definition";
+export * from "./script.js";
+export * from "./manifest.js";
+export * from "./script-definition.js";

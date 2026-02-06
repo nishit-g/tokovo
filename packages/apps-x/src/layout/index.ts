@@ -8,8 +8,8 @@ import type {
   SemanticRegion,
 } from "@tokovo/core";
 
-import type { XState } from "../runtime/state";
-import { xSpacing } from "../config/tokens";
+import type { XState } from "../runtime/state.js";
+import { xSpacing } from "../config/tokens.js";
 
 const DESIGN_WIDTH = 393;
 

@@ -1,8 +1,8 @@
 import { describe, it, expect } from "vitest";
 import type { LayoutContext, ViewKind, WorldState } from "@tokovo/core";
 import { DEFAULT_AUDIO_STATE, DEFAULT_BASE_CAMERA_STATE } from "@tokovo/core";
-import { xLayoutStrategies } from "../layout";
-import { createXInitialState, type XScreen } from "../runtime/state";
+import { xLayoutStrategies } from "../layout/index.js";
+import { createXInitialState, type XScreen } from "../runtime/state.js";
 
 function computeLayoutFor(screen: XScreen, viewKind: ViewKind) {
   const appState = { ...createXInitialState(), currentScreen: screen, viewMode: viewKind };

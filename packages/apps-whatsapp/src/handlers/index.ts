@@ -1,21 +1,21 @@
-export type { HandlerContext } from "./registry";
+export type { HandlerContext } from "./registry.js";
 
-import { registerMessageHandlers } from "./message";
-import { registerTypingHandlers } from "./typing";
-import { registerMediaHandlers } from "./media";
-import { registerGroupHandlers } from "./group";
-import { registerConversationHandlers } from "./conversation";
+import { registerMessageHandlers } from "./message.js";
+import { registerTypingHandlers } from "./typing.js";
+import { registerMediaHandlers } from "./media.js";
+import { registerGroupHandlers } from "./group.js";
+import { registerConversationHandlers } from "./conversation.js";
 import {
   createWhatsAppHandlerRegistry,
   type HandlerMap,
   type MutableHandlerRegistry,
-} from "./registry";
+} from "./registry.js";
 
-export { registerMessageHandlers } from "./message";
-export { registerTypingHandlers } from "./typing";
-export { registerMediaHandlers } from "./media";
-export { registerGroupHandlers } from "./group";
-export { registerConversationHandlers } from "./conversation";
+export { registerMessageHandlers } from "./message.js";
+export { registerTypingHandlers } from "./typing.js";
+export { registerMediaHandlers } from "./media.js";
+export { registerGroupHandlers } from "./group.js";
+export { registerConversationHandlers } from "./conversation.js";
 
 export function registerAllWhatsAppHandlers(
   registry: MutableHandlerRegistry,

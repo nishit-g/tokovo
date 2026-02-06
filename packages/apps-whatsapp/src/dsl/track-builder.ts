@@ -11,8 +11,8 @@
  */
 
 import type { TrackMessageRef } from "@tokovo/ir";
-import type { WhatsAppTrackEvent, WhatsAppEventType } from "../types/events";
-import { parseFileSizeToBytes } from "../utils/file-size";
+import type { WhatsAppTrackEvent, WhatsAppEventType } from "../types/events.js";
+import { parseFileSizeToBytes } from "../utils/file-size.js";
 
 // =============================================================================
 // TYPES

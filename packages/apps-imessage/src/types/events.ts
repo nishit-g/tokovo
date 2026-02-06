@@ -5,9 +5,9 @@ import type {
   IMessageMessageStatus,
   IMessageTapbackType,
   MessageReference,
-} from "./messages";
-import type { IMessageScreen, IMessageThemeMode } from "./state";
-import type { IMessageParticipant, IMessageConversation } from "./conversation";
+} from "./messages.js";
+import type { IMessageScreen, IMessageThemeMode } from "./state.js";
+import type { IMessageParticipant, IMessageConversation } from "./conversation.js";
 
 export interface ConversationCreatePayload {
   conversation: IMessageConversation;

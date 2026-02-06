@@ -1,6 +1,23 @@
 import { z } from "zod";
 import type { TokovoPluginContract } from "@tokovo/core";
-import type { AppMetadata } from "../registries/metadata";
+import type { AppMetadata } from "../registries/metadata.js";
+
+// Core built-in sounds are registered by Tokovo itself and intentionally do not
+// require namespacing (e.g. "tap", "notification_soft").
+const CORE_SOUND_IDS = new Set([
+  "notification",
+  "notification_soft",
+  "ringtone",
+  "call_end",
+  "camera_shutter",
+  "screenshot",
+  "lock",
+  "unlock",
+  "tap",
+  "keyboard_click",
+  "suspense",
+  "dramatic",
+]);
 
 const ViewKindSchema = z.enum([
   "CHAT",
@@ -309,20 +326,30 @@ export function validatePluginDetailed<AppId extends string>(
           message: "Audio rule must have match criteria",
         });
       }
-      if (!rule.sound) {
-        errors.push({
-          field: `audioRules[${i}].sound`,
-          message: "Audio rule must specify sound ID",
-        });
-      } else if (
-        !rule.sound.startsWith(plugin.id) &&
-        !rule.sound.startsWith("device.")
-      ) {
-        warnings.push({
-          field: `audioRules[${i}].sound`,
-          message: "Sound ID should be namespaced",
-          suggestion: `Consider using '${plugin.id}.${rule.sound}'`,
-        });
+      if (rule.action === "STOP_SOUND") {
+        if (!rule.stopId) {
+          errors.push({
+            field: `audioRules[${i}].stopId`,
+            message: "STOP_SOUND rules must specify stopId",
+          });
+        }
+      } else {
+        if (!rule.sound) {
+          errors.push({
+            field: `audioRules[${i}].sound`,
+            message: `${rule.action} rules must specify sound ID`,
+          });
+        } else if (
+          !rule.sound.startsWith(plugin.id) &&
+          !rule.sound.startsWith("device.") &&
+          !CORE_SOUND_IDS.has(rule.sound)
+        ) {
+          warnings.push({
+            field: `audioRules[${i}].sound`,
+            message: "Sound ID should be namespaced",
+            suggestion: `Consider using '${plugin.id}.${rule.sound}'`,
+          });
+        }
       }
     });
   }

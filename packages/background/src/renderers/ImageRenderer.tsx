@@ -4,7 +4,7 @@
 
 import React from "react";
 import { AbsoluteFill, Img, staticFile } from "remotion";
-import type { ResolvedBackgroundConfig } from "../types";
+import type { ResolvedBackgroundConfig } from "../types.js";
 
 interface ImageRendererProps {
     config: ResolvedBackgroundConfig;

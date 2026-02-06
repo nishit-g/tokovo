@@ -1,17 +1,17 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
-import type { WorldState } from "../types";
+import type { WorldState } from "../types.js";
 import {
   processAudioEvent,
   cleanupExpiredSounds,
   handleAutoSounds,
-} from "../engine/handlers/audio";
-import { processCallEvent } from "../engine/handlers/call";
-import { processOSEvent } from "../engine/handlers/os";
-import { processCameraEvent } from "../engine/handlers/camera";
-import { processVoiceEvent } from "../engine/handlers/voice";
-import { navigationReducer } from "../engine/handlers/navigation";
-import * as autoSound from "../audio/auto-sound";
-import { createReducerRegistry, type ReducerRegistryClass } from "../engine/registry";
+} from "../engine/handlers/audio.js";
+import { processCallEvent } from "../engine/handlers/call.js";
+import { processOSEvent } from "../engine/handlers/os.js";
+import { processCameraEvent } from "../engine/handlers/camera.js";
+import { processVoiceEvent } from "../engine/handlers/voice.js";
+import { navigationReducer } from "../engine/handlers/navigation.js";
+import * as autoSound from "../audio/auto-sound.js";
+import { createReducerRegistry, type ReducerRegistryClass } from "../engine/registry.js";
 
 const baseWorld = (): WorldState => ({
   devices: {

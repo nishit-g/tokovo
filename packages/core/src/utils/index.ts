@@ -4,9 +4,9 @@
  * @description All utility functions.
  */
 
-export * from "./type-guards";
+export * from "./type-guards.js";
 
-export * from "./event-utils";
+export * from "./event-utils.js";
 
 export {
   SeededRNG,
@@ -15,8 +15,8 @@ export {
   resetIdCounter,
   createSeededRng,
   normalizeSeed,
-} from "./rng";
+} from "./rng.js";
 
-export * from "./state-cache";
+export * from "./state-cache.js";
 
-export * from "./result";
+export * from "./result.js";

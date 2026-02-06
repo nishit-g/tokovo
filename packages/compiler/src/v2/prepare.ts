@@ -25,7 +25,8 @@ import {
   computeEventSignature,
   TokovoConfig,
 } from "@tokovo/core";
-import { lowerEpisode } from "./lowering";
+import { lowerEpisode } from "./lowering.js";
+import { validateV1RuntimeEpisode } from "./validation.js";
 
 // =============================================================================
 // TYPES
@@ -92,6 +93,35 @@ export function prepareTrackEpisode(
 
   // Build initial world state from device configs
   const initialWorld = buildInitialWorld(ir);
+
+  if (shouldValidate) {
+    const runtimeIssues = validateV1RuntimeEpisode(sortedEvents);
+    const errors = runtimeIssues.filter((i) => i.severity === "error");
+    if (errors.length > 0) {
+      const header = `[prepareTrackEpisode] V1 runtime validation failed (${errors.length} error(s))`;
+      const body = runtimeIssues
+        .slice(0, 10)
+        .map((i) => {
+          const at = typeof i.at === "number" ? ` at=${i.at}` : "";
+          const app = i.appId ? ` appId=${i.appId}` : "";
+          const type = i.type ? ` type=${i.type}` : "";
+          return `- [${i.severity}]${at}${app}${type}: ${i.message}`;
+        })
+        .join("\n");
+      throw new Error(`${header}\n${body}`);
+    }
+
+    if (shouldLog) {
+      for (const issue of runtimeIssues) {
+        if (issue.severity === "warning") {
+          console.warn(
+            `[prepareTrackEpisode] [warn] ${issue.message}`,
+            issue,
+          );
+        }
+      }
+    }
+  }
 
   // Build metadata
   const metadata = {

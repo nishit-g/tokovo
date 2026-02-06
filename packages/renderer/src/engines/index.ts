@@ -8,6 +8,6 @@
  * - Renderer: all outputs → JSX pixels
  */
 
-export { useLayoutEngine, type LayoutEngineInput, type LayoutEngineOutput } from "./useLayoutEngine";
-export { useCameraEngine, type CameraEngineInput, type CameraEngineOutput } from "./useCameraEngine";
-export { useAudioEngine, type AudioEngineInput, type AudioEngineOutput, NULL_AUDIO_OUTPUT } from "./useAudioEngine";
+export { useLayoutEngine, type LayoutEngineInput, type LayoutEngineOutput } from "./useLayoutEngine.js";
+export { useCameraEngine, type CameraEngineInput, type CameraEngineOutput } from "./useCameraEngine.js";
+export { useAudioEngine, type AudioEngineInput, type AudioEngineOutput, NULL_AUDIO_OUTPUT } from "./useAudioEngine.js";

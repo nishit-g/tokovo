@@ -1,15 +1,15 @@
 import React from "react";
 import type { WorldState } from "@tokovo/core";
-import { useXTheme } from "./ThemeContext";
+import { useXTheme } from "./ThemeContext.js";
 import {
   getActiveThread,
   getThreadMessages,
   getXState,
-} from "../runtime/selectors";
-import { AppShell } from "./AppShell";
-import { Avatar, XIcon, VerifiedBadge, formatTimestamp } from "./components";
-import { ScreenTransition } from "./ScreenTransition";
-import { BottomNav } from "./BottomNav";
+} from "../runtime/selectors.js";
+import { AppShell } from "./AppShell.js";
+import { Avatar, XIcon, VerifiedBadge, formatTimestamp } from "./components.js";
+import { ScreenTransition } from "./ScreenTransition.js";
+import { BottomNav } from "./BottomNav.js";
 
 interface MessageThreadProps {
   world: WorldState;

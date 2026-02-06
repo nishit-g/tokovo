@@ -36,8 +36,8 @@ import type {
 } from "@tokovo/core";
 import { DEFAULT_TRANSFORM } from "@tokovo/core";
 
-import { LayoutEngineOutput } from "./useLayoutEngine";
-import { useRendererRegistries } from "../RegistryContext";
+import { LayoutEngineOutput } from "./useLayoutEngine.js";
+import { useRendererRegistries } from "../RegistryContext.js";
 
 // =============================================================================
 // INPUT / OUTPUT TYPES

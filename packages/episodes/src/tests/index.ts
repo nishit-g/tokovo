@@ -11,10 +11,10 @@
 
 import type { EpisodeDefinition } from "../types/episode-definition.js";
 
-import testEpisode from "./test.episode";
-import keyboardPluginDemo from "./keyboard-plugin-demo.episode";
-import typingPluginDemo from "./typing-plugin-demo.episode";
-import newDxTest from "../test/new-dx-test.episode";
+import testEpisode from "./test.episode.js";
+import keyboardPluginDemo from "./keyboard-plugin-demo.episode.js";
+import typingPluginDemo from "./typing-plugin-demo.episode.js";
+import newDxTest from "../test/new-dx-test.episode.js";
 // plop:episode-import
 
 export const testEpisodes: EpisodeDefinition[] = [

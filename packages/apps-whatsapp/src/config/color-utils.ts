@@ -5,7 +5,7 @@
  * Uses djb2 hash algorithm for consistent color mapping.
  */
 
-import { GROUP_SENDER_COLORS, SENDER_COLOR_COUNT } from "./colors";
+import { GROUP_SENDER_COLORS, SENDER_COLOR_COUNT } from "./colors.js";
 
 /**
  * djb2 hash algorithm - fast, deterministic string hash.

@@ -2,7 +2,7 @@ import {
   LayoutContext,
   LockscreenLayoutState,
   NotificationLayout,
-} from "../types";
+} from "../types.js";
 
 export function computeLockscreenLayout(
   ctx: LayoutContext,

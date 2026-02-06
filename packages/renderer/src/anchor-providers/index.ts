@@ -5,5 +5,5 @@
  * Apps are the ONLY source of truth for what can be focused.
  */
 
-export * from "./notification";
-export * from "./registry";
+export * from "./notification.js";
+export * from "./registry.js";

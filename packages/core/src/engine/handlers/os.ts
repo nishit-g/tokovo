@@ -4,9 +4,9 @@
  * @description Handles device OS state: time, battery, network, DND.
  */
 
-import type { WorldState, NetworkType } from "../../types";
-import { DEFAULT_OS_STATE } from "../../types";
-import type { OSEvent, HandlerContext } from "./types";
+import type { WorldState, NetworkType } from "../../types.js";
+import { DEFAULT_OS_STATE } from "../../types.js";
+import type { OSEvent, HandlerContext } from "./types.js";
 
 interface OSEventPayload {
   deviceId?: string;

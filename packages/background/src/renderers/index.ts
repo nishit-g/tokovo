@@ -2,8 +2,8 @@
  * Renderers Index
  */
 
-export { SolidRenderer } from "./SolidRenderer";
-export { GradientRenderer } from "./GradientRenderer";
-export { ImageRenderer } from "./ImageRenderer";
-export { VideoRenderer } from "./VideoRenderer";
-export { ParticlesRenderer } from "./ParticlesRenderer";
+export { SolidRenderer } from "./SolidRenderer.js";
+export { GradientRenderer } from "./GradientRenderer.js";
+export { ImageRenderer } from "./ImageRenderer.js";
+export { VideoRenderer } from "./VideoRenderer.js";
+export { ParticlesRenderer } from "./ParticlesRenderer.js";

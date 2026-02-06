@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { WorldState } from "../types";
+import type { WorldState } from "../types.js";
 import {
   createStateCache,
   cacheStateAtKeyframe,
@@ -7,7 +7,7 @@ import {
   invalidateCacheAfter,
   clearStateCache,
   ensureStateCacheIdentity,
-} from "../utils/state-cache";
+} from "../utils/state-cache.js";
 
 const baseState = {
   devices: {},

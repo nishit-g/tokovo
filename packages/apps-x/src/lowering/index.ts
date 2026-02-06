@@ -1,6 +1,6 @@
 import type { TrackEvent } from "@tokovo/ir";
 import type { RuntimeEvent } from "@tokovo/core";
-import type { XTrackEvent } from "../types";
+import type { XTrackEvent } from "../types/index.js";
 
 export interface XLoweringHandler {
   lower: (event: TrackEvent) => RuntimeEvent[];

@@ -4,7 +4,7 @@
  * Built-in background presets for common use cases.
  */
 
-import type { BackgroundPreset, BackgroundPresetId } from "./types";
+import type { BackgroundPreset, BackgroundPresetId } from "./types.js";
 
 // =============================================================================
 // PRESET DEFINITIONS

@@ -16,19 +16,19 @@ export type {
   ContactAttachment,
   IMessageMessageKind,
   IMessageMessage,
-} from "./messages";
+} from "./messages.js";
 
-export type { IMessageParticipant, IMessageConversation } from "./conversation";
+export type { IMessageParticipant, IMessageConversation } from "./conversation.js";
 
-export type { IMessageState, IMessageScreen, IMessageThemeMode } from "./state";
-export { asIMessageState } from "./state";
+export type { IMessageState, IMessageScreen, IMessageThemeMode } from "./state.js";
+export { asIMessageState } from "./state.js";
 
 export type {
   IMessageEventType,
   IMessageEventMap,
   IMessageEventPayload,
   IMessageTrackEvent,
-} from "./events";
-export { isIMessageEvent } from "./events";
+} from "./events.js";
+export { isIMessageEvent } from "./events.js";
 
-import "./module-augmentation";
+import "./module-augmentation.js";

@@ -1,9 +1,9 @@
-import { iPhone16Frame } from "./Frame";
-import { StatusBar } from "../StatusBar";
-import { iPhone16Profile } from "./profile";
-import type { DeviceShell } from "../types";
-import type { FrameComponent } from "../registries/frame-registry";
-import type { StatusBarStrategyComponent } from "../registries/statusbar-registry";
+import { iPhone16Frame } from "./Frame.js";
+import { StatusBar } from "../StatusBar.js";
+import { iPhone16Profile } from "./profile.js";
+import type { DeviceShell } from "../types.js";
+import type { FrameComponent } from "../registries/frame-registry.js";
+import type { StatusBarStrategyComponent } from "../registries/statusbar-registry.js";
 
 export const iPhone16Shell: DeviceShell = {
   id: "iphone16",

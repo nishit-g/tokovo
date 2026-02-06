@@ -1,6 +1,6 @@
 import React from "react";
-import { Key } from "./Key";
-import { keyboardSpacing, type KeyboardTheme } from "./tokens";
+import { Key } from "./Key.js";
+import { keyboardSpacing, type KeyboardTheme } from "./tokens.js";
 
 interface KeyRowProps {
   keys: readonly string[];

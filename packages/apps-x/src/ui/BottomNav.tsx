@@ -1,6 +1,6 @@
 import React from "react";
-import { useXTheme } from "./ThemeContext";
-import { XIcon } from "./components";
+import { useXTheme } from "./ThemeContext.js";
+import { XIcon } from "./components.js";
 
 type NavItem = "home" | "search" | "bell" | "mail";
 

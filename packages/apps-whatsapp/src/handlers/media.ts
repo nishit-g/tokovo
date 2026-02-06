@@ -1,4 +1,4 @@
-import type { MutableHandlerRegistry } from "./registry";
+import type { MutableHandlerRegistry } from "./registry.js";
 import type {
   ImageReceivedEvent,
   ImageSentEvent,
@@ -19,10 +19,10 @@ import type {
   VoicePlayEvent,
   VoicePauseEvent,
   VoiceMessageReceivedEvent,
-} from "../schemas";
-import type { WhatsAppMessage } from "../types";
-import type { HandlerContext } from "./registry";
-import { formatFileSize } from "../utils/file-size";
+} from "../schemas/index.js";
+import type { WhatsAppMessage } from "../types/index.js";
+import type { HandlerContext } from "./registry.js";
+import { formatFileSize } from "../utils/file-size.js";
 
 function buildMediaMessageId(
   ctx: HandlerContext,

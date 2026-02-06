@@ -1,5 +1,5 @@
 import React from "react";
-import { useXTheme } from "./ThemeContext";
+import { useXTheme } from "./ThemeContext.js";
 
 // =============================================================================
 // X LOGO

@@ -1,8 +1,8 @@
-import type { WorldState, SoundCue, DuckRule } from "../../types";
+import type { WorldState, SoundCue, DuckRule } from "../../types.js";
 import type {
   VoiceRuntimeEvent,
   VoicePlaySegmentEvent,
-} from "../../types/runtime-event";
+} from "../../types/runtime-event.js";
 
 const DEFAULT_FPS = 30;
 

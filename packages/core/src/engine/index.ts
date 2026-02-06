@@ -1,52 +1,52 @@
 // Config and Logger
-export { EngineConfig } from "./config";
-export { EngineLogger } from "./logger";
+export { EngineConfig } from "./config.js";
+export { EngineLogger } from "./logger.js";
 
 // Registry
-export { createReducerRegistry } from "./registry";
+export { createReducerRegistry } from "./registry.js";
 export type {
   DeviceReducer,
   AppReducer,
   FeatureReducer,
   ReducerRegistryClass,
-} from "./registry";
+} from "./registry.js";
 
 // Event Handler Registry
-export { registerEventHandler, defineEventHandler, createEventHandlerRegistry } from "./event-handlers";
+export { registerEventHandler, defineEventHandler, createEventHandlerRegistry } from "./event-handlers.js";
 export type {
   EventHandler,
   EventHandlerContext,
   EventHandlerDefinition,
   EventHandlerRegistryClass,
-} from "./event-handlers";
+} from "./event-handlers.js";
 
 // Middleware
-export { useMiddleware, defineMiddleware, builtInMiddlewares, createMiddlewareRegistry } from "./middleware";
+export { useMiddleware, defineMiddleware, builtInMiddlewares, createMiddlewareRegistry } from "./middleware.js";
 export type {
   Middleware,
   MiddlewareContext,
   MiddlewareDefinition,
   NextFunction,
   MiddlewareRegistryClass,
-} from "./middleware";
+} from "./middleware.js";
 
 // Lifecycle
-export { defineLifecycle, createLifecycleManager } from "./lifecycle";
+export { defineLifecycle, createLifecycleManager } from "./lifecycle.js";
 export type {
   PluginLifecycleHooks,
   LifecycleContext,
   LifecycleManagerClass,
-} from "./lifecycle";
+} from "./lifecycle.js";
 
-export { createEngineRegistries, type EngineRegistries } from "./registries";
+export { createEngineRegistries, type EngineRegistries } from "./registries.js";
 
 // Handlers
-export * from "./handlers";
+export * from "./handlers/index.js";
 
 // Engine Facade - unified API for engine initialization and control
-import { builtInMiddlewares } from "./middleware";
-import type { EngineRegistries } from "./registries";
-import { createConfig, TokovoConfig } from "../config";
+import { builtInMiddlewares } from "./middleware.js";
+import type { EngineRegistries } from "./registries.js";
+import { createConfig, TokovoConfig } from "../config/index.js";
 
 export interface EngineInitOptions {
   config?: Partial<typeof TokovoConfig>;

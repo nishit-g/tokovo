@@ -4,9 +4,9 @@
  * Animated three-dot typing bubble
  */
 import React from "react";
-import { useIMessageTheme } from "../ui/ThemeContext";
-import { iMessageSpacing, iMessageAnimations } from "../config/tokens";
-import type { IMessageTheme } from "../config/imessage-theme";
+import { useIMessageTheme } from "../ui/ThemeContext.js";
+import { iMessageSpacing, iMessageAnimations } from "../config/tokens.js";
+import type { IMessageTheme } from "../config/imessage-theme.js";
 
 interface TypingIndicatorProps {
   /** For backward compatibility - prefer using inside ThemeContext */

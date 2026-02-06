@@ -1,4 +1,4 @@
-import type { CompilerPlugin, CompilerContext } from "./types";
+import type { CompilerPlugin, CompilerContext } from "./types.js";
 import type { TrackEvent } from "@tokovo/ir";
 
 /**

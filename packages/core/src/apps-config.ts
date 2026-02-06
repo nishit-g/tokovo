@@ -1,5 +1,5 @@
 
-import { Platform } from "./types";
+import { Platform } from "./types.js";
 
 /**
  * Configuration for built-in system apps/views

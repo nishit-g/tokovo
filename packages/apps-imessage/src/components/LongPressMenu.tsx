@@ -3,8 +3,8 @@
  */
 
 import React from "react";
-import { useIMessageTheme } from "../ui/ThemeContext";
-import type { IMessageTapbackType } from "../types";
+import { useIMessageTheme } from "../ui/ThemeContext.js";
+import type { IMessageTapbackType } from "../types/index.js";
 
 interface LongPressMenuProps {
     isVisible: boolean;

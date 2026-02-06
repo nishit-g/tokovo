@@ -1,5 +1,5 @@
 import React from "react";
-import type { NotificationLockScreenProps } from "../types";
+import type { NotificationLockScreenProps } from "../types.js";
 
 export const AndroidLockScreen: React.FC<NotificationLockScreenProps> = ({
   notifications,

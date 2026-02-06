@@ -1,7 +1,7 @@
 import React from "react";
 import { useSafeAreaInsets } from "@tokovo/react";
-import { injectXStyles } from "../styles";
-import { useXTheme } from "./ThemeContext";
+import { injectXStyles } from "../styles.js";
+import { useXTheme } from "./ThemeContext.js";
 
 interface AppShellProps {
   children: React.ReactNode;

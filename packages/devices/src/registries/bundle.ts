@@ -1,19 +1,19 @@
 import {
   createDeviceRegistry,
   type DeviceRegistryClass,
-} from "./device-registry";
+} from "./device-registry.js";
 import {
   createFrameRegistry,
   type FrameRegistryClass,
-} from "./frame-registry";
+} from "./frame-registry.js";
 import {
   createStatusBarStrategyRegistry,
   type StatusBarStrategyRegistryClass,
-} from "./statusbar-registry";
+} from "./statusbar-registry.js";
 import {
   createDeviceShellRegistry,
   type DeviceShellRegistryClass,
-} from "../registry";
+} from "../registry.js";
 
 export interface DeviceRegistries {
   devices: DeviceRegistryClass;

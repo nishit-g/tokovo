@@ -1,6 +1,6 @@
 import React, { createContext, useContext } from "react";
-import type { XTheme, XThemeMode } from "../config/theme";
-import { getXTheme } from "../config/theme";
+import type { XTheme, XThemeMode } from "../config/theme.js";
+import { getXTheme } from "../config/theme.js";
 
 const ThemeContext = createContext<XTheme>(getXTheme("dark"));
 

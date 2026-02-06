@@ -4,8 +4,8 @@
  * These utilities help avoid O(n) filtering on every frame.
  */
 
-import { TimelineEvent } from "../types";
-import type { RuntimeEvent } from "../types/runtime-event";
+import { TimelineEvent } from "../types.js";
+import type { RuntimeEvent } from "../types/runtime-event.js";
 
 // RuntimeEvent and TimelineEvent are compatible for event indexing
 // They both have { at: number, kind: string, ... }

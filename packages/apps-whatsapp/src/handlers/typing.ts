@@ -1,5 +1,5 @@
-import type { MutableHandlerRegistry } from "./registry";
-import type { TypingStartEvent, TypingEndEvent } from "../schemas";
+import type { MutableHandlerRegistry } from "./registry.js";
+import type { TypingStartEvent, TypingEndEvent } from "../schemas/index.js";
 
 export function registerTypingHandlers(
   registry: MutableHandlerRegistry,

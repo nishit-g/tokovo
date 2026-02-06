@@ -4,9 +4,9 @@
  */
 
 import React from "react";
-import { useIMessageTheme } from "../ui/ThemeContext";
-import { iMessageSpacing, iMessageTypography } from "../config/tokens";
-import { iOS_COLORS } from "../config/colors";
+import { useIMessageTheme } from "../ui/ThemeContext.js";
+import { iMessageSpacing, iMessageTypography } from "../config/tokens.js";
+import { iOS_COLORS } from "../config/colors.js";
 
 interface SearchBarProps {
     query?: string;

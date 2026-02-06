@@ -1,7 +1,7 @@
 import React, { memo } from "react";
-import { useTheme } from "../../theme/ThemeContext";
-import { PhoneCallIcon, VideoCallIcon } from "../Icons";
-import { formatDuration } from "./shared";
+import { useTheme } from "../../theme/ThemeContext.js";
+import { PhoneCallIcon, VideoCallIcon } from "../Icons.js";
+import { formatDuration } from "./shared.js";
 
 type CallType = "voice" | "video";
 

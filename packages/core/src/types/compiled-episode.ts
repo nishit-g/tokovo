@@ -7,7 +7,7 @@
  * @see docs/FUCKING_MESS.md Section 5
  */
 
-import { RuntimeEvent } from "./runtime-event";
+import { RuntimeEvent } from "./runtime-event.js";
 
 // =============================================================================
 // ASSET MANIFEST

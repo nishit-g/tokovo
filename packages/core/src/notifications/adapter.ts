@@ -4,8 +4,8 @@
  * Apps provide adapters to format and handle notifications.
  */
 
-import { Notification, TimelineEvent } from "../types";
-import { createScopedLogger } from "../logger";
+import { Notification, TimelineEvent } from "../types.js";
+import { createScopedLogger } from "../logger/index.js";
 
 const log = createScopedLogger("notification");
 

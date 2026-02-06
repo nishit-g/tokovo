@@ -17,13 +17,13 @@ export {
   lowerTrackEvents,
   lowerEpisode,
   createLoweringContext,
-} from "./v2";
+} from "./v2/index.js";
 
 export type {
   PreparedTrackEpisode,
   PluginLowering,
   LoweringContext,
-} from "./v2";
+} from "./v2/index.js";
 
 export type {
   CompilerPlugin,
@@ -36,22 +36,22 @@ export type {
   AnchorRegistry,
   AnchorInfo,
   ComponentType,
-} from "./plugins/types";
+} from "./plugins/types.js";
 
-export { LoggingPlugin } from "./plugins/logging.plugin";
-export { CameraDirectorPlugin } from "./plugins/camera-director.plugin";
-export type { CameraDirectorPluginOptions } from "./plugins/camera-director.plugin";
-export { AudioDirectorPlugin } from "./plugins/audio-director.plugin";
-export type { AudioDirectorPluginOptions } from "./plugins/audio-director.plugin";
-export { OSDirectorPlugin } from "./plugins/os-director.plugin";
-export type { OSDirectorPluginOptions } from "./plugins/os-director.plugin";
-export { TypingIndicatorPlugin } from "./plugins/typing-indicator.plugin";
+export { LoggingPlugin } from "./plugins/logging.plugin.js";
+export { CameraDirectorPlugin } from "./plugins/camera-director.plugin.js";
+export type { CameraDirectorPluginOptions } from "./plugins/camera-director.plugin.js";
+export { AudioDirectorPlugin } from "./plugins/audio-director.plugin.js";
+export type { AudioDirectorPluginOptions } from "./plugins/audio-director.plugin.js";
+export { OSDirectorPlugin } from "./plugins/os-director.plugin.js";
+export type { OSDirectorPluginOptions } from "./plugins/os-director.plugin.js";
+export { TypingIndicatorPlugin } from "./plugins/typing-indicator.plugin.js";
 export type {
   TypingIndicatorPluginOptions,
   CharacterTypingProfile,
-} from "./plugins/typing-indicator.plugin";
-export { KeyboardPlugin } from "./plugins/keyboard.plugin";
+} from "./plugins/typing-indicator.plugin.js";
+export { KeyboardPlugin } from "./plugins/keyboard.plugin.js";
 export type {
   KeyboardPluginOptions,
   CharacterKeyboardProfile,
-} from "./plugins/keyboard.plugin";
+} from "./plugins/keyboard.plugin.js";

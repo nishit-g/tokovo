@@ -1,11 +1,11 @@
 import { describe, expect, it, vi, afterEach } from "vitest";
-import type { WorldState } from "../types";
+import type { WorldState } from "../types.js";
 import {
   hasBuiltInHandler,
   getBuiltInHandler,
-} from "../engine/built-in-handlers";
-import { createReducerRegistry } from "../engine/registry";
-import * as handlers from "../engine/handlers";
+} from "../engine/built-in-handlers.js";
+import { createReducerRegistry } from "../engine/registry.js";
+import * as handlers from "../engine/handlers/index.js";
 
 const baseWorld = (): WorldState => ({
   devices: { phone: { id: "phone" } },

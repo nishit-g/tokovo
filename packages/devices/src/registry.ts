@@ -1,4 +1,4 @@
-import { DeviceShell } from "./types";
+import { DeviceShell } from "./types.js";
 
 export class DeviceShellRegistryClass {
   private shells = new Map<string, DeviceShell>();

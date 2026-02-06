@@ -13,34 +13,34 @@ export {
   useKeyboardHeight,
   useConversation,
   useActiveConversation,
-} from "./TokovoContext";
+} from "./TokovoContext.js";
 
 export {
   useKeyboardAwareContainer,
   useKeyboardState,
   KeyboardAwareView,
   ScrollableContent,
-} from "./KeyboardAware";
+} from "./KeyboardAware.js";
 export type {
   UseKeyboardAwareContainerOptions,
   KeyboardAwareContainerResult,
   KeyboardAwareViewProps,
   KeyboardInputState,
   ScrollableContentProps,
-} from "./KeyboardAware";
+} from "./KeyboardAware.js";
 
-export { AppSurface } from "./AppSurface";
-export type { AppSurfaceProps } from "./AppSurface";
+export { AppSurface } from "./AppSurface.js";
+export type { AppSurfaceProps } from "./AppSurface.js";
 
 // =============================================================================
 // UI REGISTRIES
 // =============================================================================
-export * from "./registries";
+export * from "./registries/index.js";
 
 // =============================================================================
 // PLUGINS
 // =============================================================================
-export * from "./plugin";
+export * from "./plugin/index.js";
 
 // =============================================================================
 // RUNTIME REGISTRIES
@@ -49,7 +49,7 @@ export {
   createTokovoRegistries,
   type TokovoRegistries,
   type TokovoRegistriesOverrides,
-} from "./registries/runtime";
+} from "./registries/runtime.js";
 
 // =============================================================================
 // NOTIFICATION VIEWS
@@ -57,11 +57,11 @@ export {
 export {
   createNotificationViewRegistry,
   NotificationViewRegistryClass,
-} from "./notifications/registry";
+} from "./notifications/registry.js";
 export type {
   NotificationViewProps,
   NotificationViewComponent,
-} from "./notifications/registry";
+} from "./notifications/registry.js";
 
 // =============================================================================
 // PLUGIN VALIDATION UTILS
@@ -72,5 +72,5 @@ export {
   validatePlugin,
   validatePluginDetailed,
   assertPluginValid,
-} from "./utils/validation";
-export type { ValidationError, ValidationResult } from "./utils/validation";
+} from "./utils/validation.js";
+export type { ValidationError, ValidationResult } from "./utils/validation.js";

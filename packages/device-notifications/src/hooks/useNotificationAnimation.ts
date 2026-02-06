@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { spring, interpolate } from "remotion";
-import type { AnimationState } from "../runtime/selectors";
-import type { NotificationTokens } from "../tokens/types";
+import type { AnimationState } from "../runtime/selectors.js";
+import type { NotificationTokens } from "../tokens/types.js";
 
 interface AnimationValues {
   translateY: number;

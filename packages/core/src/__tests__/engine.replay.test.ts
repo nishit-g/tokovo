@@ -1,6 +1,6 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
-import type { WorldState } from "../types";
-import { DEFAULT_CAMERA_TRANSFORM } from "../types";
+import type { WorldState } from "../types.js";
+import { DEFAULT_CAMERA_TRANSFORM } from "../types.js";
 import {
   replay,
   replayIncremental,
@@ -10,11 +10,11 @@ import {
   createStateCache,
   cacheStateAtKeyframe,
   PluginError,
-} from "../engine";
-import { createEngineRegistries, type EngineRegistries } from "../engine/registries";
-import * as handlerModule from "../engine/handlers";
-import { logger } from "../logger";
-import { createConfig } from "../config";
+} from "../engine.js";
+import { createEngineRegistries, type EngineRegistries } from "../engine/registries.js";
+import * as handlerModule from "../engine/handlers/index.js";
+import { getLogger } from "../logger/index.js";
+import { createConfig } from "../config/index.js";
 
 const baseWorld = (): WorldState => ({
   devices: { phone: { id: "phone" } },
@@ -37,7 +37,11 @@ const renderCtx = () => ({
 
 beforeEach(() => {
   registries = createEngineRegistries();
-  logger.configure({ consoleOutput: false, minLevel: "debug", components: [] });
+  getLogger().configure({
+    consoleOutput: false,
+    minLevel: "debug",
+    components: [],
+  });
 });
 
 afterEach(() => {

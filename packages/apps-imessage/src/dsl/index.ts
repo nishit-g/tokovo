@@ -2,7 +2,7 @@ export {
   IMessageTrackBuilder,
   IMessagePointBuilder,
   createIMessageTrackBuilder,
-} from "./track-builder";
+} from "./track-builder.js";
 
 export type {
   SendMessageInput,
@@ -13,5 +13,5 @@ export type {
   SendAudioInput,
   SendContactInput,
   SendCalendarInput,
-} from "./track-builder";
+} from "./track-builder.js";
 

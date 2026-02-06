@@ -10,7 +10,7 @@ import type {
   DynamicIslandState,
   StatusBarIcon,
   NotificationQueueState,
-} from "./notification";
+} from "./notification.js";
 
 // =============================================================================
 // EXTENSIBLE REGISTRIES

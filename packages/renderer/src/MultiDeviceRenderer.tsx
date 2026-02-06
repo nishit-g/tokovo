@@ -5,13 +5,13 @@ import {
   DEFAULT_VIDEO_CONFIG,
 } from "@tokovo/core";
 import { PluginManagerClass } from "@tokovo/react";
-import { TokovoRenderer } from "./TokovoRenderer";
-import { AudioLayer } from "./AudioLayer";
+import { TokovoRenderer } from "./TokovoRenderer.js";
+import { AudioLayer } from "./AudioLayer.js";
 import { getDeviceProfile } from "@tokovo/devices";
 import {
   RendererRegistryProvider,
   type RendererRegistries,
-} from "./RegistryContext";
+} from "./RegistryContext.js";
 
 // Helper to get video config with defaults
 const getVideoConfig = (world: WorldState): VideoConfig => ({

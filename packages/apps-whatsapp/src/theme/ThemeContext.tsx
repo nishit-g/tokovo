@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useMemo } from "react";
-import { iosTheme, getTheme, type WhatsAppTheme, type Platform } from "./index";
+import { iosTheme, getTheme, type WhatsAppTheme, type Platform } from "./index.js";
 
 interface ThemeContextValue {
   theme: WhatsAppTheme;
@@ -41,7 +41,14 @@ export function ThemeProvider({
 }
 
 // Canonical name used across other apps.
-export const WhatsAppThemeProvider = ThemeProvider;
+//
+// Exporting a function (vs `const Alias = ThemeProvider`) avoids TDZ issues in
+// some bundler/hot-refresh circular import edge-cases.
+export function WhatsAppThemeProvider(
+  props: ThemeProviderProps,
+): React.ReactElement {
+  return <ThemeProvider {...props} />;
+}
 
 export function useTheme(): WhatsAppTheme {
   return useContext(ThemeContext).theme;

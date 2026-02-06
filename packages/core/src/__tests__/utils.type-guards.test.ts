@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { TimelineEvent } from "../types";
+import type { TimelineEvent } from "../types.js";
 import {
   isDeviceEvent,
   isLockEvent,
@@ -26,7 +26,7 @@ import {
   isBackgroundMusicEvent,
   isEventForApp,
   isEventForDevice,
-} from "../utils/type-guards";
+} from "../utils/type-guards.js";
 
 describe("type guards", () => {
   it("detects device events", () => {

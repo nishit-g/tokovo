@@ -1,8 +1,8 @@
 import { ChevronLeft, Video, Phone } from "lucide-react";
 import { Img } from "remotion";
-import { UI_CONSTANTS } from "../config/layout-config";
-import { useTheme } from "../theme/ThemeContext";
-import { resolveAvatarWithFallback } from "../utils/avatar";
+import { UI_CONSTANTS } from "../config/layout-config.js";
+import { useTheme } from "../theme/ThemeContext.js";
+import { resolveAvatarWithFallback } from "../utils/avatar.js";
 
 export interface HeaderProps {
   contactName: string;

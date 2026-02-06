@@ -3,8 +3,8 @@
  * 
  * Uses centralized tokens from tokens.ts for spacing and typography.
  */
-import { iOS_COLORS, TAPBACK_COLORS } from "./colors";
-import { iMessageSpacing, iMessageTypography } from "./tokens";
+import { iOS_COLORS, TAPBACK_COLORS } from "./colors.js";
+import { iMessageSpacing, iMessageTypography } from "./tokens.js";
 
 
 export interface BubbleColors {

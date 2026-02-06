@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { MessageData } from "../types";
+import { MessageData } from "../types/index.js";
 
 export interface MessageGroup {
     id: string;

@@ -1,4 +1,4 @@
-import { LayoutConfig } from "./types";
+import { LayoutConfig } from "./types.js";
 
 export const defaultLayoutConfig: LayoutConfig = {
   cinematicMode: "NONE",

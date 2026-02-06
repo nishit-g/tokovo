@@ -1,8 +1,8 @@
 import type {
   VoiceScriptDefinition,
   VoiceScheduleItem,
-} from "../types/script-definition";
-import type { VoicePlayEvent } from "./voice-track";
+} from "../types/script-definition.js";
+import type { VoicePlayEvent } from "./voice-track.js";
 
 export class VoiceEpisodeTrackBuilder<T extends string = string> {
   private readonly _fps: number;

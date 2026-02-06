@@ -1,11 +1,11 @@
 import type { Rect } from "@tokovo/core";
-import { PluginManagerClass } from "./plugin";
+import { PluginManagerClass } from "./plugin.js";
 import type {
   TokovoPluginContract,
   PluginLayoutConstants,
 } from "@tokovo/core";
 import type { WorldState } from "@tokovo/core";
-import type { PluginRegistries } from "./registries";
+import type { PluginRegistries } from "./registries.js";
 
 export interface PluginAccessor {
   readonly id: string;

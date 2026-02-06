@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { TimelineEvent } from "../types";
+import type { TimelineEvent } from "../types.js";
 import {
   createEventIndex,
   createKeyframedEventIndex,
@@ -10,7 +10,7 @@ import {
   filterEventsByKind,
   filterEventsForApp,
   filterEventsForDevice,
-} from "../utils/event-utils";
+} from "../utils/event-utils.js";
 
 describe("event utils", () => {
   const events: TimelineEvent[] = [

@@ -1,4 +1,4 @@
-import type { WorldState } from "../types";
+import type { WorldState } from "../types.js";
 
 export interface StateSnapshot {
   frame: number;

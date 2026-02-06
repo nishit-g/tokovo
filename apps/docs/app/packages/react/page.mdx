@@ -42,7 +42,7 @@ Use `@tokovo/react` when:
 - ✅ Building a **custom episode player** with your own UI
 - ✅ Creating an **episode editor** or preview tool
 - ✅ Embedding Tokovo episodes in a **React/Next.js app**
-- ✅ Building **Tokovo Studio** or other authoring tools
+- ✅ Building authoring tools on top of Tokovo
 - ✅ Creating **custom app plugins** that need React hooks
 
 Use `@tokovo/renderer` instead when:
@@ -722,13 +722,13 @@ function EpisodePlayer({ episode }) {
 
 ---
 
-### 4. Building Tokovo Studio Interface
+### 4. Building an Authoring Interface
 
 ```tsx
 import { TokovoProvider, useDevice, useAppState } from "@tokovo/react";
 import { createTokovoRegistries } from "@tokovo/react";
 
-function TokovoStudio() {
+function TokovoAuthoringSurface() {
   const [project, setProject] = useState(null);
   const [frame, setFrame] = useState(0);
 
@@ -743,7 +743,7 @@ function TokovoStudio() {
   const world = runEpisode(project.episode, frame, opts);
 
   return (
-    <div className="studio">
+    <div className="authoring">
       <Sidebar project={project} />
 
       <main className="canvas">
@@ -931,7 +931,7 @@ Use it when:
 - Building **custom players** with your own controls
 - Creating **episode editors** or preview tools
 - Embedding episodes in **React/Next.js apps**
-- Building **Tokovo Studio** or authoring tools
+- Building authoring tools
 
 Use `@tokovo/renderer` instead when:
 

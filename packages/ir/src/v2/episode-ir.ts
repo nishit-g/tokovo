@@ -6,7 +6,7 @@
  * prepareEpisode() transforms this into CompiledEpisode.
  */
 
-import type { TrackEvent } from "./track-event";
+import type { TrackEvent } from "./track-event.js";
 
 // =============================================================================
 // DEVICE CONFIG

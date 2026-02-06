@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
-import type { WorldState } from "../types";
+import type { WorldState } from "../types.js";
 import {
   createAnchorRegistry,
   DEFAULT_FRAMING,
-} from "../anchors/registry";
-import type { AnchorProvider } from "../types/anchor";
+} from "../anchors/registry.js";
+import type { AnchorProvider } from "../types/anchor.js";
 
 const provider: AnchorProvider = {
   appId: "app_test",

@@ -14,13 +14,13 @@ export {
   WhatsAppPluginV2 as WhatsAppPlugin,
   registerWhatsAppPlugin,
   type WhatsAppDslApi,
-} from "./plugin";
+} from "./plugin.js";
 
 // =============================================================================
 // TYPES
 // =============================================================================
 
-export * from "./types";
+export * from "./types/index.js";
 
 // =============================================================================
 // RUNTIME
@@ -35,26 +35,26 @@ export {
   selectMessages,
   selectLastMessage,
   selectTypingMembers,
-} from "./runtime";
+} from "./runtime/index.js";
 
 // =============================================================================
 // VIEWS
 // =============================================================================
 
-export * from "./ui";
+export * from "./ui/index.js";
 
 // =============================================================================
 // IR (Intermediate Representation)
 // =============================================================================
 
-export type { WhatsAppPayloads, WhatsAppTrackEvent } from "./ir";
-export { isWhatsAppEvent, isWhatsAppGroupEvent } from "./ir";
+export type { WhatsAppPayloads, WhatsAppTrackEvent } from "./ir/index.js";
+export { isWhatsAppEvent, isWhatsAppGroupEvent } from "./ir/index.js";
 
 // =============================================================================
 // LOWERING
 // =============================================================================
 
-export { whatsappLowering, whatsappV2Lowering } from "./lowering";
+export { whatsappLowering, whatsappV2Lowering } from "./lowering/index.js";
 
 // =============================================================================
 // DSL
@@ -66,42 +66,42 @@ export {
   WhatsAppPointBuilder,
   WhatsAppSpanBuilder,
   createWhatsAppTrackBuilder,
-} from "./dsl";
+} from "./dsl/index.js";
 export type {
   ReceiveOptions,
   SendOptions,
   ImageOptions,
   TypingOptions,
-} from "./dsl";
-export { GroupBuilder } from "./dsl";
-export type { GroupBuilderOptions } from "./dsl";
+} from "./dsl/index.js";
+export { GroupBuilder } from "./dsl/index.js";
+export type { GroupBuilderOptions } from "./dsl/index.js";
 
 // =============================================================================
 // LAYOUT
 // =============================================================================
 
-export { computeChatLayout } from "./layout/chat";
+export { computeChatLayout } from "./layout/chat.js";
 
 // =============================================================================
 // CAMERA
 // =============================================================================
 
-export { WhatsAppBehavior } from "./camera";
+export { WhatsAppBehavior } from "./camera/index.js";
 
 // =============================================================================
 // ASSETS
 // =============================================================================
 
-export { whatsappAudioRules } from "./assets/audio-rules";
+export { whatsappAudioRules } from "./assets/audio-rules.js";
 
 // =============================================================================
 // LEGACY ALIASES
 // =============================================================================
 
-export { WhatsAppPluginV2 as WhatsApp } from "./plugin";
+export { WhatsAppPluginV2 as WhatsApp } from "./plugin.js";
 
 // =============================================================================
 // DEFAULT
 // =============================================================================
 
-export { default } from "./plugin";
+export { default } from "./plugin.js";

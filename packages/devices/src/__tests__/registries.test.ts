@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { createDeviceRegistries, createFrameRegistry } from "../registries";
-import type { FrameComponent } from "../registries";
+import { createDeviceRegistries, createFrameRegistry } from "../registries/index.js";
+import type { FrameComponent } from "../registries/index.js";
 
 const DummyFrame: FrameComponent = () => null;
 

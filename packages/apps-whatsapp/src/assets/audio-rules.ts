@@ -1,5 +1,5 @@
 import { AutoSoundRule } from "@tokovo/core";
-import { WHATSAPP_APP_ID } from "../constants";
+import { WHATSAPP_APP_ID } from "../constants.js";
 
 export const whatsappAudioRules: AutoSoundRule[] = [
   {

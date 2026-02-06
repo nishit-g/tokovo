@@ -1,8 +1,8 @@
 import { describe, it, expect } from "vitest";
 import { produce } from "immer";
-import { xReducer } from "../runtime/reducer";
-import { createXInitialState } from "../runtime/state";
-import { getXState } from "../runtime/selectors";
+import { xReducer } from "../runtime/reducer.js";
+import { createXInitialState } from "../runtime/state.js";
+import { getXState } from "../runtime/selectors.js";
 import type { WorldState, RuntimeEvent } from "@tokovo/core";
 import { DEFAULT_AUDIO_STATE, DEFAULT_BASE_CAMERA_STATE } from "@tokovo/core";
 

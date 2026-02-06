@@ -1,7 +1,7 @@
 import React, { useMemo } from "react";
 import { spring, interpolate } from "remotion";
-import type { NotificationBannerProps } from "./types";
-import { useNotificationAnimation } from "../hooks/useNotificationAnimation";
+import type { NotificationBannerProps } from "./types.js";
+import { useNotificationAnimation } from "../hooks/useNotificationAnimation.js";
 
 const STACK_SHIFT_DURATION = 8;
 

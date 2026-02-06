@@ -1,18 +1,18 @@
 import React from "react";
 import { WorldState } from "@tokovo/core";
-import { injectWhatsAppStyles } from "../styles";
-import { WhatsAppThemeProvider } from "../theme/ThemeContext";
+import { injectWhatsAppStyles } from "../styles.js";
+import { WhatsAppThemeProvider } from "../theme/ThemeContext.js";
 
 // Screens
-import { ChatScreen } from "../components/screens/ChatScreen";
-import { ChatListScreen } from "../components/screens/ChatListScreen";
-import { StatusScreen } from "../components/screens/StatusScreen";
-import { CommunitiesScreen } from "../components/screens/CommunitiesScreen";
-import { CallsScreen } from "../components/screens/CallsScreen";
-import { ProfileScreen } from "../components/screens/ProfileScreen";
-import { SettingsScreen } from "../components/screens/SettingsScreen";
+import { ChatScreen } from "../components/screens/ChatScreen.js";
+import { ChatListScreen } from "../components/screens/ChatListScreen.js";
+import { StatusScreen } from "../components/screens/StatusScreen.js";
+import { CommunitiesScreen } from "../components/screens/CommunitiesScreen.js";
+import { CallsScreen } from "../components/screens/CallsScreen.js";
+import { ProfileScreen } from "../components/screens/ProfileScreen.js";
+import { SettingsScreen } from "../components/screens/SettingsScreen.js";
 
-import { WhatsAppState } from "../types";
+import { WhatsAppState } from "../types/index.js";
 
 export interface WhatsappChatViewProps {
   world: WorldState;

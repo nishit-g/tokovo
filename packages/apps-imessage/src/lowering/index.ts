@@ -1,6 +1,6 @@
 import type { TrackEvent } from "@tokovo/ir";
 import type { RuntimeEvent } from "@tokovo/core";
-import type { IMessageTrackEvent, IMessageEventType, IMessageEventPayload } from "../types";
+import type { IMessageTrackEvent, IMessageEventType, IMessageEventPayload } from "../types/index.js";
 
 export interface IMessageLoweringHandler {
   lower: (event: TrackEvent) => RuntimeEvent[];

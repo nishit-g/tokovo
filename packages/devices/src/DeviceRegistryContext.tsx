@@ -1,5 +1,5 @@
 import React from "react";
-import type { DeviceRegistries } from "./registries/bundle";
+import type { DeviceRegistries } from "./registries/bundle.js";
 
 const DeviceRegistryContext = React.createContext<DeviceRegistries | null>(null);
 

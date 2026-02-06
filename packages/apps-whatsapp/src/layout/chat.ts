@@ -14,9 +14,9 @@ import {
   type MessageForGap,
   type MessageType,
   type GapContext,
-} from "../config";
-import { MessageData, WhatsAppMessage, WhatsAppConversation } from "../types";
-import { computeConversationLayout, getLayoutCache } from "./cache";
+} from "../config/index.js";
+import { MessageData, WhatsAppMessage, WhatsAppConversation } from "../types/index.js";
+import { computeConversationLayout, getLayoutCache } from "./cache.js";
 
 type LayoutMessage = MessageData & {
   replyTo?: { messageId: string; text: string; from: string };

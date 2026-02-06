@@ -5,7 +5,8 @@ describe("logger (node)", () => {
   it("logs without browser styling and omits stack traces when disabled", async () => {
     vi.resetModules();
     const mod = await import("../logger");
-    const { logger, LogCollector } = mod;
+    const { getLogger, LogCollector } = mod;
+    const logger = getLogger();
 
     logger.configure({
       minLevel: "debug",

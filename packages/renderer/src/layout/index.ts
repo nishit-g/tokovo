@@ -6,15 +6,15 @@
  */
 
 import type { LayoutRegistryClass } from "@tokovo/react";
-import { LayoutContext, LayoutState } from "./types";
-import { defaultLayoutConfig } from "./config";
-import { computeFeedLayout } from "./strategies/feed";
-import { computeStoryLayout } from "./strategies/story";
-import { computeLockscreenLayout } from "./strategies/lockscreen";
-import { computeTransitionLayout } from "./strategies/transition";
+import { LayoutContext, LayoutState } from "./types.js";
+import { defaultLayoutConfig } from "./config.js";
+import { computeFeedLayout } from "./strategies/feed.js";
+import { computeStoryLayout } from "./strategies/story.js";
+import { computeLockscreenLayout } from "./strategies/lockscreen.js";
+import { computeTransitionLayout } from "./strategies/transition.js";
 
-export * from "./types";
-export * from "./config";
+export * from "./types.js";
+export * from "./config.js";
 
 const mergedConfigCache = new WeakMap<object, typeof defaultLayoutConfig>();
 

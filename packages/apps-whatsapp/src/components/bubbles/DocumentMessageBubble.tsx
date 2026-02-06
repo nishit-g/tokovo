@@ -1,7 +1,7 @@
 import React, { memo } from "react";
 import { Platform } from "@tokovo/core";
-import { MediaBubbleBase } from "./shared";
-import { FONT_FAMILY, WA_GRAY, WA_BLACK, MESSAGE_TEXT_SIZE } from "./constants";
+import { MediaBubbleBase } from "./shared.js";
+import { FONT_FAMILY, WA_GRAY, WA_BLACK, MESSAGE_TEXT_SIZE } from "./constants.js";
 
 export interface DocumentMessageBubbleProps {
   fileName: string;

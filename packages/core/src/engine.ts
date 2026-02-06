@@ -16,9 +16,9 @@ import {
   DEFAULT_BASE_CAMERA_STATE,
   DEFAULT_CAMERA_TRANSFORM,
   DEFAULT_AUDIO_STATE,
-} from "./types";
-import type { CameraTransform } from "./types/camera";
-import { TokovoConfigType } from "./config";
+} from "./types.js";
+import type { CameraTransform } from "./types/camera.js";
+import { TokovoConfigType } from "./config/index.js";
 import {
   EventIndex,
   KeyframedEventIndex,
@@ -26,28 +26,28 @@ import {
   getEventsUpTo,
   getEventsUpToKeyframed,
   getEventsInRange,
-} from "./utils/event-utils";
+} from "./utils/event-utils.js";
 import {
   StateCache,
   getCachedStateForFrame,
   cacheStateAtKeyframe,
-} from "./utils/state-cache";
+} from "./utils/state-cache.js";
 
-import { createScopedLogger } from "./logger";
+import { createScopedLogger } from "./logger/index.js";
 import {
   processCameraEvent,
   handleAutoSounds,
   cleanupExpiredSounds,
   HandlerContext,
-} from "./engine/handlers";
-import type { EventHandlerContext } from "./engine/event-handlers";
-import type { MiddlewareContext } from "./engine/middleware";
-import type { LifecycleContext } from "./engine/lifecycle";
+} from "./engine/handlers/index.js";
+import type { EventHandlerContext } from "./engine/event-handlers.js";
+import type { MiddlewareContext } from "./engine/middleware.js";
+import type { LifecycleContext } from "./engine/lifecycle.js";
 import {
   hasBuiltInHandler,
   getBuiltInHandler,
-} from "./engine/built-in-handlers";
-import type { EngineRegistries } from "./engine/registries";
+} from "./engine/built-in-handlers.js";
+import type { EngineRegistries } from "./engine/registries.js";
 
 const log = createScopedLogger("engine");
 const sortedEventCache = new WeakMap<TimelineEvent[], TimelineEvent[]>();
@@ -56,15 +56,15 @@ export type {
   DeviceReducer,
   AppReducer,
   FeatureReducer,
-} from "./engine/registry";
-export { createReducerRegistry } from "./engine/registry";
-export { EngineConfig } from "./engine/config";
-export { EngineLogger } from "./engine/logger";
+} from "./engine/registry.js";
+export { createReducerRegistry } from "./engine/registry.js";
+export { EngineConfig } from "./engine/config.js";
+export { EngineLogger } from "./engine/logger.js";
 export {
   createEventIndex,
   createKeyframedEventIndex,
   type KeyframedEventIndex,
-} from "./utils/event-utils";
+} from "./utils/event-utils.js";
 export {
   createStateCache,
   getCachedStateForFrame,
@@ -72,7 +72,7 @@ export {
   invalidateCacheAfter,
   clearStateCache,
   type StateCache,
-} from "./utils/state-cache";
+} from "./utils/state-cache.js";
 
 // =============================================================================
 // REPLAY CONTEXT

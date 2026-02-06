@@ -9,10 +9,10 @@
  */
 
 // Reducer
-export { whatsappReducer } from "./reducer";
+export { whatsappReducer } from "./reducer.js";
 
 // Initial State
-export { createWhatsAppInitialState, createInitialConversation } from "./initial-state";
+export { createWhatsAppInitialState, createInitialConversation } from "./initial-state.js";
 
 // Selectors
 export {
@@ -24,7 +24,7 @@ export {
     selectLastMessage,
     selectTypingMembers,
     selectIsGroupConversation,
-} from "./selectors";
+} from "./selectors.js";
 
 // Adapters
-export * from "./adapters";
+export * from "./adapters/index.js";

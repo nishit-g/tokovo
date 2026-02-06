@@ -10,7 +10,7 @@ import {
 import { getSoundPath } from "@tokovo/core";
 import { computeSoundVolume, computeBusStates, BusState } from "@tokovo/core";
 import { computeCrossfade } from "@tokovo/core";
-import { useRendererRegistries } from "./RegistryContext";
+import { useRendererRegistries } from "./RegistryContext.js";
 
 const VOLUME_THRESHOLD = 0.001;
 const PREMOUNT_FRAMES = 30;

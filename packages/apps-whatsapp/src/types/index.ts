@@ -23,14 +23,14 @@ export type {
   ReplyToData,
   LinkPreviewData,
   WhatsAppMessage,
-} from "./messages";
+} from "./messages.js";
 
 // Conversation
-export type { WhatsAppGroupMember, WhatsAppConversation } from "./conversation";
+export type { WhatsAppGroupMember, WhatsAppConversation } from "./conversation.js";
 
 // State
-export type { WhatsAppState } from "./state";
-export { asWhatsAppConversations, asWhatsAppState } from "./state";
+export type { WhatsAppState } from "./state.js";
+export { asWhatsAppConversations, asWhatsAppState } from "./state.js";
 
 export type {
   WhatsAppEventType,
@@ -66,7 +66,7 @@ export type {
   MessageForwardedPayload,
   NavigateScreenPayload,
   DateSeparatorPayload,
-} from "./events";
-export { isWhatsAppEvent, getEventPayload, assertEventType } from "./events";
+} from "./events.js";
+export { isWhatsAppEvent, getEventPayload, assertEventType } from "./events.js";
 
-import "./module-augmentation";
+import "./module-augmentation.js";

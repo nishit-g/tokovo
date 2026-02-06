@@ -10,10 +10,10 @@
  */
 
 import React from "react";
-import { ChevronLeftIcon, VideoCallIcon, PhoneCallIcon } from "./Icons";
+import { ChevronLeftIcon, VideoCallIcon, PhoneCallIcon } from "./Icons.js";
 import { Img } from "remotion";
-import { resolveAvatarWithFallback } from "../utils/avatar";
-import { whatsappColors, spacing, typography } from "./theme";
+import { resolveAvatarWithFallback } from "../utils/avatar.js";
+import { whatsappColors, spacing, typography } from "./theme.js";
 
 export interface GroupMemberInfo {
     id: string;

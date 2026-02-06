@@ -17,8 +17,8 @@
  */
 
 // Main component
-export { BackgroundLayer, PresetBackground, ImageBackground, VideoBackground } from "./BackgroundLayer";
-export type { BackgroundLayerProps } from "./BackgroundLayer";
+export { BackgroundLayer, PresetBackground, ImageBackground, VideoBackground } from "./BackgroundLayer.js";
+export type { BackgroundLayerProps } from "./BackgroundLayer.js";
 
 // Types
 export type {
@@ -27,11 +27,11 @@ export type {
     BackgroundConfig,
     ResolvedBackgroundConfig,
     BackgroundPreset,
-} from "./types";
-export { DEFAULT_BACKGROUND_CONFIG, FALLBACK_COLOR } from "./types";
+} from "./types.js";
+export { DEFAULT_BACKGROUND_CONFIG, FALLBACK_COLOR } from "./types.js";
 
 // Presets
-export { BACKGROUND_PRESETS, getPreset, listPresets, isPresetId } from "./presets";
+export { BACKGROUND_PRESETS, getPreset, listPresets, isPresetId } from "./presets.js";
 
 // Resolver
 export {
@@ -40,7 +40,7 @@ export {
     fromImage,
     fromVideo,
     fromGradient,
-} from "./resolver";
+} from "./resolver.js";
 
 // Renderers (for advanced usage)
 export {
@@ -49,4 +49,4 @@ export {
     ImageRenderer,
     VideoRenderer,
     ParticlesRenderer,
-} from "./renderers";
+} from "./renderers/index.js";

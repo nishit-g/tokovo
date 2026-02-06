@@ -7,7 +7,7 @@
 
 import React from "react";
 import { STATUS_BAR_PRESETS } from "@tokovo/core";
-import type { StatusBarStrategyProps } from "../registries";
+import type { StatusBarStrategyProps } from "../registries/index.js";
 import {
     SignalBarsIcon,
     WifiIcon,
@@ -15,7 +15,7 @@ import {
     DNDIcon,
     NetworkTypeLabel,
     formatTime,
-} from "./shared-icons";
+} from "./shared-icons.js";
 
 /**
  * Resolve theme prop to actual colors.

@@ -5,11 +5,11 @@
  */
 
 // Icons
-export * from "./Icons";
+export * from "./Icons.js";
 
 // Components
-export { Header, type HeaderProps } from "./Header";
-export { MessageBubble, type MessageBubbleProps } from "./MessageBubble";
+export { Header, type HeaderProps } from "./Header.js";
+export { MessageBubble, type MessageBubbleProps } from "./MessageBubble.js";
 
 // Media Bubbles
 export {
@@ -17,35 +17,35 @@ export {
   VideoMessageBubble,
   GifMessageBubble,
   VoiceMessageBubble,
-} from "./MediaBubbles";
+} from "./MediaBubbles.js";
 
 // Date Separator
-export { DateSeparator } from "./DateSeparator";
+export { DateSeparator } from "./DateSeparator.js";
 
 // Chats List Screen (now in screens folder)
 export {
   ChatListScreen,
   type ChatListScreenProps,
-} from "./screens/ChatListScreen";
+} from "./screens/ChatListScreen.js";
 export {
   StatusScreen,
   type StatusScreenProps,
-} from "./screens/StatusScreen";
+} from "./screens/StatusScreen.js";
 export {
   CommunitiesScreen,
   type CommunitiesScreenProps,
-} from "./screens/CommunitiesScreen";
+} from "./screens/CommunitiesScreen.js";
 export {
   CallsScreen,
   type CallsScreenProps,
-} from "./screens/CallsScreen";
+} from "./screens/CallsScreen.js";
 export {
   ProfileScreen,
   type ProfileScreenProps,
-} from "./screens/ProfileScreen";
+} from "./screens/ProfileScreen.js";
 
 // Bubble Tail (extracted from iOSStatusBar)
-export { BubbleTail } from "./BubbleTail";
+export { BubbleTail } from "./BubbleTail.js";
 
 // Advanced Features (Phase 16)
 export {
@@ -53,10 +53,10 @@ export {
   ReactionPicker,
   type Reaction,
   COMMON_REACTIONS,
-} from "./Reactions";
+} from "./Reactions.js";
 export {
   LinkPreview,
   MiniLinkPreview,
   type LinkPreviewData,
-} from "./LinkPreview";
-export { ReplyQuote, type ReplyToData } from "./ReplyQuote";
+} from "./LinkPreview.js";
+export { ReplyQuote, type ReplyToData } from "./ReplyQuote.js";

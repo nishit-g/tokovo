@@ -1,5 +1,5 @@
 import type { WorldState } from "@tokovo/core";
-import type { WhatsAppMessage } from "../types";
+import type { WhatsAppMessage } from "../types/index.js";
 
 type NormalizeOptions = {
   conversationId: string;

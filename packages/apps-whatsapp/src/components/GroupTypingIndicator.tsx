@@ -10,7 +10,7 @@
  */
 
 import React from "react";
-import { whatsappColors, spacing, typography } from "./theme";
+import { whatsappColors, spacing, typography } from "./theme.js";
 
 export interface TypingMember {
     id: string;

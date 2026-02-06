@@ -8,7 +8,7 @@
  */
 
 import { AudioTrackEvent } from "@tokovo/ir";
-import { parseTimeToFrames, parseDurationToFrames } from "./utils/time";
+import { parseTimeToFrames, parseDurationToFrames } from "./utils/time.js";
 
 // =============================================================================
 // TYPES

@@ -1,12 +1,12 @@
 import React from "react";
 import { WorldState } from "@tokovo/core";
 import { Img } from "remotion";
-import { whatsappColors, spacing, typography } from "../theme";
-import { TabNavigation } from "../TabNavigation";
-import { CameraFillIcon, PlusCircleIcon } from "../Icons";
-import { resolveAvatarWithFallback } from "../../utils/avatar";
-import { WhatsAppConversation, WhatsAppState } from "../../types";
-import { normalizeMessages } from "../../utils/messages";
+import { whatsappColors, spacing, typography } from "../theme.js";
+import { TabNavigation } from "../TabNavigation.js";
+import { CameraFillIcon, PlusCircleIcon } from "../Icons.js";
+import { resolveAvatarWithFallback } from "../../utils/avatar.js";
+import { WhatsAppConversation, WhatsAppState } from "../../types/index.js";
+import { normalizeMessages } from "../../utils/messages.js";
 
 export interface StatusScreenProps {
   world: WorldState;

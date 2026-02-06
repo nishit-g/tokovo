@@ -1,4 +1,4 @@
-import type { MutableHandlerRegistry } from "./registry";
+import type { MutableHandlerRegistry } from "./registry.js";
 import type {
   PinConversationEvent,
   UnpinConversationEvent,
@@ -10,7 +10,7 @@ import type {
   NavigateScreenEvent,
   ConversationOpenedEvent,
   ReadMessagesEvent,
-} from "../schemas";
+} from "../schemas/index.js";
 
 export function registerConversationHandlers(
   registry: MutableHandlerRegistry,

@@ -1,6 +1,6 @@
 import React from "react";
 import { Img, staticFile } from "remotion";
-import { useTheme } from "../../theme/ThemeContext";
+import { useTheme } from "../../theme/ThemeContext.js";
 
 interface MessageBubbleProps {
   isMe: boolean;

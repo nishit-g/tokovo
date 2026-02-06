@@ -8,8 +8,8 @@ import type {
   SemanticRegion,
 } from "@tokovo/core";
 
-import type { IMessageState } from "../types";
-import { iMessageSpacing } from "../config/tokens";
+import type { IMessageState } from "../types/index.js";
+import { iMessageSpacing } from "../config/tokens.js";
 
 const DESIGN_WIDTH = 393;
 

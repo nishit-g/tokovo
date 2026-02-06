@@ -1,5 +1,5 @@
-import type { DeviceId, AppId } from "./device";
-import type { ViewLayoutMode, PIPPosition } from "./layout";
+import type { DeviceId, AppId } from "./device.js";
+import type { ViewLayoutMode, PIPPosition } from "./layout.js";
 export type { ViewLayoutMode, PIPPosition };
 
 export interface CameraTransform {

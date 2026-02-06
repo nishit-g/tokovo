@@ -1,4 +1,4 @@
-import { DeviceState, NotificationInstance } from "../types";
+import { DeviceState, NotificationInstance } from "../types.js";
 
 interface LegacyNotificationTiming {
   dismissedAt?: number;

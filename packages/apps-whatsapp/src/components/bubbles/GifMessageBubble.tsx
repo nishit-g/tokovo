@@ -1,8 +1,8 @@
 import React, { memo } from "react";
 import { Img, staticFile } from "remotion";
 import { Platform } from "@tokovo/core";
-import { MediaBubbleBase, TimestampOverlay } from "./shared";
-import { FONT_FAMILY, WA_WHITE } from "./constants";
+import { MediaBubbleBase, TimestampOverlay } from "./shared.js";
+import { FONT_FAMILY, WA_WHITE } from "./constants.js";
 
 export interface GifMessageBubbleProps {
   gifUrl: string;

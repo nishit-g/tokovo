@@ -1,13 +1,18 @@
 // V2 DSL public API
 
-export { episode, EpisodeBuilder } from "./episode";
-export type { DeviceOptions, TrackBuilder, TrackFn, TrackFactory } from "./episode";
+export { episode, EpisodeBuilder } from "./episode.js";
+export type {
+  DeviceOptions,
+  TrackBuilder,
+  TrackFn,
+  TrackFactory,
+} from "./episode.js";
 
 export {
   CameraTrackBuilder,
   CameraPointBuilder,
   CameraSpanBuilder,
-} from "./camera-track";
+} from "./camera-track.js";
 export type {
   CameraSetOptions,
   CameraAnimateOptions,
@@ -21,31 +26,31 @@ export type {
   CameraDutchTiltOptions,
   CameraFlashOptions,
   CameraWhipPanOptions,
-} from "./camera-track";
+} from "./camera-track.js";
 
 export {
   AudioTrackBuilder,
   AudioPointBuilder,
   AudioSpanBuilder,
-} from "./audio-track";
+} from "./audio-track.js";
 export type {
   BgmOptions,
   PlayOptions,
   CrossfadeOptions,
   FadeOutOptions,
-} from "./audio-track";
+} from "./audio-track.js";
 
-export { OSTrackBuilder, OSPointBuilder } from "./os-track";
+export { OSTrackBuilder, OSPointBuilder } from "./os-track.js";
 export type {
   OSStateOptions,
   BatteryOptions,
   NetworkOptions,
   NotificationOptions,
-} from "./os-track";
+} from "./os-track.js";
 
 export {
   parseTimeToFrames,
   parseDurationToFrames,
   framesToSeconds,
   framesToTimeString,
-} from "./utils/time";
+} from "./utils/time.js";

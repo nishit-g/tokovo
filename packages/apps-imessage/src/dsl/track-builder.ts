@@ -1,5 +1,5 @@
 import { parseTimeToFrames } from "@tokovo/dsl";
-import { IMESSAGE_APP_ID } from "../constants";
+import { IMESSAGE_APP_ID } from "../constants.js";
 import type {
   IMessageAttachment,
   IMessageBubbleEffect,
@@ -10,9 +10,9 @@ import type {
   VoiceAttachment,
   ContactAttachment,
   CalendarAttachment,
-} from "../types";
-import type { IMessageTrackEvent } from "../types";
-import type { IMessageConversation, IMessageParticipant } from "../types";
+} from "../types/index.js";
+import type { IMessageTrackEvent } from "../types/index.js";
+import type { IMessageConversation, IMessageParticipant } from "../types/index.js";
 
 type GetDeclarationOrder = () => number;
 

@@ -1,5 +1,5 @@
-import type { SoundRegistryAPI } from "../registries/sound";
-import { AudioLogger } from "../engine/logger";
+import type { SoundRegistryAPI } from "../registries/sound.js";
+import { AudioLogger } from "../engine/logger.js";
 
 const BUILT_IN_SOUNDS = {
   notification: "notification.mp3",

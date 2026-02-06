@@ -9,9 +9,9 @@ import type {
     BackgroundConfig,
     ResolvedBackgroundConfig,
     BackgroundPresetId,
-} from "./types";
-import { DEFAULT_BACKGROUND_CONFIG, FALLBACK_COLOR } from "./types";
-import { BACKGROUND_PRESETS, isPresetId } from "./presets";
+} from "./types.js";
+import { DEFAULT_BACKGROUND_CONFIG, FALLBACK_COLOR } from "./types.js";
+import { BACKGROUND_PRESETS, isPresetId } from "./presets.js";
 
 // =============================================================================
 // RESOLVER

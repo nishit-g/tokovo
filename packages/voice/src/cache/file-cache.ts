@@ -1,8 +1,8 @@
 import * as crypto from "crypto";
 import * as fs from "fs";
 import * as path from "path";
-import { VoiceScript } from "../types/script";
-import { VoiceManifest } from "../types/manifest";
+import { VoiceScript } from "../types/script.js";
+import { VoiceManifest } from "../types/manifest.js";
 
 export interface CacheEntry {
   manifest: VoiceManifest;

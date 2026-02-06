@@ -2,7 +2,7 @@
  * iMessage App State Types
  */
 
-import type { IMessageConversation } from "./conversation";
+import type { IMessageConversation } from "./conversation.js";
 import type { ViewKind } from "@tokovo/core";
 
 export type IMessageScreen = "list" | "chat" | "info" | "media";

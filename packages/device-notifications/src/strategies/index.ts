@@ -1,16 +1,16 @@
-export * from "./types";
+export * from "./types.js";
 
-export { NotificationBanner } from "./NotificationBanner";
-export { NotificationLockScreen } from "./NotificationLockScreen";
+export { NotificationBanner } from "./NotificationBanner.js";
+export { NotificationLockScreen } from "./NotificationLockScreen.js";
 
-export { IOSBanner } from "./ios/Banner";
-export { IOSLockScreen } from "./ios/LockScreen";
-export { AndroidBanner } from "./android/Banner";
-export { AndroidLockScreen } from "./android/LockScreen";
+export { IOSBanner } from "./ios/Banner.js";
+export { IOSLockScreen } from "./ios/LockScreen.js";
+export { AndroidBanner } from "./android/Banner.js";
+export { AndroidLockScreen } from "./android/LockScreen.js";
 
-import type { NotificationStrategy, StrategyRegistry } from "./types";
-import { NotificationBanner } from "./NotificationBanner";
-import { NotificationLockScreen } from "./NotificationLockScreen";
+import type { NotificationStrategy, StrategyRegistry } from "./types.js";
+import { NotificationBanner } from "./NotificationBanner.js";
+import { NotificationLockScreen } from "./NotificationLockScreen.js";
 
 export const defaultStrategy: NotificationStrategy = {
   id: "default",

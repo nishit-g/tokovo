@@ -4,7 +4,7 @@
 
 import React from "react";
 import { AbsoluteFill } from "remotion";
-import type { ResolvedBackgroundConfig } from "../types";
+import type { ResolvedBackgroundConfig } from "../types.js";
 
 interface GradientRendererProps {
     config: ResolvedBackgroundConfig;

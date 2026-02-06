@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { replay, createInitialWorld } from "../engine";
-import { createEngineRegistries } from "../engine/registries";
-import { createConfig } from "../config";
+import { replay, createInitialWorld } from "../engine.js";
+import { createEngineRegistries } from "../engine/registries.js";
+import { createConfig } from "../config/index.js";
 
 describe("replay APP event routing", () => {
   it("routes APP events by appId to the registered reducer", () => {

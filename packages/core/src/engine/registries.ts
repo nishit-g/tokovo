@@ -1,19 +1,19 @@
 import {
   createReducerRegistry,
   type ReducerRegistryClass,
-} from "./registry";
+} from "./registry.js";
 import {
   createEventHandlerRegistry,
   type EventHandlerRegistryClass,
-} from "./event-handlers";
+} from "./event-handlers.js";
 import {
   createMiddlewareRegistry,
   type MiddlewareRegistryClass,
-} from "./middleware";
+} from "./middleware.js";
 import {
   createLifecycleManager,
   type LifecycleManagerClass,
-} from "./lifecycle";
+} from "./lifecycle.js";
 
 export interface EngineRegistries {
   reducers: ReducerRegistryClass;

@@ -1,4 +1,4 @@
-import type { NotificationTokens, NotificationTokensConfig } from "./types";
+import type { NotificationTokens, NotificationTokensConfig } from "./types.js";
 
 const androidLightTokens: NotificationTokens = {
   platform: "android",

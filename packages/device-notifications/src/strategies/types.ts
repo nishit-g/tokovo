@@ -1,7 +1,7 @@
 import type React from "react";
 import type { NotificationInstance } from "@tokovo/core";
-import type { NotificationTokens } from "../tokens/types";
-import type { AnimationState } from "../runtime/selectors";
+import type { NotificationTokens } from "../tokens/types.js";
+import type { AnimationState } from "../runtime/selectors.js";
 
 export interface NotificationBannerProps {
   notification: NotificationInstance;

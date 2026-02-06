@@ -1,13 +1,13 @@
 import type { WorldState, TimelineEvent } from "@tokovo/core";
-import { IMESSAGE_APP_ID } from "../constants";
+import { IMESSAGE_APP_ID } from "../constants.js";
 import type {
   IMessageConversation,
   IMessageMessage,
   IMessageMessageKind,
   IMessageMessageStatus,
   IMessageState,
-} from "../types";
-import type { IMessageEventType, IMessageEventPayload } from "../types/events";
+} from "../types/index.js";
+import type { IMessageEventType, IMessageEventPayload } from "../types/events.js";
 
 function syncViewMode(state: IMessageState): void {
   switch (state.currentScreen) {

@@ -1,4 +1,4 @@
-import type { MutableHandlerRegistry } from "./registry";
+import type { MutableHandlerRegistry } from "./registry.js";
 import type {
   MessageReceivedEvent,
   MessageSentEvent,
@@ -6,8 +6,8 @@ import type {
   MessageDeletedEvent,
   MessageEditedEvent,
   MessageForwardedEvent,
-} from "../schemas";
-import type { WhatsAppMessage, WhatsAppMessageType } from "../types";
+} from "../schemas/index.js";
+import type { WhatsAppMessage, WhatsAppMessageType } from "../types/index.js";
 
 function bumpUnread(ctx: { draft: unknown; conversation: { id: string; unreadCount?: number } }, from: string): void {
   if (from === "me" || from === "system") return;

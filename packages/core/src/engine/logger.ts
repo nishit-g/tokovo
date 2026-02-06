@@ -9,9 +9,9 @@
  */
 /* eslint-disable no-console */
 
-import { EngineConfig } from "./config";
-import type { TimelineEvent } from "../types";
-import type { AudioBus } from "../types";
+import { EngineConfig } from "./config.js";
+import type { TimelineEvent } from "../types.js";
+import type { AudioBus } from "../types.js";
 
 export const EngineLogger = {
   event: (kind: string, type: string, frame: number): void => {

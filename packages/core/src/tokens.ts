@@ -155,7 +155,7 @@ export const androidTokens = {
 // =============================================================================
 
 // Import Platform from types/device to avoid duplicate exports
-import type { Platform } from "./types/device";
+import type { Platform } from "./types/device.js";
 // Re-export for backward compatibility (consumers of tokens.ts may expect it)
 export type { Platform };
 

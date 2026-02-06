@@ -3,7 +3,7 @@ import {
   PluginManagerClass,
   type TokovoRegistries,
 } from "@tokovo/react";
-import { registerBuiltInAnchorProviders } from "@tokovo/renderer";
+import { registerOSAnchorProviders } from "@tokovo/renderer";
 import { registerWhatsAppPlugin } from "@tokovo/apps-whatsapp";
 import { registerXPlugin } from "@tokovo/apps-x";
 import { registerIMessagePlugin } from "@tokovo/apps-imessage";
@@ -47,7 +47,7 @@ export function createVideoRunnerRuntime(): VideoRunnerRuntime {
   registerNotificationPlugin(tokovoRegistries.engine);
   registerCameraPlugin(pluginManager, tokovoRegistries.engine);
   registerKeyboardPlugin(tokovoRegistries.engine);
-  registerBuiltInAnchorProviders(tokovoRegistries.plugins.anchors);
+  registerOSAnchorProviders(tokovoRegistries.plugins.anchors);
 
   const episodeRegistry = createVideoRunnerEpisodeRegistry();
 

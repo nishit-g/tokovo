@@ -5,9 +5,9 @@ import type {
   Rect,
   ResolvedAnchor,
   AnchorProviderContext,
-} from "../types/anchor";
-import { DEFAULT_FRAMING, EMPTY_SNAPSHOT } from "../types/anchor";
-import type { WorldState } from "../types";
+} from "../types/anchor.js";
+import { DEFAULT_FRAMING, EMPTY_SNAPSHOT } from "../types/anchor.js";
+import type { WorldState } from "../types.js";
 
 export type {
   AnchorProvider,

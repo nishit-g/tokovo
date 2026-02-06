@@ -1,11 +1,11 @@
 import React, { useEffect, useRef } from "react";
 import { useKeyboardHeight } from "@tokovo/react";
-import { MessageBubble } from "./MessageBubble";
-import { useMessageGrouping } from "../hooks/useMessageGrouping";
-import { MessageData } from "../types";
-import { TypingIndicator } from "./TypingIndicator";
-import { useTheme } from "../theme/ThemeContext";
-import { senderColors } from "./theme";
+import { MessageBubble } from "./MessageBubble.js";
+import { useMessageGrouping } from "../hooks/useMessageGrouping.js";
+import { MessageData } from "../types/index.js";
+import { TypingIndicator } from "./TypingIndicator.js";
+import { useTheme } from "../theme/ThemeContext.js";
+import { senderColors } from "./theme.js";
 
 interface MessageListProps {
   messages: MessageData[];

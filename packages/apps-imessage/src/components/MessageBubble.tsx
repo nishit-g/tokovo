@@ -1,10 +1,10 @@
 import React from "react";
-import type { IMessageMessage, IMessageTapbackType } from "../types";
-import { iOS_IMESSAGE_LIGHT, LAYOUT_CONSTANTS } from "../config";
-import { AudioMessage } from "./AudioMessage";
-import { ContactCard } from "./ContactCard";
-import { CalendarCard } from "./CalendarCard";
-import { LinkPreviewCard } from "./LinkPreviewCard";
+import type { IMessageMessage, IMessageTapbackType } from "../types/index.js";
+import { iOS_IMESSAGE_LIGHT, LAYOUT_CONSTANTS } from "../config/index.js";
+import { AudioMessage } from "./AudioMessage.js";
+import { ContactCard } from "./ContactCard.js";
+import { CalendarCard } from "./CalendarCard.js";
+import { LinkPreviewCard } from "./LinkPreviewCard.js";
 
 interface MessageBubbleProps {
   message: IMessageMessage;

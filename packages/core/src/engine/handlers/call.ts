@@ -4,8 +4,8 @@
  * @description Handles incoming calls, answers, declines, and call controls.
  */
 
-import type { WorldState } from "../../types";
-import type { CallEvent, HandlerContext } from "./types";
+import type { WorldState } from "../../types.js";
+import type { CallEvent, HandlerContext } from "./types.js";
 
 interface CallEventPayload {
   deviceId?: string;

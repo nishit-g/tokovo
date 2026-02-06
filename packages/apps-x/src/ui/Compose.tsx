@@ -1,11 +1,11 @@
 import React from "react";
 import type { WorldState } from "@tokovo/core";
-import { useXTheme } from "./ThemeContext";
-import { getXState } from "../runtime/selectors";
-import { AppShell } from "./AppShell";
-import { Avatar } from "./components";
-import { ScreenTransition } from "./ScreenTransition";
-import { BottomNav } from "./BottomNav";
+import { useXTheme } from "./ThemeContext.js";
+import { getXState } from "../runtime/selectors.js";
+import { AppShell } from "./AppShell.js";
+import { Avatar } from "./components.js";
+import { ScreenTransition } from "./ScreenTransition.js";
+import { BottomNav } from "./BottomNav.js";
 
 interface ComposeProps {
   world: WorldState;

@@ -7,7 +7,7 @@ import type {
   XDMThread,
   XDMMessage,
   XThemeMode,
-} from "./state";
+} from "./state.js";
 
 export function getXState(world: WorldState): XState | undefined {
   return world.appState?.["app_x"] as XState | undefined;

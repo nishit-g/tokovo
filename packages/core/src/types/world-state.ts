@@ -4,9 +4,9 @@
  * @description WorldState and TouchState definitions.
  */
 
-import type { DeviceId, DeviceState } from "./device";
-import type { BaseCameraState } from "./camera";
-import type { AudioState, VideoConfig } from "./audio";
+import type { DeviceId, DeviceState } from "./device.js";
+import type { BaseCameraState } from "./camera.js";
+import type { AudioState, VideoConfig } from "./audio.js";
 
 // =============================================================================
 // APP STATE MAP - Extensible via module augmentation

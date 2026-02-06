@@ -4,7 +4,7 @@
  * Re-exports the canonical event types from types/events.ts
  * and provides legacy exports for backward compatibility.
  */
-import type { WhatsAppEventMap } from "../types/events";
+import type { WhatsAppEventMap } from "../types/events.js";
 
 export type {
   WhatsAppTrackEvent,
@@ -37,9 +37,9 @@ export type {
   MessageForwardedPayload,
   NavigateScreenPayload,
   DateSeparatorPayload,
-} from "../types/events";
+} from "../types/events.js";
 
-export { isWhatsAppEvent } from "../types/events";
+export { isWhatsAppEvent } from "../types/events.js";
 
 export type WhatsAppPayloads = WhatsAppEventMap;
 

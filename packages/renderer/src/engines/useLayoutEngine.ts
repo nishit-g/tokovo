@@ -28,9 +28,9 @@ import {
   type TokovoConfigType,
   type LayoutCacheStore,
 } from "@tokovo/core";
-import { computeLayout } from "../layout";
+import { computeLayout } from "../layout/index.js";
 import type { DeviceProfile, DeviceRegistries } from "@tokovo/devices";
-import { useRendererRegistries } from "../RegistryContext";
+import { useRendererRegistries } from "../RegistryContext.js";
 
 // =============================================================================
 // INPUT / OUTPUT TYPES

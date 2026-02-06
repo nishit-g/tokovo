@@ -4,7 +4,7 @@
  * Conversation and group member type definitions.
  */
 
-import type { WhatsAppMessage } from "./messages";
+import type { WhatsAppMessage } from "./messages.js";
 
 // =============================================================================
 // GROUP MEMBER

@@ -4,7 +4,7 @@ export {
   useStrings,
   useTranslation,
   useI18n,
-} from "./I18nContext";
+} from "./I18nContext.js";
 export {
   getStrings,
   t,
@@ -12,4 +12,4 @@ export {
   type Locale,
   type WhatsAppStrings,
   type TranslationKey,
-} from "./translations";
+} from "./translations.js";

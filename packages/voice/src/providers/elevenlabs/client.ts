@@ -2,7 +2,7 @@ import {
   ElevenLabsConfig,
   ElevenLabsTextToDialogueRequest,
   ElevenLabsTextToDialogueResponse,
-} from "./types";
+} from "./types.js";
 
 const DEFAULT_BASE_URL = "https://api.elevenlabs.io";
 const DEFAULT_MODEL = "eleven_v3";

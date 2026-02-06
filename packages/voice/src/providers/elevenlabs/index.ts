@@ -1,2 +1,2 @@
-export { ElevenLabsClient } from "./client";
-export * from "./types";
+export { ElevenLabsClient } from "./client.js";
+export * from "./types.js";

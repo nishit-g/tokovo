@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
-import type { WorldState } from "../types";
-import navigationReducer from "../engine/handlers/navigation";
+import type { WorldState } from "../types.js";
+import navigationReducer from "../engine/handlers/navigation.js";
 
 describe("navigation reducer", () => {
   const baseWorld = (): WorldState => ({

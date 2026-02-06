@@ -1,6 +1,6 @@
 // NOTE: DeviceId, AppId, ConversationId, Platform are now in ./types/device.ts
 // Re-export for backward compatibility
-export type { DeviceId, AppId, ConversationId, Platform } from "./types/device";
+export type { DeviceId, AppId, ConversationId, Platform } from "./types/device.js";
 
 export type {
   AppScreens,
@@ -26,9 +26,9 @@ export type {
   KeyPressState,
   KeyboardState,
   TypingAnimation,
-} from "./types/device";
+} from "./types/device.js";
 
-export { DEFAULT_OS_STATE, DEFAULT_KEYBOARD_STATE } from "./types/device";
+export { DEFAULT_OS_STATE, DEFAULT_KEYBOARD_STATE } from "./types/device.js";
 
 export type {
   NotificationPriority,
@@ -46,14 +46,14 @@ export type {
   DynamicIslandMode,
   DynamicIslandContent,
   NotificationQueueState,
-} from "./types/notification";
+} from "./types/notification.js";
 
 export {
   IOS_NOTIFICATION_POLICY,
   ANDROID_NOTIFICATION_POLICY,
   DEFAULT_NOTIFICATION_CENTER,
   DEFAULT_DYNAMIC_ISLAND,
-} from "./types/notification";
+} from "./types/notification.js";
 
 // =============================================================================
 // APP DATA - REMOVED FROM CORE
@@ -79,12 +79,12 @@ export {
 // =============================================================================
 
 // Core camera types (no device-camera dependency)
-export type { CameraTransform, BaseCameraState } from "./types/camera";
+export type { CameraTransform, BaseCameraState } from "./types/camera.js";
 export {
   DEFAULT_TRANSFORM,
   DEFAULT_CAMERA_TRANSFORM,
   DEFAULT_BASE_CAMERA_STATE,
-} from "./types/camera";
+} from "./types/camera.js";
 
 // =============================================================================
 // TRANSITION SYSTEM TYPES (not camera-specific, stays in core)
@@ -116,7 +116,7 @@ export type HighlightStyle =
 // MULTI-DEVICE / POV TYPES (stays in core)
 // =============================================================================
 
-import type { ViewLayoutMode, PIPPosition } from "./types/layout";
+import type { ViewLayoutMode, PIPPosition } from "./types/layout.js";
 export type { ViewLayoutMode, PIPPosition };
 
 export interface ViewLayout {
@@ -151,19 +151,19 @@ export type {
   CrossfadeCurve,
   AudioState,
   VideoConfig,
-} from "./types/audio";
+} from "./types/audio.js";
 
 export {
   DEFAULT_BUS_CONFIG,
   DEFAULT_AUDIO_STATE,
   DEFAULT_VIDEO_CONFIG,
-} from "./types/audio";
+} from "./types/audio.js";
 
 // =============================================================================
 // TOUCH STATE (for gesture visualization)
 // =============================================================================
 
-export type { WorldState, TouchState } from "./types/world-state";
+export type { WorldState, TouchState } from "./types/world-state.js";
 
 // =============================================================================
 // EVENT TYPE - UNIFIED
@@ -179,7 +179,7 @@ export type { WorldState, TouchState } from "./types/world-state";
  *
  * @see docs/FUCKING_MESS.md Section 4
  */
-import type { RuntimeEvent } from "./types/runtime-event";
+import type { RuntimeEvent } from "./types/runtime-event.js";
 export type TimelineEvent = RuntimeEvent;
 
 export type {
@@ -205,7 +205,7 @@ export type {
   OSRuntimeEvent,
   CallRuntimeEvent,
   DeviceRuntimeEvent,
-} from "./types/runtime-event";
+} from "./types/runtime-event.js";
 
 // --- Layout System Types ---
 // Re-export from types/layout.ts for backward compatibility
@@ -242,19 +242,19 @@ export type {
   LockscreenLayoutMeta,
   TransitionLayoutState,
   TransitionLayoutMeta,
-} from "./types/layout";
+} from "./types/layout.js";
 
 // StatusBar theming
 export {
   STATUS_BAR_PRESETS,
   resolveStatusBarTheme,
-} from "./types/statusbar-theme";
+} from "./types/statusbar-theme.js";
 export type {
   StatusBarPreset,
   StatusBarCustomTheme,
   StatusBarTheme,
   ResolvedStatusBarTheme,
-} from "./types/statusbar-theme";
+} from "./types/statusbar-theme.js";
 
 // Re-export runtime event types (for typed device events)
 export type {
@@ -284,6 +284,6 @@ export type {
   VoiceStopEvent,
   VoiceRuntimeEvent,
   isRuntimeVoiceEvent,
-} from "./types/runtime-event";
+} from "./types/runtime-event.js";
 
-export type { SemanticAnchorId } from "./types/anchor";
+export type { SemanticAnchorId } from "./types/anchor.js";

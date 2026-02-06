@@ -1,2 +1,2 @@
-export { FileCache, computeScriptHash } from "./file-cache";
-export type { CacheEntry, CacheConfig } from "./file-cache";
+export { FileCache, computeScriptHash } from "./file-cache.js";
+export type { CacheEntry, CacheConfig } from "./file-cache.js";

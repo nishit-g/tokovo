@@ -11,30 +11,30 @@ import {
   CompiledEpisode,
   PrepareOptions,
   AssetManifest,
-} from "../types/compiled-episode";
-import { RuntimeEvent } from "../types/runtime-event";
-import { TokovoPluginContract } from "../types/plugin-contract";
+} from "../types/compiled-episode.js";
+import { RuntimeEvent } from "../types/runtime-event.js";
+import { TokovoPluginContract } from "../types/plugin-contract.js";
 import {
   compareEvents,
   createEventIndex,
   createKeyframedEventIndex,
-} from "../utils/event-utils";
-import { TokovoConfig } from "../config";
+} from "../utils/event-utils.js";
+import { TokovoConfig } from "../config/index.js";
 import {
   WorldState,
   DEFAULT_BASE_CAMERA_STATE as DEFAULT_BASE_CAMERA_STATE,
   DEFAULT_AUDIO_STATE,
   DEFAULT_OS_STATE,
-} from "../types";
-import { replayIncremental } from "../engine";
-import type { EventIndex, KeyframedEventIndex } from "../utils/event-utils";
+} from "../types.js";
+import { replayIncremental } from "../engine.js";
+import type { EventIndex, KeyframedEventIndex } from "../utils/event-utils.js";
 import {
   type StateCache,
   createStateCache,
   ensureStateCacheIdentity,
   computeEventSignature,
-} from "../utils/state-cache";
-import type { TokovoConfigType } from "../config";
+} from "../utils/state-cache.js";
+import type { TokovoConfigType } from "../config/index.js";
 
 // Type for compile function (optional peer dependency)
 interface CompileResult {
@@ -568,7 +568,7 @@ export type {
   CompiledEpisode,
   PrepareOptions,
   AssetManifest,
-} from "../types/compiled-episode";
+} from "../types/compiled-episode.js";
 export type {
   RuntimeEvent,
   AppRuntimeEvent,
@@ -576,4 +576,4 @@ export type {
   CameraRuntimeEvent,
   AudioRuntimeEvent,
   KeyboardRuntimeEvent,
-} from "../types/runtime-event";
+} from "../types/runtime-event.js";

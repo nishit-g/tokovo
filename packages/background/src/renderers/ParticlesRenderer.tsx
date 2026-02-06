@@ -6,7 +6,7 @@
 
 import React, { useMemo } from "react";
 import { AbsoluteFill, useCurrentFrame, useVideoConfig, interpolate } from "remotion";
-import type { ResolvedBackgroundConfig } from "../types";
+import type { ResolvedBackgroundConfig } from "../types.js";
 
 interface ParticlesRendererProps {
     config: ResolvedBackgroundConfig;

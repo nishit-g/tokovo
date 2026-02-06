@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
-import type { AudioState, SoundCue } from "../types";
-import { DEFAULT_BUS_CONFIG } from "../types/audio";
+import type { AudioState, SoundCue } from "../types.js";
+import { DEFAULT_BUS_CONFIG } from "../types/audio.js";
 import {
   applyEnvelope,
   computeBusDuckMultiplier,
@@ -9,7 +9,7 @@ import {
   createSoundCue,
   createUISoundCue,
   createVoiceSoundCue,
-} from "../audio/mixer";
+} from "../audio/mixer.js";
 
 describe("audio mixer", () => {
   it("applies envelope attack and release", () => {

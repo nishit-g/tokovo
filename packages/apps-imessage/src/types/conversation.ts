@@ -2,7 +2,7 @@
  * iMessage conversation and participant types.
  */
 
-import type { IMessageMessage, IMessageTransport } from "./messages";
+import type { IMessageMessage, IMessageTransport } from "./messages.js";
 
 export interface IMessageParticipant {
   id: string;

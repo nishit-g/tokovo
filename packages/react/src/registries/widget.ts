@@ -5,7 +5,7 @@
  * Note: Complex resolution logic - not using createRegistry factory.
  */
 
-import type { WidgetSlot, WidgetMode, WidgetComponent } from "../plugin/plugin";
+import type { WidgetSlot, WidgetMode, WidgetComponent } from "../plugin/plugin.js";
 import type { Platform } from "@tokovo/core";
 
 // =============================================================================

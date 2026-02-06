@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
-import type { TimelineEvent, WorldState } from "../types";
-import { createReducerRegistry } from "../engine/registry";
-import { EngineLogger } from "../engine/logger";
+import type { TimelineEvent, WorldState } from "../types.js";
+import { createReducerRegistry } from "../engine/registry.js";
+import { EngineLogger } from "../engine/logger.js";
 
 describe("ReducerRegistry", () => {
   it("registers and retrieves device reducer", () => {

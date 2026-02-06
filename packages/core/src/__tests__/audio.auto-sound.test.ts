@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
-import type { TimelineEvent } from "../types";
+import type { TimelineEvent } from "../types.js";
 import {
   deriveAudioInstructions,
   AutoSoundRule,
   createAutoSoundRegistry,
-} from "../audio/auto-sound";
+} from "../audio/auto-sound.js";
 
 const baseEvent: TimelineEvent = {
   at: 10,

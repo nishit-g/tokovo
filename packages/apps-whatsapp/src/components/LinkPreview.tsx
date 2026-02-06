@@ -1,6 +1,6 @@
 import React from "react";
 import { Img, staticFile } from "remotion";
-import { whatsappColors } from "./theme";
+import { whatsappColors } from "./theme.js";
 
 export interface LinkPreviewData {
   url: string;

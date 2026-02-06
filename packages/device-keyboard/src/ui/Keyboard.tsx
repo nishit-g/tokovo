@@ -1,15 +1,15 @@
 import React from "react";
-import { KeyRow } from "./KeyRow";
-import { Key } from "./Key";
-import type { KeyboardState } from "../runtime/state";
-import { isKeyActive, getKeyboardSlideProgress } from "../runtime/selectors";
+import { KeyRow } from "./KeyRow.js";
+import { Key } from "./Key.js";
+import type { KeyboardState } from "../runtime/state.js";
+import { isKeyActive, getKeyboardSlideProgress } from "../runtime/selectors.js";
 import {
   keyboardTypography,
   keyboardSpacing,
   getKeyboardColors,
   createKeyboardShadows,
-} from "./tokens";
-import { getLayout, type KeyboardLayout } from "./layouts";
+} from "./tokens.js";
+import { getLayout, type KeyboardLayout } from "./layouts.js";
 
 interface KeyboardProps {
   state: KeyboardState;

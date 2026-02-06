@@ -4,8 +4,8 @@
 
 import React from "react";
 import { AbsoluteFill } from "remotion";
-import type { ResolvedBackgroundConfig } from "../types";
-import { FALLBACK_COLOR } from "../types";
+import type { ResolvedBackgroundConfig } from "../types.js";
+import { FALLBACK_COLOR } from "../types.js";
 
 interface SolidRendererProps {
     config: ResolvedBackgroundConfig;

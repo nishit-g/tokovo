@@ -6,7 +6,7 @@ import {
   createKeyboardShadows,
   type KeyboardTheme,
   getKeyboardColors,
-} from "./tokens";
+} from "./tokens.js";
 
 export interface KeyProps {
   label: string;

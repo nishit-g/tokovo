@@ -5,8 +5,8 @@
  * Apps self-register their behaviors at module load time.
  */
 
-import { createRegistry } from "./factory";
-import type { SemanticAnchorId } from "../types/anchor";
+import { createRegistry } from "./factory.js";
+import type { SemanticAnchorId } from "../types/anchor.js";
 
 // ShotPresetId is now just a string (presets moved to device-camera)
 type ShotPresetId = string;

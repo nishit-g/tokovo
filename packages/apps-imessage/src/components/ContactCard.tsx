@@ -4,10 +4,10 @@
  */
 
 import React from "react";
-import { useIMessageTheme } from "../ui/ThemeContext";
-import { iMessageSpacing, iMessageTypography } from "../config/tokens";
-import { iOS_COLORS } from "../config/colors";
-import type { ContactAttachment } from "../types";
+import { useIMessageTheme } from "../ui/ThemeContext.js";
+import { iMessageSpacing, iMessageTypography } from "../config/tokens.js";
+import { iOS_COLORS } from "../config/colors.js";
+import type { ContactAttachment } from "../types/index.js";
 
 interface ContactCardProps {
     contact: ContactAttachment;

@@ -33,15 +33,15 @@ import {
 } from "@tokovo/device-keyboard";
 
 import { useDeviceRegistries } from "@tokovo/devices";
-import { NotificationOverlay } from "./overlays";
-import { LockscreenView, HomeScreenView } from "./screens";
-import { VisualDebugger } from "./VisualDebugger";
-import { DynamicIsland } from "./os";
-import { useLayoutEngine } from "./engines/useLayoutEngine";
-import { useCameraEngine } from "./engines/useCameraEngine";
-import type { CameraEngineOutput } from "./engines/useCameraEngine";
-import { AppErrorBoundary } from "./ErrorBoundary";
-import { RendererRegistryProvider, type RendererRegistries } from "./RegistryContext";
+import { NotificationOverlay } from "./overlays/index.js";
+import { LockscreenView, HomeScreenView } from "./screens/index.js";
+import { VisualDebugger } from "./VisualDebugger.js";
+import { DynamicIsland } from "./os/index.js";
+import { useLayoutEngine } from "./engines/useLayoutEngine.js";
+import { useCameraEngine } from "./engines/useCameraEngine.js";
+import type { CameraEngineOutput } from "./engines/useCameraEngine.js";
+import { AppErrorBoundary } from "./ErrorBoundary.js";
+import { RendererRegistryProvider, type RendererRegistries } from "./RegistryContext.js";
 
 const log = createScopedLogger("renderer");
 

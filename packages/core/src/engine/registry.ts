@@ -4,9 +4,9 @@
  * @description Registry for plugin reducers. Apps self-register their handlers.
  */
 
-import type { WorldState, TimelineEvent, DeviceState } from "../types";
-import type { HandlerContext } from "./handlers/types";
-import { EngineLogger } from "./logger";
+import type { WorldState, TimelineEvent, DeviceState } from "../types.js";
+import type { HandlerContext } from "./handlers/types.js";
+import { EngineLogger } from "./logger.js";
 
 // =============================================================================
 // REDUCER TYPES

@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import type { WorldState } from "@tokovo/core";
 import { DEFAULT_AUDIO_STATE, DEFAULT_BASE_CAMERA_STATE } from "@tokovo/core";
-import { whatsappReducer } from "../runtime/reducer";
+import { whatsappReducer } from "../runtime/reducer.js";
 
 function baseWorld(): WorldState {
   return {

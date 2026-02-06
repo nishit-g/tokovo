@@ -1,6 +1,6 @@
 import { produce } from "immer";
-import type { KeyboardState, KeyPressState } from "./state";
-import { createKeyboardInitialState } from "./state";
+import type { KeyboardState, KeyPressState } from "./state.js";
+import { createKeyboardInitialState } from "./state.js";
 
 interface KeyboardShowPayload {
   keyboardType?: KeyboardState["keyboardType"];

@@ -6,8 +6,8 @@
  */
 
 /** @deprecated Prefer device registries (use registerDevicesPlugin). */
-export { iPhone16Frame } from "./iphone16/Frame";
+export { iPhone16Frame } from "./iphone16/Frame.js";
 /** @deprecated Prefer device registries (use registerDevicesPlugin). */
-export { iPhone16Shell } from "./iphone16/shell";
+export { iPhone16Shell } from "./iphone16/shell.js";
 /** @deprecated Prefer device registries (use registerDevicesPlugin). */
-export { PixelFrame } from "./pixel/Frame";
+export { PixelFrame } from "./pixel/Frame.js";

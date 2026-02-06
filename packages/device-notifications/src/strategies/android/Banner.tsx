@@ -1,6 +1,6 @@
 import React from "react";
-import type { NotificationBannerProps } from "../types";
-import { useNotificationAnimation } from "../../hooks/useNotificationAnimation";
+import type { NotificationBannerProps } from "../types.js";
+import { useNotificationAnimation } from "../../hooks/useNotificationAnimation.js";
 
 export const AndroidBanner: React.FC<NotificationBannerProps> = ({
   notification,

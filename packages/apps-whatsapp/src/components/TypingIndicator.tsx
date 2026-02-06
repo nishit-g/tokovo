@@ -1,6 +1,6 @@
 import React from "react";
 import { useCurrentFrame, useVideoConfig, interpolate } from "remotion";
-import { useTheme } from "../theme/ThemeContext";
+import { useTheme } from "../theme/ThemeContext.js";
 
 export const TypingIndicator: React.FC = () => {
   const theme = useTheme();

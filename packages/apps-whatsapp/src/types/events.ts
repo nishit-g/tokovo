@@ -1,5 +1,5 @@
 import type { TrackEventBase } from "@tokovo/ir";
-import type { WhatsAppMessageType } from "./messages";
+import type { WhatsAppMessageType } from "./messages.js";
 
 export interface MessageReference {
   messageId?: string;

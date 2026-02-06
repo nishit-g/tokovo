@@ -4,9 +4,9 @@
  * iOS 17 style message input with apps button, camera, and send
  */
 import React from "react";
-import { useIMessageTheme } from "../ui/ThemeContext";
-import { iMessageSpacing, iMessageTypography } from "../config/tokens";
-import type { IMessageTheme } from "../config/imessage-theme";
+import { useIMessageTheme } from "../ui/ThemeContext.js";
+import { iMessageSpacing, iMessageTypography } from "../config/tokens.js";
+import type { IMessageTheme } from "../config/imessage-theme.js";
 
 interface InputBarProps {
   /** For backward compatibility - prefer using inside ThemeContext */

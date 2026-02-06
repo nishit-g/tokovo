@@ -1,5 +1,5 @@
-import type { WorldState, TimelineEvent } from "../types";
-import { createScopedLogger } from "../logger";
+import type { WorldState, TimelineEvent } from "../types.js";
+import { createScopedLogger } from "../logger/index.js";
 
 const log = createScopedLogger("lifecycle");
 

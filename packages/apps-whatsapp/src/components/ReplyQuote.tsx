@@ -9,7 +9,7 @@
 
 import React from "react";
 import { Camera, Video, Mic } from "lucide-react";
-import { whatsappColors } from "./theme";
+import { whatsappColors } from "./theme.js";
 
 export interface ReplyToData {
     messageId: string;

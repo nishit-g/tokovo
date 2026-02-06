@@ -12,5 +12,5 @@ export {
   typography as waTypography,
   spacing as waSpacing,
   whatsappIOSTheme as waTheme,
-} from "../components/theme";
+} from "../components/theme.js";
 

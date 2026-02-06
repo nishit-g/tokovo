@@ -8,8 +8,8 @@ import type {
   WorldState,
 } from "@tokovo/core";
 
-import type { XState } from "../runtime/state";
-import { xAnchors } from "../runtime/adapters/anchors";
+import type { XState } from "../runtime/state.js";
+import { xAnchors } from "../runtime/adapters/anchors.js";
 
 const APP_ID = "app_x";
 

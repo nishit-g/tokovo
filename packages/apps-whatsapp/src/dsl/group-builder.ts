@@ -20,7 +20,7 @@ import {
   GroupMemberRemovePayload,
   GroupAdminChangePayload,
   GroupInfoUpdatePayload,
-} from "../ir/group-ops";
+} from "../ir/group-ops.js";
 
 interface CustomOp {
   at: number;

@@ -1,10 +1,10 @@
 import React from "react";
 import { NotificationInstance, NotificationGroup } from "@tokovo/core";
-import { useRendererRegistries } from "../RegistryContext";
+import { useRendererRegistries } from "../RegistryContext.js";
 import type {
   LockscreenLayoutState,
   NotificationLayout,
-} from "../layout/types";
+} from "../layout/types.js";
 
 interface LayoutState {
   kind: string;

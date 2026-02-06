@@ -16,7 +16,7 @@ import type {
   WorldState,
 } from "@tokovo/core";
 
-import { WhatsAppAnchors } from "../runtime/adapters/anchors";
+import { WhatsAppAnchors } from "../runtime/adapters/anchors.js";
 
 const APP_ID = "app_whatsapp";
 

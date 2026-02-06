@@ -1,5 +1,5 @@
-import type { TimelineEvent, WorldState } from "../types";
-import type { ReducerRegistryClass } from "./registry";
+import type { TimelineEvent, WorldState } from "../types.js";
+import type { ReducerRegistryClass } from "./registry.js";
 import {
   processCameraEvent,
   processAudioEvent,
@@ -7,7 +7,7 @@ import {
   processCallEvent,
   processVoiceEvent,
   HandlerContext,
-} from "./handlers";
+} from "./handlers/index.js";
 
 export type BuiltInHandler = (
   draft: WorldState,

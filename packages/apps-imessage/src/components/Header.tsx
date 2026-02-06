@@ -4,9 +4,9 @@
  * iOS 17 style navigation header with frosted glass effect
  */
 import React from "react";
-import { useIMessageTheme } from "../ui/ThemeContext";
-import { iMessageSpacing, iMessageTypography } from "../config/tokens";
-import type { IMessageTheme } from "../config/imessage-theme";
+import { useIMessageTheme } from "../ui/ThemeContext.js";
+import { iMessageSpacing, iMessageTypography } from "../config/tokens.js";
+import type { IMessageTheme } from "../config/imessage-theme.js";
 
 interface HeaderProps {
   name: string;

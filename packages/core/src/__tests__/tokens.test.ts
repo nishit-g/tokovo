@@ -7,7 +7,7 @@ import {
   getAppConfig,
   sharedStyles,
   appConfigs,
-} from "../tokens";
+} from "../tokens.js";
 
 describe("tokens", () => {
   it("returns platform tokens", () => {

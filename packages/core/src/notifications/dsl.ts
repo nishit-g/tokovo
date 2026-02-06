@@ -8,7 +8,7 @@ import {
   TimelineEvent,
   NotificationPriority,
   NotificationDeliverWhen,
-} from "../types";
+} from "../types.js";
 
 // =============================================================================
 // NOTIFICATION DSL

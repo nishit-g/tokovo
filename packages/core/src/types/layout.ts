@@ -4,7 +4,7 @@
  * @description View kinds, layout configs, layout states, and semantic regions.
  */
 
-import type { WorldState } from "./world-state";
+import type { WorldState } from "./world-state.js";
 
 // =============================================================================
 // VIEW KINDS

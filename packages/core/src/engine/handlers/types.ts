@@ -4,7 +4,7 @@
  * @description Defines the interface all handlers must implement.
  */
 
-import type { WorldState, TimelineEvent } from "../../types";
+import type { WorldState, TimelineEvent } from "../../types.js";
 
 // =============================================================================
 // HANDLER CONTEXT

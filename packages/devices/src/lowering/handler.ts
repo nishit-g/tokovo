@@ -5,7 +5,7 @@
  */
 
 import type { TrackEvent } from "@tokovo/ir";
-import type { DeviceTrackEvent } from "../ir/device-event";
+import type { DeviceTrackEvent } from "../ir/device-event.js";
 
 type TimelineOp = TrackEvent;
 

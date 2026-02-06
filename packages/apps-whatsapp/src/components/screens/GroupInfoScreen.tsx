@@ -1,6 +1,6 @@
 import React from "react";
 import { WorldState } from "@tokovo/core";
-import { whatsappColors, spacing } from "../theme";
+import { whatsappColors, spacing } from "../theme.js";
 
 export interface GroupInfoScreenProps {
   world: WorldState;

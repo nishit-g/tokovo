@@ -1,12 +1,12 @@
-import type { MutableHandlerRegistry } from "./registry";
+import type { MutableHandlerRegistry } from "./registry.js";
 import type {
   GroupMemberAddedEvent,
   GroupMemberRemovedEvent,
   DateSeparatorEvent,
   ReactEvent,
   ReactionAddedEvent,
-} from "../schemas";
-import type { WhatsAppMessage } from "../types";
+} from "../schemas/index.js";
+import type { WhatsAppMessage } from "../types/index.js";
 
 export function registerGroupHandlers(
   registry: MutableHandlerRegistry,

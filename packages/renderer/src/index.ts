@@ -8,60 +8,60 @@
 // ===========================================================================
 // CORE RENDERERS
 // ===========================================================================
-export { TokovoRenderer } from "./TokovoRenderer";
-export type { CameraDebugFrame } from "./TokovoRenderer";
-export { DeviceFrame } from "./DeviceFrame";
-export { MultiDeviceRenderer } from "./MultiDeviceRenderer";
-export { AudioLayer } from "./AudioLayer";
+export { TokovoRenderer } from "./TokovoRenderer.js";
+export type { CameraDebugFrame } from "./TokovoRenderer.js";
+export { DeviceFrame } from "./DeviceFrame.js";
+export { MultiDeviceRenderer } from "./MultiDeviceRenderer.js";
+export { AudioLayer } from "./AudioLayer.js";
 
 // ===========================================================================
 // OVERLAYS
 // ===========================================================================
-export { NotificationOverlay } from "./overlays";
-export { CallOverlay } from "./overlays";
-export { TouchOverlay } from "./overlays";
+export { NotificationOverlay } from "./overlays/index.js";
+export { CallOverlay } from "./overlays/index.js";
+export { TouchOverlay } from "./overlays/index.js";
 
 // ===========================================================================
 // SCREENS
 // ===========================================================================
-export { LockscreenView } from "./screens";
-export { HomeScreenView } from "./screens";
+export { LockscreenView } from "./screens/index.js";
+export { HomeScreenView } from "./screens/index.js";
 
 // ===========================================================================
 // OS COMPONENTS
 // ===========================================================================
-export { DynamicIsland } from "./os";
-export { NotificationShade } from "./os";
+export { DynamicIsland } from "./os/index.js";
+export { NotificationShade } from "./os/index.js";
 // HeadsUpNotification is now in @tokovo/device-notifications
 
 // ===========================================================================
 // LAYOUT SYSTEM
 // ===========================================================================
-export { computeLayout } from "./layout";
+export { computeLayout } from "./layout/index.js";
 export type {
   LayoutState,
   ChatLayoutState,
   ChatMessageLayout,
-} from "./layout/types";
-export * from "./layout";
+} from "./layout/types.js";
+export * from "./layout/index.js";
 
 // ===========================================================================
 // UTILITIES
 // ===========================================================================
-export { NowPlayingBar } from "./NowPlayingBar";
-export { VisualDebugger } from "./VisualDebugger";
-export { UnlockTransition } from "./AppTransition";
+export { NowPlayingBar } from "./NowPlayingBar.js";
+export { VisualDebugger } from "./VisualDebugger.js";
+export { UnlockTransition } from "./AppTransition.js";
 export {
   RendererRegistryProvider,
   useRendererRegistries,
   type RendererRegistries,
-} from "./RegistryContext";
+} from "./RegistryContext.js";
 
 // ===========================================================================
 // ENGINES
 // ===========================================================================
-export { useLayoutEngine, useCameraEngine, useAudioEngine } from "./engines";
-export { NULL_AUDIO_OUTPUT } from "./engines";
+export { useLayoutEngine, useCameraEngine, useAudioEngine } from "./engines/index.js";
+export { NULL_AUDIO_OUTPUT } from "./engines/index.js";
 export type {
   LayoutEngineInput,
   LayoutEngineOutput,
@@ -69,7 +69,7 @@ export type {
   CameraEngineOutput,
   AudioEngineInput,
   AudioEngineOutput,
-} from "./engines";
+} from "./engines/index.js";
 
 // ===========================================================================
 // ANCHOR SYSTEM
@@ -78,5 +78,6 @@ export type {
 // Only export renderer-specific anchors:
 export {
   registerBuiltInAnchorProviders,
+  registerOSAnchorProviders,
   getAllAnchors,
-} from "./anchor-providers";
+} from "./anchor-providers/index.js";

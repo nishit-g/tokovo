@@ -7,7 +7,7 @@
  */
 
 // Runtime Layer
-import { deviceReducer } from "./reducer";
+import { deviceReducer } from "./reducer.js";
 
 // Local interface for the registries we need (TokovoRegistries is not exported from core)
 interface TokovoRegistries {
@@ -22,7 +22,7 @@ interface TokovoRegistries {
 }
 
 // Registries
-import type { DeviceRegistries } from "./registries/bundle";
+import type { DeviceRegistries } from "./registries/bundle.js";
 import {
     createDeviceRegistries,
     createDeviceRegistry,
@@ -31,26 +31,26 @@ import {
     DeviceRegistryClass,
     FrameRegistryClass,
     StatusBarStrategyRegistryClass,
-} from "./registries";
-import { createDeviceShellRegistry, DeviceShellRegistryClass } from "./registry";
+} from "./registries/index.js";
+import { createDeviceShellRegistry, DeviceShellRegistryClass } from "./registry.js";
 
 // Views
-import { StatusBar } from "./StatusBar";
+import { StatusBar } from "./StatusBar.js";
 
 // Strategies
-import { IOSStatusBarStrategy, AndroidStatusBarStrategy } from "./strategies";
+import { IOSStatusBarStrategy, AndroidStatusBarStrategy } from "./strategies/index.js";
 
 // DSL
-import { DeviceTrackBuilder } from "./dsl";
+import { DeviceTrackBuilder } from "./dsl/index.js";
 
 // Lowering
-import { deviceV2Lowering } from "./lowering";
+import { deviceV2Lowering } from "./lowering/index.js";
 
 // Profiles
-import { iPhone16Profile } from "./iphone16/profile";
-import { iPhone16Frame } from "./iphone16/Frame";
-import { PixelProfile } from "./pixel/profile";
-import { PixelFrame } from "./pixel/Frame";
+import { iPhone16Profile } from "./iphone16/profile.js";
+import { iPhone16Frame } from "./iphone16/Frame.js";
+import { PixelProfile } from "./pixel/profile.js";
+import { PixelFrame } from "./pixel/Frame.js";
 
 // =============================================================================
 // PLUGIN CONTRACT

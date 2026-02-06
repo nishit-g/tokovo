@@ -1,8 +1,8 @@
-import { VoiceScript } from "../types/script";
-import { VoiceManifest, VoiceSegment } from "../types/manifest";
-import { ElevenLabsClient } from "../providers/elevenlabs/client";
-import { ElevenLabsTextToDialogueResponse } from "../providers/elevenlabs/types";
-import { FileCache, computeScriptHash } from "../cache/file-cache";
+import { VoiceScript } from "../types/script.js";
+import { VoiceManifest, VoiceSegment } from "../types/manifest.js";
+import { ElevenLabsClient } from "../providers/elevenlabs/client.js";
+import { ElevenLabsTextToDialogueResponse } from "../providers/elevenlabs/types.js";
+import { FileCache, computeScriptHash } from "../cache/file-cache.js";
 
 export interface GenerateOptions {
   apiKey: string;

@@ -1,5 +1,5 @@
-import type { IMessageTrackEvent, IMessageEventType } from "./events";
-import type { IMessageState } from "./state";
+import type { IMessageTrackEvent, IMessageEventType } from "./events.js";
+import type { IMessageState } from "./state.js";
 
 declare module "@tokovo/ir" {
   interface AppTrackEventRegistry {

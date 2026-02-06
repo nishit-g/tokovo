@@ -7,16 +7,16 @@
 
 import React from "react";
 import { AbsoluteFill } from "remotion";
-import type { BackgroundConfig, BackgroundPresetId } from "./types";
-import { FALLBACK_COLOR } from "./types";
-import { resolveBackground } from "./resolver";
+import type { BackgroundConfig, BackgroundPresetId } from "./types.js";
+import { FALLBACK_COLOR } from "./types.js";
+import { resolveBackground } from "./resolver.js";
 import {
     SolidRenderer,
     GradientRenderer,
     ImageRenderer,
     VideoRenderer,
     ParticlesRenderer,
-} from "./renderers";
+} from "./renderers/index.js";
 
 // =============================================================================
 // TYPES

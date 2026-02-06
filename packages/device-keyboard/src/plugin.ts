@@ -1,4 +1,4 @@
-import { keyboardReducer } from "./runtime/reducer";
+import { keyboardReducer } from "./runtime/reducer.js";
 import type { KeyboardState } from "@tokovo/core";
 import type { EngineRegistries } from "@tokovo/core";
 

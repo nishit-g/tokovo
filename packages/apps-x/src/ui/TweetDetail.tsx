@@ -1,18 +1,18 @@
 import React from "react";
 import type { WorldState } from "@tokovo/core";
 import { framesToSeconds, TokovoConfig } from "@tokovo/core";
-import { useXTheme } from "./ThemeContext";
-import { getActiveTweet, getXState } from "../runtime/selectors";
-import { AppShell } from "./AppShell";
+import { useXTheme } from "./ThemeContext.js";
+import { getActiveTweet, getXState } from "../runtime/selectors.js";
+import { AppShell } from "./AppShell.js";
 import {
   Avatar,
   VerifiedBadge,
   XIcon,
   ActionButton,
   formatTimestamp as formatRelative,
-} from "./components";
-import { ScreenTransition } from "./ScreenTransition";
-import { BottomNav } from "./BottomNav";
+} from "./components.js";
+import { ScreenTransition } from "./ScreenTransition.js";
+import { BottomNav } from "./BottomNav.js";
 
 interface TweetDetailProps {
   world: WorldState;

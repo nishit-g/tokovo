@@ -15,11 +15,11 @@
  * @see docs/FUCKING_MESS.md
  */
 
-import type { WorldState } from "../../types";
+import type { WorldState } from "../../types.js";
 import type {
   DeviceRuntimeEvent,
   AppRuntimeEvent,
-} from "../../types/runtime-event";
+} from "../../types/runtime-event.js";
 
 interface NavigationEventPayload {
   deviceId?: string;

@@ -10,7 +10,7 @@ import {
   getCameraConfig,
   isDebugEnabled,
   ConfigValidationError,
-} from "../config";
+} from "../config/index.js";
 
 describe("engine config", () => {
   it("creates a new config without mutating the default", () => {

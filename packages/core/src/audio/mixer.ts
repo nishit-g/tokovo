@@ -8,7 +8,7 @@
  * - Per-frame volume computation
  */
 
-import { SoundCue, AudioBus, AudioState } from "../types";
+import { SoundCue, AudioBus, AudioState } from "../types.js";
 
 // =============================================================================
 // VALIDATION HELPERS

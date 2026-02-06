@@ -25,7 +25,7 @@ import type {
   CallPayloads,
   DevicePayloads,
   VoicePayloads,
-} from "./payloads";
+} from "./payloads.js";
 
 // =============================================================================
 // TRACK EVENT BASE

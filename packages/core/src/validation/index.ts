@@ -1,5 +1,5 @@
 import { ZodError, ZodSchema, ZodIssue } from "zod";
-import { logger, createScopedLogger } from "../logger";
+import { createScopedLogger, getLogger } from "../logger/index.js";
 
 const log = createScopedLogger("validation");
 
@@ -198,7 +198,7 @@ export function withGracefulDegradation<T, F>(
     onError(result.issues);
   }
 
-  logger.warn("validation", "Using fallback due to validation failure", {
+  getLogger().warn("validation", "Using fallback due to validation failure", {
     issueCount: result.issueCount,
     firstIssue: result.issues[0],
   });

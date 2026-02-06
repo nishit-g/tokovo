@@ -5,7 +5,7 @@ import type {
   BehaviorConfig,
   CameraEffect,
 } from "@tokovo/device-camera";
-import type { CompilerPlugin, CompilerContext } from "./types";
+import type { CompilerPlugin, CompilerContext } from "./types.js";
 import type { TrackEvent } from "@tokovo/ir";
 
 export interface CameraDirectorPluginOptions extends CameraDirectorOptions {

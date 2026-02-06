@@ -4,9 +4,9 @@
  * Central export for all WhatsApp configuration.
  */
 
-export * from "./layout-config";
-export * from "./tokens";
-export * from "./theme";
-export * from "./polish";
-export * from "./colors";
-export * from "./color-utils";
+export * from "./layout-config.js";
+export * from "./tokens.js";
+export * from "./theme.js";
+export * from "./polish.js";
+export * from "./colors.js";
+export * from "./color-utils.js";

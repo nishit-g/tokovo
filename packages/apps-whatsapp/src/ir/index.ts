@@ -9,11 +9,11 @@
  */
 
 // Payloads
-export type { WhatsAppPayloads } from "./payloads";
-export { isWhatsAppEvent as isWhatsAppPayloadEvent } from "./payloads";
+export type { WhatsAppPayloads } from "./payloads.js";
+export { isWhatsAppEvent as isWhatsAppPayloadEvent } from "./payloads.js";
 
 // Track Event
-export type { WhatsAppTrackEvent } from "./track-event";
+export type { WhatsAppTrackEvent } from "./track-event.js";
 
 // Group Operations
 export {
@@ -26,7 +26,7 @@ export {
     type GroupInfoUpdatePayload,
     type GroupCreatedPayload,
     isWhatsAppGroupEvent,
-} from "./group-ops";
+} from "./group-ops.js";
 
 // Type Guards
 export {
@@ -38,4 +38,4 @@ export {
     isGroupMemberAddPayload,
     isGroupMemberRemovePayload,
     isGroupAdminChangePayload,
-} from "./type-guards";
+} from "./type-guards.js";

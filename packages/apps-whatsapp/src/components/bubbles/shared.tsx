@@ -13,7 +13,7 @@ import {
   BUBBLE_MY_COLOR,
   BUBBLE_OTHER_COLOR,
   BUBBLE_SHADOW,
-} from "./constants";
+} from "./constants.js";
 
 export interface MediaBubbleBaseProps {
   isMe: boolean;

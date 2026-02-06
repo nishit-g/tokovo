@@ -1,14 +1,14 @@
 import React, { memo } from "react";
 import { Img, staticFile } from "remotion";
 import { Platform } from "@tokovo/core";
-import { MediaBubbleBase } from "./shared";
+import { MediaBubbleBase } from "./shared.js";
 import {
   FONT_FAMILY,
   BUBBLE_PADDING,
   BUBBLE_PADDING_H,
   MESSAGE_TEXT_SIZE,
   WA_BLACK,
-} from "./constants";
+} from "./constants.js";
 
 export interface ImageMessageBubbleProps {
   imageUrl: string;

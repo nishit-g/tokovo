@@ -1,7 +1,7 @@
 import React, { memo } from "react";
 import { Img, staticFile } from "remotion";
-import { DoubleCheckIcon } from "./shared";
-import { FONT_FAMILY, TIMESTAMP_SIZE, WA_WHITE } from "./constants";
+import { DoubleCheckIcon } from "./shared.js";
+import { FONT_FAMILY, TIMESTAMP_SIZE, WA_WHITE } from "./constants.js";
 
 export interface StickerMessageBubbleProps {
   stickerUrl: string;

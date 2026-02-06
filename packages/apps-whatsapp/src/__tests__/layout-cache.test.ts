@@ -6,7 +6,7 @@
  */
 
 import { describe, it, expect } from "vitest";
-import type { WhatsAppMessage, WhatsAppConversation } from "../types";
+import type { WhatsAppMessage, WhatsAppConversation } from "../types/index.js";
 
 // =============================================================================
 // TEST DATA

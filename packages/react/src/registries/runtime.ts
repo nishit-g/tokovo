@@ -7,7 +7,7 @@ import {
 import {
   createPluginRegistries,
   type PluginRegistries,
-} from "../plugin/registries";
+} from "../plugin/registries.js";
 
 export interface TokovoRegistries {
   engine: EngineRegistries;

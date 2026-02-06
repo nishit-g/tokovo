@@ -7,8 +7,8 @@
  * - Priority-based sound selection
  */
 
-import { SoundCue, AudioBus } from "../types";
-import { AudioLogger } from "../engine/logger";
+import { SoundCue, AudioBus } from "../types.js";
+import { AudioLogger } from "../engine/logger.js";
 
 // =============================================================================
 // TYPES

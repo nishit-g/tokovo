@@ -1,5 +1,5 @@
 import type { TrackEvent } from "@tokovo/ir";
-import type { WhatsAppTrackEvent } from "../types/events";
+import type { WhatsAppTrackEvent } from "../types/events.js";
 
 export function isWhatsAppEvent(
   e: TrackEvent,
@@ -42,4 +42,4 @@ export {
   isGroupMemberAddPayload,
   isGroupMemberRemovePayload,
   isGroupAdminChangePayload,
-} from "./group-ops";
+} from "./group-ops.js";

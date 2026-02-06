@@ -8,7 +8,7 @@
 import React from "react";
 import { WorldState, DeviceState } from "@tokovo/core";
 import type { WidgetProps } from "@tokovo/react";
-import { useRendererRegistries } from "../RegistryContext";
+import { useRendererRegistries } from "../RegistryContext.js";
 import { DeviceProfile, DynamicIslandConfig } from "@tokovo/devices";
 
 interface DynamicIslandProps {

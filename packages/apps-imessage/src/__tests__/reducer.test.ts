@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
-import { iMessageReducer } from "../runtime/reducer";
-import { createIMessageInitialState } from "../runtime/initial-state";
-import type { IMessageState } from "../types";
+import { iMessageReducer } from "../runtime/reducer.js";
+import { createIMessageInitialState } from "../runtime/initial-state.js";
+import type { IMessageState } from "../types/index.js";
 import type { WorldState, RuntimeEvent } from "@tokovo/core";
 import { DEFAULT_AUDIO_STATE, DEFAULT_BASE_CAMERA_STATE } from "@tokovo/core";
 

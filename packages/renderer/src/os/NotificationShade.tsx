@@ -7,7 +7,7 @@
 
 import React from "react";
 import { NotificationCenterState, NotificationGroup, Notification } from "@tokovo/core";
-import { useRendererRegistries } from "../RegistryContext";
+import { useRendererRegistries } from "../RegistryContext.js";
 
 interface NotificationShadeProps {
   notificationCenter: NotificationCenterState;

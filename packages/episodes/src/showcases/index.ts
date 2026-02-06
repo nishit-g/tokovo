@@ -11,16 +11,16 @@
 
 import type { EpisodeDefinition } from "../types/episode-definition.js";
 
-import cameraDirectorFull from "./camera-director-full.episode";
-import megaCameraDirector from "./mega-camera-director.episode";
-import megaCameraShowcase from "./mega-camera-showcase.episode";
-import iMessageDemo from "./imessage-demo.episode";
-import tennisCasual from "./tennis-casual.episode";
-import tennisDramatic from "./tennis-dramatic.episode";
-import tennisEnergetic from "./tennis-energetic.episode";
-import tennisFluidDemo from "./tennis-fluid-demo.episode";
-import tennisGroupOrganic from "./tennis-group-organic.episode";
-import ghibliX from "./ghibli-x.episode";
+import cameraDirectorFull from "./camera-director-full.episode.js";
+import megaCameraDirector from "./mega-camera-director.episode.js";
+import megaCameraShowcase from "./mega-camera-showcase.episode.js";
+import iMessageDemo from "./imessage-demo.episode.js";
+import tennisCasual from "./tennis-casual.episode.js";
+import tennisDramatic from "./tennis-dramatic.episode.js";
+import tennisEnergetic from "./tennis-energetic.episode.js";
+import tennisFluidDemo from "./tennis-fluid-demo.episode.js";
+import tennisGroupOrganic from "./tennis-group-organic.episode.js";
+import ghibliX from "./ghibli-x.episode.js";
 // plop:episode-import
 
 export const showcaseEpisodes: EpisodeDefinition[] = [

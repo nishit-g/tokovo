@@ -1,3 +1,3 @@
-export { createIMessageInitialState } from "./initial-state";
-export { iMessageReducer } from "./reducer";
-export * from "./selectors";
+export { createIMessageInitialState } from "./initial-state.js";
+export { iMessageReducer } from "./reducer.js";
+export * from "./selectors.js";

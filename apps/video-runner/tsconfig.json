@@ -17,5 +17,8 @@
     "include": [
         "src/**/*",
         "remotion.config.ts"
+    ],
+    "exclude": [
+        "src/__tests__/**/*"
     ]
 }

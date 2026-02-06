@@ -1,7 +1,7 @@
 import React from "react";
 import { WorldState } from "@tokovo/core";
-import { whatsappColors, spacing, typography } from "../theme";
-import { TabNavigation } from "../TabNavigation";
+import { whatsappColors, spacing, typography } from "../theme.js";
+import { TabNavigation } from "../TabNavigation.js";
 
 export interface SettingsScreenProps {
   world: WorldState;

@@ -13,7 +13,7 @@
  */
 
 import type { SoundRegistryAPI } from "@tokovo/core";
-import type { DeviceProfile } from "../types";
+import type { DeviceProfile } from "../types.js";
 
 // =============================================================================
 // REGISTRY IMPLEMENTATION

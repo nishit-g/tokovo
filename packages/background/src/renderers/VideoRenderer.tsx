@@ -4,7 +4,7 @@
 
 import React from "react";
 import { AbsoluteFill, Video, staticFile } from "remotion";
-import type { ResolvedBackgroundConfig } from "../types";
+import type { ResolvedBackgroundConfig } from "../types.js";
 
 interface VideoRendererProps {
     config: ResolvedBackgroundConfig;

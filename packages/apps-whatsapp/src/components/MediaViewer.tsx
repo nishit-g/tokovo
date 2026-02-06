@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from "react";
 import { Img, Video, staticFile } from "remotion";
-import { whatsappColors } from "./theme";
+import { whatsappColors } from "./theme.js";
 
 export interface MediaViewerProps {
   mediaUrl: string;

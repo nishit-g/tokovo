@@ -1,12 +1,12 @@
 import React from "react";
 import type { WorldState } from "@tokovo/core";
-import { useXTheme } from "./ThemeContext";
+import { useXTheme } from "./ThemeContext.js";
 import {
   getActiveUser,
   getXState,
   getTimelineTweets,
-} from "../runtime/selectors";
-import { AppShell } from "./AppShell";
+} from "../runtime/selectors.js";
+import { AppShell } from "./AppShell.js";
 import {
   Avatar,
   VerifiedBadge,
@@ -14,9 +14,9 @@ import {
   ActionButton,
   formatTimestamp,
   TabButton,
-} from "./components";
-import { ScreenTransition } from "./ScreenTransition";
-import { BottomNav } from "./BottomNav";
+} from "./components.js";
+import { ScreenTransition } from "./ScreenTransition.js";
+import { BottomNav } from "./BottomNav.js";
 
 interface ProfileProps {
   world: WorldState;

@@ -1,5 +1,5 @@
 import type { WorldState } from "@tokovo/core";
-import type { IMessageConversation, IMessageMessage, IMessageState } from "../types";
+import type { IMessageConversation, IMessageMessage, IMessageState } from "../types/index.js";
 
 export function selectIMessageState(world: WorldState) {
   return world.appState?.app_imessage as IMessageState | undefined;

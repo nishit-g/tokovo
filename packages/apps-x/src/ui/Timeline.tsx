@@ -1,9 +1,9 @@
 import React from "react";
 import type { WorldState } from "@tokovo/core";
-import { getXTheme } from "../config/theme";
-import { useXTheme } from "./ThemeContext";
-import { getTimelineTweets, getXState } from "../runtime/selectors";
-import { AppShell } from "./AppShell";
+import { getXTheme } from "../config/theme.js";
+import { useXTheme } from "./ThemeContext.js";
+import { getTimelineTweets, getXState } from "../runtime/selectors.js";
+import { AppShell } from "./AppShell.js";
 import {
   Avatar,
   VerifiedBadge,
@@ -12,9 +12,9 @@ import {
   ActionButton,
   formatTimestamp,
   TabButton,
-} from "./components";
-import { ScreenTransition } from "./ScreenTransition";
-import { BottomNav } from "./BottomNav";
+} from "./components.js";
+import { ScreenTransition } from "./ScreenTransition.js";
+import { BottomNav } from "./BottomNav.js";
 
 interface TimelineProps {
   world: WorldState;

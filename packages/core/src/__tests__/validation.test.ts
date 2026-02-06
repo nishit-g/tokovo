@@ -10,7 +10,7 @@ import {
   ValidationError,
   assertValid,
   createValidator,
-} from "../validation";
+} from "../validation/index.js";
 
 const schema = z.object({ name: z.string(), count: z.number() });
 

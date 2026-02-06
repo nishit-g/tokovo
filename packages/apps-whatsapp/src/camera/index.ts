@@ -4,4 +4,4 @@
  * Exports the WhatsApp-specific camera behaviors.
  */
 
-export * from "./behaviors";
+export * from "./behaviors.js";
