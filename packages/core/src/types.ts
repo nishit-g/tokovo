@@ -189,6 +189,7 @@ export type {
   AudioCrossfadeEvent,
   AudioStopAllEvent,
   AudioRuntimeEvent,
+  OverlayRuntimeEvent,
   CameraZoomEvent,
   CameraPanEvent,
   CameraShakeEvent,

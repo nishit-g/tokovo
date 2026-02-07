@@ -5,7 +5,7 @@ This reference provides exhaustive guidance for the core systems that app plugin
 ## 1) Camera System
 - **DSL**: Use camera track builders (see `packages/dsl/src/v2/camera-track.ts`).
 - **Scale/Zoom**: Use `scale` fields in camera events or DSL helpers. Keep values consistent with layout and device scale.
-- **Anchors**: Providers return normalized bounds (0–1). Registry namespaces them by `appId:anchor`.
+- **Anchors**: Prefer `AnchorProvider` (pixel-space `Rect` anchors). Device-owned anchors are merged into every snapshot.
 - **Transforms**: Camera state lives in `WorldState.camera` (see `packages/core/src/types/camera.ts`).
 
 ## 2) Tokens and Theme System

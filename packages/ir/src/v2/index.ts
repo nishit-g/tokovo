@@ -16,6 +16,9 @@ export type {
   MarkerPayloads,
   CallPayloads,
   DevicePayloads,
+  OverlayPayloads,
+  OverlayVariant,
+  OverlayPlacementPreset,
   AppPayloadRegistry,
   SystemPayloads,
   AllPayloads,
@@ -35,6 +38,7 @@ export type {
   MarkerTrackEvent,
   CallTrackEvent,
   DeviceTrackEvent,
+  OverlayTrackEvent,
   SystemTrackEvent,
   TrackEvent,
 } from "./track-event.js";
@@ -48,6 +52,7 @@ export {
   isAppEvent,
   isCallEvent,
   isDeviceEvent,
+  isOverlayEvent,
 } from "./track-event.js";
 
 // Episode IR

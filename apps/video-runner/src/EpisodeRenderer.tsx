@@ -35,6 +35,7 @@ import {
 import {
   TokovoRenderer,
   AudioLayer,
+  StoryOverlay,
   RendererRegistryProvider,
   type CameraDebugFrame,
 } from "@tokovo/renderer";
@@ -538,6 +539,7 @@ const EpisodeRendererInner: React.FC<EpisodeRendererProps> = ({
             cameraDebugShowAllAnchors={showAllAnchors}
           />
         </div>
+        <StoryOverlay world={worldWithVoice} t={frame} width={1080} height={1920} />
       </RendererRegistryProvider>
       {cameraDebugEnabled && (
         <>

@@ -1,7 +1,7 @@
 # Movement Recipes
 
 ## Focus on Message
-- Use `focus("app_x:message")` with a small scale bump (1.05–1.2).
+- Use `focus("lastMessage")` (WhatsApp) or `focus("tweet_card")` (X) with a small scale bump (1.05–1.2).
 - Use short durations (0.3–0.6s) for natural snap.
 
 ## Slow Push-In

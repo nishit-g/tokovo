@@ -22,6 +22,7 @@ export type RuntimeEventKind =
   | "AUDIO"
   | "VOICE"
   | "KEYBOARD"
+  | "OVERLAY"
   | "OS"
   | "CALL"
   | "TRANSITION"
@@ -578,6 +579,53 @@ export interface MarkerRuntimeEvent extends BaseRuntimeEvent {
 }
 
 // =============================================================================
+// OVERLAY EVENT (Story Layer)
+// =============================================================================
+
+export type OverlayEventType = "SHOW" | "HIDE" | "CLEAR";
+
+export type OverlayVariant =
+  | "hook"
+  | "caption"
+  | "receipt"
+  | "reactionGif"
+  | "cliffhanger";
+
+export type OverlayPlacementPreset =
+  | "top"
+  | "bottom"
+  | "topLeft"
+  | "topRight"
+  | "bottomLeft"
+  | "bottomRight"
+  | "center";
+
+export interface OverlayShowPayload {
+  id?: string;
+  variant: OverlayVariant;
+  lane?: string;
+  text?: string;
+  mediaSrc?: string;
+  durationFrames?: number;
+  preset?: OverlayPlacementPreset;
+  xPct?: number;
+  yPct?: number;
+  intensity?: number;
+}
+
+export interface OverlayHidePayload {
+  id?: string;
+  lane?: string;
+  variant?: OverlayVariant;
+}
+
+export interface OverlayRuntimeEvent extends BaseRuntimeEvent {
+  kind: "OVERLAY";
+  type: OverlayEventType;
+  payload?: OverlayShowPayload | OverlayHidePayload | Record<string, never>;
+}
+
+// =============================================================================
 // VOICE EVENT
 // =============================================================================
 
@@ -627,6 +675,7 @@ export type RuntimeEvent =
   | AudioRuntimeEvent
   | VoiceRuntimeEvent
   | KeyboardRuntimeEvent
+  | OverlayRuntimeEvent
   | OSRuntimeEvent
   | CallRuntimeEvent
   | TransitionRuntimeEvent

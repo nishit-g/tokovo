@@ -13,9 +13,10 @@
 - UI components should import tokens/theme rather than hard-coded values.
 
 ### Anchor Providers
-- Providers return normalized 0–1 bounds.
-- Names are local keys; registry namespaces by `appId:anchor`.
-- Return `null` to fall back to default framing.
+- Preferred: implement `anchorProvider` (pixel-space `Rect` anchors, layout-aware).
+- Anchor IDs are plain keys within a snapshot (no `appId:` prefix in DSL).
+- Device-owned anchors are merged into every snapshot: `device`, `app`, `keyboard`, `dynamicIsland`, `notification_banner`.
+- Legacy support: `anchors.providers` can still return normalized (0–1) bounds, but avoid for new plugins.
 
 ### Deterministic DSL
 - Default IDs and timestamps should be derived from `event.at` and `_declarationOrder`.
@@ -25,7 +26,7 @@
 
 ### Scaling Anti-Patterns
 - Mixing device pixel density with layout units directly.
-- Using pixel units in anchors instead of normalized (0–1) bounds.
+- Using normalized bounds in the pixel-space `AnchorProvider` pipeline (wrong coordinate system).
 - Applying camera scale and UI scale independently without a defined rule.
 
 ### Static Asset Anti-Patterns

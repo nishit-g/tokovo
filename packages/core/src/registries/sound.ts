@@ -23,6 +23,13 @@ export interface SoundRegistryAPI {
 
 export function createSoundRegistry(): SoundRegistryAPI {
   const registry = createRegistry<string, string>("Sound");
+  // Track which sound IDs were registered per app so unregister can be safe.
+  // We register both:
+  // - `${appId}:${soundId}` (plugin accessor usage)
+  // - `soundId` (audio engine / global usage)
+  //
+  // Convention: sound IDs should be globally unique (e.g. `app_whatsapp.message_in`).
+  const appOwned = new Map<string, Array<{ id: string; path: string }>>();
 
   return {
     register: registry.register,
@@ -34,22 +41,42 @@ export function createSoundRegistry(): SoundRegistryAPI {
     },
 
     registerNamespaced(appId: string, sounds: Record<string, string>): void {
-      Object.entries(sounds).forEach(([id, path]) => {
+      const owned = appOwned.get(appId) ?? [];
+
+      Object.entries(sounds).forEach(([id, p]) => {
         const namespacedId = `${appId}:${id}`;
-        registry.register(namespacedId, path);
+
+        // Namespaced entry for plugin router accessors
+        registry.register(namespacedId, p);
+
+        // Also register the plain ID for engine-wide audio resolution.
+        // This avoids the "double namespace" trap for IDs that already include app prefix.
+        registry.register(id, p);
+
+        owned.push({ id, path: p });
       });
+
+      appOwned.set(appId, owned);
     },
 
     unregisterNamespaced(appId: string): void {
-      const keysToRemove: string[] = [];
+      const owned = appOwned.get(appId) ?? [];
+      appOwned.delete(appId);
+
+      // Remove the namespaced keys.
       const prefix = `${appId}:`;
       for (const key of registry.keys()) {
         if (key.startsWith(prefix)) {
-          keysToRemove.push(key);
+          registry.delete(key);
         }
       }
-      for (const key of keysToRemove) {
-        registry.delete(key);
+
+      // Remove the plain keys only if they still map to the same path.
+      // This avoids deleting a newer registration by another plugin/runtime.
+      for (const { id, path: p } of owned) {
+        if (registry.get(id) === p) {
+          registry.delete(id);
+        }
       }
     },
 

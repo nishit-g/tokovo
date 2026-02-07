@@ -121,6 +121,9 @@ importers:
       '@tokovo/ir':
         specifier: workspace:*
         version: link:../../packages/ir
+      '@tokovo/overlay':
+        specifier: workspace:*
+        version: link:../../packages/overlay
       '@tokovo/react':
         specifier: workspace:*
         version: link:../../packages/react
@@ -641,6 +644,19 @@ importers:
       vitest:
         specifier: ^1.0.0
         version: 1.6.1(@types/node@20.19.25)(jsdom@24.1.3)(lightningcss@1.30.2)(terser@5.44.1)
+
+  packages/overlay:
+    dependencies:
+      '@tokovo/core':
+        specifier: workspace:*
+        version: link:../core
+    devDependencies:
+      '@types/node':
+        specifier: ^20.0.0
+        version: 20.19.25
+      typescript:
+        specifier: ^5.0.0
+        version: 5.9.3
 
   packages/react:
     dependencies:

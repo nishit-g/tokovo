@@ -58,6 +58,8 @@ export type {
   NotificationShowOptions,
 } from "./device-track.js";
 
+export { OverlayTrackBuilder, OverlayPointBuilder } from "./overlay-track.js";
+
 export {
   parseTimeToFrames,
   parseDurationToFrames,

@@ -9,6 +9,10 @@
 - Reducer registry maps event kind → appId.
 - Missing or duplicate kinds are contract violations.
 
+## System Kinds (No eventKinds Required)
+Some kinds are handled by built-ins / feature reducers and are not routed via `eventKinds`:
+- `DEVICE`, `CAMERA`, `AUDIO`, `VOICE`, `OS`, `CALL`, `KEYBOARD`, `OVERLAY`
+
 ## Repo Paths
 - Track events: `packages/ir/src/v2/track-event.ts`
 - Runtime events: `packages/core/src/types/runtime-event.ts`

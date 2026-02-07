@@ -16,6 +16,7 @@ import type {
   MarkerTrackEvent,
   CallTrackEvent,
   DeviceTrackEvent,
+  OverlayTrackEvent,
   VoiceTrackEvent,
 } from "@tokovo/ir";
 import {
@@ -25,6 +26,7 @@ import {
   isMarkerEvent,
   isCallEvent,
   isDeviceEvent,
+  isOverlayEvent,
   isVoiceEvent,
 } from "@tokovo/ir";
 import type {
@@ -36,6 +38,7 @@ import type {
   AudioStopEvent,
   CallRuntimeEvent,
   DeviceRuntimeEvent,
+  OverlayRuntimeEvent,
   OSRuntimeEvent,
   RuntimeEvent,
   TokovoPlugin,
@@ -83,6 +86,9 @@ export function lowerTrackEvent(
   if (isAudioEvent(event)) {
     return lowerAudioEvent(event);
   }
+  if (isOverlayEvent(event)) {
+    return lowerOverlayEvent(event);
+  }
   if (isVoiceEvent(event)) {
     return lowerVoiceEvent(event, ctx);
   }
@@ -100,6 +106,19 @@ export function lowerTrackEvent(
   }
   return lowerAppEvent(event, ctx);
 }
+
+function lowerOverlayEvent(event: OverlayTrackEvent): OverlayRuntimeEvent[] {
+  const base = { at: event.at, kind: "OVERLAY" as const };
+  return [
+    {
+      ...base,
+      type: event.type,
+      payload: event.payload,
+      silent: (event as { silent?: boolean }).silent,
+    } as OverlayRuntimeEvent,
+  ];
+}
+
 /**
  * Lower APP events by delegating to the appropriate plugin.
  * Plugins MUST implement v2Lowering - no fallback.

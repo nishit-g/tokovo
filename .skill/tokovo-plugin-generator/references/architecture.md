@@ -21,7 +21,7 @@ flowchart LR
 - **Lowering**: Maps TrackEvents to RuntimeEvents. Payloads must be deterministic.
 - **Reducer**: Mutates WorldState using Immer. No wall clock time or randomness.
 - **Views**: UI renders from WorldState only.
-- **Anchors**: Plugin anchor providers return normalized (0–1) bounds.
+- **Anchors**: Prefer `AnchorProvider` (pixel-space `Rect` anchors, layout-aware). Legacy plugins may use normalized (0–1) anchors.
 - **Device + System Handlers**: Audio/notifications/keyboard/device systems consume RuntimeEvents.
 
 ## Plugin Contract (Tiered)
@@ -37,7 +37,7 @@ When a plugin registers (via `PluginManagerClass`):
 - Initial state factory is registered.
 - Views are registered with app registry.
 - Layouts are registered with layout registry.
-- Anchors are registered and namespaced by appId.
+- Anchors are registered by `appId` provider. Anchor IDs are plain strings within a snapshot; device-owned anchors are merged in.
 - Assets and audio rules are wired into registries.
 
 ## Determinism Contract

@@ -7,6 +7,7 @@ import {
 import { PluginManagerClass } from "@tokovo/react";
 import { TokovoRenderer } from "./TokovoRenderer.js";
 import { AudioLayer } from "./AudioLayer.js";
+import { StoryOverlay } from "./overlays/StoryOverlay.js";
 import { getDeviceProfile } from "@tokovo/devices";
 import {
   RendererRegistryProvider,
@@ -165,7 +166,10 @@ export const MultiDeviceRenderer: React.FC<{
     })();
     return (
         <RendererRegistryProvider registries={registries}>
-            {content}
+            <div style={{ position: "relative", width: compositionWidth, height: compositionHeight }}>
+                {content}
+                <StoryOverlay world={world} t={t} width={compositionWidth} height={compositionHeight} />
+            </div>
         </RendererRegistryProvider>
     );
 };

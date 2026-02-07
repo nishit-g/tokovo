@@ -15,6 +15,7 @@ import {
 import { registerNotificationPlugin } from "@tokovo/device-notifications";
 import { registerCameraPlugin } from "@tokovo/device-camera";
 import { registerKeyboardPlugin } from "@tokovo/device-keyboard";
+import { registerOverlayPlugin } from "@tokovo/overlay";
 
 import { type EpisodeRegistry } from "@tokovo/episodes";
 import { createVideoRunnerEpisodeRegistry } from "./episode-registry";
@@ -47,6 +48,7 @@ export function createVideoRunnerRuntime(): VideoRunnerRuntime {
   registerNotificationPlugin(tokovoRegistries.engine);
   registerCameraPlugin(pluginManager, tokovoRegistries.engine);
   registerKeyboardPlugin(tokovoRegistries.engine);
+  registerOverlayPlugin(tokovoRegistries.engine);
   registerOSAnchorProviders(tokovoRegistries.plugins.anchors);
 
   const episodeRegistry = createVideoRunnerEpisodeRegistry();

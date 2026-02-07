@@ -31,6 +31,7 @@ import {
 import { registerNotificationPlugin } from "@tokovo/device-notifications";
 import { registerCameraPlugin } from "@tokovo/device-camera";
 import { registerKeyboardPlugin } from "@tokovo/device-keyboard";
+import { registerOverlayPlugin } from "@tokovo/overlay";
 
 import { registerWhatsAppPlugin } from "@tokovo/apps-whatsapp";
 import { registerXPlugin } from "@tokovo/apps-x";
@@ -56,6 +57,7 @@ function createRuntimeForSmoke(): {
   registerNotificationPlugin(tokovoRegistries.engine);
   registerCameraPlugin(pluginManager, tokovoRegistries.engine);
   registerKeyboardPlugin(tokovoRegistries.engine);
+  registerOverlayPlugin(tokovoRegistries.engine);
 
   // OS providers only. App providers must come from plugins.
   // (intentionally not calling registerBuiltInAnchorProviders here)
@@ -116,6 +118,10 @@ describe("v1 render smoke", () => {
     "parallel-timeline-split-screen-showcase",
     "v2-device-baseline",
     "v2-enterprise-long-showcase",
+    "v2-overlay-baseline",
+    "v2-kannada-bakchodi-multiapp",
+    "v2-hinglish-friends-bakchodi-no-overlay",
+    "v2-mysuru-friends-bakchodi-no-overlay",
     "v2-whatsapp-group-roast-baseline",
     "v2-x-roast-thread-baseline",
   ] as const;

@@ -1,4 +1,4 @@
 interface:
   display_name: "Tokovo Episode Authoring"
-  short_description: "Episode DSL patterns, timing, and deterministic authoring"
-  default_prompt: "Use -episode-authoring to build a deterministic Tokovo episode."
+  short_description: "Creator-first episode authoring (v2): deviceTrack, overlays, camera, timing"
+  default_prompt: "Use -episode-authoring to build a deterministic Tokovo v2 episode using @tokovo/creator."

@@ -14,3 +14,11 @@
 
 ## App State Registry
 Plugins augment `AppStateMap` in `@tokovo/core` to get typed access.
+
+## System State (Non-App)
+Some system features store state inside `appState` under reserved keys:
+- `sys_overlay` (story overlays)
+
+This is a pragmatic v1 choice (keeps WorldState stable) but the invariants matter:
+- Single source of truth: renderer reads state only from WorldState.
+- Deterministic ids/timing.

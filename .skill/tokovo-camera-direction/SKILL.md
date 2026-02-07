@@ -11,13 +11,17 @@ Plan and validate camera movement using Tokovo's camera DSL, anchors, and framin
 ## Quick Start
 1. Identify the target UI element and anchor.
 2. Use camera DSL to set or animate scale/position.
-3. Validate anchor bounds (normalized 0–1).
-4. Test the sequence in studio or video runner.
+3. Validate anchor rects (Tokovo v1 uses pixel-space `Rect` in viewport coordinates).
+4. Test the sequence in video runner + smoke suite.
 
 ## Direction Checkpoints
-- **Anchors**: normalized bounds, namespaced by `appId:anchor`.
+- **Anchors**: anchors are plain IDs (`"lastMessage"`, `"tweet_card"`, `"keyboard"`).
+- **Device-owned anchors** (always available): `device`, `app`, `keyboard`, `dynamicIsland`, `notification_banner`.
 - **Scale**: keep camera scale consistent with layout + device scale.
 - **Movement**: prefer explicit durations and easing.
+
+## Always Read First
+- Tokovo invariants: `../tokovo-core-architecture/references/v1-invariants.md`
 
 ## Decision Tree
 - Need camera DSL usage? See `references/camera-dsl.md`.

@@ -69,6 +69,27 @@ export default defineEpisode({
       })
       .background({ type: "image", src: "/backgrounds/cozy-bedroom.png" })
 
+      .overlay((ov) => {
+        ov.at("0.0s").hook("Wake up. It started.", {
+          durationFrames: 120,
+          intensity: 0.95,
+        });
+        ov.at("14.0s").caption("The banner hits while you're mid-chat.", {
+          durationFrames: 120,
+        });
+        ov.at("29.8s").caption("Now watch the roast thread.", {
+          durationFrames: 120,
+        });
+        ov.at("58.0s").receipt("DM: Mina (do not panic)", {
+          preset: "topLeft",
+          durationFrames: 180,
+        });
+        ov.at("86.0s").cliffhanger("He tagged your mom.", {
+          durationFrames: 180,
+          intensity: 1.0,
+        });
+      })
+
       // ---------------------------------------------------------------------
       // DEVICE: lockscreen bait + deterministic unlock + transitions
       // ---------------------------------------------------------------------

@@ -7,7 +7,7 @@
     "dev": "npx remotion studio",
     "build": "tsc -p tsconfig.json",
     "upgrade": "remotion upgrade",
-    "pretest": "pnpm --filter @tokovo/episodes build",
+    "pretest": "pnpm --filter @tokovo/core build && pnpm --filter @tokovo/ir build && pnpm --filter @tokovo/compiler build && pnpm --filter @tokovo/dsl build && pnpm --filter @tokovo/renderer build && pnpm --filter @tokovo/overlay build && pnpm --filter @tokovo/episodes build",
     "test": "vitest run && pnpm run lint",
     "lint": "eslint src"
   },
@@ -24,6 +24,7 @@
     "@tokovo/devices": "workspace:*",
     "@tokovo/device-notifications": "workspace:*",
     "@tokovo/dsl": "workspace:*",
+    "@tokovo/overlay": "workspace:*",
     "@tokovo/episodes": "workspace:*",
     "@tokovo/ir": "workspace:*",
     "@tokovo/react": "workspace:*",

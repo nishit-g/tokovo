@@ -7,3 +7,4 @@
 export { NotificationOverlay } from "./NotificationOverlay.js";
 export { CallOverlay } from "./CallOverlay.js";
 export { TouchOverlay } from "./TouchOverlay.js";
+export { StoryOverlay } from "./StoryOverlay.js";

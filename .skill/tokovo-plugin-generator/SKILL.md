@@ -8,10 +8,15 @@ description: Create or update Tokovo app plugins using the turbo generator templ
 ## Overview
 Scaffold Tokovo app plugins with the turbo generator, then align the output with Tokovo's architecture, determinism rules, and type registries. Use this skill to build new plugins, keep generator output in sync, and maintain docs accuracy.
 
+Also use this skill for **feature plugins** (system-level reducers like `OVERLAY`) when you need global behavior that is not app-scoped.
+
+## Always Read First
+- Tokovo invariants: `../tokovo-core-architecture/references/v1-invariants.md`
+
 ## Quick Start
 1. Run `pnpm turbo gen plugin` and answer prompts.
 2. Review generated package under `packages/apps-<name>`.
-3. Register the plugin in `apps/video-runner/src/runtime.ts` and `packages/studio/src/runtime.ts`.
+3. Register the plugin in `apps/video-runner/src/runtime.ts`.
 4. Run tests: `pnpm test --filter=@tokovo/apps-<name>`.
 5. If episodes import the plugin, add `@tokovo/apps-<name>` to `packages/episodes/package.json` dependencies.
 6. After UI/state changes, rebuild: `pnpm run build --filter=@tokovo/apps-<name>` and `pnpm run build --filter=@tokovo/episodes`.
@@ -21,6 +26,7 @@ Scaffold Tokovo app plugins with the turbo generator, then align the output with
 - **Pipeline**: DSL → Track → Lowering → Runtime → Reducer → WorldState → UI → Anchors.
 - **Plugin contract**: `id`, `displayName`, `reducer`, `views`, `createInitialState`, `v2Lowering`, `layouts`, `anchors`, `eventKinds`.
 - **Type registries**: module augmentation for app state + track events + event kinds.
+- **Feature plugins**: if behavior is global (not app-scoped), prefer `registries.reducers.registerFeatureReducer("<KIND>", ...)` and register in runtime.
 
 ## UI + State Gotchas (Common Failures)
 - **AppSurface sizing**: Render inside a full-height wrapper (`height: 100%`) instead of `100vh`, or the app surface may collapse and appear black.
@@ -30,8 +36,9 @@ Scaffold Tokovo app plugins with the turbo generator, then align the output with
 
 ## Decision Tree
 - Need a new plugin scaffold? Use the generator and follow Quick Start.
+- Need global behavior (not an app)? Build a feature plugin (example: `@tokovo/overlay`) and register it in runtime.
 - Adding new events? Update types + module augmentation + eventKinds + lowering.
-- Camera framing issue? Update anchors and verify normalized bounds.
+- Camera framing issue? Prefer `anchorProvider` (pixel-space `Rect` anchors) and verify rects against device viewport.
 - Scaling issue? Check camera scale, device pixel density, layout sizing, and renderer scale.
 
 ## References (Exhaustive Detail)

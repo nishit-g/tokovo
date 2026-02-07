@@ -2,21 +2,21 @@ import type { SoundRegistryAPI } from "../registries/sound.js";
 import { AudioLogger } from "../engine/logger.js";
 
 const BUILT_IN_SOUNDS = {
-  notification: "notification.mp3",
-  notification_soft: "notification-soft.mp3",
+  notification: "generated/core/notification.wav",
+  notification_soft: "generated/core/notification-soft.wav",
 
-  ringtone: "ringtone.mp3",
-  call_end: "call-end.mp3",
+  ringtone: "generated/core/ringtone.wav",
+  call_end: "generated/core/call-end.wav",
 
-  camera_shutter: "camera-shutter.mp3",
-  screenshot: "screenshot.mp3",
-  lock: "lock.mp3",
-  unlock: "unlock.mp3",
-  tap: "tap.mp3",
-  keyboard_click: "keyboard-click.mp3",
+  camera_shutter: "generated/core/camera-shutter.wav",
+  screenshot: "generated/core/screenshot.wav",
+  lock: "generated/core/lock.wav",
+  unlock: "generated/core/unlock.wav",
+  tap: "generated/core/tap.wav",
+  keyboard_click: "generated/core/keyboard-click.wav",
 
-  suspense: "suspense.mp3",
-  dramatic: "dramatic.mp3",
+  suspense: "generated/core/suspense.wav",
+  dramatic: "generated/core/dramatic.wav",
 };
 
 export function registerBuiltInSounds(registry: SoundRegistryAPI): void {
@@ -37,7 +37,8 @@ export function getSoundPath(
 
   const path = registry.getPath(soundId);
   if (!path) {
-    const fallbackPath = `sounds/${soundId}.mp3`;
+    // Default to wav fallback. (Prefer explicit registry entries in production.)
+    const fallbackPath = `sounds/${soundId}.wav`;
     AudioLogger.soundPathFallback(soundId, fallbackPath);
     return fallbackPath;
   }

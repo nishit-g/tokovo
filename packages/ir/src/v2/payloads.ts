@@ -378,6 +378,53 @@ export interface DevicePayloads {
 }
 
 // =============================================================================
+// OVERLAY PAYLOADS (Story / Captions)
+// =============================================================================
+
+export type OverlayVariant =
+  | "hook"
+  | "caption"
+  | "receipt"
+  | "reactionGif"
+  | "cliffhanger";
+
+export type OverlayPlacementPreset =
+  | "top"
+  | "bottom"
+  | "topLeft"
+  | "topRight"
+  | "bottomLeft"
+  | "bottomRight"
+  | "center";
+
+export interface OverlayPayloads {
+  SHOW: {
+    /** Optional stable id to hide/update later. Auto-generated if missing. */
+    id?: string;
+    variant: OverlayVariant;
+    /** Optional lane for replacement behavior (default = variant). */
+    lane?: string;
+    text?: string;
+    mediaSrc?: string;
+    /** How long to keep visible (frames). If omitted, reducer applies variant defaults. */
+    durationFrames?: number;
+    /** Positioning hint. */
+    preset?: OverlayPlacementPreset;
+    /** Optional fine positioning (0-1 in composition coords). */
+    xPct?: number;
+    yPct?: number;
+    /** Visual emphasis (0-1). */
+    intensity?: number;
+  };
+  HIDE: {
+    id?: string;
+    lane?: string;
+    variant?: OverlayVariant;
+  };
+  CLEAR: Record<string, never>;
+}
+
+// =============================================================================
 // APP PAYLOAD REGISTRY (Extensible via Module Augmentation)
 // =============================================================================
 
@@ -412,6 +459,7 @@ export interface SystemPayloads {
   marker: MarkerPayloads;
   call: CallPayloads;
   device: DevicePayloads;
+  overlay: OverlayPayloads;
 }
 
 // =============================================================================

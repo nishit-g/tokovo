@@ -24,6 +24,7 @@ import type {
   MarkerPayloads,
   CallPayloads,
   DevicePayloads,
+  OverlayPayloads,
   VoicePayloads,
 } from "./payloads.js";
 
@@ -225,6 +226,17 @@ export type DeviceTrackEvent = TrackEventBase & {
       }
   );
 
+/**
+ * Overlay track event (story layer)
+ */
+export type OverlayTrackEvent = TrackEventBase & {
+  kind: "OVERLAY";
+} & (
+    | { type: "SHOW"; payload: OverlayPayloads["SHOW"] }
+    | { type: "HIDE"; payload: OverlayPayloads["HIDE"] }
+    | { type: "CLEAR"; payload: OverlayPayloads["CLEAR"] }
+  );
+
 export type VoiceTrackEvent = TrackEventBase & {
   kind: "VOICE";
 } & (
@@ -246,6 +258,7 @@ export type SystemTrackEvent =
   | MarkerTrackEvent
   | CallTrackEvent
   | DeviceTrackEvent
+  | OverlayTrackEvent
   | VoiceTrackEvent;
 
 // =============================================================================
@@ -294,6 +307,10 @@ export function isCallEvent(e: TrackEvent): e is CallTrackEvent {
 
 export function isDeviceEvent(e: TrackEvent): e is DeviceTrackEvent {
   return e.kind === "DEVICE";
+}
+
+export function isOverlayEvent(e: TrackEvent): e is OverlayTrackEvent {
+  return e.kind === "OVERLAY";
 }
 
 export function isVoiceEvent(e: TrackEvent): e is VoiceTrackEvent {

@@ -10,9 +10,10 @@ Create and maintain Tokovo episodes with deterministic DSL patterns. Use this sk
 
 ## Quick Start
 1. Start with `defineEpisode` and a clear `meta` + `config`.
-2. Use the DSL to create devices and tracks.
+2. Use `import { episode } from "@tokovo/creator"` for the creator-first API (no `getOrder` boilerplate).
+3. Create devices + tracks (`deviceTrack`, app tracks, `camera`, `overlay`).
 3. Validate timing in frames/seconds and keep event order deterministic.
-4. Test in studio or video runner.
+4. Test in video runner + smoke suite.
 
 ## Authoring Checkpoints
 - **Determinism**: no `Date.now()`/`Math.random()` in authoring logic.
@@ -20,11 +21,13 @@ Create and maintain Tokovo episodes with deterministic DSL patterns. Use this sk
 - **Timing**: prefer explicit frames or `parseTimeToFrames` semantics.
 
 ## Decision Tree
+- Need the v1 non-negotiables? See `../tokovo-core-architecture/references/v1-invariants.md`.
 - Need structure or config guidance? See `references/episode-structure.md`.
 - Need DSL usage? See `references/dsl-authoring.md`.
 - Need timing rules? See `references/timing-and-frames.md`.
 - Need patterns? See `references/patterns.md`.
 - Need QA/debug? See `references/qa-and-debug.md`.
+- Need a starter template? See `references/v2-baselines.md`.
 
 ## References
 - `references/episode-structure.md`
@@ -33,3 +36,4 @@ Create and maintain Tokovo episodes with deterministic DSL patterns. Use this sk
 - `references/patterns.md`
 - `references/determinism.md`
 - `references/qa-and-debug.md`
+- `references/v2-baselines.md`

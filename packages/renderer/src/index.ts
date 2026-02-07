@@ -20,6 +20,7 @@ export { AudioLayer } from "./AudioLayer.js";
 export { NotificationOverlay } from "./overlays/index.js";
 export { CallOverlay } from "./overlays/index.js";
 export { TouchOverlay } from "./overlays/index.js";
+export { StoryOverlay } from "./overlays/index.js";
 
 // ===========================================================================
 // SCREENS

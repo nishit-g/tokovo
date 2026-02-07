@@ -88,6 +88,13 @@ function createBuiltInHandlers(
     }
   });
 
+  registerBuiltInHandler("OVERLAY", (draft, event, index, ctx) => {
+    const overlayReducer = registry.getFeatureReducer("OVERLAY");
+    if (overlayReducer) {
+      overlayReducer(draft, event, index, ctx);
+    }
+  });
+
   registerBuiltInHandler("OS", (draft, event, _index, ctx) => {
     processOSEvent(draft, event as Parameters<typeof processOSEvent>[1], ctx);
   });

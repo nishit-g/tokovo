@@ -58,9 +58,9 @@ export const PixelProfile: DeviceProfile = {
 
   // Device OS sounds
   sounds: {
-    "device.notification": "os/android/notification.ogg",
-    "device.lock": "os/android/lock.ogg",
-    "device.unlock": "os/android/unlock.ogg",
-    "device.keyboard": "os/android/keyboard.ogg",
+    "device.notification": "os/android/notification.wav",
+    "device.lock": "os/android/lock.wav",
+    "device.unlock": "os/android/unlock.wav",
+    "device.keyboard": "os/android/keyboard.wav",
   },
 };

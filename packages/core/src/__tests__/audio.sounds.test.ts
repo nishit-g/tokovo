@@ -14,7 +14,7 @@ describe("audio sounds", () => {
     expect(getSoundPath("ding", registry)).toBe("sounds/ding.mp3");
 
     const spy = vi.spyOn(AudioLogger, "soundPathFallback");
-    expect(getSoundPath("missing", registry)).toBe("sounds/missing.mp3");
+    expect(getSoundPath("missing", registry)).toBe("sounds/missing.wav");
     expect(spy).toHaveBeenCalled();
     spy.mockRestore();
   });

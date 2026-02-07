@@ -26,6 +26,7 @@ Explain and validate Tokovo's core runtime architecture and invariants. Use this
 - Need registry/lifecycle details? See `references/registries-and-lifecycle.md`.
 - Need determinism rules? See `references/determinism.md`.
 - Need config defaults? See `references/config-and-defaults.md`.
+- Need the non-negotiables? See `references/v1-invariants.md`.
 
 ## References
 - `references/architecture.md`
@@ -35,3 +36,4 @@ Explain and validate Tokovo's core runtime architecture and invariants. Use this
 - `references/determinism.md`
 - `references/config-and-defaults.md`
 - `references/maintenance-checklist.md`
+- `references/v1-invariants.md`

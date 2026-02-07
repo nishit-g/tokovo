@@ -10,7 +10,7 @@ flowchart LR
   D --> E[WorldState]
   E --> F[UI Views]
   E --> G[Anchors]
-  C --> H[Device + Audio + Notifications]
+  C --> H[System Features (Device/Audio/Notifications/Overlay)]
 ```
 
 ## Key Repo Paths

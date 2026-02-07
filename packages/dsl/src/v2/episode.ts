@@ -41,6 +41,7 @@ import { CameraTrackBuilder } from "./camera-track.js";
 import { AudioTrackBuilder } from "./audio-track.js";
 import { OSTrackBuilder } from "./os-track.js";
 import { DeviceTrackBuilderV2 } from "./device-track.js";
+import { OverlayTrackBuilder } from "./overlay-track.js";
 
 // =============================================================================
 // TYPES
@@ -237,6 +238,20 @@ export class EpisodeBuilder {
    */
   audio(fn: TrackFn<AudioTrackBuilder>): this {
     const builder = new AudioTrackBuilder(
+      this._fps,
+      () => this._declarationOrder++,
+    );
+    fn(builder);
+    this._events.push(...builder._events);
+    return this;
+  }
+
+  /**
+   * Add a story overlay track (hook/captions/receipts).
+   * Renders above devices and is unaffected by camera transforms.
+   */
+  overlay(fn: TrackFn<OverlayTrackBuilder>): this {
+    const builder = new OverlayTrackBuilder(
       this._fps,
       () => this._declarationOrder++,
     );

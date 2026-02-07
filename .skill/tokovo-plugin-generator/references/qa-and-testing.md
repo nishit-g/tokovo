@@ -21,8 +21,9 @@ Example pattern:
 - Validate lowering outputs RuntimeEvents with expected payloads.
 
 ## Smoke Tests
-- Register plugin in `apps/video-runner/src/runtime.ts` and `packages/studio/src/runtime.ts`.
-- Run a simple episode using the plugin.
+- Register plugin in `apps/video-runner/src/runtime.ts`.
+- Add or update a small v2 episode that uses the plugin.
+- Ensure `pnpm --filter video-runner test` passes (smoke suite).
 
 ## Determinism Tests
 - Run the same episode twice and verify stable output (no frame drift or ID changes).
