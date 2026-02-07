@@ -47,7 +47,11 @@ import {
   voiceScheduleToSoundCues,
 } from "@tokovo/voice";
 import type { VoiceConfig, BackgroundConfigIR } from "@tokovo/ir";
-import { getDeviceProfile } from "@tokovo/devices";
+import {
+  ensureCanvasProfile,
+  getDeviceProfile,
+  resolveCanvasProfileId,
+} from "@tokovo/devices";
 import {
   getFormat,
   type EpisodeDefinition,
@@ -261,6 +265,25 @@ const EpisodeRendererInner: React.FC<EpisodeRendererProps> = ({
 
         const ir = ep.build();
 
+        // Resolve placeholder canvas device profiles deterministically from episode format.
+        const fmt =
+          typeof ep.config.format === "string"
+            ? getFormat(ep.config.format as FormatId)
+            : ep.config.format;
+        for (const d of ir.devices ?? []) {
+          if (d.profile === "canvas") {
+            const canvasId = resolveCanvasProfileId({
+              width: fmt.width,
+              height: fmt.height,
+            });
+            d.profile = canvasId;
+            ensureCanvasProfile(rendererRegistries.devices, canvasId, {
+              width: fmt.width,
+              height: fmt.height,
+            });
+          }
+        }
+
         // Store background config
         if (ir.background) {
           setBackgroundConfig(ir.background);
@@ -324,7 +347,14 @@ const EpisodeRendererInner: React.FC<EpisodeRendererProps> = ({
       }
     }
     prepare();
-  }, [episodeId, handle, config]);
+  }, [
+    episodeId,
+    handle,
+    config,
+    episodeRegistry,
+    pluginManager,
+    rendererRegistries.devices,
+  ]);
 
   // === ALL HOOKS MUST BE CALLED BEFORE CONDITIONAL RETURNS ===
   // (React rules of hooks - hooks must be called unconditionally)
@@ -410,14 +440,15 @@ const EpisodeRendererInner: React.FC<EpisodeRendererProps> = ({
   }, [world, voiceSoundCues]);
 
   // === CALCULATE FORMAT AND SCALE ===
+  const fmt = useMemo((): { width: number; height: number; fps: number } => {
+    if (!episode) return { width: 1080, height: 1920, fps: 30 };
+    return typeof episode.config.format === "string"
+      ? getFormat(episode.config.format as FormatId)
+      : episode.config.format;
+  }, [episode]);
+
   const { scale } = useMemo(() => {
-    if (!episode) {
-      return { scale: 1 };
-    }
-    const fmt =
-      typeof episode.config.format === "string"
-        ? getFormat(episode.config.format as FormatId)
-        : episode.config.format;
+    if (!episode) return { scale: 1 };
     const deviceId =
       worldWithVoice?.camera?.activeDeviceId ||
       Object.keys(worldWithVoice?.devices ?? {})[0];
@@ -430,10 +461,11 @@ const EpisodeRendererInner: React.FC<EpisodeRendererProps> = ({
       fmt.width / profile.dimensions.width,
       fmt.height / profile.dimensions.height,
     );
-    // Reduce to 85% to show more background around the device
-    const s = fitScale * 0.85;
+    const isCanvas = profileId.startsWith("canvas-");
+    // Canvas devices should fill the video. Phones keep a margin for background visibility.
+    const s = isCanvas ? fitScale : fitScale * 0.85;
     return { scale: s };
-  }, [episode, worldWithVoice]);
+  }, [episode, fmt.height, fmt.width, worldWithVoice, rendererRegistries.devices]);
 
   // === ERROR STATE ===
   if (error) {
@@ -478,6 +510,8 @@ const EpisodeRendererInner: React.FC<EpisodeRendererProps> = ({
     );
   }
 
+  const hasDevices = Object.keys(worldWithVoice.devices ?? {}).length > 0;
+
   // Log which audio path is being used (only on first few frames to avoid spam)
   // === RENDER ===
   return (
@@ -515,31 +549,38 @@ const EpisodeRendererInner: React.FC<EpisodeRendererProps> = ({
               volume={voiceConfig.volume ?? 1}
             />
           ))}
-        <div
-          style={{
-            transform: `scale(${scale})`,
-            transformOrigin: "center center",
-          }}
-        >
-          <TokovoRenderer
-            world={worldWithVoice}
-            t={frame}
-            fps={fps}
-            debug={cameraDebugEnabled}
-            config={config}
-            layoutCacheKey={
-              prepared
-                ? `${prepared.id}:${prepared.eventSignature ?? "unknown"}`
-                : undefined
-            }
-            eventIndex={keyframedEventIndex}
-            pluginManager={pluginManager}
-            registries={rendererRegistries}
-            onCameraDebugFrame={handleCameraDebugFrame}
-            cameraDebugShowAllAnchors={showAllAnchors}
-          />
-        </div>
-        <StoryOverlay world={worldWithVoice} t={frame} width={1080} height={1920} />
+        {hasDevices && (
+          <div
+            style={{
+              transform: `scale(${scale})`,
+              transformOrigin: "center center",
+            }}
+          >
+            <TokovoRenderer
+              world={worldWithVoice}
+              t={frame}
+              fps={fps}
+              debug={cameraDebugEnabled}
+              config={config}
+              layoutCacheKey={
+                prepared
+                  ? `${prepared.id}:${prepared.eventSignature ?? "unknown"}`
+                  : undefined
+              }
+              eventIndex={keyframedEventIndex}
+              pluginManager={pluginManager}
+              registries={rendererRegistries}
+              onCameraDebugFrame={handleCameraDebugFrame}
+              cameraDebugShowAllAnchors={showAllAnchors}
+            />
+          </div>
+        )}
+        <StoryOverlay
+          world={worldWithVoice}
+          t={frame}
+          width={fmt.width}
+          height={fmt.height}
+        />
       </RendererRegistryProvider>
       {cameraDebugEnabled && (
         <>

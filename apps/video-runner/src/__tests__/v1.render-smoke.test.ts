@@ -37,8 +37,11 @@ import { registerWhatsAppPlugin } from "@tokovo/apps-whatsapp";
 import { registerXPlugin } from "@tokovo/apps-x";
 import { registerIMessagePlugin } from "@tokovo/apps-imessage";
 import { registerLinkedInPlugin } from "@tokovo/apps-linkedin";
+import { registerTypewriterPlugin } from "@tokovo/apps-typewriter";
 
 import { createVideoRunnerEpisodeRegistry } from "../episode-registry";
+import { ensureCanvasProfile, resolveCanvasProfileId } from "@tokovo/devices";
+import { getFormat, type FormatId } from "@tokovo/episodes";
 
 function createRuntimeForSmoke(): {
   tokovoRegistries: TokovoRegistries;
@@ -56,6 +59,7 @@ function createRuntimeForSmoke(): {
   registerXPlugin(pluginManager);
   registerIMessagePlugin(pluginManager);
   registerLinkedInPlugin(pluginManager);
+  registerTypewriterPlugin(pluginManager);
   registerNotificationPlugin(tokovoRegistries.engine);
   registerCameraPlugin(pluginManager, tokovoRegistries.engine);
   registerKeyboardPlugin(tokovoRegistries.engine);
@@ -126,6 +130,7 @@ describe("v1 render smoke", () => {
     "v2-mysuru-friends-bakchodi-no-overlay",
     "v2-whatsapp-group-roast-baseline",
     "v2-x-roast-thread-baseline",
+    "typewriter-letter",
   ] as const;
 
   for (const episodeId of smokeEpisodeIds) {
@@ -137,6 +142,24 @@ describe("v1 render smoke", () => {
       resetAnchorDiagnostics();
 
       const ir = ep.build();
+      // Resolve placeholder canvas device profiles deterministically from episode format.
+      const fmt =
+        typeof ep.config.format === "string"
+          ? getFormat(ep.config.format as FormatId)
+          : ep.config.format;
+      for (const d of ir.devices ?? []) {
+        if (d.profile === "canvas") {
+          const canvasId = resolveCanvasProfileId({
+            width: fmt.width,
+            height: fmt.height,
+          });
+          d.profile = canvasId;
+          ensureCanvasProfile(runtime.deviceRegistries, canvasId, {
+            width: fmt.width,
+            height: fmt.height,
+          });
+        }
+      }
       const plugins = ep.config.apps.map((appId) => {
         const p = runtime.pluginManager.get(appId);
         if (!p) throw new Error(`Missing plugin: ${appId}`);

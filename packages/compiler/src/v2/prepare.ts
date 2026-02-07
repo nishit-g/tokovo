@@ -93,7 +93,7 @@ export function prepareTrackEpisode(
     .map((entry) => entry.event);
 
   // Build initial world state from device configs
-  const initialWorld = buildInitialWorld(ir);
+  const initialWorld = buildInitialWorld(ir, plugins);
   initialWorld.audio = {
     ...initialWorld.audio,
     autoSoundRules: [
@@ -181,7 +181,7 @@ export function prepareTrackEpisode(
 /**
  * Build initial WorldState from TrackEpisodeIR device configs.
  */
-function buildInitialWorld(ir: TrackEpisodeIR): WorldState {
+function buildInitialWorld(ir: TrackEpisodeIR, plugins: TokovoPlugin[]): WorldState {
   const devices: Record<string, DeviceState> = {};
   for (const device of ir.devices) {
     const platform = device.profile.includes("pixel") ? "android" : "ios";
@@ -228,11 +228,26 @@ function buildInitialWorld(ir: TrackEpisodeIR): WorldState {
   const camera = { ...DEFAULT_CAMERA_STATE, activeDeviceId: firstDeviceId };
   const audio = { ...DEFAULT_AUDIO_STATE };
 
+  const pluginsById = new Map<string, TokovoPlugin>(
+    plugins.map((p) => [p.id, p]),
+  );
+
   const appState: Record<string, unknown> = {};
   for (const device of ir.devices) {
     if (device.app) {
-      const hasConversations =
-        device.conversations && device.conversations.length > 0;
+      const appId = device.app;
+      const plugin = pluginsById.get(appId);
+      const baseState = (() => {
+        try {
+          const created = plugin?.createInitialState?.();
+          if (created && typeof created === "object") return { ...(created as Record<string, unknown>) };
+        } catch (e) {
+          console.warn(`[prepareTrackEpisode] createInitialState failed for ${appId}`, e);
+        }
+        return {};
+      })();
+
+      const hasConversations = (device.conversations?.length ?? 0) > 0;
       const firstConversation = device.conversations?.[0];
 
       // Build conversations for this app
@@ -253,11 +268,37 @@ function buildInitialWorld(ir: TrackEpisodeIR): WorldState {
         };
       }
 
-      appState[device.app] = {
-        viewMode: hasConversations ? "CHAT" : "FEED",
-        conversationId: firstConversation?.id,
-        conversations,
-      };
+      const merged = {
+        ...baseState,
+        ...(hasConversations
+          ? {
+              viewMode: "CHAT",
+              conversationId: firstConversation?.id,
+              conversations,
+            }
+          : {}),
+      } as Record<string, unknown>;
+
+      // Ensure viewMode is always present (required by LayoutEngine in render mode)
+      if (typeof merged.viewMode !== "string") {
+        merged.viewMode = hasConversations ? "CHAT" : "FEED";
+      }
+
+      // If conversations exist but conversationId is missing, set it deterministically.
+      if (
+        hasConversations &&
+        typeof merged.conversationId !== "string" &&
+        typeof firstConversation?.id === "string"
+      ) {
+        merged.conversationId = firstConversation.id;
+      }
+
+      // If no conversations, still ensure conversations key exists if base state expects it.
+      if (!hasConversations && merged.conversations === undefined) {
+        merged.conversations = conversations;
+      }
+
+      appState[appId] = merged;
     }
   }
 

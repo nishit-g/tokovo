@@ -350,7 +350,13 @@ const TokovoRendererInner: React.FC<TokovoRendererProps> = ({
                   baseContent = <div style={{ flex: 1, backgroundColor: "black" }} />;
                 } else {
                   const pluginAssets = pm.get(appId)?.assets;
-                  const designWidth = pluginAssets?.designWidth || 393;
+                  const isCanvasProfile =
+                    typeof device.profileId === "string" &&
+                    device.profileId.startsWith("canvas-");
+                  // Canvas devices should render 1:1 in video pixel coordinates.
+                  const designWidth = isCanvasProfile
+                    ? profile.dimensions.width
+                    : pluginAssets?.designWidth || 393;
                   const scale = profile.dimensions.width / designWidth;
 
                   baseContent = (

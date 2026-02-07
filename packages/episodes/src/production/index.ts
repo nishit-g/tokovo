@@ -35,6 +35,7 @@ import whatsappToX from "./whatsapp-to-x.episode.js";
 import whatsappToXViral from "./whatsapp-to-x-viral.episode.js";
 import xAnchorTour from "./x-anchor-tour.episode.js";
 import iMessageAnchorTour from "./imessage-anchor-tour.episode.js";
+import typewriterLetter from "./typewriter-letter.episode.js";
 // plop:episode-import
 
 export const productionEpisodes: EpisodeDefinition[] = [
@@ -61,6 +62,7 @@ export const productionEpisodes: EpisodeDefinition[] = [
   whatsappToXViral,
   xAnchorTour,
   iMessageAnchorTour,
+  typewriterLetter,
   // plop:episode-entry
 ];
 
@@ -95,4 +97,5 @@ export {
   whatsappToXViral,
   xAnchorTour,
   iMessageAnchorTour,
+  typewriterLetter,
 };
