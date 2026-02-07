@@ -9,8 +9,20 @@ export interface TypewriterLetterMeta {
 }
 
 export interface TypewriterCursor {
+  page: number;
   row: number;
   col: number;
+}
+
+export interface TypewriterGlyph {
+  ch: string;
+  typedAt: number;
+  seed: number;
+}
+
+export interface TypewriterPage {
+  index: number;
+  cells: Array<TypewriterGlyph | null>;
 }
 
 export interface TypewriterSettings {
@@ -26,19 +38,18 @@ export interface TypewriterFxState {
   lastCh?: string;
   lastCarriageFrame?: number;
   lastCarriageFromCol?: number;
-  scrollAnim?: {
+  pageFeedAnim?: {
     at: number;
-    fromLines: number;
-    toLines: number;
+    fromPage: number;
+    toPage: number;
   };
 }
 
 export interface TypewriterState {
   viewMode: ViewKind;
   meta: TypewriterLetterMeta;
-  lines: string[];
   cursor: TypewriterCursor;
-  scrollLines: number;
+  pages: TypewriterPage[];
   settings: TypewriterSettings;
   seed: number;
   theme: TypewriterThemeConfig;
@@ -49,9 +60,8 @@ export function createTypewriterInitialState(): TypewriterState {
   return {
     viewMode: "FULLSCREEN",
     meta: {},
-    lines: [""],
-    cursor: { row: 0, col: 0 },
-    scrollLines: 0,
+    pages: [{ index: 0, cells: [] }],
+    cursor: { page: 0, row: 0, col: 0 },
     settings: {
       maxCols: 44,
       maxRows: 26,

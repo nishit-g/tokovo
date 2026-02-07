@@ -40,6 +40,8 @@ export interface TypewriterThemeTokens {
     vignetteOpacity: number;
     bgTop: string;
     bgBottom: string;
+    edgeWearOpacity: number;
+    edgeWearStrengthPx: number;
   };
 
   text: {
@@ -66,6 +68,13 @@ export interface TypewriterThemeTokens {
     inkOpacity: number;
     inkBleedOpacity: number;
     inkBleedBlurPx: number;
+
+    // Classic paper guides (top margin + left margin line).
+    guideLineColor: string;
+    guideLineOpacity: number;
+    guideLineWidthPx: number;
+    guideLeftMarginXPct: number;
+    guideTopMarginYPct: number;
   };
 
   typewriter: {
@@ -82,9 +91,20 @@ export interface TypewriterThemeTokens {
     plateHeightPx: number;
     plateRadiusPx: number;
 
+    brandText: string;
+    brandFontFamily: string;
+    brandFontSizePx: number;
+    brandFontWeight: number;
+    brandLetterSpacingEm: number;
+    brandColor: string;
+    brandInsetLeftPx: number;
+    brandInsetBottomPx: number;
+
     keys: {
       gapPx: number;
       keyRadiusPx: number;
+      keyRingOpacity: number;
+      keyInsetOpacity: number;
       keyFontSizePx: number;
       keyBgUpTop: string;
       keyBgUpBottom: string;
@@ -104,6 +124,9 @@ export interface TypewriterThemeTokens {
       knobShadowOpacity: number;
       carriageColor: string;
     };
+
+    keyAreaTopOffsetPx: number;
+    keyAreaBottomInsetPx: number;
   };
 
   motion: {
@@ -125,6 +148,19 @@ export interface TypewriterThemeTokens {
     roomVol: number;
     volVar: number;
     roomDurationFrames: number;
+    // One-shot durations (seconds). Lowering converts to frames using episode fps.
+    durKeyS: number;
+    durSpaceS: number;
+    durPunctS: number;
+    durBackspaceS: number;
+    durCarriageS: number;
+    durBellS: number;
+    durRoomS: number;
+
+    // If true, TypeText emits a subtle continuous typing bed (room/mechanics) only for that segment.
+    typingBed: boolean;
+    typingBedVol: number;
+    typingBedTailS: number;
   };
 }
 

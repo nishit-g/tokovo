@@ -25,6 +25,7 @@
   "scripts": {
     "build": "tsc",
     "lint": "eslint . --ext .ts,.tsx",
+    "generate:sfx": "python3 scripts/generate_sfx.py",
     "test": "vitest run",
     "test:watch": "vitest"
   }

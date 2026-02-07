@@ -39,6 +39,14 @@ export const TypewriterPlugin: TokovoPluginContract<typeof TYPEWRITER_APP_ID> & 
       "app_typewriter.punct": "plugins/typewriter/punct.wav",
       "app_typewriter.bell": "plugins/typewriter/bell.wav",
       "app_typewriter.room": "plugins/typewriter/room.wav",
+      // Spam gate may soften rapid repeats by appending "_soft" to sound IDs.
+      // These assets must exist or typing audio will go silent.
+      "app_typewriter.key_soft": "plugins/typewriter/key_soft.wav",
+      "app_typewriter.space_soft": "plugins/typewriter/space_soft.wav",
+      "app_typewriter.punct_soft": "plugins/typewriter/punct_soft.wav",
+      "app_typewriter.backspace_soft": "plugins/typewriter/backspace_soft.wav",
+      "app_typewriter.carriage_soft": "plugins/typewriter/carriage_soft.wav",
+      "app_typewriter.bell_soft": "plugins/typewriter/bell_soft.wav",
     },
     designWidth: 1080,
   },

@@ -50,6 +50,11 @@ function createAudioEvent(
   } as unknown as RuntimeEvent;
 }
 
+function durFrames(sec: number | undefined, fps: number, minFrames: number = 1): number | undefined {
+  if (typeof sec !== "number" || !isFinite(sec) || sec <= 0) return undefined;
+  return Math.max(minFrames, Math.ceil(sec * fps));
+}
+
 function isWhitespaceToken(tok: string): boolean {
   return tok.trim().length === 0;
 }
@@ -182,17 +187,28 @@ function expandTypeText(input: {
     mistakes?: { rate?: number; max?: number; alphabet?: string };
     allowOverflow?: boolean;
     pauses?: { afterPunctFrames?: number; afterNewlineFrames?: number; afterSpaceFrames?: number };
-    audio?: Partial<{
-      baseKeyVol: number;
-      baseSpaceVol: number;
-      basePunctVol: number;
-      baseBackspaceVol: number;
-      baseCarriageVol: number;
-      baseBellVol: number;
-      roomVol: number;
-      volVar: number;
-      roomDurationFrames: number;
-      bellColsFromRight: number;
+	    audio?: Partial<{
+	      baseKeyVol: number;
+	      baseSpaceVol: number;
+	      basePunctVol: number;
+	      baseBackspaceVol: number;
+	      baseCarriageVol: number;
+	      baseBellVol: number;
+	      roomVol: number;
+	      volVar: number;
+	      roomDurationFrames: number;
+	      bellColsFromRight: number;
+	      // Typing bed: subtle continuous layer only while this typing segment runs.
+	      typingBed?: boolean;
+	      typingBedVol?: number;
+	      typingBedTailS?: number;
+	      durKeyS: number;
+	      durSpaceS: number;
+	      durPunctS: number;
+	      durBackspaceS: number;
+	      durCarriageS: number;
+      durBellS: number;
+      durRoomS: number;
     }>;
   };
   const rawText = typeof payload.text === "string" ? payload.text : "";
@@ -229,11 +245,26 @@ function expandTypeText(input: {
   let mistakesUsed = 0;
 
   const out: RuntimeEvent[] = [];
-  let t = event.at;
-  let col = 0;
+	  let t = event.at;
+	  let col = 0;
 
-  const volVar = payload.audio?.volVar ?? 0.12;
-  const bellColsFromRight = payload.audio?.bellColsFromRight ?? 5;
+	  const volVar = payload.audio?.volVar ?? 0.12;
+	  const bellColsFromRight = payload.audio?.bellColsFromRight ?? 5;
+
+	  // Optional continuous bed during typing (keeps fast typing from feeling like isolated bursts).
+	  // Uses the existing offline-generated room tone asset at a very low volume.
+	  const typingBedEnabled = payload.audio?.typingBed !== false;
+	  const typingBedVol =
+	    payload.audio?.typingBedVol ??
+	    Math.min(0.07, (payload.audio?.roomVol ?? 0.16) * 0.35);
+	  const typingBedTail = durFrames(payload.audio?.typingBedTailS ?? 0.35, fps, 0) ?? 0;
+	  const typingBedStart = t;
+	  const durKey = durFrames(payload.audio?.durKeyS ?? 0.05, fps);
+	  const durSpace = durFrames(payload.audio?.durSpaceS ?? 0.1, fps);
+	  const durPunct = durFrames(payload.audio?.durPunctS ?? 0.05, fps);
+	  const durBackspace = durFrames(payload.audio?.durBackspaceS ?? 0.06, fps);
+	  const durCarriage = durFrames(payload.audio?.durCarriageS ?? 0.3, fps);
+	  const durBell = durFrames(payload.audio?.durBellS ?? 1.5, fps);
 
   for (const ch of text) {
     if (ch === "\n") {
@@ -247,9 +278,10 @@ function expandTypeText(input: {
             base: payload.audio?.baseCarriageVol ?? baseVolumeForCategory("return"),
             var: Math.min(0.12, volVar),
           }),
-          bus: "ui",
-        }),
-      );
+	          bus: "sfx",
+	          duration: durCarriage,
+	        }),
+	      );
       col = 0;
     } else {
       // Optional mistake: type a wrong char, backspace, then correct.
@@ -262,7 +294,7 @@ function expandTypeText(input: {
       if (shouldMistake) {
         const wrongIdx = Math.floor(rng() * mistakesAlphabet.length);
         const wrong = mistakesAlphabet[wrongIdx] ?? "x";
-        out.push(createRuntimeEvent(t, deviceId, "TYPEWRITER_KEY", { ch: wrong }));
+        out.push(createRuntimeEvent(t, deviceId, "TYPEWRITER_KEY", { ch: wrong, noAutoWrap: true }));
         out.push(
           createAudioEvent(t, deviceId, {
             soundId: soundIdForCategory(categorizeSoundForChar(wrong)),
@@ -275,9 +307,10 @@ function expandTypeText(input: {
                   : payload.audio?.baseKeyVol ?? baseVolumeForCategory("key"),
               var: volVar,
             }),
-            bus: "ui",
-          }),
-        );
+	            bus: "sfx",
+	            duration: categorizeSoundForChar(wrong) === "punct" ? durPunct : durKey,
+	          }),
+	        );
         t += stepFrames;
         out.push(createRuntimeEvent(t, deviceId, "TYPEWRITER_BACKSPACE", {}));
         out.push(
@@ -289,14 +322,15 @@ function expandTypeText(input: {
               base: payload.audio?.baseBackspaceVol ?? baseVolumeForCategory("backspace"),
               var: Math.min(0.12, volVar),
             }),
-            bus: "ui",
-          }),
-        );
+	            bus: "sfx",
+	            duration: durBackspace,
+	          }),
+	        );
         t += Math.max(1, Math.floor(stepFrames / 2));
         mistakesUsed++;
       }
 
-      out.push(createRuntimeEvent(t, deviceId, "TYPEWRITER_KEY", { ch }));
+      out.push(createRuntimeEvent(t, deviceId, "TYPEWRITER_KEY", { ch, noAutoWrap: true }));
       const cat = categorizeSoundForChar(ch);
       out.push(
         createAudioEvent(t, deviceId, {
@@ -312,9 +346,11 @@ function expandTypeText(input: {
                   : payload.audio?.baseKeyVol ?? baseVolumeForCategory("key"),
             var: volVar,
           }),
-          bus: "ui",
-        }),
-      );
+	          bus: "sfx",
+	          duration:
+	            cat === "space" ? durSpace : cat === "punct" ? durPunct : durKey,
+	        }),
+	      );
 
       col += 1;
       const bellAt = maxCols - bellColsFromRight;
@@ -328,10 +364,11 @@ function expandTypeText(input: {
               base: payload.audio?.baseBellVol ?? 0.55,
               var: Math.min(0.08, volVar),
             }),
-            bus: "ui",
-          }),
-        );
-      }
+	            bus: "sfx",
+	            duration: durBell,
+	          }),
+	        );
+	      }
     }
 
     const pauseExtra =
@@ -348,10 +385,25 @@ function expandTypeText(input: {
         ? Math.floor((Math.min(jitterMin, jitterMax) + rng() * (jitterRange + 1)) as number)
         : Math.min(jitterMin, jitterMax);
     t += Math.max(1, stepFrames + jitter + pauseExtra);
-  }
+	  }
 
-  return out;
-}
+	  // Insert typing bed as the first event in the segment, so it deterministically starts
+	  // before any key clicks. It is bounded (no infinite loop sounds).
+	  if (typingBedEnabled && text.length > 0) {
+	    const dur = Math.max(1, (t - typingBedStart) + typingBedTail);
+	    out.unshift(
+	      createAudioEvent(typingBedStart, deviceId, {
+	        soundId: "app_typewriter.room",
+	        volume: clamp01(typingBedVol),
+	        bus: "sfx",
+	        loop: true,
+	        duration: dur,
+	      }),
+	    );
+	  }
+
+	  return out;
+	}
 
 export const typewriterLowering: TypewriterLoweringHandler = {
   lower: (event: TrackEvent, ctx: { fps: number }): RuntimeEvent[] => {
@@ -365,13 +417,21 @@ export const typewriterLowering: TypewriterLoweringHandler = {
         const payload = (event.payload ?? {}) as {
           roomTone?: boolean;
           seed?: number;
-          audio?: { roomVol?: number; roomDurationFrames?: number; volVar?: number };
+          audio?: {
+            roomVol?: number;
+            roomDurationFrames?: number;
+            volVar?: number;
+            durRoomS?: number;
+          };
         };
-        const roomTone = payload.roomTone !== false;
+        // Room tone must be opt-in. If the asset ever goes missing in a harness,
+        // default-on room tone creates confusing "silent audio" failures.
+        const roomTone = payload.roomTone === true;
         const seed = typeof payload.seed === "number" ? payload.seed : hashStringToU32(`${event.at}:${event._declarationOrder ?? 0}`);
         const roomVol = payload.audio?.roomVol ?? 0.16;
         const roomDurationFrames = payload.audio?.roomDurationFrames ?? 3600;
         const roomVar = Math.min(0.08, payload.audio?.volVar ?? 0.12);
+        const roomDur = durFrames(payload.audio?.durRoomS ?? 10.0, ctx.fps);
         const out: RuntimeEvent[] = [createRuntimeEvent(event.at, deviceId, event.type, event.payload ?? {})];
         if (roomTone) {
           out.push(
@@ -380,7 +440,7 @@ export const typewriterLowering: TypewriterLoweringHandler = {
               volume: seededVolume({ seed, tag: `room:${event.at}`, base: roomVol, var: roomVar }),
               bus: "sfx",
               loop: true,
-              duration: roomDurationFrames,
+              duration: roomDur ?? roomDurationFrames,
             }),
           );
         }
@@ -390,6 +450,7 @@ export const typewriterLowering: TypewriterLoweringHandler = {
         const payload = (event.payload ?? {}) as {
           ch?: string;
           seed?: number;
+          noAutoWrap?: boolean;
           audio?: Partial<{
             baseKeyVol: number;
             baseSpaceVol: number;
@@ -398,6 +459,9 @@ export const typewriterLowering: TypewriterLoweringHandler = {
             baseCarriageVol: number;
             baseBellVol: number;
             volVar: number;
+            durKeyS: number;
+            durSpaceS: number;
+            durPunctS: number;
           }>;
         };
         const ch = typeof payload.ch === "string" ? payload.ch : "";
@@ -411,7 +475,10 @@ export const typewriterLowering: TypewriterLoweringHandler = {
               ? payload.audio?.basePunctVol ?? baseVolumeForCategory("punct")
               : payload.audio?.baseKeyVol ?? baseVolumeForCategory("key");
         return [
-          createRuntimeEvent(event.at, deviceId, event.type, { ch }),
+          createRuntimeEvent(event.at, deviceId, event.type, {
+            ch,
+            noAutoWrap: payload.noAutoWrap === true,
+          }),
           createAudioEvent(event.at, deviceId, {
             soundId: soundIdForCategory(cat),
             volume: seededVolume({
@@ -420,12 +487,18 @@ export const typewriterLowering: TypewriterLoweringHandler = {
               base,
               var: volVar,
             }),
-            bus: "ui",
+            bus: "sfx",
+            duration:
+              cat === "space"
+                ? durFrames(payload.audio?.durSpaceS ?? 0.1, ctx.fps)
+                : cat === "punct"
+                  ? durFrames(payload.audio?.durPunctS ?? 0.05, ctx.fps)
+                  : durFrames(payload.audio?.durKeyS ?? 0.05, ctx.fps),
           }),
         ];
       }
       case "TYPEWRITER_NEWLINE": {
-        const payload = (event.payload ?? {}) as { audio?: { baseCarriageVol?: number; volVar?: number } };
+        const payload = (event.payload ?? {}) as { audio?: { baseCarriageVol?: number; volVar?: number; durCarriageS?: number } };
         const seed = hashStringToU32(`${event.at}:${event._declarationOrder ?? 0}`);
         return [
           createRuntimeEvent(event.at, deviceId, event.type, event.payload ?? {}),
@@ -437,12 +510,13 @@ export const typewriterLowering: TypewriterLoweringHandler = {
               base: payload.audio?.baseCarriageVol ?? 0.95,
               var: Math.min(0.12, payload.audio?.volVar ?? 0.06),
             }),
-            bus: "ui",
+            bus: "sfx",
+            duration: durFrames(payload.audio?.durCarriageS ?? 0.3, ctx.fps),
           }),
         ];
       }
       case "TYPEWRITER_BACKSPACE": {
-        const payload = (event.payload ?? {}) as { audio?: { baseBackspaceVol?: number; volVar?: number } };
+        const payload = (event.payload ?? {}) as { audio?: { baseBackspaceVol?: number; volVar?: number; durBackspaceS?: number } };
         const seed = hashStringToU32(`${event.at}:${event._declarationOrder ?? 0}`);
         return [
           createRuntimeEvent(event.at, deviceId, event.type, event.payload ?? {}),
@@ -454,7 +528,8 @@ export const typewriterLowering: TypewriterLoweringHandler = {
               base: payload.audio?.baseBackspaceVol ?? 0.8,
               var: Math.min(0.12, payload.audio?.volVar ?? 0.08),
             }),
-            bus: "ui",
+            bus: "sfx",
+            duration: durFrames(payload.audio?.durBackspaceS ?? 0.06, ctx.fps),
           }),
         ];
       }

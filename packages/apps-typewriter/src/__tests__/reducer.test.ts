@@ -33,8 +33,9 @@ describe("typewriterReducer", () => {
     } as any);
 
     const s = (w.appState as any)[TYPEWRITER_APP_ID];
-    expect(s.lines[0]).toBe("Hi");
-    expect(s.cursor).toEqual({ row: 0, col: 2 });
+    expect(s.cursor).toEqual({ page: 0, row: 0, col: 2 });
+    expect(s.pages[0].cells[0].ch).toBe("H");
+    expect(s.pages[0].cells[1].ch).toBe("i");
     expect(Object.keys(s.fx.pressedKeys).length).toBeGreaterThan(0);
   });
 
@@ -45,8 +46,27 @@ describe("typewriterReducer", () => {
     typewriterReducer(w, { at: 2, kind: "APP", appId: TYPEWRITER_APP_ID, type: "TYPEWRITER_KEY", payload: { ch: "B" } } as any);
 
     const s = (w.appState as any)[TYPEWRITER_APP_ID];
-    expect(s.lines).toEqual(["A", "B"]);
-    expect(s.cursor).toEqual({ row: 1, col: 1 });
+    expect(s.cursor).toEqual({ page: 0, row: 1, col: 1 });
+    expect(s.pages[0].cells[0].ch).toBe("A");
+    expect(s.pages[0].cells[44].ch).toBe("B");
     expect(typeof s.fx.lastCarriageFromCol).toBe("number");
+  });
+
+  it("page breaks when newline happens past last row", () => {
+    const w = baseWorld();
+    typewriterReducer(w, { at: 0, kind: "APP", appId: TYPEWRITER_APP_ID, type: "TYPEWRITER_INIT_LETTER", payload: { reset: true } } as any);
+    typewriterReducer(w, {
+      at: 1,
+      kind: "APP",
+      appId: TYPEWRITER_APP_ID,
+      type: "TYPEWRITER_SET_CURSOR",
+      payload: { page: 0, row: 25, col: 43 },
+    } as any);
+    typewriterReducer(w, { at: 2, kind: "APP", appId: TYPEWRITER_APP_ID, type: "TYPEWRITER_KEY", payload: { ch: "X" } } as any);
+    const s = (w.appState as any)[TYPEWRITER_APP_ID];
+    expect(s.pages.length).toBeGreaterThan(1);
+    expect(s.cursor.page).toBe(1);
+    expect(s.cursor.row).toBe(0);
+    expect(s.cursor.col).toBe(0);
   });
 });
