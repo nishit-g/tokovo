@@ -418,6 +418,20 @@ draft.appState.whatsapp.messages.push(msg);
 
 ## Remotion Rendering Tips
 
+### Fast Local Renders (Tokovo Profile)
+
+Tokovo ships a tuned "fast" render profile for local iteration on a MacBook:
+
+```bash
+EPISODE_ID=v2-enterprise-long-showcase pnpm --filter video-runner render:fast
+```
+
+What it does:
+- Enables GPU rendering (`--gl=angle`) and hardware-accelerated encoding (`--hardware-acceleration=if-possible`).
+- Uses max CPU concurrency for throughput.
+
+For final exports, render without the fast profile or override flags to prioritize quality and predictable bitrate.
+
 ### **1. Use Concurrency for Faster Renders**
 
 ```bash

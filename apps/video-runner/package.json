@@ -5,6 +5,8 @@
   "scripts": {
     "start": "npx remotion studio",
     "dev": "npx remotion studio",
+    "benchmark": "npx remotion benchmark src/index.ts v2-enterprise-long-showcase",
+    "render:fast": "node scripts/render-fast.mjs",
     "build": "tsc -p tsconfig.json",
     "upgrade": "remotion upgrade",
     "pretest": "pnpm --filter @tokovo/core build && pnpm --filter @tokovo/ir build && pnpm --filter @tokovo/compiler build && pnpm --filter @tokovo/dsl build && pnpm --filter @tokovo/renderer build && pnpm --filter @tokovo/overlay build && pnpm --filter @tokovo/episodes build",
@@ -16,6 +18,7 @@
     "@tokovo/background": "workspace:*",
     "@tokovo/compiler": "workspace:*",
     "@tokovo/apps-imessage": "workspace:*",
+    "@tokovo/apps-linkedin": "workspace:*",
     "@tokovo/apps-whatsapp": "workspace:*",
     "@tokovo/apps-x": "workspace:*",
     "@tokovo/core": "workspace:*",

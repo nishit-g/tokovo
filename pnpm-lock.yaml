@@ -85,6 +85,9 @@ importers:
       '@tokovo/apps-imessage':
         specifier: workspace:*
         version: link:../../packages/apps-imessage
+      '@tokovo/apps-linkedin':
+        specifier: workspace:*
+        version: link:../../packages/apps-linkedin
       '@tokovo/apps-whatsapp':
         specifier: workspace:*
         version: link:../../packages/apps-whatsapp
@@ -253,6 +256,46 @@ importers:
       '@types/react':
         specifier: 18.3.1
         version: 18.3.1
+      typescript:
+        specifier: ^5.0.0
+        version: 5.9.3
+      vitest:
+        specifier: ^1.0.0
+        version: 1.6.1(@types/node@20.19.25)(jsdom@24.1.3)(lightningcss@1.30.2)(terser@5.44.1)
+
+  packages/apps-linkedin:
+    dependencies:
+      '@tokovo/core':
+        specifier: workspace:*
+        version: link:../core
+      '@tokovo/device-keyboard':
+        specifier: workspace:*
+        version: link:../device-keyboard
+      '@tokovo/dsl':
+        specifier: workspace:*
+        version: link:../dsl
+      '@tokovo/ir':
+        specifier: workspace:*
+        version: link:../ir
+      '@tokovo/react':
+        specifier: workspace:*
+        version: link:../react
+      react:
+        specifier: 18.3.1
+        version: 18.3.1
+      react-dom:
+        specifier: 18.3.1
+        version: 18.3.1(react@18.3.1)
+    devDependencies:
+      '@types/node':
+        specifier: ^20.0.0
+        version: 20.19.25
+      '@types/react':
+        specifier: 18.3.1
+        version: 18.3.1
+      immer:
+        specifier: ^10.0.0
+        version: 10.2.0
       typescript:
         specifier: ^5.0.0
         version: 5.9.3
@@ -582,6 +625,9 @@ importers:
       '@tokovo/apps-imessage':
         specifier: workspace:*
         version: link:../apps-imessage
+      '@tokovo/apps-linkedin':
+        specifier: workspace:*
+        version: link:../apps-linkedin
       '@tokovo/apps-whatsapp':
         specifier: workspace:*
         version: link:../apps-whatsapp

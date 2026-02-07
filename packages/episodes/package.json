@@ -46,6 +46,7 @@
     "@tokovo/apps-whatsapp": "workspace:*",
     "@tokovo/apps-imessage": "workspace:*",
     "@tokovo/apps-x": "workspace:*",
+    "@tokovo/apps-linkedin": "workspace:*",
     "@tokovo/device-camera": "workspace:*",
     "@tokovo/device-keyboard": "workspace:*",
     "@tokovo/device-notifications": "workspace:*",

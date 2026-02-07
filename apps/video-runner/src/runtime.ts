@@ -7,6 +7,7 @@ import { registerOSAnchorProviders } from "@tokovo/renderer";
 import { registerWhatsAppPlugin } from "@tokovo/apps-whatsapp";
 import { registerXPlugin } from "@tokovo/apps-x";
 import { registerIMessagePlugin } from "@tokovo/apps-imessage";
+import { registerLinkedInPlugin } from "@tokovo/apps-linkedin";
 import {
   createDeviceRegistries,
   registerDevicesPlugin,
@@ -45,6 +46,7 @@ export function createVideoRunnerRuntime(): VideoRunnerRuntime {
   registerWhatsAppPlugin(pluginManager);
   registerXPlugin(pluginManager);
   registerIMessagePlugin(pluginManager);
+  registerLinkedInPlugin(pluginManager);
   registerNotificationPlugin(tokovoRegistries.engine);
   registerCameraPlugin(pluginManager, tokovoRegistries.engine);
   registerKeyboardPlugin(tokovoRegistries.engine);

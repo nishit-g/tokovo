@@ -36,6 +36,7 @@ import { registerOverlayPlugin } from "@tokovo/overlay";
 import { registerWhatsAppPlugin } from "@tokovo/apps-whatsapp";
 import { registerXPlugin } from "@tokovo/apps-x";
 import { registerIMessagePlugin } from "@tokovo/apps-imessage";
+import { registerLinkedInPlugin } from "@tokovo/apps-linkedin";
 
 import { createVideoRunnerEpisodeRegistry } from "../episode-registry";
 
@@ -54,6 +55,7 @@ function createRuntimeForSmoke(): {
   registerWhatsAppPlugin(pluginManager);
   registerXPlugin(pluginManager);
   registerIMessagePlugin(pluginManager);
+  registerLinkedInPlugin(pluginManager);
   registerNotificationPlugin(tokovoRegistries.engine);
   registerCameraPlugin(pluginManager, tokovoRegistries.engine);
   registerKeyboardPlugin(tokovoRegistries.engine);

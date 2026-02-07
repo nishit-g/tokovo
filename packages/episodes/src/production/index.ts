@@ -27,6 +27,7 @@ import typedMessageDemo from "./typed-message-demo.episode.js";
 import cheatingExposedNewDx from "./cheating-exposed-new-dx.episode.js";
 import voiceDemo from "./voice-demo.episode.js";
 import megaX from "./mega-x.episode.js";
+import megaLinkedIn from "./mega-linkedin.episode.js";
 import megaWhatsapp from "./mega-whatsapp.episode.js";
 import megaMegaWhatsapp from "./mega-mega-whatsapp.episode.js";
 import whatsappGhibli from "./whatsapp-ghibli.episode.js";
@@ -52,6 +53,7 @@ export const productionEpisodes: EpisodeDefinition[] = [
   cheatingExposedNewDx,
   voiceDemo,
   megaX,
+  megaLinkedIn,
   megaWhatsapp,
   megaMegaWhatsapp,
   whatsappGhibli,
@@ -85,6 +87,7 @@ export {
   cheatingExposedNewDx,
   voiceDemo,
   megaX,
+  megaLinkedIn,
   megaWhatsapp,
   megaMegaWhatsapp,
   whatsappGhibli,
