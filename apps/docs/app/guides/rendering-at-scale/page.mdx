@@ -1,0 +1,164 @@
+# Rendering at Scale (Fast as F***, Actually Reliable)
+
+Tokovo can ship 1000 videos/day, but only if you treat rendering like a system, not a CLI command you spam.
+
+This guide is the practical playbook:
+- The exact flags that are fast on a Mac
+- How to benchmark and pick the best concurrency
+- How to structure a render farm (or worker pool) that doesn’t rebundle and doesn’t melt
+- What *will* slow you down in Tokovo episodes (and how to avoid it)
+
+---
+
+## TL;DR Preset (MacBook / Mac Mini)
+
+**Use GPU + hardware encode + tuned concurrency.**
+
+```bash
+EPISODE_ID=v2-enterprise-long-showcase pnpm --filter video-runner render:fast
+```
+
+What it does:
+- `--gl=angle` (huge speedup for Tokovo’s UI heavy CSS)
+- `--hardware-acceleration=if-possible` (VideoToolbox on macOS)
+- `--codec=h264 --x264-preset=veryfast --video-bitrate=8M`
+- `--concurrency=<cpu cores>` (but see benchmark; max is not always best)
+
+If you don’t use GPU (`--gl=angle`), you will waste minutes per render. Don’t.
+
+---
+
+## Measure First: Benchmark Like a Grownup
+
+Never guess concurrency. Benchmark it on a representative episode:
+
+```bash
+pnpm --filter video-runner benchmark
+```
+
+Or run it manually for a specific episode:
+
+```bash
+cd apps/video-runner
+TOKOVO_RENDER_PROFILE=fast ./node_modules/.bin/remotion benchmark src/index.ts v2-device-baseline \
+  --runs=1 \
+  --gl=angle \
+  --hardware-acceleration=if-possible \
+  --codec=h264 \
+  --x264-preset=veryfast \
+  --video-bitrate=8M \
+  --concurrencies=2,4,6,8,10,12
+```
+
+Pick the best concurrency (often slightly under max cores).
+
+---
+
+## The Real Scaling Rule: Don’t Rebundle Per Video
+
+If you “bundle” for every render, you can’t hit 1000/day.
+
+Correct mental model:
+1. **Bundle once per Git SHA** (or per release).
+2. Render N videos from that bundle using input props.
+
+Tokovo today renders via the Remotion CLI entrypoint. That’s fine for development, but for scale you want a worker service.
+
+---
+
+## A Production Architecture That Actually Ships 1000/day
+
+### 1) Render queue + workers
+
+You need:
+- A queue (Postgres table or Redis).
+- Workers (processes) that pull jobs and render.
+
+Each job is:
+- `{ bundleId, compositionId, inputProps, outputPath, preset }`
+
+### 2) Bundle manager (build artifacts)
+
+Bundle once per SHA and store:
+- `bundleId = sha`
+- `serveUrl = https://.../bundles/<sha>/index.html`
+
+### 3) Worker process model
+
+Per worker machine:
+- Start worker
+- Load `serveUrl`
+- Keep Chrome instance alive (reuse between jobs)
+- Render jobs back-to-back
+
+This avoids Chrome startup cost and avoids bundling cost.
+
+### 4) Why Mac minis are a legit strategy
+
+Tokovo’s output is UI-heavy and benefits from:
+- GPU rendering
+- macOS hardware encoding (VideoToolbox)
+
+So a Mac mini farm is often the simplest “money -> throughput” conversion.
+
+---
+
+## Tokovo Authoring Rules That Keep Renders Fast
+
+### Keep event counts sane
+
+If you generate 2000 “typing” events, you’re paying for it.
+Prefer “typed: true” expansions (few track events -> deterministic runtime expansion).
+
+### Avoid per-frame allocations in hot components
+
+When you render 30fps, everything runs 30 times/sec per worker.
+Avoid patterns like:
+- building huge arrays in render
+- JSON.stringify in render
+- dynamic regex creation in render
+
+### Don’t fetch assets in render
+
+Use `staticFile()` and keep assets in `public/`.
+Remote URLs during render are latency bombs.
+
+---
+
+## Presets: Fast vs Final
+
+### Fast iteration
+- `h264`, `veryfast`, bitrate capped
+- max safe concurrency
+- GPU on
+
+### Final export
+- raise bitrate or use CRF (only if not using hardware acceleration)
+- consider `medium` preset if you care about quality-per-byte
+
+Tokovo’s default scripts are tuned for iteration. Decide what “final” means for your product.
+
+---
+
+## Troubleshooting (Common Failures)
+
+### Render suddenly becomes 5-10x slower
+- GPU not active (missing `--gl=angle`)
+- concurrency too high (thrashing)
+- you introduced heavy blur/shadow on huge nodes
+
+### Audio 404s during render
+- sound IDs not registered globally (SoundRegistry)
+- asset path mismatch under `public/`
+
+---
+
+## Next: Add a Real Render Service (Not Required for v1, Required for scale)
+
+If your goal is 1000/day, you will eventually want:
+- a render-worker service that reuses Chrome
+- a bundle pipeline per SHA
+- metrics: frames/sec, encode time, crash rate
+
+When you’re ready, we can implement that in-repo.
+
