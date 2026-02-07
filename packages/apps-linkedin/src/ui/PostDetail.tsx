@@ -1,8 +1,15 @@
+/**
+ * Post Detail Screen
+ * ==================
+ * Single post view with comments.
+ */
 import React from "react";
 import type { WorldState } from "@tokovo/core";
 import { useLinkedInTheme } from "./ThemeContext.js";
-import { LIAvatar, LIIcon, Pill } from "./components.js";
+import { Header, LIAvatar, LIIcon } from "./components.js";
+import { PostCard } from "./PostCard.js";
 import { getActivePost, getCommentsForPost, getUserById } from "../runtime/selectors.js";
+import type { LIReactionType } from "../types/index.js";
 
 export const PostDetail: React.FC<{ world: WorldState }> = ({ world }) => {
   const theme = useLinkedInTheme();
@@ -12,92 +19,184 @@ export const PostDetail: React.FC<{ world: WorldState }> = ({ world }) => {
 
   return (
     <div style={{ flex: 1, overflow: "hidden", display: "flex", flexDirection: "column" }}>
-      <div style={{ padding: theme.spacing.screenPadding, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <LIIcon name="back" />
-          <div style={{ fontSize: theme.typography.title.fontSize, fontWeight: theme.typography.title.fontWeight }}>Post</div>
-        </div>
-        <Pill>Public</Pill>
-      </div>
+      {/* Header with back button */}
+      <Header showBack title="Post" />
 
-      <div style={{ flex: 1, overflow: "auto", padding: theme.spacing.screenPadding, paddingTop: 0 }}>
+      {/* Content */}
+      <div
+        style={{
+          flex: 1,
+          overflow: "auto",
+          padding: theme.spacing.screenPadding,
+        }}
+      >
         {!post ? (
-          <div style={{ color: theme.colors.textSecondary }}>No active post.</div>
+          <div
+            style={{
+              padding: theme.spacing.xxl,
+              textAlign: "center",
+              color: theme.colors.textSecondary,
+            }}
+          >
+            Post not found
+          </div>
         ) : (
           <>
-            <div
-              style={{
-                background: theme.colors.surface,
-                border: `1px solid ${theme.colors.border}`,
-                borderRadius: theme.spacing.cardRadius,
-                padding: 14,
-              }}
-            >
-              <div style={{ display: "flex", gap: theme.spacing.avatarGap }}>
-                <LIAvatar size={theme.spacing.avatarSize} src={author?.avatarUrl} />
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: theme.typography.headline.fontSize, fontWeight: theme.typography.headline.fontWeight }}>
-                    {author?.name ?? "Unknown"}
-                  </div>
-                  <div style={{ color: theme.colors.textSecondary, fontSize: theme.typography.caption.fontSize }}>{author?.headline ?? "Professional"}</div>
+            {/* Main Post */}
+            <PostCard
+              authorName={author?.name ?? "LinkedIn User"}
+              authorHeadline={author?.headline}
+              authorAvatar={author?.avatarUrl}
+              timeAgo="1h"
+              content={post.text}
+              linkPreview={post.linkPreview}
+              reactions={post.reactions as Partial<Record<LIReactionType, number>>}
+              commentCount={comments.length}
+              repostCount={0}
+            />
+
+            {/* Comments Section */}
+            {comments.length > 0 && (
+              <div style={{ marginTop: theme.spacing.sectionGap }}>
+                <div
+                  style={{
+                    fontSize: theme.typography.headline.fontSize,
+                    fontWeight: theme.typography.headline.fontWeight,
+                    color: theme.colors.textSecondary,
+                    marginBottom: theme.spacing.md,
+                  }}
+                >
+                  Comments
+                </div>
+
+                <div
+                  style={{
+                    background: theme.colors.surface,
+                    borderRadius: theme.radius.card,
+                    boxShadow: theme.shadows.card,
+                  }}
+                >
+                  {comments.map((comment, index) => {
+                    const commentAuthor = getUserById(world, comment.authorId);
+                    return (
+                      <div
+                        key={comment.id}
+                        style={{
+                          padding: theme.spacing.cardPadding,
+                          borderBottom:
+                            index < comments.length - 1
+                              ? `1px solid ${theme.colors.border}`
+                              : "none",
+                        }}
+                      >
+                        <div
+                          style={{
+                            display: "flex",
+                            gap: theme.spacing.avatarGap,
+                          }}
+                        >
+                          <LIAvatar
+                            size="sm"
+                            src={commentAuthor?.avatarUrl}
+                            name={commentAuthor?.name}
+                          />
+                          <div style={{ flex: 1 }}>
+                            <div
+                              style={{
+                                display: "flex",
+                                alignItems: "center",
+                                gap: theme.spacing.xs,
+                              }}
+                            >
+                              <span
+                                style={{
+                                  fontSize: theme.typography.captionSemibold.fontSize,
+                                  fontWeight: theme.typography.captionSemibold.fontWeight,
+                                  color: theme.colors.textPrimary,
+                                }}
+                              >
+                                {commentAuthor?.name ?? "User"}
+                              </span>
+                              <span
+                                style={{
+                                  fontSize: theme.typography.caption.fontSize,
+                                  color: theme.colors.textTertiary,
+                                }}
+                              >
+                                • 1h
+                              </span>
+                            </div>
+                            <div
+                              style={{
+                                fontSize: theme.typography.bodySmall.fontSize,
+                                color: theme.colors.textPrimary,
+                                marginTop: theme.spacing.xs,
+                                lineHeight: theme.typography.bodySmall.lineHeight,
+                              }}
+                            >
+                              {comment.text}
+                            </div>
+
+                            {/* Comment actions */}
+                            <div
+                              style={{
+                                display: "flex",
+                                gap: theme.spacing.lg,
+                                marginTop: theme.spacing.sm,
+                                color: theme.colors.textSecondary,
+                                fontSize: theme.typography.caption.fontSize,
+                                fontWeight: 600,
+                              }}
+                            >
+                              <span>Like</span>
+                              <span>Reply</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
-              <div style={{ marginTop: 10, fontSize: theme.typography.body.fontSize, lineHeight: "20px" }}>{post.text}</div>
-            </div>
-
-            <div style={{ marginTop: 14, marginBottom: 8, color: theme.colors.textSecondary, fontSize: 12 }}>
-              {comments.length} comments
-            </div>
-
-            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-              {comments.map((c) => {
-                const u = getUserById(world, c.authorId);
-                return (
-                  <div key={c.id} style={{ display: "flex", gap: 10 }}>
-                    <LIAvatar size={34} src={u?.avatarUrl} />
-                    <div style={{ flex: 1 }}>
-                      <div style={{ display: "flex", gap: 8, alignItems: "baseline" }}>
-                        <div style={{ fontSize: 13, fontWeight: 700 }}>{u?.name ?? "Unknown"}</div>
-                        <div style={{ fontSize: 11, color: theme.colors.textMuted }}>• 1h</div>
-                      </div>
-                      <div style={{ fontSize: 13, color: theme.colors.textPrimary, lineHeight: "18px" }}>{c.text}</div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
+            )}
           </>
         )}
       </div>
 
+      {/* Comment Composer */}
       <div
         style={{
-          padding: 12,
+          padding: theme.spacing.md,
           background: theme.colors.surface,
           borderTop: `1px solid ${theme.colors.border}`,
         }}
       >
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <LIAvatar size={30} />
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: theme.spacing.md,
+          }}
+        >
+          <LIAvatar size="sm" />
           <div
             style={{
               flex: 1,
-              height: 40,
-              borderRadius: 999,
-              border: `1px solid ${theme.colors.border}`,
-              background: theme.mode === "dark" ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.03)",
+              height: theme.spacing.inputHeight,
+              background: theme.colors.surfaceHover,
+              borderRadius: theme.radius.pill,
               display: "flex",
               alignItems: "center",
-              padding: "0 12px",
-              color: theme.colors.textMuted,
-              fontSize: 13,
+              padding: `0 ${theme.spacing.md}px`,
+              color: theme.colors.textTertiary,
+              fontSize: theme.typography.body.fontSize,
             }}
           >
             Add a comment...
           </div>
+          <LIIcon name="send" size={20} color={theme.colors.accent} />
         </div>
       </div>
     </div>
   );
 };
-

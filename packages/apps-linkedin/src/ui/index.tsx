@@ -43,6 +43,22 @@ export const LinkedInView: React.FC<PluginViewProps> = ({ world, deviceId, t }) 
     }
   };
 
+  // Map screen names to nav tab names
+  const getActiveTab = () => {
+    switch (screen) {
+      case "feed":
+        return "home" as const;
+      case "profile":
+        return "network" as const;
+      case "notifications":
+        return "notifications" as const;
+      case "messages":
+        return "messages" as const;
+      default:
+        return "home" as const;
+    }
+  };
+
   return (
     <LinkedInThemeProvider mode={themeMode}>
       <LinkedInAppShell>
@@ -50,19 +66,7 @@ export const LinkedInView: React.FC<PluginViewProps> = ({ world, deviceId, t }) 
           <div style={{ flex: 1, overflow: "hidden", display: "flex", flexDirection: "column" }}>
             {renderScreen()}
           </div>
-          {showNav && (
-            <BottomNav
-              active={
-                screen === "feed"
-                  ? "feed"
-                  : screen === "profile"
-                    ? "profile"
-                    : screen === "notifications"
-                      ? "notifications"
-                      : "messages"
-              }
-            />
-          )}
+          {showNav && <BottomNav active={getActiveTab()} />}
         </div>
       </LinkedInAppShell>
     </LinkedInThemeProvider>

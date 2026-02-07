@@ -66,7 +66,10 @@ export class KeyboardTrackBuilder {
     this._push({
       type: "KEYBOARD_SHOW",
       at: this._parseTime(time),
-      returnKeyType: options?.returnKeyType,
+      payload: {
+        keyboardType: options?.keyboardType,
+        returnKeyType: options?.returnKeyType,
+      },
     });
     return this;
   }
@@ -91,6 +94,8 @@ export class KeyboardTrackBuilder {
       options?.seed ?? `${text}|${startTime}|${speed}|${this._deviceId}`;
     const rng = createSeededRng(seedInput);
 
+    // Prefer explicit KEYBOARD_KEY_PRESS events when showKeyPresses is enabled.
+    // This keeps key highlight + text entry synchronized even with per-character variance.
     for (const char of text) {
       const delayMs = baseDelayMs + (rng.next() - 0.5) * varianceMs;
       const delayFrames = Math.round((delayMs / 1000) * this._fps);
@@ -100,19 +105,25 @@ export class KeyboardTrackBuilder {
         this._push({
           type: "KEYBOARD_KEY_PRESS",
           at: currentFrame,
-          key: keyChar,
-          duration: Math.round(this._fps * 0.15),
+          payload: {
+            key: keyChar,
+            duration: Math.round(this._fps * 0.15),
+          },
         });
       }
 
       currentFrame += delayFrames;
     }
 
-    this._push({
-      type: "KEYBOARD_TYPE",
-      at: currentFrame,
-      text,
-    });
+    // If we didn't emit per-key presses, fall back to optimized KEYBOARD_TYPE.
+    // NOTE: KEYBOARD_TYPE's `at` is the *start* of the typing animation.
+    if (!showKeyPresses) {
+      this._push({
+        type: "KEYBOARD_TYPE",
+        at: this._parseTime(startTime),
+        payload: { text, speed },
+      });
+    }
 
     return this;
   }
@@ -129,7 +140,7 @@ export class KeyboardTrackBuilder {
     this._push({
       type: "KEYBOARD_SET_SUGGESTIONS",
       at: this._parseTime(time),
-      suggestions,
+      payload: { suggestions },
     });
     return this;
   }
@@ -138,7 +149,7 @@ export class KeyboardTrackBuilder {
     this._push({
       type: "KEYBOARD_TAP_SUGGESTION",
       at: this._parseTime(time),
-      index,
+      payload: { index },
     });
     return this;
   }
@@ -147,8 +158,10 @@ export class KeyboardTrackBuilder {
     this._push({
       type: "KEYBOARD_KEY_PRESS",
       at: this._parseTime(time),
-      key,
-      duration: durationFrames ?? Math.round(this._fps * 0.15),
+      payload: {
+        key,
+        duration: durationFrames ?? Math.round(this._fps * 0.15),
+      },
     });
     return this;
   }

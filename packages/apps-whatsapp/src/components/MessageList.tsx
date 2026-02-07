@@ -64,7 +64,9 @@ export const MessageList: React.FC<MessageListProps> = ({
         padding: `${listPaddingY}px ${listPaddingX}px`,
         overflowY: "auto",
         WebkitOverflowScrolling: "touch",
-        paddingBottom: bottomPadding + keyboardHeight,
+        // KeyboardAwareView already reduces available height when the keyboard is visible.
+        // Adding keyboardHeight here double-counts and pushes content too far up.
+        paddingBottom: bottomPadding,
       }}
     >
       {doodlePattern && (

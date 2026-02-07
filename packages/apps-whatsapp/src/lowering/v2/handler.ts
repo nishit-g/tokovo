@@ -1,9 +1,9 @@
 import type { TrackEvent } from "@tokovo/ir";
-import type { RuntimeEvent } from "@tokovo/core";
+import { getLoweringScratchpad, planTypedKeyboard, type RuntimeEvent } from "@tokovo/core";
 import type { WhatsAppTrackEvent, WhatsAppEventType } from "../../types/events.js";
 
 export interface V2LoweringHandler {
-  lower: (event: TrackEvent) => RuntimeEvent[];
+  lower: (event: TrackEvent, ctx?: unknown) => RuntimeEvent[];
 }
 
 function isWhatsAppTrackEvent(event: TrackEvent): event is WhatsAppTrackEvent {
@@ -131,61 +131,10 @@ function createRuntimeEvent(
   return result as unknown as RuntimeEvent;
 }
 
-function expandTypedMessage(event: WhatsAppTrackEvent): RuntimeEvent[] {
-  const payload = event.payload as { text?: string; charDelay?: number };
-  const text = payload?.text || "";
-  const charDelay = payload?.charDelay || 3;
-  const deviceId = event.deviceId;
-  const messageAt = event.at;
-
-  const typeDuration = text.length * charDelay;
-  const keyboardShowAt = messageAt - typeDuration - 20;
-  const typeStartAt = messageAt - typeDuration - 5;
-  const returnPressAt = messageAt - 3;
-  const keyboardHideAt = messageAt + 15;
-
-  const events: RuntimeEvent[] = [];
-
-  events.push({
-    at: keyboardShowAt,
-    kind: "DEVICE",
-    type: "KEYBOARD_SHOW",
-    deviceId,
-    payload: { keyboardType: "default", returnKeyType: "send" },
-  } as unknown as RuntimeEvent);
-
-  events.push({
-    at: typeStartAt,
-    kind: "DEVICE",
-    type: "KEYBOARD_TYPE",
-    deviceId,
-    payload: { text, charDelay },
-  } as unknown as RuntimeEvent);
-
-  events.push({
-    at: returnPressAt,
-    kind: "DEVICE",
-    type: "KEYBOARD_KEY_PRESS",
-    deviceId,
-    payload: { key: "return", duration: 4 },
-  } as unknown as RuntimeEvent);
-
-  // Keep type in APP_* namespace so runtime normalization can map it.
-  events.push(createRuntimeEvent(event));
-
-  events.push({
-    at: keyboardHideAt,
-    kind: "DEVICE",
-    type: "KEYBOARD_HIDE",
-    deviceId,
-    payload: {},
-  } as unknown as RuntimeEvent);
-
-  return events;
-}
+type WhatsAppLoweringScratchpad = { lastEventAtByConversation: Map<string, number> };
 
 export const whatsappV2Lowering: V2LoweringHandler = {
-  lower(event: TrackEvent): RuntimeEvent[] {
+  lower(event: TrackEvent, ctx?: unknown): RuntimeEvent[] {
     if (!isWhatsAppTrackEvent(event)) {
       console.warn("[whatsappV2Lowering] Received non-WhatsApp event");
       return [];
@@ -213,7 +162,55 @@ export const whatsappV2Lowering: V2LoweringHandler = {
     }
 
     if (eventType === "MESSAGE_SENT" && event.payload?.typed) {
-      return expandTypedMessage(event);
+      const conversationId =
+        event.conversationId ??
+        (event.payload as { conversationId?: string })?.conversationId;
+      const key = `${event.deviceId}::${conversationId ?? "unknown"}`;
+      const scratchpad = getLoweringScratchpad<WhatsAppLoweringScratchpad>(
+        ctx,
+        "app_whatsapp.lowering",
+        () => ({ lastEventAtByConversation: new Map() }),
+      );
+      const prevAt = scratchpad.lastEventAtByConversation.get(key) ?? 0;
+      const notBeforeFrame = prevAt > 0 ? prevAt + 2 : 0;
+      const payload = event.payload as { text?: string; charDelay?: number };
+      const text = payload?.text ?? "";
+
+      const plan = planTypedKeyboard({
+        deviceId: event.deviceId,
+        submitAt: event.at,
+        text,
+        requestedCharDelay: payload?.charDelay ?? 3,
+        notBeforeFrame,
+        keyboardType: "default",
+        returnKeyType: "send",
+      });
+
+      scratchpad.lastEventAtByConversation.set(key, Math.max(prevAt, event.at));
+
+      if (!plan.ok) {
+        // Not enough time to animate full typing after context start.
+        // Better to skip keyboard than to show it early or truncate the draft.
+        return [createRuntimeEvent(event)];
+      }
+
+      const [showEv, typeEv, pressEv, hideEv] = plan.events;
+      return [showEv, typeEv, pressEv, createRuntimeEvent(event), hideEv];
+    }
+
+    // Update last-seen timestamp for conversation-scoped timing heuristics.
+    {
+      const conversationId =
+        event.conversationId ??
+        (event.payload as { conversationId?: string })?.conversationId;
+      const key = `${event.deviceId}::${conversationId ?? "unknown"}`;
+      const scratchpad = getLoweringScratchpad<WhatsAppLoweringScratchpad>(
+        ctx,
+        "app_whatsapp.lowering",
+        () => ({ lastEventAtByConversation: new Map() }),
+      );
+      const prevAt = scratchpad.lastEventAtByConversation.get(key) ?? 0;
+      scratchpad.lastEventAtByConversation.set(key, Math.max(prevAt, event.at));
     }
 
     return [createRuntimeEvent(event)];

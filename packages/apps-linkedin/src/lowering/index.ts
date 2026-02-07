@@ -1,9 +1,9 @@
 import type { TrackEvent } from "@tokovo/ir";
-import type { RuntimeEvent } from "@tokovo/core";
+import { getLoweringScratchpad, planTypedKeyboard, type RuntimeEvent } from "@tokovo/core";
 import type { LITrackEvent } from "../types/index.js";
 
 export interface LILoweringHandler {
-  lower: (event: TrackEvent) => RuntimeEvent[];
+  lower: (event: TrackEvent, ctx?: unknown) => RuntimeEvent[];
 }
 
 function isLITrackEvent(event: TrackEvent): event is LITrackEvent {
@@ -11,10 +11,6 @@ function isLITrackEvent(event: TrackEvent): event is LITrackEvent {
     (event as { kind?: string }).kind === "APP" &&
     (event as { appId?: string }).appId === "app_linkedin"
   );
-}
-
-function clampFrame(frame: number): number {
-  return Math.max(0, Math.round(frame));
 }
 
 function createRuntimeEvent(event: TrackEvent, type: string, payload: unknown): RuntimeEvent {
@@ -28,81 +24,26 @@ function createRuntimeEvent(event: TrackEvent, type: string, payload: unknown): 
   } as RuntimeEvent;
 }
 
-function expandTypedText(params: {
-  at: number;
-  deviceId: string;
-  text: string;
-  charDelay?: number;
-  returnKeyType?: string;
-  after: () => RuntimeEvent[];
-  clearDraftEvents?: () => RuntimeEvent[];
-}): RuntimeEvent[] {
-  const {
-    at,
-    deviceId,
-    text,
-    charDelay = 2,
-    returnKeyType = "send",
-    after,
-    clearDraftEvents,
-  } = params;
-
-  if (!text) return after();
-
-  const typeDuration = text.length * charDelay;
-  const keyboardShowAt = clampFrame(at - typeDuration - 20);
-  const typeStartAt = clampFrame(at - typeDuration - 5);
-  const returnPressAt = clampFrame(at - 3);
-  const keyboardHideAt = clampFrame(at + 15);
-
-  const result: RuntimeEvent[] = [];
-
-  result.push({
-    at: keyboardShowAt,
-    kind: "DEVICE",
-    type: "KEYBOARD_SHOW",
-    deviceId,
-    payload: { returnKeyType },
-  } as unknown as RuntimeEvent);
-
-  result.push({
-    at: typeStartAt,
-    kind: "DEVICE",
-    type: "KEYBOARD_TYPE",
-    deviceId,
-    payload: { text, charDelay },
-  } as unknown as RuntimeEvent);
-
-  result.push({
-    at: returnPressAt,
-    kind: "DEVICE",
-    type: "KEYBOARD_KEY_PRESS",
-    deviceId,
-    payload: { key: "return", duration: 4 },
-  } as unknown as RuntimeEvent);
-
-  result.push(...after());
-
-  if (clearDraftEvents) {
-    result.push(...clearDraftEvents());
-  }
-
-  result.push({
-    at: keyboardHideAt,
-    kind: "DEVICE",
-    type: "KEYBOARD_HIDE",
-    deviceId,
-    payload: {},
-  } as unknown as RuntimeEvent);
-
-  return result;
-}
+type LinkedInLoweringScratchpad = {
+  lastComposeOpenAtByDevice: Map<string, number>;
+  lastPostOpenAtByDevice: Map<string, number>;
+  lastThreadOpenAtByDeviceThread: Map<string, number>;
+};
 
 export const linkedInLowering: LILoweringHandler = {
-  lower: (event: TrackEvent): RuntimeEvent[] => {
+  lower: (event: TrackEvent, ctx?: unknown): RuntimeEvent[] => {
     if (!isLITrackEvent(event)) return [];
     const deviceId = (event as { deviceId?: string }).deviceId;
     if (!deviceId) return [];
+    const scratchpad = getLoweringScratchpad<LinkedInLoweringScratchpad>(
+      ctx,
+      "app_linkedin.lowering",
+      () => ({
+        lastComposeOpenAtByDevice: new Map(),
+        lastPostOpenAtByDevice: new Map(),
+        lastThreadOpenAtByDeviceThread: new Map(),
+      }),
+    );
 
     switch (event.type) {
       case "USER_CREATE":
@@ -128,28 +69,44 @@ export const linkedInLowering: LILoweringHandler = {
         const typed = Boolean(event.payload.typed);
         const text = event.payload.text ?? "";
         if (typed) {
-          return expandTypedText({
-            at: event.at,
+          const composeOpenedAt =
+            scratchpad.lastComposeOpenAtByDevice.get(deviceId) ?? 0;
+
+          const after: RuntimeEvent[] = [
+            createRuntimeEvent(event, "LINKEDIN_SET_COMPOSE_DRAFT", { text }),
+            createRuntimeEvent(event, "LINKEDIN_ADD_POST", {
+              id: event.payload.id ?? `li-${event.at}-${event._declarationOrder ?? 0}`,
+              authorId: event.payload.authorId,
+              text,
+              createdAt:
+                typeof event.payload.createdAt === "number"
+                  ? event.payload.createdAt
+                  : event.at,
+              visibility: event.payload.visibility ?? "public",
+              media: event.payload.media,
+              linkPreview: event.payload.linkPreview,
+              hashtags: event.payload.hashtags ?? [],
+              mentions: event.payload.mentions ?? [],
+            }),
+          ];
+          const clearDraft: RuntimeEvent[] = [
+            createRuntimeEvent(event, "LINKEDIN_SET_COMPOSE_DRAFT", { text: "" }),
+          ];
+
+          const plan = planTypedKeyboard({
             deviceId,
+            submitAt: event.at,
             text,
-            charDelay: event.payload.charDelay,
+            requestedCharDelay: event.payload.charDelay ?? 2,
+            notBeforeFrame: composeOpenedAt,
+            keyboardType: "default",
             returnKeyType: "post",
-            after: () => [
-              createRuntimeEvent(event, "LINKEDIN_SET_COMPOSE_DRAFT", { text }),
-              createRuntimeEvent(event, "LINKEDIN_ADD_POST", {
-                id: event.payload.id ?? `li-${event.at}-${event._declarationOrder ?? 0}`,
-                authorId: event.payload.authorId,
-                text,
-                createdAt: typeof event.payload.createdAt === "number" ? event.payload.createdAt : event.at,
-                visibility: event.payload.visibility ?? "public",
-                media: event.payload.media,
-                linkPreview: event.payload.linkPreview,
-                hashtags: event.payload.hashtags ?? [],
-                mentions: event.payload.mentions ?? [],
-              }),
-            ],
-            clearDraftEvents: () => [createRuntimeEvent(event, "LINKEDIN_SET_COMPOSE_DRAFT", { text: "" })],
           });
+
+          if (!plan.ok) return [...after, ...clearDraft];
+
+          const [showEv, typeEv, pressEv, hideEv] = plan.events;
+          return [showEv, typeEv, pressEv, ...after, ...clearDraft, hideEv];
         }
         return [
           createRuntimeEvent(event, "LINKEDIN_ADD_POST", {
@@ -184,22 +141,35 @@ export const linkedInLowering: LILoweringHandler = {
         const typed = Boolean(event.payload.typed);
         const text = event.payload.text ?? "";
         if (typed) {
-          return expandTypedText({
-            at: event.at,
+          const postOpenedAt =
+            scratchpad.lastPostOpenAtByDevice.get(deviceId) ?? 0;
+          const after: RuntimeEvent[] = [
+            createRuntimeEvent(event, "LINKEDIN_ADD_COMMENT", {
+              id: event.payload.id ?? `li-c-${event.at}-${event._declarationOrder ?? 0}`,
+              postId: event.payload.postId,
+              authorId: event.payload.authorId,
+              text,
+              createdAt:
+                typeof event.payload.createdAt === "number"
+                  ? event.payload.createdAt
+                  : event.at,
+            }),
+          ];
+
+          const plan = planTypedKeyboard({
             deviceId,
+            submitAt: event.at,
             text,
-            charDelay: event.payload.charDelay,
+            requestedCharDelay: event.payload.charDelay ?? 2,
+            notBeforeFrame: postOpenedAt,
+            keyboardType: "default",
             returnKeyType: "send",
-            after: () => [
-              createRuntimeEvent(event, "LINKEDIN_ADD_COMMENT", {
-                id: event.payload.id ?? `li-c-${event.at}-${event._declarationOrder ?? 0}`,
-                postId: event.payload.postId,
-                authorId: event.payload.authorId,
-                text,
-                createdAt: typeof event.payload.createdAt === "number" ? event.payload.createdAt : event.at,
-              }),
-            ],
           });
+
+          if (!plan.ok) return after;
+
+          const [showEv, typeEv, pressEv, hideEv] = plan.events;
+          return [showEv, typeEv, pressEv, ...after, hideEv];
         }
         return [
           createRuntimeEvent(event, "LINKEDIN_ADD_COMMENT", {
@@ -216,6 +186,18 @@ export const linkedInLowering: LILoweringHandler = {
         return [createRuntimeEvent(event, "LINKEDIN_VIEW_POST", event.payload)];
 
       case "NAVIGATE": {
+        if (event.payload.screen === "compose") {
+          scratchpad.lastComposeOpenAtByDevice.set(deviceId, event.at);
+        }
+        if (event.payload.screen === "post") {
+          scratchpad.lastPostOpenAtByDevice.set(deviceId, event.at);
+        }
+        if (event.payload.screen === "thread" && event.payload.threadId) {
+          scratchpad.lastThreadOpenAtByDeviceThread.set(
+            `${deviceId}::${event.payload.threadId}`,
+            event.at,
+          );
+        }
         const evs: RuntimeEvent[] = [
           createRuntimeEvent(event, "LINKEDIN_SET_SCREEN", {
             screen: event.payload.screen,
@@ -262,22 +244,38 @@ export const linkedInLowering: LILoweringHandler = {
         const typed = Boolean(event.payload.typed);
         const text = event.payload.text ?? "";
         if (typed) {
-          return expandTypedText({
-            at: event.at,
+          const threadOpenedAt =
+            scratchpad.lastThreadOpenAtByDeviceThread.get(
+              `${deviceId}::${event.payload.threadId}`,
+            ) ?? 0;
+
+          const after: RuntimeEvent[] = [
+            createRuntimeEvent(event, "LINKEDIN_ADD_DM_MESSAGE", {
+              id: event.payload.id ?? `li-msg-${event.at}-${event._declarationOrder ?? 0}`,
+              threadId: event.payload.threadId,
+              senderId: event.payload.senderId,
+              text,
+              createdAt:
+                typeof event.payload.createdAt === "number"
+                  ? event.payload.createdAt
+                  : event.at,
+            }),
+          ];
+
+          const plan = planTypedKeyboard({
             deviceId,
+            submitAt: event.at,
             text,
-            charDelay: event.payload.charDelay,
+            requestedCharDelay: event.payload.charDelay ?? 2,
+            notBeforeFrame: threadOpenedAt,
+            keyboardType: "default",
             returnKeyType: "send",
-            after: () => [
-              createRuntimeEvent(event, "LINKEDIN_ADD_DM_MESSAGE", {
-                id: event.payload.id ?? `li-msg-${event.at}-${event._declarationOrder ?? 0}`,
-                threadId: event.payload.threadId,
-                senderId: event.payload.senderId,
-                text,
-                createdAt: typeof event.payload.createdAt === "number" ? event.payload.createdAt : event.at,
-              }),
-            ],
           });
+
+          if (!plan.ok) return after;
+
+          const [showEv, typeEv, pressEv, hideEv] = plan.events;
+          return [showEv, typeEv, pressEv, ...after, hideEv];
         }
         return [
           createRuntimeEvent(event, "LINKEDIN_ADD_DM_MESSAGE", {

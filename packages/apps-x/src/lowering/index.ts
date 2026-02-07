@@ -1,9 +1,9 @@
 import type { TrackEvent } from "@tokovo/ir";
-import type { RuntimeEvent } from "@tokovo/core";
+import { getLoweringScratchpad, planTypedKeyboard, type RuntimeEvent } from "@tokovo/core";
 import type { XTrackEvent } from "../types/index.js";
 
 export interface XLoweringHandler {
-  lower: (event: TrackEvent) => RuntimeEvent[];
+  lower: (event: TrackEvent, ctx?: unknown) => RuntimeEvent[];
 }
 
 function isXTrackEvent(event: TrackEvent): event is XTrackEvent {
@@ -15,10 +15,6 @@ function isXTrackEvent(event: TrackEvent): event is XTrackEvent {
 
 function getTimestamp(event: TrackEvent, override?: number): number {
   return typeof override === "number" ? override : event.at;
-}
-
-function clampFrame(frame: number): number {
-  return Math.max(0, Math.round(frame));
 }
 
 function createRuntimeEvent(
@@ -36,81 +32,24 @@ function createRuntimeEvent(
   };
 }
 
-function expandTypedText(params: {
-  at: number;
-  deviceId: string;
-  text: string;
-  charDelay?: number;
-  returnKeyType?: string;
-  after: () => RuntimeEvent[];
-  clearDraftEvents?: () => RuntimeEvent[];
-}): RuntimeEvent[] {
-  const {
-    at,
-    deviceId,
-    text,
-    charDelay = 2,
-    returnKeyType = "send",
-    after,
-    clearDraftEvents,
-  } = params;
-
-  if (!text) return after();
-
-  const typeDuration = text.length * charDelay;
-  const keyboardShowAt = clampFrame(at - typeDuration - 20);
-  const typeStartAt = clampFrame(at - typeDuration - 5);
-  const returnPressAt = clampFrame(at - 3);
-  const keyboardHideAt = clampFrame(at + 15);
-
-  const result: RuntimeEvent[] = [];
-
-  result.push({
-    at: keyboardShowAt,
-    kind: "DEVICE",
-    type: "KEYBOARD_SHOW",
-    deviceId,
-    payload: { returnKeyType },
-  } as unknown as RuntimeEvent);
-
-  result.push({
-    at: typeStartAt,
-    kind: "DEVICE",
-    type: "KEYBOARD_TYPE",
-    deviceId,
-    payload: { text, charDelay },
-  } as unknown as RuntimeEvent);
-
-  result.push({
-    at: returnPressAt,
-    kind: "DEVICE",
-    type: "KEYBOARD_KEY_PRESS",
-    deviceId,
-    payload: { key: "return", duration: 4 },
-  } as unknown as RuntimeEvent);
-
-  result.push(...after());
-
-  if (clearDraftEvents) {
-    result.push(...clearDraftEvents());
-  }
-
-  result.push({
-    at: keyboardHideAt,
-    kind: "DEVICE",
-    type: "KEYBOARD_HIDE",
-    deviceId,
-    payload: {},
-  } as unknown as RuntimeEvent);
-
-  return result;
-}
+type XLoweringScratchpad = {
+  lastComposeOpenAtByDevice: Map<string, number>;
+  lastThreadOpenAtByDeviceThread: Map<string, number>;
+};
 
 export const xLowering: XLoweringHandler = {
-  lower: (event: TrackEvent): RuntimeEvent[] => {
+  lower: (event: TrackEvent, ctx?: unknown): RuntimeEvent[] => {
     if (!isXTrackEvent(event)) return [];
     const deviceId = (event as { deviceId?: string }).deviceId;
     if (!deviceId) return [];
+    const scratchpad = getLoweringScratchpad<XLoweringScratchpad>(
+      ctx,
+      "app_x.lowering",
+      () => ({
+        lastComposeOpenAtByDevice: new Map(),
+        lastThreadOpenAtByDeviceThread: new Map(),
+      }),
+    );
 
     switch (event.type) {
       case "USER_CREATE":
@@ -139,13 +78,8 @@ export const xLowering: XLoweringHandler = {
       case "TWEET_CREATE":
         if (event.payload?.typed) {
           const text = event.payload.text ?? "";
-          return expandTypedText({
-            at: event.at,
-            deviceId,
-            text,
-            charDelay: event.payload.charDelay,
-            returnKeyType: "send",
-            after: () => [
+          const composeOpenedAt = scratchpad.lastComposeOpenAtByDevice.get(deviceId) ?? 0;
+          const after: RuntimeEvent[] = [
               // Keep compose draft in sync so app UI can show text even if keyboard is hidden.
               createRuntimeEvent(event, "SET_COMPOSE_DRAFT", { text }),
               createRuntimeEvent(event, "ADD_TWEET", {
@@ -163,11 +97,27 @@ export const xLowering: XLoweringHandler = {
                 bookmarkCount: event.payload.bookmarkCount ?? 0,
                 shareCount: event.payload.shareCount ?? 0,
               }),
-            ],
-            clearDraftEvents: () => [
-              createRuntimeEvent(event, "SET_COMPOSE_DRAFT", { text: "" }),
-            ],
+          ];
+          const clearDraft: RuntimeEvent[] = [
+            createRuntimeEvent(event, "SET_COMPOSE_DRAFT", { text: "" }),
+          ];
+
+          const plan = planTypedKeyboard({
+            deviceId,
+            submitAt: event.at,
+            text,
+            requestedCharDelay: event.payload.charDelay ?? 2,
+            notBeforeFrame: composeOpenedAt,
+            keyboardType: "default",
+            returnKeyType: "send",
           });
+
+          if (!plan.ok) {
+            return [...after, ...clearDraft];
+          }
+
+          const [showEv, typeEv, pressEv, hideEv] = plan.events;
+          return [showEv, typeEv, pressEv, ...after, ...clearDraft, hideEv];
         }
 
         return [
@@ -245,6 +195,17 @@ export const xLowering: XLoweringHandler = {
       case "TWEET_SHARE":
         return [createRuntimeEvent(event, "SHARE_TWEET", event.payload)];
       case "NAVIGATE": {
+        {
+          if (event.payload.screen === "compose") {
+            scratchpad.lastComposeOpenAtByDevice.set(deviceId, event.at);
+          }
+          if (event.payload.screen === "thread" && event.payload.threadId) {
+            scratchpad.lastThreadOpenAtByDeviceThread.set(
+              `${deviceId}::${event.payload.threadId}`,
+              event.at,
+            );
+          }
+        }
         const events: RuntimeEvent[] = [
           createRuntimeEvent(event, "SET_SCREEN", {
             screen: event.payload.screen,
@@ -313,22 +274,35 @@ export const xLowering: XLoweringHandler = {
       case "DM_SEND":
         if (event.payload?.typed) {
           const text = event.payload.text ?? "";
-          return expandTypedText({
-            at: event.at,
+          const threadOpenedAt =
+            scratchpad.lastThreadOpenAtByDeviceThread.get(
+              `${deviceId}::${event.payload.threadId}`,
+            ) ?? 0;
+
+          const after: RuntimeEvent[] = [
+            createRuntimeEvent(event, "ADD_DM_MESSAGE", {
+              id: event.payload.id ?? `msg-${event.at}-${event._declarationOrder ?? 0}`,
+              threadId: event.payload.threadId,
+              senderId: event.payload.senderId,
+              text,
+              createdAt: getTimestamp(event, event.payload.createdAt),
+            }),
+          ];
+
+          const plan = planTypedKeyboard({
             deviceId,
+            submitAt: event.at,
             text,
-            charDelay: event.payload.charDelay,
+            requestedCharDelay: event.payload.charDelay ?? 2,
+            notBeforeFrame: threadOpenedAt,
+            keyboardType: "default",
             returnKeyType: "send",
-            after: () => [
-              createRuntimeEvent(event, "ADD_DM_MESSAGE", {
-                id: event.payload.id ?? `msg-${event.at}-${event._declarationOrder ?? 0}`,
-                threadId: event.payload.threadId,
-                senderId: event.payload.senderId,
-                text,
-                createdAt: getTimestamp(event, event.payload.createdAt),
-              }),
-            ],
           });
+
+          if (!plan.ok) return after;
+
+          const [showEv, typeEv, pressEv, hideEv] = plan.events;
+          return [showEv, typeEv, pressEv, ...after, hideEv];
         }
 
         return [

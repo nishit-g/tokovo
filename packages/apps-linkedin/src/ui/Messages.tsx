@@ -1,7 +1,12 @@
+/**
+ * Messages Screen
+ * ===============
+ * LinkedIn messaging inbox with conversation list.
+ */
 import React from "react";
 import type { WorldState } from "@tokovo/core";
 import { useLinkedInTheme } from "./ThemeContext.js";
-import { LIAvatar, Pill } from "./components.js";
+import { Header, LIAvatar, LIIcon } from "./components.js";
 import { getDMThreads, getUserById } from "../runtime/selectors.js";
 
 export const Messages: React.FC<{ world: WorldState }> = ({ world }) => {
@@ -9,39 +14,161 @@ export const Messages: React.FC<{ world: WorldState }> = ({ world }) => {
   const threads = getDMThreads(world);
 
   return (
-    <div style={{ flex: 1, overflow: "auto", padding: theme.spacing.screenPadding }}>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
-        <div style={{ fontSize: theme.typography.title.fontSize, fontWeight: theme.typography.title.fontWeight }}>Messages</div>
-        <Pill>{threads.length}</Pill>
+    <div style={{ flex: 1, overflow: "hidden", display: "flex", flexDirection: "column" }}>
+      {/* Header */}
+      <Header title="Messaging" showSearch={false} />
+
+      {/* Search Bar */}
+      <div style={{ padding: `${theme.spacing.sm}px ${theme.spacing.screenPadding}px` }}>
+        <div
+          style={{
+            height: theme.spacing.inputHeight,
+            background: theme.colors.surfaceHover,
+            borderRadius: theme.radius.input,
+            display: "flex",
+            alignItems: "center",
+            padding: `0 ${theme.spacing.md}px`,
+            gap: theme.spacing.sm,
+            color: theme.colors.textSecondary,
+            fontSize: theme.typography.body.fontSize,
+          }}
+        >
+          <LIIcon name="search" size={16} color={theme.colors.textSecondary} />
+          <span>Search messages</span>
+        </div>
       </div>
 
-      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-        {threads.map((t) => {
-          const firstOther = t.participantIds.find((id) => id !== null);
-          const u = getUserById(world, firstOther ?? null);
+      {/* Conversations List */}
+      <div style={{ flex: 1, overflow: "auto" }}>
+        {threads.map((thread) => {
+          const otherUserId = thread.participantIds.find((id) => id !== null);
+          const user = getUserById(world, otherUserId ?? null);
+          const isOnline = Math.random() > 0.5; // Simulated
+
           return (
             <div
-              key={t.id}
+              key={thread.id}
               style={{
-                background: theme.colors.surface,
-                border: `1px solid ${theme.colors.border}`,
-                borderRadius: 14,
-                padding: 12,
                 display: "flex",
-                gap: 10,
+                alignItems: "center",
+                gap: theme.spacing.md,
+                padding: `${theme.spacing.md}px ${theme.spacing.screenPadding}px`,
+                borderBottom: `1px solid ${theme.colors.border}`,
+                cursor: "pointer",
               }}
             >
-              <LIAvatar size={42} src={u?.avatarUrl} />
-              <div style={{ flex: 1 }}>
-                <div style={{ fontWeight: 900, fontSize: 13 }}>{u?.name ?? "Thread"}</div>
-                <div style={{ color: theme.colors.textSecondary, fontSize: 12 }}>Tap to open</div>
+              <LIAvatar
+                size="lg"
+                src={user?.avatarUrl}
+                name={user?.name}
+                showOnline={isOnline}
+              />
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    marginBottom: theme.spacing.xs,
+                  }}
+                >
+                  <span
+                    style={{
+                      fontSize: theme.typography.headline.fontSize,
+                      fontWeight: theme.typography.headline.fontWeight,
+                      color: theme.colors.textPrimary,
+                    }}
+                  >
+                    {user?.name ?? "LinkedIn User"}
+                  </span>
+                  <span
+                    style={{
+                      fontSize: theme.typography.caption.fontSize,
+                      color: theme.colors.textTertiary,
+                    }}
+                  >
+                    2h ago
+                  </span>
+                </div>
+                <div
+                  style={{
+                    fontSize: theme.typography.bodySmall.fontSize,
+                    color: theme.colors.textSecondary,
+                    whiteSpace: "nowrap",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                  }}
+                >
+                  {user?.headline ?? "Tap to view conversation"}
+                </div>
               </div>
-              <div style={{ color: theme.colors.textMuted, fontSize: 11 }}>Now</div>
             </div>
           );
         })}
+
+        {threads.length === 0 && (
+          <div
+            style={{
+              padding: theme.spacing.xxl,
+              textAlign: "center",
+            }}
+          >
+            <div
+              style={{
+                width: 64,
+                height: 64,
+                margin: "0 auto",
+                marginBottom: theme.spacing.lg,
+                borderRadius: theme.radius.pill,
+                background: theme.colors.accentLight,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <LIIcon name="message" size={32} color={theme.colors.accent} />
+            </div>
+            <div
+              style={{
+                fontSize: theme.typography.title.fontSize,
+                fontWeight: theme.typography.title.fontWeight,
+                color: theme.colors.textPrimary,
+                marginBottom: theme.spacing.sm,
+              }}
+            >
+              No messages yet
+            </div>
+            <div
+              style={{
+                fontSize: theme.typography.body.fontSize,
+                color: theme.colors.textSecondary,
+              }}
+            >
+              Start a conversation with your connections
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Compose FAB */}
+      <div
+        style={{
+          position: "absolute",
+          bottom: theme.spacing.navHeight + theme.spacing.lg,
+          right: theme.spacing.screenPadding,
+          width: theme.spacing.composerHeight,
+          height: theme.spacing.composerHeight,
+          borderRadius: theme.radius.pill,
+          background: theme.colors.accent,
+          boxShadow: theme.shadows.fab,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          cursor: "pointer",
+        }}
+      >
+        <LIIcon name="send" size={24} color={theme.colors.textInverse} />
       </div>
     </div>
   );
 };
-
