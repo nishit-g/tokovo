@@ -35,6 +35,7 @@ describe("typewriterReducer", () => {
     const s = (w.appState as any)[TYPEWRITER_APP_ID];
     expect(s.lines[0]).toBe("Hi");
     expect(s.cursor).toEqual({ row: 0, col: 2 });
+    expect(Object.keys(s.fx.pressedKeys).length).toBeGreaterThan(0);
   });
 
   it("newline splits the line and moves cursor", () => {
@@ -46,6 +47,6 @@ describe("typewriterReducer", () => {
     const s = (w.appState as any)[TYPEWRITER_APP_ID];
     expect(s.lines).toEqual(["A", "B"]);
     expect(s.cursor).toEqual({ row: 1, col: 1 });
+    expect(typeof s.fx.lastCarriageFromCol).toBe("number");
   });
 });
-

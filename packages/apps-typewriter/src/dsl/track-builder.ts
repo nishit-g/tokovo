@@ -1,11 +1,32 @@
 import { parseTimeToFrames } from "@tokovo/dsl";
 import type { TypewriterTrackEvent } from "../types/index.js";
 import { TYPEWRITER_APP_ID } from "../constants.js";
+import type { TypewriterThemeConfig, WrapMode } from "../theme/types.js";
+import type { TypewriterSettings } from "../runtime/state.js";
 
 type GetDeclarationOrder = () => number;
 
 export type TypeTextOptions = {
   cps?: number;
+  seed?: number;
+  wrap?: WrapMode;
+  maxCols?: number;
+  jitter?: { minFrames?: number; maxFrames?: number };
+  mistakes?: { rate?: number; max?: number; alphabet?: string };
+  allowOverflow?: boolean;
+  pauses?: { afterPunctFrames?: number; afterNewlineFrames?: number; afterSpaceFrames?: number };
+  audio?: Partial<{
+    baseKeyVol: number;
+    baseSpaceVol: number;
+    basePunctVol: number;
+    baseBackspaceVol: number;
+    baseCarriageVol: number;
+    baseBellVol: number;
+    roomVol: number;
+    volVar: number;
+    roomDurationFrames: number;
+    bellColsFromRight: number;
+  }>;
 };
 
 type PayloadInput =
@@ -35,7 +56,20 @@ class TypewriterPointBuilder {
     } as unknown as TypewriterTrackEvent);
   }
 
-  initLetter(data: { to?: string; from?: string; date?: string; subject?: string; reset?: boolean } = {}): void {
+  initLetter(
+    data: {
+      to?: string;
+      from?: string;
+      date?: string;
+      subject?: string;
+      reset?: boolean;
+      seed?: number;
+      settings?: Partial<TypewriterSettings>;
+      theme?: TypewriterThemeConfig;
+      roomTone?: boolean;
+      audio?: TypeTextOptions["audio"];
+    } = {},
+  ): void {
     this._push("TYPEWRITER_INIT_LETTER", data);
   }
 
@@ -55,16 +89,29 @@ class TypewriterPointBuilder {
     this._push("TYPEWRITER_SET_CURSOR", { row, col });
   }
 
-  scroll(deltaY: number): void {
-    this._push("TYPEWRITER_SCROLL", { deltaY });
+  scroll(deltaLines: number): void {
+    this._push("TYPEWRITER_SCROLL", { deltaLines });
   }
 
   /**
    * Deterministic typed text. Lowering expands to KEY/NEWLINE events.
    */
   typeText(text: string, options: TypeTextOptions = {}): void {
-    this._push("TYPEWRITER_TYPE_TEXT", { text, cps: options.cps });
+    this._push("TYPEWRITER_TYPE_TEXT", {
+      text,
+      cps: options.cps,
+      seed: options.seed,
+      wrap: options.wrap,
+      maxCols: options.maxCols,
+      jitter: options.jitter,
+      mistakes: options.mistakes,
+      allowOverflow: options.allowOverflow,
+      pauses: options.pauses,
+      audio: options.audio,
+    });
   }
+
+  // Intentionally no `.pause()`; timelines are authored in absolute time.
 }
 
 class TypewriterSpanBuilder {
@@ -92,7 +139,19 @@ class TypewriterSpanBuilder {
   }
 
   typeText(text: string, options: TypeTextOptions = {}): void {
-    this._push("TYPEWRITER_TYPE_TEXT", { text, cps: options.cps, fit: "spread" });
+    this._push("TYPEWRITER_TYPE_TEXT", {
+      text,
+      cps: options.cps,
+      fit: "spread",
+      seed: options.seed,
+      wrap: options.wrap,
+      maxCols: options.maxCols,
+      jitter: options.jitter,
+      mistakes: options.mistakes,
+      allowOverflow: options.allowOverflow,
+      pauses: options.pauses,
+      audio: options.audio,
+    });
   }
 }
 
@@ -117,4 +176,3 @@ export class TypewriterTrackBuilder {
     return new TypewriterSpanBuilder(startFrame, duration, this._deviceId, this._events, this._getOrder);
   }
 }
-

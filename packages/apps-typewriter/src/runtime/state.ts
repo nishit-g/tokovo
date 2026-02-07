@@ -1,4 +1,5 @@
 import type { ViewKind } from "@tokovo/core";
+import type { TypewriterThemeConfig, WrapMode } from "../theme/types.js";
 
 export interface TypewriterLetterMeta {
   to?: string;
@@ -12,10 +13,24 @@ export interface TypewriterCursor {
   col: number;
 }
 
+export interface TypewriterSettings {
+  maxCols: number;
+  maxRows: number;
+  wrap: WrapMode;
+  bellColsFromRight: number;
+}
+
 export interface TypewriterFxState {
+  pressedKeys: Record<string, number>;
   lastKeyFrame?: number;
-  lastKey?: string;
+  lastCh?: string;
   lastCarriageFrame?: number;
+  lastCarriageFromCol?: number;
+  scrollAnim?: {
+    at: number;
+    fromLines: number;
+    toLines: number;
+  };
 }
 
 export interface TypewriterState {
@@ -23,7 +38,10 @@ export interface TypewriterState {
   meta: TypewriterLetterMeta;
   lines: string[];
   cursor: TypewriterCursor;
-  scrollY: number;
+  scrollLines: number;
+  settings: TypewriterSettings;
+  seed: number;
+  theme: TypewriterThemeConfig;
   fx: TypewriterFxState;
 }
 
@@ -33,8 +51,15 @@ export function createTypewriterInitialState(): TypewriterState {
     meta: {},
     lines: [""],
     cursor: { row: 0, col: 0 },
-    scrollY: 0,
-    fx: {},
+    scrollLines: 0,
+    settings: {
+      maxCols: 44,
+      maxRows: 26,
+      wrap: "word",
+      bellColsFromRight: 5,
+    },
+    seed: 1337,
+    theme: { preset: "classic" },
+    fx: { pressedKeys: {} },
   };
 }
-

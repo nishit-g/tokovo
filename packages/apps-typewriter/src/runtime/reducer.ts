@@ -1,6 +1,7 @@
 import type { PluginReducer, RuntimeEvent, WorldState } from "@tokovo/core";
 import { createTypewriterInitialState, type TypewriterState } from "./state.js";
 import { TYPEWRITER_APP_ID } from "../constants.js";
+import { deriveKeyPressFromChar } from "../keyboard/index.js";
 
 function getAppState(draft: WorldState): TypewriterState {
   if (!draft.appState) draft.appState = {};
@@ -12,6 +13,38 @@ function getAppState(draft: WorldState): TypewriterState {
 
 function clamp(n: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, n));
+}
+
+function prunePressedKeys(map: Record<string, number>, now: number): void {
+  const cutoff = now - 18;
+  for (const [k, v] of Object.entries(map)) {
+    if (v < cutoff) {
+      delete map[k];
+    }
+  }
+}
+
+function registerKeyPresses(state: TypewriterState, ch: string, at: number): void {
+  prunePressedKeys(state.fx.pressedKeys, at);
+  const press = deriveKeyPressFromChar(ch);
+  for (const k of press.keys) {
+    state.fx.pressedKeys[k] = at;
+  }
+  state.fx.lastKeyFrame = at;
+  state.fx.lastCh = ch;
+}
+
+function ensureScrollVisible(state: TypewriterState, at: number): void {
+  const maxRows = state.settings.maxRows;
+  const visibleRow = state.cursor.row - state.scrollLines;
+  if (visibleRow < maxRows) return;
+
+  const toLines = state.cursor.row - (maxRows - 1);
+  const fromLines = state.scrollLines;
+  state.scrollLines = Math.max(state.scrollLines, toLines);
+  if (state.scrollLines !== fromLines) {
+    state.fx.scrollAnim = { at, fromLines, toLines: state.scrollLines };
+  }
 }
 
 export const typewriterReducer: PluginReducer<typeof TYPEWRITER_APP_ID> = (
@@ -28,6 +61,9 @@ export const typewriterReducer: PluginReducer<typeof TYPEWRITER_APP_ID> = (
         date: string;
         subject: string;
         reset: boolean;
+        seed: number;
+        settings: Partial<TypewriterState["settings"]>;
+        theme: TypewriterState["theme"];
       }>;
       s.meta = {
         to: payload.to ?? s.meta.to,
@@ -35,10 +71,21 @@ export const typewriterReducer: PluginReducer<typeof TYPEWRITER_APP_ID> = (
         date: payload.date ?? s.meta.date,
         subject: payload.subject ?? s.meta.subject,
       };
+      if (typeof payload.seed === "number") {
+        s.seed = payload.seed;
+      }
+      if (payload.settings) {
+        s.settings = { ...s.settings, ...payload.settings };
+      }
+      if (payload.theme) {
+        s.theme = payload.theme;
+      }
       if (payload.reset) {
         s.lines = [""];
         s.cursor = { row: 0, col: 0 };
-        s.scrollY = 0;
+        s.scrollLines = 0;
+        s.fx.pressedKeys = {};
+        s.fx.scrollAnim = undefined;
       }
       break;
     }
@@ -49,12 +96,13 @@ export const typewriterReducer: PluginReducer<typeof TYPEWRITER_APP_ID> = (
       const line = s.lines[row] ?? "";
       const col = clamp(payload.col ?? s.cursor.col, 0, line.length);
       s.cursor = { row, col };
+      ensureScrollVisible(s, event.at);
       break;
     }
 
     case "TYPEWRITER_SCROLL": {
-      const payload = (event.payload ?? {}) as { deltaY?: number };
-      s.scrollY += payload.deltaY ?? 0;
+      const payload = (event.payload ?? {}) as { deltaLines?: number };
+      s.scrollLines = Math.max(0, s.scrollLines + (payload.deltaLines ?? 0));
       break;
     }
 
@@ -64,10 +112,27 @@ export const typewriterReducer: PluginReducer<typeof TYPEWRITER_APP_ID> = (
       const row = clamp(s.cursor.row, 0, Math.max(0, s.lines.length - 1));
       const line = s.lines[row] ?? "";
       const col = clamp(s.cursor.col, 0, line.length);
-      s.lines[row] = line.slice(0, col) + ch + line.slice(col);
-      s.cursor = { row, col: col + ch.length };
-      s.fx.lastKeyFrame = event.at;
-      s.fx.lastKey = ch;
+      const next = line.slice(0, col) + ch + line.slice(col);
+      const maxCols = s.settings.maxCols;
+
+      // Hard cap + deterministic wrap to keep UI/anchors stable.
+      if (next.length <= maxCols) {
+        s.lines[row] = next;
+        s.cursor = { row, col: col + ch.length };
+      } else if (s.settings.wrap !== "none") {
+        const head = next.slice(0, maxCols);
+        const tail = next.slice(maxCols);
+        s.lines[row] = head;
+        s.lines.splice(row + 1, 0, tail);
+        s.cursor = { row: row + 1, col: tail.length };
+        s.fx.lastCarriageFrame = event.at;
+        ensureScrollVisible(s, event.at);
+      } else {
+        s.lines[row] = next.slice(0, maxCols);
+        s.cursor = { row, col: Math.min(col + ch.length, maxCols) };
+      }
+
+      registerKeyPresses(s, ch, event.at);
       break;
     }
 
@@ -82,6 +147,9 @@ export const typewriterReducer: PluginReducer<typeof TYPEWRITER_APP_ID> = (
       s.lines.splice(row + 1, 0, after);
       s.cursor = { row: row + 1, col: 0 };
       s.fx.lastCarriageFrame = event.at;
+      s.fx.lastCarriageFromCol = col;
+      registerKeyPresses(s, "\n", event.at);
+      ensureScrollVisible(s, event.at);
       break;
     }
 
@@ -100,10 +168,8 @@ export const typewriterReducer: PluginReducer<typeof TYPEWRITER_APP_ID> = (
         s.cursor = { row: row - 1, col: prev.length };
       }
 
-      s.fx.lastKeyFrame = event.at;
-      s.fx.lastKey = "Backspace";
+      registerKeyPresses(s, "Backspace", event.at);
       break;
     }
   }
 };
-

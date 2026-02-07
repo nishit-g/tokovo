@@ -35,32 +35,13 @@ export const TypewriterPlugin: TokovoPluginContract<typeof TYPEWRITER_APP_ID> & 
       "app_typewriter.key": "plugins/typewriter/key.wav",
       "app_typewriter.carriage": "plugins/typewriter/carriage.wav",
       "app_typewriter.backspace": "plugins/typewriter/backspace.wav",
+      "app_typewriter.space": "plugins/typewriter/space.wav",
+      "app_typewriter.punct": "plugins/typewriter/punct.wav",
+      "app_typewriter.bell": "plugins/typewriter/bell.wav",
+      "app_typewriter.room": "plugins/typewriter/room.wav",
     },
     designWidth: 1080,
   },
-  audioRules: [
-    {
-      match: { kind: "APP", appId: TYPEWRITER_APP_ID, type: "TYPEWRITER_KEY" },
-      action: "PLAY_ONE_SHOT",
-      sound: "app_typewriter.key",
-      bus: "ui",
-      volume: 0.85,
-    },
-    {
-      match: { kind: "APP", appId: TYPEWRITER_APP_ID, type: "TYPEWRITER_NEWLINE" },
-      action: "PLAY_ONE_SHOT",
-      sound: "app_typewriter.carriage",
-      bus: "ui",
-      volume: 0.95,
-    },
-    {
-      match: { kind: "APP", appId: TYPEWRITER_APP_ID, type: "TYPEWRITER_BACKSPACE" },
-      action: "PLAY_ONE_SHOT",
-      sound: "app_typewriter.backspace",
-      bus: "ui",
-      volume: 0.8,
-    },
-  ],
   v2Lowering: typewriterLowering,
   anchorProvider: TypewriterAnchorProvider,
 };
@@ -74,4 +55,3 @@ export function registerTypewriterPlugin(pluginManager: PluginManagerClass): voi
 }
 
 export default TypewriterPlugin;
-

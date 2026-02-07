@@ -15,11 +15,14 @@ describe("typewriterLowering", () => {
     } as any;
 
     const out = typewriterLowering.lower(ev, { fps: 30 });
-    expect(out.map((e: any) => [e.at, e.type, e.payload?.ch ?? null])).toEqual([
+    const app = out.filter((e: any) => e.kind === "APP");
+    expect(app.map((e: any) => [e.at, e.type, e.payload?.ch ?? null])).toEqual([
       [10, "TYPEWRITER_KEY", "A"],
       [11, "TYPEWRITER_NEWLINE", null],
       [12, "TYPEWRITER_KEY", "B"],
     ]);
+
+    const audio = out.filter((e: any) => e.kind === "AUDIO");
+    expect(audio.length).toBeGreaterThan(0);
   });
 });
-

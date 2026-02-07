@@ -3,26 +3,25 @@ import { DEFAULT_FRAMING } from "@tokovo/core";
 import { TYPEWRITER_APP_ID } from "../constants.js";
 import { computeTypewriterGeometry } from "./geometry.js";
 import type { TypewriterState } from "../runtime/state.js";
+import { resolveTypewriterTheme } from "../theme/resolve.js";
 
 function rectAtCursor(input: {
   textArea: Rect;
   state: TypewriterState | undefined;
+  charWidthPx: number;
+  lineHeightPx: number;
 }): Rect {
-  const { textArea, state } = input;
+  const { textArea, state, charWidthPx, lineHeightPx } = input;
   const row = state?.cursor?.row ?? 0;
   const col = state?.cursor?.col ?? 0;
-
-  // Approximate monospace metrics (deterministic). UI should match close enough.
-  const cols = 44;
-  const rows = 26;
-  const cw = textArea.width / cols;
-  const lh = textArea.height / rows;
+  const scrollLines = state?.scrollLines ?? 0;
+  const visibleRow = Math.max(0, row - scrollLines);
 
   return {
-    x: textArea.x + cw * col,
-    y: textArea.y + lh * row,
-    width: Math.max(2, cw * 0.9),
-    height: Math.max(2, lh * 0.9),
+    x: textArea.x + charWidthPx * col,
+    y: textArea.y + lineHeightPx * visibleRow,
+    width: Math.max(2, charWidthPx * 0.9),
+    height: Math.max(2, lineHeightPx * 0.9),
   };
 }
 
@@ -47,15 +46,21 @@ export const TypewriterAnchorProvider: AnchorProvider = {
       height: 1920,
     };
 
-    const geom = computeTypewriterGeometry(dims);
     const state = world.appState?.[TYPEWRITER_APP_ID] as TypewriterState | undefined;
+    const theme = resolveTypewriterTheme({ config: state?.theme, video: dims });
+    const geom = computeTypewriterGeometry(dims, theme);
 
     const anchors: Record<string, Rect> = {
       desk: geom.desk,
       paper: geom.paper,
       textArea: geom.textArea,
       typewriter: geom.typewriter,
-      cursor: rectAtCursor({ textArea: geom.textArea, state }),
+      cursor: rectAtCursor({
+        textArea: geom.textArea,
+        state,
+        charWidthPx: theme.text.charWidthPx,
+        lineHeightPx: theme.text.lineHeightPx,
+      }),
     };
 
     return {
@@ -65,4 +70,3 @@ export const TypewriterAnchorProvider: AnchorProvider = {
     };
   },
 };
-

@@ -48,4 +48,3 @@ declare module "@tokovo/core" {
     app_typewriter: TypewriterState;
   }
 }
-
