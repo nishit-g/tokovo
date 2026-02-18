@@ -36,6 +36,9 @@ import whatsappToXViral from "./whatsapp-to-x-viral.episode.js";
 import xAnchorTour from "./x-anchor-tour.episode.js";
 import iMessageAnchorTour from "./imessage-anchor-tour.episode.js";
 import typewriterLetter from "./typewriter-letter.episode.js";
+import mrRobotTheHook from "./mrrobot-the-hook.episode.js";
+import flirtyWhatsappRomance from "./flirty-whatsapp-romance.episode.js";
+import midnightMaggiCrisis from "./midnight-maggi-crisis.episode.js";
 // plop:episode-import
 
 export const productionEpisodes: EpisodeDefinition[] = [
@@ -63,6 +66,9 @@ export const productionEpisodes: EpisodeDefinition[] = [
   xAnchorTour,
   iMessageAnchorTour,
   typewriterLetter,
+  mrRobotTheHook,
+  flirtyWhatsappRomance,
+  midnightMaggiCrisis,
   // plop:episode-entry
 ];
 
@@ -98,4 +104,7 @@ export {
   xAnchorTour,
   iMessageAnchorTour,
   typewriterLetter,
+  mrRobotTheHook,
+  flirtyWhatsappRomance,
+  midnightMaggiCrisis,
 };

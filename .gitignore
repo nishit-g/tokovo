@@ -41,3 +41,12 @@ Thumbs.db
 .idea
 *.swp
 *.swo
+
+# OpenClaw agent files (machine-specific, not source code)
+AGENTS.md
+SOUL.md
+IDENTITY.md
+TOOLS.md
+HEARTBEAT.md
+BOOTSTRAP.md
+memory/
