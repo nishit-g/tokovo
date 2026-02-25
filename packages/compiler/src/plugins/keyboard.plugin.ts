@@ -67,23 +67,31 @@ export class KeyboardPlugin implements CompilerPlugin {
     };
   }
 
-  process(events: TrackEvent[], context: CompilerContext): TrackEvent[] {
+  process(events: TrackEvent[], _context: CompilerContext): TrackEvent[] {
     if (!this.options.enabled) {
       return [];
     }
 
     for (const event of events) {
-      const e = event as any;
-
-      if (e.kind !== "APP") continue;
-      if (e.type !== "MESSAGE_SENT" && e.type !== "MESSAGE_RECEIVED") continue;
-
-      if (this.options.onlyForSentMessages && e.type !== "MESSAGE_SENT")
-        continue;
-      if (this.options.onlyForReceivedMessages && e.type !== "MESSAGE_RECEIVED")
+      if (event.kind !== "APP") continue;
+      if (event.type !== "MESSAGE_SENT" && event.type !== "MESSAGE_RECEIVED")
         continue;
 
-      const messageText = e.payload?.text || "";
+      if (this.options.onlyForSentMessages && event.type !== "MESSAGE_SENT")
+        continue;
+      if (
+        this.options.onlyForReceivedMessages &&
+        event.type !== "MESSAGE_RECEIVED"
+      )
+        continue;
+
+      const payload = (event.payload ?? {}) as {
+        text?: unknown;
+        from?: unknown;
+        typed?: unknown;
+        charDelay?: unknown;
+      };
+      const messageText = typeof payload.text === "string" ? payload.text : "";
 
       if (
         this.options.excludeShortMessages > 0 &&
@@ -92,12 +100,14 @@ export class KeyboardPlugin implements CompilerPlugin {
         continue;
       }
 
-      if (e.payload?.typed) {
+      if (payload.typed === true) {
         continue;
       }
 
       const actor =
-        e.type === "MESSAGE_RECEIVED" ? e.payload?.from || "them" : "me";
+        event.type === "MESSAGE_RECEIVED" && typeof payload.from === "string"
+          ? payload.from
+          : "me";
       const profile = this.options.characterProfiles[actor];
 
       if (profile && profile.enabled === false) {
@@ -106,8 +116,8 @@ export class KeyboardPlugin implements CompilerPlugin {
 
       const charDelay = profile?.charDelay ?? this.options.defaultCharDelay;
 
-      e.payload = {
-        ...e.payload,
+      event.payload = {
+        ...payload,
         typed: true,
         charDelay,
       };

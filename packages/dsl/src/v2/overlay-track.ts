@@ -5,7 +5,12 @@
  * hook, caption, receipts, reaction gifs, cliffhangers.
  */
 
-import type { OverlayPayloads, OverlayVariant, TrackEvent } from "@tokovo/ir";
+import type {
+  OverlayPayloads,
+  OverlayTrackEvent,
+  OverlayVariant,
+  TrackEvent,
+} from "@tokovo/ir";
 import { parseTimeToFrames } from "./utils/time.js";
 
 type GetDeclarationOrder = () => number;
@@ -23,13 +28,14 @@ export class OverlayPointBuilder {
   ): string {
     const id =
       payload.id ?? `ov_${variant}_${this._frame}_${this._events.length}`;
-    this._events.push({
+    const event: OverlayTrackEvent = {
       at: this._frame,
       kind: "OVERLAY",
       type: "SHOW",
       payload: { ...payload, id, variant },
       _declarationOrder: this._getOrder(),
-    } as unknown as TrackEvent);
+    };
+    this._events.push(event);
     return id;
   }
 
@@ -69,23 +75,25 @@ export class OverlayPointBuilder {
   }
 
   hide(options: OverlayPayloads["HIDE"]): void {
-    this._events.push({
+    const event: OverlayTrackEvent = {
       at: this._frame,
       kind: "OVERLAY",
       type: "HIDE",
       payload: options,
       _declarationOrder: this._getOrder(),
-    } as unknown as TrackEvent);
+    };
+    this._events.push(event);
   }
 
   clear(): void {
-    this._events.push({
+    const event: OverlayTrackEvent = {
       at: this._frame,
       kind: "OVERLAY",
       type: "CLEAR",
       payload: {},
       _declarationOrder: this._getOrder(),
-    } as unknown as TrackEvent);
+    };
+    this._events.push(event);
   }
 }
 
@@ -123,4 +131,3 @@ export class OverlayTrackBuilder {
     return new OverlayPointBuilder(startFrame, this._events, this._getOrder);
   }
 }
-

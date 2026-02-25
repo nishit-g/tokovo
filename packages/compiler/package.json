@@ -15,7 +15,9 @@
   ],
   "scripts": {
     "build": "tsc",
-    "dev": "tsc --watch"
+    "dev": "tsc --watch",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
     "@tokovo/ir": "workspace:*",
@@ -23,6 +25,8 @@
     "@tokovo/device-camera": "workspace:*"
   },
   "devDependencies": {
-    "typescript": "^5.0.0"
+    "typescript": "^5.0.0",
+    "vitest": "^1.0.0",
+    "@types/node": "^20.0.0"
   }
 }

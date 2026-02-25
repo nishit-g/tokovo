@@ -74,8 +74,7 @@ export interface TrackBuilder {
   span: (start: string | number, end: string | number) => unknown;
 }
 
-// Track factory function type - use any for factory to allow app-specific builders
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+// Track factory function type for app-specific builders.
 export type TrackFactory<T> = () => T;
 export type TrackFn<T> = (track: T) => void;
 

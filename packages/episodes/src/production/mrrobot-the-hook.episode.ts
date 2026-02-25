@@ -2,6 +2,7 @@ import { defineEpisode } from "../types/episode-definition.js";
 import { episode } from "@tokovo/dsl";
 import { WhatsAppTrackBuilder } from "@tokovo/apps-whatsapp";
 import { TypewriterTrackBuilder } from "@tokovo/apps-typewriter";
+import type { TypewriterThemeConfig } from "@tokovo/apps-typewriter";
 import { KeyboardPlugin } from "@tokovo/compiler";
 
 let order = 0;
@@ -15,7 +16,7 @@ const TERMINAL_THEME = {
     desk: { vignetteOpacity: 0.7, highlightOpacity: 0.05 },
     audio: { volVar: 0.15, roomVol: 0.18 },
   },
-} as const;
+} as const satisfies TypewriterThemeConfig;
 
 export default defineEpisode({
   meta: {
@@ -59,7 +60,7 @@ export default defineEpisode({
             reset: true,
             seed: 1337,
             roomTone: false,
-            theme: TERMINAL_THEME as any,
+            theme: TERMINAL_THEME,
           });
 
           tw.span("1.0s", "15.0s").typeText(
@@ -186,7 +187,7 @@ export default defineEpisode({
             reset: true,
             seed: 4242,
             roomTone: false,
-            theme: TERMINAL_THEME as any,
+            theme: TERMINAL_THEME,
           });
 
           tw.span("152.0s", "180.0s").typeText(

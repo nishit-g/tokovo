@@ -121,23 +121,29 @@ export default defineEpisode({
         "app_whatsapp",
         (getOrder) => {
           const builder = new WhatsAppTrackBuilder(30, "phone", "dm_alex", getOrder);
-          (builder as unknown as { _getOrder?: () => number })._getOrder = getOrder;
+          Object.defineProperty(builder, "_getOrder", {
+            value: getOrder,
+            configurable: true,
+          });
           return builder;
         },
         (wa) => {
           const fps = 30;
+          const maybeOrder = Reflect.get(wa, "_getOrder");
           const getOrder =
-            (wa as unknown as { _getOrder?: () => number })._getOrder ??
-            (() => 0);
+            typeof maybeOrder === "function" ? (maybeOrder as () => number) : (() => 0);
           let groupFrame = 0;
           const group = new GroupBuilder(
             "group_design",
             () => groupFrame,
             (op: GroupOp) => {
-              (wa._events as unknown[]).push({
+              const rawEvents = Reflect.get(wa, "_events") as unknown;
+              if (Array.isArray(rawEvents)) {
+                (rawEvents as unknown[]).push({
                 ...op,
                 _declarationOrder: getOrder(),
-              });
+                });
+              }
             },
             { deviceId: "phone", appId: "app_whatsapp" },
           );

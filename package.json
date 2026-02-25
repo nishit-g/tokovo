@@ -20,6 +20,11 @@
     "create-plugin": "pnpm turbo gen plugin",
     "create-episode": "pnpm turbo gen episode",
     "test": "pnpm -r test",
+    "test:phase1": "pnpm --filter @tokovo/ir test && pnpm --filter @tokovo/dsl test && pnpm --filter @tokovo/compiler test && pnpm --filter @tokovo/episodes test",
+    "test:determinism:phase1": "pnpm --filter @tokovo/ir test && pnpm --filter @tokovo/ir test && pnpm --filter @tokovo/dsl test && pnpm --filter @tokovo/dsl test && pnpm --filter @tokovo/compiler test && pnpm --filter @tokovo/compiler test && pnpm --filter @tokovo/episodes test && pnpm --filter @tokovo/episodes test",
+    "lint:unsafe:phase1": "bash -lc 'if rg -n \"as\\\\s+unknown\\\\s+as|as\\\\s+any\\\\b|:\\\\s*any\\\\b|<any>\" packages/{ir,dsl,compiler,episodes}/src --glob '!**/*.test.ts' --glob '!**/__tests__/**'; then echo \"Unsafe typing policy violated in phase1 targets\"; exit 1; fi'",
+    "build:phase1": "pnpm --filter @tokovo/ir build && pnpm --filter @tokovo/dsl build && pnpm --filter @tokovo/compiler build && pnpm --filter @tokovo/episodes build",
+    "ci:phase1": "pnpm lint:unsafe:phase1 && pnpm test:phase1 && pnpm test:determinism:phase1 && pnpm build:phase1",
     "ci": "pnpm lint && pnpm typecheck && pnpm test && pnpm build",
     "validate": "pnpm --filter @tokovo/episodes validate"
   },

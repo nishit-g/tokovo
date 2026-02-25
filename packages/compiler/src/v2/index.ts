@@ -17,3 +17,10 @@ export {
     createLoweringContext,
 } from "./lowering.js";
 export type { PluginLowering, LoweringContext } from "./lowering.js";
+
+export {
+  CompilerError,
+  CompilerSchemaValidationError,
+  PluginLowererMissingError,
+  RuntimeValidationError,
+} from "./errors.js";

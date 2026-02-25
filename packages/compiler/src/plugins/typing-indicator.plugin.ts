@@ -24,16 +24,22 @@ export interface TypingIndicatorPluginOptions {
   pauseDuration?: number;
 }
 
-const DEFAULT_OPTIONS: Required<
-  Omit<TypingIndicatorPluginOptions, "characterProfiles">
-> & { characterProfiles: Record<string, CharacterTypingProfile> } = {
+type ResolvedTypingIndicatorPluginOptions = Omit<
+  Required<Omit<TypingIndicatorPluginOptions, "characterProfiles" | "onlyFor">>,
+  never
+> & {
+  onlyFor: "them" | "me" | undefined;
+  characterProfiles: Record<string, CharacterTypingProfile>;
+};
+
+const DEFAULT_OPTIONS: ResolvedTypingIndicatorPluginOptions = {
   mode: "auto",
   fixedDuration: 2,
   minDuration: 0.5,
   maxDuration: 5,
   charsPerSecond: 10,
   delayBefore: 0.5,
-  onlyFor: undefined as any,
+  onlyFor: undefined,
   skipIfShorterThan: 0,
   characterProfiles: {},
   enableRealisticPauses: false,
@@ -48,9 +54,7 @@ export class TypingIndicatorPlugin implements CompilerPlugin {
   subscribesTo = ["MESSAGE_RECEIVED", "MESSAGE_SENT"];
   emits = ["TYPING_START", "TYPING_END"];
 
-  private options: Required<
-    Omit<TypingIndicatorPluginOptions, "characterProfiles">
-  > & { characterProfiles: Record<string, CharacterTypingProfile> };
+  private options: ResolvedTypingIndicatorPluginOptions;
 
   constructor(options: TypingIndicatorPluginOptions = {}) {
     this.options = {
@@ -101,8 +105,7 @@ export class TypingIndicatorPlugin implements CompilerPlugin {
       appId?: string;
     }> = [];
 
-    for (const e of events) {
-      const event = e as any;
+    for (const event of events) {
       if (event.kind !== "APP") continue;
       if (event.type !== "MESSAGE_RECEIVED" && event.type !== "MESSAGE_SENT")
         continue;
@@ -112,10 +115,25 @@ export class TypingIndicatorPlugin implements CompilerPlugin {
       if (this.options.onlyFor === "me" && event.type !== "MESSAGE_SENT")
         continue;
 
+      const payload = event.payload as {
+        conversationId?: unknown;
+        text?: unknown;
+        from?: unknown;
+      };
+      const conversationId =
+        typeof payload?.conversationId === "string"
+          ? payload.conversationId
+          : "";
+      if (!conversationId) continue;
+
       filtered.push({
         at: event.at,
         type: event.type,
-        payload: event.payload,
+        payload: {
+          conversationId,
+          text: typeof payload?.text === "string" ? payload.text : "",
+          from: typeof payload?.from === "string" ? payload.from : undefined,
+        },
         deviceId: event.deviceId,
         appId: event.appId,
       });
@@ -188,7 +206,7 @@ export class TypingIndicatorPlugin implements CompilerPlugin {
           actor,
         },
         _declarationOrder: 0,
-      } as any,
+      } as TrackEvent,
       {
         ...baseEvent,
         at: typingEndFrame,
@@ -198,7 +216,7 @@ export class TypingIndicatorPlugin implements CompilerPlugin {
           actor,
         },
         _declarationOrder: 0,
-      } as any,
+      } as TrackEvent,
     ];
 
     if (enableBurst && messageText.length > 30) {
@@ -212,7 +230,7 @@ export class TypingIndicatorPlugin implements CompilerPlugin {
           type: "TYPING_END" as const,
           payload: { conversationId: payload.conversationId, actor },
           _declarationOrder: 0,
-        } as any,
+        } as TrackEvent,
         {
           ...baseEvent,
           at: midPoint + pauseDuration,
@@ -220,7 +238,7 @@ export class TypingIndicatorPlugin implements CompilerPlugin {
           type: "TYPING_START" as const,
           payload: { conversationId: payload.conversationId, actor },
           _declarationOrder: 0,
-        } as any,
+        } as TrackEvent,
       );
     }
 

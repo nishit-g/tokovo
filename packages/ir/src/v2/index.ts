@@ -84,3 +84,14 @@ export {
 } from "./schemas.js";
 
 export type { ValidatedTrackEpisodeIR } from "./schemas.js";
+
+export {
+  createCanonicalDeviceConfig,
+  createCanonicalTrackEpisodeIR,
+} from "./fixtures.js";
+export type { CanonicalTrackEpisodeFixtureOptions } from "./fixtures.js";
+
+export {
+  normalizeTrackEpisodeIR,
+  normalizeZodIssues,
+} from "./normalize.js";

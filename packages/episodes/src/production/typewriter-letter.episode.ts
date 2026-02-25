@@ -1,6 +1,7 @@
 import { defineEpisode } from "../types/episode-definition.js";
 import { episode } from "@tokovo/creator";
 import { TypewriterTrackBuilder } from "@tokovo/apps-typewriter";
+import type { TypewriterThemeConfig } from "@tokovo/apps-typewriter";
 
 let order = 0;
 const getOrder = () => order++;
@@ -13,7 +14,7 @@ const THEME = {
     desk: { vignetteOpacity: 0.62, highlightOpacity: 0.09 },
     audio: { volVar: 0.1, roomVol: 0.14 },
   },
-} as const;
+} as const satisfies TypewriterThemeConfig;
 
 export default defineEpisode({
   meta: {
@@ -49,7 +50,7 @@ export default defineEpisode({
             seed: 42,
             // Room tone is opt-in (see typewriterLowering). Keep canary clean.
             roomTone: false,
-            theme: THEME as any,
+            theme: THEME,
           });
 
           // We type fast early so the first ~10s (smoke replay window) exercises page feed + cursor anchors.

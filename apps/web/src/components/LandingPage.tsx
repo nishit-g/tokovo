@@ -510,17 +510,17 @@ export function LandingPage() {
                 <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-6 px-6 sm:flex-row lg:px-12">
                     <span className="font-serif text-lg italic text-cream/40">tokovo</span>
                     <div className="flex gap-8">
+                        <a href="#" className="font-mono text-xs uppercase tracking-widest text-stone hover:text-cream transition-colors">
+                            Home
+                        </a>
+                        <a href="#" className="font-mono text-xs uppercase tracking-widest text-stone hover:text-cream transition-colors">
+                            About
+                        </a>
                         <a href="mailto:hello@tokovo.studio" className="font-mono text-xs uppercase tracking-widest text-stone hover:text-cream transition-colors">
                             Contact
                         </a>
-                        <a href="#" className="font-mono text-xs uppercase tracking-widest text-stone hover:text-cream transition-colors">
-                            Twitter
-                        </a>
-                        <a href="#" className="font-mono text-xs uppercase tracking-widest text-stone hover:text-cream transition-colors">
-                            GitHub
-                        </a>
                     </div>
-                    <span className="font-mono text-xs text-stone/50">© {new Date().getFullYear()} Tokovo Studio</span>
+                    <span className="font-mono text-xs text-stone/50">Tokovo 2026</span>
                 </div>
             </footer>
         </div>

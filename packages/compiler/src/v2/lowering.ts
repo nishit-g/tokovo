@@ -47,6 +47,7 @@ import type {
   VoiceStopEvent,
 } from "@tokovo/core";
 import { cameraV2Lowering } from "@tokovo/device-camera";
+import { PluginLowererMissingError } from "./errors.js";
 
 // =============================================================================
 // TYPES
@@ -108,7 +109,11 @@ export function lowerTrackEvent(
 }
 
 function lowerOverlayEvent(event: OverlayTrackEvent): OverlayRuntimeEvent[] {
-  const base = { at: event.at, kind: "OVERLAY" as const };
+  const base = {
+    at: event.at,
+    kind: "OVERLAY" as const,
+    _declarationOrder: event._declarationOrder,
+  };
   return [
     {
       ...base,
@@ -139,7 +144,7 @@ function lowerAppEvent(
     return pluginLowerer.lower(event, ctx);
   }
 
-  throw new Error(`No plugin lowerer registered for appId: ${appId}`);
+  throw new PluginLowererMissingError(appId);
 }
 
 // Camera lowering is now delegated to @tokovo/device-camera
@@ -149,7 +154,11 @@ function lowerAppEvent(
  * Lower audio events.
  */
 function lowerAudioEvent(event: AudioTrackEvent): AudioRuntimeEvent[] {
-  const base = { at: event.at, kind: "AUDIO" as const };
+  const base = {
+    at: event.at,
+    kind: "AUDIO" as const,
+    _declarationOrder: event._declarationOrder,
+  };
 
   switch (event.type) {
     case "BGM_START":
@@ -230,6 +239,7 @@ function lowerVoiceEvent(
     at: event.at,
     kind: "VOICE" as const,
     deviceId: event.deviceId,
+    _declarationOrder: event._declarationOrder,
   };
 
   switch (event.type) {
@@ -277,7 +287,12 @@ function lowerVoiceEvent(
  * Lower OS events.
  */
 function lowerOSEvent(event: OSTrackEvent): OSRuntimeEvent[] {
-  const base = { at: event.at, kind: "OS" as const, deviceId: event.deviceId };
+  const base = {
+    at: event.at,
+    kind: "OS" as const,
+    deviceId: event.deviceId,
+    _declarationOrder: event._declarationOrder,
+  };
 
   switch (event.type) {
     case "SET_TIME":
@@ -382,6 +397,7 @@ function lowerDeviceEvent(event: TrackEvent): RuntimeEvent[] {
     kind: "DEVICE" as const,
     deviceId: (e.deviceId as string) ?? "device_1",
     silent: (e.silent as boolean | undefined) === true ? true : undefined,
+    _declarationOrder: (e._declarationOrder as number | undefined),
   };
 
   const type = e.type as string;
@@ -434,34 +450,36 @@ function lowerDeviceEvent(event: TrackEvent): RuntimeEvent[] {
     case "SET_BATTERY":
       return [
         {
-          ...base,
+          at: base.at,
+          kind: "OS",
+          deviceId: base.deviceId,
           type: "SET_BATTERY",
-          payload: {
-            percent: Number(p.percent ?? p.level ?? e.percent ?? e.level ?? 100),
-            charging: Boolean(p.charging ?? e.charging ?? false),
-          },
-        } as unknown as DeviceRuntimeEvent,
+          level: Number(p.percent ?? p.level ?? e.percent ?? e.level ?? 100),
+          charging: Boolean(p.charging ?? e.charging ?? false),
+        } as OSRuntimeEvent,
       ];
 
     case "SET_NETWORK":
       return [
         {
-          ...base,
+          at: base.at,
+          kind: "OS",
+          deviceId: base.deviceId,
           type: "SET_NETWORK",
-          payload: {
-            network: (p.network ?? p.type ?? e.network ?? e.type) as string,
-            strength: Number(p.strength ?? e.strength ?? 4),
-          },
-        } as unknown as DeviceRuntimeEvent,
+          network: (p.network ?? p.type ?? e.network ?? e.type) as string,
+          strength: Number(p.strength ?? e.strength ?? 4),
+        } as OSRuntimeEvent,
       ];
 
     case "SET_DND":
       return [
         {
-          ...base,
+          at: base.at,
+          kind: "OS",
+          deviceId: base.deviceId,
           type: "SET_DND",
-          payload: { dnd: Boolean(p.dnd ?? p.enabled ?? e.dnd ?? e.enabled ?? false) },
-        } as unknown as DeviceRuntimeEvent,
+          enabled: Boolean(p.dnd ?? p.enabled ?? e.dnd ?? e.enabled ?? false),
+        } as OSRuntimeEvent,
       ];
 
     case "SET_DYNAMIC_ISLAND":

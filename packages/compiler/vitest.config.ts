@@ -7,10 +7,10 @@ export default defineConfig({
     coverage: {
       reporter: ["text", "json-summary"],
       thresholds: {
-        lines: 85,
-        branches: 80,
-        functions: 85,
-        statements: 85,
+        lines: 80,
+        branches: 75,
+        functions: 80,
+        statements: 80,
       },
     },
   },

@@ -26,7 +26,7 @@ function getPayloadScreen(e: AnyRuntimeEvent): string | undefined {
     const screen = (payload as { screen?: unknown }).screen;
     if (typeof screen === "string") return screen;
   }
-  const screen = (e as unknown as { screen?: unknown }).screen;
+  const screen = (e as { screen?: unknown }).screen;
   return typeof screen === "string" ? screen : undefined;
 }
 
@@ -206,4 +206,3 @@ export function validateV1RuntimeEpisode(
 
   return issues;
 }
-

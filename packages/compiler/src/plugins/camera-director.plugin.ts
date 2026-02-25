@@ -6,7 +6,7 @@ import type {
   CameraEffect,
 } from "@tokovo/device-camera";
 import type { CompilerPlugin, CompilerContext } from "./types.js";
-import type { TrackEvent } from "@tokovo/ir";
+import type { EasingType, TrackEvent } from "@tokovo/ir";
 
 export interface CameraDirectorPluginOptions extends CameraDirectorOptions {
   behaviorConfig?: BehaviorConfig;
@@ -49,30 +49,29 @@ export class CameraDirectorPlugin implements CompilerPlugin {
 
   private convertToCameraEvents(
     events: TrackEvent[],
-    fps: number,
+    _fps: number,
   ): CameraEvent[] {
     const cameraEvents: CameraEvent[] = [];
     let eventId = 0;
 
     for (const event of events) {
-      const e = event as any;
       const timestamp = event.at;
-      const payload = event.payload as Record<string, unknown>;
+      const payload = event.payload as Record<string, unknown> | undefined;
 
-      if (e.kind === "APP" && e.type === "MESSAGE_RECEIVED") {
+      if (event.kind === "APP" && event.type === "MESSAGE_RECEIVED") {
         cameraEvents.push({
           id: `plugin-${eventId++}`,
           type: "MESSAGE_RECEIVED",
           timestamp,
           priority: "normal",
           payload: {
-            from: payload.from as string,
-            text: payload.text as string,
+            from: typeof payload?.from === "string" ? payload.from : "them",
+            text: typeof payload?.text === "string" ? payload.text : "",
             order: eventId - 1,
             anchor: "lastMessage",
           },
         });
-      } else if (e.kind === "APP" && e.type === "MESSAGE_SENT") {
+      } else if (event.kind === "APP" && event.type === "MESSAGE_SENT") {
         cameraEvents.push({
           id: `plugin-${eventId++}`,
           type: "MESSAGE_SENT",
@@ -80,33 +79,33 @@ export class CameraDirectorPlugin implements CompilerPlugin {
           priority: "normal",
           payload: {
             from: "me",
-            text: payload.text as string,
+            text: typeof payload?.text === "string" ? payload.text : "",
             order: eventId - 1,
             anchor: "lastMessage",
           },
         });
-      } else if (e.kind === "DEVICE" && e.type === "NOTIFICATION_SHOW") {
+      } else if (event.kind === "DEVICE" && event.type === "NOTIFICATION_SHOW") {
         cameraEvents.push({
           id: `plugin-${eventId++}`,
           type: "NOTIFICATION_SHOWN",
           timestamp,
           priority: "high",
           payload: {
-            app: payload.appId as string,
-            title: payload.title as string,
-            body: payload.body as string,
+            app: typeof payload?.appId === "string" ? payload.appId : "unknown",
+            title: typeof payload?.title === "string" ? payload.title : "",
+            body: typeof payload?.body === "string" ? payload.body : "",
             anchor: "headsUpNotification",
             duration: 1.5,
           },
         });
-      } else if (e.kind === "APP" && e.type === "TYPING_START") {
+      } else if (event.kind === "APP" && event.type === "TYPING_START") {
         cameraEvents.push({
           id: `plugin-${eventId++}`,
           type: "TYPING_START",
           timestamp,
           priority: "normal",
           payload: {
-            actor: payload.actor as string,
+            actor: typeof payload?.actor === "string" ? payload.actor : "them",
             anchor: "typingIndicator",
           },
         });
@@ -123,66 +122,86 @@ export class CameraDirectorPlugin implements CompilerPlugin {
     const trackEvents: TrackEvent[] = [];
 
     for (const effect of effects) {
-      const e = effect as any;
-
-      if (e.type === "focus") {
+      if (effect.type === "focus") {
+        const params = effect.params as {
+          anchor?: string;
+          scale?: number;
+          padding?: number;
+          easing?: string;
+        };
         trackEvents.push({
-          at: e.timestamp,
+          at: effect.timestamp,
           kind: "CAMERA",
           type: "FOCUS",
           payload: {
-            anchorId: e.params.anchor,
-            scale: e.params.scale,
-            padding: e.params.padding,
-            easing: e.params.easing,
+            anchorId: params.anchor ?? "lastMessage",
+            scale: params.scale,
+            padding: params.padding,
+            easing: params.easing as EasingType | undefined,
           },
-        } as unknown as TrackEvent);
-      } else if (e.type === "shake") {
-        const duration = Math.round((e.params.duration || 0.5) * fps);
+        });
+      } else if (effect.type === "shake") {
+        const params = effect.params as {
+          duration?: number;
+          intensityX: number;
+          intensityY: number;
+          frequency?: number;
+          decay?: number;
+        };
+        const duration = Math.round((params.duration || 0.5) * fps);
         trackEvents.push(
           {
-            at: e.timestamp,
+            at: effect.timestamp,
             duration,
             kind: "CAMERA",
             type: "SHAKE_START",
             payload: {
-              intensityX: e.params.intensityX,
-              intensityY: e.params.intensityY,
-              frequency: e.params.frequency,
-              decay: e.params.decay,
+              intensityX: params.intensityX,
+              intensityY: params.intensityY,
+              frequency: params.frequency,
+              decay: params.decay,
             },
           } as TrackEvent,
           {
-            at: e.timestamp + duration,
+            at: effect.timestamp + duration,
             kind: "CAMERA",
             type: "SHAKE_END",
             payload: {},
           } as TrackEvent,
         );
-      } else if (e.type === "reset") {
+      } else if (effect.type === "reset") {
+        const params = effect.params as {
+          easing?: string;
+          spring?: string;
+        };
         trackEvents.push({
-          at: e.timestamp,
+          at: effect.timestamp,
           kind: "CAMERA",
           type: "RESET",
           payload: {
-            easing: e.params.easing,
-            spring: e.params.spring,
+            easing: params.easing,
+            spring: params.spring,
           },
         } as TrackEvent);
-      } else if (e.type === "zoom") {
+      } else if (effect.type === "zoom") {
+        const params = effect.params as {
+          scale: number;
+          duration?: number;
+          easing?: string;
+        };
         trackEvents.push({
-          at: e.timestamp,
+          at: effect.timestamp,
           kind: "CAMERA",
           type: "ZOOM",
           payload: {
-            scale: e.params.scale,
-            duration: e.params.duration,
-            easing: e.params.easing,
+            scale: params.scale,
+            duration: params.duration,
+            easing: params.easing,
           },
         } as TrackEvent);
       } else {
         console.warn(
-          `[CameraDirectorPlugin] Unsupported effect type: ${e.type}`,
+          `[CameraDirectorPlugin] Unsupported effect type: ${effect.type}`,
         );
       }
     }

@@ -43,7 +43,10 @@ export default defineEpisode({
         "app_whatsapp",
         (getOrder) => {
           const builder = new WhatsAppTrackBuilder(30, "phone", "dm_riya", getOrder);
-          (builder as unknown as { _getOrder?: () => number })._getOrder = getOrder;
+          Object.defineProperty(builder, "_getOrder", {
+            value: getOrder,
+            configurable: true,
+          });
           return builder;
         },
         (wa) => {

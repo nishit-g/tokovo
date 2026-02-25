@@ -28,6 +28,10 @@ import {
 } from "@tokovo/core";
 import { lowerEpisode } from "./lowering.js";
 import { validateV1RuntimeEpisode } from "./validation.js";
+import {
+  CompilerSchemaValidationError,
+  RuntimeValidationError,
+} from "./errors.js";
 
 // =============================================================================
 // TYPES
@@ -82,7 +86,9 @@ export function prepareTrackEpisode(
         "[prepareTrackEpisode] IR validation failed:",
         validation.error.format(),
       );
-      throw new Error(`Invalid TrackEpisodeIR: ${validation.error.message}`);
+      throw new CompilerSchemaValidationError(
+        `Invalid TrackEpisodeIR: ${validation.error.message}`,
+      );
     }
   }
 
@@ -116,7 +122,7 @@ export function prepareTrackEpisode(
           return `- [${i.severity}]${at}${app}${type}: ${i.message}`;
         })
         .join("\n");
-      throw new Error(`${header}\n${body}`);
+      throw new RuntimeValidationError(`${header}\n${body}`);
     }
 
     if (shouldLog) {

@@ -107,7 +107,7 @@ export class DevicePointBuilderV2 {
       payload,
       _declarationOrder: this._getOrder(),
       silent: silent ? true : undefined,
-    } as unknown as TrackEvent;
+    } as DeviceTrackEvent & { silent?: boolean };
     this._events.push(deviceEvent);
   }
 

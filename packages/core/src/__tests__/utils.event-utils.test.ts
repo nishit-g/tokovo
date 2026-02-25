@@ -30,6 +30,7 @@ describe("event utils", () => {
     expect(getEventsAt(index, 99)).toEqual([]);
     expect(getEventsUpTo(index, 5)).toHaveLength(3);
     expect(getEventsInRange(index, 5, 6)).toHaveLength(3);
+    expect(getEventsInRange(index, 6, 5)).toEqual([]);
   });
 
   it("handles keyframed indexing with cached and fallback paths", () => {
@@ -41,6 +42,7 @@ describe("event utils", () => {
 
     const withAdditional = getEventsUpToKeyframed(keyframed, 6);
     expect(withAdditional).toHaveLength(4);
+    expect(withAdditional.slice(0, 3)).toEqual(exact);
 
     const sparseEvents: TimelineEvent[] = [
       { at: 3, kind: "APP", appId: "chat" } as any,

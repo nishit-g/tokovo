@@ -8,6 +8,35 @@
  */
 
 import type { EpisodeDefinition } from "../types/episode-definition.js";
+import { EpisodeDefinitionSchema } from "../types/episode-definition.js";
+
+export class EpisodeRegistryDuplicateError extends Error {
+    constructor(public readonly episodeId: string) {
+        super(`Episode "${episodeId}" is already registered`);
+        this.name = "EpisodeRegistryDuplicateError";
+    }
+}
+
+export class EpisodeRegistryValidationError extends Error {
+    constructor(
+        public readonly episodeId: string,
+        public readonly details: string,
+    ) {
+        super(`Episode "${episodeId}" failed registry validation: ${details}`);
+        this.name = "EpisodeRegistryValidationError";
+    }
+}
+
+export function validateEpisodeForRegistry(
+    definition: EpisodeDefinition,
+): EpisodeDefinition {
+    const parsed = EpisodeDefinitionSchema.safeParse(definition);
+    if (!parsed.success) {
+        const id = definition.meta?.id ?? "<unknown>";
+        throw new EpisodeRegistryValidationError(id, parsed.error.message);
+    }
+    return definition;
+}
 
 /**
  * Enterprise Episode Registry
@@ -27,14 +56,13 @@ export class EpisodeRegistry {
      * Called automatically by defineEpisode().
      */
     register(episode: EpisodeDefinition): void {
-        if (this.episodes.has(episode.meta.id)) {
-            if (this.debug) {
-                console.warn(`[EpisodeRegistry] Overwriting: ${episode.meta.id}`);
-            }
+        const validated = validateEpisodeForRegistry(episode);
+        if (this.episodes.has(validated.meta.id)) {
+            throw new EpisodeRegistryDuplicateError(validated.meta.id);
         }
-        this.episodes.set(episode.meta.id, episode);
+        this.episodes.set(validated.meta.id, validated);
         if (this.debug) {
-            console.warn(`[EpisodeRegistry] ✓ Registered: ${episode.meta.id}`);
+            console.warn(`[EpisodeRegistry] ✓ Registered: ${validated.meta.id}`);
         }
     }
 

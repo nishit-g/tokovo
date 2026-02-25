@@ -369,7 +369,7 @@ export function replayIncremental(
     return result;
   }
 
-  const stateAfterEvents = produce(startState, (draft) => {
+  const finalState = produce(startState, (draft) => {
     const handlerCtx: HandlerContext = {
       frame: t,
       eventIndex: 0,
@@ -408,9 +408,10 @@ export function replayIncremental(
         handleEventError(error, event, ctx);
       }
     }
-  });
 
-  const finalState = finalizeState(stateAfterEvents, t, ctx.config);
+    // Single-pass finalize in incremental replay (perf: avoid second Immer produce)
+    finalizeDraftState(draft, t, ctx.config);
+  });
   cacheStateAtKeyframe(stateCache, t, finalState);
 
   registries.lifecycle.notifyAfterReplay(finalState, lifecycleCtx);
@@ -622,58 +623,62 @@ function finalizeState(
   config: TokovoConfigType,
 ): WorldState {
   return produce(state, (draft) => {
-    // Only filter activeEffects if it exists (extended CameraState from device-camera)
-    const cameraWithEffects = draft.camera as {
-      activeEffects?: Array<{ endFrame: number }>;
-    };
-    if (Array.isArray(cameraWithEffects.activeEffects)) {
-      cameraWithEffects.activeEffects = cameraWithEffects.activeEffects.filter(
-        (effect) => t <= effect.endFrame + config.timing.effectCleanupBuffer,
-      );
-    }
-
-    cleanupExpiredSounds(draft, t);
-    cleanupExpiredNotifications(
-      draft,
-      t,
-      config.notifications.cleanupDelayFrames,
-    );
-
-    if (!draft.camera.deviceTransforms) {
-      draft.camera.deviceTransforms = {};
-    }
-
-    let firstDeviceId: string | undefined;
-    for (const deviceId in draft.devices) {
-      if (Object.hasOwn(draft.devices, deviceId)) {
-        if (!firstDeviceId) firstDeviceId = deviceId;
-        const device = draft.devices[deviceId];
-        if (device?.keyboard?.activeKeyPresses?.length) {
-          device.keyboard.activeKeyPresses =
-            device.keyboard.activeKeyPresses.filter(
-              (kp) => t < kp.startFrame + kp.duration,
-            );
-        }
-        if (device?.keyboard?.typingAnimation) {
-          const { text, startFrame, charDelay } =
-            device.keyboard.typingAnimation;
-          const lastFrame =
-            startFrame + Math.max(0, (text.length - 1) * charDelay);
-          if (t > lastFrame) {
-            device.keyboard.typingAnimation = undefined;
-          }
-        }
-        draft.camera.deviceTransforms[deviceId] =
-          DEFAULT_CAMERA_TRANSFORM as CameraTransform;
-      }
-    }
-
-    const activeDeviceId = draft.camera.activeDeviceId || firstDeviceId;
-    draft.camera.transform = activeDeviceId
-      ? draft.camera.deviceTransforms[activeDeviceId] ||
-        DEFAULT_CAMERA_TRANSFORM
-      : DEFAULT_CAMERA_TRANSFORM;
+    finalizeDraftState(draft, t, config);
   });
+}
+
+function finalizeDraftState(
+  draft: WorldState,
+  t: number,
+  config: TokovoConfigType,
+): void {
+  // Only filter activeEffects if it exists (extended CameraState from device-camera)
+  const cameraWithEffects = draft.camera as {
+    activeEffects?: Array<{ endFrame: number }>;
+  };
+  if (Array.isArray(cameraWithEffects.activeEffects)) {
+    cameraWithEffects.activeEffects = cameraWithEffects.activeEffects.filter(
+      (effect) => t <= effect.endFrame + config.timing.effectCleanupBuffer,
+    );
+  }
+
+  cleanupExpiredSounds(draft, t);
+  cleanupExpiredNotifications(
+    draft,
+    t,
+    config.notifications.cleanupDelayFrames,
+  );
+
+  if (!draft.camera.deviceTransforms) {
+    draft.camera.deviceTransforms = {};
+  }
+
+  let firstDeviceId: string | undefined;
+  for (const deviceId in draft.devices) {
+    if (Object.hasOwn(draft.devices, deviceId)) {
+      if (!firstDeviceId) firstDeviceId = deviceId;
+      const device = draft.devices[deviceId];
+      if (device?.keyboard?.activeKeyPresses?.length) {
+        device.keyboard.activeKeyPresses = device.keyboard.activeKeyPresses.filter(
+          (kp) => t < kp.startFrame + kp.duration,
+        );
+      }
+      if (device?.keyboard?.typingAnimation) {
+        const { text, startFrame, charDelay } = device.keyboard.typingAnimation;
+        const lastFrame = startFrame + Math.max(0, (text.length - 1) * charDelay);
+        if (t > lastFrame) {
+          device.keyboard.typingAnimation = undefined;
+        }
+      }
+      draft.camera.deviceTransforms[deviceId] =
+        DEFAULT_CAMERA_TRANSFORM as CameraTransform;
+    }
+  }
+
+  const activeDeviceId = draft.camera.activeDeviceId || firstDeviceId;
+  draft.camera.transform = activeDeviceId
+    ? draft.camera.deviceTransforms[activeDeviceId] || DEFAULT_CAMERA_TRANSFORM
+    : DEFAULT_CAMERA_TRANSFORM;
 }
 
 function cleanupExpiredNotifications(

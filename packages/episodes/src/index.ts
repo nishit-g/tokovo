@@ -26,8 +26,11 @@
 // =============================================================================
 export {
   EpisodeRegistry,
+  EpisodeRegistryDuplicateError,
+  EpisodeRegistryValidationError,
   createEpisodeRegistry,
   getEpisodeRegistrySnapshot,
+  validateEpisodeForRegistry,
 } from "./registry/index.js";
 
 // =============================================================================

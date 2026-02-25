@@ -9,7 +9,9 @@
   ],
   "scripts": {
     "build": "tsc",
-    "dev": "tsc --watch"
+    "dev": "tsc --watch",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
     "@tokovo/core": "workspace:*",
@@ -19,6 +21,8 @@
   },
   "devDependencies": {
     "@types/source-map-support": "^0.5.10",
-    "typescript": "^5.0.0"
+    "typescript": "^5.0.0",
+    "vitest": "^1.0.0",
+    "@types/node": "^20.0.0"
   }
 }

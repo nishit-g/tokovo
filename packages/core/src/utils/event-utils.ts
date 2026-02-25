@@ -165,18 +165,57 @@ function binarySearchUpperBound(arr: number[], target: number): number {
   return low;
 }
 
-export function getEventsUpTo(index: EventIndex, t: number): TimelineEvent[] {
-  const cutoffIdx = binarySearchUpperBound(index.frames, t);
-  const result: TimelineEvent[] = [];
+function binarySearchLowerBound(arr: number[], target: number): number {
+  let low = 0;
+  let high = arr.length;
+  while (low < high) {
+    const mid = (low + high) >>> 1;
+    if (arr[mid] < target) {
+      low = mid + 1;
+    } else {
+      high = mid;
+    }
+  }
+  return low;
+}
 
-  for (let i = 0; i < cutoffIdx; i++) {
+function collectEventsBetweenFrameIndexes(
+  index: EventIndex,
+  startIdx: number,
+  endIdx: number,
+): TimelineEvent[] {
+  if (startIdx >= endIdx) {
+    return [];
+  }
+
+  let totalEvents = 0;
+  for (let i = startIdx; i < endIdx; i++) {
     const events = index.byFrame.get(index.frames[i]);
     if (events) {
-      result.push(...events);
+      totalEvents += events.length;
+    }
+  }
+
+  if (totalEvents === 0) {
+    return [];
+  }
+
+  const result = new Array<TimelineEvent>(totalEvents);
+  let writeIndex = 0;
+  for (let i = startIdx; i < endIdx; i++) {
+    const events = index.byFrame.get(index.frames[i]);
+    if (!events) continue;
+    for (let j = 0; j < events.length; j++) {
+      result[writeIndex++] = events[j];
     }
   }
 
   return result;
+}
+
+export function getEventsUpTo(index: EventIndex, t: number): TimelineEvent[] {
+  const cutoffIdx = binarySearchUpperBound(index.frames, t);
+  return collectEventsBetweenFrameIndexes(index, 0, cutoffIdx);
 }
 
 export function getEventsUpToKeyframed(
@@ -196,19 +235,22 @@ export function getEventsUpToKeyframed(
     return baseEvents;
   }
 
-  const additional: TimelineEvent[] = [];
   const startIdx = binarySearchUpperBound(index.frames, nearestKeyframe);
   const endIdx = binarySearchUpperBound(index.frames, t);
+  const additional = collectEventsBetweenFrameIndexes(index, startIdx, endIdx);
 
-  for (let i = startIdx; i < endIdx; i++) {
-    const frame = index.frames[i];
-    const events = index.byFrame.get(frame);
-    if (events) {
-      additional.push(...events);
-    }
+  if (additional.length === 0) {
+    return baseEvents;
   }
 
-  return additional.length > 0 ? baseEvents.concat(additional) : baseEvents;
+  const merged = new Array<TimelineEvent>(baseEvents.length + additional.length);
+  for (let i = 0; i < baseEvents.length; i++) {
+    merged[i] = baseEvents[i];
+  }
+  for (let i = 0; i < additional.length; i++) {
+    merged[baseEvents.length + i] = additional[i];
+  }
+  return merged;
 }
 
 export function getEventsAt(index: EventIndex, t: number): TimelineEvent[] {
@@ -228,18 +270,12 @@ export function getEventsInRange(
   start: number,
   end: number,
 ): TimelineEvent[] {
-  const result: TimelineEvent[] = [];
-
-  for (const frame of index.frames) {
-    if (frame < start) continue;
-    if (frame > end) break;
-    const events = index.byFrame.get(frame);
-    if (events) {
-      result.push(...events);
-    }
+  if (end < start) {
+    return [];
   }
-
-  return result;
+  const startIdx = binarySearchLowerBound(index.frames, start);
+  const endIdx = binarySearchUpperBound(index.frames, end);
+  return collectEventsBetweenFrameIndexes(index, startIdx, endIdx);
 }
 
 // =============================================================================
