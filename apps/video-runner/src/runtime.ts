@@ -10,6 +10,7 @@ import { registerIMessagePlugin } from "@tokovo/apps-imessage";
 import { registerLinkedInPlugin } from "@tokovo/apps-linkedin";
 import { registerTypewriterPlugin } from "@tokovo/apps-typewriter";
 import { registerSnapchatPlugin } from "@tokovo/apps-snapchat";
+import { registerTeamsPlugin } from "@tokovo/apps-teams";
 import {
   createDeviceRegistries,
   registerDevicesPlugin,
@@ -51,6 +52,7 @@ export function createVideoRunnerRuntime(): VideoRunnerRuntime {
   registerLinkedInPlugin(pluginManager);
   registerTypewriterPlugin(pluginManager);
   registerSnapchatPlugin(pluginManager);
+  registerTeamsPlugin(pluginManager);
   registerNotificationPlugin(tokovoRegistries.engine);
   registerCameraPlugin(pluginManager, tokovoRegistries.engine);
   registerKeyboardPlugin(tokovoRegistries.engine);

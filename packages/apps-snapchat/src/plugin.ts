@@ -1,4 +1,4 @@
-import type { TokovoPluginContract, PluginViews, PluginReducer } from "@tokovo/core";
+import type { TokovoPluginContract, PluginViews } from "@tokovo/core";
 import type { PluginManagerClass } from "@tokovo/react";
 import { SNAPCHAT_APP_ID, SNAPCHAT_DISPLAY_NAME, SNAPCHAT_VERSION } from "./constants.js";
 import { snapchatReducer } from "./runtime/reducer.js";
@@ -71,7 +71,7 @@ export const SnapchatPlugin: TokovoPluginContract<"app_snapchat"> & {
     id: SNAPCHAT_APP_ID,
     version: SNAPCHAT_VERSION,
     displayName: SNAPCHAT_DISPLAY_NAME,
-    reducer: snapchatReducer as PluginReducer<"app_snapchat">,
+    reducer: snapchatReducer,
     views: snapchatViews,
     createInitialState: createSnapchatInitialState,
     eventKinds: [

@@ -2,7 +2,7 @@ import { parseTimeToFrames } from "@tokovo/dsl";
 import { SNAPCHAT_APP_ID } from "../constants.js";
 import type { SnapchatAttachment, SnapchatSnapType } from "../types/messages.js";
 import type { SnapchatTrackEvent } from "../types/events.js";
-import type { SnapchatConversation, SnapchatParticipant } from "../types/conversation.js";
+import type { SnapchatConversation } from "../types/conversation.js";
 import type { SnapchatScreen } from "../types/state.js";
 
 type GetDeclarationOrder = () => number;
@@ -246,7 +246,7 @@ export class SnapchatTrackBuilder {
         return this._point();
     }
 
-    span(start: string | number, end: string | number): SnapchatPointBuilder {
+    span(start: string | number, _end: string | number): SnapchatPointBuilder {
         const startFrame =
             typeof start === "number" ? start : parseTimeToFrames(start, this._fps);
         this._currentFrame = startFrame;

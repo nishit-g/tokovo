@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import { snapchatReducer } from "../runtime/reducer.js";
 import { createSnapchatInitialState } from "../runtime/initial-state.js";
 import type { SnapchatState } from "../types/index.js";
-import type { WorldState, RuntimeEvent } from "@tokovo/core";
+import type { WorldState } from "@tokovo/core";
 import { DEFAULT_AUDIO_STATE, DEFAULT_BASE_CAMERA_STATE } from "@tokovo/core";
 
 function createTestWorldState(): WorldState {
@@ -16,9 +16,11 @@ function createTestWorldState(): WorldState {
     } as WorldState;
 }
 
-function runReducer(state: WorldState, event: RuntimeEvent): WorldState {
+type SnapchatReducerEvent = Parameters<typeof snapchatReducer>[1];
+
+function runReducer(state: WorldState, event: SnapchatReducerEvent): WorldState {
     const draft = JSON.parse(JSON.stringify(state)) as WorldState;
-    snapchatReducer(draft, event as any);
+    snapchatReducer(draft, event);
     return draft;
 }
 

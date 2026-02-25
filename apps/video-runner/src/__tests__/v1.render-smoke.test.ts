@@ -38,6 +38,7 @@ import { registerXPlugin } from "@tokovo/apps-x";
 import { registerIMessagePlugin } from "@tokovo/apps-imessage";
 import { registerLinkedInPlugin } from "@tokovo/apps-linkedin";
 import { registerTypewriterPlugin } from "@tokovo/apps-typewriter";
+import { registerTeamsPlugin } from "@tokovo/apps-teams";
 
 import { createVideoRunnerEpisodeRegistry } from "../episode-registry";
 import { ensureCanvasProfile, resolveCanvasProfileId } from "@tokovo/devices";
@@ -60,6 +61,7 @@ function createRuntimeForSmoke(): {
   registerIMessagePlugin(pluginManager);
   registerLinkedInPlugin(pluginManager);
   registerTypewriterPlugin(pluginManager);
+  registerTeamsPlugin(pluginManager);
   registerNotificationPlugin(tokovoRegistries.engine);
   registerCameraPlugin(pluginManager, tokovoRegistries.engine);
   registerKeyboardPlugin(tokovoRegistries.engine);

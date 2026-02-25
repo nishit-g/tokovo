@@ -39,6 +39,8 @@ import typewriterLetter from "./typewriter-letter.episode.js";
 import mrRobotTheHook from "./mrrobot-the-hook.episode.js";
 import flirtyWhatsappRomance from "./flirty-whatsapp-romance.episode.js";
 import midnightMaggiCrisis from "./midnight-maggi-crisis.episode.js";
+import snapchatBestieDrama from "./snapchat-bestie-drama.episode.js";
+import teamsWarRoom from "./teams-war-room.episode.js";
 // plop:episode-import
 
 export const productionEpisodes: EpisodeDefinition[] = [
@@ -69,6 +71,8 @@ export const productionEpisodes: EpisodeDefinition[] = [
   mrRobotTheHook,
   flirtyWhatsappRomance,
   midnightMaggiCrisis,
+  snapchatBestieDrama,
+  teamsWarRoom,
   // plop:episode-entry
 ];
 
@@ -107,4 +111,6 @@ export {
   mrRobotTheHook,
   flirtyWhatsappRomance,
   midnightMaggiCrisis,
+  snapchatBestieDrama,
+  teamsWarRoom,
 };

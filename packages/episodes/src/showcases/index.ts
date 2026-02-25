@@ -23,6 +23,7 @@ import tennisEnergetic from "./tennis-energetic.episode.js";
 import tennisFluidDemo from "./tennis-fluid-demo.episode.js";
 import tennisGroupOrganic from "./tennis-group-organic.episode.js";
 import ghibliX from "./ghibli-x.episode.js";
+import teamsEnterpriseExhaustiveShowcase from "./teams-enterprise-exhaustive-showcase.episode.js";
 // plop:episode-import
 
 export const showcaseEpisodes: EpisodeDefinition[] = [
@@ -38,6 +39,7 @@ export const showcaseEpisodes: EpisodeDefinition[] = [
   tennisFluidDemo,
   tennisGroupOrganic,
   ghibliX,
+  teamsEnterpriseExhaustiveShowcase,
   // plop:episode-entry
 ];
 
@@ -56,4 +58,5 @@ export {
   tennisFluidDemo,
   tennisGroupOrganic,
   ghibliX,
+  teamsEnterpriseExhaustiveShowcase,
 };

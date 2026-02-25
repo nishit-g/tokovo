@@ -16,6 +16,8 @@
     "@tokovo/dsl": "workspace:*",
     "@tokovo/apps-whatsapp": "workspace:*",
     "@tokovo/apps-imessage": "workspace:*",
+    "@tokovo/apps-snapchat": "workspace:*",
+    "@tokovo/apps-teams": "workspace:*",
     "@tokovo/apps-x": "workspace:*",
     "@tokovo/ir": "workspace:*"
   },

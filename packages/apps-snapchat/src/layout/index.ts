@@ -8,7 +8,6 @@ import type {
     SemanticRegion,
 } from "@tokovo/core";
 
-import type { SnapchatState } from "../types/index.js";
 import { snapchatSpacing } from "../config/tokens.js";
 
 const DESIGN_WIDTH = 393;

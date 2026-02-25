@@ -5,7 +5,7 @@ import type {
     SnapchatSnapType,
 } from "./messages.js";
 import type { SnapchatScreen } from "./state.js";
-import type { SnapchatConversation, SnapchatParticipant } from "./conversation.js";
+import type { SnapchatConversation } from "./conversation.js";
 
 // =============================================================================
 // PAYLOAD TYPES

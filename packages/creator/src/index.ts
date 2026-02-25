@@ -12,7 +12,15 @@ import {
   createIMessageTrackBuilder,
   type IMessageTrackBuilder,
 } from "@tokovo/apps-imessage";
+import {
+  createSnapchatTrackBuilder,
+  type SnapchatTrackBuilder,
+} from "@tokovo/apps-snapchat";
 import { XTrackBuilder } from "@tokovo/apps-x";
+import {
+  createTeamsTrackBuilder,
+  type TeamsTrackBuilder,
+} from "@tokovo/apps-teams";
 
 export type CreatorEpisodeBuilder = EpisodeBuilder & {
   whatsapp: (
@@ -25,7 +33,13 @@ export type CreatorEpisodeBuilder = EpisodeBuilder & {
     conversationId: string,
     fn: TrackFn<IMessageTrackBuilder>,
   ) => CreatorEpisodeBuilder;
+  snapchat: (
+    deviceId: string,
+    conversationId: string,
+    fn: TrackFn<SnapchatTrackBuilder>,
+  ) => CreatorEpisodeBuilder;
   x: (deviceId: string, fn: TrackFn<XTrackBuilder>) => CreatorEpisodeBuilder;
+  teams: (deviceId: string, fn: TrackFn<TeamsTrackBuilder>) => CreatorEpisodeBuilder;
 };
 
 /**
@@ -63,6 +77,23 @@ export function episode(id: string, config: TrackEpisodeConfig): CreatorEpisodeB
     return ep.track(
       "app_x",
       (getOrder) => new XTrackBuilder(config.fps, deviceId, getOrder),
+      fn,
+    ) as CreatorEpisodeBuilder;
+  };
+
+  ep.snapchat = (deviceId, conversationId, fn) => {
+    return ep.track(
+      "app_snapchat",
+      (getOrder) =>
+        createSnapchatTrackBuilder(config.fps, deviceId, conversationId, getOrder),
+      fn,
+    ) as CreatorEpisodeBuilder;
+  };
+
+  ep.teams = (deviceId, fn) => {
+    return ep.track(
+      "app_teams",
+      (getOrder) => createTeamsTrackBuilder(config.fps, deviceId, getOrder),
       fn,
     ) as CreatorEpisodeBuilder;
   };

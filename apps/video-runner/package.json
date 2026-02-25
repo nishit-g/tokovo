@@ -9,7 +9,7 @@
     "render:fast": "node scripts/render-fast.mjs",
     "build": "tsc -p tsconfig.json",
     "upgrade": "remotion upgrade",
-    "pretest": "pnpm --filter @tokovo/core build && pnpm --filter @tokovo/ir build && pnpm --filter @tokovo/devices build && pnpm --filter @tokovo/compiler build && pnpm --filter @tokovo/dsl build && pnpm --filter @tokovo/renderer build && pnpm --filter @tokovo/overlay build && pnpm --filter @tokovo/apps-typewriter build && pnpm --filter @tokovo/episodes build",
+    "pretest": "pnpm --filter @tokovo/core build && pnpm --filter @tokovo/ir build && pnpm --filter @tokovo/devices build && pnpm --filter @tokovo/compiler build && pnpm --filter @tokovo/dsl build && pnpm --filter @tokovo/renderer build && pnpm --filter @tokovo/overlay build && pnpm --filter @tokovo/apps-typewriter build && pnpm --filter @tokovo/apps-teams build && pnpm --filter @tokovo/episodes build",
     "test": "vitest run && pnpm run lint",
     "lint": "eslint src"
   },
@@ -20,6 +20,7 @@
     "@tokovo/apps-imessage": "workspace:*",
     "@tokovo/apps-linkedin": "workspace:*",
     "@tokovo/apps-snapchat": "workspace:*",
+    "@tokovo/apps-teams": "workspace:*",
     "@tokovo/apps-typewriter": "workspace:*",
     "@tokovo/apps-whatsapp": "workspace:*",
     "@tokovo/apps-x": "workspace:*",
