@@ -106,7 +106,7 @@ export const Header: React.FC<HeaderProps> = ({
         </div>
       </div>
 
-      <div style={{ display: "flex", gap: 24, paddingRight: 8 }}>
+      <div style={{ display: "flex", gap: 28, paddingRight: 4 }}>
         <Video size={22} color={theme.colors.headerText} strokeWidth={1.7} />
         <Phone size={20} color={theme.colors.headerText} strokeWidth={1.7} />
       </div>

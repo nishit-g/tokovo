@@ -1,18 +1,7 @@
 import React, { memo } from "react";
 import { Img, staticFile } from "remotion";
-import { Platform } from "@tokovo/core";
 import { MediaBubbleBase, DoubleCheckIcon } from "./shared.js";
-import {
-  FONT_FAMILY,
-  WA_TEAL,
-  WA_GRAY,
-  WA_BLACK,
-  BUBBLE_PADDING,
-  BUBBLE_PADDING_H,
-  TIMESTAMP_SIZE,
-  MESSAGE_TEXT_SIZE,
-} from "./constants.js";
-import { whatsappColors } from "../theme.js";
+import { useTheme } from "../../theme/ThemeContext.js";
 
 export interface ContactMessageBubbleProps {
   contactName: string;
@@ -22,7 +11,7 @@ export interface ContactMessageBubbleProps {
   senderName?: string;
   timestamp?: string;
   read?: boolean;
-  platform?: Platform;
+  platform?: string;
 }
 
 export const ContactMessageBubble = memo(function ContactMessageBubble({
@@ -34,6 +23,9 @@ export const ContactMessageBubble = memo(function ContactMessageBubble({
   timestamp = "10:42",
   read = false,
 }: ContactMessageBubbleProps) {
+  const theme = useTheme();
+  const paddingH = theme.spacing.messagePaddingHorizontal - 4;
+
   return (
     <MediaBubbleBase
       isMe={isMe}
@@ -50,7 +42,7 @@ export const ContactMessageBubble = memo(function ContactMessageBubble({
           display: "flex",
           alignItems: "center",
           gap: 12,
-          padding: BUBBLE_PADDING_H,
+          padding: paddingH,
         }}
       >
         {contactAvatarUrl ? (
@@ -75,7 +67,7 @@ export const ContactMessageBubble = memo(function ContactMessageBubble({
               width: 44,
               height: 44,
               borderRadius: "50%",
-              backgroundColor: whatsappColors.bgSecondary,
+              backgroundColor: theme.colors.divider,
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
@@ -86,7 +78,7 @@ export const ContactMessageBubble = memo(function ContactMessageBubble({
               width="24"
               height="24"
               viewBox="0 0 24 24"
-              fill={whatsappColors.textSecondary}
+              fill={theme.colors.timestamp}
             >
               <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
             </svg>
@@ -96,10 +88,12 @@ export const ContactMessageBubble = memo(function ContactMessageBubble({
         <div style={{ flex: 1, minWidth: 0 }}>
           <div
             style={{
-              fontSize: MESSAGE_TEXT_SIZE,
+              fontSize: theme.typography.messageFontSize,
               fontWeight: 500,
-              color: WA_BLACK,
-              fontFamily: FONT_FAMILY,
+              color: isMe
+                ? theme.colors.sentBubbleText
+                : theme.colors.receivedBubbleText,
+              fontFamily: theme.typography.fontFamily,
               overflow: "hidden",
               textOverflow: "ellipsis",
               whiteSpace: "nowrap",
@@ -111,8 +105,8 @@ export const ContactMessageBubble = memo(function ContactMessageBubble({
             <div
               style={{
                 fontSize: 13,
-                color: WA_GRAY,
-                fontFamily: FONT_FAMILY,
+                color: theme.colors.timestamp,
+                fontFamily: theme.typography.fontFamily,
                 marginTop: 2,
               }}
             >
@@ -124,8 +118,8 @@ export const ContactMessageBubble = memo(function ContactMessageBubble({
 
       <div
         style={{
-          borderTop: `1px solid ${whatsappColors.separatorLight}`,
-          padding: `${BUBBLE_PADDING}px ${BUBBLE_PADDING_H}px`,
+          borderTop: `1px solid rgba(0,0,0,0.06)`,
+          padding: `${theme.spacing.messagePaddingVertical - 2}px ${paddingH}px`,
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
@@ -134,9 +128,9 @@ export const ContactMessageBubble = memo(function ContactMessageBubble({
         <span
           style={{
             fontSize: 14,
-            color: WA_TEAL,
+            color: theme.colors.accent,
             fontWeight: 500,
-            fontFamily: FONT_FAMILY,
+            fontFamily: theme.typography.fontFamily,
           }}
         >
           Message
@@ -144,9 +138,9 @@ export const ContactMessageBubble = memo(function ContactMessageBubble({
         <div style={{ display: "flex", alignItems: "center", gap: 3 }}>
           <span
             style={{
-              fontSize: TIMESTAMP_SIZE,
-              color: WA_GRAY,
-              fontFamily: FONT_FAMILY,
+              fontSize: theme.typography.timestampFontSize,
+              color: theme.colors.timestamp,
+              fontFamily: theme.typography.fontFamily,
             }}
           >
             {timestamp}

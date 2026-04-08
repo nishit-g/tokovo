@@ -13,12 +13,14 @@ interface InputBarProps {
   theme?: IMessageTheme;
   draft?: string;
   safeAreaBottom?: number;
+  showCursor?: boolean;
 }
 
 export const InputBar: React.FC<InputBarProps> = ({
   theme: propTheme,
   draft = "",
   safeAreaBottom,
+  showCursor = false,
 }) => {
   const contextTheme = useIMessageTheme();
   const theme = propTheme ?? contextTheme;
@@ -64,11 +66,29 @@ export const InputBar: React.FC<InputBarProps> = ({
           fontSize: iMessageTypography.input.fontSize,
         }}
       >
-        <span style={{ color: hasDraft ? colors.bubble.otherText : colors.input.placeholder }}>
+        <span
+          style={{
+            color: hasDraft ? colors.bubble.otherText : colors.input.placeholder,
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 1,
+          }}
+        >
           {draft || "iMessage"}
+          {showCursor && (
+            <span
+              style={{
+                display: "inline-block",
+                width: 2,
+                height: 16,
+                borderRadius: 1,
+                backgroundColor: colors.input.sendButton,
+              }}
+            />
+          )}
         </span>
         {/* Memoji/sticker icon */}
-        {!hasDraft && (
+        {!hasDraft && !showCursor && (
           <svg viewBox="0 0 24 24" width="20" height="20" fill="none" style={{ color: colors.input.icons }}>
             <rect x="4" y="4" width="16" height="16" rx="4" stroke="currentColor" strokeWidth="1.5" />
             <circle cx="9" cy="10" r="1.5" fill="currentColor" />

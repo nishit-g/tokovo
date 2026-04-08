@@ -26,5 +26,19 @@ describe("planTypedKeyboard", () => {
       expect(e.at).toBeGreaterThanOrEqual(70);
     }
   });
-});
 
+  it("compresses timing margins instead of skipping tight but valid windows", () => {
+    const plan = planTypedKeyboard({
+      deviceId: "phone",
+      submitAt: 10,
+      text: "hello",
+      notBeforeFrame: 9,
+    });
+
+    expect(plan.ok).toBe(true);
+    expect(plan.keyboardShowAt).toBe(9);
+    expect(plan.typeStartAt).toBe(9);
+    expect(plan.returnPressAt).toBeGreaterThanOrEqual(9);
+    expect(plan.keyboardHideAt).toBeGreaterThan(10);
+  });
+});

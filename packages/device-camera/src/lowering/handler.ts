@@ -81,6 +81,7 @@ export function cameraV2Lowering(
   event: CameraTrackEvent,
   _ctx: LoweringContext,
 ): RuntimeEvent[] {
+  const eventType = event.type as string;
   const { _declarationOrder, payload, ...rest } = event as CameraTrackEvent & {
     _declarationOrder?: number;
     payload?: Record<string, unknown>;
@@ -94,7 +95,7 @@ export function cameraV2Lowering(
     kind: "CAMERA" as const,
   };
 
-  switch (event.type) {
+  switch (eventType) {
     // =================================================================
     // LAYOUT → LAYOUT (multi-device layout mode)
     // =================================================================
@@ -121,13 +122,14 @@ export function cameraV2Lowering(
     // ANIMATE_START → ZOOM
     // =================================================================
     case "ANIMATE_START":
+    case "ZOOM":
       return [
         {
           ...baseEvent,
           type: "zoom",
           scale: payload?.scale ?? 1,
-          translateX: payload?.x ?? 0,
-          translateY: payload?.y ?? 0,
+          translateX: payload?.translateX ?? payload?.x ?? 0,
+          translateY: payload?.translateY ?? payload?.y ?? 0,
           originX: payload?.originX,
           originY: payload?.originY,
           easing: payload?.easing ?? "ease-out",
@@ -140,11 +142,18 @@ export function cameraV2Lowering(
     // SHAKE_START → SHAKE
     // =================================================================
     case "SHAKE_START":
+    case "SHAKE":
       return [
         {
           ...baseEvent,
           type: "shake",
-          intensity: (payload?.intensityX as number) ?? 5,
+          intensity:
+            (payload?.intensity as number) ??
+            Math.max(
+              (payload?.intensityX as number) ?? 0,
+              (payload?.intensityY as number) ?? 0,
+              5,
+            ),
           intensityX: payload?.intensityX,
           intensityY: payload?.intensityY,
           frequency: payload?.frequency ?? 15,
@@ -158,6 +167,7 @@ export function cameraV2Lowering(
     // FOCUS → focus (processor registered as 'focus')
     // =================================================================
     case "FOCUS":
+    case "ANCHOR_FOCUS":
       return [
         {
           ...baseEvent,
@@ -171,7 +181,8 @@ export function cameraV2Lowering(
     // =================================================================
     // TRACK_START → track (processor registered as 'track')
     // =================================================================
-    case "TRACK_START": {
+    case "TRACK_START":
+    case "ANCHOR_TRACK": {
       const presetName = (payload?.preset as string | undefined) ?? "cinematic";
       const preset = TRACK_PRESETS[presetName] ?? TRACK_PRESETS.cinematic;
       return [
@@ -204,6 +215,17 @@ export function cameraV2Lowering(
           type: "reset",
           spring: payload?.spring,
           easing: payload?.easing ?? "ease-out",
+        },
+      ];
+
+    // =================================================================
+    // CUT → CUT (canonical pass-through for core camera handler)
+    // =================================================================
+    case "CUT":
+      return [
+        {
+          ...baseEvent,
+          type: "CUT",
         },
       ];
 
@@ -261,7 +283,7 @@ export function cameraV2Lowering(
       ];
 
     default:
-      throw new Error(`[cameraV2Lowering] Unknown CAMERA event type: ${event.type}`);
+      throw new Error(`[cameraV2Lowering] Unknown CAMERA event type: ${eventType}`);
   }
 }
 
@@ -280,6 +302,11 @@ export const CAMERA_EVENT_TYPES = [
   "TRACK_START",
   "TRACK_END",
   "RESET",
+  "ZOOM",
+  "SHAKE",
+  "ANCHOR_FOCUS",
+  "ANCHOR_TRACK",
+  "CUT",
   "PUNCH_ZOOM",
   "DUTCH_TILT",
   "FLASH",

@@ -28,6 +28,7 @@ import {
   type TokovoConfigType,
   type LayoutCacheStore,
 } from "@tokovo/core";
+import { getKeyboardSlideProgress } from "@tokovo/device-keyboard";
 import { computeLayout } from "../layout/index.js";
 import type { DeviceProfile, DeviceRegistries } from "@tokovo/devices";
 import { useRendererRegistries } from "../RegistryContext.js";
@@ -39,6 +40,7 @@ import { useRendererRegistries } from "../RegistryContext.js";
 export interface LayoutEngineInput {
   world: WorldState;
   t: number;
+  fps?: number;
   focusDeviceId?: string;
   mode?: "preview" | "render";
   config?: TokovoConfigType;
@@ -158,6 +160,8 @@ function computeWorldSignature(
   world: WorldState,
   deviceId: string,
   appId: string | undefined,
+  frame: number,
+  fps: number,
 ): string {
   // Fast path: compute a lightweight signature from state that affects layout
   const device = world.devices[deviceId];
@@ -168,7 +172,13 @@ function computeWorldSignature(
     deviceId,
     device?.foregroundAppId ?? "",
     device?.isLocked ? "1" : "0",
-    device?.keyboard?.visible ? "1" : "0",
+    device?.keyboard
+      ? String(
+          Math.round(
+            getKeyboardSlideProgress(device.keyboard, frame, fps) * 100,
+          ),
+        )
+      : "0",
     appId ?? "",
     // For chat apps, include conversation and message count
     (appState as { conversationId?: string } | undefined)?.conversationId ?? "",
@@ -194,7 +204,7 @@ function computeWorldSignature(
 // =============================================================================
 
 export function useLayoutEngine(input: LayoutEngineInput): LayoutEngineOutput {
-  const { world, t, focusDeviceId } = input;
+  const { world, t, fps, focusDeviceId } = input;
   const registries = useRendererRegistries();
   const loggedMissingDevices = useRef(new Set<string>());
   const loggedMissingViewMode = useRef(new Set<string>());
@@ -205,6 +215,7 @@ export function useLayoutEngine(input: LayoutEngineInput): LayoutEngineOutput {
   return useMemo(() => {
     const mode = input.mode ?? "preview";
     const config = input.config ?? TokovoConfig;
+    const effectiveFps = fps ?? config.rendering.defaultFps;
 
     // 1. Determine active device
     const deviceId =
@@ -234,7 +245,13 @@ export function useLayoutEngine(input: LayoutEngineInput): LayoutEngineOutput {
 
     // INCREMENTAL CACHE CHECK
     // If world signature hasn't changed for this frame, return cached result
-    const worldSignature = computeWorldSignature(world, deviceId, appId);
+    const worldSignature = computeWorldSignature(
+      world,
+      deviceId,
+      appId,
+      t,
+      effectiveFps,
+    );
     const cached = cachedResult.current;
     if (
       cached &&
@@ -332,9 +349,10 @@ export function useLayoutEngine(input: LayoutEngineInput): LayoutEngineOutput {
 
     // 4. Compute keyboard height (for viewport shrink when typing)
     const keyboardConfig = getKeyboardConfig(config, variant);
-    const keyboardHeight = device.keyboard?.visible
-      ? keyboardConfig.height
+    const keyboardSlideProgress = device.keyboard
+      ? getKeyboardSlideProgress(device.keyboard, t, effectiveFps)
       : 0;
+    const keyboardHeight = keyboardConfig.height * keyboardSlideProgress;
 
     // 5. Compute effective viewport height (shrinks when keyboard visible)
     const effectiveViewportHeight =
@@ -389,6 +407,7 @@ export function useLayoutEngine(input: LayoutEngineInput): LayoutEngineOutput {
     world,
     t,
     focusDeviceId,
+    fps,
     registries,
     input.mode,
     input.config,

@@ -92,4 +92,30 @@ describe("X Reducer", () => {
     if (!appState) throw new Error("Missing X app state after reducer run");
     expect(appState.tweets[0].likeCount).toBe(1);
   });
+
+  it("clears stale active targets when changing screens", () => {
+    const state = createTestWorldState();
+    const inThread = runReducer(state, {
+      at: 1,
+      kind: "APP",
+      appId: "app_x",
+      type: "SET_SCREEN",
+      payload: { screen: "thread", threadId: "dm-1" },
+    });
+
+    const backToTimeline = runReducer(inThread, {
+      at: 2,
+      kind: "APP",
+      appId: "app_x",
+      type: "SET_SCREEN",
+      payload: { screen: "timeline" },
+    });
+
+    const appState = getXState(backToTimeline);
+    if (!appState) throw new Error("Missing X app state after reducer run");
+    expect(appState.activeTweetId).toBeNull();
+    expect(appState.activeUserId).toBeNull();
+    expect(appState.activeThreadId).toBeNull();
+    expect(appState.currentScreen).toBe("timeline");
+  });
 });

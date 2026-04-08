@@ -1,7 +1,7 @@
 import React, { memo } from "react";
 import { Img, staticFile } from "remotion";
 import { DoubleCheckIcon } from "./shared.js";
-import { FONT_FAMILY, TIMESTAMP_SIZE, WA_WHITE } from "./constants.js";
+import { useTheme } from "../../theme/ThemeContext.js";
 
 export interface StickerMessageBubbleProps {
   stickerUrl: string;
@@ -16,9 +16,11 @@ export const StickerMessageBubble = memo(function StickerMessageBubble({
   timestamp = "10:42",
   read = false,
 }: StickerMessageBubbleProps) {
+  const theme = useTheme();
   const resolvedStickerUrl = stickerUrl.startsWith("/")
     ? staticFile(stickerUrl)
     : stickerUrl;
+
   return (
     <div style={{ position: "relative", width: 136, height: 136 }}>
       <Img
@@ -47,9 +49,9 @@ export const StickerMessageBubble = memo(function StickerMessageBubble({
       >
         <span
           style={{
-            fontSize: TIMESTAMP_SIZE,
-            color: WA_WHITE,
-            fontFamily: FONT_FAMILY,
+            fontSize: theme.typography.timestampFontSize,
+            color: "#FFFFFF",
+            fontFamily: theme.typography.fontFamily,
           }}
         >
           {timestamp}

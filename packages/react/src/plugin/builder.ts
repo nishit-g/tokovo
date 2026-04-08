@@ -124,7 +124,7 @@ export function createPluginBuilder(
       const built = builder.build();
       const unsubscribers: Array<() => void> = [];
 
-      pm.register(built.contract);
+      unsubscribers.push(pm.register(built.contract));
 
       if (built.lifecycle) {
         unsubscribers.push(

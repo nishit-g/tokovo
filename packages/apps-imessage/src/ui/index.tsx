@@ -1,6 +1,6 @@
 import React, { useEffect } from "react";
 import type { PluginViewProps } from "@tokovo/core";
-import { getTypedTextProgress } from "@tokovo/device-keyboard";
+import { useKeyboardState } from "@tokovo/react";
 import { Header, InputBar, MessageBubble, TypingIndicator, ScreenEffect, SearchBar } from "../components/index.js";
 import { computeMessageGap, iMessageSpacing } from "../config/index.js";
 import type { IMessageConversation, IMessageMessage, IMessageState } from "../types/index.js";
@@ -103,13 +103,10 @@ const ChatView: React.FC<{
     return <EmptyState />;
   }
 
-  const focusedDevice =
-    (deviceId && world.devices?.[deviceId]) ||
-    world.devices?.[Object.keys(world.devices ?? {})[0]];
-  const keyboard = focusedDevice?.keyboard;
+  const keyboardState = useKeyboardState();
   const draftText =
-    keyboard?.visible && keyboard.typingAnimation
-      ? getTypedTextProgress(keyboard, t ?? 0)
+    keyboardState.isKeyboardVisible && keyboardState.inputText
+      ? keyboardState.inputText
       : (conversation.draft ?? "");
 
   const messages = conversation.messages ?? [];
@@ -199,7 +196,12 @@ const ChatView: React.FC<{
         {typingUsers.length > 0 && <TypingIndicator theme={theme} />}
       </div>
 
-      <InputBar theme={theme} draft={draftText} safeAreaBottom={safeAreaBottom} />
+      <InputBar
+        theme={theme}
+        draft={draftText}
+        safeAreaBottom={safeAreaBottom}
+        showCursor={keyboardState.isKeyboardVisible}
+      />
 
       {/* Screen effect overlay */}
       {activeScreenEffect && <ScreenEffect effect={activeScreenEffect} />}

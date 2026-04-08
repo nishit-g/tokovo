@@ -24,6 +24,8 @@
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch",
+    "typecheck": "tsc --noEmit",
+    "test": "pnpm exec vitest run --passWithNoTests",
     "generate": "tsx bin/generate.ts",
     "sync": "tsx bin/sync.ts",
     "voice:generate": "tsx bin/generate.ts",

@@ -648,6 +648,78 @@ describe("camera processors", () => {
       const result = processActiveEffects(30, [effect]);
       expect(result.scale).toBeGreaterThan(1.0);
     });
+
+    test("track processor cumulatively converges toward anchors across frames", () => {
+      const effect: TrackEffect = {
+        type: "track",
+        id: "track_0",
+        startFrame: 0,
+        endFrame: 60,
+        anchorId: "lastMessage",
+        scale: 1.1,
+        smoothing: 0.2,
+        maxVelocityPxPerSec: 2400,
+        easing: "ease-out",
+      };
+
+      const snapshot = {
+        appId: "app_whatsapp",
+        deviceId: "phone",
+        anchors: {
+          lastMessage: { x: 320, y: 700, width: 40, height: 40 },
+        },
+      };
+      const viewport = { width: 393, height: 852 };
+
+      const early = processActiveEffects(
+        5,
+        [effect],
+        DEFAULT_TRANSFORM,
+        snapshot,
+        viewport,
+        undefined,
+        30,
+      );
+      const mid = processActiveEffects(
+        15,
+        [effect],
+        DEFAULT_TRANSFORM,
+        snapshot,
+        viewport,
+        undefined,
+        30,
+      );
+      const late = processActiveEffects(
+        30,
+        [effect],
+        DEFAULT_TRANSFORM,
+        snapshot,
+        viewport,
+        undefined,
+        30,
+      );
+
+      expect(early.originX).toBeGreaterThan(DEFAULT_TRANSFORM.originX);
+      expect(mid.originX).toBeGreaterThan(early.originX);
+      expect(late.originX).toBeGreaterThan(mid.originX);
+      expect(late.originY).toBeGreaterThan(mid.originY);
+    });
+
+    test("track processor holds framing strength through the active span", () => {
+      const effect: TrackEffect = {
+        type: "track",
+        id: "track_0",
+        startFrame: 0,
+        endFrame: 60,
+        anchorId: "lastMessage",
+        scale: 1.12,
+        smoothing: 0.2,
+        easing: "ease-out",
+      };
+
+      const resultNearEnd = processActiveEffects(55, [effect]);
+      expect(resultNearEnd.scale).toBeGreaterThan(1.08);
+    });
   });
 
   describe("processor registry", () => {

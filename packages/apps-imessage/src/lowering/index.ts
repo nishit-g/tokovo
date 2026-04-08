@@ -32,7 +32,30 @@ function createRuntimeEvent(
   } as RuntimeEvent;
 }
 
+function createKeyboardClearEvent(deviceId: string, at: number): RuntimeEvent {
+  return {
+    at,
+    kind: "DEVICE",
+    type: "KEYBOARD_CLEAR",
+    deviceId,
+    payload: {},
+  } as RuntimeEvent;
+}
+
 type IMessageLoweringScratchpad = { lastEventAtByConversation: Map<string, number> };
+const TIMING_HELPER_EVENT_TYPES = new Set<IMessageEventType>([
+  "IMESSAGE_TYPING_START",
+  "IMESSAGE_TYPING_END",
+]);
+
+function computeNotBeforeFrame(prevAt: number, submitAt: number): number {
+  if (prevAt <= 0) return 0;
+  return Math.max(0, Math.min(prevAt + 1, submitAt - 1));
+}
+
+function shouldTrackConversationTiming(eventType: IMessageEventType): boolean {
+  return !TIMING_HELPER_EVENT_TYPES.has(eventType);
+}
 
 function expandTypedSend(event: IMessageTrackEvent, ctx?: unknown): RuntimeEvent[] {
   const payload = (event.payload ?? {}) as {
@@ -58,7 +81,7 @@ function expandTypedSend(event: IMessageTrackEvent, ctx?: unknown): RuntimeEvent
   );
   const key = `${deviceId}::${conversationId ?? "unknown"}`;
   const prevAt = scratchpad.lastEventAtByConversation.get(key) ?? 0;
-  const notBeforeFrame = prevAt > 0 ? prevAt + 2 : 0;
+  const notBeforeFrame = computeNotBeforeFrame(prevAt, sendAt);
 
   const plan = planTypedKeyboard({
     deviceId,
@@ -99,7 +122,13 @@ function expandTypedSend(event: IMessageTrackEvent, ctx?: unknown): RuntimeEvent
   }
 
   const [showEv, typeEv, pressEv, hideEv] = plan.events;
-  const out: RuntimeEvent[] = [showEv, typeEv, pressEv, appSendEvent];
+  const out: RuntimeEvent[] = [
+    showEv,
+    typeEv,
+    pressEv,
+    appSendEvent,
+    createKeyboardClearEvent(deviceId, sendAt),
+  ];
   if (clearDraftEvent) out.push(clearDraftEvent);
   out.push(hideEv);
   return out;
@@ -120,7 +149,7 @@ export const iMessageV2Lowering: IMessageLoweringHandler = {
     const conversationId =
       (payload as { conversationId?: string }).conversationId ??
       (event as { conversationId?: string }).conversationId;
-    if (conversationId) {
+    if (conversationId && shouldTrackConversationTiming(type)) {
       const scratchpad = getLoweringScratchpad<IMessageLoweringScratchpad>(
         ctx,
         "app_imessage.lowering",

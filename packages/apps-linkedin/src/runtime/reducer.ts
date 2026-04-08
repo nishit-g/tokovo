@@ -67,12 +67,15 @@ function ensureUserDefaults(payload: Partial<LIUser>): LIUser {
   };
 }
 
-function ensurePostDefaults(payload: Partial<LIPost> & { id: string; authorId: string }): LIPost {
+function ensurePostDefaults(
+  payload: Partial<LIPost> & { id: string; authorId: string },
+  fallbackCreatedAt: number,
+): LIPost {
   return {
     id: payload.id,
     authorId: payload.authorId,
     text: payload.text ?? "",
-    createdAt: payload.createdAt ?? Date.now(),
+    createdAt: payload.createdAt ?? fallbackCreatedAt,
     visibility: payload.visibility ?? "public",
     media: payload.media,
     linkPreview: payload.linkPreview,
@@ -139,7 +142,7 @@ export const linkedInReducer: PluginReducer<"app_linkedin"> = (
     }
     case "LINKEDIN_ADD_POST": {
       const payload = event.payload as Partial<LIPost> & { id: string; authorId: string };
-      const post = ensurePostDefaults(payload);
+      const post = ensurePostDefaults(payload, event.at);
       app.posts.push(post);
       app.feed.unshift(post.id);
       break;
@@ -152,7 +155,7 @@ export const linkedInReducer: PluginReducer<"app_linkedin"> = (
         text: payload.text ?? "",
         repostOfId: payload.repostOfId,
         createdAt: payload.createdAt ?? event.at,
-      });
+      }, event.at);
       app.posts.push(post);
       app.feed.unshift(post.id);
       break;
@@ -201,9 +204,9 @@ export const linkedInReducer: PluginReducer<"app_linkedin"> = (
       if (!routesEqual(current, next)) app.navigationStack.push(current);
 
       app.currentScreen = payload.screen;
-      app.activePostId = payload.postId ?? app.activePostId;
-      app.activeUserId = payload.userId ?? app.activeUserId;
-      app.activeThreadId = payload.threadId ?? app.activeThreadId;
+      app.activePostId = payload.postId ?? null;
+      app.activeUserId = payload.userId ?? null;
+      app.activeThreadId = payload.threadId ?? null;
       app.lastNavFrame = event.at;
       syncViewMode(app);
       break;

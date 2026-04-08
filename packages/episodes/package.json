@@ -34,6 +34,7 @@
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch",
+    "typecheck": "tsc --noEmit",
     "lint": "eslint . --ext .ts,.tsx",
     "validate": "tsx src/cli.ts",
     "test": "vitest run",

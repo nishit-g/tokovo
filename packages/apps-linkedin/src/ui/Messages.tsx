@@ -8,6 +8,7 @@ import type { WorldState } from "@tokovo/core";
 import { useLinkedInTheme } from "./ThemeContext.js";
 import { Header, LIAvatar, LIIcon } from "./components.js";
 import { getDMThreads, getUserById } from "../runtime/selectors.js";
+import { getStableBoolean } from "./stable.js";
 
 export const Messages: React.FC<{ world: WorldState }> = ({ world }) => {
   const theme = useLinkedInTheme();
@@ -43,7 +44,7 @@ export const Messages: React.FC<{ world: WorldState }> = ({ world }) => {
         {threads.map((thread) => {
           const otherUserId = thread.participantIds.find((id) => id !== null);
           const user = getUserById(world, otherUserId ?? null);
-          const isOnline = Math.random() > 0.5; // Simulated
+          const isOnline = getStableBoolean(thread.id);
 
           return (
             <div

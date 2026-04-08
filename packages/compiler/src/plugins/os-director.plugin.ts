@@ -106,13 +106,20 @@ export class OSDirectorPlugin implements CompilerPlugin {
   }
 
   private parseStartTime(time: Date | string | undefined): Date {
-    if (!time) {
-      return new Date("2024-01-01T09:41:00Z");
+    const parsed =
+      !time
+        ? new Date("2024-01-01T09:41:00Z")
+        : typeof time === "string"
+          ? new Date(time)
+          : time;
+
+    if (!Number.isFinite(parsed.getTime())) {
+      throw new Error(
+        `OSDirectorPlugin: Invalid startTime "${String(time)}"`,
+      );
     }
-    if (typeof time === "string") {
-      return new Date(time);
-    }
-    return time;
+
+    return parsed;
   }
 
   private parseDurationToFrames(
@@ -126,6 +133,12 @@ export class OSDirectorPlugin implements CompilerPlugin {
       );
     }
     const seconds = parseFloat(match[1]);
-    return Math.floor(seconds * context.fps);
+    const frames = Math.floor(seconds * context.fps);
+    if (frames < 1) {
+      throw new Error(
+        `OSDirectorPlugin: updateInterval "${timeStr}" is smaller than one frame at ${context.fps}fps`,
+      );
+    }
+    return frames;
   }
 }

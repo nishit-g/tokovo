@@ -240,9 +240,9 @@ export const xReducer: PluginReducer<"app_x"> = (
       }
 
       appState.currentScreen = payload.screen;
-      appState.activeTweetId = payload.tweetId ?? appState.activeTweetId;
-      appState.activeUserId = payload.userId ?? appState.activeUserId;
-      appState.activeThreadId = payload.threadId ?? appState.activeThreadId;
+      appState.activeTweetId = payload.tweetId ?? null;
+      appState.activeUserId = payload.userId ?? null;
+      appState.activeThreadId = payload.threadId ?? null;
       appState.lastNavFrame = event.at;
       syncViewMode(appState);
       break;

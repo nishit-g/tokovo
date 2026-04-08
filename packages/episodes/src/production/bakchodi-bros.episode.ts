@@ -12,7 +12,6 @@ import { episode } from "@tokovo/dsl";
 import { WhatsAppTrackBuilder } from "@tokovo/apps-whatsapp";
 import {
   CameraDirectorPlugin,
-  AudioDirectorPlugin,
   OSDirectorPlugin,
   KeyboardPlugin,
 } from "@tokovo/compiler";
@@ -47,7 +46,7 @@ export default defineEpisode({
           {
             id: "dm_rahul",
             name: "Rahul 🤪",
-            avatar: "/avatars/avatar-rahul.jpg",
+            avatar: "/placeholders/app-icon.svg",
           },
         ],
         os: {
@@ -172,8 +171,14 @@ export default defineEpisode({
           wa.at("89s").sendImage("/placeholders/media.svg");
         },
       )
+      .audio((audio) => {
+        audio.span("0s", "90s").bgm("/music/ambient-track.mp3", {
+          volume: 0.15,
+          fadeIn: "2s",
+          fadeOut: "3s",
+        });
+      })
       .use(new CameraDirectorPlugin())
-      .use(new AudioDirectorPlugin({ mood: "chill", volume: 0.15 }))
       .use(
         new OSDirectorPlugin({
           startTime: new Date("2024-12-17T23:30:00"),

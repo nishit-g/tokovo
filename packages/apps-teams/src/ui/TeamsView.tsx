@@ -13,7 +13,7 @@
  */
 
 import React, { useEffect, useRef } from "react";
-import { useSafeAreaInsets, useKeyboardHeight } from "@tokovo/react";
+import { useKeyboardHeight, useKeyboardState, useSafeAreaInsets } from "@tokovo/react";
 import type { PluginViewProps } from "@tokovo/core";
 import { TEAMS_APP_ID } from "../constants.js";
 import type { TeamsState } from "../types/index.js";
@@ -467,6 +467,8 @@ function ThreadView({ state, keyboardHeight }: { state: TeamsState; keyboardHeig
 
   const messageListRef = useRef<HTMLDivElement>(null);
   const lastMessageId = messages[messages.length - 1]?.id;
+  const keyboardState = useKeyboardState();
+  const composerText = keyboardState.inputText;
 
   useEffect(() => {
     if (messageListRef.current) {
@@ -529,7 +531,30 @@ function ThreadView({ state, keyboardHeight }: { state: TeamsState; keyboardHeig
       <div style={composerStyle}>
         <PaperclipIcon size={20} color={teamsTheme.color.textSecondary} />
         <div style={composerInputStyle}>
-          <span>Type a message</span>
+          <span
+            style={{
+              color:
+                composerText.length > 0
+                  ? teamsTheme.color.textPrimary
+                  : teamsTheme.color.textSecondary,
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 1,
+            }}
+          >
+            {composerText || "Type a message"}
+            {keyboardState.isKeyboardVisible && (
+              <span
+                style={{
+                  display: "inline-block",
+                  width: 2,
+                  height: 16,
+                  borderRadius: 1,
+                  backgroundColor: teamsTheme.color.brand,
+                }}
+              />
+            )}
+          </span>
         </div>
         <SmileyIcon size={20} color={teamsTheme.color.textSecondary} />
         <MicIcon size={20} color={teamsTheme.color.textSecondary} />

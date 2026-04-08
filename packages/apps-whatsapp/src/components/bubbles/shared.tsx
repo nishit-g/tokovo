@@ -1,19 +1,5 @@
 import React, { memo } from "react";
-import {
-  FONT_FAMILY,
-  WA_TEAL,
-  WA_READ_BLUE,
-  WA_GRAY,
-  WA_WHITE,
-  BUBBLE_RADIUS,
-  BUBBLE_TAIL_RADIUS,
-  BUBBLE_PADDING_H,
-  TIMESTAMP_SIZE,
-  SENDER_NAME_SIZE,
-  BUBBLE_MY_COLOR,
-  BUBBLE_OTHER_COLOR,
-  BUBBLE_SHADOW,
-} from "./constants.js";
+import { useTheme } from "../../theme/ThemeContext.js";
 
 export interface MediaBubbleBaseProps {
   isMe: boolean;
@@ -43,35 +29,44 @@ export const MediaBubbleBase = memo(function MediaBubbleBase({
   minWidth,
   maxWidth,
 }: MediaBubbleBaseProps) {
+  const theme = useTheme();
+  const paddingH = theme.spacing.messagePaddingHorizontal - 4;
+
   return (
     <div
       style={{
-        backgroundColor: isMe ? BUBBLE_MY_COLOR : BUBBLE_OTHER_COLOR,
-        borderRadius: BUBBLE_RADIUS,
-        borderTopLeftRadius: isMe ? BUBBLE_RADIUS : BUBBLE_TAIL_RADIUS,
-        borderTopRightRadius: isMe ? BUBBLE_TAIL_RADIUS : BUBBLE_RADIUS,
-        boxShadow: BUBBLE_SHADOW,
+        backgroundColor: isMe
+          ? theme.colors.sentBubble
+          : theme.colors.receivedBubble,
+        borderRadius: theme.spacing.bubbleRadius,
+        borderTopLeftRadius: isMe
+          ? theme.spacing.bubbleRadius
+          : theme.spacing.bubbleRadiusTail,
+        borderTopRightRadius: isMe
+          ? theme.spacing.bubbleRadiusTail
+          : theme.spacing.bubbleRadius,
+        boxShadow: "0 1px 0.5px rgba(0,0,0,0.13)",
         overflow: "hidden",
         width,
         minWidth,
         maxWidth,
-        padding: noPadding ? undefined : BUBBLE_PADDING_H,
+        padding: noPadding ? undefined : paddingH,
       }}
     >
       {senderName && !isMe && (
         <div
           style={{
             padding: noPadding
-              ? `${BUBBLE_PADDING_H}px ${BUBBLE_PADDING_H}px 2px`
+              ? `${paddingH}px ${paddingH}px 2px`
               : "0 0 2px",
           }}
         >
           <span
             style={{
-              fontSize: SENDER_NAME_SIZE,
+              fontSize: 13,
               fontWeight: 600,
-              color: WA_TEAL,
-              fontFamily: FONT_FAMILY,
+              color: theme.colors.accent,
+              fontFamily: theme.typography.fontFamily,
             }}
           >
             {senderName}
@@ -99,6 +94,7 @@ export const TimestampRow = memo(function TimestampRow({
   isMe: boolean;
   read: boolean;
 }) {
+  const theme = useTheme();
   return (
     <div
       style={{
@@ -111,9 +107,9 @@ export const TimestampRow = memo(function TimestampRow({
     >
       <span
         style={{
-          fontSize: TIMESTAMP_SIZE,
-          color: WA_GRAY,
-          fontFamily: FONT_FAMILY,
+          fontSize: theme.typography.timestampFontSize,
+          color: theme.colors.timestamp,
+          fontFamily: theme.typography.fontFamily,
         }}
       >
         {timestamp}
@@ -132,6 +128,7 @@ export const TimestampOverlay = memo(function TimestampOverlay({
   isMe: boolean;
   read: boolean;
 }) {
+  const theme = useTheme();
   return (
     <div
       style={{
@@ -148,9 +145,9 @@ export const TimestampOverlay = memo(function TimestampOverlay({
     >
       <span
         style={{
-          fontSize: TIMESTAMP_SIZE,
-          color: WA_WHITE,
-          fontFamily: FONT_FAMILY,
+          fontSize: theme.typography.timestampFontSize,
+          color: "#FFFFFF",
+          fontFamily: theme.typography.fontFamily,
         }}
       >
         {timestamp}
@@ -167,18 +164,25 @@ export const DoubleCheckIcon = memo(function DoubleCheckIcon({
   read?: boolean;
   light?: boolean;
 }) {
+  const theme = useTheme();
+  const color = read
+    ? theme.colors.checkmarkRead
+    : light
+      ? "#FFFFFF"
+      : theme.colors.timestamp;
+
   return (
     <svg width="16" height="10" viewBox="0 0 16 10" fill="none">
       <path
         d="M1 5L4 8L10 2"
-        stroke={read ? WA_READ_BLUE : light ? WA_WHITE : WA_GRAY}
+        stroke={color}
         strokeWidth="1.5"
         strokeLinecap="round"
         strokeLinejoin="round"
       />
       <path
         d="M5 5L8 8L14 2"
-        stroke={read ? WA_READ_BLUE : light ? WA_WHITE : WA_GRAY}
+        stroke={color}
         strokeWidth="1.5"
         strokeLinecap="round"
         strokeLinejoin="round"

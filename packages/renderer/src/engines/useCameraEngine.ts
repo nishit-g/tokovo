@@ -56,6 +56,9 @@ export interface CameraEngineInput {
   /** Event index for signal extraction */
   eventIndex?: EventIndex;
 
+  /** Composition FPS for deterministic effect timing */
+  fps?: number;
+
   /**
    * If true, the renderer must not apply any camera transforms.
    * Used in multi-device layouts where only the active device should be camera-driven.
@@ -124,7 +127,7 @@ export interface CameraEngineOutput {
 type CameraEffect = Parameters<typeof processActiveEffects>[1][number];
 
 export function useCameraEngine(input: CameraEngineInput): CameraEngineOutput {
-  const { world, t, layoutOutput, eventIndex, disabled } = input;
+  const { world, t, layoutOutput, eventIndex, disabled, fps = 30 } = input;
   const registries = useRendererRegistries();
 
   return useMemo(() => {
@@ -213,6 +216,7 @@ export function useCameraEngine(input: CameraEngineInput): CameraEngineOutput {
       anchorSnapshot,
       viewport,
       registries.plugins.anchors,
+      fps,
     );
 
     let directorSkipped: string | undefined;
@@ -284,7 +288,6 @@ export function useCameraEngine(input: CameraEngineInput): CameraEngineOutput {
           maxVelocityPxPerSec?: number;
           predictiveLookaheadFrames?: number;
         };
-        const fps = 30;
         const deadZonePx = Math.max(0, track.deadZonePx ?? 14);
         const maxVelocityPxPerSec = Math.max(60, track.maxVelocityPxPerSec ?? 720);
         const predictiveLookaheadFrames = Math.max(
@@ -364,7 +367,7 @@ export function useCameraEngine(input: CameraEngineInput): CameraEngineOutput {
       anchorSnapshot,
       debugInfo,
     };
-  }, [world, t, layoutOutput, eventIndex, registries]);
+  }, [world, t, layoutOutput, eventIndex, registries, fps]);
 }
 
 // =============================================================================

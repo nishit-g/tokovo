@@ -30,6 +30,7 @@ import type { StackedNotificationInfo } from "@tokovo/device-notifications";
 import {
   Keyboard,
   getKeyboardHeight,
+  getKeyboardSlideProgress,
 } from "@tokovo/device-keyboard";
 
 import { useDeviceRegistries } from "@tokovo/devices";
@@ -140,6 +141,7 @@ const TokovoRendererInner: React.FC<TokovoRendererProps> = ({
   const layoutOutput = useLayoutEngine({
     world,
     t,
+    fps,
     focusDeviceId,
     mode,
     config,
@@ -165,6 +167,7 @@ const TokovoRendererInner: React.FC<TokovoRendererProps> = ({
   const cameraOutput = useCameraEngine({
     world,
     t,
+    fps,
     layoutOutput,
     eventIndex,
     disabled: disableCamera,
@@ -217,6 +220,17 @@ const TokovoRendererInner: React.FC<TokovoRendererProps> = ({
   }
 
   const hasActiveCall = device.call && device.call.status !== "ended";
+  const keyboardState =
+    device.keyboard as unknown as import("@tokovo/device-keyboard").KeyboardState | undefined;
+  const keyboardSlideProgress = keyboardState
+    ? getKeyboardSlideProgress(keyboardState, t, fps)
+    : 0;
+  const keyboardHeightForLayout =
+    keyboardState && keyboardSlideProgress > 0
+      ? getKeyboardHeight(3) * keyboardSlideProgress
+      : 0;
+  const shouldRenderKeyboard =
+    !!keyboardState && (keyboardState.visible || keyboardSlideProgress > 0);
 
   const transition = (device as unknown as { transition?: unknown }).transition as
     | {
@@ -381,7 +395,7 @@ const TokovoRendererInner: React.FC<TokovoRendererProps> = ({
                             right: 0,
                           }}
                           keyboardHeight={
-                            device.keyboard?.visible ? getKeyboardHeight(3) / scale : 0
+                            keyboardHeightForLayout / scale
                           }
                         >
                           <AppView
@@ -513,11 +527,9 @@ const TokovoRendererInner: React.FC<TokovoRendererProps> = ({
             )}
 
             {/* Keyboard - Device Level */}
-            {device.keyboard?.visible && (
+            {shouldRenderKeyboard && (
               <Keyboard
-                state={
-                  device.keyboard as unknown as import("@tokovo/device-keyboard").KeyboardState
-                }
+                state={keyboardState}
                 currentFrame={t}
                 fps={fps}
                 scale={3}

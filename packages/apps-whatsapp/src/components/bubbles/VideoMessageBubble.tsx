@@ -1,22 +1,12 @@
 import React, { memo } from "react";
 import { Img, staticFile } from "remotion";
-import { Platform } from "@tokovo/core";
 import {
   MediaBubbleBase,
   TimestampRow,
   TimestampOverlay,
   formatDuration,
 } from "./shared.js";
-import {
-  FONT_FAMILY,
-  WA_GREEN,
-  WA_WHITE,
-  WA_BLACK,
-  BUBBLE_PADDING,
-  BUBBLE_PADDING_H,
-  TIMESTAMP_SIZE,
-  MESSAGE_TEXT_SIZE,
-} from "./constants.js";
+import { useTheme } from "../../theme/ThemeContext.js";
 
 export interface VideoMessageBubbleProps {
   thumbnailUrl: string;
@@ -28,7 +18,7 @@ export interface VideoMessageBubbleProps {
   read?: boolean;
   isPlaying?: boolean;
   playProgress?: number;
-  platform?: Platform;
+  platform?: string;
 }
 
 export const VideoMessageBubble = memo(function VideoMessageBubble({
@@ -42,9 +32,11 @@ export const VideoMessageBubble = memo(function VideoMessageBubble({
   isPlaying = false,
   playProgress = 0,
 }: VideoMessageBubbleProps) {
+  const theme = useTheme();
   const resolvedThumbnailUrl = thumbnailUrl.startsWith("/")
     ? staticFile(thumbnailUrl)
     : thumbnailUrl;
+
   return (
     <MediaBubbleBase
       isMe={isMe}
@@ -60,9 +52,10 @@ export const VideoMessageBubble = memo(function VideoMessageBubble({
           style={{
             width: "100%",
             height: "auto",
-            maxHeight: 200,
+            maxHeight: 240,
             objectFit: "cover",
             display: "block",
+            borderRadius: 8,
           }}
           alt=""
         />
@@ -74,16 +67,16 @@ export const VideoMessageBubble = memo(function VideoMessageBubble({
               top: "50%",
               left: "50%",
               transform: "translate(-50%, -50%)",
-              width: 40,
-              height: 40,
-              backgroundColor: "rgba(0,0,0,0.6)",
+              width: 44,
+              height: 44,
+              backgroundColor: "rgba(0,0,0,0.55)",
               borderRadius: "50%",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
             }}
           >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill={WA_WHITE}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="#FFFFFF">
               <path d="M8 5v14l11-7z" />
             </svg>
           </div>
@@ -102,14 +95,14 @@ export const VideoMessageBubble = memo(function VideoMessageBubble({
             borderRadius: 4,
           }}
         >
-          <svg width="8" height="8" viewBox="0 0 24 24" fill={WA_WHITE}>
+          <svg width="8" height="8" viewBox="0 0 24 24" fill="#FFFFFF">
             <path d="M8 6.82v10.36c0 .79.87 1.27 1.54.84l8.14-5.18a1 1 0 0 0 0-1.69l-8.14-5.17A.998.998 0 0 0 8 6.82z" />
           </svg>
           <span
             style={{
-              fontSize: TIMESTAMP_SIZE,
-              color: WA_WHITE,
-              fontFamily: FONT_FAMILY,
+              fontSize: theme.typography.timestampFontSize,
+              color: "#FFFFFF",
+              fontFamily: theme.typography.fontFamily,
             }}
           >
             {formatDuration(duration)}
@@ -135,7 +128,7 @@ export const VideoMessageBubble = memo(function VideoMessageBubble({
               style={{
                 height: "100%",
                 width: `${(playProgress / duration) * 100}%`,
-                backgroundColor: WA_GREEN,
+                backgroundColor: theme.colors.accent,
               }}
             />
           </div>
@@ -143,13 +136,19 @@ export const VideoMessageBubble = memo(function VideoMessageBubble({
       </div>
 
       {caption && (
-        <div style={{ padding: `${BUBBLE_PADDING}px ${BUBBLE_PADDING_H}px` }}>
+        <div
+          style={{
+            padding: `${theme.spacing.messagePaddingVertical - 2}px ${theme.spacing.messagePaddingHorizontal}px`,
+          }}
+        >
           <span
             style={{
-              fontSize: MESSAGE_TEXT_SIZE,
+              fontSize: theme.typography.messageFontSize,
               lineHeight: 1.3,
-              color: WA_BLACK,
-              fontFamily: FONT_FAMILY,
+              color: isMe
+                ? theme.colors.sentBubbleText
+                : theme.colors.receivedBubbleText,
+              fontFamily: theme.typography.fontFamily,
             }}
           >
             {caption}

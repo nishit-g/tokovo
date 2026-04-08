@@ -5,6 +5,8 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "typecheck": "tsc --noEmit",
+    "test": "pnpm exec vitest run --passWithNoTests",
     "postbuild": "pagefind --site out --output-path out/_pagefind",
     "start": "next start"
   },

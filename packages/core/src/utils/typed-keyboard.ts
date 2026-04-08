@@ -57,16 +57,27 @@ export function planTypedKeyboard(
   const safeNotBefore = Math.min(notBeforeFrame, submitAt);
 
   const showLeadFrames = clampFrame(params.showLeadFrames ?? 3);
-  const typeEndBeforeSubmitFrames = clampFrame(
+  const desiredTypeEndBeforeSubmitFrames = clampFrame(
     params.typeEndBeforeSubmitFrames ?? 5,
   );
-  const returnPressLeadFrames = clampFrame(params.returnPressLeadFrames ?? 3);
+  const desiredReturnPressLeadFrames = clampFrame(
+    params.returnPressLeadFrames ?? 3,
+  );
   const returnPressDurationFrames = clampFrame(
     params.returnPressDurationFrames ?? 4,
   );
   const hideAfterSubmitFrames = clampFrame(params.hideAfterSubmitFrames ?? 12);
 
   const textLen = Math.max(1, text.length);
+  const maxFrameGap = Math.max(0, submitAt - safeNotBefore);
+  const typeEndBeforeSubmitFrames = Math.min(
+    desiredTypeEndBeforeSubmitFrames,
+    Math.max(0, maxFrameGap - 1),
+  );
+  const returnPressLeadFrames = Math.min(
+    desiredReturnPressLeadFrames,
+    maxFrameGap,
+  );
   const availableFrames = submitAt - typeEndBeforeSubmitFrames - safeNotBefore;
 
   // Can't animate typing without starting before the allowed context window.
@@ -87,9 +98,13 @@ export function planTypedKeyboard(
   const typeDuration = textLen * effectiveCharDelay;
   const typeStartRaw = submitAt - typeEndBeforeSubmitFrames - typeDuration;
   const typeStartAt = Math.max(safeNotBefore, clampFrame(typeStartRaw));
+  const effectiveShowLeadFrames = Math.min(
+    showLeadFrames,
+    Math.max(0, typeStartAt - safeNotBefore),
+  );
 
   const keyboardShowAt = clampFrame(
-    Math.max(typeStartAt - showLeadFrames, safeNotBefore),
+    Math.max(typeStartAt - effectiveShowLeadFrames, safeNotBefore),
   );
   const returnPressAt = clampFrame(
     Math.max(submitAt - returnPressLeadFrames, safeNotBefore),
@@ -140,4 +155,3 @@ export function planTypedKeyboard(
     charDelay: effectiveCharDelay,
   };
 }
-

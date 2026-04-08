@@ -1,7 +1,6 @@
 import React, { memo } from "react";
-import { Platform } from "@tokovo/core";
 import { MediaBubbleBase } from "./shared.js";
-import { FONT_FAMILY, WA_GRAY, WA_BLACK, MESSAGE_TEXT_SIZE } from "./constants.js";
+import { useTheme } from "../../theme/ThemeContext.js";
 
 export interface DocumentMessageBubbleProps {
   fileName: string;
@@ -12,7 +11,7 @@ export interface DocumentMessageBubbleProps {
   senderName?: string;
   timestamp?: string;
   read?: boolean;
-  platform?: Platform;
+  platform?: string;
 }
 
 export const DocumentMessageBubble = memo(function DocumentMessageBubble({
@@ -25,13 +24,14 @@ export const DocumentMessageBubble = memo(function DocumentMessageBubble({
   timestamp = "10:42",
   read = false,
 }: DocumentMessageBubbleProps) {
+  const theme = useTheme();
   const getIconColor = () => {
     const type = fileType.toLowerCase();
     if (type.includes("pdf")) return "#F40F02";
     if (type.includes("xls") || type.includes("sheet")) return "#1D6F42";
     if (type.includes("doc") || type.includes("word")) return "#2B579A";
     if (type.includes("ppt") || type.includes("slide")) return "#D24726";
-    return WA_GRAY;
+    return theme.colors.timestamp;
   };
 
   const iconColor = getIconColor();
@@ -70,7 +70,7 @@ export const DocumentMessageBubble = memo(function DocumentMessageBubble({
               fill={iconColor}
               fontSize="10"
               fontWeight="bold"
-              fontFamily={FONT_FAMILY}
+              fontFamily={theme.typography.fontFamily}
               style={{ textTransform: "uppercase" }}
             >
               {fileType.slice(0, 3)}
@@ -81,9 +81,11 @@ export const DocumentMessageBubble = memo(function DocumentMessageBubble({
         <div style={{ flex: 1, minWidth: 0 }}>
           <div
             style={{
-              fontSize: MESSAGE_TEXT_SIZE,
-              color: WA_BLACK,
-              fontFamily: FONT_FAMILY,
+              fontSize: theme.typography.messageFontSize,
+              color: isMe
+                ? theme.colors.sentBubbleText
+                : theme.colors.receivedBubbleText,
+              fontFamily: theme.typography.fontFamily,
               overflow: "hidden",
               textOverflow: "ellipsis",
               whiteSpace: "nowrap",
@@ -95,8 +97,8 @@ export const DocumentMessageBubble = memo(function DocumentMessageBubble({
           <div
             style={{
               fontSize: 13,
-              color: WA_GRAY,
-              fontFamily: FONT_FAMILY,
+              color: theme.colors.timestamp,
+              fontFamily: theme.typography.fontFamily,
               marginTop: 1,
             }}
           >
@@ -110,14 +112,14 @@ export const DocumentMessageBubble = memo(function DocumentMessageBubble({
             width: 32,
             height: 32,
             borderRadius: "50%",
-            border: `1px solid ${WA_GRAY}40`,
+            border: `1px solid ${theme.colors.timestamp}40`,
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
             flexShrink: 0,
           }}
         >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill={WA_GRAY}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill={theme.colors.timestamp}>
             <path d="M12 16L7 11L8.4 9.55L11 12.15V4H13V12.15L15.6 9.55L17 11L12 16ZM6 20V18H18V20H6Z" />
           </svg>
         </div>

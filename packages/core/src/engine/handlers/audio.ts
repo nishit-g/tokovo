@@ -441,13 +441,17 @@ export function handleAutoSounds(
   );
 
   for (const instruction of instructions) {
-    const instanceId = `sound_${audio.policyState.nextId++}`;
+    const generatedInstanceId = `sound_${audio.policyState.nextId++}`;
 
     if (
       instruction.action === "PLAY_ONE_SHOT" ||
       instruction.action === "START_LOOP"
     ) {
       if (instruction.cue && instruction.soundId) {
+        const instanceId =
+          instruction.action === "START_LOOP"
+            ? (instruction.instanceId ?? generatedInstanceId)
+            : generatedInstanceId;
         const sound: SoundCue = {
           soundId: instruction.soundId,
           startFrame: event.at,

@@ -62,6 +62,9 @@ export interface EffectProcessorContext {
 
   /** Registry for anchor framing lookup */
   anchorRegistry?: AnchorRegistryClass;
+
+  /** Composition FPS for deterministic frame-based motion */
+  fps: number;
 }
 
 export interface EffectProcessor {
@@ -105,7 +108,7 @@ const zoomProcessor: EffectProcessor = {
   type: "zoom",
   process(ctx): CameraTransform {
     const e = ctx.effect as ZoomEffect;
-    const animProgress = getAnimatedProgress(ctx.t, e);
+    const animProgress = getAnimatedProgress(ctx.t, e, ctx.fps);
 
     const effectScale = lerp(1, e.targetScale, animProgress);
     const currentDelta = ctx.transform.scale - 1;
@@ -169,7 +172,7 @@ const focusProcessor: EffectProcessor = {
   type: "focus",
   process(ctx): CameraTransform {
     const e = ctx.effect as FocusEffect;
-    const animProgress = getAnimatedProgress(ctx.t, e);
+    const animProgress = getAnimatedProgress(ctx.t, e, ctx.fps);
 
     let originX = 0.5;
     let originY = 0.5;
@@ -216,7 +219,7 @@ const trackProcessor: EffectProcessor = {
       0,
       e.predictiveLookaheadFrames ?? 0,
     );
-    const fps = DEFAULT_FPS;
+    const fps = ctx.fps;
 
     let originX = ctx.transform.originX;
     let originY = ctx.transform.originY;
@@ -251,25 +254,30 @@ const trackProcessor: EffectProcessor = {
       const adjustedDeltaX = Math.abs(deltaX) <= deadZoneX ? 0 : deltaX;
       const adjustedDeltaY = Math.abs(deltaY) <= deadZoneY ? 0 : deltaY;
 
+      const elapsedFrames = Math.max(0, ctx.t - e.startFrame);
       const maxPerFrameX = (maxVelocityPxPerSec / ctx.viewport.width) / fps;
       const maxPerFrameY = (maxVelocityPxPerSec / ctx.viewport.height) / fps;
+      const responseProgress = 1 - Math.pow(1 - smoothing, elapsedFrames);
+      const desiredTravelX = adjustedDeltaX * responseProgress;
+      const desiredTravelY = adjustedDeltaY * responseProgress;
+      const maxTravelX = maxPerFrameX * elapsedFrames;
+      const maxTravelY = maxPerFrameY * elapsedFrames;
 
-      const stepX = Math.max(
-        -maxPerFrameX,
-        Math.min(maxPerFrameX, adjustedDeltaX * smoothing),
+      const travelX = Math.max(
+        -maxTravelX,
+        Math.min(maxTravelX, desiredTravelX),
       );
-      const stepY = Math.max(
-        -maxPerFrameY,
-        Math.min(maxPerFrameY, adjustedDeltaY * smoothing),
+      const travelY = Math.max(
+        -maxTravelY,
+        Math.min(maxTravelY, desiredTravelY),
       );
 
-      originX = Math.max(0, Math.min(1, ctx.transform.originX + stepX));
-      originY = Math.max(0, Math.min(1, ctx.transform.originY + stepY));
+      originX = Math.max(0, Math.min(1, ctx.transform.originX + travelX));
+      originY = Math.max(0, Math.min(1, ctx.transform.originY + travelY));
     }
 
-    const easeIn = Math.min(1, progress * 5);
-    const easeOut = Math.min(1, (1 - progress) * 5);
-    const trackStrength = Math.min(easeIn, easeOut);
+    const rampInProgress = Math.min(1, progress * 5);
+    const trackStrength = applyEasing(rampInProgress, e.easing ?? "ease-out");
 
     const effectScale = lerp(1, e.scale ?? 1.05, trackStrength);
     const currentDelta = ctx.transform.scale - 1;
@@ -289,7 +297,7 @@ const resetProcessor: EffectProcessor = {
   type: "reset",
   process(ctx): CameraTransform {
     const e = ctx.effect as ResetEffect;
-    const animProgress = getAnimatedProgress(ctx.t, e);
+    const animProgress = getAnimatedProgress(ctx.t, e, ctx.fps);
 
     return {
       scale: lerp(ctx.transform.scale, 1, animProgress),
@@ -308,7 +316,7 @@ const panProcessor: EffectProcessor = {
   type: "pan",
   process(ctx): CameraTransform {
     const e = ctx.effect as PanEffect;
-    const animProgress = getAnimatedProgress(ctx.t, e);
+    const animProgress = getAnimatedProgress(ctx.t, e, ctx.fps);
 
     return {
       ...ctx.transform,
@@ -322,7 +330,7 @@ const dollyProcessor: EffectProcessor = {
   type: "dolly",
   process(ctx): CameraTransform {
     const e = ctx.effect as DollyEffect;
-    const animProgress = getAnimatedProgress(ctx.t, e);
+    const animProgress = getAnimatedProgress(ctx.t, e, ctx.fps);
 
     return {
       ...ctx.transform,
@@ -336,7 +344,7 @@ const kenBurnsProcessor: EffectProcessor = {
   type: "ken-burns",
   process(ctx): CameraTransform {
     const e = ctx.effect as KenBurnsEffect;
-    const animProgress = getAnimatedProgress(ctx.t, e);
+    const animProgress = getAnimatedProgress(ctx.t, e, ctx.fps);
 
     return {
       ...ctx.transform,
@@ -354,7 +362,7 @@ const punchZoomProcessor: EffectProcessor = {
     const elapsed = ctx.t - e.startFrame;
     const springConfig = resolveSpring(e.spring, SPRING_PRESETS.punch);
 
-    const springProgress = springValue(elapsed, DEFAULT_FPS, springConfig);
+    const springProgress = springValue(elapsed, ctx.fps, springConfig);
     const punchScale =
       e.direction === "in"
         ? 1 + e.intensity * (1 - springProgress)
@@ -374,7 +382,7 @@ const dutchTiltProcessor: EffectProcessor = {
     const elapsed = ctx.t - e.startFrame;
     const springConfig = resolveSpring(e.spring, SPRING_PRESETS.dramatic);
 
-    const springProgress = springValue(elapsed, DEFAULT_FPS, springConfig);
+    const springProgress = springValue(elapsed, ctx.fps, springConfig);
     const tiltAngle = e.angle * springProgress;
 
     return {
@@ -476,6 +484,7 @@ export function processActiveEffects(
   anchorSnapshot?: AnchorSnapshot,
   viewport?: { width: number; height: number },
   anchorRegistry?: AnchorRegistryClass,
+  fps: number = DEFAULT_FPS,
 ): CameraTransform {
   let transform = { ...initialTransform };
 
@@ -511,6 +520,7 @@ export function processActiveEffects(
         anchorSnapshot,
         viewport,
         anchorRegistry,
+        fps,
       });
     }
   }
@@ -526,6 +536,7 @@ export function processActiveEffects(
         anchorSnapshot,
         viewport,
         anchorRegistry,
+        fps,
       });
     }
   }

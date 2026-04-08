@@ -199,6 +199,30 @@ export class CameraDirectorPlugin implements CompilerPlugin {
             easing: params.easing,
           },
         } as TrackEvent);
+      } else if (effect.type === "animate") {
+        const params = effect.params as {
+          x?: number;
+          y?: number;
+          scale?: number;
+          duration?: number;
+          easing?: string;
+          originX?: number;
+          originY?: number;
+        };
+        trackEvents.push({
+          at: effect.timestamp,
+          kind: "CAMERA",
+          type: "ZOOM",
+          payload: {
+            scale: params.scale ?? 1,
+            translateX: params.x ?? 0,
+            translateY: params.y ?? 0,
+            duration: params.duration,
+            easing: params.easing,
+            originX: params.originX,
+            originY: params.originY,
+          },
+        } as TrackEvent);
       } else {
         console.warn(
           `[CameraDirectorPlugin] Unsupported effect type: ${effect.type}`,

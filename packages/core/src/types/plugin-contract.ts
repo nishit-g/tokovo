@@ -257,6 +257,8 @@ export interface TokovoPluginContract<AppId extends string = string> {
   id: AppId;
   version: string;
   displayName: string;
+  themeColor?: string;
+  icon?: string;
 
   // === TIER A: Runtime (REQUIRED) ===
   reducer: PluginReducer<AppId>;

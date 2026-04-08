@@ -10,7 +10,8 @@
  */
 
 import React from "react";
-import { whatsappColors, spacing, typography } from "./theme.js";
+import { useCurrentFrame, useVideoConfig, interpolate } from "remotion";
+import { useTheme } from "../theme/ThemeContext.js";
 
 export interface TypingMember {
     id: string;
@@ -22,21 +23,36 @@ export interface GroupTypingIndicatorProps {
 }
 
 /**
- * Animated typing dot component.
+ * Animated typing dot component using Remotion interpolation.
  */
-const TypingDot: React.FC<{ delay: number }> = ({ delay: _delay }) => (
-    <div
-        style={{
-            width: 6,
-            height: 6,
-            borderRadius: "50%",
-            backgroundColor: whatsappColors.textSecondary,
-            // Note: In Remotion, we'd use interpolate for animation
-            // For static rendering, we just show the dot
-            opacity: 0.7,
-        }}
-    />
-);
+const TypingDot: React.FC<{ delay: number }> = ({ delay }) => {
+    const frame = useCurrentFrame();
+    const { fps } = useVideoConfig();
+    const cycleDuration = fps * 1.4;
+    const cycleFrame = frame % cycleDuration;
+    const delayFrames = delay * fps;
+    const adjustedFrame =
+        (cycleFrame - delayFrames + cycleDuration) % cycleDuration;
+
+    const translateY = interpolate(
+        adjustedFrame,
+        [0, cycleDuration * 0.3, cycleDuration * 0.6, cycleDuration],
+        [0, -6, 0, 0],
+        { extrapolateRight: "clamp" },
+    );
+
+    return (
+        <div
+            style={{
+                width: 6,
+                height: 6,
+                borderRadius: "50%",
+                backgroundColor: "#667781",
+                transform: `translateY(${translateY}px)`,
+            }}
+        />
+    );
+};;
 
 /**
  * Format typing text based on number of people typing.
@@ -62,25 +78,28 @@ function getTypingText(typingMembers: TypingMember[]): string {
 export const GroupTypingIndicator: React.FC<GroupTypingIndicatorProps> = ({
     typingMembers,
 }) => {
+    const theme = useTheme();
+
     if (typingMembers.length === 0) return null;
 
     const typingText = getTypingText(typingMembers);
 
     return (
         <div style={{
-            padding: `8px ${spacing.pagePaddingX}px`,
             display: "flex",
             alignItems: "center",
             gap: 8,
-            backgroundColor: "transparent",
+            marginLeft: 6,
         }}>
             {/* Typing Dots Container */}
             <div style={{
                 display: "flex",
                 gap: 3,
-                padding: "6px 10px",
-                backgroundColor: whatsappColors.bgSecondary,
-                borderRadius: 12,
+                padding: "10px 14px",
+                backgroundColor: theme.colors.receivedBubble,
+                borderRadius: 18,
+                borderBottomLeftRadius: 4,
+                boxShadow: "0 1px 1px rgba(0,0,0,0.05)",
             }}>
                 <TypingDot delay={0} />
                 <TypingDot delay={0.15} />
@@ -89,8 +108,8 @@ export const GroupTypingIndicator: React.FC<GroupTypingIndicatorProps> = ({
 
             {/* Typing Text */}
             <span style={{
-                fontSize: typography.caption.fontSize,
-                color: whatsappColors.textSecondary,
+                fontSize: 13,
+                color: theme.colors.timestamp,
                 fontStyle: "italic",
             }}>
                 {typingText}
@@ -106,20 +125,24 @@ export const GroupTypingIndicator: React.FC<GroupTypingIndicatorProps> = ({
 export const SimpleTypingIndicator: React.FC<{ isTyping: boolean }> = ({
     isTyping,
 }) => {
+    const theme = useTheme();
+
     if (!isTyping) return null;
 
     return (
         <div style={{
-            padding: `8px ${spacing.pagePaddingX}px`,
             display: "flex",
             alignItems: "center",
+            marginLeft: 6,
         }}>
             <div style={{
                 display: "flex",
                 gap: 3,
-                padding: "8px 12px",
-                backgroundColor: whatsappColors.bgSecondary,
-                borderRadius: 16,
+                padding: "10px 14px",
+                backgroundColor: theme.colors.receivedBubble,
+                borderRadius: 18,
+                borderBottomLeftRadius: 4,
+                boxShadow: "0 1px 1px rgba(0,0,0,0.05)",
             }}>
                 <TypingDot delay={0} />
                 <TypingDot delay={0.15} />

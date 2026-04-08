@@ -4,7 +4,8 @@ import React, {
   type CSSProperties,
   type ReactNode,
 } from "react";
-import { useKeyboardHeight } from "./TokovoContext.js";
+import { useDevice, useKeyboardHeight, useTime } from "./TokovoContext.js";
+import type { KeyboardState } from "@tokovo/core";
 
 export interface UseKeyboardAwareContainerOptions {
   autoScroll?: boolean;
@@ -78,14 +79,34 @@ export interface KeyboardInputState {
 }
 
 export function useKeyboardState(): KeyboardInputState {
+  const device = useDevice();
+  const t = useTime();
   const keyboardHeight = useKeyboardHeight();
+  const keyboard = device.keyboard as KeyboardState | undefined;
+  const inputText = getKeyboardDraftText(keyboard, t);
 
   return {
-    inputText: "",
-    cursorPosition: 0,
+    inputText,
+    cursorPosition: inputText.length,
     isKeyboardVisible: keyboardHeight > 0,
     keyboardHeight,
   };
+}
+
+function getKeyboardDraftText(
+  keyboard: KeyboardState | undefined,
+  currentFrame: number,
+): string {
+  if (!keyboard) return "";
+  if (!keyboard.typingAnimation) return keyboard.inputText;
+
+  const { text, startFrame, charDelay } = keyboard.typingAnimation;
+  const elapsed = currentFrame - startFrame;
+  if (elapsed < 0) return "";
+
+  const safeCharDelay = Math.max(charDelay, Number.EPSILON);
+  const charsTyped = Math.floor(elapsed / safeCharDelay) + 1;
+  return text.slice(0, Math.min(charsTyped, text.length));
 }
 
 export interface ScrollableContentProps {

@@ -131,7 +131,33 @@ function createRuntimeEvent(
   return result as unknown as RuntimeEvent;
 }
 
+function createKeyboardClearEvent(
+  deviceId: string,
+  at: number,
+): RuntimeEvent {
+  return {
+    at,
+    kind: "DEVICE",
+    type: "KEYBOARD_CLEAR",
+    deviceId,
+    payload: {},
+  } as RuntimeEvent;
+}
+
 type WhatsAppLoweringScratchpad = { lastEventAtByConversation: Map<string, number> };
+const TIMING_HELPER_EVENT_TYPES = new Set<WhatsAppEventType>([
+  "TYPING_START",
+  "TYPING_END",
+]);
+
+function computeNotBeforeFrame(prevAt: number, submitAt: number): number {
+  if (prevAt <= 0) return 0;
+  return Math.max(0, Math.min(prevAt + 1, submitAt - 1));
+}
+
+function shouldTrackConversationTiming(eventType: WhatsAppEventType): boolean {
+  return !TIMING_HELPER_EVENT_TYPES.has(eventType);
+}
 
 export const whatsappV2Lowering: V2LoweringHandler = {
   lower(event: TrackEvent, ctx?: unknown): RuntimeEvent[] {
@@ -172,7 +198,7 @@ export const whatsappV2Lowering: V2LoweringHandler = {
         () => ({ lastEventAtByConversation: new Map() }),
       );
       const prevAt = scratchpad.lastEventAtByConversation.get(key) ?? 0;
-      const notBeforeFrame = prevAt > 0 ? prevAt + 2 : 0;
+      const notBeforeFrame = computeNotBeforeFrame(prevAt, event.at);
       const payload = event.payload as { text?: string; charDelay?: number };
       const text = payload?.text ?? "";
 
@@ -195,11 +221,18 @@ export const whatsappV2Lowering: V2LoweringHandler = {
       }
 
       const [showEv, typeEv, pressEv, hideEv] = plan.events;
-      return [showEv, typeEv, pressEv, createRuntimeEvent(event), hideEv];
+      return [
+        showEv,
+        typeEv,
+        pressEv,
+        createRuntimeEvent(event),
+        createKeyboardClearEvent(event.deviceId, event.at),
+        hideEv,
+      ];
     }
 
     // Update last-seen timestamp for conversation-scoped timing heuristics.
-    {
+    if (shouldTrackConversationTiming(eventType)) {
       const conversationId =
         event.conversationId ??
         (event.payload as { conversationId?: string })?.conversationId;

@@ -41,6 +41,7 @@ import flirtyWhatsappRomance from "./flirty-whatsapp-romance.episode.js";
 import midnightMaggiCrisis from "./midnight-maggi-crisis.episode.js";
 import snapchatBestieDrama from "./snapchat-bestie-drama.episode.js";
 import teamsWarRoom from "./teams-war-room.episode.js";
+import attendanceHeistBros from "./attendance-heist-bros.episode.js";
 // plop:episode-import
 
 export const productionEpisodes: EpisodeDefinition[] = [
@@ -73,6 +74,7 @@ export const productionEpisodes: EpisodeDefinition[] = [
   midnightMaggiCrisis,
   snapchatBestieDrama,
   teamsWarRoom,
+  attendanceHeistBros,
   // plop:episode-entry
 ];
 
@@ -113,4 +115,5 @@ export {
   midnightMaggiCrisis,
   snapchatBestieDrama,
   teamsWarRoom,
+  attendanceHeistBros,
 };

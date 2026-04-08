@@ -138,7 +138,7 @@ export class PluginManagerClass {
         `Failed to register plugin ${plugin.id}`,
         e instanceof Error ? e : new Error(message),
       );
-      log.warn("Continuing despite validation error (Migration Mode)");
+      throw e instanceof Error ? e : new Error(message);
     }
 
     if (this.plugins.has(plugin.id)) {
@@ -203,8 +203,8 @@ export class PluginManagerClass {
 
       const meta: AppMetadata = {
         displayName: plugin.displayName,
-        themeColor: "#000000",
-        icon: "📱",
+        themeColor: plugin.themeColor ?? "#000000",
+        icon: plugin.icon ?? "📱",
       };
       this.registries.metadata.register(plugin.id, meta);
       cleanups.push(() => this.registries.metadata.unregister(plugin.id));

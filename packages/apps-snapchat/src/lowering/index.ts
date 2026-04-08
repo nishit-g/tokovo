@@ -9,6 +9,19 @@ export interface SnapchatLoweringHandler {
 type SnapchatLoweringScratchpad = {
   lastEventAtByConversation: Map<string, number>;
 };
+const TIMING_HELPER_EVENT_TYPES = new Set<SnapchatEventType>([
+  "SNAPCHAT_TYPING_START",
+  "SNAPCHAT_TYPING_END",
+]);
+
+function computeNotBeforeFrame(prevAt: number, submitAt: number): number {
+  if (prevAt <= 0) return 0;
+  return Math.max(0, Math.min(prevAt + 1, submitAt - 1));
+}
+
+function shouldTrackConversationTiming(eventType: SnapchatEventType): boolean {
+  return !TIMING_HELPER_EVENT_TYPES.has(eventType);
+}
 
 const ALLOWED_TYPES: readonly SnapchatEventType[] = [
   "SNAPCHAT_CONVERSATION_CREATE",
@@ -43,6 +56,16 @@ function createRuntimeEvent(event: SnapchatTrackEvent): RuntimeEvent {
   };
 }
 
+function createKeyboardClearEvent(deviceId: string, at: number): RuntimeEvent {
+  return {
+    at,
+    kind: "DEVICE",
+    type: "KEYBOARD_CLEAR",
+    deviceId,
+    payload: {},
+  } as RuntimeEvent;
+}
+
 function expandTypedSend(
   event: Extract<SnapchatTrackEvent, { type: "SNAPCHAT_MESSAGE_SEND" }>,
   ctx?: unknown,
@@ -64,7 +87,7 @@ function expandTypedSend(
 
   const key = `${deviceId}::${conversationId ?? "unknown"}`;
   const prevAt = scratchpad.lastEventAtByConversation.get(key) ?? 0;
-  const notBeforeFrame = prevAt > 0 ? prevAt + 2 : 0;
+  const notBeforeFrame = computeNotBeforeFrame(prevAt, sendAt);
 
   const plan = planTypedKeyboard({
     deviceId,
@@ -83,7 +106,14 @@ function expandTypedSend(
   }
 
   const [showEv, typeEv, pressEv, hideEv] = plan.events;
-  return [showEv, typeEv, pressEv, createRuntimeEvent(event), hideEv];
+  return [
+    showEv,
+    typeEv,
+    pressEv,
+    createRuntimeEvent(event),
+    createKeyboardClearEvent(deviceId, sendAt),
+    hideEv,
+  ];
 }
 
 export const snapchatV2Lowering: SnapchatLoweringHandler = {
@@ -103,7 +133,7 @@ export const snapchatV2Lowering: SnapchatLoweringHandler = {
         ? event.payload.conversationId
         : event.conversationId;
 
-    if (conversationId) {
+    if (conversationId && shouldTrackConversationTiming(event.type)) {
       const scratchpad = getLoweringScratchpad<SnapchatLoweringScratchpad>(
         ctx,
         "app_snapchat.lowering",

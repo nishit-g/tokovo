@@ -13,7 +13,7 @@
  */
 
 import React, { useEffect, useRef } from "react";
-import { useSafeAreaInsets, useKeyboardHeight } from "@tokovo/react";
+import { useKeyboardHeight, useKeyboardState, useSafeAreaInsets } from "@tokovo/react";
 import type { PluginViewProps } from "@tokovo/core";
 import { SNAPCHAT_APP_ID } from "../constants.js";
 import type { SnapchatState } from "../types/state.js";
@@ -153,10 +153,28 @@ function getState(world: PluginViewProps["world"]): SnapchatState {
     }) as SnapchatState;
 }
 
+function getWorldClock(world: PluginViewProps["world"]): number {
+    const activeDeviceId = world.camera?.activeDeviceId;
+    if (activeDeviceId) {
+        const activeClock = world.devices?.[activeDeviceId]?.os?.clock;
+        if (typeof activeClock === "number" && Number.isFinite(activeClock)) {
+            return activeClock;
+        }
+    }
+
+    for (const device of Object.values(world.devices ?? {})) {
+        const clock = device.os?.clock;
+        if (typeof clock === "number" && Number.isFinite(clock)) {
+            return clock;
+        }
+    }
+
+    return 0;
+}
+
 /** Format timestamp to relative time string */
-function formatRelativeTime(timestamp: number): string {
-    const now = Date.now();
-    const diffMs = now - timestamp;
+function formatRelativeTime(timestamp: number, currentTimeMs: number): string {
+    const diffMs = Math.max(0, currentTimeMs - timestamp);
     const diffMin = Math.floor(diffMs / 60000);
     if (diffMin < 1) return "now";
     if (diffMin < 60) return `${diffMin}m`;
@@ -316,10 +334,16 @@ const BottomNavBar: React.FC<{ activeTab?: string }> = ({ activeTab = "chat" }) 
 // CHAT LIST SCREEN
 // =============================================================================
 
-const ChatListScreen: React.FC<{ state: SnapchatState; safeTop: number; safeBottom: number }> = ({
+const ChatListScreen: React.FC<{
+    state: SnapchatState;
+    safeTop: number;
+    safeBottom: number;
+    world: PluginViewProps["world"];
+}> = ({
     state,
     safeTop,
     safeBottom,
+    world,
 }) => {
     const conversations = Object.values(state.conversations ?? {});
 
@@ -354,7 +378,7 @@ const ChatListScreen: React.FC<{ state: SnapchatState; safeTop: number; safeBott
             {/* Conversation list */}
             <div style={{ flex: 1, overflow: "hidden" }}>
                 {conversations.map((conv) => (
-                    <ChatListRow key={conv.id} conversation={conv} />
+                    <ChatListRow key={conv.id} conversation={conv} world={world} />
                 ))}
             </div>
 
@@ -366,7 +390,10 @@ const ChatListScreen: React.FC<{ state: SnapchatState; safeTop: number; safeBott
     );
 };
 
-const ChatListRow: React.FC<{ conversation: SnapchatConversation }> = ({ conversation }) => {
+const ChatListRow: React.FC<{
+    conversation: SnapchatConversation;
+    world: PluginViewProps["world"];
+}> = ({ conversation, world }) => {
     const lastMessage = conversation.messages[conversation.messages.length - 1];
     const name = conversation.title
         ?? conversation.participants[0]?.name
@@ -391,7 +418,9 @@ const ChatListRow: React.FC<{ conversation: SnapchatConversation }> = ({ convers
 
     const hasUnread = conversation.unreadCount > 0;
     const subtitleColor = getSubtitleColor(lastMessage, hasUnread);
-    const timeStr = lastMessage ? formatRelativeTime(lastMessage.timestamp) : "";
+    const timeStr = lastMessage
+        ? formatRelativeTime(lastMessage.timestamp, getWorldClock(world))
+        : "";
 
     return (
         <div style={conversationRowStyle()}>
@@ -478,6 +507,9 @@ const ChatScreen: React.FC<{
     const typingActors = Object.entries(conversation.typing ?? {})
         .filter(([, v]) => v)
         .map(([k]) => k);
+    const keyboardState = useKeyboardState();
+    const composerText = keyboardState.inputText;
+    const showKeyboardCursor = keyboardState.isKeyboardVisible;
 
     const messageListRef = useRef<HTMLDivElement>(null);
     const lastMessageId = messages[messages.length - 1]?.id;
@@ -587,7 +619,30 @@ const ChatScreen: React.FC<{
                     <CameraIcon size={18} color={snapchatColors.black} />
                 </div>
                 <div style={chatInputFieldStyle()}>
-                    <span>Send a chat</span>
+                    <span
+                        style={{
+                            color:
+                                composerText.length > 0
+                                    ? snapchatColors.textPrimary
+                                    : snapchatColors.inputPlaceholder,
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: 1,
+                        }}
+                    >
+                        {composerText || "Send a chat"}
+                        {showKeyboardCursor && (
+                            <span
+                                style={{
+                                    display: "inline-block",
+                                    width: 2,
+                                    height: 16,
+                                    borderRadius: 1,
+                                    backgroundColor: snapchatColors.textPrimary,
+                                }}
+                            />
+                        )}
+                    </span>
                 </div>
                 <SmileyIcon size={22} color={snapchatColors.textSecondary} />
                 <MicIcon size={20} color={snapchatColors.textSecondary} />
@@ -714,6 +769,7 @@ export const SnapchatView: React.FC<PluginViewProps> = (props) => {
                     state={state}
                     safeTop={safeArea.top}
                     safeBottom={safeArea.bottom}
+                    world={props.world}
                 />
             );
     }

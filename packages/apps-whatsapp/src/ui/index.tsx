@@ -144,7 +144,7 @@ export const WhatsappChatView: React.FC<WhatsappChatViewProps> = ({
 
   return (
     <WhatsAppThemeProvider platform={platform} themeId={appTheme}>
-      <div style={{ width: "100%", height: "100%", backgroundColor: "#000" }}>
+      <div style={{ width: "100%", height: "100%" }}>
         {activeScreenContent}
       </div>
     </WhatsAppThemeProvider>

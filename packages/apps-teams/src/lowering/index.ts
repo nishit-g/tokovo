@@ -8,6 +8,11 @@ type TeamsLoweringScratchpad = {
   lastEventAtByThread: Map<string, number>;
 };
 
+function computeNotBeforeFrame(prevAt: number, submitAt: number): number {
+  if (prevAt <= 0) return 0;
+  return Math.max(0, Math.min(prevAt + 1, submitAt - 1));
+}
+
 const ALLOWED_TYPES: readonly TeamsEventType[] = [
   "TEAMS_DM_SEND",
   "TEAMS_DM_RECEIVE",
@@ -39,6 +44,16 @@ function toRuntime(event: TeamsTrackEvent): RuntimeEvent {
     deviceId: event.deviceId,
     _declarationOrder: event._declarationOrder,
   };
+}
+
+function createKeyboardClearEvent(deviceId: string, at: number): RuntimeEvent {
+  return {
+    at,
+    kind: "DEVICE",
+    type: "KEYBOARD_CLEAR",
+    deviceId,
+    payload: {},
+  } as RuntimeEvent;
 }
 
 function maybeExpandTyped(event: TeamsTrackEvent, ctx?: unknown): RuntimeEvent[] {
@@ -75,7 +90,7 @@ function maybeExpandTyped(event: TeamsTrackEvent, ctx?: unknown): RuntimeEvent[]
     submitAt: event.at,
     text: payload.text,
     requestedCharDelay: payload.charDelay ?? 3,
-    notBeforeFrame: prevAt > 0 ? prevAt + 2 : 0,
+    notBeforeFrame: computeNotBeforeFrame(prevAt, event.at),
     keyboardType: "default",
     returnKeyType: "send",
   });
@@ -87,7 +102,14 @@ function maybeExpandTyped(event: TeamsTrackEvent, ctx?: unknown): RuntimeEvent[]
   }
 
   const [showEv, typeEv, pressEv, hideEv] = plan.events;
-  return [showEv, typeEv, pressEv, toRuntime(event), hideEv];
+  return [
+    showEv,
+    typeEv,
+    pressEv,
+    toRuntime(event),
+    createKeyboardClearEvent(event.deviceId, event.at),
+    hideEv,
+  ];
 }
 
 export const teamsV2Lowering = {

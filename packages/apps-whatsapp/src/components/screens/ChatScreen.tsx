@@ -1,6 +1,6 @@
 import React from "react";
 import { WorldState } from "@tokovo/core";
-import { KeyboardAwareView } from "@tokovo/react";
+import { KeyboardAwareView, useKeyboardState } from "@tokovo/react";
 import { Header as DefaultHeader } from "../Header.js";
 import { MessageList } from "../MessageList.js";
 import { InputArea as DefaultInputArea } from "../InputArea.js";
@@ -74,18 +74,26 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({
     rawMessages as unknown[],
     deviceId,
   );
+  const membersById = Object.fromEntries(
+    (conversation?.members ?? []).map((m) => [m.id, m]),
+  );
+
   const typingMembers = Object.entries(conversation?.typing ?? {})
     .filter(([id, isTyping]) => isTyping && id !== "me")
-    .map(([id]) => id);
+    .map(([id]) => ({
+      id,
+      name: membersById[id]?.name ?? id,
+    }));
 
   const memberNames = conversation?.members?.map((m) => m.name) ?? [];
   const memberCount = conversation?.members?.length ?? 0;
 
   const status = (() => {
     if (typingMembers.length > 0) {
-      const preview = typingMembers.slice(0, 2).join(", ");
-      const suffix = typingMembers.length > 2 ? "…" : "";
-      return `${preview}${suffix} typing…`;
+      const names = typingMembers.map((m) => m.name);
+      if (names.length === 1) return `${names[0]} typing…`;
+      if (names.length === 2) return `${names[0]} and ${names[1]} typing…`;
+      return `${names[0]} and ${names.length - 1} others typing…`;
     }
     if (conversation?.type === "group") {
       if (conversation.description) return conversation.description;
@@ -217,6 +225,11 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({
   const safeAreaBottom = safeAreaInsets?.bottom ?? 34;
   const bottomPadding =
     theme.spacing.inputAreaHeight + safeAreaBottom + 12;
+  const keyboardState = useKeyboardState();
+  const composerText =
+    keyboardState.isKeyboardVisible && keyboardState.inputText
+      ? keyboardState.inputText
+      : (conversation?.draftText ?? "");
 
   return (
     <KeyboardAwareView>
@@ -234,13 +247,14 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({
           conversation?.typing &&
           Object.keys(conversation.typing).some((id) => id !== "me")
         }
+        typingMembers={typingMembers}
         isGroupChat={conversation?.type === "group"}
         bottomPadding={bottomPadding}
       />
 
       <DefaultInputArea
-        text=""
-        showCursor={false}
+        text={composerText}
+        showCursor={keyboardState.isKeyboardVisible}
         safeAreaBottom={safeAreaBottom}
       />
     </KeyboardAwareView>

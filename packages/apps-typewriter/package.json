@@ -24,6 +24,7 @@
   },
   "scripts": {
     "build": "tsc",
+    "typecheck": "tsc --noEmit",
     "lint": "eslint . --ext .ts,.tsx",
     "generate:sfx": "python3 scripts/generate_sfx.py",
     "test": "vitest run",

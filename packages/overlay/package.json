@@ -8,6 +8,8 @@
   ],
   "scripts": {
     "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "test": "pnpm exec vitest run --passWithNoTests",
     "lint": "eslint . --ext .ts,.tsx"
   },
   "dependencies": {
@@ -18,4 +20,3 @@
     "@types/node": "^20.0.0"
   }
 }
-

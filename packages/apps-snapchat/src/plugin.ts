@@ -22,6 +22,7 @@ const snapchatAssets = {
         "app_snapchat.message_in": "plugins/snapchat/received.wav",
         "app_snapchat.message_out": "plugins/snapchat/sent.wav",
         "app_snapchat.snap_in": "plugins/snapchat/snap_received.wav",
+        "app_snapchat.typing_loop": "core/keyboard/typing_loop.wav",
     },
     icons: {
         app_icon: "/icons/snapchat.svg",
@@ -53,7 +54,7 @@ const snapchatAudioRules: NonNullable<TokovoPluginContract["audioRules"]> = [
     {
         match: { kind: "APP", appId: SNAPCHAT_APP_ID, type: "SNAPCHAT_TYPING_START" },
         action: "START_LOOP",
-        sound: "app_snapchat.message_in",
+        sound: "app_snapchat.typing_loop",
         bus: "sfx",
         volume: 0.3,
         idTemplate: "typing_{conversationId}_{actor}",

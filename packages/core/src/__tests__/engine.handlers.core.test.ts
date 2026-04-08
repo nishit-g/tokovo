@@ -438,6 +438,66 @@ describe("engine handlers", () => {
     spy.mockRestore();
   });
 
+  it("preserves resolved loop instance ids so stop instructions can delete them", () => {
+    const world = baseWorld();
+    world.audio.autoSoundRules = [
+      {
+        match: { kind: "APP", type: "TYPING_START", appId: "app" },
+        action: "START_LOOP",
+        sound: "typing",
+        stopId: "typing_{conversationId}_{from}",
+        idTemplate: "typing_{conversationId}_{from}",
+      },
+      {
+        match: { kind: "APP", type: "TYPING_END", appId: "app" },
+        action: "STOP_SOUND",
+        stopId: "typing_{conversationId}_{from}",
+      },
+    ];
+
+    handleAutoSounds(
+      world,
+      {
+        kind: "APP",
+        type: "TYPING_START",
+        appId: "app",
+        at: 1,
+        conversationId: "conv-1",
+        from: "alice",
+      } as any,
+      {
+        frame: 1,
+        eventIndex: 0,
+        mode: "preview",
+        fps: 30,
+      },
+    );
+
+    expect(Object.keys(world.audio.activeSounds)).toEqual([
+      "typing_conv-1_alice",
+    ]);
+
+    handleAutoSounds(
+      world,
+      {
+        kind: "APP",
+        type: "TYPING_END",
+        appId: "app",
+        at: 2,
+        conversationId: "conv-1",
+        from: "alice",
+      } as any,
+      {
+        frame: 2,
+        eventIndex: 1,
+        mode: "preview",
+        fps: 30,
+      },
+    );
+
+    expect(Object.keys(world.audio.activeSounds)).toHaveLength(0);
+  });
+
   it("uses auto sound priority overrides", () => {
     const world = baseWorld();
     world.audio.autoSoundRules = [

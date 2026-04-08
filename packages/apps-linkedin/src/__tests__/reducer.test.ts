@@ -35,6 +35,20 @@ describe("LinkedIn reducer basics", () => {
     expect(app.feed[0]).toBe("p1");
   });
 
+  it("uses event time when post payload omits createdAt", () => {
+    const w0 = createWorld();
+    const w1 = run(w0, {
+      at: 42,
+      kind: "APP",
+      appId: "app_linkedin",
+      type: "LINKEDIN_ADD_POST",
+      payload: { id: "p1", authorId: "u1", text: "Hello" },
+    });
+
+    const app = w1.appState?.app_linkedin as any;
+    expect(app.posts[0].createdAt).toBe(42);
+  });
+
   it("tracks reactions per user and supports switching", () => {
     const w0 = createWorld();
     const w1 = run(w0, {
@@ -62,5 +76,29 @@ describe("LinkedIn reducer basics", () => {
     expect(post.reactions.like ?? 0).toBe(0);
     expect(post.reactions.celebrate ?? 0).toBe(1);
     expect(post.reactedBy.me).toBe("celebrate");
+  });
+
+  it("clears stale active targets when changing screens", () => {
+    const w0 = createWorld();
+    const w1 = run(w0, {
+      at: 1,
+      kind: "APP",
+      appId: "app_linkedin",
+      type: "LINKEDIN_SET_SCREEN",
+      payload: { screen: "thread", threadId: "t1" },
+    });
+    const w2 = run(w1, {
+      at: 2,
+      kind: "APP",
+      appId: "app_linkedin",
+      type: "LINKEDIN_SET_SCREEN",
+      payload: { screen: "feed" },
+    });
+
+    const app = w2.appState?.app_linkedin as any;
+    expect(app.activePostId).toBeNull();
+    expect(app.activeUserId).toBeNull();
+    expect(app.activeThreadId).toBeNull();
+    expect(app.currentScreen).toBe("feed");
   });
 });

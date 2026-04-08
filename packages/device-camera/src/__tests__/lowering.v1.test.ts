@@ -59,6 +59,40 @@ describe("cameraV2Lowering v1", () => {
     });
   });
 
+  it("maps canonical ZOOM events to runtime zoom effects", () => {
+    const events = cameraV2Lowering(
+      {
+        at: 24,
+        kind: "CAMERA",
+        type: "ZOOM",
+        duration: 18,
+        payload: {
+          scale: 1.12,
+          translateX: 8,
+          translateY: -24,
+          originX: 0.5,
+          originY: 0.25,
+          easing: "ease-out",
+        },
+      } as any,
+      { fps: 30 },
+    );
+
+    expect(events).toHaveLength(1);
+    expect(events[0]).toMatchObject({
+      at: 24,
+      kind: "CAMERA",
+      type: "zoom",
+      duration: 18,
+      scale: 1.12,
+      translateX: 8,
+      translateY: -24,
+      originX: 0.5,
+      originY: 0.25,
+      easing: "ease-out",
+    });
+  });
+
   it("drops *_END control events", () => {
     const events = cameraV2Lowering(
       {

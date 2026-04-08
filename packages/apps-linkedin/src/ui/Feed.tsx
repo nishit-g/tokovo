@@ -10,6 +10,7 @@ import { Header, LIAvatar, LIIcon } from "./components.js";
 import { PostCard } from "./PostCard.js";
 import { getFeedPosts, getUserById, getActiveUser } from "../runtime/selectors.js";
 import type { LIReactionType } from "../types/index.js";
+import { getStableCount } from "./stable.js";
 
 /**
  * "Start a post" prompt at top of feed
@@ -193,7 +194,7 @@ export const Feed: React.FC<{ world: WorldState }> = ({ world }) => {
                 linkPreview={post.linkPreview}
                 reactions={post.reactions as Partial<Record<LIReactionType, number>>}
                 commentCount={post.commentIds.length}
-                repostCount={Math.floor(Math.random() * 50)}
+                repostCount={getStableCount(post.id, 50)}
                 isLiked={index === 0}
                 showFollowButton={index > 0}
                 isPromoted={index === 2}

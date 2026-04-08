@@ -1,8 +1,7 @@
 import React, { memo } from "react";
 import { Img, staticFile } from "remotion";
-import { Platform } from "@tokovo/core";
 import { MediaBubbleBase, TimestampOverlay } from "./shared.js";
-import { FONT_FAMILY, WA_WHITE } from "./constants.js";
+import { useTheme } from "../../theme/ThemeContext.js";
 
 export interface GifMessageBubbleProps {
   gifUrl: string;
@@ -10,7 +9,7 @@ export interface GifMessageBubbleProps {
   senderName?: string;
   timestamp?: string;
   read?: boolean;
-  platform?: Platform;
+  platform?: string;
 }
 
 export const GifMessageBubble = memo(function GifMessageBubble({
@@ -20,7 +19,9 @@ export const GifMessageBubble = memo(function GifMessageBubble({
   timestamp = "10:42",
   read = false,
 }: GifMessageBubbleProps) {
+  const theme = useTheme();
   const resolvedGifUrl = gifUrl.startsWith("/") ? staticFile(gifUrl) : gifUrl;
+
   return (
     <MediaBubbleBase
       isMe={isMe}
@@ -36,9 +37,10 @@ export const GifMessageBubble = memo(function GifMessageBubble({
           style={{
             width: "100%",
             height: "auto",
-            maxHeight: 170,
+            maxHeight: 200,
             objectFit: "cover",
             display: "block",
+            borderRadius: 8,
           }}
           alt=""
         />
@@ -57,8 +59,8 @@ export const GifMessageBubble = memo(function GifMessageBubble({
             style={{
               fontSize: 8,
               fontWeight: 700,
-              color: WA_WHITE,
-              fontFamily: FONT_FAMILY,
+              color: "#FFFFFF",
+              fontFamily: theme.typography.fontFamily,
               letterSpacing: 0.3,
             }}
           >

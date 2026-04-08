@@ -381,18 +381,18 @@ export const MessageBubble = memo(function MessageBubble({
 
       {showTail && (
         <svg
-          width="8"
-          height="13"
-          viewBox="0 0 8 13"
+          width="10"
+          height="14"
+          viewBox="0 0 10 14"
           style={{
             position: "absolute",
-            [isMe ? "right" : "left"]: -7,
+            [isMe ? "right" : "left"]: -8,
             bottom: 0,
             fill: isMe ? theme.colors.sentBubble : theme.colors.receivedBubble,
             transform: isMe ? undefined : "scaleX(-1)",
           }}
         >
-          <path d="M5.188 0H0v11.193c.498-.098.984-.236 1.453-.424a14.937 14.937 0 0 0 4.243-2.636c.634-.556 1.228-1.2 1.74-2.01.327-.519.613-1.1.684-1.732C8.298 2.66 6.953.404 5.188 0Z" />
+          <path d="M6.5 0H0v12c.6-.1 1.2-.3 1.7-.5 1.6-.7 3-1.8 4.1-3.2.5-.6.9-1.3 1.1-2.1C7.5 4.5 7.6 2.5 6.5 0Z" />
         </svg>
       )}
     </div>
