@@ -105,7 +105,7 @@ function getKeyboardDraftText(
   if (elapsed < 0) return "";
 
   const safeCharDelay = Math.max(charDelay, Number.EPSILON);
-  const charsTyped = Math.floor(elapsed / safeCharDelay) + 1;
+  const charsTyped = Math.floor(elapsed / safeCharDelay);
   return text.slice(0, Math.min(charsTyped, text.length));
 }
 

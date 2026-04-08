@@ -10,6 +10,11 @@ export interface ImageMessageBubbleProps {
   senderName?: string;
   timestamp?: string;
   read?: boolean;
+  messageAt?: number;
+  deliveredAt?: number;
+  readAt?: number;
+  status?: "sending" | "sent" | "delivered" | "read";
+  starred?: boolean;
   platform?: string;
 }
 
@@ -20,6 +25,11 @@ export const ImageMessageBubble = memo(function ImageMessageBubble({
   senderName,
   timestamp = "10:42",
   read = false,
+  messageAt,
+  deliveredAt,
+  readAt,
+  status,
+  starred = false,
 }: ImageMessageBubbleProps) {
   const theme = useTheme();
   const resolvedImageUrl = imageUrl.startsWith("/")
@@ -32,6 +42,11 @@ export const ImageMessageBubble = memo(function ImageMessageBubble({
       senderName={senderName}
       timestamp={timestamp}
       read={read}
+      messageAt={messageAt}
+      deliveredAt={deliveredAt}
+      readAt={readAt}
+      status={status}
+      starred={starred}
       noPadding
       overlayTimestamp
     >
@@ -56,7 +71,16 @@ export const ImageMessageBubble = memo(function ImageMessageBubble({
         />
 
         {!caption && (
-          <TimestampOverlay timestamp={timestamp} isMe={isMe} read={read} />
+          <TimestampOverlay
+            timestamp={timestamp}
+            isMe={isMe}
+            read={read}
+            starred={starred}
+            messageAt={messageAt}
+            deliveredAt={deliveredAt}
+            readAt={readAt}
+            status={status}
+          />
         )}
       </div>
 

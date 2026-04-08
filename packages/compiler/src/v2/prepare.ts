@@ -271,6 +271,19 @@ function buildInitialWorld(ir: TrackEpisodeIR, plugins: TokovoPlugin[]): WorldSt
           isMuted: conv.isMuted ?? false,
           isPinned: conv.isPinned ?? false,
           hasStatus: conv.hasStatus ?? false,
+          description: conv.description,
+          isLocked: conv.isLocked ?? false,
+          businessLabel: conv.businessLabel,
+          isVerifiedBusiness: conv.isVerifiedBusiness ?? false,
+          isChannel: conv.isChannel ?? false,
+          isFollowed: conv.isFollowed ?? false,
+          channelUnreadCount: conv.channelUnreadCount ?? 0,
+          channelDescription: conv.channelDescription,
+          channelLatestSnippet: conv.channelLatestSnippet,
+          channelFollowersLabel: conv.channelFollowersLabel,
+          channelCategory: conv.channelCategory,
+          pinnedMessage: conv.pinnedMessage,
+          disappearingMessagesLabel: conv.disappearingMessagesLabel,
         };
       }
 

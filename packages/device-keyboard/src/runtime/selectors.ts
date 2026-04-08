@@ -102,6 +102,6 @@ export function getTypedTextProgress(
 
   if (elapsed < 0) return "";
 
-  const charsTyped = Math.floor(elapsed / charDelay) + 1;
+  const charsTyped = Math.floor(elapsed / Math.max(charDelay, Number.EPSILON));
   return text.slice(0, Math.min(charsTyped, text.length));
 }

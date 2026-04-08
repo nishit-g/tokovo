@@ -1,12 +1,13 @@
 import React from "react";
 import { WorldState } from "@tokovo/core";
 import { Img } from "remotion";
-import { whatsappColors, spacing, typography } from "../theme.js";
+import { spacing, typography } from "../theme.js";
 import { TabNavigation } from "../TabNavigation.js";
 import { PhoneCallIcon, VideoCallIcon } from "../Icons.js";
 import { resolveAvatarWithFallback } from "../../utils/avatar.js";
 import { WhatsAppConversation, WhatsAppState } from "../../types/index.js";
 import { normalizeMessages } from "../../utils/messages.js";
+import { useTheme } from "../../theme/ThemeContext.js";
 
 export interface CallsScreenProps {
   world: WorldState;
@@ -25,10 +26,9 @@ export const CallsScreen: React.FC<CallsScreenProps> = ({
   safeAreaInsets,
   width: _width,
 }) => {
-  // TokovoRenderer already provides safeAreaInsets in design coordinates.
+  const theme = useTheme();
   const safeAreaTop = safeAreaInsets?.top ?? 47;
   const safeAreaBottom = safeAreaInsets?.bottom ?? 34;
-
   const deviceId = Object.keys(world.devices || {})[0];
 
   const appState = (world.appState?.["app_whatsapp"] || {}) as WhatsAppState;
@@ -50,8 +50,7 @@ export const CallsScreen: React.FC<CallsScreenProps> = ({
     const isMissed =
       lastCall?.type === "call_missed" ||
       ((conv.unreadCount || 0) > 0 && lastMessage?.from !== "me");
-    const isVideo =
-      lastCall?.callType === "video" || conv.type === "group";
+    const isVideo = lastCall?.callType === "video" || conv.type === "group";
     const directionLabel =
       lastCall?.type === "call_missed"
         ? "Missed"
@@ -74,9 +73,10 @@ export const CallsScreen: React.FC<CallsScreenProps> = ({
       style={{
         width: "100%",
         height: "100%",
-        backgroundColor: whatsappColors.bgList,
+        backgroundColor: theme.colors.headerBackground,
         display: "flex",
         flexDirection: "column",
+        fontFamily: theme.typography.fontFamily,
       }}
     >
       <div
@@ -88,14 +88,21 @@ export const CallsScreen: React.FC<CallsScreenProps> = ({
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
-          borderBottom: `0.5px solid ${whatsappColors.separatorLight}`,
-          backgroundColor: whatsappColors.surfaceGlass,
+          borderBottom: `0.5px solid ${theme.colors.divider}`,
+          backgroundColor: `${theme.colors.headerBackground}F2`,
+          backdropFilter: "blur(20px)",
         }}
       >
-        <div style={{ ...typography.title, color: whatsappColors.textPrimary }}>
+        <div
+          style={{
+            ...typography.title,
+            color: theme.colors.receivedBubbleText,
+            fontFamily: theme.typography.fontFamily,
+          }}
+        >
           Calls
         </div>
-        <VideoCallIcon color={whatsappColors.primary} />
+        <VideoCallIcon color={theme.colors.accent} />
       </div>
 
       <div
@@ -110,8 +117,8 @@ export const CallsScreen: React.FC<CallsScreenProps> = ({
             key={entry.id}
             style={{
               padding: `${spacing.sectionGap}px ${spacing.pagePaddingX}px`,
-              backgroundColor: whatsappColors.bgPrimary,
-              borderBottom: `0.5px solid ${whatsappColors.separator}`,
+              backgroundColor: theme.colors.background,
+              borderBottom: `0.5px solid ${theme.colors.divider}`,
               display: "flex",
               alignItems: "center",
               gap: spacing.contentMarginLeft,
@@ -123,7 +130,7 @@ export const CallsScreen: React.FC<CallsScreenProps> = ({
                 height: 52,
                 borderRadius: "50%",
                 overflow: "hidden",
-                backgroundColor: whatsappColors.avatarPlaceholder,
+                backgroundColor: `${theme.colors.divider}66`,
                 flexShrink: 0,
               }}
             >
@@ -138,31 +145,31 @@ export const CallsScreen: React.FC<CallsScreenProps> = ({
               <div
                 style={{
                   ...typography.headline,
-                  color: entry.missed ? whatsappColors.iosRed : whatsappColors.textPrimary,
+                  color: entry.missed
+                    ? "#FF3B30"
+                    : theme.colors.receivedBubbleText,
+                  fontFamily: theme.typography.fontFamily,
                 }}
               >
                 {entry.name}
               </div>
-              <div style={{ ...typography.body, color: whatsappColors.textSecondary }}>
+              <div
+                style={{
+                  ...typography.body,
+                  color: theme.colors.timestamp,
+                  fontFamily: theme.typography.fontFamily,
+                }}
+              >
                 {(entry.missed ? "Missed" : entry.direction) ?? "Outgoing"} · {entry.time}
               </div>
             </div>
 
-            <div>
-              {entry.video ? (
-                <VideoCallIcon color={whatsappColors.primary} />
-              ) : (
-                <PhoneCallIcon color={whatsappColors.primary} />
-              )}
-            </div>
+            <div>{entry.video ? <VideoCallIcon color={theme.colors.accent} /> : <PhoneCallIcon color={theme.colors.accent} />}</div>
           </div>
         ))}
       </div>
 
-      <TabNavigation
-        activeTab="calls"
-        safeAreaBottom={safeAreaBottom}
-      />
+      <TabNavigation activeTab="calls" safeAreaBottom={safeAreaBottom} />
     </div>
   );
 };

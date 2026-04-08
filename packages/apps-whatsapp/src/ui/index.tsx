@@ -6,7 +6,7 @@ import { WhatsAppThemeProvider } from "../theme/ThemeContext.js";
 // Screens
 import { ChatScreen } from "../components/screens/ChatScreen.js";
 import { ChatListScreen } from "../components/screens/ChatListScreen.js";
-import { StatusScreen } from "../components/screens/StatusScreen.js";
+import { UpdatesScreen } from "../components/screens/StatusScreen.js";
 import { CommunitiesScreen } from "../components/screens/CommunitiesScreen.js";
 import { CallsScreen } from "../components/screens/CallsScreen.js";
 import { ProfileScreen } from "../components/screens/ProfileScreen.js";
@@ -73,9 +73,10 @@ export const WhatsappChatView: React.FC<WhatsappChatViewProps> = ({
         />
       );
       break;
+    case "updates":
     case "status":
       activeScreenContent = (
-        <StatusScreen
+        <UpdatesScreen
           world={world}
           width={activeWidth}
           height={activeHeight}

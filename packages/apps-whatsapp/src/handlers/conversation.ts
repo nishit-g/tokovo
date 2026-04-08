@@ -49,7 +49,8 @@ export function registerConversationHandlers(
   });
 
   registry.registerHandler<NavigateScreenEvent>("NavigateScreen", (ctx, e) => {
-    const screen = e.payload?.screen ?? e.screen;
+    const rawScreen = e.payload?.screen ?? e.screen;
+    const screen = rawScreen === "status" ? "updates" : rawScreen;
     const appState = ctx.draft.appState?.["app_whatsapp"];
     if (appState && typeof screen === "string") {
       (appState as { currentScreen?: string }).currentScreen = screen;
@@ -75,6 +76,22 @@ export function registerConversationHandlers(
       (appState as { viewMode?: "CHAT" | "FEED" | "FULLSCREEN" | "TRANSITION" }).viewMode =
         "CHAT";
     }
+    if (
+      !ctx.conversation.unreadDividerMessageId &&
+      (ctx.conversation.unreadCount ?? 0) > 0
+    ) {
+      let remainingUnread = ctx.conversation.unreadCount ?? 0;
+      for (let i = ctx.conversation.messages.length - 1; i >= 0; i--) {
+        const message = ctx.conversation.messages[i];
+        if (message.type === "system" || message.from === "me") continue;
+        remainingUnread -= 1;
+        if (remainingUnread <= 0) {
+          ctx.conversation.unreadDividerMessageId = message.id;
+          break;
+        }
+      }
+    }
+    ctx.conversation.unreadCount = 0;
   });
 
   registry.registerHandler<ReadMessagesEvent>("ReadMessages", (ctx, e) => {

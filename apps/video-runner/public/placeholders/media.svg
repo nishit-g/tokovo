@@ -1,14 +1,27 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="720" height="480" viewBox="0 0 720 480" role="img" aria-label="Media placeholder">
   <defs>
-    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="#EEF2F6" />
-      <stop offset="100%" stop-color="#DDE6EE" />
+    <linearGradient id="mediaBg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#F7EFCF" />
+      <stop offset="100%" stop-color="#DCECCF" />
+    </linearGradient>
+    <linearGradient id="card" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#FFFDF5" />
+      <stop offset="100%" stop-color="#F2F6EA" />
     </linearGradient>
   </defs>
-  <rect width="720" height="480" fill="url(#bg)" />
-  <rect x="40" y="40" width="640" height="400" rx="24" fill="#F7F9FB" stroke="#B7C4CF" stroke-width="2" />
-  <circle cx="220" cy="210" r="36" fill="#A5B4C2" />
-  <path d="M140 360 L260 250 L330 310 L430 210 L580 360 Z" fill="#C3D0DB" />
-  <text x="360" y="250" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="28" fill="#66737F">Media Placeholder</text>
-  <text x="360" y="285" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="14" fill="#7B8791">tokovo</text>
+  <rect width="720" height="480" fill="url(#mediaBg)" />
+  <circle cx="130" cy="90" r="74" fill="#FFFFFF" opacity="0.25" />
+  <circle cx="612" cy="392" r="108" fill="#FFFFFF" opacity="0.22" />
+  <rect x="56" y="52" width="608" height="376" rx="30" fill="url(#card)" stroke="#C9D6B9" stroke-width="2" />
+  <rect x="88" y="92" width="544" height="250" rx="22" fill="#DDE8D3" />
+  <circle cx="190" cy="178" r="36" fill="#A5BC93" />
+  <path d="M126 314 L246 218 L320 272 L412 186 L594 314 Z" fill="#A7BA93" />
+  <path d="M210 314 L334 226 L424 286 L516 212 L632 314 Z" fill="#8FA97A" opacity="0.78" />
+  <rect x="104" y="364" width="180" height="18" rx="9" fill="#C0D0AF" />
+  <rect x="104" y="392" width="284" height="14" rx="7" fill="#D2DEC6" />
+  <g transform="translate(548 360)">
+    <rect x="0" y="0" width="72" height="46" rx="14" fill="#1F2C1A" opacity="0.82" />
+    <polygon points="28,14 28,32 46,23" fill="#FFFFFF" />
+  </g>
+  <text x="360" y="58" text-anchor="middle" font-family="'SF Pro Display', Arial, sans-serif" font-size="18" fill="#6C7C5E">shared media</text>
 </svg>

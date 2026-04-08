@@ -1,13 +1,18 @@
 import React, { memo } from "react";
-import { Img, staticFile } from "remotion";
+import { Img, staticFile, useCurrentFrame } from "remotion";
 import { DoubleCheckIcon } from "./shared.js";
 import { useTheme } from "../../theme/ThemeContext.js";
+import { resolveDeliveryStage } from "../../utils/status.js";
 
 export interface StickerMessageBubbleProps {
   stickerUrl: string;
   isMe: boolean;
   timestamp?: string;
   read?: boolean;
+  messageAt?: number;
+  deliveredAt?: number;
+  readAt?: number;
+  status?: "sending" | "sent" | "delivered" | "read";
 }
 
 export const StickerMessageBubble = memo(function StickerMessageBubble({
@@ -15,11 +20,29 @@ export const StickerMessageBubble = memo(function StickerMessageBubble({
   isMe,
   timestamp = "10:42",
   read = false,
+  messageAt,
+  deliveredAt,
+  readAt,
+  status,
 }: StickerMessageBubbleProps) {
   const theme = useTheme();
+  const currentFrame = useCurrentFrame();
   const resolvedStickerUrl = stickerUrl.startsWith("/")
     ? staticFile(stickerUrl)
     : stickerUrl;
+  const deliveryStage =
+    isMe
+      ? resolveDeliveryStage(
+        {
+          from: "me",
+          at: messageAt,
+          deliveredAt,
+          readAt,
+          status,
+        },
+        currentFrame,
+      )
+      : undefined;
 
   return (
     <div style={{ position: "relative", width: 136, height: 136 }}>
@@ -56,7 +79,12 @@ export const StickerMessageBubble = memo(function StickerMessageBubble({
         >
           {timestamp}
         </span>
-        {isMe && <DoubleCheckIcon read={read} light />}
+        {isMe && (
+          <DoubleCheckIcon
+            stage={deliveryStage ?? (read ? "read" : "delivered")}
+            light
+          />
+        )}
       </div>
     </div>
   );

@@ -28,6 +28,9 @@ export interface PlanTypedKeyboardParams {
   returnPressLeadFrames?: number;
   returnPressDurationFrames?: number;
   hideAfterSubmitFrames?: number;
+  minShowToTypeLeadFrames?: number;
+  allowCompressedCharDelay?: boolean;
+  minCompressedCharDelay?: number;
 }
 
 function clampFrame(frame: number): number {
@@ -67,6 +70,15 @@ export function planTypedKeyboard(
     params.returnPressDurationFrames ?? 4,
   );
   const hideAfterSubmitFrames = clampFrame(params.hideAfterSubmitFrames ?? 12);
+  const minShowToTypeLeadFrames = Math.max(
+    1,
+    clampFrame(params.minShowToTypeLeadFrames ?? 1),
+  );
+  const allowCompressedCharDelay = params.allowCompressedCharDelay ?? false;
+  const minCompressedCharDelay = Math.max(
+    0.5,
+    params.minCompressedCharDelay ?? 0.5,
+  );
 
   const textLen = Math.max(1, text.length);
   const maxFrameGap = Math.max(0, submitAt - safeNotBefore);
@@ -78,7 +90,8 @@ export function planTypedKeyboard(
     desiredReturnPressLeadFrames,
     maxFrameGap,
   );
-  const availableFrames = submitAt - typeEndBeforeSubmitFrames - safeNotBefore;
+  const earliestTypeStart = safeNotBefore + minShowToTypeLeadFrames;
+  const availableFrames = submitAt - typeEndBeforeSubmitFrames - earliestTypeStart;
 
   // Can't animate typing without starting before the allowed context window.
   if (availableFrames <= 0) {
@@ -90,14 +103,21 @@ export function planTypedKeyboard(
     Math.round(params.requestedCharDelay ?? 3),
   );
 
-  // Allow fractional charDelay (chars per frame > 1) to keep typing bounded to the context window.
-  // This avoids early keyboard, and avoids truncating the draft text in apps that use typed progress.
-  const maxCharDelayThatFits = availableFrames / textLen;
+  const exactMaxCharDelayThatFits = availableFrames / textLen;
+  if (
+    (!allowCompressedCharDelay && exactMaxCharDelayThatFits < 1) ||
+    (allowCompressedCharDelay && exactMaxCharDelayThatFits < minCompressedCharDelay)
+  ) {
+    return { ok: false, reason: "insufficient_window", events: [] };
+  }
+  const maxCharDelayThatFits = allowCompressedCharDelay
+    ? exactMaxCharDelayThatFits
+    : Math.floor(exactMaxCharDelayThatFits);
   const effectiveCharDelay = Math.min(requestedCharDelay, maxCharDelayThatFits);
 
   const typeDuration = textLen * effectiveCharDelay;
   const typeStartRaw = submitAt - typeEndBeforeSubmitFrames - typeDuration;
-  const typeStartAt = Math.max(safeNotBefore, clampFrame(typeStartRaw));
+  const typeStartAt = Math.max(earliestTypeStart, clampFrame(typeStartRaw));
   const effectiveShowLeadFrames = Math.min(
     showLeadFrames,
     Math.max(0, typeStartAt - safeNotBefore),

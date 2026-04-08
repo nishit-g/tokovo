@@ -1,22 +1,32 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="720" height="480" viewBox="0 0 720 480" role="img" aria-label="Map placeholder">
   <defs>
     <linearGradient id="mapBg" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="#E9F5EC" />
-      <stop offset="100%" stop-color="#D6E8DB" />
+      <stop offset="0%" stop-color="#DDF0E4" />
+      <stop offset="100%" stop-color="#F4EAC8" />
     </linearGradient>
   </defs>
   <rect width="720" height="480" fill="url(#mapBg)" />
-  <g stroke="#B7CDBE" stroke-width="2">
-    <path d="M80 120 H640" />
-    <path d="M80 200 H640" />
-    <path d="M80 280 H640" />
-    <path d="M80 360 H640" />
-    <path d="M160 80 V400" />
-    <path d="M280 80 V400" />
-    <path d="M400 80 V400" />
-    <path d="M520 80 V400" />
+  <path d="M0 86 C124 62 194 126 316 98 C438 70 530 126 720 84 V154 C544 186 460 134 316 166 C172 198 108 138 0 160 Z" fill="#B8D7C0" opacity="0.7" />
+  <path d="M0 294 C142 250 234 336 356 298 C478 260 596 322 720 280 V480 H0 Z" fill="#C5E1E8" opacity="0.58" />
+  <g stroke="#A4BDA7" stroke-width="12" stroke-linecap="round" opacity="0.7">
+    <path d="M82 118 H644" />
+    <path d="M104 206 H626" />
+    <path d="M78 334 H664" />
+    <path d="M176 64 V408" />
+    <path d="M340 54 V430" />
+    <path d="M520 84 V392" />
+    <path d="M94 140 L230 250 L166 390" />
+    <path d="M420 84 L584 210 L494 390" />
   </g>
-  <path d="M360 140 C320 140 288 172 288 212 C288 266 360 340 360 340 C360 340 432 266 432 212 C432 172 400 140 360 140 Z" fill="#4CAF50" />
-  <circle cx="360" cy="210" r="18" fill="#FFFFFF" />
-  <text x="360" y="80" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="24" fill="#3E5A45">Map Preview</text>
+  <g fill="#D7E8B6" opacity="0.95">
+    <rect x="392" y="116" width="96" height="70" rx="16" />
+    <rect x="152" y="256" width="112" height="84" rx="20" />
+  </g>
+  <g transform="translate(360 226)">
+    <ellipse cx="0" cy="102" rx="34" ry="10" fill="rgba(0,0,0,0.16)" />
+    <path d="M0 -84 C-44 -84 -80 -48 -80 -4 C-80 64 0 144 0 144 C0 144 80 64 80 -4 C80 -48 44 -84 0 -84 Z" fill="#25D366" />
+    <circle cx="0" cy="-6" r="28" fill="#FFFFFF" />
+    <circle cx="0" cy="-6" r="12" fill="#25D366" />
+  </g>
+  <text x="360" y="60" text-anchor="middle" font-family="'SF Pro Display', Arial, sans-serif" font-size="18" fill="#557164">live location</text>
 </svg>

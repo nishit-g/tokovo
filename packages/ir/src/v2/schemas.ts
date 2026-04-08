@@ -10,6 +10,24 @@ export const ConversationConfigSchema = z.object({
   isMuted: z.boolean().optional(),
   isPinned: z.boolean().optional(),
   hasStatus: z.boolean().optional(),
+  description: z.string().optional(),
+  isLocked: z.boolean().optional(),
+  businessLabel: z.string().optional(),
+  isVerifiedBusiness: z.boolean().optional(),
+  isChannel: z.boolean().optional(),
+  isFollowed: z.boolean().optional(),
+  channelUnreadCount: z.number().optional(),
+  channelDescription: z.string().optional(),
+  channelLatestSnippet: z.string().optional(),
+  channelFollowersLabel: z.string().optional(),
+  channelCategory: z.string().optional(),
+  pinnedMessage: z
+    .object({
+      text: z.string(),
+      from: z.string().optional(),
+    })
+    .optional(),
+  disappearingMessagesLabel: z.string().optional(),
 });
 
 export const OSConfigSchema = z.object({

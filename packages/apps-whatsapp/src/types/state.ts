@@ -17,6 +17,7 @@ export interface WhatsAppState {
     | "main"
     | "chat"
     | "chats"
+    | "updates"
     | "status"
     | "calls"
     | "communities"

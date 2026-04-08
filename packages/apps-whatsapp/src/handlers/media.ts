@@ -47,6 +47,28 @@ function bumpUnread(ctx: HandlerContext, from: string): void {
   ctx.conversation.unreadCount = (ctx.conversation.unreadCount ?? 0) + 1;
 }
 
+function markUnreadBoundary(
+  ctx: HandlerContext,
+  from: string,
+  messageId: string,
+): void {
+  if (from === "me" || from === "system") return;
+  const appState = (
+    ctx.draft as {
+      appState?: { app_whatsapp?: { currentConversationId?: string } };
+    }
+  ).appState?.app_whatsapp;
+  if (
+    appState?.currentConversationId &&
+    appState.currentConversationId === ctx.conversation.id
+  ) {
+    return;
+  }
+  if ((ctx.conversation.unreadCount ?? 0) === 0) {
+    ctx.conversation.unreadDividerMessageId = messageId;
+  }
+}
+
 function inferFileType(fileName?: string, fallback?: string): string | undefined {
   if (!fileName) return fallback;
   const match = fileName.match(/\.([a-z0-9]+)$/i);
@@ -118,6 +140,7 @@ export function registerMediaHandlers(
       at: e.at,
     };
     ctx.addMessage(msg);
+    markUnreadBoundary(ctx, from, msg.id);
     bumpUnread(ctx, from);
   });
 
@@ -132,6 +155,7 @@ export function registerMediaHandlers(
       timestamp: ctx.generateTimestamp(e.at),
       status: "sent",
       at: e.at,
+      deliveredAt: e.at + 18,
     };
     ctx.addMessage(msg);
   });
@@ -152,6 +176,7 @@ export function registerMediaHandlers(
       at: e.at,
     };
     ctx.addMessage(msg);
+    markUnreadBoundary(ctx, from, msg.id);
     bumpUnread(ctx, from);
   });
 
@@ -168,6 +193,7 @@ export function registerMediaHandlers(
       timestamp: ctx.generateTimestamp(e.at),
       status: "sent",
       at: e.at,
+      deliveredAt: e.at + 18,
     };
     ctx.addMessage(msg);
   });
@@ -187,6 +213,7 @@ export function registerMediaHandlers(
       at: e.at,
     };
     ctx.addMessage(msg);
+    markUnreadBoundary(ctx, from, msg.id);
     bumpUnread(ctx, from);
   });
 
@@ -202,6 +229,7 @@ export function registerMediaHandlers(
       timestamp: ctx.generateTimestamp(e.at),
       status: "sent",
       at: e.at,
+      deliveredAt: e.at + 18,
     };
     ctx.addMessage(msg);
   });
@@ -219,6 +247,7 @@ export function registerMediaHandlers(
       at: e.at,
     };
     ctx.addMessage(msg);
+    markUnreadBoundary(ctx, from, msg.id);
     bumpUnread(ctx, from);
   });
 
@@ -232,6 +261,7 @@ export function registerMediaHandlers(
       timestamp: ctx.generateTimestamp(e.at),
       status: "sent",
       at: e.at,
+      deliveredAt: e.at + 18,
     };
     ctx.addMessage(msg);
   });
@@ -249,6 +279,7 @@ export function registerMediaHandlers(
       at: e.at,
     };
     ctx.addMessage(msg);
+    markUnreadBoundary(ctx, from, msg.id);
     bumpUnread(ctx, from);
   });
 
@@ -262,6 +293,7 @@ export function registerMediaHandlers(
       timestamp: ctx.generateTimestamp(e.at),
       status: "sent",
       at: e.at,
+      deliveredAt: e.at + 18,
     };
     ctx.addMessage(msg);
   });
@@ -287,6 +319,7 @@ export function registerMediaHandlers(
       at: e.at,
     };
     ctx.addMessage(msg);
+    markUnreadBoundary(ctx, from, msg.id);
     bumpUnread(ctx, from);
   });
 
@@ -306,6 +339,7 @@ export function registerMediaHandlers(
       timestamp: ctx.generateTimestamp(e.at),
       status: "sent",
       at: e.at,
+      deliveredAt: e.at + 18,
     };
     ctx.addMessage(msg);
   });
@@ -326,6 +360,7 @@ export function registerMediaHandlers(
       at: e.at,
     };
     ctx.addMessage(msg);
+    markUnreadBoundary(ctx, from, msg.id);
     bumpUnread(ctx, from);
   });
 
@@ -342,6 +377,7 @@ export function registerMediaHandlers(
       timestamp: ctx.generateTimestamp(e.at),
       status: "sent",
       at: e.at,
+      deliveredAt: e.at + 18,
     };
     ctx.addMessage(msg);
   });
@@ -364,6 +400,7 @@ export function registerMediaHandlers(
       at: e.at,
     };
     ctx.addMessage(msg);
+    markUnreadBoundary(ctx, from, msg.id);
     bumpUnread(ctx, from);
   });
 
@@ -382,6 +419,7 @@ export function registerMediaHandlers(
       timestamp: ctx.generateTimestamp(e.at),
       status: "sent",
       at: e.at,
+      deliveredAt: e.at + 18,
     };
     ctx.addMessage(msg);
   });

@@ -72,6 +72,9 @@ const HANDLERS = createWhatsAppHandlers();
 
 function syncViewMode(state: WhatsAppState): void {
   state.currentScreen ??= "chats";
+  if (state.currentScreen === "status") {
+    state.currentScreen = "updates";
+  }
 
   // Canonical mapping:
   // - "chat" => CHAT + conversationId required

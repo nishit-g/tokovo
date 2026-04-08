@@ -1,12 +1,20 @@
 import React, { useState } from "react";
+import { useCurrentFrame } from "remotion";
 import { WorldState } from "@tokovo/core";
 import { ArchiveIcon, ChevronRightIcon } from "../Icons.js";
 import { ChatListHeader } from "../ChatListHeader.js";
 import { TabNavigation } from "../TabNavigation.js";
 import { ChatListItem } from "../ChatListItem.js";
-import { whatsappColors, spacing, typography } from "../theme.js";
+import { spacing, typography } from "../theme.js";
 import { WhatsAppConversation, WhatsAppState } from "../../types/index.js";
-import { normalizeMessages } from "../../utils/messages.js";
+import {
+  formatConversationListTimestamp,
+  getBaseTime,
+  normalizeMessages,
+} from "../../utils/messages.js";
+import { resolveTypingMembers } from "../../utils/participants.js";
+import { resolveDeliveryStage } from "../../utils/status.js";
+import { useTheme } from "../../theme/ThemeContext.js";
 
 // =============================================================================
 // TYPES
@@ -30,19 +38,21 @@ type FilterType = "all" | "unread" | "favorites" | "groups";
 // ARCHIVED ROW COMPONENT
 // =============================================================================
 
-const ArchivedRow: React.FC<{ count: number }> = ({ count }) => (
-  <div
-    style={{
-      display: "flex",
-      height: spacing.chatListItemHeight,
-      alignItems: "center",
-      paddingLeft: spacing.avatarMarginLeft,
-      paddingRight: spacing.contentMarginRight,
-      cursor: "pointer",
-      backgroundColor: whatsappColors.bgPrimary,
-      borderBottom: `0.5px solid ${whatsappColors.separator}`,
-    }}
-  >
+const ArchivedRow: React.FC<{ count: number }> = ({ count }) => {
+  const theme = useTheme();
+  return (
+    <div
+      style={{
+        display: "flex",
+        height: spacing.chatListItemHeight,
+        alignItems: "center",
+        paddingLeft: spacing.avatarMarginLeft,
+        paddingRight: spacing.contentMarginRight,
+        cursor: "pointer",
+        backgroundColor: theme.colors.background,
+        borderBottom: `0.5px solid ${theme.colors.divider}`,
+      }}
+    >
     {/* Archive Icon */}
     <div
       style={{
@@ -52,7 +62,7 @@ const ArchivedRow: React.FC<{ count: number }> = ({ count }) => (
         marginRight: spacing.contentMarginLeft,
       }}
     >
-      <ArchiveIcon color={whatsappColors.textSecondary} size={20} />
+      <ArchiveIcon color={theme.colors.timestamp} size={20} />
     </div>
 
     {/* Content */}
@@ -67,7 +77,8 @@ const ArchivedRow: React.FC<{ count: number }> = ({ count }) => (
       <span
         style={{
           ...typography.headline,
-          color: whatsappColors.textPrimary,
+          color: theme.colors.receivedBubbleText,
+          fontFamily: theme.typography.fontFamily,
         }}
       >
         Archived
@@ -78,23 +89,26 @@ const ArchivedRow: React.FC<{ count: number }> = ({ count }) => (
           <span
             style={{
               ...typography.body,
-              color: whatsappColors.textSecondary,
+              color: theme.colors.timestamp,
+              fontFamily: theme.typography.fontFamily,
             }}
           >
             {count}
           </span>
         )}
-        <ChevronRightIcon color={whatsappColors.textSecondary} size={14} />
+        <ChevronRightIcon color={theme.colors.timestamp} size={14} />
       </div>
     </div>
-  </div>
-);
+    </div>
+  );
+};
 
 // =============================================================================
 // EMPTY STATE COMPONENT
 // =============================================================================
 
 const EmptyState: React.FC<{ filter: FilterType }> = ({ filter }) => {
+  const theme = useTheme();
   const getMessage = () => {
     switch (filter) {
       case "unread":
@@ -142,7 +156,8 @@ const EmptyState: React.FC<{ filter: FilterType }> = ({ filter }) => {
         style={{
           ...typography.headline,
           fontSize: 20,
-          color: whatsappColors.textPrimary,
+          color: theme.colors.receivedBubbleText,
+          fontFamily: theme.typography.fontFamily,
           marginBottom: 8,
         }}
       >
@@ -151,7 +166,8 @@ const EmptyState: React.FC<{ filter: FilterType }> = ({ filter }) => {
       <div
         style={{
           ...typography.body,
-          color: whatsappColors.textSecondary,
+          color: theme.colors.timestamp,
+          fontFamily: theme.typography.fontFamily,
         }}
       >
         {subtitle}
@@ -170,8 +186,11 @@ export const ChatListScreen: React.FC<ChatListScreenProps> = ({
   width: _width,
   height: _height,
 }) => {
+  const theme = useTheme();
   const [activeFilter, setActiveFilter] = useState<FilterType>("all");
+  const currentFrame = useCurrentFrame();
   const deviceId = Object.keys(world.devices || {})[0];
+  const baseTime = getBaseTime(world, deviceId);
 
   // TokovoRenderer already provides safeAreaInsets in design coordinates.
   const safeAreaTop = safeAreaInsets?.top ?? 47;
@@ -229,10 +248,9 @@ export const ChatListScreen: React.FC<ChatListScreenProps> = ({
         flexDirection: "column",
         height: "100%",
         width: "100%",
-        backgroundColor: whatsappColors.bgList,
+        backgroundColor: theme.colors.headerBackground,
         position: "relative",
-        fontFamily:
-          "-apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro Display', sans-serif",
+        fontFamily: theme.typography.fontFamily,
         overflow: "hidden",
       }}
     >
@@ -250,7 +268,7 @@ export const ChatListScreen: React.FC<ChatListScreenProps> = ({
           flex: 1,
           overflow: "auto",
           overflowX: "hidden",
-          backgroundColor: whatsappColors.bgList,
+          backgroundColor: theme.colors.headerBackground,
           paddingBottom: spacing.tabBarHeight + safeAreaBottom,
           WebkitOverflowScrolling: "touch",
         }}
@@ -345,21 +363,18 @@ export const ChatListScreen: React.FC<ChatListScreenProps> = ({
               // Determine read status
               let status: "sent" | "delivered" | "read" | undefined;
               if (lastRenderable?.from === "me") {
-                if (lastRenderable.status === "read") status = "read";
-                else if (lastRenderable.status === "delivered") status = "delivered";
-                else if (lastRenderable.status === "sent") status = "sent";
-                else if (lastRenderable.status === "sending") status = "sent";
-                else if (lastRenderable.readAt) status = "read";
-                else if (lastRenderable.deliveredAt) status = "delivered";
-                else status = "sent";
+                status = resolveDeliveryStage(lastRenderable, currentFrame);
               }
 
               // Check if someone is typing
-              const isTyping =
-                conv.typing &&
-                Object.entries(conv.typing).some(
-                  ([id, typing]) => typing && id !== "me",
-                );
+              const typingMembers = resolveTypingMembers(conv);
+              const isTyping = typingMembers.length > 0;
+              const typingText = (() => {
+                if (!isTyping) return undefined;
+                if (conv.type !== "group") return "typing…";
+                if (typingMembers.length === 1) return `${typingMembers[0].name} typing…`;
+                return `${typingMembers[0].name} +${typingMembers.length - 1} typing…`;
+              })();
 
               const lastMessagePreview = (() => {
                 if (!lastRenderable) return "No messages yet";
@@ -414,7 +429,15 @@ export const ChatListScreen: React.FC<ChatListScreenProps> = ({
                       : undefined
                   }
                   lastMessage={lastMessagePreview}
-                  timestamp={lastRenderable?.timestamp || lastMsg?.timestamp || ""}
+                  timestamp={
+                    formatConversationListTimestamp(
+                      lastRenderable?.timestampMs ?? lastMsg?.timestampMs,
+                      baseTime,
+                    ) ||
+                    lastRenderable?.timestamp ||
+                    lastMsg?.timestamp ||
+                    ""
+                  }
                   unreadCount={conv.unreadCount || 0}
                   status={status}
                   isGroup={conv.type === "group"}
@@ -426,6 +449,9 @@ export const ChatListScreen: React.FC<ChatListScreenProps> = ({
                   mediaType={mediaType}
                   senderName={senderName}
                   subtitle={groupSubtitle}
+                  typingText={typingText}
+                  isLocked={conv.isLocked}
+                  isVerifiedBusiness={conv.isVerifiedBusiness}
                 />
               );
             })}

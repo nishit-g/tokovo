@@ -13,6 +13,11 @@ export interface LocationMessageBubbleProps {
   senderName?: string;
   timestamp?: string;
   read?: boolean;
+  messageAt?: number;
+  deliveredAt?: number;
+  readAt?: number;
+  status?: "sending" | "sent" | "delivered" | "read";
+  starred?: boolean;
 }
 
 /** Draws a stylized static map grid when no thumbnail is provided. */
@@ -72,6 +77,11 @@ export const LocationMessageBubble = memo(function LocationMessageBubble({
   senderName,
   timestamp = "10:42",
   read = false,
+  messageAt,
+  deliveredAt,
+  readAt,
+  status,
+  starred = false,
 }: LocationMessageBubbleProps) {
   const theme = useTheme();
   const resolvedMapThumbnailUrl =
@@ -87,6 +97,11 @@ export const LocationMessageBubble = memo(function LocationMessageBubble({
       senderName={senderName}
       timestamp={timestamp}
       read={read}
+      messageAt={messageAt}
+      deliveredAt={deliveredAt}
+      readAt={readAt}
+      status={status}
+      starred={starred}
       noPadding
       overlayTimestamp={!hasCaption}
       minWidth={240}
@@ -136,7 +151,16 @@ export const LocationMessageBubble = memo(function LocationMessageBubble({
         )}
 
         {!hasCaption && (
-          <TimestampOverlay timestamp={timestamp} isMe={isMe} read={read} />
+          <TimestampOverlay
+            timestamp={timestamp}
+            isMe={isMe}
+            read={read}
+            starred={starred}
+            messageAt={messageAt}
+            deliveredAt={deliveredAt}
+            readAt={readAt}
+            status={status}
+          />
         )}
       </div>
 
@@ -169,7 +193,16 @@ export const LocationMessageBubble = memo(function LocationMessageBubble({
               {locationAddress}
             </div>
           )}
-          <TimestampRow timestamp={timestamp} isMe={isMe} read={read} />
+          <TimestampRow
+            timestamp={timestamp}
+            isMe={isMe}
+            read={read}
+            starred={starred}
+            messageAt={messageAt}
+            deliveredAt={deliveredAt}
+            readAt={readAt}
+            status={status}
+          />
         </div>
       )}
     </MediaBubbleBase>

@@ -1,8 +1,15 @@
 import React, { memo } from "react";
 import { Img, useCurrentFrame, interpolate } from "remotion";
-import { DoubleCheckIcon, MutedIcon, PinIcon } from "./Icons.js";
-import { whatsappColors, typography, spacing } from "./theme.js";
+import {
+  DoubleCheckIcon,
+  MutedIcon,
+  PinIcon,
+  LockIcon,
+  SingleCheckIcon,
+} from "./Icons.js";
+import { spacing, typography } from "./theme.js";
 import { resolveAvatarWithFallback } from "../utils/avatar.js";
+import { useTheme } from "../theme/ThemeContext.js";
 
 // =============================================================================
 // TYPES
@@ -33,13 +40,19 @@ export interface ChatListItemProps {
   | "gif"
   | null;
   senderName?: string;
+  typingText?: string;
+  isLocked?: boolean;
+  isVerifiedBusiness?: boolean;
+  isChannel?: boolean;
+  isFollowed?: boolean;
+  channelUnreadCount?: number;
 }
 
 // =============================================================================
 // HELPER COMPONENTS
 // =============================================================================
 
-const TypingDots: React.FC = () => {
+const TypingDots: React.FC<{ color: string }> = ({ color }) => {
   const frame = useCurrentFrame();
   const cycleLength = 42;
 
@@ -65,7 +78,7 @@ const TypingDots: React.FC = () => {
           width: 4,
           height: 4,
           borderRadius: "50%",
-          backgroundColor: whatsappColors.primary,
+          backgroundColor: color,
           display: "inline-block",
           transform: `translateY(${translateY}px)`,
           opacity,
@@ -77,7 +90,7 @@ const TypingDots: React.FC = () => {
   return (
     <span
       style={{
-        color: whatsappColors.primary,
+        color,
         display: "inline-flex",
         alignItems: "center",
         gap: 2,
@@ -88,7 +101,10 @@ const TypingDots: React.FC = () => {
   );
 };
 
-const StatusRing: React.FC<{ size: number }> = ({ size }) => {
+const StatusRing: React.FC<{ size: number; color: string }> = ({
+  size,
+  color,
+}) => {
   const strokeWidth = 2;
   const radius = (size - strokeWidth) / 2;
   const circ = 2 * Math.PI * radius;
@@ -109,7 +125,7 @@ const StatusRing: React.FC<{ size: number }> = ({ size }) => {
         cy={size / 2}
         r={radius}
         fill="none"
-        stroke={whatsappColors.primary}
+        stroke={color}
         strokeWidth={strokeWidth}
         strokeDasharray={`${circ * 0.15} ${circ * 0.05}`}
         strokeLinecap="round"
@@ -157,16 +173,41 @@ export const ChatListItem = memo(function ChatListItem({
   hasStatus,
   mediaType,
   senderName,
+  typingText,
+  isLocked,
+  isVerifiedBusiness,
+  isChannel,
+  isFollowed,
+  channelUnreadCount = 0,
 }: ChatListItemProps) {
+  const theme = useTheme();
   const hasUnread = unreadCount > 0;
+  const primaryText = theme.colors.receivedBubbleText;
+  const secondaryText = theme.colors.timestamp;
+  const tertiaryText = `${theme.colors.timestamp}B3`;
+  const accent = theme.colors.accent;
+  const background = theme.colors.background;
+  const divider = theme.colors.divider;
+  const avatarPlaceholder = `${theme.colors.divider}66`;
+  const avatarBorder = theme.colors.background;
 
   const buildMessagePreview = (): React.ReactNode => {
+    if (isChannel) {
+      return <span style={{ color: secondaryText }}>{lastMessage}</span>;
+    }
+
     if (isTyping) {
       return (
         <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
-          <TypingDots />
-          <span style={{ color: whatsappColors.primary, fontWeight: 500 }}>
-            typing…
+          <TypingDots color={accent} />
+          <span
+            style={{
+              color: accent,
+              fontWeight: 500,
+              fontFamily: theme.typography.fontFamily,
+            }}
+          >
+            {typingText || "typing…"}
           </span>
         </span>
       );
@@ -176,7 +217,7 @@ export const ChatListItem = memo(function ChatListItem({
       const prefix = getMediaPrefix(mediaType);
       if (prefix) {
         return (
-          <span style={{ color: whatsappColors.textSecondary }}>
+          <span style={{ color: secondaryText }}>
             {senderName && (
               <span style={{ fontWeight: 500 }}>{senderName}: </span>
             )}
@@ -189,9 +230,7 @@ export const ChatListItem = memo(function ChatListItem({
     if (senderName) {
       return (
         <>
-          <span
-            style={{ fontWeight: 500, color: whatsappColors.textSecondary }}
-          >
+          <span style={{ fontWeight: 500, color: secondaryText }}>
             {senderName}:
           </span>{" "}
           <span>{lastMessage}</span>
@@ -204,9 +243,10 @@ export const ChatListItem = memo(function ChatListItem({
 
   return (
     <div
+      data-anchor={isChannel ? "channel_row" : "chat_row"}
       style={{
         display: "flex",
-        backgroundColor: whatsappColors.bgPrimary,
+        backgroundColor: background,
         cursor: "pointer",
         height: spacing.chatListItemHeight,
         alignItems: "center",
@@ -234,7 +274,7 @@ export const ChatListItem = memo(function ChatListItem({
               transform: "translateY(-50%)",
             }}
           >
-            <StatusRing size={spacing.avatarSize + 4} />
+            <StatusRing size={spacing.avatarSize + 4} color={accent} />
           </div>
         )}
 
@@ -244,7 +284,7 @@ export const ChatListItem = memo(function ChatListItem({
               width: spacing.avatarSize,
               height: spacing.avatarSize,
               borderRadius: spacing.avatarRadius,
-              backgroundColor: whatsappColors.avatarPlaceholder,
+              backgroundColor: avatarPlaceholder,
               overflow: "hidden",
               position: "relative",
             }}
@@ -262,8 +302,8 @@ export const ChatListItem = memo(function ChatListItem({
                   position: "absolute",
                   top: idx === 0 ? 0 : spacing.avatarSize * 0.3,
                   left: idx === 0 ? 0 : spacing.avatarSize * 0.3,
-                  border: `2px solid ${whatsappColors.avatarBorder}`,
-                  backgroundColor: whatsappColors.avatarPlaceholder,
+                  border: `2px solid ${avatarBorder}`,
+                  backgroundColor: avatarPlaceholder,
                 }}
               />
             ))}
@@ -274,9 +314,10 @@ export const ChatListItem = memo(function ChatListItem({
               width: spacing.avatarSize,
               height: spacing.avatarSize,
               borderRadius: spacing.avatarRadius,
-              backgroundColor: whatsappColors.avatarPlaceholder,
+              backgroundColor: avatarPlaceholder,
               overflow: "hidden",
               flexShrink: 0,
+              position: "relative",
             }}
           >
             <Img
@@ -284,6 +325,29 @@ export const ChatListItem = memo(function ChatListItem({
               alt={name}
               style={{ width: "100%", height: "100%", objectFit: "cover" }}
             />
+            {isChannel && channelUnreadCount > 0 && (
+              <div
+                style={{
+                  position: "absolute",
+                  right: 2,
+                  top: 2,
+                  minWidth: 18,
+                  height: 18,
+                  padding: "0 5px",
+                  borderRadius: 999,
+                  backgroundColor: theme.colors.unreadBadge,
+                  color: theme.colors.unreadBadgeText,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontSize: 10,
+                  fontWeight: 700,
+                  border: `2px solid ${background}`,
+                }}
+              >
+                {channelUnreadCount > 99 ? "99+" : channelUnreadCount}
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -300,7 +364,7 @@ export const ChatListItem = memo(function ChatListItem({
           paddingLeft: spacing.contentMarginLeft,
           borderBottom: isLast
             ? "none"
-            : `0.5px solid ${whatsappColors.separator}`,
+            : `0.5px solid ${divider}`,
           minWidth: 0,
         }}
       >
@@ -316,7 +380,8 @@ export const ChatListItem = memo(function ChatListItem({
           <div
             style={{
               ...typography.headline,
-              color: whatsappColors.textPrimary,
+              color: primaryText,
+              fontFamily: theme.typography.fontFamily,
               whiteSpace: "nowrap",
               overflow: "hidden",
               textOverflow: "ellipsis",
@@ -327,6 +392,21 @@ export const ChatListItem = memo(function ChatListItem({
             {name}
           </div>
 
+          {isChannel && (
+            <div
+              style={{
+                ...typography.caption,
+                fontFamily: theme.typography.fontFamily,
+                color: isFollowed ? primaryText : accent,
+                fontWeight: 700,
+                marginRight: 8,
+                whiteSpace: "nowrap",
+              }}
+            >
+              {isFollowed ? "Following" : "Follow"}
+            </div>
+          )}
+
           <div
             style={{
               display: "flex",
@@ -336,14 +416,15 @@ export const ChatListItem = memo(function ChatListItem({
             }}
           >
             {isMuted && (
-              <MutedIcon size={14} color={whatsappColors.textSecondary} />
+              <MutedIcon size={14} color={secondaryText} />
             )}
             <span
               style={{
                 ...typography.caption,
+                fontFamily: theme.typography.fontFamily,
                 color: hasUnread
-                  ? whatsappColors.primary
-                  : whatsappColors.textSecondary,
+                  ? accent
+                  : secondaryText,
               }}
             >
               {timestamp}
@@ -355,7 +436,8 @@ export const ChatListItem = memo(function ChatListItem({
           <div
             style={{
               ...typography.caption,
-              color: whatsappColors.textTertiary,
+              color: tertiaryText,
+              fontFamily: theme.typography.fontFamily,
               marginBottom: 2,
               whiteSpace: "nowrap",
               overflow: "hidden",
@@ -377,7 +459,8 @@ export const ChatListItem = memo(function ChatListItem({
           <div
             style={{
               ...typography.body,
-              color: hasUnread ? whatsappColors.textPrimary : whatsappColors.textSecondary,
+              color: hasUnread ? primaryText : secondaryText,
+              fontFamily: theme.typography.fontFamily,
               whiteSpace: "nowrap",
               overflow: "hidden",
               textOverflow: "ellipsis",
@@ -392,7 +475,14 @@ export const ChatListItem = memo(function ChatListItem({
               <span
                 style={{ display: "flex", alignItems: "center", flexShrink: 0 }}
               >
-                <DoubleCheckIcon read={status === "read"} size={16} />
+                {status === "sent" ? (
+                  <SingleCheckIcon
+                    size={16}
+                    color={theme.colors.checkmark}
+                  />
+                ) : (
+                  <DoubleCheckIcon read={status === "read"} size={16} />
+                )}
               </span>
             )}
             <span
@@ -416,16 +506,37 @@ export const ChatListItem = memo(function ChatListItem({
             }}
           >
             {isPinned && (
-              <PinIcon size={14} color={whatsappColors.textSecondary} />
+              <PinIcon size={14} color={secondaryText} />
+            )}
+            {isLocked && (
+              <LockIcon size={13} color={secondaryText} />
+            )}
+            {isVerifiedBusiness && (
+              <div
+                style={{
+                  width: 14,
+                  height: 14,
+                  borderRadius: "50%",
+                  backgroundColor: theme.colors.link,
+                  color: "#fff",
+                  fontSize: 9,
+                  fontWeight: 700,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                ✓
+              </div>
             )}
 
             {hasUnread && (
               <div
                 style={{
                   backgroundColor: isMuted
-                    ? whatsappColors.textSecondary
-                    : whatsappColors.primary,
-                  color: whatsappColors.unreadBadgeText,
+                    ? secondaryText
+                    : theme.colors.unreadBadge,
+                  color: theme.colors.unreadBadgeText,
                   borderRadius: spacing.badgeRadius,
                   minWidth: spacing.badgeMinWidth,
                   height: spacing.badgeHeight,
@@ -434,6 +545,7 @@ export const ChatListItem = memo(function ChatListItem({
                   alignItems: "center",
                   justifyContent: "center",
                   ...typography.badge,
+                  fontFamily: theme.typography.fontFamily,
                 }}
               >
                 {unreadCount > 99 ? "99+" : unreadCount}

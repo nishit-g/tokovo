@@ -131,6 +131,24 @@ export const WhatsAppAnchorProvider: AnchorProvider = {
       anchors.lastMessage = lastMessageRect;
     }
 
+    const mediaIds = semantic?.groups?.media ?? [];
+    const lastMediaId = mediaIds[mediaIds.length - 1];
+    const lastMediaRect = lastMediaId
+      ? semantic?.regions?.[lastMediaId]?.rect
+      : undefined;
+    if (lastMediaRect) {
+      anchors.lastMedia = lastMediaRect;
+    }
+
+    const replyIds = semantic?.groups?.reply ?? [];
+    const lastReplyId = replyIds[replyIds.length - 1];
+    const lastReplyRect = lastReplyId
+      ? semantic?.regions?.[lastReplyId]?.rect
+      : undefined;
+    if (lastReplyRect) {
+      anchors.lastReply = lastReplyRect;
+    }
+
     addContentAnchor(anchors, layout as LayoutState);
 
     return {
@@ -140,4 +158,3 @@ export const WhatsAppAnchorProvider: AnchorProvider = {
     };
   },
 };
-

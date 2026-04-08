@@ -27,6 +27,16 @@ export const WhatsAppAnchors: PluginAnchorRegistry = {
       paddingPx: 40,
       targetFill: 0.6,
     },
+    lastMedia: {
+      anchorPoint: { x: 0.5, y: 0.5 },
+      paddingPx: 22,
+      targetFill: 0.68,
+    },
+    lastReply: {
+      anchorPoint: { x: 0.5, y: 0.38 },
+      paddingPx: 18,
+      targetFill: 0.44,
+    },
     device: {
       anchorPoint: { x: 0.5, y: 0.5 },
       paddingPx: 0,
@@ -56,6 +66,41 @@ export const WhatsAppAnchors: PluginAnchorRegistry = {
       anchorPoint: { x: 0.5, y: 0.15 },
       paddingPx: 10,
       targetFill: 0.9,
+    },
+    updates_header: {
+      anchorPoint: { x: 0.5, y: 0.15 },
+      paddingPx: 10,
+      targetFill: 0.9,
+    },
+    updates_status_strip: {
+      anchorPoint: { x: 0.5, y: 0.32 },
+      paddingPx: 18,
+      targetFill: 0.86,
+    },
+    updates_channels: {
+      anchorPoint: { x: 0.5, y: 0.58 },
+      paddingPx: 18,
+      targetFill: 0.84,
+    },
+    updates_channels_hero: {
+      anchorPoint: { x: 0.5, y: 0.46 },
+      paddingPx: 16,
+      targetFill: 0.88,
+    },
+    updates_list: {
+      anchorPoint: { x: 0.5, y: 0.5 },
+      paddingPx: 14,
+      targetFill: 0.94,
+    },
+    chat_row: {
+      anchorPoint: { x: 0.5, y: 0.5 },
+      paddingPx: 10,
+      targetFill: 0.92,
+    },
+    channel_row: {
+      anchorPoint: { x: 0.5, y: 0.5 },
+      paddingPx: 10,
+      targetFill: 0.92,
     },
     profile: {
       anchorPoint: { x: 0.2, y: 0.15 },

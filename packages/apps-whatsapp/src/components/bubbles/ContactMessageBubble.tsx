@@ -1,7 +1,8 @@
 import React, { memo } from "react";
-import { Img, staticFile } from "remotion";
+import { Img, staticFile, useCurrentFrame } from "remotion";
 import { MediaBubbleBase, DoubleCheckIcon } from "./shared.js";
 import { useTheme } from "../../theme/ThemeContext.js";
+import { resolveDeliveryStage } from "../../utils/status.js";
 
 export interface ContactMessageBubbleProps {
   contactName: string;
@@ -11,6 +12,11 @@ export interface ContactMessageBubbleProps {
   senderName?: string;
   timestamp?: string;
   read?: boolean;
+  messageAt?: number;
+  deliveredAt?: number;
+  readAt?: number;
+  status?: "sending" | "sent" | "delivered" | "read";
+  starred?: boolean;
   platform?: string;
 }
 
@@ -22,9 +28,28 @@ export const ContactMessageBubble = memo(function ContactMessageBubble({
   senderName,
   timestamp = "10:42",
   read = false,
+  messageAt,
+  deliveredAt,
+  readAt,
+  status,
+  starred = false,
 }: ContactMessageBubbleProps) {
   const theme = useTheme();
+  const currentFrame = useCurrentFrame();
   const paddingH = theme.spacing.messagePaddingHorizontal - 4;
+  const deliveryStage =
+    isMe
+      ? resolveDeliveryStage(
+        {
+          from: "me",
+          at: messageAt,
+          deliveredAt,
+          readAt,
+          status,
+        },
+        currentFrame,
+      )
+      : undefined;
 
   return (
     <MediaBubbleBase
@@ -32,6 +57,11 @@ export const ContactMessageBubble = memo(function ContactMessageBubble({
       senderName={senderName}
       timestamp={timestamp}
       read={read}
+      messageAt={messageAt}
+      deliveredAt={deliveredAt}
+      readAt={readAt}
+      status={status}
+      starred={starred}
       overlayTimestamp
       noPadding
       minWidth={200}
@@ -145,7 +175,14 @@ export const ContactMessageBubble = memo(function ContactMessageBubble({
           >
             {timestamp}
           </span>
-          {isMe && <DoubleCheckIcon read={read} />}
+          {starred && (
+            <span style={{ color: theme.colors.timestamp, fontSize: 10 }}>★</span>
+          )}
+          {isMe && (
+            <DoubleCheckIcon
+              stage={deliveryStage ?? (read ? "read" : "delivered")}
+            />
+          )}
         </div>
       </div>
     </MediaBubbleBase>

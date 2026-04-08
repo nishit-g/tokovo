@@ -28,6 +28,8 @@ export {
   type ChatListScreenProps,
 } from "./screens/ChatListScreen.js";
 export {
+  UpdatesScreen,
+  type UpdatesScreenProps,
   StatusScreen,
   type StatusScreenProps,
 } from "./screens/StatusScreen.js";

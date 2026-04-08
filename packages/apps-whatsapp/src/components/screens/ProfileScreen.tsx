@@ -1,12 +1,13 @@
 import React from "react";
 import { WorldState } from "@tokovo/core";
 import { Img } from "remotion";
-import { whatsappColors, spacing, typography } from "../theme.js";
+import { spacing, typography } from "../theme.js";
 import { PhoneCallIcon, VideoCallIcon } from "../Icons.js";
 import { resolveAvatarWithFallback } from "../../utils/avatar.js";
 import { WhatsAppConversation, WhatsAppState } from "../../types/index.js";
 import { GroupInfoScreen } from "./GroupInfoScreen.js";
 import { normalizeMessages } from "../../utils/messages.js";
+import { useTheme } from "../../theme/ThemeContext.js";
 
 export interface ProfileScreenProps {
   world: WorldState;
@@ -26,7 +27,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
   width: _width,
   height: _height,
 }) => {
-  // TokovoRenderer already provides safeAreaInsets in design coordinates.
+  const theme = useTheme();
   const safeAreaTop = safeAreaInsets?.top ?? 47;
 
   const appState = (world.appState?.["app_whatsapp"] || {}) as WhatsAppState;
@@ -40,9 +41,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
     Object.keys(conversations)[0];
   const conversation = conversationId ? conversations[conversationId] : undefined;
 
-  if (!conversation) {
-    return null;
-  }
+  if (!conversation) return null;
 
   if (conversation.type === "group") {
     return (
@@ -72,9 +71,10 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
       style={{
         width: "100%",
         height: "100%",
-        backgroundColor: whatsappColors.bgList,
+        backgroundColor: theme.colors.headerBackground,
         display: "flex",
         flexDirection: "column",
+        fontFamily: theme.typography.fontFamily,
       }}
     >
       <div
@@ -85,11 +85,18 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
           height: spacing.navBarHeight + safeAreaTop,
           display: "flex",
           alignItems: "center",
-          borderBottom: `0.5px solid ${whatsappColors.separatorLight}`,
-          backgroundColor: whatsappColors.surfaceGlass,
+          borderBottom: `0.5px solid ${theme.colors.divider}`,
+          backgroundColor: `${theme.colors.headerBackground}F2`,
+          backdropFilter: "blur(20px)",
         }}
       >
-        <div style={{ ...typography.title, color: whatsappColors.textPrimary }}>
+        <div
+          style={{
+            ...typography.title,
+            color: theme.colors.receivedBubbleText,
+            fontFamily: theme.typography.fontFamily,
+          }}
+        >
           Contact Info
         </div>
       </div>
@@ -101,8 +108,8 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
             display: "flex",
             alignItems: "center",
             gap: spacing.contentMarginLeft,
-            backgroundColor: whatsappColors.bgPrimary,
-            borderBottom: `0.5px solid ${whatsappColors.separator}`,
+            backgroundColor: theme.colors.background,
+            borderBottom: `0.5px solid ${theme.colors.divider}`,
           }}
         >
           <div
@@ -111,7 +118,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
               height: 72,
               borderRadius: "50%",
               overflow: "hidden",
-              backgroundColor: whatsappColors.avatarPlaceholder,
+              backgroundColor: `${theme.colors.divider}66`,
             }}
           >
             <Img
@@ -124,10 +131,23 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
             />
           </div>
           <div>
-            <div style={{ ...typography.headline, fontSize: 20 }}>
+            <div
+              style={{
+                ...typography.headline,
+                fontSize: 20,
+                color: theme.colors.receivedBubbleText,
+                fontFamily: theme.typography.fontFamily,
+              }}
+            >
               {conversation.name || "Contact"}
             </div>
-            <div style={{ ...typography.body, color: whatsappColors.textSecondary }}>
+            <div
+              style={{
+                ...typography.body,
+                color: theme.colors.timestamp,
+                fontFamily: theme.typography.fontFamily,
+              }}
+            >
               online
             </div>
           </div>
@@ -138,57 +158,65 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
             padding: `${spacing.sectionGap}px ${spacing.pagePaddingX}px`,
             display: "flex",
             gap: spacing.contentMarginLeft,
-            backgroundColor: whatsappColors.bgPrimary,
-            borderBottom: `0.5px solid ${whatsappColors.separator}`,
+            backgroundColor: theme.colors.background,
+            borderBottom: `0.5px solid ${theme.colors.divider}`,
           }}
         >
-          <div
-            style={{
-              flex: 1,
-              backgroundColor: whatsappColors.bgSecondary,
-              borderRadius: 14,
-              padding: "12px 14px",
-              display: "flex",
-              alignItems: "center",
-              gap: 8,
-              justifyContent: "center",
-            }}
-          >
-            <PhoneCallIcon color={whatsappColors.primary} />
-            <span style={{ ...typography.body, color: whatsappColors.textPrimary }}>
-              Call
-            </span>
-          </div>
-          <div
-            style={{
-              flex: 1,
-              backgroundColor: whatsappColors.bgSecondary,
-              borderRadius: 14,
-              padding: "12px 14px",
-              display: "flex",
-              alignItems: "center",
-              gap: 8,
-              justifyContent: "center",
-            }}
-          >
-            <VideoCallIcon color={whatsappColors.primary} />
-            <span style={{ ...typography.body, color: whatsappColors.textPrimary }}>
-              Video
-            </span>
-          </div>
+          {[
+            { label: "Call", Icon: PhoneCallIcon },
+            { label: "Video", Icon: VideoCallIcon },
+          ].map(({ label, Icon }) => (
+            <div
+              key={label}
+              style={{
+                flex: 1,
+                backgroundColor: `${theme.colors.accent}10`,
+                borderRadius: 14,
+                padding: "12px 14px",
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+                justifyContent: "center",
+                border: `1px solid ${theme.colors.divider}`,
+              }}
+            >
+              <Icon color={theme.colors.accent} />
+              <span
+                style={{
+                  ...typography.body,
+                  color: theme.colors.receivedBubbleText,
+                  fontFamily: theme.typography.fontFamily,
+                }}
+              >
+                {label}
+              </span>
+            </div>
+          ))}
         </div>
 
         <div
           style={{
             padding: `${spacing.sectionGap}px ${spacing.pagePaddingX}px`,
-            backgroundColor: whatsappColors.bgPrimary,
-            borderBottom: `0.5px solid ${whatsappColors.separator}`,
+            backgroundColor: theme.colors.background,
+            borderBottom: `0.5px solid ${theme.colors.divider}`,
           }}
         >
-          <div style={{ ...typography.caption, color: whatsappColors.textSecondary }}>
+          <div
+            style={{
+              ...typography.caption,
+              color: theme.colors.timestamp,
+              fontFamily: theme.typography.fontFamily,
+            }}
+          >
             Media, links, and docs
           </div>
-          <div style={{ ...typography.headline, color: whatsappColors.textPrimary }}>
+          <div
+            style={{
+              ...typography.headline,
+              color: theme.colors.receivedBubbleText,
+              fontFamily: theme.typography.fontFamily,
+            }}
+          >
             {mediaCount} items
           </div>
         </div>

@@ -9,6 +9,11 @@ export interface GifMessageBubbleProps {
   senderName?: string;
   timestamp?: string;
   read?: boolean;
+  messageAt?: number;
+  deliveredAt?: number;
+  readAt?: number;
+  status?: "sending" | "sent" | "delivered" | "read";
+  starred?: boolean;
   platform?: string;
 }
 
@@ -18,6 +23,11 @@ export const GifMessageBubble = memo(function GifMessageBubble({
   senderName,
   timestamp = "10:42",
   read = false,
+  messageAt,
+  deliveredAt,
+  readAt,
+  status,
+  starred = false,
 }: GifMessageBubbleProps) {
   const theme = useTheme();
   const resolvedGifUrl = gifUrl.startsWith("/") ? staticFile(gifUrl) : gifUrl;
@@ -28,6 +38,11 @@ export const GifMessageBubble = memo(function GifMessageBubble({
       senderName={senderName}
       timestamp={timestamp}
       read={read}
+      messageAt={messageAt}
+      deliveredAt={deliveredAt}
+      readAt={readAt}
+      status={status}
+      starred={starred}
       overlayTimestamp
       noPadding
     >
@@ -68,7 +83,16 @@ export const GifMessageBubble = memo(function GifMessageBubble({
           </span>
         </div>
 
-        <TimestampOverlay timestamp={timestamp} isMe={isMe} read={read} />
+        <TimestampOverlay
+          timestamp={timestamp}
+          isMe={isMe}
+          read={read}
+          starred={starred}
+          messageAt={messageAt}
+          deliveredAt={deliveredAt}
+          readAt={readAt}
+          status={status}
+        />
       </div>
     </MediaBubbleBase>
   );

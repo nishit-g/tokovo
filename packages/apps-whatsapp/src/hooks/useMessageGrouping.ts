@@ -17,12 +17,17 @@ const GROUP_TIME_THRESHOLD_SECONDS = 60;
 export const useMessageGrouping = (messages: MessageData[], ownerName: string = "me"): MessageGroup[] => {
     return useMemo(() => {
         const groups: MessageGroup[] = [];
+        const normalizedOwnerName = ownerName.trim().toLowerCase();
 
         let currentGroup: MessageGroup | null = null;
 
         messages.forEach((msg) => {
             const isSystem = msg.type === "system" || msg.type === "screenshot_alert";
-            const isMe = msg.from === ownerName;
+            const normalizedFrom = msg.from.trim().toLowerCase();
+            const isMe =
+              normalizedFrom === "me" ||
+              (normalizedOwnerName.length > 0 && normalizedFrom === normalizedOwnerName);
+            const senderId = isMe ? "me" : msg.from;
 
             // System messages always break groups and sit alone
             if (isSystem) {
@@ -40,7 +45,7 @@ export const useMessageGrouping = (messages: MessageData[], ownerName: string = 
             // Rules: Same Sender AND Time Gap is small
             let shouldGroup = false;
 
-            if (currentGroup && currentGroup.senderId === msg.from && currentGroup.senderId !== "system") {
+            if (currentGroup && currentGroup.senderId === senderId && currentGroup.senderId !== "system") {
                 const lastMsg = currentGroup.messages[currentGroup.messages.length - 1].data;
 
                 // Check time frame if available
@@ -70,7 +75,7 @@ export const useMessageGrouping = (messages: MessageData[], ownerName: string = 
                 // Start new group
                 currentGroup = {
                     id: `group_${msg.id}`,
-                    senderId: msg.from,
+                    senderId,
                     isMe,
                     messages: [{
                         data: msg,

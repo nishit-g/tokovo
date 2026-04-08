@@ -4,8 +4,16 @@ import { DEFAULT_AUDIO_STATE, DEFAULT_BASE_CAMERA_STATE } from "@tokovo/core";
 import { computeFeedLayout } from "../layout/index.js";
 import { createWhatsAppInitialState } from "../runtime/initial-state.js";
 
-function computeForScreen(currentScreen: string) {
-  const appState = { ...createWhatsAppInitialState(), currentScreen, viewMode: "FEED" as const };
+function computeForScreen(
+  currentScreen: string,
+  conversations?: Record<string, unknown>,
+) {
+  const appState = {
+    ...createWhatsAppInitialState(),
+    currentScreen,
+    viewMode: "FEED" as const,
+    conversations,
+  };
   const world = {
     appState: { app_whatsapp: appState },
     devices: {},
@@ -41,9 +49,55 @@ describe("WhatsApp semantic anchors (FEED)", () => {
     expectHas(layout, ["device", "app", "tab_bar", "chat_list_header", "chat_list"]);
   });
 
-  it("status includes expected anchors", () => {
+  it("updates includes expected anchors", () => {
+    const layout = computeForScreen("updates");
+    expectHas(layout, [
+      "device",
+      "app",
+      "tab_bar",
+      "updates_header",
+      "updates_status_strip",
+      "updates_channels",
+      "updates_list",
+    ]);
+  });
+
+  it("status alias resolves to updates anchors", () => {
     const layout = computeForScreen("status");
-    expectHas(layout, ["device", "app", "tab_bar", "status_header", "status_list"]);
+    expectHas(layout, [
+      "device",
+      "app",
+      "tab_bar",
+      "updates_header",
+      "updates_status_strip",
+      "updates_channels",
+      "updates_list",
+    ]);
+  });
+
+  it("updates exposes channel and status row anchors", () => {
+    const layout = computeForScreen("updates", {
+      dm_naina: { id: "dm_naina", hasStatus: true, messages: [] },
+      dm_bakery: {
+        id: "dm_bakery",
+        isChannel: true,
+        isVerifiedBusiness: true,
+        messages: [],
+      },
+    });
+    expectHas(layout, ["updates_status_dm_naina", "channel_row_dm_bakery"]);
+  });
+
+  it("chats exposes per-row anchors", () => {
+    const layout = computeForScreen("chats", {
+      dm_naina: { id: "dm_naina", name: "Naina", messages: [] },
+    });
+    expectHas(layout, [
+      "chat_row_dm_naina",
+      "chat_row_dm_naina_avatar",
+      "chat_row_dm_naina_title",
+      "chat_row_dm_naina_preview",
+    ]);
   });
 
   it("calls includes expected anchors", () => {
@@ -56,4 +110,3 @@ describe("WhatsApp semantic anchors (FEED)", () => {
     expectHas(layout, ["device", "app", "tab_bar", "communities_header", "communities_list"]);
   });
 });
-

@@ -28,6 +28,7 @@ const MessageRefSchema = z.object({
 const ReplyToSchema = z.object({
   messageId: z.string().optional(),
   id: z.string().optional(),
+  index: z.union([z.number(), z.literal("last")]).optional(),
   text: z.string().optional(),
   from: z.string().optional(),
   type: z.string().optional(),

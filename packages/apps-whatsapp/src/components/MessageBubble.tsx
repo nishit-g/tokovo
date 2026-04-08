@@ -1,8 +1,11 @@
 import { memo } from "react";
+import { useCurrentFrame } from "remotion";
 import { Check, CheckCheck } from "lucide-react";
 import { MessageContent } from "./MessageContent.js";
+import { ReplyQuote } from "./ReplyQuote.js";
 import { MessageData } from "../types/index.js";
 import { useTheme } from "../theme/ThemeContext.js";
+import { resolveDeliveryStage } from "../utils/status.js";
 
 export interface MessageBubbleProps {
   message: MessageData;
@@ -28,6 +31,8 @@ export const MessageBubble = memo(function MessageBubble({
   messageOrder,
 }: MessageBubbleProps) {
   const theme = useTheme();
+  const currentFrame = useCurrentFrame();
+  const deliveryStage = resolveDeliveryStage(message, currentFrame);
 
   const isSystem = message.type === "system" || message.type === "screenshot_alert";
   const isSticker = message.type === "sticker";
@@ -120,6 +125,11 @@ export const MessageBubble = memo(function MessageBubble({
           isMe={isMe}
           timestamp={message.timestamp}
           read={message.status === "read"}
+          messageAt={message.at}
+          deliveredAt={message.deliveredAt}
+          readAt={message.readAt}
+          status={message.status}
+          starred={message.starred}
         />
 
         {message.reactions && message.reactions.length > 0 && (
@@ -267,41 +277,18 @@ export const MessageBubble = memo(function MessageBubble({
 
         {/* Reply-To Preview */}
         {message.replyTo && (
-          <div
-            style={{
-              backgroundColor: "rgba(0, 0, 0, 0.06)",
-              borderLeft: `3px solid ${theme.colors.accent}`,
-              borderRadius: theme.spacing.bubbleRadiusTail,
-              padding: "4px 8px",
-              marginBottom: 4,
-              fontSize: 12,
-              cursor: "pointer",
+          <ReplyQuote
+            replyTo={message.replyTo}
+            isMyMessage={isMe}
+            onClick={() => {
+              const targetId = message.replyTo?.messageId;
+              if (!targetId || typeof document === "undefined") return;
+              const node = document.querySelector(
+                `[data-message-id="${targetId}"]`,
+              ) as HTMLElement | null;
+              node?.scrollIntoView({ behavior: "smooth", block: "center" });
             }}
-          >
-            <div
-              style={{
-                color: theme.colors.accent,
-                fontWeight: 500,
-                marginBottom: 2,
-              }}
-            >
-              {message.replyTo.from || "You"}
-            </div>
-            <div
-              style={{
-                color: isMe
-                  ? theme.colors.sentBubbleText
-                  : theme.colors.receivedBubbleText,
-                opacity: 0.7,
-                overflow: "hidden",
-                textOverflow: "ellipsis",
-                whiteSpace: "nowrap",
-                maxWidth: 200,
-              }}
-            >
-              {message.replyTo.text || "📷 Photo"}
-            </div>
-          </div>
+          />
         )}
 
         <div
@@ -311,7 +298,17 @@ export const MessageBubble = memo(function MessageBubble({
               : theme.colors.receivedBubbleText,
           }}
         >
-          <MessageContent message={message} />
+          <MessageContent
+            message={message}
+            isMe={isMe}
+            timestamp={message.timestamp}
+            read={message.status === "read"}
+            messageAt={message.at}
+            deliveredAt={message.deliveredAt}
+            readAt={message.readAt}
+            status={message.status}
+            starred={message.starred}
+          />
         </div>
 
         <div
@@ -331,11 +328,16 @@ export const MessageBubble = memo(function MessageBubble({
           >
             {message.timestamp || "10:00"}
           </span>
+          {message.starred && (
+            <span style={{ fontSize: 10, color: theme.colors.timestamp }}>★</span>
+          )}
           {isMe &&
-            (message.status === "read" ? (
+            (deliveryStage === "read" ? (
               <CheckCheck size={14} color={theme.colors.checkmarkRead} />
-            ) : (
+            ) : deliveryStage === "sent" ? (
               <Check size={14} color={theme.colors.checkmark} />
+            ) : (
+              <CheckCheck size={14} color={theme.colors.checkmark} />
             ))}
         </div>
       </div>

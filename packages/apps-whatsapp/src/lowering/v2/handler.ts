@@ -149,6 +149,12 @@ const TIMING_HELPER_EVENT_TYPES = new Set<WhatsAppEventType>([
   "TYPING_START",
   "TYPING_END",
 ]);
+type AuthoredTypingSpan = { startAt: number; endAt?: number };
+type WhatsAppTypingScratchpad = {
+  lastEventAtByConversation: Map<string, number>;
+  activeMeTypingStartByConversation: Map<string, number>;
+  recentMeTypingSpanByConversation: Map<string, AuthoredTypingSpan>;
+};
 
 function computeNotBeforeFrame(prevAt: number, submitAt: number): number {
   if (prevAt <= 0) return 0;
@@ -157,6 +163,17 @@ function computeNotBeforeFrame(prevAt: number, submitAt: number): number {
 
 function shouldTrackConversationTiming(eventType: WhatsAppEventType): boolean {
   return !TIMING_HELPER_EVENT_TYPES.has(eventType);
+}
+
+function getConversationKey(event: WhatsAppTrackEvent): string {
+  const conversationId =
+    event.conversationId ??
+    (event.payload as { conversationId?: string })?.conversationId;
+  return `${event.deviceId}::${conversationId ?? "unknown"}`;
+}
+
+function getTypingActor(event: WhatsAppTrackEvent): string | undefined {
+  return (event.payload as { actor?: string })?.actor;
 }
 
 export const whatsappV2Lowering: V2LoweringHandler = {
@@ -187,18 +204,45 @@ export const whatsappV2Lowering: V2LoweringHandler = {
       return [goBackEvent as unknown as RuntimeEvent];
     }
 
+    const scratchpad = getLoweringScratchpad<WhatsAppTypingScratchpad>(
+      ctx,
+      "app_whatsapp.lowering",
+      () => ({
+        lastEventAtByConversation: new Map(),
+        activeMeTypingStartByConversation: new Map(),
+        recentMeTypingSpanByConversation: new Map(),
+      }),
+    );
+    const key = getConversationKey(event);
+
+    if (eventType === "TYPING_START" && getTypingActor(event) === "me") {
+      scratchpad.activeMeTypingStartByConversation.set(key, event.at);
+    }
+
+    if (eventType === "TYPING_END" && getTypingActor(event) === "me") {
+      const activeStart =
+        scratchpad.activeMeTypingStartByConversation.get(key) ?? event.at;
+      scratchpad.activeMeTypingStartByConversation.delete(key);
+      scratchpad.recentMeTypingSpanByConversation.set(key, {
+        startAt: activeStart,
+        endAt: event.at,
+      });
+    }
+
     if (eventType === "MESSAGE_SENT" && event.payload?.typed) {
-      const conversationId =
-        event.conversationId ??
-        (event.payload as { conversationId?: string })?.conversationId;
-      const key = `${event.deviceId}::${conversationId ?? "unknown"}`;
-      const scratchpad = getLoweringScratchpad<WhatsAppLoweringScratchpad>(
-        ctx,
-        "app_whatsapp.lowering",
-        () => ({ lastEventAtByConversation: new Map() }),
-      );
       const prevAt = scratchpad.lastEventAtByConversation.get(key) ?? 0;
-      const notBeforeFrame = computeNotBeforeFrame(prevAt, event.at);
+      const activeTypingStart =
+        scratchpad.activeMeTypingStartByConversation.get(key);
+      const recentTypingSpan =
+        scratchpad.recentMeTypingSpanByConversation.get(key);
+      const authoredTypingStart =
+        recentTypingSpan?.endAt === event.at
+          ? recentTypingSpan.startAt
+          : activeTypingStart;
+      const notBeforeFrame =
+        authoredTypingStart !== undefined && authoredTypingStart < event.at
+          ? authoredTypingStart
+          : computeNotBeforeFrame(prevAt, event.at);
       const payload = event.payload as { text?: string; charDelay?: number };
       const text = payload?.text ?? "";
 
@@ -208,11 +252,16 @@ export const whatsappV2Lowering: V2LoweringHandler = {
         text,
         requestedCharDelay: payload?.charDelay ?? 3,
         notBeforeFrame,
+        allowCompressedCharDelay: authoredTypingStart !== undefined,
         keyboardType: "default",
         returnKeyType: "send",
       });
 
       scratchpad.lastEventAtByConversation.set(key, Math.max(prevAt, event.at));
+      scratchpad.activeMeTypingStartByConversation.delete(key);
+      if (recentTypingSpan?.endAt === event.at) {
+        scratchpad.recentMeTypingSpanByConversation.delete(key);
+      }
 
       if (!plan.ok) {
         // Not enough time to animate full typing after context start.
@@ -233,15 +282,6 @@ export const whatsappV2Lowering: V2LoweringHandler = {
 
     // Update last-seen timestamp for conversation-scoped timing heuristics.
     if (shouldTrackConversationTiming(eventType)) {
-      const conversationId =
-        event.conversationId ??
-        (event.payload as { conversationId?: string })?.conversationId;
-      const key = `${event.deviceId}::${conversationId ?? "unknown"}`;
-      const scratchpad = getLoweringScratchpad<WhatsAppLoweringScratchpad>(
-        ctx,
-        "app_whatsapp.lowering",
-        () => ({ lastEventAtByConversation: new Map() }),
-      );
       const prevAt = scratchpad.lastEventAtByConversation.get(key) ?? 0;
       scratchpad.lastEventAtByConversation.set(key, Math.max(prevAt, event.at));
     }

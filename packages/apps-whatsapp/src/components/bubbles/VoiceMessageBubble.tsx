@@ -1,6 +1,8 @@
 import React, { memo } from "react";
 import { MediaBubbleBase, DoubleCheckIcon, formatDuration } from "./shared.js";
 import { useTheme } from "../../theme/ThemeContext.js";
+import { useCurrentFrame } from "remotion";
+import { resolveDeliveryStage } from "../../utils/status.js";
 
 export interface VoiceMessageBubbleProps {
   duration: number;
@@ -10,6 +12,11 @@ export interface VoiceMessageBubbleProps {
   read?: boolean;
   isPlaying?: boolean;
   playProgress?: number;
+  messageAt?: number;
+  deliveredAt?: number;
+  readAt?: number;
+  status?: "sending" | "sent" | "delivered" | "read";
+  starred?: boolean;
   platform?: string;
 }
 
@@ -21,8 +28,14 @@ export const VoiceMessageBubble = memo(function VoiceMessageBubble({
   read = false,
   isPlaying = false,
   playProgress = 0,
+  messageAt,
+  deliveredAt,
+  readAt,
+  status,
+  starred = false,
 }: VoiceMessageBubbleProps) {
   const theme = useTheme();
+  const currentFrame = useCurrentFrame();
   const waveformBars = Array.from({ length: 35 }, (_, i) => {
     const seed = (duration * 13 + i * 7) % 100;
     const baseHeight = 0.3 + 0.5 * Math.sin((i / 35) * Math.PI);
@@ -32,6 +45,19 @@ export const VoiceMessageBubble = memo(function VoiceMessageBubble({
 
   const playedBars = Math.floor(playProgress * waveformBars.length);
   const playBtnBg = isMe ? theme.colors.accent : theme.colors.onlineStatus;
+  const deliveryStage =
+    isMe
+      ? resolveDeliveryStage(
+        {
+          from: "me",
+          at: messageAt,
+          deliveredAt,
+          readAt,
+          status,
+        },
+        currentFrame,
+      )
+      : undefined;
 
   return (
     <MediaBubbleBase
@@ -39,6 +65,11 @@ export const VoiceMessageBubble = memo(function VoiceMessageBubble({
       senderName={senderName}
       timestamp={timestamp}
       read={read}
+      messageAt={messageAt}
+      deliveredAt={deliveredAt}
+      readAt={readAt}
+      status={status}
+      starred={starred}
       overlayTimestamp
       minWidth={160}
     >
@@ -132,7 +163,14 @@ export const VoiceMessageBubble = memo(function VoiceMessageBubble({
               >
                 {timestamp}
               </span>
-              {isMe && <DoubleCheckIcon read={read} />}
+              {starred && (
+                <span style={{ color: theme.colors.timestamp, fontSize: 10 }}>★</span>
+              )}
+              {isMe && (
+                <DoubleCheckIcon
+                  stage={deliveryStage ?? (read ? "read" : "delivered")}
+                />
+              )}
             </div>
           </div>
         </div>

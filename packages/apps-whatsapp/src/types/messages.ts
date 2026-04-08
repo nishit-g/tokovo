@@ -13,6 +13,7 @@ export type WhatsAppMessageType =
   | "image"
   | "video"
   | "voice"
+  | "poll"
   | "system"
   | "gif"
   | "link"
@@ -33,8 +34,11 @@ export interface BaseMessage {
   id: string;
   from: string;
   timestamp?: string;
+  timestampMs?: number;
   status?: "sending" | "sent" | "delivered" | "read";
   at?: number;
+  deliveredAt?: number;
+  readAt?: number;
   /** Reactions (tapbacks) on this message */
   reactions?: WhatsAppReaction[];
   /** Reply-to reference if this message is a reply */
@@ -45,6 +49,8 @@ export interface BaseMessage {
   forwardedFrom?: string;
   /** Sender display name for group chats */
   senderName?: string;
+  /** Whether the message is starred */
+  starred?: boolean;
 }
 
 // =============================================================================
@@ -79,6 +85,14 @@ export interface VoiceMessage extends BaseMessage {
   playProgress?: number;
 }
 
+export interface PollMessage extends BaseMessage {
+  type: "poll";
+  pollQuestion: string;
+  options: Array<{ text: string; votes?: number }>;
+  totalVotes?: number;
+  pollStatus?: string;
+}
+
 export interface GifMessage extends BaseMessage {
   type: "gif";
   gifUrl: string;
@@ -100,7 +114,10 @@ export interface SystemMessage extends BaseMessage {
     | "group_created"
     | "group_name_changed"
     | "date_change"
-    | "encryption_notice";
+    | "encryption_notice"
+    | "unread_divider"
+    | "disappearing_messages"
+    | "group_description_changed";
   targetMember?: string;
   actorName?: string;
 }
@@ -170,6 +187,7 @@ export type MessageData =
   | ImageMessage
   | VideoMessage
   | VoiceMessage
+  | PollMessage
   | GifMessage
   | StickerMessage
   | SystemMessage
@@ -216,6 +234,10 @@ export interface WhatsAppMessage extends BaseMessage {
   type: WhatsAppMessageType;
   text?: string;
   imageUrl?: string;
+  pollQuestion?: string;
+  options?: Array<{ text: string; votes?: number }>;
+  totalVotes?: number;
+  pollStatus?: string;
   thumbnailUrl?: string;
   videoUrl?: string;
   gifUrl?: string;
@@ -258,7 +280,4 @@ export interface WhatsAppMessage extends BaseMessage {
   fileUrl?: string;
   // Sender display name for group chats
   senderName?: string;
-  // Delivery status timestamps
-  readAt?: number;
-  deliveredAt?: number;
 }

@@ -174,6 +174,19 @@ export const PinIcon = ({
   </svg>
 );
 
+export const LockIcon = ({
+  color = whatsappColors.textSecondary,
+  size = 14,
+}: {
+  color?: string;
+  size?: number;
+}) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <rect x="5" y="10" width="14" height="10" rx="2.5" stroke={color} strokeWidth="1.8" />
+    <path d="M8 10V7.8C8 5.14903 10.149 3 12.8 3C15.451 3 17.6 5.14903 17.6 7.8V10" stroke={color} strokeWidth="1.8" strokeLinecap="round" />
+  </svg>
+);
+
 // =============================================================================
 // MESSAGE STATUS ICONS
 // =============================================================================

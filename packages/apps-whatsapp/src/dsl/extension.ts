@@ -33,6 +33,7 @@ export interface WhatsAppDslApi {
     screen:
       | "chats"
       | "chat"
+      | "updates"
       | "status"
       | "calls"
       | "communities"
@@ -127,6 +128,7 @@ export const whatsappDsl: DslExtension<WhatsAppDslApi> = {
         screen:
           | "chats"
           | "chat"
+          | "updates"
           | "status"
           | "calls"
           | "communities"

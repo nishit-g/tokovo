@@ -12,6 +12,7 @@ export type {
   ImageMessage,
   VideoMessage,
   VoiceMessage,
+  PollMessage,
   GifMessage,
   SystemMessage,
   CallMessage,

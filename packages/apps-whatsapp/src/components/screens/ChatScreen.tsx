@@ -11,7 +11,12 @@ import {
   WhatsAppConversation,
   SystemMessage,
 } from "../../types/index.js";
-import { normalizeMessages } from "../../utils/messages.js";
+import { normalizeMessagesForChat } from "../../utils/messages.js";
+import {
+  resolveParticipantName,
+  resolveReplyPreview,
+  resolveTypingMembers,
+} from "../../utils/participants.js";
 
 export interface ChatScreenProps {
   world: WorldState;
@@ -68,28 +73,23 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({
 
   const contactName = conversation?.name || "Unknown";
   const rawMessages = conversation?.messages || [];
-  const normalizedMessages = normalizeMessages(
+  const normalizedMessages = normalizeMessagesForChat(
     world,
     conversationId || "unknown",
     rawMessages as unknown[],
     deviceId,
+    conversation,
   );
-  const membersById = Object.fromEntries(
-    (conversation?.members ?? []).map((m) => [m.id, m]),
-  );
-
-  const typingMembers = Object.entries(conversation?.typing ?? {})
-    .filter(([id, isTyping]) => isTyping && id !== "me")
-    .map(([id]) => ({
-      id,
-      name: membersById[id]?.name ?? id,
-    }));
+  const typingMembers = resolveTypingMembers(conversation);
 
   const memberNames = conversation?.members?.map((m) => m.name) ?? [];
   const memberCount = conversation?.members?.length ?? 0;
 
   const status = (() => {
     if (typingMembers.length > 0) {
+      if (conversation?.type !== "group") {
+        return "typing…";
+      }
       const names = typingMembers.map((m) => m.name);
       if (names.length === 1) return `${names[0]} typing…`;
       if (names.length === 2) return `${names[0]} and ${names[1]} typing…`;
@@ -107,7 +107,7 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({
   const messages = normalizedMessages.map((m): MessageData => {
     const senderName =
       conversation?.type === "group" && m.from !== "me"
-        ? conversation?.members?.find((member) => member.id === m.from)?.name ??
+        ? resolveParticipantName(conversation, m.from) ??
           m.senderName ??
           m.from
         : m.senderName;
@@ -115,11 +115,15 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({
       id: m.id,
       from: m.from,
       timestamp: m.timestamp,
+      timestampMs: m.timestampMs,
       status: m.status,
       at: m.at,
+      deliveredAt: m.deliveredAt,
+      readAt: m.readAt,
       reactions: m.reactions,
-      replyTo: m.replyTo,
+      replyTo: resolveReplyPreview(conversation, m.replyTo),
       senderName,
+      starred: m.starred,
     };
 
     switch (m.type) {
@@ -141,6 +145,15 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({
         };
       case "voice":
         return { ...base, type: "voice" as const, duration: m.duration || 0 };
+      case "poll":
+        return {
+          ...base,
+          type: "poll" as const,
+          pollQuestion: m.pollQuestion ?? "",
+          options: m.options ?? [],
+          totalVotes: m.totalVotes,
+          pollStatus: m.pollStatus,
+        };
       case "gif":
         return {
           ...base,
@@ -238,15 +251,53 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({
         avatarUrl={conversation?.avatar}
         status={status}
         safeAreaTop={safeAreaTop}
+        isLocked={conversation?.isLocked}
+        businessLabel={conversation?.businessLabel}
+        isVerifiedBusiness={conversation?.isVerifiedBusiness}
       />
+
+      {conversation?.pinnedMessage && (
+        <div
+          style={{
+            backgroundColor: "rgba(255,255,255,0.94)",
+            borderBottom: `1px solid ${theme.colors.divider}`,
+            padding: "8px 16px",
+            display: "flex",
+            flexDirection: "column",
+            gap: 2,
+          }}
+        >
+          <div
+            style={{
+              fontSize: 11,
+              color: theme.colors.accent,
+              fontWeight: 600,
+              fontFamily: theme.typography.fontFamily,
+            }}
+          >
+            Pinned message
+          </div>
+          <div
+            style={{
+              fontSize: 13,
+              color: theme.colors.receivedBubbleText,
+              whiteSpace: "nowrap",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              fontFamily: theme.typography.fontFamily,
+            }}
+          >
+            {conversation.pinnedMessage.from
+              ? `${conversation.pinnedMessage.from}: ${conversation.pinnedMessage.text}`
+              : conversation.pinnedMessage.text}
+          </div>
+        </div>
+      )}
 
       <MessageList
         messages={messages}
         ownerName={world.devices?.[deviceId || "main_phone"]?.ownerName || "me"}
-        isTyping={
-          conversation?.typing &&
-          Object.keys(conversation.typing).some((id) => id !== "me")
-        }
+        isTyping={typingMembers.length > 0}
         typingMembers={typingMembers}
         isGroupChat={conversation?.type === "group"}
         bottomPadding={bottomPadding}

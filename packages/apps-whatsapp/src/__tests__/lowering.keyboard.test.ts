@@ -40,7 +40,7 @@ describe("whatsappV2Lowering keyboard flow", () => {
       conversationId: "dm_kabir",
       payload: {
         conversationId: "dm_kabir",
-        text: "subah 7 baje kaunsi emergency hoti hai be",
+        text: "bhai so ja",
         typed: true,
         charDelay: 3,
       },
@@ -60,5 +60,56 @@ describe("whatsappV2Lowering keyboard flow", () => {
     ]);
     expect(lowered[0]?.at).toBeLessThan(sent.at);
     expect(lowered[1]?.at).toBeLessThan(sent.at);
+  });
+
+  it("uses authored me-typing span as the keyboard window when present", () => {
+    const ctx = { pluginLowerers: new Map(), fps: 30 };
+    const typingStart = {
+      at: 135,
+      kind: "APP",
+      appId: "app_whatsapp",
+      type: "TYPING_START",
+      deviceId: "phone",
+      conversationId: "dm_kabir",
+      payload: {
+        conversationId: "dm_kabir",
+        actor: "me",
+      },
+    } as const;
+    const typingEnd = {
+      at: 180,
+      kind: "APP",
+      appId: "app_whatsapp",
+      type: "TYPING_END",
+      deviceId: "phone",
+      conversationId: "dm_kabir",
+      payload: {
+        conversationId: "dm_kabir",
+        actor: "me",
+      },
+    } as const;
+    const sent = {
+      at: 180,
+      kind: "APP",
+      appId: "app_whatsapp",
+      type: "MESSAGE_SENT",
+      deviceId: "phone",
+      conversationId: "dm_kabir",
+      payload: {
+        conversationId: "dm_kabir",
+        text: "bhai so ja",
+        typed: true,
+        charDelay: 3,
+      },
+    } as const;
+
+    whatsappV2Lowering.lower(typingStart as never, ctx);
+    whatsappV2Lowering.lower(typingEnd as never, ctx);
+    const lowered = whatsappV2Lowering.lower(sent as never, ctx);
+
+    expect(lowered[0]?.type).toBe("KEYBOARD_SHOW");
+    expect(lowered[1]?.type).toBe("KEYBOARD_TYPE");
+    expect(lowered[0]?.at).toBeGreaterThanOrEqual(135);
+    expect(lowered[1]?.at).toBeGreaterThanOrEqual(136);
   });
 });

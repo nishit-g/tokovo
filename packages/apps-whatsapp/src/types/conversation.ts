@@ -38,9 +38,25 @@ export interface WhatsAppConversation {
   isPinned?: boolean;
   hasStatus?: boolean;
   isArchived?: boolean;
+  unreadDividerMessageId?: string;
   lastMessageAt?: number;
   mutedUntil?: string;
   description?: string;
   createdAt?: string;
   createdBy?: string;
+  isLocked?: boolean;
+  businessLabel?: string;
+  isVerifiedBusiness?: boolean;
+  isChannel?: boolean;
+  isFollowed?: boolean;
+  channelUnreadCount?: number;
+  channelDescription?: string;
+  channelLatestSnippet?: string;
+  channelFollowersLabel?: string;
+  channelCategory?: string;
+  pinnedMessage?: {
+    text: string;
+    from?: string;
+  };
+  disappearingMessagesLabel?: string;
 }

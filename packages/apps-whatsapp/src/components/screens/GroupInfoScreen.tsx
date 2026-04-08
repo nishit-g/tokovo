@@ -1,6 +1,8 @@
 import React from "react";
 import { WorldState } from "@tokovo/core";
-import { whatsappColors, spacing } from "../theme.js";
+import { spacing } from "../theme.js";
+import { useTheme } from "../../theme/ThemeContext.js";
+import { resolveAvatarWithFallback } from "../../utils/avatar.js";
 
 export interface GroupInfoScreenProps {
   world: WorldState;
@@ -37,6 +39,7 @@ const MemberItem: React.FC<{
   member: GroupMember;
   isLast: boolean;
 }> = ({ member, isLast }) => {
+  const theme = useTheme();
   return (
     <div
       style={{
@@ -44,7 +47,7 @@ const MemberItem: React.FC<{
         alignItems: "center",
         paddingLeft: spacing.avatarMarginLeft,
         paddingRight: spacing.contentMarginRight,
-        backgroundColor: whatsappColors.bgPrimary,
+        backgroundColor: theme.colors.background,
       }}
     >
       <div
@@ -52,8 +55,10 @@ const MemberItem: React.FC<{
           width: 40,
           height: 40,
           borderRadius: 20,
-          backgroundColor: whatsappColors.bgSecondary,
-          backgroundImage: member.avatar ? `url(${member.avatar})` : undefined,
+          backgroundColor: `${theme.colors.divider}66`,
+          backgroundImage: member.avatar
+            ? `url(${resolveAvatarWithFallback(member.avatar, member.name)})`
+            : undefined,
           backgroundSize: "cover",
           backgroundPosition: "center",
           marginRight: spacing.contentMarginLeft,
@@ -68,7 +73,7 @@ const MemberItem: React.FC<{
             width="22"
             height="22"
             viewBox="0 0 24 24"
-            fill={whatsappColors.textSecondary}
+            fill={theme.colors.timestamp}
           >
             <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
           </svg>
@@ -85,7 +90,7 @@ const MemberItem: React.FC<{
           paddingBottom: 12,
           borderBottom: isLast
             ? "none"
-            : `0.5px solid ${whatsappColors.separator}`,
+            : `0.5px solid ${theme.colors.divider}`,
         }}
       >
         <div>
@@ -93,8 +98,9 @@ const MemberItem: React.FC<{
             style={{
               fontSize: 17,
               fontWeight: "400",
-              color: whatsappColors.textPrimary,
+              color: theme.colors.receivedBubbleText,
               marginBottom: 2,
+              fontFamily: theme.typography.fontFamily,
             }}
           >
             {member.name}
@@ -103,7 +109,8 @@ const MemberItem: React.FC<{
             <div
               style={{
                 fontSize: 14,
-                color: whatsappColors.textSecondary,
+                color: theme.colors.timestamp,
+                fontFamily: theme.typography.fontFamily,
               }}
             >
               {member.phone}
@@ -115,10 +122,12 @@ const MemberItem: React.FC<{
           <span
             style={{
               fontSize: 12,
-              color: whatsappColors.textSecondary,
-              backgroundColor: whatsappColors.bgSecondary,
+              color: theme.colors.timestamp,
+              backgroundColor: `${theme.colors.accent}14`,
               padding: "4px 8px",
               borderRadius: 4,
+              border: `1px solid ${theme.colors.divider}`,
+              fontFamily: theme.typography.fontFamily,
             }}
           >
             Group Admin
@@ -132,51 +141,70 @@ const MemberItem: React.FC<{
 const InfoSection: React.FC<{
   title: string;
   children: React.ReactNode;
-}> = ({ title, children }) => (
-  <div style={{ marginBottom: 24 }}>
-    <div
-      style={{
-        padding: "8px 16px",
-        fontSize: 13,
-        fontWeight: "600",
-        color: whatsappColors.textSecondary,
-        textTransform: "uppercase",
-        letterSpacing: 0.5,
-      }}
-    >
-      {title}
+}> = ({ title, children }) => {
+  const theme = useTheme();
+
+  return (
+    <div style={{ marginBottom: 24 }}>
+      {title ? (
+        <div
+          style={{
+            padding: "8px 16px",
+            fontSize: 13,
+            fontWeight: "600",
+            color: theme.colors.timestamp,
+            textTransform: "uppercase",
+            letterSpacing: 0.5,
+            fontFamily: theme.typography.fontFamily,
+          }}
+        >
+          {title}
+        </div>
+      ) : null}
+      <div
+        style={{
+          backgroundColor: theme.colors.background,
+          borderTop: `0.5px solid ${theme.colors.divider}`,
+          borderBottom: `0.5px solid ${theme.colors.divider}`,
+        }}
+      >
+        {children}
+      </div>
     </div>
-    <div
-      style={{
-        backgroundColor: whatsappColors.bgPrimary,
-        borderTop: `0.5px solid ${whatsappColors.separator}`,
-        borderBottom: `0.5px solid ${whatsappColors.separator}`,
-      }}
-    >
-      {children}
-    </div>
-  </div>
-);
+  );
+};
 
 const ActionRow: React.FC<{
   icon: React.ReactNode;
   label: string;
   color?: string;
   isLast?: boolean;
-}> = ({ icon, label, color = whatsappColors.textPrimary, isLast }) => (
-  <div
-    style={{
-      display: "flex",
-      alignItems: "center",
-      padding: "12px 16px",
-      gap: 12,
-      borderBottom: isLast ? "none" : `0.5px solid ${whatsappColors.separator}`,
-    }}
-  >
-    {icon}
-    <span style={{ fontSize: 17, color }}>{label}</span>
-  </div>
-);
+}> = ({ icon, label, color, isLast }) => {
+  const theme = useTheme();
+
+  return (
+    <div
+      style={{
+        display: "flex",
+        alignItems: "center",
+        padding: "12px 16px",
+        gap: 12,
+        borderBottom: isLast ? "none" : `0.5px solid ${theme.colors.divider}`,
+      }}
+    >
+      {icon}
+      <span
+        style={{
+          fontSize: 17,
+          color: color ?? theme.colors.receivedBubbleText,
+          fontFamily: theme.typography.fontFamily,
+        }}
+      >
+        {label}
+      </span>
+    </div>
+  );
+};
 
 export const GroupInfoScreen: React.FC<GroupInfoScreenProps> = ({
   world,
@@ -185,7 +213,7 @@ export const GroupInfoScreen: React.FC<GroupInfoScreenProps> = ({
   width: _width,
   height: _height,
 }) => {
-  // TokovoRenderer already provides safeAreaInsets in design coordinates.
+  const theme = useTheme();
   const safeAreaTop = safeAreaInsets?.top ?? 47;
 
   const appState = world.appState?.["app_whatsapp"] as
@@ -222,19 +250,18 @@ export const GroupInfoScreen: React.FC<GroupInfoScreenProps> = ({
         display: "flex",
         flexDirection: "column",
         height: "100%",
-        backgroundColor: whatsappColors.bgSecondary,
+        backgroundColor: theme.colors.headerBackground,
         position: "relative",
-        fontFamily:
-          "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif",
+        fontFamily: theme.typography.fontFamily,
       }}
     >
       <div
         style={{
           paddingTop: safeAreaTop,
-          backgroundColor: "rgba(249, 249, 249, 0.94)",
+          backgroundColor: `${theme.colors.headerBackground}F0`,
           backdropFilter: "blur(20px)",
           WebkitBackdropFilter: "blur(20px)",
-          borderBottom: `0.5px solid ${whatsappColors.separator}`,
+          borderBottom: `0.5px solid ${theme.colors.divider}`,
           position: "sticky",
           top: 0,
           zIndex: 100,
@@ -253,11 +280,17 @@ export const GroupInfoScreen: React.FC<GroupInfoScreenProps> = ({
               width="24"
               height="24"
               viewBox="0 0 24 24"
-              fill={whatsappColors.primary}
+              fill={theme.colors.accent}
             >
               <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z" />
             </svg>
-            <span style={{ fontSize: 17, color: whatsappColors.primary }}>
+            <span
+              style={{
+                fontSize: 17,
+                color: theme.colors.accent,
+                fontFamily: theme.typography.fontFamily,
+              }}
+            >
               Back
             </span>
           </div>
@@ -265,12 +298,19 @@ export const GroupInfoScreen: React.FC<GroupInfoScreenProps> = ({
             style={{
               fontSize: 17,
               fontWeight: "600",
-              color: whatsappColors.textPrimary,
+              color: theme.colors.receivedBubbleText,
+              fontFamily: theme.typography.fontFamily,
             }}
           >
             Group Info
           </span>
-          <span style={{ fontSize: 17, color: whatsappColors.primary }}>
+          <span
+            style={{
+              fontSize: 17,
+              color: theme.colors.accent,
+              fontFamily: theme.typography.fontFamily,
+            }}
+          >
             Edit
           </span>
         </div>
@@ -279,12 +319,12 @@ export const GroupInfoScreen: React.FC<GroupInfoScreenProps> = ({
       <div style={{ flex: 1, overflow: "auto" }}>
         <div
           style={{
-            backgroundColor: whatsappColors.bgPrimary,
+            backgroundColor: theme.colors.background,
             padding: "20px 16px",
             display: "flex",
             flexDirection: "column",
             alignItems: "center",
-            borderBottom: `0.5px solid ${whatsappColors.separator}`,
+            borderBottom: `0.5px solid ${theme.colors.divider}`,
           }}
         >
           <div
@@ -292,9 +332,9 @@ export const GroupInfoScreen: React.FC<GroupInfoScreenProps> = ({
               width: 100,
               height: 100,
               borderRadius: 50,
-              backgroundColor: whatsappColors.bgSecondary,
+              backgroundColor: `${theme.colors.divider}66`,
               backgroundImage: groupData.avatar
-                ? `url(${groupData.avatar})`
+                ? `url(${resolveAvatarWithFallback(groupData.avatar, groupData.name)})`
                 : undefined,
               backgroundSize: "cover",
               backgroundPosition: "center",
@@ -309,7 +349,7 @@ export const GroupInfoScreen: React.FC<GroupInfoScreenProps> = ({
                 width="48"
                 height="48"
                 viewBox="0 0 24 24"
-                fill={whatsappColors.textSecondary}
+                fill={theme.colors.timestamp}
               >
                 <path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z" />
               </svg>
@@ -320,8 +360,9 @@ export const GroupInfoScreen: React.FC<GroupInfoScreenProps> = ({
             style={{
               fontSize: 22,
               fontWeight: "600",
-              color: whatsappColors.textPrimary,
+              color: theme.colors.receivedBubbleText,
               marginBottom: 4,
+              fontFamily: theme.typography.fontFamily,
             }}
           >
             {groupData.name}
@@ -330,7 +371,8 @@ export const GroupInfoScreen: React.FC<GroupInfoScreenProps> = ({
           <div
             style={{
               fontSize: 14,
-              color: whatsappColors.textSecondary,
+              color: theme.colors.timestamp,
+              fontFamily: theme.typography.fontFamily,
             }}
           >
             Group · {groupData.members.length} participants
@@ -343,7 +385,8 @@ export const GroupInfoScreen: React.FC<GroupInfoScreenProps> = ({
               style={{
                 padding: "12px 16px",
                 fontSize: 15,
-                color: whatsappColors.textPrimary,
+                color: theme.colors.receivedBubbleText,
+                fontFamily: theme.typography.fontFamily,
               }}
             >
               {groupData.description}
@@ -358,7 +401,7 @@ export const GroupInfoScreen: React.FC<GroupInfoScreenProps> = ({
                 width="22"
                 height="22"
                 viewBox="0 0 24 24"
-                fill={whatsappColors.primary}
+                fill={theme.colors.accent}
               >
                 <path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z" />
               </svg>
@@ -376,7 +419,7 @@ export const GroupInfoScreen: React.FC<GroupInfoScreenProps> = ({
                   width: 40,
                   height: 40,
                   borderRadius: 20,
-                  backgroundColor: whatsappColors.primary,
+                  backgroundColor: theme.colors.accent,
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
@@ -388,7 +431,7 @@ export const GroupInfoScreen: React.FC<GroupInfoScreenProps> = ({
               </div>
             }
             label="Add Participants"
-            color={whatsappColors.primary}
+            color={theme.colors.accent}
           />
           {groupData.members.map((member, i) => (
             <MemberItem
@@ -406,13 +449,13 @@ export const GroupInfoScreen: React.FC<GroupInfoScreenProps> = ({
                 width="22"
                 height="22"
                 viewBox="0 0 24 24"
-                fill={whatsappColors.iosRed}
+                fill="#FF3B30"
               >
                 <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" />
               </svg>
             }
             label="Exit Group"
-            color={whatsappColors.iosRed}
+            color="#FF3B30"
           />
           <ActionRow
             icon={
@@ -420,13 +463,13 @@ export const GroupInfoScreen: React.FC<GroupInfoScreenProps> = ({
                 width="22"
                 height="22"
                 viewBox="0 0 24 24"
-                fill={whatsappColors.iosRed}
+                fill="#FF3B30"
               >
                 <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
               </svg>
             }
             label="Report Group"
-            color={whatsappColors.iosRed}
+            color="#FF3B30"
             isLast
           />
         </InfoSection>

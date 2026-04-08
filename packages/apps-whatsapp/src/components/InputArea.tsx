@@ -2,7 +2,6 @@ import React from "react";
 import { useCurrentFrame, useVideoConfig } from "remotion";
 import { Keyboard, Camera, Mic, Send } from "lucide-react";
 import { useTheme } from "../theme/ThemeContext.js";
-import { whatsappColors } from "./theme.js";
 
 export const InputArea: React.FC<{
   text?: string;
@@ -132,7 +131,7 @@ export const InputArea: React.FC<{
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              boxShadow: `0 6px 12px ${whatsappColors.primaryGlow}`,
+              boxShadow: `0 6px 12px ${theme.colors.accent}40`,
             }}
           >
             <Send

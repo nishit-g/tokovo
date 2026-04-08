@@ -18,6 +18,11 @@ export interface VideoMessageBubbleProps {
   read?: boolean;
   isPlaying?: boolean;
   playProgress?: number;
+  messageAt?: number;
+  deliveredAt?: number;
+  readAt?: number;
+  status?: "sending" | "sent" | "delivered" | "read";
+  starred?: boolean;
   platform?: string;
 }
 
@@ -31,6 +36,11 @@ export const VideoMessageBubble = memo(function VideoMessageBubble({
   read = false,
   isPlaying = false,
   playProgress = 0,
+  messageAt,
+  deliveredAt,
+  readAt,
+  status,
+  starred = false,
 }: VideoMessageBubbleProps) {
   const theme = useTheme();
   const resolvedThumbnailUrl = thumbnailUrl.startsWith("/")
@@ -43,6 +53,11 @@ export const VideoMessageBubble = memo(function VideoMessageBubble({
       senderName={senderName}
       timestamp={timestamp}
       read={read}
+      messageAt={messageAt}
+      deliveredAt={deliveredAt}
+      readAt={readAt}
+      status={status}
+      starred={starred}
       overlayTimestamp={!caption}
       noPadding
     >
@@ -110,7 +125,16 @@ export const VideoMessageBubble = memo(function VideoMessageBubble({
         </div>
 
         {!caption && (
-          <TimestampOverlay timestamp={timestamp} isMe={isMe} read={read} />
+          <TimestampOverlay
+            timestamp={timestamp}
+            isMe={isMe}
+            read={read}
+            starred={starred}
+            messageAt={messageAt}
+            deliveredAt={deliveredAt}
+            readAt={readAt}
+            status={status}
+          />
         )}
 
         {isPlaying && (
@@ -153,7 +177,16 @@ export const VideoMessageBubble = memo(function VideoMessageBubble({
           >
             {caption}
           </span>
-          <TimestampRow timestamp={timestamp} isMe={isMe} read={read} />
+          <TimestampRow
+            timestamp={timestamp}
+            isMe={isMe}
+            read={read}
+            starred={starred}
+            messageAt={messageAt}
+            deliveredAt={deliveredAt}
+            readAt={readAt}
+            status={status}
+          />
         </div>
       )}
     </MediaBubbleBase>

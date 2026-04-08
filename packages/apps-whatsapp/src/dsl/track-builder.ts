@@ -19,16 +19,24 @@ import { parseFileSizeToBytes } from "../utils/file-size.js";
 // =============================================================================
 
 type GetDeclarationOrder = () => number;
+type ReplyReference =
+  | TrackMessageRef
+  | {
+    messageId?: string;
+    id?: string;
+    index?: number | "last";
+  };
 
 export interface ReceiveOptions {
   silent?: boolean;
-  replyTo?: TrackMessageRef;
+  replyTo?: ReplyReference;
 }
 
 export interface SendOptions {
   silent?: boolean;
   typed?: boolean;
   charDelay?: number;
+  replyTo?: ReplyReference;
 }
 
 export interface ImageOptions {
@@ -92,6 +100,7 @@ export class WhatsAppPointBuilder {
       silent: options.silent,
       typed: options.typed,
       charDelay: options.charDelay,
+      replyTo: options.replyTo,
     });
   }
 
@@ -510,9 +519,9 @@ export class WhatsAppTrackBuilder {
   }
 
   /**
-   * Open the status screen at a specific time.
+   * Open the updates screen at a specific time.
    */
-  openStatus(time: string | number = "0s"): void {
+  openUpdates(time: string | number = "0s"): void {
     const frame = parseTime(time, this._fps);
     this._events.push({
       at: frame,
@@ -521,10 +530,17 @@ export class WhatsAppTrackBuilder {
       appId: "app_whatsapp",
       type: "NAVIGATE_SCREEN",
       payload: {
-        screen: "status",
+        screen: "updates",
       },
       _declarationOrder: this._getOrder(),
     });
+  }
+
+  /**
+   * Backwards-compatible alias for older episodes.
+   */
+  openStatus(time: string | number = "0s"): void {
+    this.openUpdates(time);
   }
 
   /**
@@ -645,7 +661,7 @@ export class WhatsAppTrackBuilder {
     return frames / this._fps;
   }
 
-  receive(from: string, text: string): this {
+  receive(from: string, text: string, options: ReceiveOptions = {}): this {
     const conversationId = this._currentConversation || this._conversationId;
     this._events.push({
       at: this._currentTime,
@@ -654,14 +670,19 @@ export class WhatsAppTrackBuilder {
       appId: "app_whatsapp",
       type: "MESSAGE_RECEIVED",
       conversationId,
-      payload: { conversationId, from, text },
+      payload: {
+        conversationId,
+        from,
+        text,
+        replyTo: options.replyTo,
+      },
       _declarationOrder: this._getOrder(),
     });
     this._currentTime += 0.5 * this._fps;
     return this;
   }
 
-  send(text: string): this {
+  send(text: string, options: SendOptions = {}): this {
     const conversationId = this._currentConversation || this._conversationId;
     this._events.push({
       at: this._currentTime,
@@ -670,7 +691,13 @@ export class WhatsAppTrackBuilder {
       appId: "app_whatsapp",
       type: "MESSAGE_SENT",
       conversationId,
-      payload: { conversationId, text },
+      payload: {
+        conversationId,
+        text,
+        typed: options.typed,
+        charDelay: options.charDelay,
+        replyTo: options.replyTo,
+      },
       _declarationOrder: this._getOrder(),
     });
     this._currentTime += 0.5 * this._fps;
@@ -903,6 +930,48 @@ export class WhatsAppTrackBuilder {
     });
 
     this._currentTime += 0.5 * this._fps;
+    return this;
+  }
+
+  quoteReply(
+    messageRef: ReplyReference,
+    text: string,
+    typingDuration: number = 2,
+    options: Omit<SendOptions, "replyTo"> = {},
+  ): this {
+    const typingStart = this._currentTime;
+    const typingEnd = typingStart + typingDuration * this._fps;
+
+    this._events.push({
+      at: typingStart,
+      deviceId: this._deviceId,
+      kind: "APP",
+      appId: "app_whatsapp",
+      type: "TYPING_START",
+      conversationId: this._conversationId,
+      payload: {
+        conversationId: this._conversationId,
+        actor: "me",
+      },
+      _declarationOrder: this._getOrder(),
+    });
+
+    this._events.push({
+      at: typingEnd,
+      deviceId: this._deviceId,
+      kind: "APP",
+      appId: "app_whatsapp",
+      type: "TYPING_END",
+      conversationId: this._conversationId,
+      payload: {
+        conversationId: this._conversationId,
+        actor: "me",
+      },
+      _declarationOrder: this._getOrder(),
+    });
+
+    this._currentTime = typingEnd;
+    this.send(text, { ...options, replyTo: messageRef });
     return this;
   }
 

@@ -1,4 +1,11 @@
-import { ChevronLeft, Video, Phone } from "lucide-react";
+import {
+  ChevronLeft,
+  Video,
+  Phone,
+  Lock,
+  BadgeCheck,
+  Briefcase,
+} from "lucide-react";
 import { Img } from "remotion";
 import { UI_CONSTANTS } from "../config/layout-config.js";
 import { useTheme } from "../theme/ThemeContext.js";
@@ -9,6 +16,9 @@ export interface HeaderProps {
   avatarUrl?: string;
   status: string;
   safeAreaTop?: number;
+  isLocked?: boolean;
+  businessLabel?: string;
+  isVerifiedBusiness?: boolean;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -16,6 +26,9 @@ export const Header: React.FC<HeaderProps> = ({
   avatarUrl,
   status,
   safeAreaTop = 47,
+  isLocked = false,
+  businessLabel,
+  isVerifiedBusiness = false,
 }) => {
   const theme = useTheme();
   // Use fallback avatar when local paths don't exist
@@ -91,18 +104,43 @@ export const Header: React.FC<HeaderProps> = ({
             color: theme.colors.headerText,
             lineHeight: "20px",
             fontFamily: theme.typography.fontFamily,
+            display: "flex",
+            alignItems: "center",
+            gap: 6,
           }}
         >
-          {contactName}
+          <span>{contactName}</span>
+          {isVerifiedBusiness && (
+            <BadgeCheck
+              size={15}
+              color={theme.colors.link}
+              fill={theme.colors.link}
+              strokeWidth={1.5}
+            />
+          )}
+          {isLocked && (
+            <Lock size={13} color={theme.colors.timestamp} strokeWidth={1.8} />
+          )}
         </div>
         <div
           style={{
             fontSize: theme.typography.headerSubtitleFontSize,
             color: theme.colors.timestamp,
             lineHeight: "14px",
+            display: "flex",
+            alignItems: "center",
+            gap: 4,
+            fontFamily: theme.typography.fontFamily,
           }}
         >
-          {status}
+          {businessLabel && (
+            <Briefcase
+              size={12}
+              color={theme.colors.timestamp}
+              strokeWidth={1.8}
+            />
+          )}
+          {businessLabel ? `${businessLabel} • ${status}` : status}
         </div>
       </div>
 

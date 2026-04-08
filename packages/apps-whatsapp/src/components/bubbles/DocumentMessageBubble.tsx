@@ -11,6 +11,11 @@ export interface DocumentMessageBubbleProps {
   senderName?: string;
   timestamp?: string;
   read?: boolean;
+  messageAt?: number;
+  deliveredAt?: number;
+  readAt?: number;
+  status?: "sending" | "sent" | "delivered" | "read";
+  starred?: boolean;
   platform?: string;
 }
 
@@ -23,6 +28,11 @@ export const DocumentMessageBubble = memo(function DocumentMessageBubble({
   senderName,
   timestamp = "10:42",
   read = false,
+  messageAt,
+  deliveredAt,
+  readAt,
+  status,
+  starred = false,
 }: DocumentMessageBubbleProps) {
   const theme = useTheme();
   const getIconColor = () => {
@@ -42,6 +52,11 @@ export const DocumentMessageBubble = memo(function DocumentMessageBubble({
       senderName={senderName}
       timestamp={timestamp}
       read={read}
+      messageAt={messageAt}
+      deliveredAt={deliveredAt}
+      readAt={readAt}
+      status={status}
+      starred={starred}
       minWidth={200}
       maxWidth={280}
     >

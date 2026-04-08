@@ -271,6 +271,7 @@ export interface ConversationOpenedPayload {
 export interface NavigateScreenPayload {
   screen:
     | "chats"
+    | "updates"
     | "status"
     | "calls"
     | "communities"

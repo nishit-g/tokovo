@@ -16,7 +16,7 @@ describe("planTypedKeyboard", () => {
   it("plans events bounded by notBeforeFrame", () => {
     const plan = planTypedKeyboard({
       deviceId: "phone",
-      submitAt: 80,
+      submitAt: 96,
       text: "hello",
       notBeforeFrame: 70,
     });
@@ -27,7 +27,21 @@ describe("planTypedKeyboard", () => {
     }
   });
 
-  it("compresses timing margins instead of skipping tight but valid windows", () => {
+  it("keeps keyboard show ahead of typing when a valid window exists", () => {
+    const plan = planTypedKeyboard({
+      deviceId: "phone",
+      submitAt: 20,
+      text: "hey",
+      notBeforeFrame: 10,
+    });
+
+    expect(plan.ok).toBe(true);
+    expect(plan.keyboardShowAt).toBeLessThan(plan.typeStartAt ?? Infinity);
+    expect(plan.charDelay).toBeGreaterThanOrEqual(1);
+    expect(Number.isInteger(plan.charDelay)).toBe(true);
+  });
+
+  it("skips impossible windows instead of faking multi-character jumps", () => {
     const plan = planTypedKeyboard({
       deviceId: "phone",
       submitAt: 10,
@@ -35,10 +49,24 @@ describe("planTypedKeyboard", () => {
       notBeforeFrame: 9,
     });
 
+    expect(plan.ok).toBe(false);
+    expect(plan.reason).toBe("insufficient_window");
+  });
+
+  it("supports bounded compressed typing for authored windows", () => {
+    const plan = planTypedKeyboard({
+      deviceId: "phone",
+      submitAt: 180,
+      text: "subah 7 baje kaunsi emergency hoti hai be",
+      notBeforeFrame: 135,
+      requestedCharDelay: 3,
+      allowCompressedCharDelay: true,
+    });
+
     expect(plan.ok).toBe(true);
-    expect(plan.keyboardShowAt).toBe(9);
-    expect(plan.typeStartAt).toBe(9);
-    expect(plan.returnPressAt).toBeGreaterThanOrEqual(9);
-    expect(plan.keyboardHideAt).toBeGreaterThan(10);
+    expect(plan.keyboardShowAt).toBeGreaterThanOrEqual(135);
+    expect(plan.typeStartAt).toBeGreaterThan(plan.keyboardShowAt ?? -Infinity);
+    expect(plan.charDelay).toBeLessThan(1);
+    expect(plan.charDelay).toBeGreaterThanOrEqual(0.5);
   });
 });

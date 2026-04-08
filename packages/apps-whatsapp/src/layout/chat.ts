@@ -84,6 +84,9 @@ export function computeChatLayout(
   const semanticGroups: Record<string, string[]> = {
     message: [],
     system: [],
+    media: [],
+    reply: [],
+    reactions: [],
   };
 
   let lastMessageId: string | undefined;
@@ -94,6 +97,7 @@ export function computeChatLayout(
   for (let i = 0; i <= lastVisibleIndex; i++) {
     const msg = allMessages[i] as LayoutMessage;
     const msgType = (msg.type || "text") as MessageType;
+    const rawMessageType = msg.type || "text";
     const baseLayout = conversationLayout.messageLayouts.get(msg.id);
     if (!baseLayout) {
       continue;
@@ -146,6 +150,75 @@ export function computeChatLayout(
     semanticGroups["message"].push(anchorId);
     if (msgType === "system") {
       semanticGroups["system"].push(anchorId);
+    }
+
+    const innerX = rect.x + px(8);
+    const innerWidth = Math.max(0, rect.width - px(16));
+    let contentTop = rect.y + px(8);
+
+    if (msg.replyTo) {
+      const replyRect = {
+        x: innerX,
+        y: contentTop,
+        width: innerWidth,
+        height: Math.min(px(46), Math.max(px(28), rect.height * 0.26)),
+      };
+      semanticRegions[`reply_${msg.id}`] = {
+        id: `reply_${msg.id}`,
+        rect: replyRect,
+        tags: ["reply", "message_fragment"],
+        metadata: { messageId: msg.id },
+      };
+      semanticGroups.reply.push(`reply_${msg.id}`);
+      contentTop += replyRect.height + px(6);
+    }
+
+    const isMediaSemanticType =
+      msg.type === "image" ||
+      msg.type === "video" ||
+      msg.type === "gif" ||
+      msg.type === "document" ||
+      msg.type === "contact" ||
+      msg.type === "location" ||
+      msg.type === "voice" ||
+      msg.type === "sticker";
+
+    if (isMediaSemanticType) {
+      const mediaHeightRatio =
+        rawMessageType === "voice" || rawMessageType === "document" || rawMessageType === "contact"
+          ? 0.44
+          : rawMessageType === "location"
+            ? 0.62
+            : 0.72;
+      const mediaRect = {
+        x: innerX,
+        y: contentTop,
+        width: innerWidth,
+        height: Math.max(px(32), Math.min(rect.height - px(16), rect.height * mediaHeightRatio)),
+      };
+      semanticRegions[`media_${msg.id}`] = {
+        id: `media_${msg.id}`,
+        rect: mediaRect,
+        tags: ["media", rawMessageType],
+        metadata: { messageId: msg.id, type: rawMessageType },
+      };
+      semanticGroups.media.push(`media_${msg.id}`);
+    }
+
+    if (msg.reactions && msg.reactions.length > 0) {
+      const reactionsRect = {
+        x: isOutgoing(msg) ? rect.x + rect.width - px(74) : rect.x + px(8),
+        y: rect.y + rect.height - px(14),
+        width: px(66),
+        height: px(18),
+      };
+      semanticRegions[`reactions_${msg.id}`] = {
+        id: `reactions_${msg.id}`,
+        rect: reactionsRect,
+        tags: ["reactions", "overlay"],
+        metadata: { messageId: msg.id },
+      };
+      semanticGroups.reactions.push(`reactions_${msg.id}`);
     }
 
     lastMessageId = msg.id;
@@ -322,6 +395,10 @@ export function computeChatLayout(
       groups: semanticGroups,
     },
   };
+}
+
+function isOutgoing(message: LayoutMessage): boolean {
+  return message.from === "me";
 }
 
 function findLastVisibleIndex(

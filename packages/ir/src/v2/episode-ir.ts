@@ -37,6 +37,22 @@ export interface ConversationConfig {
   isMuted?: boolean;
   isPinned?: boolean;
   hasStatus?: boolean;
+  description?: string;
+  isLocked?: boolean;
+  businessLabel?: string;
+  isVerifiedBusiness?: boolean;
+  isChannel?: boolean;
+  isFollowed?: boolean;
+  channelUnreadCount?: number;
+  channelDescription?: string;
+  channelLatestSnippet?: string;
+  channelFollowersLabel?: string;
+  channelCategory?: string;
+  pinnedMessage?: {
+    text: string;
+    from?: string;
+  };
+  disappearingMessagesLabel?: string;
 }
 
 export interface OSConfig {

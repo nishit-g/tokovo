@@ -1,47 +1,26 @@
-/**
- * Reactions Component
- *
- * Renders message reactions (emoji responses) like WhatsApp/iMessage.
- * Supports multiple reactions with counts.
- *
- * NOTE: Uses 1x logical pixels (matches iOS components)
- */
-
 import React from "react";
-import { whatsappColors } from "./theme.js";
-
-// =============================================================================
-// TYPES
-// =============================================================================
+import { useTheme } from "../theme/ThemeContext.js";
 
 export interface Reaction {
   emoji: string;
   count: number;
-  fromMe?: boolean; // Highlight if user reacted
+  fromMe?: boolean;
 }
 
 interface ReactionsBarProps {
   reactions: Reaction[];
   isMyMessage?: boolean;
-  compact?: boolean; // For smaller bubbles
+  compact?: boolean;
 }
 
-// =============================================================================
-// REACTIONS BAR
-// =============================================================================
-
-/**
- * Displays reactions below a message bubble.
- * Appears as a small pill with emoji and counts.
- */
 export const ReactionsBar: React.FC<ReactionsBarProps> = ({
   reactions,
   isMyMessage = false,
   compact = false,
 }) => {
+  const theme = useTheme();
   if (!reactions || reactions.length === 0) return null;
 
-  // Sort by count descending
   const sorted = [...reactions].sort((a, b) => b.count - a.count);
 
   return (
@@ -60,11 +39,11 @@ export const ReactionsBar: React.FC<ReactionsBarProps> = ({
         style={{
           display: "flex",
           gap: 2,
-          backgroundColor: whatsappColors.bgPrimary,
+          backgroundColor: theme.colors.background,
           padding: compact ? "2px 4px" : "3px 6px",
           borderRadius: 20,
           boxShadow: "0 1px 2px rgba(0,0,0,0.15)",
-          border: `0.5px solid ${whatsappColors.separatorLight}`,
+          border: `0.5px solid ${theme.colors.divider}`,
         }}
       >
         {sorted.map((reaction, i) => (
@@ -81,10 +60,6 @@ export const ReactionsBar: React.FC<ReactionsBarProps> = ({
   );
 };
 
-// =============================================================================
-// REACTION PILL
-// =============================================================================
-
 interface ReactionPillProps {
   emoji: string;
   count: number;
@@ -97,44 +72,43 @@ const ReactionPill: React.FC<ReactionPillProps> = ({
   count,
   highlighted = false,
   compact = false,
-}) => (
-  <div
-    style={{
-      display: "flex",
-      alignItems: "center",
-      gap: compact ? 1 : 2,
-      backgroundColor: highlighted ? whatsappColors.primaryGlow : "transparent",
-      padding: compact ? "1px 2px" : "1px 3px",
-      borderRadius: 10,
-    }}
-  >
-    <span
+}) => {
+  const theme = useTheme();
+
+  return (
+    <div
       style={{
-        fontSize: compact ? 12 : 14,
-        lineHeight: 1,
+        display: "flex",
+        alignItems: "center",
+        gap: compact ? 1 : 2,
+        backgroundColor: highlighted ? `${theme.colors.accent}22` : "transparent",
+        padding: compact ? "1px 2px" : "1px 3px",
+        borderRadius: 10,
       }}
     >
-      {emoji}
-    </span>
-    {count > 1 && (
       <span
         style={{
-          fontSize: compact ? 9 : 11,
-          color: whatsappColors.textSecondary,
-          fontWeight: 500,
-          fontFamily:
-            "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif",
+          fontSize: compact ? 12 : 14,
+          lineHeight: 1,
         }}
       >
-        {count}
+        {emoji}
       </span>
-    )}
-  </div>
-);
-
-// =============================================================================
-// REACTION PICKER (FOR FUTURE USE)
-// =============================================================================
+      {count > 1 && (
+        <span
+          style={{
+            fontSize: compact ? 9 : 11,
+            color: theme.colors.timestamp,
+            fontWeight: 500,
+            fontFamily: theme.typography.fontFamily,
+          }}
+        >
+          {count}
+        </span>
+      )}
+    </div>
+  );
+};
 
 export const COMMON_REACTIONS = ["❤️", "😂", "😮", "😢", "🙏", "👍"];
 
@@ -147,6 +121,7 @@ export const ReactionPicker: React.FC<ReactionPickerProps> = ({
   onSelect,
   visible = true,
 }) => {
+  const theme = useTheme();
   if (!visible) return null;
 
   return (
@@ -154,10 +129,11 @@ export const ReactionPicker: React.FC<ReactionPickerProps> = ({
       style={{
         display: "flex",
         gap: 4,
-        backgroundColor: whatsappColors.bgPrimary,
+        backgroundColor: theme.colors.background,
         padding: "6px 8px",
         borderRadius: 20,
         boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
+        border: `0.5px solid ${theme.colors.divider}`,
       }}
     >
       {COMMON_REACTIONS.map((emoji) => (

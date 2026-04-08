@@ -8,15 +8,125 @@ import type {
   MessageForwardedEvent,
 } from "../schemas/index.js";
 import type { WhatsAppMessage, WhatsAppMessageType } from "../types/index.js";
+import type { HandlerContext } from "./registry.js";
+
+function isConversationActive(
+  ctx: { draft: unknown; conversation: { id: string } },
+): boolean {
+  const appState = (
+    ctx.draft as {
+      appState?: { app_whatsapp?: { currentConversationId?: string } };
+    }
+  ).appState?.app_whatsapp;
+  return !!(
+    appState?.currentConversationId &&
+    appState.currentConversationId === ctx.conversation.id
+  );
+}
 
 function bumpUnread(ctx: { draft: unknown; conversation: { id: string; unreadCount?: number } }, from: string): void {
   if (from === "me" || from === "system") return;
-  const appState = (ctx.draft as { appState?: { app_whatsapp?: { currentConversationId?: string } } })
-    .appState?.app_whatsapp;
-  if (appState?.currentConversationId && appState.currentConversationId === ctx.conversation.id) {
+  if (isConversationActive(ctx)) {
     return;
   }
   ctx.conversation.unreadCount = (ctx.conversation.unreadCount ?? 0) + 1;
+}
+
+type ReplyPayload = {
+  messageId?: string;
+  id?: string;
+  index?: number | "last";
+  text?: string;
+  from?: string;
+  type?: string;
+  thumbnailUrl?: string;
+};
+
+function resolveReplyTarget(
+  ctx: HandlerContext,
+  replyTo: ReplyPayload,
+): WhatsAppMessage | undefined {
+  const messageId = replyTo.messageId ?? replyTo.id;
+  if (messageId) {
+    return ctx.getMessageById(messageId);
+  }
+
+  const indexRef = replyTo.index;
+  const messages = ctx.conversation.messages;
+  if (indexRef === "last") {
+    return messages[messages.length - 1];
+  }
+  if (typeof indexRef === "number" && indexRef < 0) {
+    return messages[messages.length + indexRef];
+  }
+  if (typeof indexRef === "number") {
+    return messages[indexRef];
+  }
+  return undefined;
+}
+
+function getReplyFallbackText(message: WhatsAppMessage | undefined): string | undefined {
+  if (!message) return undefined;
+  if (message.text) return message.text;
+  if (message.caption) return message.caption;
+  switch (message.type) {
+    case "image":
+      return "Photo";
+    case "video":
+      return "Video";
+    case "voice":
+      return "Voice message";
+    case "gif":
+      return "GIF";
+    case "sticker":
+      return "Sticker";
+    case "document":
+      return message.fileName ?? "Document";
+    case "contact":
+      return message.contactName ?? "Contact";
+    case "location":
+      return message.locationName ?? "Location";
+    case "call":
+      return message.callType === "video" ? "Video call" : "Voice call";
+    case "call_missed":
+      return message.callType === "video" ? "Missed video call" : "Missed voice call";
+    default:
+      return undefined;
+  }
+}
+
+function getReplyThumbnail(message: WhatsAppMessage | undefined): string | undefined {
+  if (!message) return undefined;
+  return (
+    message.thumbnailUrl ??
+    message.imageUrl ??
+    message.mapThumbnailUrl ??
+    message.contactAvatarUrl
+  );
+}
+
+function buildReplyPreview(
+  ctx: HandlerContext,
+  replyTo: ReplyPayload | undefined,
+):
+  | {
+    messageId?: string;
+    text?: string;
+    from?: string;
+    type?: WhatsAppMessageType;
+    thumbnailUrl?: string;
+  }
+  | undefined {
+  if (!replyTo) return undefined;
+
+  const target = resolveReplyTarget(ctx, replyTo);
+  return {
+    messageId: replyTo.messageId ?? replyTo.id ?? target?.id,
+    text: replyTo.text ?? getReplyFallbackText(target),
+    from: replyTo.from ?? target?.senderName ?? target?.from,
+    type: (replyTo.type as WhatsAppMessageType | undefined) ?? target?.type,
+    thumbnailUrl: replyTo.thumbnailUrl ?? getReplyThumbnail(target),
+  };
 }
 
 export function registerMessageHandlers(
@@ -50,6 +160,16 @@ export function registerMessageHandlers(
       timestamp: ctx.generateTimestamp(e.at),
     };
 
+    if (fromUser !== "me") {
+      for (let i = ctx.conversation.messages.length - 1; i >= 0; i--) {
+        const priorMessage = ctx.conversation.messages[i];
+        if (priorMessage.from !== "me") continue;
+        if (priorMessage.status === "read") continue;
+        priorMessage.status = "read";
+        priorMessage.readAt = e.at;
+      }
+    }
+
     if (msgType === "image") {
       newMessage.imageUrl = msgPayload.imageUrl;
       newMessage.caption = msgPayload.caption;
@@ -71,17 +191,21 @@ export function registerMessageHandlers(
         (msgPayload.duration as number | undefined);
     }
 
-    if (payload.replyTo) {
-      newMessage.replyTo = {
-        messageId: payload.replyTo.messageId ?? payload.replyTo.id,
-        text: payload.replyTo.text,
-        from: payload.replyTo.from,
-        type: payload.replyTo.type as WhatsAppMessageType,
-        thumbnailUrl: payload.replyTo.thumbnailUrl,
-      };
+    const replyPreview = buildReplyPreview(ctx, payload.replyTo as ReplyPayload | undefined);
+    if (replyPreview) {
+      newMessage.replyTo = replyPreview;
     }
 
+    const previousUnread = ctx.conversation.unreadCount ?? 0;
     ctx.addMessage(newMessage);
+    if (
+      fromUser !== "me" &&
+      fromUser !== "system" &&
+      !isConversationActive(ctx) &&
+      previousUnread === 0
+    ) {
+      ctx.conversation.unreadDividerMessageId = newMessage.id;
+    }
     bumpUnread(ctx, fromUser);
   });
 
@@ -110,6 +234,7 @@ export function registerMessageHandlers(
       status: (msgPayload.status as WhatsAppMessage["status"]) ?? "sent",
       edited: msgPayload.edited,
       timestamp: ctx.generateTimestamp(e.at),
+      deliveredAt: e.at + 18,
     };
 
     if (msgType === "image") {
@@ -133,14 +258,9 @@ export function registerMessageHandlers(
         (msgPayload.duration as number | undefined);
     }
 
-    if (payload.replyTo) {
-      newMessage.replyTo = {
-        messageId: payload.replyTo.messageId ?? payload.replyTo.id,
-        text: payload.replyTo.text,
-        from: payload.replyTo.from,
-        type: payload.replyTo.type as WhatsAppMessageType,
-        thumbnailUrl: payload.replyTo.thumbnailUrl,
-      };
+    const replyPreview = buildReplyPreview(ctx, payload.replyTo as ReplyPayload | undefined);
+    if (replyPreview) {
+      newMessage.replyTo = replyPreview;
     }
 
     ctx.addMessage(newMessage);
@@ -150,6 +270,7 @@ export function registerMessageHandlers(
     const msg = ctx.getMessageById(e.messageId);
     if (msg) {
       msg.status = "read";
+      msg.readAt = e.at;
     }
   });
 

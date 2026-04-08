@@ -1,10 +1,7 @@
 import React from "react";
 import { CameraFillIcon, ComposeIcon, SearchIcon } from "./Icons.js";
-import { whatsappColors, typography, spacing } from "./theme.js";
-
-// =============================================================================
-// TYPES
-// =============================================================================
+import { spacing, typography } from "./theme.js";
+import { useTheme } from "../theme/ThemeContext.js";
 
 export interface ChatListHeaderProps {
   safeAreaTop?: number;
@@ -13,45 +10,39 @@ export interface ChatListHeaderProps {
   showEditButton?: boolean;
 }
 
-// =============================================================================
-// FILTER CHIPS
-// =============================================================================
-
 const FilterChip: React.FC<{
   label: string;
   isActive: boolean;
   onClick?: () => void;
-}> = ({ label, isActive, onClick }) => (
-  <div
-    onClick={onClick}
-    style={{
-      padding: `${spacing.filterChipPaddingY}px ${spacing.filterChipPaddingX}px`,
-      backgroundColor: isActive
-        ? whatsappColors.bgTertiary
-        : whatsappColors.bgSecondary,
-      borderRadius: spacing.filterChipRadius,
-      border: isActive
-        ? `1px solid ${whatsappColors.separatorLight}`
-        : `1px solid ${whatsappColors.separatorUltraLight}`,
-      boxShadow: isActive
-        ? "0 6px 14px rgba(0,0,0,0.06)"
-        : "0 1px 0 rgba(0,0,0,0.02)",
-      ...typography.chip,
-      fontWeight: isActive ? "600" : "500",
-      color: isActive
-        ? whatsappColors.textPrimary
-        : whatsappColors.textSecondary,
-      cursor: "pointer",
-      userSelect: "none",
-    }}
-  >
-    {label}
-  </div>
-);
+}> = ({ label, isActive, onClick }) => {
+  const theme = useTheme();
+  const activeBg = `${theme.colors.accent}1A`;
 
-// =============================================================================
-// MAIN COMPONENT
-// =============================================================================
+  return (
+    <div
+      onClick={onClick}
+      style={{
+        padding: `${spacing.filterChipPaddingY}px ${spacing.filterChipPaddingX}px`,
+        backgroundColor: isActive ? activeBg : theme.colors.background,
+        borderRadius: spacing.filterChipRadius,
+        border: `1px solid ${theme.colors.divider}`,
+        boxShadow: isActive
+          ? `0 6px 14px ${theme.colors.accent}18`
+          : "0 1px 0 rgba(0,0,0,0.02)",
+        ...typography.chip,
+        fontWeight: isActive ? "600" : "500",
+        color: isActive
+          ? theme.colors.receivedBubbleText
+          : theme.colors.timestamp,
+        cursor: "pointer",
+        userSelect: "none",
+        fontFamily: theme.typography.fontFamily,
+      }}
+    >
+      {label}
+    </div>
+  );
+};
 
 export const ChatListHeader: React.FC<ChatListHeaderProps> = ({
   safeAreaTop = 47,
@@ -59,6 +50,7 @@ export const ChatListHeader: React.FC<ChatListHeaderProps> = ({
   onFilterChange,
   showEditButton = false,
 }) => {
+  const theme = useTheme();
   const filters = [
     { id: "all", label: "All" },
     { id: "unread", label: "Unread" },
@@ -69,7 +61,7 @@ export const ChatListHeader: React.FC<ChatListHeaderProps> = ({
   return (
     <div
       style={{
-        backgroundColor: whatsappColors.surfaceGlass,
+        backgroundColor: `${theme.colors.headerBackground}F2`,
         backdropFilter: "blur(20px)",
         WebkitBackdropFilter: "blur(20px)",
         display: "flex",
@@ -77,10 +69,9 @@ export const ChatListHeader: React.FC<ChatListHeaderProps> = ({
         zIndex: 100,
         position: "sticky",
         top: 0,
-        borderBottom: `0.5px solid ${whatsappColors.separatorLight}`,
+        borderBottom: `0.5px solid ${theme.colors.divider}`,
       }}
     >
-      {/* Top Bar: Edit & Actions */}
       <div
         style={{
           paddingTop: safeAreaTop,
@@ -93,15 +84,15 @@ export const ChatListHeader: React.FC<ChatListHeaderProps> = ({
           boxSizing: "border-box",
         }}
       >
-        {/* Left Side - Edit Button (optional) or empty */}
         <div style={{ width: 60 }}>
           {showEditButton && (
             <div
               style={{
-                color: whatsappColors.primary,
+                color: theme.colors.accent,
                 fontSize: 17,
                 fontWeight: "400",
                 cursor: "pointer",
+                fontFamily: theme.typography.fontFamily,
               }}
             >
               Edit
@@ -109,7 +100,6 @@ export const ChatListHeader: React.FC<ChatListHeaderProps> = ({
           )}
         </div>
 
-        {/* Right Actions */}
         <div
           style={{
             display: "flex",
@@ -117,33 +107,28 @@ export const ChatListHeader: React.FC<ChatListHeaderProps> = ({
             alignItems: "center",
           }}
         >
-          <div
-            style={{ cursor: "pointer", display: "flex", alignItems: "center" }}
-          >
-            <CameraFillIcon color={whatsappColors.primary} />
+          <div style={{ cursor: "pointer", display: "flex", alignItems: "center" }}>
+            <CameraFillIcon color={theme.colors.accent} />
           </div>
-          <div
-            style={{ cursor: "pointer", display: "flex", alignItems: "center" }}
-          >
-            <ComposeIcon color={whatsappColors.primary} size={24} />
+          <div style={{ cursor: "pointer", display: "flex", alignItems: "center" }}>
+            <ComposeIcon color={theme.colors.accent} size={24} />
           </div>
         </div>
       </div>
 
-      {/* Large Title */}
       <div
         style={{
           padding: `4px ${spacing.pagePaddingWide}px 10px ${spacing.pagePaddingWide}px`,
           ...typography.largeTitle,
-          color: whatsappColors.textPrimary,
+          color: theme.colors.receivedBubbleText,
           display: "flex",
           alignItems: "center",
+          fontFamily: theme.typography.fontFamily,
         }}
       >
         Chats
       </div>
 
-      {/* Search Bar */}
       <div
         style={{
           padding: `0 ${spacing.pagePaddingX}px 10px ${spacing.pagePaddingX}px`,
@@ -151,23 +136,24 @@ export const ChatListHeader: React.FC<ChatListHeaderProps> = ({
       >
         <div
           style={{
-            backgroundColor: whatsappColors.bgSecondary,
+            backgroundColor: theme.colors.background,
             borderRadius: spacing.searchBarRadius,
             height: spacing.searchBarHeight,
             display: "flex",
             alignItems: "center",
             padding: `0 ${spacing.searchPaddingX}px`,
-            border: `1px solid ${whatsappColors.separatorUltraLight}`,
+            border: `1px solid ${theme.colors.divider}`,
             boxShadow: "0 1px 0 rgba(0,0,0,0.02)",
           }}
         >
-          <SearchIcon color={whatsappColors.textSecondary} size={16} />
+          <SearchIcon color={theme.colors.timestamp} size={16} />
           <div
             style={{
               marginLeft: spacing.searchIconGap,
               fontSize: 17,
-              color: whatsappColors.textSecondary,
+              color: theme.colors.timestamp,
               flex: 1,
+              fontFamily: theme.typography.fontFamily,
             }}
           >
             Search
@@ -175,7 +161,6 @@ export const ChatListHeader: React.FC<ChatListHeaderProps> = ({
         </div>
       </div>
 
-      {/* Filter Chips */}
       <div
         style={{
           padding: `0 ${spacing.pagePaddingX}px 12px ${spacing.pagePaddingX}px`,

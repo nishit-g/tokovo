@@ -1,23 +1,26 @@
 import React from "react";
-import { UpdatesIcon, CallsTabIcon, CommunitiesIcon, ChatsIcon, SettingsIcon } from "./Icons.js";
-import { whatsappColors, typography, spacing } from "./theme.js";
-
-// =============================================================================
-// TYPES
-// =============================================================================
+import {
+  UpdatesIcon,
+  CallsTabIcon,
+  CommunitiesIcon,
+  ChatsIcon,
+  SettingsIcon,
+} from "./Icons.js";
+import { spacing, typography } from "./theme.js";
+import { useTheme } from "../theme/ThemeContext.js";
 
 export interface TabNavigationProps {
-  activeTab?: "status" | "calls" | "communities" | "chats" | "settings";
+  activeTab?: "updates" | "calls" | "communities" | "chats" | "settings";
   safeAreaBottom?: number;
   unreadChatsCount?: number;
   missedCallsCount?: number;
 }
 
-// =============================================================================
-// BADGE COMPONENT
-// =============================================================================
-
-const TabBadge: React.FC<{ count: number; isMuted?: boolean }> = ({ count, isMuted }) => {
+const TabBadge: React.FC<{ count: number; isMuted?: boolean }> = ({
+  count,
+  isMuted,
+}) => {
+  const theme = useTheme();
   if (count <= 0) return null;
 
   return (
@@ -26,8 +29,8 @@ const TabBadge: React.FC<{ count: number; isMuted?: boolean }> = ({ count, isMut
         position: "absolute",
         top: spacing.tabBadgeOffsetTop,
         right: spacing.tabBadgeOffsetRight,
-        backgroundColor: isMuted ? whatsappColors.badgeMuted : whatsappColors.primary,
-        color: "white",
+        backgroundColor: isMuted ? theme.colors.timestamp : theme.colors.unreadBadge,
+        color: theme.colors.unreadBadgeText,
         borderRadius: spacing.badgeRadius,
         minWidth: spacing.badgeMinWidth,
         height: spacing.badgeHeight,
@@ -36,6 +39,7 @@ const TabBadge: React.FC<{ count: number; isMuted?: boolean }> = ({ count, isMut
         alignItems: "center",
         justifyContent: "center",
         ...typography.badge,
+        fontFamily: theme.typography.fontFamily,
       }}
     >
       {count > 99 ? "99+" : count}
@@ -43,22 +47,18 @@ const TabBadge: React.FC<{ count: number; isMuted?: boolean }> = ({ count, isMut
   );
 };
 
-// =============================================================================
-// MAIN COMPONENT
-// =============================================================================
-
 export const TabNavigation: React.FC<TabNavigationProps> = ({
   activeTab = "chats",
   safeAreaBottom = 34,
   unreadChatsCount = 0,
   missedCallsCount = 0,
 }) => {
-  // Use GREEN for active, not blue!
-  const activeColor = whatsappColors.tabActive;
-  const inactiveColor = whatsappColors.tabInactive;
+  const theme = useTheme();
+  const activeColor = theme.colors.accent;
+  const inactiveColor = theme.colors.timestamp;
 
   const tabs = [
-    { id: "status", label: "Status", Icon: UpdatesIcon, badge: 0 },
+    { id: "updates", label: "Updates", Icon: UpdatesIcon, badge: 0 },
     { id: "calls", label: "Calls", Icon: CallsTabIcon, badge: missedCallsCount },
     { id: "communities", label: "Communities", Icon: CommunitiesIcon, badge: 0 },
     { id: "chats", label: "Chats", Icon: ChatsIcon, badge: unreadChatsCount },
@@ -68,10 +68,10 @@ export const TabNavigation: React.FC<TabNavigationProps> = ({
   return (
     <div
       style={{
-        backgroundColor: whatsappColors.surfaceGlass,
+        backgroundColor: `${theme.colors.headerBackground}F2`,
         backdropFilter: "blur(20px)",
         WebkitBackdropFilter: "blur(20px)",
-        borderTop: `0.5px solid ${whatsappColors.separator}`,
+        borderTop: `0.5px solid ${theme.colors.divider}`,
         display: "flex",
         justifyContent: "space-around",
         paddingBottom: safeAreaBottom,
@@ -107,7 +107,8 @@ export const TabNavigation: React.FC<TabNavigationProps> = ({
               style={{
                 ...typography.tabLabel,
                 marginTop: 2,
-                color: color,
+                color,
+                fontFamily: theme.typography.fontFamily,
               }}
             >
               {tab.label}
