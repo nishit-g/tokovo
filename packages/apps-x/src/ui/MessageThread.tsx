@@ -45,7 +45,20 @@ export const MessageThread: React.FC<MessageThreadProps> = ({ world }) => {
   const otherParticipants = thread.participantIds.filter(
     (id) => id !== state?.currentUserId
   );
-  const mainParticipant = getUser(otherParticipants[0] ?? "");
+  const participantUsers = otherParticipants.map((id) => getUser(id)).filter(Boolean);
+  const mainParticipant = participantUsers[0];
+  const isGroup = otherParticipants.length > 1;
+  const title = isGroup
+    ? participantUsers.map((user) => user?.name ?? "Unknown").join(", ")
+    : mainParticipant?.name ?? "Unknown";
+  const subtitle = isGroup
+    ? `${otherParticipants.length} participants`
+    : `@${mainParticipant?.handle ?? "unknown"}`;
+  const groupBio = isGroup
+    ? `${participantUsers
+        .map((user) => `@${user?.handle ?? "unknown"}`)
+        .join(", ")}`
+    : (mainParticipant?.bio ?? "");
 
   return (
     <AppShell>
@@ -66,7 +79,7 @@ export const MessageThread: React.FC<MessageThreadProps> = ({ world }) => {
         }}
       >
         <XIcon name="back" size={20} color={theme.colors.textPrimary} />
-        <Avatar size={32} />
+        <Avatar size={32} src={mainParticipant?.avatarUrl} />
         <div style={{ flex: 1 }}>
           <div
             style={{
@@ -82,14 +95,14 @@ export const MessageThread: React.FC<MessageThreadProps> = ({ world }) => {
                 color: theme.colors.textPrimary,
               }}
             >
-              {mainParticipant?.name ?? "Unknown"}
+              {title}
             </span>
-            {mainParticipant?.verified && (
+            {mainParticipant?.verified && !isGroup && (
               <VerifiedBadge variant={mainParticipant.verified} size={16} />
             )}
           </div>
           <div style={{ fontSize: 13, color: theme.colors.textSecondary }}>
-            @{mainParticipant?.handle ?? "unknown"}
+            {subtitle}
           </div>
         </div>
         <XIcon name="more" size={20} color={theme.colors.textPrimary} />
@@ -106,7 +119,7 @@ export const MessageThread: React.FC<MessageThreadProps> = ({ world }) => {
             borderBottom: `1px solid ${theme.colors.border}`,
           }}
         >
-          <Avatar size={64} />
+          <Avatar size={64} src={mainParticipant?.avatarUrl} />
           <div
             style={{
               marginTop: 8,
@@ -122,14 +135,14 @@ export const MessageThread: React.FC<MessageThreadProps> = ({ world }) => {
                 color: theme.colors.textPrimary,
               }}
             >
-              {mainParticipant?.name ?? "Unknown"}
+              {title}
             </span>
-            {mainParticipant?.verified && (
+            {mainParticipant?.verified && !isGroup && (
               <VerifiedBadge variant={mainParticipant.verified} size={18} />
             )}
           </div>
           <div style={{ fontSize: 15, color: theme.colors.textSecondary }}>
-            @{mainParticipant?.handle ?? "unknown"}
+            {subtitle}
           </div>
           <div
             style={{
@@ -137,8 +150,8 @@ export const MessageThread: React.FC<MessageThreadProps> = ({ world }) => {
               fontSize: 15,
               color: theme.colors.textSecondary,
             }}
-          >
-            {mainParticipant?.bio ?? ""}
+            >
+            {groupBio}
           </div>
           <div
             style={{
@@ -146,8 +159,10 @@ export const MessageThread: React.FC<MessageThreadProps> = ({ world }) => {
               fontSize: 13,
               color: theme.colors.textMuted,
             }}
-          >
-            {mainParticipant?.followers ?? 0} Followers
+            >
+            {isGroup
+              ? `${participantUsers.length} members`
+              : `${mainParticipant?.followers ?? 0} Followers`}
           </div>
         </div>
 

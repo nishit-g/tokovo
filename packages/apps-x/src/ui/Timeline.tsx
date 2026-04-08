@@ -10,6 +10,8 @@ import {
   XLogo,
   XIcon,
   ActionButton,
+  LinkPreviewCard,
+  MediaCard,
   formatTimestamp,
   TabButton,
 } from "./components.js";
@@ -41,7 +43,14 @@ const renderRichText = (
 // Tweet Card Component - Real X layout
 const TweetCard: React.FC<{
   tweet: ReturnType<typeof getTimelineTweets>[0];
-  author: { name: string; handle: string; verified?: "blue" | "gold" | "grey" | null } | undefined;
+  author:
+    | {
+        name: string;
+        handle: string;
+        verified?: "blue" | "gold" | "grey" | null;
+        avatarUrl?: string;
+      }
+    | undefined;
   liked: boolean;
   theme: ReturnType<typeof getXTheme>;
   nowMs: number;
@@ -56,7 +65,7 @@ const TweetCard: React.FC<{
       }}
     >
       {/* Avatar Column */}
-      <Avatar size={theme.spacing.avatarSize} />
+      <Avatar size={theme.spacing.avatarSize} src={author?.avatarUrl} />
 
       {/* Content Column */}
       <div style={{ flex: 1, minWidth: 0 }}>
@@ -132,75 +141,10 @@ const TweetCard: React.FC<{
         </div>
 
         {/* Media */}
-        {tweet.media && (
-          <div
-            style={{
-              marginTop: 12,
-              borderRadius: 16,
-              border: `1px solid ${theme.colors.border}`,
-              overflow: "hidden",
-              backgroundColor: theme.colors.surfaceRaised,
-              height: tweet.media.aspect === "wide" ? 160 : 280,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-          >
-            <span style={{ color: theme.colors.textSecondary, fontSize: 13 }}>
-              {tweet.media.type.toUpperCase()}
-            </span>
-          </div>
-        )}
+        {tweet.media && <MediaCard media={tweet.media} variant="timeline" />}
 
         {/* Link Preview */}
-        {tweet.linkPreview && (
-          <div
-            style={{
-              marginTop: 12,
-              borderRadius: 16,
-              border: `1px solid ${theme.colors.border}`,
-              overflow: "hidden",
-              backgroundColor: theme.colors.surface,
-            }}
-          >
-            <div
-              style={{
-                height: 120,
-                backgroundColor: theme.colors.surfaceRaised,
-              }}
-            />
-            <div style={{ padding: 12 }}>
-              <div style={{ fontSize: 13, color: theme.colors.textSecondary }}>
-                {tweet.linkPreview.domain}
-              </div>
-              <div
-                style={{
-                  fontSize: 15,
-                  fontWeight: 400,
-                  color: theme.colors.textPrimary,
-                  marginTop: 4,
-                }}
-              >
-                {tweet.linkPreview.title}
-              </div>
-              {tweet.linkPreview.description && (
-                <div
-                  style={{
-                    fontSize: 15,
-                    color: theme.colors.textSecondary,
-                    marginTop: 4,
-                    display: "-webkit-box",
-                    WebkitLineClamp: 2,
-                    WebkitBoxOrient: "vertical",
-                    overflow: "hidden",
-                  }}
-                >
-                  {tweet.linkPreview.description}
-                </div>
-              )}
-            </div>
-          </div>
-        )}
+        {tweet.linkPreview && <LinkPreviewCard preview={tweet.linkPreview} />}
 
         {/* Poll */}
         {tweet.poll && (() => {
@@ -295,6 +239,9 @@ export const Timeline: React.FC<TimelineProps> = ({ world }) => {
   );
   const users = state?.users ?? [];
   const currentUserId = state?.currentUserId ?? null;
+  const currentUser = currentUserId
+    ? users.find((user) => user.id === currentUserId)
+    : undefined;
 
   const getUser = (id: string | undefined) => users.find((u) => u.id === id);
 
@@ -316,7 +263,7 @@ export const Timeline: React.FC<TimelineProps> = ({ world }) => {
           zIndex: 10,
         }}
       >
-        <Avatar size={32} />
+        <Avatar size={32} src={currentUser?.avatarUrl} />
         <XLogo size={28} />
         <XIcon name="grok" size={24} color={theme.colors.textPrimary} />
       </div>

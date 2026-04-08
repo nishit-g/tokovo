@@ -31,6 +31,15 @@ export function getTimelineTweets(world: WorldState): XTweet[] {
   return timeline.map((id) => byId.get(id)).filter(Boolean) as XTweet[];
 }
 
+export function getTweetsByAuthor(world: WorldState, authorId: string | null): XTweet[] {
+  if (!authorId) return [];
+  const state = getXState(world);
+  if (!state) return [];
+  return (state.tweets ?? [])
+    .filter((tweet) => tweet.authorId === authorId)
+    .sort((a, b) => b.createdAt - a.createdAt);
+}
+
 export function getActiveTweet(world: WorldState): XTweet | null {
   const state = getXState(world);
   if (!state?.activeTweetId) return null;

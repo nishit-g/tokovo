@@ -118,4 +118,72 @@ describe("X Reducer", () => {
     expect(appState.activeThreadId).toBeNull();
     expect(appState.currentScreen).toBe("timeline");
   });
+
+  it("UNFOLLOW_USER only decrements counts when relationship exists", () => {
+    const state = createTestWorldState();
+    const withUsers = runReducer(
+      runReducer(state, {
+        at: 0,
+        kind: "APP",
+        appId: "app_x",
+        type: "ADD_USER",
+        payload: { id: "u1", name: "A", handle: "a", followers: 10, following: 20 },
+      }),
+      {
+        at: 0,
+        kind: "APP",
+        appId: "app_x",
+        type: "ADD_USER",
+        payload: { id: "u2", name: "B", handle: "b", followers: 30, following: 40 },
+      },
+    );
+
+    const unfollowed = runReducer(withUsers, {
+      at: 1,
+      kind: "APP",
+      appId: "app_x",
+      type: "UNFOLLOW_USER",
+      payload: { followerId: "u1", followingId: "u2" },
+    });
+
+    const appState = getXState(unfollowed);
+    if (!appState) throw new Error("Missing X app state after reducer run");
+    const u1 = appState.users.find((u) => u.id === "u1");
+    const u2 = appState.users.find((u) => u.id === "u2");
+    expect(u1?.following).toBe(20);
+    expect(u2?.followers).toBe(30);
+  });
+
+  it("orders top-level timeline tweets by createdAt descending", () => {
+    const state = createTestWorldState();
+    const withNew = runReducer(state, {
+      at: 10,
+      kind: "APP",
+      appId: "app_x",
+      type: "ADD_TWEET",
+      payload: {
+        id: "tw-newer",
+        authorId: "u1",
+        text: "new",
+        createdAt: 1000,
+      },
+    });
+
+    const withOld = runReducer(withNew, {
+      at: 20,
+      kind: "APP",
+      appId: "app_x",
+      type: "ADD_TWEET",
+      payload: {
+        id: "tw-older",
+        authorId: "u1",
+        text: "old",
+        createdAt: 100,
+      },
+    });
+
+    const appState = getXState(withOld);
+    if (!appState) throw new Error("Missing X app state after reducer run");
+    expect(appState.timeline).toEqual(["tw-newer", "tw-older"]);
+  });
 });

@@ -9,6 +9,8 @@ import {
   VerifiedBadge,
   XIcon,
   ActionButton,
+  LinkPreviewCard,
+  MediaCard,
   formatTimestamp as formatRelative,
 } from "./components.js";
 import { ScreenTransition } from "./ScreenTransition.js";
@@ -51,6 +53,9 @@ export const TweetDetail: React.FC<TweetDetailProps> = ({ world }) => {
   const tweet = getActiveTweet(world);
   const users = state?.users ?? [];
   const currentUserId = state?.currentUserId ?? null;
+  const currentUser = currentUserId
+    ? users.find((user) => user.id === currentUserId)
+    : undefined;
 
   const getUser = (id: string | undefined) => users.find((u) => u.id === id);
 
@@ -126,7 +131,7 @@ export const TweetDetail: React.FC<TweetDetailProps> = ({ world }) => {
                 alignItems: "center",
               }}
             >
-              <Avatar size={48} />
+              <Avatar size={48} src={author?.avatarUrl} />
               <div style={{ flex: 1 }}>
                 <div
                   style={{
@@ -173,68 +178,10 @@ export const TweetDetail: React.FC<TweetDetailProps> = ({ world }) => {
             </div>
 
             {/* Media */}
-            {tweet.media && (
-              <div
-                style={{
-                  marginTop: 12,
-                  borderRadius: 16,
-                  border: `1px solid ${theme.colors.border}`,
-                  backgroundColor: theme.colors.surfaceRaised,
-                  height: tweet.media.aspect === "wide" ? 180 : 280,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  overflow: "hidden",
-                }}
-              >
-                <span
-                  style={{
-                    color: theme.colors.textSecondary,
-                    fontSize: 13,
-                  }}
-                >
-                  {tweet.media.type.toUpperCase()}
-                </span>
-              </div>
-            )}
+            {tweet.media && <MediaCard media={tweet.media} variant="detail" />}
 
             {/* Link Preview */}
-            {tweet.linkPreview && (
-              <div
-                style={{
-                  marginTop: 12,
-                  borderRadius: 16,
-                  border: `1px solid ${theme.colors.border}`,
-                  overflow: "hidden",
-                }}
-              >
-                <div
-                  style={{
-                    height: 120,
-                    backgroundColor: theme.colors.surfaceRaised,
-                  }}
-                />
-                <div style={{ padding: 12 }}>
-                  <div
-                    style={{
-                      fontSize: 13,
-                      color: theme.colors.textSecondary,
-                    }}
-                  >
-                    {tweet.linkPreview.domain}
-                  </div>
-                  <div
-                    style={{
-                      fontSize: 15,
-                      color: theme.colors.textPrimary,
-                      marginTop: 4,
-                    }}
-                  >
-                    {tweet.linkPreview.title}
-                  </div>
-                </div>
-              </div>
-            )}
+            {tweet.linkPreview && <LinkPreviewCard preview={tweet.linkPreview} />}
 
             {/* Quote Tweet */}
             {quote && (
@@ -253,7 +200,7 @@ export const TweetDetail: React.FC<TweetDetailProps> = ({ world }) => {
                     gap: 4,
                   }}
                 >
-                  <Avatar size={20} />
+                  <Avatar size={20} src={quoteAuthor?.avatarUrl} />
                   <span
                     style={{
                       fontSize: 13,
@@ -364,7 +311,7 @@ export const TweetDetail: React.FC<TweetDetailProps> = ({ world }) => {
               borderBottom: `1px solid ${theme.colors.border}`,
             }}
           >
-            <Avatar size={40} />
+            <Avatar size={40} src={currentUser?.avatarUrl} />
             <div style={{ flex: 1 }}>
               <div
                 style={{
@@ -416,7 +363,7 @@ export const TweetDetail: React.FC<TweetDetailProps> = ({ world }) => {
                     gap: theme.spacing.avatarGap,
                   }}
                 >
-                  <Avatar size={40} />
+                  <Avatar size={40} src={replyAuthor?.avatarUrl} />
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div
                       style={{

@@ -18,6 +18,7 @@ export const Compose: React.FC<ComposeProps> = ({ world, deviceId, t }) => {
   const theme = useXTheme();
   const state = getXState(world);
   const draft = state?.composeDraft ?? "";
+  const currentUser = state?.users.find((u) => u.id === state?.currentUserId);
   const focusedDevice =
     (deviceId && world.devices?.[deviceId]) ||
     world.devices?.[Object.keys(world.devices ?? {})[0]];
@@ -26,6 +27,12 @@ export const Compose: React.FC<ComposeProps> = ({ world, deviceId, t }) => {
     keyboard?.visible && keyboard.typingAnimation
       ? getTypedTextProgress(keyboard, t ?? 0)
       : draft;
+  const draftLength = typedDraft.length;
+  const isEmpty = draftLength === 0;
+  const isOverLimit = draftLength > 280;
+  const canPost = !isEmpty && !isOverLimit;
+  const ctaBg = canPost ? theme.colors.textPrimary : theme.colors.surfaceRaised;
+  const ctaFg = canPost ? theme.colors.background : theme.colors.textMuted;
 
   return (
     <AppShell>
@@ -45,10 +52,12 @@ export const Compose: React.FC<ComposeProps> = ({ world, deviceId, t }) => {
           style={{
             fontSize: 12,
             fontWeight: 700,
-            color: theme.colors.background,
-            backgroundColor: theme.colors.textPrimary,
+            color: ctaFg,
+            backgroundColor: ctaBg,
             padding: "6px 12px",
             borderRadius: 999,
+            border: `1px solid ${theme.colors.border}`,
+            opacity: canPost ? 1 : 0.75,
           }}
         >
           Post
@@ -67,7 +76,7 @@ export const Compose: React.FC<ComposeProps> = ({ world, deviceId, t }) => {
               gap: 12,
             }}
           >
-            <Avatar size={theme.spacing.avatarSize} />
+            <Avatar size={theme.spacing.avatarSize} src={currentUser?.avatarUrl} />
             <div style={{ flex: 1 }}>
               <div style={{ fontSize: 15, lineHeight: 1.5, minHeight: 120 }}>
                 {typedDraft || "What's happening?"}
@@ -82,7 +91,9 @@ export const Compose: React.FC<ComposeProps> = ({ world, deviceId, t }) => {
                   fontSize: 12,
                 }}
               >
-                <span>{typedDraft.length}/280</span>
+                <span style={{ color: isOverLimit ? theme.colors.likeActive : undefined }}>
+                  {draftLength}/280
+                </span>
                 <span style={{ color: theme.colors.accent }}>Everyone can reply</span>
               </div>
             </div>
@@ -90,7 +101,7 @@ export const Compose: React.FC<ComposeProps> = ({ world, deviceId, t }) => {
         </div>
       </ScreenTransition>
 
-      <BottomNav active="home" />
+      <BottomNav />
     </AppShell>
   );
 };

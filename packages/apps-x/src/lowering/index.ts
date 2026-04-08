@@ -37,6 +37,91 @@ type XLoweringScratchpad = {
   lastThreadOpenAtByDeviceThread: Map<string, number>;
 };
 
+type TweetAddPayload = {
+  id?: string;
+  authorId: string;
+  text?: string;
+  createdAt?: number;
+  media?: unknown;
+  linkPreview?: unknown;
+  poll?: unknown;
+  hashtags?: string[];
+  mentions?: string[];
+  quoteTweetId?: string;
+  viewCount?: number;
+  bookmarkCount?: number;
+  shareCount?: number;
+  replyToId?: string;
+  repostOfId?: string;
+  typed?: boolean;
+  charDelay?: number;
+};
+
+function buildAddTweetPayload(
+  event: TrackEvent & { payload: TweetAddPayload },
+  extra: Partial<TweetAddPayload> = {},
+): Record<string, unknown> {
+  const payload = { ...event.payload, ...extra };
+  return {
+    id: payload.id ?? `tw-${event.at}-${event._declarationOrder ?? 0}`,
+    authorId: payload.authorId,
+    text: payload.text ?? "",
+    createdAt: getTimestamp(event, payload.createdAt),
+    replyToId: payload.replyToId,
+    repostOfId: payload.repostOfId,
+    quoteTweetId: payload.quoteTweetId,
+    media: payload.media,
+    linkPreview: payload.linkPreview,
+    poll: payload.poll,
+    hashtags: payload.hashtags ?? [],
+    mentions: payload.mentions ?? [],
+    viewCount: payload.viewCount ?? 0,
+    bookmarkCount: payload.bookmarkCount ?? 0,
+    shareCount: payload.shareCount ?? 0,
+  };
+}
+
+function lowerTweetWithOptionalTyping(
+  event: TrackEvent & { payload: TweetAddPayload },
+  deviceId: string,
+  composeOpenedAt: number | undefined,
+  addTweetPayload: Record<string, unknown>,
+): RuntimeEvent[] {
+  const text = event.payload.text ?? "";
+  const addTweetEvent = createRuntimeEvent(event, "ADD_TWEET", addTweetPayload);
+  if (!event.payload.typed) {
+    return [addTweetEvent];
+  }
+
+  // Typed compose is only credible after an explicit compose-open beat.
+  if (typeof composeOpenedAt !== "number" || composeOpenedAt > event.at) {
+    return [addTweetEvent];
+  }
+
+  const plan = planTypedKeyboard({
+    deviceId,
+    submitAt: event.at,
+    text,
+    requestedCharDelay: event.payload.charDelay ?? 2,
+    notBeforeFrame: composeOpenedAt,
+    keyboardType: "default",
+    returnKeyType: "send",
+  });
+
+  const after: RuntimeEvent[] = [
+    createRuntimeEvent(event, "SET_COMPOSE_DRAFT", { text }),
+    addTweetEvent,
+    createRuntimeEvent(event, "SET_COMPOSE_DRAFT", { text: "" }),
+  ];
+
+  if (!plan.ok) {
+    return after;
+  }
+
+  const [showEv, typeEv, pressEv, hideEv] = plan.events;
+  return [showEv, typeEv, pressEv, ...after, hideEv];
+}
+
 export const xLowering: XLoweringHandler = {
   lower: (event: TrackEvent, ctx?: unknown): RuntimeEvent[] => {
     if (!isXTrackEvent(event)) return [];
@@ -76,104 +161,26 @@ export const xLowering: XLoweringHandler = {
       case "UNFOLLOW_USER":
         return [createRuntimeEvent(event, "UNFOLLOW_USER", event.payload)];
       case "TWEET_CREATE":
-        if (event.payload?.typed) {
-          const text = event.payload.text ?? "";
-          const composeOpenedAt = scratchpad.lastComposeOpenAtByDevice.get(deviceId) ?? 0;
-          const after: RuntimeEvent[] = [
-              // Keep compose draft in sync so app UI can show text even if keyboard is hidden.
-              createRuntimeEvent(event, "SET_COMPOSE_DRAFT", { text }),
-              createRuntimeEvent(event, "ADD_TWEET", {
-                id: event.payload.id ?? `tw-${event.at}-${event._declarationOrder ?? 0}`,
-                authorId: event.payload.authorId,
-                text,
-                createdAt: getTimestamp(event, event.payload.createdAt),
-                media: event.payload.media,
-                linkPreview: event.payload.linkPreview,
-                poll: event.payload.poll,
-                hashtags: event.payload.hashtags ?? [],
-                mentions: event.payload.mentions ?? [],
-                quoteTweetId: event.payload.quoteTweetId,
-                viewCount: event.payload.viewCount ?? 0,
-                bookmarkCount: event.payload.bookmarkCount ?? 0,
-                shareCount: event.payload.shareCount ?? 0,
-              }),
-          ];
-          const clearDraft: RuntimeEvent[] = [
-            createRuntimeEvent(event, "SET_COMPOSE_DRAFT", { text: "" }),
-          ];
-
-          const plan = planTypedKeyboard({
-            deviceId,
-            submitAt: event.at,
-            text,
-            requestedCharDelay: event.payload.charDelay ?? 2,
-            notBeforeFrame: composeOpenedAt,
-            keyboardType: "default",
-            returnKeyType: "send",
-          });
-
-          if (!plan.ok) {
-            return [...after, ...clearDraft];
-          }
-
-          const [showEv, typeEv, pressEv, hideEv] = plan.events;
-          return [showEv, typeEv, pressEv, ...after, ...clearDraft, hideEv];
-        }
-
-        return [
-          createRuntimeEvent(event, "ADD_TWEET", {
-            id: event.payload.id ?? `tw-${event.at}-${event._declarationOrder ?? 0}`,
-            authorId: event.payload.authorId,
-            text: event.payload.text ?? "",
-            createdAt: getTimestamp(event, event.payload.createdAt),
-            media: event.payload.media,
-            linkPreview: event.payload.linkPreview,
-            poll: event.payload.poll,
-            hashtags: event.payload.hashtags ?? [],
-            mentions: event.payload.mentions ?? [],
-            quoteTweetId: event.payload.quoteTweetId,
-            viewCount: event.payload.viewCount ?? 0,
-            bookmarkCount: event.payload.bookmarkCount ?? 0,
-            shareCount: event.payload.shareCount ?? 0,
-          }),
-        ];
+        return lowerTweetWithOptionalTyping(
+          event,
+          deviceId,
+          scratchpad.lastComposeOpenAtByDevice.get(deviceId),
+          buildAddTweetPayload(event),
+        );
       case "TWEET_REPLY":
-        return [
-          createRuntimeEvent(event, "ADD_TWEET", {
-            id: event.payload.id ?? `tw-${event.at}-${event._declarationOrder ?? 0}`,
-            authorId: event.payload.authorId,
-            text: event.payload.text ?? "",
-            replyToId: event.payload.replyToId,
-            createdAt: getTimestamp(event, event.payload.createdAt),
-            media: event.payload.media,
-            linkPreview: event.payload.linkPreview,
-            poll: event.payload.poll,
-            hashtags: event.payload.hashtags ?? [],
-            mentions: event.payload.mentions ?? [],
-            quoteTweetId: event.payload.quoteTweetId,
-            viewCount: event.payload.viewCount ?? 0,
-            bookmarkCount: event.payload.bookmarkCount ?? 0,
-            shareCount: event.payload.shareCount ?? 0,
-          }),
-        ];
+        return lowerTweetWithOptionalTyping(
+          event,
+          deviceId,
+          scratchpad.lastComposeOpenAtByDevice.get(deviceId),
+          buildAddTweetPayload(event, { replyToId: event.payload.replyToId }),
+        );
       case "TWEET_QUOTE":
-        return [
-          createRuntimeEvent(event, "ADD_TWEET", {
-            id: event.payload.id ?? `tw-${event.at}-${event._declarationOrder ?? 0}`,
-            authorId: event.payload.authorId,
-            text: event.payload.text ?? "",
-            quoteTweetId: event.payload.quoteTweetId,
-            createdAt: getTimestamp(event, event.payload.createdAt),
-            media: event.payload.media,
-            linkPreview: event.payload.linkPreview,
-            poll: event.payload.poll,
-            hashtags: event.payload.hashtags ?? [],
-            mentions: event.payload.mentions ?? [],
-            viewCount: event.payload.viewCount ?? 0,
-            bookmarkCount: event.payload.bookmarkCount ?? 0,
-            shareCount: event.payload.shareCount ?? 0,
-          }),
-        ];
+        return lowerTweetWithOptionalTyping(
+          event,
+          deviceId,
+          scratchpad.lastComposeOpenAtByDevice.get(deviceId),
+          buildAddTweetPayload(event, { quoteTweetId: event.payload.quoteTweetId }),
+        );
       case "TWEET_REPOST":
         return [
           createRuntimeEvent(event, "ADD_TWEET", {
@@ -217,11 +224,6 @@ export const xLowering: XLoweringHandler = {
         if (event.payload.tweetId) {
           events.push(
             createRuntimeEvent(event, "SET_ACTIVE_TWEET", {
-              tweetId: event.payload.tweetId,
-            })
-          );
-          events.push(
-            createRuntimeEvent(event, "VIEW_TWEET", {
               tweetId: event.payload.tweetId,
             })
           );

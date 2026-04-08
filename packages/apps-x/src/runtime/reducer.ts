@@ -95,6 +95,29 @@ function routesEqual(a: XRoute, b: XRoute): boolean {
   );
 }
 
+function insertTopLevelTweetByCreatedAt(
+  state: XState,
+  tweetId: string,
+  createdAt: number,
+): void {
+  const existingIndex = state.timeline.indexOf(tweetId);
+  if (existingIndex >= 0) {
+    state.timeline.splice(existingIndex, 1);
+  }
+
+  const insertAt = state.timeline.findIndex((id) => {
+    const existingTweet = state.tweets.find((t) => t.id === id);
+    if (!existingTweet) return false;
+    return existingTweet.createdAt < createdAt;
+  });
+
+  if (insertAt >= 0) {
+    state.timeline.splice(insertAt, 0, tweetId);
+    return;
+  }
+  state.timeline.push(tweetId);
+}
+
 export const xReducer: PluginReducer<"app_x"> = (
   draft: WorldState,
   event: RuntimeEvent & { kind: "APP"; appId: "app_x" }
@@ -134,12 +157,18 @@ export const xReducer: PluginReducer<"app_x"> = (
       const follower = appState.users.find((u) => u.id === payload.followerId);
       const following = appState.users.find((u) => u.id === payload.followingId);
       if (follower) {
-        follower.followingIds = follower.followingIds.filter((id) => id !== payload.followingId);
-        follower.following = Math.max(0, follower.following - 1);
+        const hadRelationship = follower.followingIds.includes(payload.followingId);
+        if (hadRelationship) {
+          follower.followingIds = follower.followingIds.filter((id) => id !== payload.followingId);
+          follower.following = Math.max(0, follower.following - 1);
+        }
       }
       if (following) {
-        following.followerIds = following.followerIds.filter((id) => id !== payload.followerId);
-        following.followers = Math.max(0, following.followers - 1);
+        const hadRelationship = following.followerIds.includes(payload.followerId);
+        if (hadRelationship) {
+          following.followerIds = following.followerIds.filter((id) => id !== payload.followerId);
+          following.followers = Math.max(0, following.followers - 1);
+        }
       }
       break;
     }
@@ -179,7 +208,7 @@ export const xReducer: PluginReducer<"app_x"> = (
       appState.tweets.push(tweet);
       const shouldAppearInTimeline = !tweet.replyToId;
       if (shouldAppearInTimeline) {
-        appState.timeline.unshift(tweet.id);
+        insertTopLevelTweetByCreatedAt(appState, tweet.id, tweet.createdAt);
       }
 
       if (tweet.replyToId) {

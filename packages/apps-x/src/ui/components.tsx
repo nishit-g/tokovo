@@ -37,6 +37,183 @@ export const Avatar: React.FC<{
   );
 };
 
+export interface XMediaCardPayload {
+  type: "image" | "video" | "link" | "poll";
+  urls?: string[];
+  aspect?: "square" | "wide" | "tall";
+}
+
+export interface XLinkPreviewCardPayload {
+  url: string;
+  domain: string;
+  title: string;
+  description?: string;
+  imageUrl?: string;
+}
+
+const aspectToHeight = (
+  aspect: XMediaCardPayload["aspect"] | undefined,
+  variant: "timeline" | "detail",
+): number => {
+  const base = variant === "detail" ? 240 : 210;
+  if (aspect === "wide") return Math.round(base * 0.65);
+  if (aspect === "tall") return Math.round(base * 1.15);
+  return base;
+};
+
+export const MediaCard: React.FC<{
+  media: XMediaCardPayload;
+  variant?: "timeline" | "detail";
+}> = ({ media, variant = "timeline" }) => {
+  const theme = useXTheme();
+  const height = aspectToHeight(media.aspect, variant);
+  const firstUrl = media.urls?.[0];
+  const canRenderAsset = Boolean(firstUrl);
+
+  if (media.type === "image" && canRenderAsset) {
+    return (
+      <div
+        style={{
+          marginTop: 12,
+          borderRadius: 16,
+          border: `1px solid ${theme.colors.border}`,
+          overflow: "hidden",
+          height,
+          backgroundImage: `url(${firstUrl})`,
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+          backgroundRepeat: "no-repeat",
+        }}
+      />
+    );
+  }
+
+  if (media.type === "video" && canRenderAsset) {
+    return (
+      <div
+        style={{
+          marginTop: 12,
+          borderRadius: 16,
+          border: `1px solid ${theme.colors.border}`,
+          overflow: "hidden",
+          height,
+          position: "relative",
+          backgroundColor: theme.colors.surfaceRaised,
+        }}
+      >
+        <video
+          src={firstUrl}
+          muted
+          playsInline
+          preload="metadata"
+          style={{ width: "100%", height: "100%", objectFit: "cover" }}
+        />
+        <div
+          style={{
+            position: "absolute",
+            inset: 0,
+            background:
+              "linear-gradient(to top, rgba(0,0,0,0.45) 0%, rgba(0,0,0,0.05) 60%)",
+            pointerEvents: "none",
+          }}
+        />
+      </div>
+    );
+  }
+
+  return (
+    <div
+      style={{
+        marginTop: 12,
+        borderRadius: 16,
+        border: `1px solid ${theme.colors.border}`,
+        overflow: "hidden",
+        height,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        background: "linear-gradient(180deg, #0f1114 0%, #1a1f24 100%)",
+      }}
+    >
+      <span style={{ color: theme.colors.textSecondary, fontSize: 13, letterSpacing: 0.3 }}>
+        {media.type.toUpperCase()}
+      </span>
+    </div>
+  );
+};
+
+export const LinkPreviewCard: React.FC<{
+  preview: XLinkPreviewCardPayload;
+}> = ({ preview }) => {
+  const theme = useXTheme();
+  const domain = preview.domain || (() => {
+    try {
+      return new URL(preview.url).hostname;
+    } catch {
+      return preview.url;
+    }
+  })();
+
+  return (
+    <div
+      style={{
+        marginTop: 12,
+        borderRadius: 16,
+        border: `1px solid ${theme.colors.border}`,
+        overflow: "hidden",
+        backgroundColor: theme.colors.surface,
+      }}
+    >
+      {preview.imageUrl ? (
+        <div
+          style={{
+            height: 120,
+            backgroundImage: `url(${preview.imageUrl})`,
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+            backgroundRepeat: "no-repeat",
+          }}
+        />
+      ) : (
+        <div
+          style={{
+            height: 120,
+            background: "linear-gradient(135deg, #1d1f23 0%, #2f3336 100%)",
+          }}
+        />
+      )}
+      <div style={{ padding: 12 }}>
+        <div style={{ fontSize: 13, color: theme.colors.textSecondary }}>{domain}</div>
+        <div
+          style={{
+            fontSize: 15,
+            fontWeight: 400,
+            color: theme.colors.textPrimary,
+            marginTop: 4,
+          }}
+        >
+          {preview.title}
+        </div>
+        {preview.description && (
+          <div
+            style={{
+              fontSize: 15,
+              color: theme.colors.textSecondary,
+              marginTop: 4,
+              display: "-webkit-box",
+              WebkitLineClamp: 2,
+              WebkitBoxOrient: "vertical",
+              overflow: "hidden",
+            }}
+          >
+            {preview.description}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
 // =============================================================================
 // VERIFIED BADGE
 // =============================================================================

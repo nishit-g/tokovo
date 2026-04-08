@@ -176,7 +176,6 @@ export const Notifications: React.FC<NotificationsProps> = ({ world }) => {
         }}
       >
         <TabButton label="All" active={tab === "all"} />
-        <TabButton label="Verified" active={false} />
         <TabButton label="Mentions" active={tab === "mentions"} />
       </div>
 
@@ -221,9 +220,9 @@ export const Notifications: React.FC<NotificationsProps> = ({ world }) => {
                 </div>
 
                 {/* Content */}
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  {/* Actor Avatar */}
-                  <Avatar size={32} />
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    {/* Actor Avatar */}
+                  <Avatar size={32} src={actor?.avatarUrl} />
 
                   {/* Notification Text */}
                   <div style={{ marginTop: 8 }}>

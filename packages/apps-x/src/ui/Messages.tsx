@@ -32,6 +32,23 @@ export const Messages: React.FC<MessagesProps> = ({ world }) => {
     return messages[messages.length - 1];
   };
 
+  const getParticipantsLabel = (participantIds: string[]): string => {
+    const names = participantIds.map(getUserName);
+    if (names.length <= 2) return names.join(", ");
+    return `${names.slice(0, 2).join(", ")} +${names.length - 2}`;
+  };
+
+  const getThreadMeta = (participantIds: string[]): string => {
+    if (participantIds.length <= 1) return "";
+    if (participantIds.length === 2) {
+      const handles = participantIds
+        .map((id) => getUser(id)?.handle)
+        .filter(Boolean) as string[];
+      return handles.length > 0 ? `@${handles.join(", @")}` : "";
+    }
+    return `${participantIds.length} people`;
+  };
+
   return (
     <AppShell>
       {/* Header */}
@@ -178,6 +195,8 @@ export const Messages: React.FC<MessagesProps> = ({ world }) => {
             );
             const mainParticipant = getUser(otherParticipants[0] ?? "");
             const isGroup = otherParticipants.length > 1;
+            const participantLabel = getParticipantsLabel(otherParticipants);
+            const threadMeta = getThreadMeta(otherParticipants);
 
             return (
               <div
@@ -191,7 +210,7 @@ export const Messages: React.FC<MessagesProps> = ({ world }) => {
                 }}
               >
                 {/* Avatar */}
-                <Avatar size={48} />
+                <Avatar size={48} src={mainParticipant?.avatarUrl} />
 
                 {/* Content */}
                 <div style={{ flex: 1, minWidth: 0 }}>
@@ -209,9 +228,7 @@ export const Messages: React.FC<MessagesProps> = ({ world }) => {
                         color: theme.colors.textPrimary,
                       }}
                     >
-                      {isGroup
-                        ? otherParticipants.map(getUserName).join(", ")
-                        : mainParticipant?.name ?? "Unknown"}
+                      {isGroup ? participantLabel : mainParticipant?.name ?? "Unknown"}
                     </span>
                     {mainParticipant?.verified && !isGroup && (
                       <svg width={16} height={16} viewBox="0 0 22 22" fill="none">
@@ -222,14 +239,16 @@ export const Messages: React.FC<MessagesProps> = ({ world }) => {
                         />
                       </svg>
                     )}
-                    <span
-                      style={{
-                        fontSize: 15,
-                        color: theme.colors.textSecondary,
-                      }}
-                    >
-                      @{mainParticipant?.handle ?? "unknown"}
-                    </span>
+                    {threadMeta && (
+                      <span
+                        style={{
+                          fontSize: 15,
+                          color: theme.colors.textSecondary,
+                        }}
+                      >
+                        {threadMeta}
+                      </span>
+                    )}
                     <span
                       style={{
                         fontSize: 15,

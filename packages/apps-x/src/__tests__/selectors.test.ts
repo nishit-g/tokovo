@@ -3,6 +3,7 @@ import {
   getXState,
   getTimelineTweets,
   getActiveTweet,
+  getTweetsByAuthor,
 } from "../runtime/selectors.js";
 import { createXInitialState, type XTweet } from "../runtime/state.js";
 import type { WorldState } from "@tokovo/core";
@@ -76,5 +77,27 @@ describe("X Selectors", () => {
 
     const tweet = getActiveTweet(world);
     expect(tweet?.id).toBe("tw-2");
+  });
+
+  it("getTweetsByAuthor returns authored tweets sorted by createdAt desc", () => {
+    const world: WorldState = {
+      appState: {
+        app_x: {
+          ...createXInitialState(),
+          tweets: [
+            baseTweet({ id: "tw-1", authorId: "u1", createdAt: 100 }),
+            baseTweet({ id: "tw-2", authorId: "u2", createdAt: 200 }),
+            baseTweet({ id: "tw-3", authorId: "u1", createdAt: 300 }),
+          ],
+          timeline: ["tw-2"],
+        },
+      },
+      devices: {},
+      camera: DEFAULT_BASE_CAMERA_STATE,
+      audio: DEFAULT_AUDIO_STATE,
+    } as WorldState;
+
+    const tweets = getTweetsByAuthor(world, "u1");
+    expect(tweets.map((tweet) => tweet.id)).toEqual(["tw-3", "tw-1"]);
   });
 });
