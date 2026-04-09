@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { RuntimeEvent } from "@tokovo/core";
+import type { TokovoPlugin } from "@tokovo/core";
 import { createCanonicalTrackEpisodeIR, type TrackEvent } from "@tokovo/ir";
 import { lowerTrackEvent } from "./lowering.js";
 import { prepareTrackEpisode } from "./prepare.js";
@@ -90,5 +91,52 @@ describe("compiler pipeline guarantees", () => {
       preparedB.keyframedEventIndex?.frames,
     );
     expect(preparedA.events).toEqual(preparedB.events);
+  });
+
+  it("preserves plugin feed/chat-list initial view state when conversations are seeded", () => {
+    const whatsappLikePlugin = {
+      id: "app_whatsapp",
+      version: "1.0.0",
+      displayName: "WhatsApp",
+      reducer: (state: unknown) => state,
+      views: { AppRoot: () => null },
+      createInitialState: () => ({
+        viewMode: "CHATS",
+        currentScreen: "chats",
+      }),
+    } as unknown as TokovoPlugin;
+
+    const ir = createCanonicalTrackEpisodeIR();
+    const prepared = prepareTrackEpisode(ir, [whatsappLikePlugin], {
+      log: false,
+      validate: true,
+    });
+
+    const app = prepared.initialWorld.appState.app_whatsapp as Record<string, unknown>;
+    expect(app.viewMode).toBe("CHATS");
+    expect(app.currentScreen).toBe("chats");
+    expect(app.conversationId).toBeUndefined();
+    expect(typeof app.conversations).toBe("object");
+  });
+
+  it("keeps deterministic CHAT opener fallback when app state has no explicit viewMode", () => {
+    const fallbackPlugin = {
+      id: "app_whatsapp",
+      version: "1.0.0",
+      displayName: "Fallback Plugin",
+      reducer: (state: unknown) => state,
+      views: { AppRoot: () => null },
+      createInitialState: () => ({}),
+    } as unknown as TokovoPlugin;
+
+    const ir = createCanonicalTrackEpisodeIR();
+    const prepared = prepareTrackEpisode(ir, [fallbackPlugin], {
+      log: false,
+      validate: true,
+    });
+
+    const app = prepared.initialWorld.appState.app_whatsapp as Record<string, unknown>;
+    expect(app.viewMode).toBe("CHAT");
+    expect(app.conversationId).toBe("dm_alex");
   });
 });

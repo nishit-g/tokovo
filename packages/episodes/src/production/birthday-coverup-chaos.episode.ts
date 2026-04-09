@@ -5,9 +5,15 @@
  * and the DM with the person who thinks everyone forgot.
  */
 
-import { episode } from "@tokovo/dsl";
 import { WhatsAppTrackBuilder } from "@tokovo/apps-whatsapp";
 import { KeyboardPlugin, OSDirectorPlugin } from "@tokovo/compiler";
+import {
+  cozyChat,
+  creatorPhonesV1,
+  socialAssetsV1,
+  startupChaos,
+  storyEpisode,
+} from "../story-kit/index.js";
 
 import { defineEpisode } from "../types/episode-definition.js";
 
@@ -28,189 +34,280 @@ export default defineEpisode({
     durationInFrames: 2340,
     apps: ["app_whatsapp"],
   },
-  build: () =>
-    episode("birthday-coverup-chaos", {
+  build: () => {
+    const ep = storyEpisode("birthday-coverup-chaos", {
       fps: 30,
       duration: "78s",
       title: "Birthday Cover-Up Chaos 🎂",
       description:
         "One group is trying to save a surprise, while the DM is one text away from disaster.",
     })
-      .device("phone", "iphone16", {
-        app: "app_whatsapp",
-        conversations: [
-          {
-            id: "dm_rhea",
+      .usePacks({
+        personas: startupChaos,
+        assets: socialAssetsV1,
+        styles: cozyChat,
+        devices: creatorPhonesV1,
+      })
+      .cast({
+        me: {
+          persona: "builder",
+          device: "main_phone",
+          overrides: {
+            name: "me",
+            handle: "@me",
+          },
+          assetOverrides: {
+            avatar: "avatars:kabir",
+          },
+        },
+        sid: {
+          persona: "founder",
+          device: "main_phone",
+          overrides: {
+            name: "Sid",
+            handle: "@sid",
+          },
+          assetOverrides: {
+            avatar: "avatars:arjun",
+          },
+        },
+        tara: {
+          persona: "investor",
+          device: "main_phone",
+          overrides: {
+            name: "Tara",
+            handle: "@tara",
+          },
+          assetOverrides: {
+            avatar: "avatars:neha",
+          },
+        },
+        neel: {
+          persona: "meme_account",
+          device: "main_phone",
+          overrides: {
+            name: "Neel",
+            handle: "@neel",
+          },
+          assetOverrides: {
+            avatar: "avatars:meme_daily",
+          },
+        },
+        rhea: {
+          persona: "investor",
+          device: "main_phone",
+          overrides: {
             name: "Rhea",
-            unreadCount: 1,
-            isPinned: true,
-            initialMessages: [
-              {
-                from: "Rhea",
-                text: "kal pakka free rehna",
-                timestamp: -7200,
-              },
-            ],
+            handle: "@rhea",
           },
-          {
-            id: "group_ops",
-            name: "Operation Rhea",
-            type: "group",
-            unreadCount: 3,
-            participants: ["me", "Sid", "Tara", "Neel"],
-            description: "Sid, Tara, Neel",
-            pinnedMessage: {
-              from: "Sid",
-              text: "No one wishes before the balcony cue.",
-            },
-            disappearingMessagesLabel:
-              "Disappearing messages are on. New messages will vanish after 24 hours.",
-            initialMessages: [
-              {
-                from: "Sid",
-                text: "candles kisne uthayi",
-                timestamp: -1800,
-              },
-              {
-                from: "Tara",
-                text: "speaker charge pe hai",
-                timestamp: -1700,
-              },
-            ],
+          assetOverrides: {
+            avatar: "avatars:neha",
           },
-          {
-            id: "dm_mom",
+        },
+        mom: {
+          persona: "founder",
+          device: "main_phone",
+          overrides: {
             name: "Mom ❤️",
-            unreadCount: 1,
-            isLocked: true,
-            isPinned: true,
-            initialMessages: [
-              {
-                from: "Mom",
-                text: "ghar aate waqt bread le aana",
-                timestamp: -2400,
-              },
-            ],
+            handle: "@mom",
           },
-          {
-            id: "group_flatmates",
-            name: "Flat 4A",
-            type: "group",
-            unreadCount: 2,
-            initialMessages: [
-              {
-                from: "Kush",
-                text: "kisne geyser on chhoda",
-                timestamp: -3000,
-              },
-            ],
+          assetOverrides: {
+            avatar: "avatars:arjun",
           },
-        ],
-        os: {
-          time: new Date("2025-02-22T19:38:00"),
-          battery: 58,
-          network: "5G",
         },
       })
-      .background({ type: "image", src: "/backgrounds/night-window.png" })
+      .device("main_phone", {
+        profile: "iphone16",
+        app: "app_whatsapp",
+      });
+
+    const kit = ep.kit();
+    const sid = kit.actor("sid").name;
+    const tara = kit.actor("tara").name;
+    const neel = kit.actor("neel").name;
+    const rhea = kit.actor("rhea").name;
+    const mom = kit.actor("mom").name;
+    const mainPhone = kit.project.device("main_phone", {
+      profile: "iphone16",
+      app: "app_whatsapp",
+      conversations: [
+        kit.project.whatsappConversation({
+          id: "dm_rhea",
+          name: rhea,
+          avatarRole: "rhea",
+          unreadCount: 1,
+          isPinned: true,
+          initialMessages: [
+            {
+              from: rhea,
+              text: "kal pakka free rehna",
+              timestamp: -7200,
+            },
+          ],
+        }),
+        kit.project.whatsappConversation({
+          id: "group_ops",
+          name: "Operation Rhea",
+          avatarRole: "sid",
+          type: "group",
+          unreadCount: 3,
+          participantRoles: ["me", "sid", "tara", "neel"],
+          description: `${sid}, ${tara}, ${neel}`,
+          pinnedMessage: {
+            from: sid,
+            text: "No one wishes before the balcony cue.",
+          },
+          disappearingMessagesLabel:
+            "Disappearing messages are on. New messages will vanish after 24 hours.",
+          initialMessages: [
+            {
+              from: sid,
+              text: "candles kisne uthayi",
+              timestamp: -1800,
+            },
+            {
+              from: tara,
+              text: "speaker charge pe hai",
+              timestamp: -1700,
+            },
+          ],
+        }),
+        kit.project.whatsappConversation({
+          id: "dm_mom",
+          name: mom,
+          avatarRole: "mom",
+          unreadCount: 1,
+          isLocked: true,
+          isPinned: true,
+          initialMessages: [
+            {
+              from: mom,
+              text: "ghar aate waqt bread le aana",
+              timestamp: -2400,
+            },
+          ],
+        }),
+        kit.project.whatsappConversation({
+          id: "group_flatmates",
+          name: "Flat 4A",
+          type: "group",
+          unreadCount: 2,
+          initialMessages: [
+            {
+              from: "Kush",
+              text: "kisne geyser on chhoda",
+              timestamp: -3000,
+            },
+          ],
+        }),
+      ],
+      os: {
+        time: new Date("2025-02-22T19:38:00"),
+        battery: 58,
+        network: "5G",
+      },
+    });
+
+    return ep
+      .device("main_phone", mainPhone.profile, mainPhone.options)
       .track(
         "app_whatsapp",
-        () => new WhatsAppTrackBuilder(30, "phone", "group_ops", getOrder),
+        () => new WhatsAppTrackBuilder(30, "main_phone", "group_ops", getOrder),
         (wa) => {
           wa.openChatList("0s");
 
           wa.switchTo("group_ops", "2.4s");
-          wa.at("3s").receive("Sid", "situation kharab hai");
-          wa.at("3.9s").receive("Tara", "Rhea ko genuinely lag raha hai sab bhool gaye");
-          wa.at("4.8s").receive("Neel", "cake tilt pe hai but morally stable hai");
+          wa.at("3s").receive(sid, "situation kharab hai");
+          wa.at("3.9s").receive(tara, `${rhea} ko genuinely lag raha hai sab bhool gaye`);
+          wa.at("4.8s").receive(neel, "cake tilt pe hai but morally stable hai");
 
           wa.span("5.8s", "7.2s").typing("me");
           wa.at("7.2s").send("koi bhi usko wish mat karo jab tak main bolu");
 
-          wa.span("8.2s", "9.4s").typing("Tara");
+          wa.span("8.2s", "9.4s").typing(tara);
           wa.at("9.4s").receive(
-            "Tara",
+            tara,
             "too late उसने status dala 'another normal day :)'",
             { replyTo: { index: -1 } },
           );
 
           wa.openChatList("10.8s");
           wa.switchTo("dm_rhea", "12.2s");
-          wa.at("12.8s").receive("Rhea", "nice");
-          wa.at("13.5s").receive("Rhea", "even you forgot");
+          wa.at("12.8s").receive(rhea, "nice");
+          wa.at("13.5s").receive(rhea, "even you forgot");
 
           wa.span("14.4s", "16.6s").typing("me");
           wa.at("16.6s").send("pagal hai kya, office me atka hua hu");
 
-          wa.span("17.6s", "18.8s").typing("Rhea");
-          wa.at("18.8s").receive("Rhea", "haan obviously");
-          wa.at("19.6s").receive("Rhea", "12 ghante se atke hue ho");
+          wa.span("17.6s", "18.8s").typing(rhea);
+          wa.at("18.8s").receive(rhea, "haan obviously");
+          wa.at("19.6s").receive(rhea, "12 ghante se atke hue ho");
 
           wa.openChatList("21.2s");
           wa.switchTo("group_ops", "22.8s");
-          wa.at("23.4s").receiveImage("Neel", "/placeholders/media.svg", {
+          wa.at("23.4s").receiveImage(neel, "/placeholders/media.svg", {
             caption: "cake update",
           });
-          wa.at("24.6s").receive("Sid", "bakery ne likh diya happy retirement reha");
-          wa.at("25.8s").receive("Tara", "florist condolence bouquet bhej gaya");
+          wa.at("24.6s").receive(sid, "bakery ne likh diya happy retirement reha");
+          wa.at("25.8s").receive(tara, "florist condolence bouquet bhej gaya");
 
           wa.span("27s", "28.6s").typing("me");
           wa.at("28.6s").send("scrape the r. make it look intentional.");
 
-          wa.span("29.6s", "30.8s").typing("Sid");
-          wa.at("30.8s").receive("Sid", "bro bouquet pe deepest condolences bhi likha hai");
+          wa.span("29.6s", "30.8s").typing(sid);
+          wa.at("30.8s").receive(sid, "bro bouquet pe deepest condolences bhi likha hai");
 
           wa.openChatList("32.4s");
           wa.switchTo("dm_rhea", "33.8s");
-          wa.at("34.4s").receive("Rhea", "it's fine");
-          wa.at("35.1s").receive("Rhea", "i booked dinner for one");
-          wa.at("35.9s").receive("Rhea", "don't worry, i am used to this");
+          wa.at("34.4s").receive(rhea, "it's fine");
+          wa.at("35.1s").receive(rhea, "i booked dinner for one");
+          wa.at("35.9s").receive(rhea, "don't worry, i am used to this");
 
           wa.span("37s", "39.4s").typing("me");
           wa.at("39.4s").send("drama band kar aur 20 min de mujhe");
 
-          wa.span("40.4s", "41.2s").typing("Rhea");
-          wa.at("41.2s").receive("Rhea", "kyu", { replyTo: { index: -1 } });
+          wa.span("40.4s", "41.2s").typing(rhea);
+          wa.at("41.2s").receive(rhea, "kyu", { replyTo: { index: -1 } });
 
           wa.openChatList("42.6s");
           wa.switchTo("group_ops", "44s");
-          wa.at("44.6s").receive("Sid", "we are downstairs");
-          wa.at("45.4s").receive("Neel", "watchman ne bola bouquet gaadi me chhupa do");
-          wa.at("46.2s").receive("Tara", "cake abhi bhi rehab jaisa lag raha hai");
+          wa.at("44.6s").receive(sid, "we are downstairs");
+          wa.at("45.4s").receive(neel, "watchman ne bola bouquet gaadi me chhupa do");
+          wa.at("46.2s").receive(tara, "cake abhi bhi rehab jaisa lag raha hai");
 
           wa.span("47.4s", "49.6s").typing("me");
           wa.at("49.6s").send("lights off rakho. bouquet hide karo. neel ko kuch mat touch karne do");
 
-          wa.span("50.6s", "51.8s").typing("Sid");
-          wa.at("51.8s").receive("Sid", "too late. usne ribbon kaat diya");
+          wa.span("50.6s", "51.8s").typing(sid);
+          wa.at("51.8s").receive(sid, "too late. usne ribbon kaat diya");
 
           wa.openChatList("53.4s");
           wa.switchTo("dm_rhea", "54.8s");
           wa.span("55.2s", "57.4s").typing("me");
           wa.at("57.4s").send("balcony pe aa 2 min");
 
-          wa.span("58.2s", "59.2s").typing("Rhea");
-          wa.at("59.2s").receive("Rhea", "why");
+          wa.span("58.2s", "59.2s").typing(rhea);
+          wa.at("59.2s").receive(rhea, "why");
 
           wa.span("60s", "62.4s").typing("me");
           wa.at("62.4s").send("bas aa. aur mood mat lana");
 
-          wa.span("63.2s", "64.4s").typing("Rhea");
-          wa.at("64.4s").receive("Rhea", "this better be insane");
+          wa.span("63.2s", "64.4s").typing(rhea);
+          wa.at("64.4s").receive(rhea, "this better be insane");
 
           wa.openChatList("65.8s");
           wa.switchTo("group_ops", "67.2s");
-          wa.at("67.8s").receive("Sid", "positions ready");
-          wa.at("68.6s").receive("Tara", "3... 2... 1...");
+          wa.at("67.8s").receive(sid, "positions ready");
+          wa.at("68.6s").receive(tara, "3... 2... 1...");
 
           wa.openChatList("69.8s");
           wa.switchTo("dm_rhea", "71s");
           wa.span("71.2s", "73.4s").typing("me");
           wa.at("73.4s").send("ab neeche dekh");
 
-          wa.span("74.4s", "75.8s").typing("Rhea");
-          wa.at("75.8s").receive("Rhea", "WHAT", { replyTo: { index: -1 } });
-          wa.at("76.6s").receive("Rhea", "you idiots planned all this?");
+          wa.span("74.4s", "75.8s").typing(rhea);
+          wa.at("75.8s").receive(rhea, "WHAT", { replyTo: { index: -1 } });
+          wa.at("76.6s").receive(rhea, "you idiots planned all this?");
 
           wa.span("77.1s", "78s").typing("me");
           wa.at("78s").send("haan. cake ko judge mat karna bas");
@@ -247,5 +344,6 @@ export default defineEpisode({
           excludeShortMessages: 3,
         }),
       )
-      .build(),
+      .build();
+  },
 });

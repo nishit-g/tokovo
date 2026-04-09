@@ -3,6 +3,16 @@
   "version": "0.0.0",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./story-kit": {
+      "types": "./dist/story-kit.d.ts",
+      "default": "./dist/story-kit.js"
+    }
+  },
   "files": [
     "dist"
   ],
@@ -20,7 +30,8 @@
     "@tokovo/apps-snapchat": "workspace:*",
     "@tokovo/apps-teams": "workspace:*",
     "@tokovo/apps-x": "workspace:*",
-    "@tokovo/ir": "workspace:*"
+    "@tokovo/ir": "workspace:*",
+    "@tokovo/packs": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",

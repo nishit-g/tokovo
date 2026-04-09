@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "next dev --port 3001",
     "build": "next build",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "tsc --noEmit -p tsconfig.typecheck.json",
     "test": "pnpm exec vitest run --passWithNoTests",
     "start": "next start",
     "lint": "eslint . --max-warnings 0"
@@ -15,9 +15,13 @@
     "@headlessui/react": "^2.2.6",
     "@tailwindcss/forms": "^0.5.10",
     "@tailwindcss/postcss": "^4.1.15",
+    "@tokovo/creator": "workspace:*",
+    "@tokovo/episodes": "workspace:*",
+    "@tokovo/packs": "workspace:*",
     "clsx": "^2.1.1",
     "framer-motion": "^12.23.11",
     "lenis": "^1.3.17",
+    "lucide-react": "^0.263.1",
     "next": "^15",
     "react": "^19",
     "react-dom": "^19",
@@ -31,6 +35,7 @@
     "eslint": "^9.32.0",
     "eslint-config-next": "^15",
     "prettier": "^3.6.2",
-    "prettier-plugin-tailwindcss": "^0.7.1"
+    "prettier-plugin-tailwindcss": "^0.7.1",
+    "vitest": "^1.6.1"
   }
 }

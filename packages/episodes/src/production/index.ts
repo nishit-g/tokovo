@@ -44,6 +44,7 @@ import teamsWarRoom from "./teams-war-room.episode.js";
 import attendanceHeistBros from "./attendance-heist-bros.episode.js";
 import birthdayCoverupChaos from "./birthday-coverup-chaos.episode.js";
 import megaV2EpisodeWhatsapp from "./mega-v2-episode-whatsapp.episode.js";
+import storyKitCrossoverShowcase from "./story-kit-crossover-showcase.episode.js";
 // plop:episode-import
 
 export const productionEpisodes: EpisodeDefinition[] = [
@@ -79,6 +80,7 @@ export const productionEpisodes: EpisodeDefinition[] = [
   attendanceHeistBros,
   birthdayCoverupChaos,
   megaV2EpisodeWhatsapp,
+  storyKitCrossoverShowcase,
   // plop:episode-entry
 ];
 
@@ -122,4 +124,5 @@ export {
   attendanceHeistBros,
   birthdayCoverupChaos,
   megaV2EpisodeWhatsapp,
+  storyKitCrossoverShowcase,
 };

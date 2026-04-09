@@ -26,6 +26,14 @@
     "./tests": {
       "types": "./dist/tests/index.d.ts",
       "default": "./dist/tests/index.js"
+    },
+    "./story-kit": {
+      "types": "./dist/story-kit/index.d.ts",
+      "default": "./dist/story-kit/index.js"
+    },
+    "./studio": {
+      "types": "./dist/studio/index.d.ts",
+      "default": "./dist/studio/index.js"
     }
   },
   "files": [
@@ -44,6 +52,7 @@
     "@tokovo/creator": "workspace:*",
     "@tokovo/dsl": "workspace:*",
     "@tokovo/ir": "workspace:*",
+    "@tokovo/packs": "workspace:*",
     "@tokovo/compiler": "workspace:*",
     "@tokovo/voice": "workspace:*",
     "@tokovo/apps-whatsapp": "workspace:*",

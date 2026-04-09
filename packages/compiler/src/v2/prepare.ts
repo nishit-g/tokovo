@@ -289,13 +289,7 @@ function buildInitialWorld(ir: TrackEpisodeIR, plugins: TokovoPlugin[]): WorldSt
 
       const merged = {
         ...baseState,
-        ...(hasConversations
-          ? {
-              viewMode: "CHAT",
-              conversationId: firstConversation?.id,
-              conversations,
-            }
-          : {}),
+        ...(hasConversations ? { conversations } : {}),
       } as Record<string, unknown>;
 
       // Ensure viewMode is always present (required by LayoutEngine in render mode)
@@ -306,6 +300,7 @@ function buildInitialWorld(ir: TrackEpisodeIR, plugins: TokovoPlugin[]): WorldSt
       // If conversations exist but conversationId is missing, set it deterministically.
       if (
         hasConversations &&
+        merged.viewMode === "CHAT" &&
         typeof merged.conversationId !== "string" &&
         typeof firstConversation?.id === "string"
       ) {
