@@ -101,4 +101,60 @@ describe("LinkedIn reducer basics", () => {
     expect(app.activeThreadId).toBeNull();
     expect(app.currentScreen).toBe("feed");
   });
+
+  it("marks notifications as read when opening notifications", () => {
+    const w0 = createWorld();
+    const w1 = run(w0, {
+      at: 1,
+      kind: "APP",
+      appId: "app_linkedin",
+      type: "LINKEDIN_ADD_NOTIFICATION",
+      payload: { id: "n1", type: "comment", actorId: "u2" },
+    });
+    const w2 = run(w1, {
+      at: 2,
+      kind: "APP",
+      appId: "app_linkedin",
+      type: "LINKEDIN_SET_SCREEN",
+      payload: { screen: "notifications" },
+    });
+
+    const app = w2.appState?.app_linkedin as any;
+    expect(app.notifications[0].unread).toBe(false);
+  });
+
+  it("increments unread dm counts for incoming messages and clears on open", () => {
+    const w0 = createWorld();
+    const w1 = run(w0, {
+      at: 1,
+      kind: "APP",
+      appId: "app_linkedin",
+      type: "LINKEDIN_SET_CURRENT_USER",
+      payload: { userId: "me" },
+    });
+    const w2 = run(w1, {
+      at: 2,
+      kind: "APP",
+      appId: "app_linkedin",
+      type: "LINKEDIN_ADD_DM_THREAD",
+      payload: { id: "t1", participantIds: ["me", "u2"] },
+    });
+    const w3 = run(w2, {
+      at: 3,
+      kind: "APP",
+      appId: "app_linkedin",
+      type: "LINKEDIN_ADD_DM_MESSAGE",
+      payload: { id: "m1", threadId: "t1", senderId: "u2", text: "Need a quick intro?" },
+    });
+    expect((w3.appState?.app_linkedin as any).dmThreads[0].unreadCount).toBe(1);
+
+    const w4 = run(w3, {
+      at: 4,
+      kind: "APP",
+      appId: "app_linkedin",
+      type: "LINKEDIN_SET_SCREEN",
+      payload: { screen: "thread", threadId: "t1" },
+    });
+    expect((w4.appState?.app_linkedin as any).dmThreads[0].unreadCount).toBe(0);
+  });
 });

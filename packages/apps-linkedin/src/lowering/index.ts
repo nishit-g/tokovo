@@ -24,6 +24,26 @@ function createRuntimeEvent(event: TrackEvent, type: string, payload: unknown): 
   } as RuntimeEvent;
 }
 
+function createKeyboardClearEvent(deviceId: string, at: number): RuntimeEvent {
+  return {
+    at,
+    kind: "DEVICE",
+    type: "KEYBOARD_CLEAR",
+    deviceId,
+    payload: {},
+  } as RuntimeEvent;
+}
+
+function createKeyboardHideEvent(deviceId: string, at: number): RuntimeEvent {
+  return {
+    at,
+    kind: "DEVICE",
+    type: "KEYBOARD_HIDE",
+    deviceId,
+    payload: {},
+  } as RuntimeEvent;
+}
+
 type LinkedInLoweringScratchpad = {
   lastComposeOpenAtByDevice: Map<string, number>;
   lastPostOpenAtByDevice: Map<string, number>;
@@ -54,8 +74,13 @@ export const linkedInLowering: LILoweringHandler = {
             handle: event.payload.handle,
             headline: event.payload.headline,
             avatarUrl: event.payload.avatarUrl,
+            location: event.payload.location,
+            company: event.payload.company,
+            about: event.payload.about,
             connections: event.payload.connections ?? 0,
             followers: event.payload.followers ?? 0,
+            profileViews: event.payload.profileViews,
+            impressionCount: event.payload.impressionCount,
           }),
         ];
       case "SET_CURRENT_USER":
@@ -106,7 +131,7 @@ export const linkedInLowering: LILoweringHandler = {
           if (!plan.ok) return [...after, ...clearDraft];
 
           const [showEv, typeEv, pressEv, hideEv] = plan.events;
-          return [showEv, typeEv, pressEv, ...after, ...clearDraft, hideEv];
+          return [showEv, typeEv, pressEv, ...after, createKeyboardClearEvent(deviceId, event.at), ...clearDraft, hideEv];
         }
         return [
           createRuntimeEvent(event, "LINKEDIN_ADD_POST", {
@@ -120,6 +145,7 @@ export const linkedInLowering: LILoweringHandler = {
             hashtags: event.payload.hashtags ?? [],
             mentions: event.payload.mentions ?? [],
           }),
+          createRuntimeEvent(event, "LINKEDIN_SET_COMPOSE_DRAFT", { text: "" }),
         ];
       }
 
@@ -169,7 +195,7 @@ export const linkedInLowering: LILoweringHandler = {
           if (!plan.ok) return after;
 
           const [showEv, typeEv, pressEv, hideEv] = plan.events;
-          return [showEv, typeEv, pressEv, ...after, hideEv];
+          return [showEv, typeEv, pressEv, ...after, createKeyboardClearEvent(deviceId, event.at), hideEv];
         }
         return [
           createRuntimeEvent(event, "LINKEDIN_ADD_COMMENT", {
@@ -206,6 +232,10 @@ export const linkedInLowering: LILoweringHandler = {
             threadId: event.payload.threadId,
           }),
         ];
+        if (event.payload.screen !== "compose" && event.payload.screen !== "post" && event.payload.screen !== "thread") {
+          evs.push(createKeyboardClearEvent(deviceId, event.at));
+          evs.push(createKeyboardHideEvent(deviceId, event.at));
+        }
         if (event.payload.postId) evs.push(createRuntimeEvent(event, "LINKEDIN_SET_ACTIVE_POST", { postId: event.payload.postId }));
         if (event.payload.userId) evs.push(createRuntimeEvent(event, "LINKEDIN_SET_ACTIVE_USER", { userId: event.payload.userId }));
         if (event.payload.threadId) evs.push(createRuntimeEvent(event, "LINKEDIN_SET_ACTIVE_THREAD", { threadId: event.payload.threadId }));
@@ -222,21 +252,58 @@ export const linkedInLowering: LILoweringHandler = {
         return [createRuntimeEvent(event, "LINKEDIN_SET_THEME_MODE", { mode: event.payload.mode })];
 
       case "NOTIFICATION_ADD":
-        return [
-          createRuntimeEvent(event, "LINKEDIN_ADD_NOTIFICATION", {
-            id: event.payload.id ?? `li-nt-${event.at}-${event._declarationOrder ?? 0}`,
-            type: event.payload.type,
-            actorId: event.payload.actorId,
-            postId: event.payload.postId,
-            createdAt: typeof event.payload.createdAt === "number" ? event.payload.createdAt : event.at,
-          }),
-        ];
+        {
+          const id = event.payload.id ?? `li-nt-${event.at}-${event._declarationOrder ?? 0}`;
+          const body =
+            event.payload.body ??
+            (event.payload.type === "reaction"
+              ? "reacted to your post"
+              : event.payload.type === "comment"
+                ? "commented on your post"
+                : event.payload.type === "repost"
+                  ? "reposted your update"
+                  : event.payload.type === "connection"
+                    ? "accepted your invitation"
+                    : event.payload.type === "message"
+                      ? "sent you a message"
+                      : "started following you");
+          return [
+            createRuntimeEvent(event, "LINKEDIN_ADD_NOTIFICATION", {
+              id,
+              type: event.payload.type,
+              actorId: event.payload.actorId,
+              postId: event.payload.postId,
+              threadId: event.payload.threadId,
+              title: event.payload.title,
+              body,
+              unread: event.payload.unread ?? true,
+              createdAt: typeof event.payload.createdAt === "number" ? event.payload.createdAt : event.at,
+            }),
+            {
+              at: event.at,
+              kind: "DEVICE",
+              type: "SHOW_NOTIFICATION",
+              deviceId,
+              payload: {
+                id,
+                appId: "app_linkedin",
+                title: event.payload.title ?? "LinkedIn",
+                body,
+                threadKey: event.payload.threadId ?? event.payload.postId ?? event.payload.actorId,
+                priority: event.payload.type === "message" ? "HIGH" : "DEFAULT",
+              },
+            } as RuntimeEvent,
+          ];
+        }
 
       case "DM_THREAD_CREATE":
         return [
           createRuntimeEvent(event, "LINKEDIN_ADD_DM_THREAD", {
             id: event.payload.id ?? `li-dm-${event.at}-${event._declarationOrder ?? 0}`,
             participantIds: event.payload.participantIds ?? [],
+            title: event.payload.title,
+            unreadCount: event.payload.unreadCount ?? 0,
+            pinned: event.payload.pinned ?? false,
           }),
         ];
 
@@ -275,7 +342,7 @@ export const linkedInLowering: LILoweringHandler = {
           if (!plan.ok) return after;
 
           const [showEv, typeEv, pressEv, hideEv] = plan.events;
-          return [showEv, typeEv, pressEv, ...after, hideEv];
+          return [showEv, typeEv, pressEv, ...after, createKeyboardClearEvent(deviceId, event.at), hideEv];
         }
         return [
           createRuntimeEvent(event, "LINKEDIN_ADD_DM_MESSAGE", {

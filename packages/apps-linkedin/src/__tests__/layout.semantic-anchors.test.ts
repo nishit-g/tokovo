@@ -50,35 +50,36 @@ describe("LinkedIn semantic anchors (layout-driven)", () => {
       "li_nav_bar",
       "li_header",
       "li_feed",
-      "li_post_card",
-      "li_reaction_row",
-      "li_compose_fab",
+      "li_feed_composer",
+      "li_feed_sort",
+      "li_post_focus",
+      "li_post_focus_reactions",
+      "li_post_focus_comments",
     ]);
   });
 
   it("notifications includes expected anchors", () => {
     const layout = computeLayoutFor("notifications", "FEED");
-    expectHasAnchors(layout, ["device", "app", "li_nav_bar", "li_header", "li_notifications_list"]);
+    expectHasAnchors(layout, ["device", "app", "li_nav_bar", "li_header", "li_notifications_list", "li_notifications_focus_row"]);
   });
 
   it("messages includes expected anchors", () => {
     const layout = computeLayoutFor("messages", "FEED");
-    expectHasAnchors(layout, ["device", "app", "li_nav_bar", "li_header", "li_messages_list"]);
+    expectHasAnchors(layout, ["device", "app", "li_nav_bar", "li_header", "li_messages_search", "li_messages_list", "li_messages_focus_row", "li_compose_fab"]);
   });
 
   it("post detail includes expected anchors", () => {
     const layout = computeLayoutFor("post", "FEED");
-    expectHasAnchors(layout, ["device", "app", "li_nav_bar", "li_header", "li_post_detail", "li_comment_composer"]);
+    expectHasAnchors(layout, ["device", "app", "li_nav_bar", "li_header", "li_post_detail", "li_post_detail_card", "li_post_detail_comments", "li_comment_composer"]);
   });
 
   it("thread includes expected anchors", () => {
     const layout = computeLayoutFor("thread", "CHAT");
-    expectHasAnchors(layout, ["device", "app", "li_dm_thread", "li_dm_composer"]);
+    expectHasAnchors(layout, ["device", "app", "li_dm_header", "li_dm_thread", "li_dm_focus_message", "li_dm_composer"]);
   });
 
   it("compose includes expected anchors", () => {
     const layout = computeLayoutFor("compose", "FULLSCREEN");
-    expectHasAnchors(layout, ["device", "app", "li_compose_sheet"]);
+    expectHasAnchors(layout, ["device", "app", "li_compose_header", "li_compose_sheet", "li_compose_actions"]);
   });
 });
-

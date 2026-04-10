@@ -3,6 +3,7 @@ import type { LinkedInState, LIPost, LIUser } from "./runtime/state.js";
 
 const MAX_FEED_POSTS = 4;
 const MAX_NOTIFICATIONS = 6;
+const MAX_MESSAGE_THREADS = 4;
 
 function createRef(
   src: string | undefined,
@@ -103,8 +104,15 @@ export const collectLinkedInAssetRefs: PluginAssetCollector<"app_linkedin"> = ({
     case "profile":
       pushUserAvatar(
         refs,
-        state.activeUserId ? usersById.get(state.activeUserId) : undefined,
+        state.activeUserId ? usersById.get(state.activeUserId) : state.currentUserId ? usersById.get(state.currentUserId) : undefined,
       );
+      for (const postId of state.feed.filter((id) => {
+        const post = postsById.get(id);
+        const ownerId = state.activeUserId ?? state.currentUserId;
+        return Boolean(post && ownerId && post.authorId === ownerId);
+      }).slice(0, 2)) {
+        pushPostAssets(refs, postsById.get(postId), usersById);
+      }
       break;
     case "notifications":
       for (const notification of state.notifications.slice(0, MAX_NOTIFICATIONS)) {
@@ -112,6 +120,11 @@ export const collectLinkedInAssetRefs: PluginAssetCollector<"app_linkedin"> = ({
       }
       break;
     case "messages":
+      for (const thread of state.dmThreads.slice(0, MAX_MESSAGE_THREADS)) {
+        const participantId = thread.participantIds.find((id) => id !== state.currentUserId);
+        pushUserAvatar(refs, participantId ? usersById.get(participantId) : undefined);
+      }
+      break;
     case "thread": {
       const thread = state.activeThreadId
         ? state.dmThreads.find((item) => item.id === state.activeThreadId)

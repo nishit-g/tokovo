@@ -35,6 +35,7 @@ function getAppState(draft: WorldState): LinkedInState {
   state.notifications = ensureMutableArray(state.notifications);
   state.dmThreads = ensureMutableArray(state.dmThreads);
   state.dmMessages = ensureMutableArray(state.dmMessages);
+  state.dmThreads = state.dmThreads.map((thread) => ensureThreadDefaults(thread));
 
   state.currentScreen ??= "feed";
   state.activePostId ??= null;
@@ -60,11 +61,39 @@ function ensureUserDefaults(payload: Partial<LIUser>): LIUser {
     handle: payload.handle ?? "unknown",
     headline: payload.headline,
     avatarUrl: payload.avatarUrl,
+    location: payload.location,
+    company: payload.company,
+    about: payload.about,
     connections: payload.connections ?? 0,
     followers: payload.followers ?? 0,
+    profileViews: payload.profileViews,
+    impressionCount: payload.impressionCount,
     connectionIds: Array.isArray(payload.connectionIds) ? [...payload.connectionIds] : [],
     followerIds: Array.isArray(payload.followerIds) ? [...payload.followerIds] : [],
   };
+}
+
+function ensureThreadDefaults(payload: Partial<LIDMThread> & { id: string }): LIDMThread {
+  return {
+    id: payload.id,
+    participantIds: Array.isArray(payload.participantIds) ? [...payload.participantIds] : [],
+    messageIds: Array.isArray(payload.messageIds) ? [...payload.messageIds] : [],
+    title: payload.title,
+    unreadCount: payload.unreadCount ?? 0,
+    pinned: payload.pinned ?? false,
+    lastMessageId: payload.lastMessageId ?? null,
+    lastMessageAt: payload.lastMessageAt ?? null,
+    draftText: payload.draftText ?? "",
+    typingParticipantIds: Array.isArray(payload.typingParticipantIds) ? [...payload.typingParticipantIds] : [],
+  };
+}
+
+function sortThreads(threads: LIDMThread[]): void {
+  threads.sort((a, b) => {
+    if (a.pinned !== b.pinned) return a.pinned ? -1 : 1;
+    if ((a.unreadCount ?? 0) !== (b.unreadCount ?? 0)) return (b.unreadCount ?? 0) - (a.unreadCount ?? 0);
+    return (b.lastMessageAt ?? 0) - (a.lastMessageAt ?? 0);
+  });
 }
 
 function ensurePostDefaults(
@@ -118,6 +147,7 @@ export const linkedInReducer: PluginReducer<"app_linkedin"> = (
     case "LINKEDIN_SET_CURRENT_USER": {
       const payload = event.payload as { userId: string };
       app.currentUserId = payload.userId;
+      if (!app.activeUserId) app.activeUserId = payload.userId;
       break;
     }
     case "LINKEDIN_CONNECT_USERS":
@@ -145,6 +175,9 @@ export const linkedInReducer: PluginReducer<"app_linkedin"> = (
       const post = ensurePostDefaults(payload, event.at);
       app.posts.push(post);
       app.feed.unshift(post.id);
+      if (app.currentUserId && payload.authorId === app.currentUserId) {
+        app.composeDraft = "";
+      }
       break;
     }
     case "LINKEDIN_REPOST_POST": {
@@ -208,6 +241,13 @@ export const linkedInReducer: PluginReducer<"app_linkedin"> = (
       app.activeUserId = payload.userId ?? null;
       app.activeThreadId = payload.threadId ?? null;
       app.lastNavFrame = event.at;
+      if (payload.screen === "notifications") {
+        app.notifications = app.notifications.map((notification) => ({ ...notification, unread: false }));
+      }
+      if (payload.screen === "thread" && payload.threadId) {
+        const thread = app.dmThreads.find((item) => item.id === payload.threadId);
+        if (thread) thread.unreadCount = 0;
+      }
       syncViewMode(app);
       break;
     }
@@ -236,6 +276,8 @@ export const linkedInReducer: PluginReducer<"app_linkedin"> = (
     case "LINKEDIN_SET_ACTIVE_THREAD": {
       const payload = event.payload as { threadId: string };
       app.activeThreadId = payload.threadId;
+       const thread = app.dmThreads.find((item) => item.id === payload.threadId);
+       if (thread && app.currentScreen === "thread") thread.unreadCount = 0;
       syncViewMode(app);
       break;
     }
@@ -256,7 +298,11 @@ export const linkedInReducer: PluginReducer<"app_linkedin"> = (
         type: payload.type,
         actorId: payload.actorId,
         postId: payload.postId,
+        threadId: payload.threadId,
+        title: payload.title,
+        body: payload.body,
         createdAt: payload.createdAt ?? event.at,
+        unread: payload.unread ?? true,
       };
       app.notifications.unshift(n);
       break;
@@ -265,11 +311,8 @@ export const linkedInReducer: PluginReducer<"app_linkedin"> = (
       const payload = event.payload as LIDMThread;
       const exists = app.dmThreads.find((t) => t.id === payload.id);
       if (!exists) {
-        app.dmThreads.push({
-          id: payload.id,
-          participantIds: Array.isArray(payload.participantIds) ? [...payload.participantIds] : [],
-          messageIds: [],
-        });
+        app.dmThreads.push(ensureThreadDefaults(payload));
+        sortThreads(app.dmThreads);
       }
       break;
     }
@@ -277,7 +320,7 @@ export const linkedInReducer: PluginReducer<"app_linkedin"> = (
       const payload = event.payload as LIDMMessage;
       let thread = app.dmThreads.find((t) => t.id === payload.threadId);
       if (!thread) {
-        app.dmThreads.push({ id: payload.threadId, participantIds: [], messageIds: [] });
+        app.dmThreads.push(ensureThreadDefaults({ id: payload.threadId }));
         thread = app.dmThreads.find((t) => t.id === payload.threadId);
       }
       if (!thread) {
@@ -292,6 +335,19 @@ export const linkedInReducer: PluginReducer<"app_linkedin"> = (
       };
       app.dmMessages.push(msg);
       thread.messageIds.push(msg.id);
+      thread.lastMessageId = msg.id;
+      thread.lastMessageAt = msg.createdAt;
+      const isIncoming = Boolean(app.currentUserId) && msg.senderId !== app.currentUserId;
+      const isVisibleThread = app.currentScreen === "thread" && app.activeThreadId === thread.id;
+      if (app.currentUserId && msg.senderId === app.currentUserId) {
+        thread.draftText = "";
+      }
+      if (isIncoming && !isVisibleThread) {
+        thread.unreadCount = (thread.unreadCount ?? 0) + 1;
+      } else if (isVisibleThread) {
+        thread.unreadCount = 0;
+      }
+      sortThreads(app.dmThreads);
       break;
     }
     default:

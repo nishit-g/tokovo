@@ -1,58 +1,31 @@
-/**
- * Notifications Screen
- * ====================
- * LinkedIn notifications with type-specific styling.
- */
 import React from "react";
 import type { WorldState } from "@tokovo/core";
-import { useLinkedInTheme } from "./ThemeContext.js";
 import { Header, LIAvatar, LIIcon } from "./components.js";
-import { getNotifications, getUserById } from "../runtime/selectors.js";
+import { useLinkedInTheme } from "./ThemeContext.js";
+import {
+  formatRelativeFrameTime,
+  getCurrentUser,
+  getNotifications,
+  getReferenceFrame,
+  getUnreadMessageCount,
+  getUserById,
+} from "../runtime/selectors.js";
 
 export const Notifications: React.FC<{ world: WorldState }> = ({ world }) => {
   const theme = useLinkedInTheme();
+  const currentUser = getCurrentUser(world);
   const notifications = getNotifications(world);
-
-  // Get notification icon and color based on type
-  const getNotificationIcon = (type: string) => {
-    switch (type) {
-      case "like":
-        return { icon: "like-fill" as const, color: theme.colors.reactionLike };
-      case "comment":
-        return { icon: "comment" as const, color: theme.colors.accent };
-      case "connection":
-        return { icon: "network" as const, color: theme.colors.success };
-      default:
-        return { icon: "bell" as const, color: theme.colors.textSecondary };
-    }
-  };
-
-  const getNotificationText = (type: string, postId?: string | null) => {
-    switch (type) {
-      case "like":
-        return postId ? "liked your post" : "liked your comment";
-      case "comment":
-        return "commented on your post";
-      case "connection":
-        return "accepted your connection request";
-      case "mention":
-        return "mentioned you in a post";
-      default:
-        return "interacted with you";
-    }
-  };
+  const unreadMessages = getUnreadMessageCount(world);
+  const referenceFrame = getReferenceFrame(world);
 
   return (
     <div style={{ flex: 1, overflow: "hidden", display: "flex", flexDirection: "column" }}>
-      {/* Header */}
-      <Header title="Notifications" showSearch={false} />
+      <Header avatarSrc={currentUser?.avatarUrl} title="Notifications" showSearch={false} messageCount={unreadMessages} />
 
-      {/* Notifications List */}
       <div style={{ flex: 1, overflow: "auto" }}>
-        {notifications.map((notification, index) => {
+        {notifications.length > 0 ? notifications.map((notification) => {
           const user = getUserById(world, notification.actorId);
-          const { icon, color } = getNotificationIcon(notification.type);
-          const isUnread = index < 2; // Simulate first 2 as unread
+          const config = getNotificationConfig(notification.type, theme);
 
           return (
             <div
@@ -61,34 +34,31 @@ export const Notifications: React.FC<{ world: WorldState }> = ({ world }) => {
                 display: "flex",
                 gap: theme.spacing.md,
                 padding: `${theme.spacing.md}px ${theme.spacing.screenPadding}px`,
-                background: isUnread ? theme.colors.accentLight : "transparent",
+                background: notification.unread ? theme.colors.accentLight : theme.colors.surface,
                 borderBottom: `1px solid ${theme.colors.border}`,
-                cursor: "pointer",
               }}
             >
-              {/* Avatar with notification type indicator */}
               <div style={{ position: "relative" }}>
                 <LIAvatar size="lg" src={user?.avatarUrl} name={user?.name} />
                 <div
                   style={{
                     position: "absolute",
-                    bottom: -2,
-                    right: -2,
-                    width: 20,
-                    height: 20,
+                    right: -4,
+                    bottom: -4,
+                    width: 22,
+                    height: 22,
                     borderRadius: theme.radius.pill,
-                    background: color,
+                    background: config.color,
+                    border: `2px solid ${notification.unread ? theme.colors.accentLight : theme.colors.surface}`,
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
-                    border: `2px solid ${isUnread ? theme.colors.accentLight : theme.colors.surface}`,
                   }}
                 >
-                  <LIIcon name={icon} size={10} color="white" />
+                  <LIIcon name={config.icon} size={10} color={theme.colors.textInverse} />
                 </div>
               </div>
 
-              {/* Notification Content */}
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div
                   style={{
@@ -97,39 +67,47 @@ export const Notifications: React.FC<{ world: WorldState }> = ({ world }) => {
                     color: theme.colors.textPrimary,
                   }}
                 >
-                  <span style={{ fontWeight: 600 }}>{user?.name ?? "Someone"}</span>{" "}
-                  {getNotificationText(notification.type, notification.postId)}
+                  <span style={{ fontWeight: 600 }}>{user?.name ?? notification.title ?? "Someone"}</span>{" "}
+                  {notification.body ?? getFallbackBody(notification.type)}
                 </div>
                 <div
                   style={{
                     fontSize: theme.typography.caption.fontSize,
-                    color: theme.colors.textTertiary,
-                    marginTop: theme.spacing.xs,
+                    color: theme.colors.textSecondary,
+                    marginTop: 4,
                   }}
                 >
-                  1h ago
+                  {formatRelativeFrameTime(notification.createdAt, referenceFrame)}
                 </div>
               </div>
 
-              {/* More options */}
-              <div style={{ padding: theme.spacing.xs }}>
+              {notification.unread ? (
+                <div
+                  style={{
+                    width: 10,
+                    height: 10,
+                    borderRadius: theme.radius.pill,
+                    background: theme.colors.accent,
+                    alignSelf: "center",
+                    marginTop: 6,
+                  }}
+                />
+              ) : (
                 <LIIcon name="more" size={16} color={theme.colors.textTertiary} />
-              </div>
+              )}
             </div>
           );
-        })}
-
-        {notifications.length === 0 && (
+        }) : (
           <div
             style={{
-              padding: theme.spacing.xxl,
+              padding: `${theme.spacing.xxxl}px ${theme.spacing.xl}px`,
               textAlign: "center",
             }}
           >
             <div
               style={{
-                width: 64,
-                height: 64,
+                width: 68,
+                height: 68,
                 margin: "0 auto",
                 marginBottom: theme.spacing.lg,
                 borderRadius: theme.radius.pill,
@@ -146,18 +124,18 @@ export const Notifications: React.FC<{ world: WorldState }> = ({ world }) => {
                 fontSize: theme.typography.title.fontSize,
                 fontWeight: theme.typography.title.fontWeight,
                 color: theme.colors.textPrimary,
-                marginBottom: theme.spacing.sm,
               }}
             >
-              No notifications
+              No notifications yet
             </div>
             <div
               style={{
+                marginTop: theme.spacing.sm,
                 fontSize: theme.typography.body.fontSize,
                 color: theme.colors.textSecondary,
               }}
             >
-              When someone interacts with you, you'll see it here
+              New reactions, comments, follows, and messages will land here.
             </div>
           </div>
         )}
@@ -165,3 +143,42 @@ export const Notifications: React.FC<{ world: WorldState }> = ({ world }) => {
     </div>
   );
 };
+
+function getNotificationConfig(
+  type: "reaction" | "comment" | "repost" | "connection" | "follow" | "message",
+  theme: ReturnType<typeof useLinkedInTheme>,
+): { icon: "like-fill" | "comment" | "repost" | "network" | "bell" | "message"; color: string } {
+  switch (type) {
+    case "comment":
+      return { icon: "comment", color: theme.colors.accent };
+    case "repost":
+      return { icon: "repost", color: theme.colors.success };
+    case "connection":
+      return { icon: "network", color: theme.colors.success };
+    case "message":
+      return { icon: "message", color: "#7b61ff" };
+    case "follow":
+      return { icon: "bell", color: theme.colors.reactionCelebrate };
+    case "reaction":
+    default:
+      return { icon: "like-fill", color: theme.colors.reactionLike };
+  }
+}
+
+function getFallbackBody(type: "reaction" | "comment" | "repost" | "connection" | "follow" | "message"): string {
+  switch (type) {
+    case "comment":
+      return "commented on your post";
+    case "repost":
+      return "reposted your update";
+    case "connection":
+      return "accepted your invitation";
+    case "follow":
+      return "started following you";
+    case "message":
+      return "sent you a message";
+    case "reaction":
+    default:
+      return "reacted to your post";
+  }
+}

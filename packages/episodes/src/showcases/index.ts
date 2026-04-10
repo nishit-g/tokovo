@@ -24,6 +24,7 @@ import tennisFluidDemo from "./tennis-fluid-demo.episode.js";
 import tennisGroupOrganic from "./tennis-group-organic.episode.js";
 import ghibliX from "./ghibli-x.episode.js";
 import instagramGhibliGoldenHour from "./instagram-ghibli-golden-hour.episode.js";
+import linkedinGhibliStudio from "./linkedin-ghibli-studio.episode.js";
 import teamsEnterpriseExhaustiveShowcase from "./teams-enterprise-exhaustive-showcase.episode.js";
 import teamsGhibliNightShift from "./teams-ghibli-night-shift.episode.js";
 // plop:episode-import
@@ -42,6 +43,7 @@ export const showcaseEpisodes: EpisodeDefinition[] = [
   tennisGroupOrganic,
   ghibliX,
   instagramGhibliGoldenHour,
+  linkedinGhibliStudio,
   teamsEnterpriseExhaustiveShowcase,
   teamsGhibliNightShift,
   // plop:episode-entry
@@ -63,6 +65,7 @@ export {
   tennisGroupOrganic,
   ghibliX,
   instagramGhibliGoldenHour,
+  linkedinGhibliStudio,
   teamsEnterpriseExhaustiveShowcase,
   teamsGhibliNightShift,
 };

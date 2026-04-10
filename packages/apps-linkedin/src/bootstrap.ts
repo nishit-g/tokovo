@@ -34,7 +34,13 @@ export interface LinkedInSnapshot {
   posts?: PostInput[];
   comments?: Array<Omit<PostCommentPayload, "id"> & { id: string }>;
   notifications?: Array<NotificationAddPayload>;
-  threads?: Array<{ id: string; participantIds: string[] }>;
+  threads?: Array<{
+    id: string;
+    participantIds: string[];
+    title?: string;
+    unreadCount?: number;
+    pinned?: boolean;
+  }>;
   messages?: Array<{ id: string; threadId: string; senderId: string; text: string; createdAt?: number }>;
   connections?: Array<{ a: string; b: string }>;
 }
@@ -58,7 +64,7 @@ const LINKEDIN_SCREENS = [
   "thread",
 ] as const;
 
-const LINKEDIN_THEME_MODES: readonly LIThemeMode[] = ["light", "dark"];
+const LINKEDIN_THEME_MODES: readonly LIThemeMode[] = ["light", "dark", "ghibli"];
 
 function validateLinkedInSnapshot(
   input: PluginBootstrapSchemaContext<"app_linkedin">,
@@ -268,8 +274,13 @@ export const linkedInBootstrap: PluginBootstrapContract<"app_linkedin"> = {
       handle: user.handle,
       headline: user.headline,
       avatarUrl: user.avatarUrl,
+      location: user.location,
+      company: user.company,
+      about: user.about,
       connections: user.connections ?? 0,
       followers: user.followers ?? 0,
+      profileViews: user.profileViews,
+      impressionCount: user.impressionCount,
       connectionIds: [],
       followerIds: [],
     }));
@@ -310,7 +321,11 @@ export const linkedInBootstrap: PluginBootstrapContract<"app_linkedin"> = {
         type: notification.type,
         actorId: notification.actorId,
         postId: notification.postId,
+        threadId: notification.threadId,
+        title: notification.title,
+        body: notification.body,
         createdAt: notification.createdAt ?? 0,
+        unread: notification.unread ?? false,
       }))
       .sort((a, b) => b.createdAt - a.createdAt);
 
@@ -318,11 +333,23 @@ export const linkedInBootstrap: PluginBootstrapContract<"app_linkedin"> = {
       id: thread.id,
       participantIds: [...thread.participantIds],
       messageIds: [],
+      title: thread.title,
+      unreadCount: thread.unreadCount ?? 0,
+      pinned: thread.pinned ?? false,
+      lastMessageId: null,
+      lastMessageAt: null,
+      draftText: "",
+      typingParticipantIds: [],
     }));
     const threadsById = new Map(state.dmThreads.map((thread) => [thread.id, thread]));
     state.dmMessages = (snapshot.messages ?? [])
       .map<LIDMMessage>((message) => {
-        threadsById.get(message.threadId)?.messageIds.push(message.id);
+        const thread = threadsById.get(message.threadId);
+        if (thread) {
+          thread.messageIds.push(message.id);
+          thread.lastMessageId = message.id;
+          thread.lastMessageAt = message.createdAt ?? 0;
+        }
         return {
           id: message.id,
           threadId: message.threadId,

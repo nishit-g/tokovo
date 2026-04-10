@@ -5,28 +5,37 @@
  */
 import React from "react";
 import type { WorldState } from "@tokovo/core";
+import { KeyboardAwareView, ScrollableContent, useKeyboardState } from "@tokovo/react";
 import { useLinkedInTheme } from "./ThemeContext.js";
 import { Header, LIAvatar, LIIcon } from "./components.js";
 import { PostCard } from "./PostCard.js";
-import { getActivePost, getCommentsForPost, getUserById } from "../runtime/selectors.js";
+import {
+  formatRelativeFrameTime,
+  getActivePost,
+  getCommentsForPost,
+  getCurrentUser,
+  getReferenceFrame,
+  getRepostCountForPost,
+  getUserById,
+} from "../runtime/selectors.js";
 import type { LIReactionType } from "../types/index.js";
 
 export const PostDetail: React.FC<{ world: WorldState }> = ({ world }) => {
   const theme = useLinkedInTheme();
+  const keyboardState = useKeyboardState();
   const post = getActivePost(world);
   const comments = getCommentsForPost(world, post?.id ?? null);
   const author = getUserById(world, post?.authorId ?? null);
+  const currentUser = getCurrentUser(world);
+  const referenceFrame = getReferenceFrame(world);
 
   return (
-    <div style={{ flex: 1, overflow: "hidden", display: "flex", flexDirection: "column" }}>
-      {/* Header with back button */}
+    <KeyboardAwareView style={{ flex: 1, minHeight: 0 }}>
       <Header showBack title="Post" />
 
-      {/* Content */}
-      <div
+      <ScrollableContent
         style={{
           flex: 1,
-          overflow: "auto",
           padding: theme.spacing.screenPadding,
         }}
       >
@@ -47,12 +56,26 @@ export const PostDetail: React.FC<{ world: WorldState }> = ({ world }) => {
               authorName={author?.name ?? "LinkedIn User"}
               authorHeadline={author?.headline}
               authorAvatar={author?.avatarUrl}
-              timeAgo="1h"
+              timeAgo={post ? formatRelativeFrameTime(post.createdAt, referenceFrame) : "Now"}
               content={post.text}
-              linkPreview={post.linkPreview}
+              image={post.media?.urls?.[0]}
+              linkPreview={
+                post.linkPreview
+                  ? {
+                    url: post.linkPreview.url,
+                    title: post.linkPreview.title,
+                    domain: post.linkPreview.domain,
+                    image: post.linkPreview.imageUrl,
+                  }
+                  : undefined
+              }
               reactions={post.reactions as Partial<Record<LIReactionType, number>>}
               commentCount={comments.length}
-              repostCount={0}
+              repostCount={getRepostCountForPost(world, post.id)}
+              commentPreview={comments.slice(-2).map((comment) => ({
+                authorName: getUserById(world, comment.authorId)?.name ?? "Member",
+                text: comment.text,
+              }))}
             />
 
             {/* Comments Section */}
@@ -123,7 +146,7 @@ export const PostDetail: React.FC<{ world: WorldState }> = ({ world }) => {
                                   color: theme.colors.textTertiary,
                                 }}
                               >
-                                • 1h
+                                • {formatRelativeFrameTime(comment.createdAt, referenceFrame)}
                               </span>
                             </div>
                             <div
@@ -161,9 +184,8 @@ export const PostDetail: React.FC<{ world: WorldState }> = ({ world }) => {
             )}
           </>
         )}
-      </div>
+      </ScrollableContent>
 
-      {/* Comment Composer */}
       <div
         style={{
           padding: theme.spacing.md,
@@ -178,7 +200,7 @@ export const PostDetail: React.FC<{ world: WorldState }> = ({ world }) => {
             gap: theme.spacing.md,
           }}
         >
-          <LIAvatar size="sm" />
+          <LIAvatar size="sm" src={currentUser?.avatarUrl} name={currentUser?.name} />
           <div
             style={{
               flex: 1,
@@ -188,15 +210,27 @@ export const PostDetail: React.FC<{ world: WorldState }> = ({ world }) => {
               display: "flex",
               alignItems: "center",
               padding: `0 ${theme.spacing.md}px`,
-              color: theme.colors.textTertiary,
+              color: keyboardState.inputText ? theme.colors.textPrimary : theme.colors.textTertiary,
               fontSize: theme.typography.body.fontSize,
             }}
           >
-            Add a comment...
+            {keyboardState.inputText || "Add a comment..."}
+            {keyboardState.isKeyboardVisible ? (
+              <span
+                style={{
+                  display: "inline-block",
+                  width: 2,
+                  height: 14,
+                  marginLeft: 2,
+                  background: theme.colors.textPrimary,
+                  borderRadius: 1,
+                }}
+              />
+            ) : null}
           </div>
           <LIIcon name="send" size={20} color={theme.colors.accent} />
         </div>
       </div>
-    </div>
+    </KeyboardAwareView>
   );
 };

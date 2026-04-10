@@ -20,42 +20,53 @@ export const liSpacing = {
   xxxl: 32,
 
   // Component-specific
-  screenPadding: 16,
-  headerHeight: 52,
-  navHeight: 50,
-  cardPadding: 16,
+  screenPadding: 14,
+  headerHeight: 56,
+  navHeight: 58,
+  cardPadding: 14,
   avatarGap: 12,
   sectionGap: 16,
 
   // Avatar sizes
-  avatarXs: 24,
-  avatarSm: 32,
-  avatarMd: 40,
-  avatarLg: 48,
-  avatarXl: 72,
+  avatarXs: 28,
+  avatarSm: 36,
+  avatarMd: 44,
+  avatarLg: 52,
+  avatarXl: 88,
 
   // Profile specific
-  bannerHeight: 100,
-  profileAvatarOffset: -36,
+  bannerHeight: 116,
+  profileAvatarOffset: -44,
+  profileHeroHeight: 228,
+  profileHighlightsHeight: 124,
+  profileActionsHeight: 48,
+  profilePostsTopGap: 18,
 
   // Input/composer
-  inputHeight: 40,
-  composerHeight: 56,
-  buttonHeight: 32,
+  inputHeight: 42,
+  composerHeight: 58,
+  buttonHeight: 36,
+  feedComposerHeight: 116,
+  sortRowHeight: 34,
+  listRowHeight: 78,
+  messageHeaderHeight: 64,
 
   // Action bar
-  actionBarHeight: 44,
-  actionIconSize: 20,
+  actionBarHeight: 48,
+  actionIconSize: 22,
+  postMediaHeight: 224,
+  postCardHeight: 404,
+  postCardExpandedHeight: 476,
 
   // Layout-system backwards compatible aliases
-  cardPaddingH: 16,
-  cardPaddingV: 16,
+  cardPaddingH: 14,
+  cardPaddingV: 14,
   cardRadius: 8,
   fabSize: 56,
-  reactionRowHeight: 44,
-  profileHeaderExtra: 86,
-  commentComposerHeight: 72,
-  dmComposerHeight: 76,
+  reactionRowHeight: 48,
+  profileHeaderExtra: 132,
+  commentComposerHeight: 84,
+  dmComposerHeight: 84,
 } as const;
 
 // =============================================================================
@@ -89,8 +100,8 @@ export const liShadows = {
   xl: "0 8px 32px rgba(0, 0, 0, 0.16)",
 
   // Component-specific
-  card: "0 0 0 1px rgba(0, 0, 0, 0.08), 0 2px 4px rgba(0, 0, 0, 0.04)",
-  cardHover: "0 0 0 1px rgba(0, 0, 0, 0.08), 0 4px 12px rgba(0, 0, 0, 0.08)",
+  card: "0 0 0 1px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.05)",
+  cardHover: "0 0 0 1px rgba(0, 0, 0, 0.08), 0 8px 24px rgba(0, 0, 0, 0.08)",
   modal: "0 8px 32px rgba(0, 0, 0, 0.20)",
   fab: "0 4px 16px rgba(0, 102, 194, 0.24)",
 } as const;

@@ -1,3 +1,4 @@
+import type { DslExtension } from "@tokovo/core";
 import { parseTimeToFrames } from "@tokovo/dsl";
 import type {
   LITrackEvent,
@@ -77,8 +78,13 @@ class LIPointBuilder {
       handle: data.handle,
       headline: data.headline,
       avatarUrl: data.avatarUrl,
+      location: data.location,
+      company: data.company,
+      about: data.about,
       connections: data.connections,
       followers: data.followers,
+      profileViews: data.profileViews,
+      impressionCount: data.impressionCount,
     }));
   }
 
@@ -161,14 +167,25 @@ class LIPointBuilder {
       type: data.type,
       actorId: data.actorId,
       postId: data.postId,
+      threadId: data.threadId,
+      title: data.title,
+      body: data.body,
+      unread: data.unread,
       createdAt: data.createdAt,
     }));
   }
 
-  createThread(participantIds: string[], id?: string): void {
+  createThread(
+    participantIds: string[],
+    id?: string,
+    opts: { title?: string; unreadCount?: number; pinned?: boolean } = {},
+  ): void {
     this._push("DM_THREAD_CREATE", (order) => ({
       id: id ?? createThreadId(this._frame, order),
       participantIds,
+      title: opts.title,
+      unreadCount: opts.unreadCount,
+      pinned: opts.pinned,
     }));
   }
 
@@ -184,7 +201,7 @@ class LIPointBuilder {
     }));
   }
 
-  setThemeMode(mode: "light" | "dark"): void {
+  setThemeMode(mode: "light" | "dark" | "ghibli"): void {
     this._push("SET_THEME_MODE", { mode });
   }
 }
@@ -242,3 +259,80 @@ export class LinkedInTrackBuilder {
     return new LISpanBuilder(startFrame, duration, this._deviceId, this._events, this._getOrder);
   }
 }
+
+interface LinkedInBeatBuilder {
+  ops: Array<Record<string, unknown>>;
+}
+
+export interface LinkedInDslApi {
+  openFeed(): void;
+  openProfile(userId?: string): void;
+  openNotifications(): void;
+  openMessages(): void;
+  openThread(threadId: string): void;
+  compose(text?: string): void;
+  post(authorId: string, text: string): void;
+  react(postId: string, userId: string, reaction?: LIReactionType): void;
+  comment(postId: string, authorId: string, text: string): void;
+  notify(type: LIEventPayloadMap["NOTIFICATION_ADD"]["type"], actorId: string, opts?: { postId?: string; threadId?: string; body?: string }): void;
+  dm(threadId: string, senderId: string, text: string): void;
+}
+
+function appEvent(type: LIEventType, payload: Record<string, unknown>): Record<string, unknown> {
+  return {
+    kind: "AppEvent",
+    appId: "app_linkedin",
+    type,
+    payload,
+  };
+}
+
+export const linkedInDsl: DslExtension<LinkedInDslApi> = {
+  createApi: (builderUnknown: unknown): LinkedInDslApi => {
+    const builder = builderUnknown as LinkedInBeatBuilder;
+
+    return {
+      openFeed: () => {
+        builder.ops.push(appEvent("NAVIGATE", { screen: "feed" }));
+      },
+      openProfile: (userId?: string) => {
+        builder.ops.push(appEvent("NAVIGATE", { screen: "profile", userId }));
+      },
+      openNotifications: () => {
+        builder.ops.push(appEvent("NAVIGATE", { screen: "notifications" }));
+      },
+      openMessages: () => {
+        builder.ops.push(appEvent("NAVIGATE", { screen: "messages" }));
+      },
+      openThread: (threadId: string) => {
+        builder.ops.push(appEvent("NAVIGATE", { screen: "thread", threadId }));
+      },
+      compose: (text = "") => {
+        builder.ops.push(appEvent("NAVIGATE", { screen: "compose" }));
+        if (text.length > 0) builder.ops.push(appEvent("SET_COMPOSE_DRAFT", { text }));
+      },
+      post: (authorId: string, text: string) => {
+        builder.ops.push(appEvent("POST_CREATE", { id: `dsl_post_${builder.ops.length}`, authorId, text }));
+      },
+      react: (postId: string, userId: string, reaction: LIReactionType = "like") => {
+        builder.ops.push(appEvent("POST_REACT", { postId, userId, reaction }));
+      },
+      comment: (postId: string, authorId: string, text: string) => {
+        builder.ops.push(appEvent("POST_COMMENT", { id: `dsl_comment_${builder.ops.length}`, postId, authorId, text }));
+      },
+      notify: (type, actorId, opts = {}) => {
+        builder.ops.push(appEvent("NOTIFICATION_ADD", {
+          id: `dsl_notification_${builder.ops.length}`,
+          type,
+          actorId,
+          postId: opts.postId,
+          threadId: opts.threadId,
+          body: opts.body,
+        }));
+      },
+      dm: (threadId: string, senderId: string, text: string) => {
+        builder.ops.push(appEvent("DM_SEND", { id: `dsl_dm_${builder.ops.length}`, threadId, senderId, text }));
+      },
+    };
+  },
+};

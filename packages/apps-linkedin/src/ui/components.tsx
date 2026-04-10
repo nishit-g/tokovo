@@ -108,7 +108,10 @@ type IconName =
   | "close"
   | "photo"
   | "video"
-  | "calendar";
+  | "calendar"
+  | "compose"
+  | "filter"
+  | "article";
 
 export const LIIcon: React.FC<{
   name: IconName;
@@ -320,6 +323,42 @@ export const LIIcon: React.FC<{
         <path d="M16 2v4M8 2v4M3 10h18" stroke={c} strokeWidth="2" strokeLinecap="round" />
       </>
     ),
+    compose: (
+      <>
+        <path d="M12 20h9" stroke={c} strokeWidth="2" strokeLinecap="round" />
+        <path
+          d="M16.5 3.5a2.12 2.12 0 113 3L7 19l-4 1 1-4 12.5-12.5z"
+          fill="none"
+          stroke={c}
+          strokeWidth="2"
+          strokeLinejoin="round"
+        />
+      </>
+    ),
+    filter: (
+      <path
+        d="M4 6h16M7 12h10M10 18h4"
+        fill="none"
+        stroke={c}
+        strokeWidth="2"
+        strokeLinecap="round"
+      />
+    ),
+    article: (
+      <>
+        <rect
+          x="4"
+          y="3"
+          width="16"
+          height="18"
+          rx="2"
+          fill="none"
+          stroke={c}
+          strokeWidth="2"
+        />
+        <path d="M8 8h8M8 12h8M8 16h5" stroke={c} strokeWidth="2" strokeLinecap="round" />
+      </>
+    ),
   };
 
   return (
@@ -392,6 +431,7 @@ export const ReactionStack: React.FC<{
   reactions: LIReactionType[];
   size?: number;
 }> = ({ reactions, size = 18 }) => {
+  const theme = useLinkedInTheme();
   // Remove duplicates and limit to 3
   const unique = [...new Set(reactions)].slice(0, 3);
 
@@ -403,9 +443,9 @@ export const ReactionStack: React.FC<{
           style={{
             marginLeft: i === 0 ? 0 : -(size * 0.3),
             zIndex: unique.length - i,
-            background: "white",
+            background: theme.colors.surface,
             borderRadius: "50%",
-            border: "2px solid white",
+            border: `2px solid ${theme.colors.surface}`,
           }}
         >
           <ReactionIcon reaction={r} size={size} />
@@ -497,10 +537,10 @@ export const ActionBar: React.FC<ActionBarProps> = ({
 // =============================================================================
 // BOTTOM NAVIGATION
 // =============================================================================
-type NavTab = "home" | "network" | "post" | "notifications" | "jobs" | "messages";
+type NavTab = "home" | "network" | "post" | "notifications" | "jobs";
 
 export const BottomNav: React.FC<{
-  active: NavTab;
+  active: NavTab | null;
 }> = ({ active }) => {
   const theme = useLinkedInTheme();
 
@@ -523,7 +563,7 @@ export const BottomNav: React.FC<{
       }}
     >
       {tabs.map(({ key, icon, activeIcon, label }) => {
-        const isActive = active === key || (active === "messages" && key === "home");
+        const isActive = active === key;
         const color = isActive ? theme.colors.textPrimary : theme.colors.textSecondary;
 
         return (
@@ -547,8 +587,8 @@ export const BottomNav: React.FC<{
                   top: 0,
                   left: "50%",
                   transform: "translateX(-50%)",
-                  width: 24,
-                  height: 2,
+                  width: 28,
+                  height: 3,
                   background: theme.colors.textPrimary,
                   borderRadius: theme.radius.pill,
                 }}
@@ -556,7 +596,7 @@ export const BottomNav: React.FC<{
             )}
             <LIIcon
               name={isActive ? activeIcon : icon}
-              size={20}
+              size={22}
               color={color}
             />
             <span
@@ -582,6 +622,7 @@ export interface HeaderProps {
   showSearch?: boolean;
   title?: string;
   showBack?: boolean;
+  messageCount?: number;
 }
 
 // LinkedIn "in" logo
@@ -603,6 +644,7 @@ export const Header: React.FC<HeaderProps> = ({
   showSearch = true,
   title,
   showBack = false,
+  messageCount = 0,
 }) => {
   const theme = useLinkedInTheme();
 
@@ -640,7 +682,7 @@ export const Header: React.FC<HeaderProps> = ({
         <div
           style={{
             flex: 1,
-            height: theme.spacing.buttonHeight,
+            height: theme.spacing.inputHeight,
             background: theme.colors.surfaceHover,
             borderRadius: theme.radius.sm,
             display: "flex",
@@ -662,7 +704,31 @@ export const Header: React.FC<HeaderProps> = ({
       {!showBack && (
         <>
           <LIAvatar size="xs" src={avatarSrc} />
-          <LIIcon name="message" size={24} color={theme.colors.textSecondary} />
+          <div style={{ position: "relative" }}>
+            <LIIcon name="message" size={24} color={theme.colors.textSecondary} />
+            {messageCount > 0 ? (
+              <div
+                style={{
+                  position: "absolute",
+                  top: -4,
+                  right: -6,
+                  minWidth: 16,
+                  height: 16,
+                  borderRadius: theme.radius.pill,
+                  background: theme.colors.badge,
+                  color: theme.colors.textInverse,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  padding: "0 4px",
+                  fontSize: theme.typography.micro.fontSize,
+                  fontWeight: 700,
+                }}
+              >
+                {messageCount > 9 ? "9+" : messageCount}
+              </div>
+            ) : null}
+          </div>
         </>
       )}
       {showBack && <LIIcon name="more" size={24} color={theme.colors.textSecondary} />}

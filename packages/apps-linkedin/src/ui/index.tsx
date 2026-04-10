@@ -36,7 +36,7 @@ export const LinkedInView: React.FC<PluginViewProps> = ({ world, deviceId, t }) 
       case "messages":
         return <Messages world={world} />;
       case "thread":
-        return <MessageThread world={world} />;
+        return <MessageThread world={world} deviceId={deviceId} t={t} />;
       case "feed":
       default:
         return <Feed world={world} />;
@@ -48,12 +48,11 @@ export const LinkedInView: React.FC<PluginViewProps> = ({ world, deviceId, t }) 
     switch (screen) {
       case "feed":
         return "home" as const;
-      case "profile":
-        return "network" as const;
       case "notifications":
         return "notifications" as const;
+      case "profile":
       case "messages":
-        return "messages" as const;
+        return null;
       default:
         return "home" as const;
     }

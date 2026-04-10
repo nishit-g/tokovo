@@ -48,7 +48,7 @@ export type LIScreen =
   | "messages"
   | "thread";
 
-export type LIThemeMode = "light" | "dark";
+export type LIThemeMode = "light" | "dark" | "ghibli";
 
 export type LIPostVisibility = "public" | "connections";
 
@@ -66,8 +66,13 @@ export interface UserCreatePayload {
   handle: string;
   headline?: string;
   avatarUrl?: string;
+  location?: string;
+  company?: string;
+  about?: string;
   connections?: number;
   followers?: number;
+  profileViews?: number;
+  impressionCount?: number;
 }
 
 export interface SetCurrentUserPayload {
@@ -139,19 +144,27 @@ export type NotificationType =
   | "comment"
   | "repost"
   | "connection"
-  | "follow";
+  | "follow"
+  | "message";
 
 export interface NotificationAddPayload {
   id: string;
   type: NotificationType;
   actorId: string;
   postId?: string;
+  threadId?: string;
+  title?: string;
+  body?: string;
   createdAt?: number;
+  unread?: boolean;
 }
 
 export interface DMThreadCreatePayload {
   id: string;
   participantIds: string[];
+  title?: string;
+  unreadCount?: number;
+  pinned?: boolean;
 }
 
 export interface DMSendPayload {

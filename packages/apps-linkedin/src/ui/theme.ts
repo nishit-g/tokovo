@@ -11,7 +11,7 @@ import {
 // =============================================================================
 // TYPES
 // =============================================================================
-export type LIThemeMode = "light" | "dark";
+export type LIThemeMode = "light" | "dark" | "ghibli";
 
 // Use a general color interface so both light and dark colors are assignable
 export interface LIColors {
@@ -86,11 +86,55 @@ export const LI_DARK: LITheme = {
   animation: liAnimation,
 };
 
+export const LI_GHIBLI: LITheme = {
+  mode: "ghibli",
+  colors: {
+    ...liColorsLight,
+    background: "#F5EBDD",
+    surface: "#FFF8EE",
+    surfaceHover: "#F3E6D5",
+    surfaceActive: "#E9D7C2",
+    textPrimary: "#2E2A24",
+    textSecondary: "#6F6658",
+    textTertiary: "#9F907D",
+    border: "rgba(91, 78, 59, 0.12)",
+    borderStrong: "rgba(91, 78, 59, 0.18)",
+    accent: "#4B8A72",
+    accentHover: "#3C705C",
+    accentLight: "rgba(75, 138, 114, 0.14)",
+    reactionLike: "#5E93D0",
+    reactionCelebrate: "#C58F51",
+    reactionLove: "#D36E58",
+    reactionInsightful: "#9C8A46",
+    reactionCurious: "#8B78A6",
+    reactionSupport: "#B1736B",
+    success: "#5E8B67",
+    successLight: "rgba(94, 139, 103, 0.12)",
+    warning: "#A57B3F",
+    warningLight: "rgba(165, 123, 63, 0.12)",
+    online: "#5E8B67",
+    badge: "#C46A59",
+    skeleton: "rgba(91, 78, 59, 0.09)",
+  },
+  typography: liTypography,
+  spacing: liSpacing,
+  radius: liRadius,
+  shadows: liShadows,
+  animation: liAnimation,
+};
+
 // =============================================================================
 // HELPERS
 // =============================================================================
 export function getLITheme(mode: LIThemeMode = "light"): LITheme {
-  return mode === "dark" ? LI_DARK : LI_LIGHT;
+  switch (mode) {
+    case "dark":
+      return LI_DARK;
+    case "ghibli":
+      return LI_GHIBLI;
+    default:
+      return LI_LIGHT;
+  }
 }
 
 /**

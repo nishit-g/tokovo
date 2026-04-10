@@ -5,35 +5,29 @@
  */
 import React from "react";
 import type { WorldState } from "@tokovo/core";
-import { getTypedTextProgress } from "@tokovo/device-keyboard";
+import { KeyboardAwareView, ScrollableContent, useKeyboardState } from "@tokovo/react";
 import { useLinkedInTheme } from "./ThemeContext.js";
 import { LIAvatar, LIIcon } from "./components.js";
-import type { LinkedInState } from "../runtime/state.js";
-import { getActiveUser } from "../runtime/selectors.js";
+import { getCurrentUser } from "../runtime/selectors.js";
 
 export const Compose: React.FC<{ world: WorldState; deviceId?: string; t?: number }> = ({
   world,
-  deviceId,
-  t,
+  deviceId: _deviceId,
+  t: _t,
 }) => {
   const theme = useLinkedInTheme();
-  const appState = world.appState?.["app_linkedin"] as LinkedInState | undefined;
-  const currentUser = getActiveUser(world);
-  const focusedDevice =
-    (deviceId && world.devices?.[deviceId]) || world.devices?.[Object.keys(world.devices ?? {})[0]];
-  const keyboard = focusedDevice?.keyboard;
-
-  const draftText =
-    keyboard?.visible && keyboard.typingAnimation
-      ? getTypedTextProgress(keyboard, t ?? 0)
-      : appState?.composeDraft ?? "";
+  const currentUser = getCurrentUser(world);
+  const keyboardState = useKeyboardState();
+  const state = world.appState?.["app_linkedin"] as { composeDraft?: string } | undefined;
+  const draftText = keyboardState.isKeyboardVisible && keyboardState.inputText
+    ? keyboardState.inputText
+    : state?.composeDraft ?? "";
 
   return (
-    <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
-      {/* Header */}
+    <KeyboardAwareView style={{ flex: 1, minHeight: 0 }}>
       <div
         style={{
-          height: theme.spacing.headerHeight,
+          minHeight: theme.spacing.headerHeight,
           background: theme.colors.surface,
           borderBottom: `1px solid ${theme.colors.border}`,
           display: "flex",
@@ -49,22 +43,26 @@ export const Compose: React.FC<{ world: WorldState; deviceId?: string; t?: numbe
             padding: `${theme.spacing.sm}px ${theme.spacing.md}px`,
             background: theme.colors.accent,
             borderRadius: theme.radius.button,
-            color: theme.colors.textInverse,
-            fontSize: theme.typography.headline.fontSize,
-            fontWeight: theme.typography.headline.fontWeight,
-            opacity: draftText ? 1 : 0.5,
-          }}
-        >
+          color: theme.colors.textInverse,
+          fontSize: theme.typography.headline.fontSize,
+          fontWeight: theme.typography.headline.fontWeight,
+          opacity: draftText ? 1 : 0.5,
+        }}
+      >
           Post
         </div>
       </div>
 
-      {/* Compose Area */}
-      <div style={{ flex: 1, overflow: "auto", padding: theme.spacing.screenPadding }}>
-        {/* User Info */}
+      <ScrollableContent
+        style={{
+          flex: 1,
+          padding: theme.spacing.screenPadding,
+          background: theme.colors.surface,
+        }}
+      >
         <div style={{ display: "flex", gap: theme.spacing.md, marginBottom: theme.spacing.lg }}>
           <LIAvatar size="lg" src={currentUser?.avatarUrl} name={currentUser?.name} />
-          <div>
+          <div style={{ minWidth: 0, flex: 1 }}>
             <div
               style={{
                 fontSize: theme.typography.headline.fontSize,
@@ -91,13 +89,21 @@ export const Compose: React.FC<{ world: WorldState; deviceId?: string; t?: numbe
               <span>Anyone</span>
               <span style={{ fontSize: 10 }}>▼</span>
             </div>
+            <div
+              style={{
+                marginTop: theme.spacing.sm,
+                fontSize: theme.typography.caption.fontSize,
+                color: theme.colors.textSecondary,
+              }}
+            >
+              Post will appear in feed and on your profile.
+            </div>
           </div>
         </div>
 
-        {/* Text Area */}
         <div
           style={{
-            minHeight: 200,
+            minHeight: keyboardState.isKeyboardVisible ? 260 : 320,
             fontSize: theme.typography.title.fontSize,
             lineHeight: 1.5,
             color: draftText ? theme.colors.textPrimary : theme.colors.textTertiary,
@@ -105,10 +111,36 @@ export const Compose: React.FC<{ world: WorldState; deviceId?: string; t?: numbe
           }}
         >
           {draftText || "What do you want to talk about?"}
+          {keyboardState.isKeyboardVisible ? (
+            <span
+              style={{
+                display: "inline-block",
+                width: 2,
+                height: theme.typography.title.fontSize + 4,
+                marginLeft: 2,
+                transform: "translateY(3px)",
+                background: theme.colors.textPrimary,
+                borderRadius: 1,
+              }}
+            />
+          ) : null}
         </div>
-      </div>
 
-      {/* Media Bar */}
+        <div
+          style={{
+            marginTop: theme.spacing.xl,
+            display: "grid",
+            gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+            gap: theme.spacing.sm,
+          }}
+        >
+          <ComposeTool icon="photo" label="Add a photo" />
+          <ComposeTool icon="video" label="Add a video" />
+          <ComposeTool icon="article" label="Write article" />
+          <ComposeTool icon="calendar" label="Create event" />
+        </div>
+      </ScrollableContent>
+
       <div
         style={{
           padding: theme.spacing.md,
@@ -121,9 +153,37 @@ export const Compose: React.FC<{ world: WorldState; deviceId?: string; t?: numbe
       >
         <LIIcon name="photo" size={24} color={theme.colors.textSecondary} />
         <LIIcon name="video" size={24} color={theme.colors.textSecondary} />
-        <LIIcon name="calendar" size={24} color={theme.colors.textSecondary} />
+        <LIIcon name="article" size={24} color={theme.colors.textSecondary} />
         <LIIcon name="more" size={24} color={theme.colors.textSecondary} />
       </div>
+    </KeyboardAwareView>
+  );
+};
+
+const ComposeTool: React.FC<{ icon: "photo" | "video" | "article" | "calendar"; label: string }> = ({
+  icon,
+  label,
+}) => {
+  const theme = useLinkedInTheme();
+
+  return (
+    <div
+      style={{
+        minHeight: 54,
+        borderRadius: theme.radius.md,
+        border: `1px solid ${theme.colors.border}`,
+        background: theme.colors.surfaceHover,
+        display: "flex",
+        alignItems: "center",
+        gap: theme.spacing.sm,
+        padding: `0 ${theme.spacing.md}px`,
+        fontSize: theme.typography.captionSemibold.fontSize,
+        fontWeight: theme.typography.captionSemibold.fontWeight,
+        color: theme.colors.textPrimary,
+      }}
+    >
+      <LIIcon name={icon} size={18} color={theme.colors.accent} />
+      <span>{label}</span>
     </div>
   );
 };

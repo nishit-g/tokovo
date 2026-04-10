@@ -9,6 +9,9 @@ import { linkedInLayoutStrategies } from "./layout/index.js";
 import { LinkedInAnchorProvider } from "./anchors/provider.js";
 import { collectLinkedInAssetRefs } from "./asset-refs.js";
 import { linkedInBootstrap } from "./bootstrap.js";
+import { linkedInAudioRules } from "./assets/audio-rules.js";
+import { linkedInDsl, type LinkedInDslApi } from "./dsl/index.js";
+import { linkedInNotificationAdapter } from "./notifications/adapter.js";
 
 const views: PluginViews = {
   AppRoot: LinkedInView,
@@ -49,10 +52,13 @@ export const LinkedInPlugin: TokovoPluginContract<"app_linkedin"> & {
     icons: { app_icon: "/icons/linkedin.svg" },
     designWidth: 393,
   },
+  audioRules: linkedInAudioRules,
   v2Lowering: linkedInLowering,
   layouts: linkedInLayoutStrategies,
+  dsl: linkedInDsl,
   collectAssetRefs: collectLinkedInAssetRefs,
   anchorProvider: LinkedInAnchorProvider,
+  notificationAdapter: linkedInNotificationAdapter,
 };
 
 const registeredManagers = new WeakSet<PluginManagerClass>();
@@ -64,3 +70,4 @@ export function registerLinkedInPlugin(pluginManager: PluginManagerClass): void 
 }
 
 export default LinkedInPlugin;
+export type { LinkedInDslApi };

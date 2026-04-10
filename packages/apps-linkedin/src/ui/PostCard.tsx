@@ -1,373 +1,340 @@
-/**
- * PostCard Component
- * ==================
- * LinkedIn-style post card with author info, content, reactions, and action bar.
- * Matches real LinkedIn's design patterns.
- */
 import React from "react";
 import { useLinkedInTheme } from "./ThemeContext.js";
 import { LIAvatar, LIIcon, ReactionStack, ActionBar } from "./components.js";
 import type { LIReactionType } from "../types/index.js";
 
 export interface PostCardProps {
-    authorName: string;
-    authorHeadline?: string;
-    authorAvatar?: string;
-    authorFollowers?: string;
-    timeAgo?: string;
-    content: string;
+  authorName: string;
+  authorHeadline?: string;
+  authorAvatar?: string;
+  timeAgo?: string;
+  content: string;
+  image?: string;
+  linkPreview?: {
+    url: string;
+    title: string;
+    domain: string;
     image?: string;
-    linkPreview?: {
-        url: string;
-        title: string;
-        domain: string;
-        image?: string;
-    };
-    reactions?: Partial<Record<LIReactionType, number>>;
-    commentCount?: number;
-    repostCount?: number;
-    isLiked?: boolean;
-    showFollowButton?: boolean;
-    isPromoted?: boolean;
+  };
+  reactions?: Partial<Record<LIReactionType, number>>;
+  commentCount?: number;
+  repostCount?: number;
+  isLiked?: boolean;
+  showFollowButton?: boolean;
+  commentPreview?: Array<{ authorName: string; text: string }>;
 }
 
-// Character limit before showing "...see more"
-const CONTENT_PREVIEW_LIMIT = 150;
+const CONTENT_PREVIEW_LIMIT = 220;
 
 export const PostCard: React.FC<PostCardProps> = ({
-    authorName,
-    authorHeadline,
-    authorAvatar,
-    authorFollowers: _authorFollowers,
-    timeAgo = "1h",
-    content,
-    image,
-    linkPreview,
-    reactions = {},
-    commentCount = 0,
-    repostCount = 0,
-    isLiked = false,
-    showFollowButton = false,
-    isPromoted = false,
+  authorName,
+  authorHeadline,
+  authorAvatar,
+  timeAgo = "Now",
+  content,
+  image,
+  linkPreview,
+  reactions = {},
+  commentCount = 0,
+  repostCount = 0,
+  isLiked = false,
+  showFollowButton = false,
+  commentPreview = [],
 }) => {
-    const theme = useLinkedInTheme();
-    const [isExpanded, setIsExpanded] = React.useState(false);
+  const theme = useLinkedInTheme();
+  const [isExpanded, setIsExpanded] = React.useState(false);
+  const totalReactions = Object.values(reactions).reduce((sum, value) => sum + (value ?? 0), 0);
+  const activeReactions = (Object.keys(reactions) as LIReactionType[])
+    .filter((reaction) => (reactions[reaction] ?? 0) > 0)
+    .sort((a, b) => (reactions[b] ?? 0) - (reactions[a] ?? 0));
+  const needsTruncation = content.length > CONTENT_PREVIEW_LIMIT;
+  const displayContent = needsTruncation && !isExpanded
+    ? `${content.slice(0, CONTENT_PREVIEW_LIMIT).trimEnd()}…`
+    : content;
 
-    // Calculate total reactions
-    const totalReactions = Object.values(reactions).reduce((a, b) => a + (b ?? 0), 0);
-
-    // Get reaction types that have counts (sorted by count)
-    const activeReactions = (Object.keys(reactions) as LIReactionType[])
-        .filter((r) => (reactions[r] ?? 0) > 0)
-        .sort((a, b) => (reactions[b] ?? 0) - (reactions[a] ?? 0));
-
-    // Check if content needs truncation
-    const needsTruncation = content.length > CONTENT_PREVIEW_LIMIT;
-    const displayContent = needsTruncation && !isExpanded
-        ? content.slice(0, CONTENT_PREVIEW_LIMIT)
-        : content;
-
-    // Parse content for hashtags
-    const renderContent = (text: string) => {
-        const parts = text.split(/(#\w+)/g);
-        return parts.map((part, i) => {
-            if (part.startsWith("#")) {
-                return (
-                    <span key={i} style={{ color: theme.colors.accent, fontWeight: 600 }}>
-                        {part}
-                    </span>
-                );
-            }
-            return part;
-        });
-    };
-
-    return (
-        <div
+  return (
+    <article
+      style={{
+        background: theme.colors.surface,
+        borderRadius: 0,
+        boxShadow: "none",
+        borderTop: `1px solid ${theme.colors.border}`,
+        borderBottom: `1px solid ${theme.colors.border}`,
+        overflow: "hidden",
+      }}
+    >
+      <div
+        style={{
+          padding: theme.spacing.cardPadding,
+          display: "flex",
+          gap: theme.spacing.avatarGap,
+          alignItems: "flex-start",
+        }}
+      >
+        <LIAvatar size="lg" src={authorAvatar} name={authorName} />
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div
             style={{
-                background: theme.colors.surface,
-                borderRadius: theme.radius.card,
-                boxShadow: theme.shadows.card,
-                overflow: "hidden",
+              display: "flex",
+              alignItems: "flex-start",
+              justifyContent: "space-between",
+              gap: theme.spacing.sm,
             }}
-        >
-            {/* Promoted Badge */}
-            {isPromoted && (
-                <div
-                    style={{
-                        padding: `${theme.spacing.xs}px ${theme.spacing.cardPadding}px`,
-                        paddingTop: theme.spacing.sm,
-                        fontSize: theme.typography.caption.fontSize,
-                        color: theme.colors.textTertiary,
-                    }}
-                >
-                    Promoted
-                </div>
-            )}
-
-            {/* Author Header */}
-            <div
+          >
+            <div style={{ minWidth: 0 }}>
+              <div
                 style={{
-                    padding: theme.spacing.cardPadding,
-                    paddingTop: isPromoted ? theme.spacing.sm : theme.spacing.cardPadding,
-                    paddingBottom: theme.spacing.sm,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: theme.spacing.xs,
+                  flexWrap: "wrap",
                 }}
-            >
-                <div
-                    style={{
-                        display: "flex",
-                        gap: theme.spacing.avatarGap,
-                    }}
+              >
+                <span
+                  style={{
+                    fontSize: theme.typography.headline.fontSize,
+                    fontWeight: theme.typography.headline.fontWeight,
+                    color: theme.colors.textPrimary,
+                  }}
                 >
-                    <LIAvatar size="lg" src={authorAvatar} name={authorName} />
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                        <div
-                            style={{
-                                display: "flex",
-                                alignItems: "center",
-                                gap: theme.spacing.xs,
-                            }}
-                        >
-                            <span
-                                style={{
-                                    fontSize: theme.typography.headline.fontSize,
-                                    fontWeight: theme.typography.headline.fontWeight,
-                                    color: theme.colors.textPrimary,
-                                }}
-                            >
-                                {authorName}
-                            </span>
-                            {showFollowButton && (
-                                <>
-                                    <span style={{ color: theme.colors.textTertiary }}>•</span>
-                                    <span
-                                        style={{
-                                            fontSize: theme.typography.headline.fontSize,
-                                            fontWeight: theme.typography.headline.fontWeight,
-                                            color: theme.colors.accent,
-                                            cursor: "pointer",
-                                        }}
-                                    >
-                                        Follow
-                                    </span>
-                                </>
-                            )}
-                        </div>
-                        {authorHeadline && (
-                            <div
-                                style={{
-                                    fontSize: theme.typography.caption.fontSize,
-                                    color: theme.colors.textSecondary,
-                                    whiteSpace: "nowrap",
-                                    overflow: "hidden",
-                                    textOverflow: "ellipsis",
-                                    marginTop: 1,
-                                }}
-                            >
-                                {authorHeadline}
-                            </div>
-                        )}
-                        <div
-                            style={{
-                                display: "flex",
-                                alignItems: "center",
-                                gap: theme.spacing.xs,
-                                marginTop: 2,
-                                fontSize: theme.typography.caption.fontSize,
-                                color: theme.colors.textTertiary,
-                            }}
-                        >
-                            <span>{timeAgo}</span>
-                            <span>•</span>
-                            <GlobeIcon size={12} color={theme.colors.textTertiary} />
-                        </div>
-                    </div>
-                    <div
-                        style={{
-                            display: "flex",
-                            alignItems: "flex-start",
-                            gap: theme.spacing.xs,
-                        }}
+                  {authorName}
+                </span>
+                {showFollowButton ? (
+                  <>
+                    <span style={{ color: theme.colors.textTertiary }}>•</span>
+                    <span
+                      style={{
+                        fontSize: theme.typography.captionSemibold.fontSize,
+                        fontWeight: theme.typography.captionSemibold.fontWeight,
+                        color: theme.colors.accent,
+                      }}
                     >
-                        <div style={{ padding: theme.spacing.xs, cursor: "pointer" }}>
-                            <LIIcon name="more" size={20} color={theme.colors.textSecondary} />
-                        </div>
-                        <div style={{ padding: theme.spacing.xs, cursor: "pointer" }}>
-                            <LIIcon name="close" size={20} color={theme.colors.textSecondary} />
-                        </div>
-                    </div>
+                      Follow
+                    </span>
+                  </>
+                ) : null}
+              </div>
+              {authorHeadline ? (
+                <div
+                  style={{
+                    fontSize: theme.typography.caption.fontSize,
+                    color: theme.colors.textSecondary,
+                    marginTop: 2,
+                    display: "-webkit-box",
+                    WebkitLineClamp: 2,
+                    WebkitBoxOrient: "vertical",
+                    overflow: "hidden",
+                  }}
+                >
+                  {authorHeadline}
                 </div>
-            </div>
-
-            {/* Content */}
-            <div
+              ) : null}
+              <div
                 style={{
-                    padding: `0 ${theme.spacing.cardPadding}px`,
-                    paddingBottom: theme.spacing.md,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: theme.spacing.xs,
+                  marginTop: 4,
+                  fontSize: theme.typography.caption.fontSize,
+                  color: theme.colors.textTertiary,
                 }}
-            >
-                <div
-                    style={{
-                        fontSize: theme.typography.body.fontSize,
-                        lineHeight: theme.typography.body.lineHeight,
-                        color: theme.colors.textPrimary,
-                        whiteSpace: "pre-wrap",
-                    }}
-                >
-                    {renderContent(displayContent)}
-                    {needsTruncation && !isExpanded && (
-                        <span
-                            onClick={() => setIsExpanded(true)}
-                            style={{
-                                color: theme.colors.textSecondary,
-                                cursor: "pointer",
-                                fontWeight: 500,
-                            }}
-                        >
-                            ...see more
-                        </span>
-                    )}
-                </div>
+              >
+                <span>{timeAgo}</span>
+                <span>•</span>
+                <GlobeIcon size={12} color={theme.colors.textTertiary} />
+              </div>
             </div>
+            <LIIcon name="more" size={20} color={theme.colors.textSecondary} />
+          </div>
 
-            {/* Image */}
-            {image && (
-                <div
-                    style={{
-                        width: "100%",
-                        aspectRatio: "16/9",
-                        background: `url(${image}) center/cover`,
-                        backgroundColor: theme.colors.skeleton,
-                    }}
-                />
-            )}
-
-            {/* Link Preview */}
-            {linkPreview && (
-                <div
-                    style={{
-                        border: `1px solid ${theme.colors.border}`,
-                        borderLeft: "none",
-                        borderRight: "none",
-                        background: theme.colors.surfaceHover,
-                    }}
-                >
-                    {linkPreview.image && (
-                        <div
-                            style={{
-                                width: "100%",
-                                height: 150,
-                                background: `url(${linkPreview.image}) center/cover`,
-                                backgroundColor: theme.colors.skeleton,
-                            }}
-                        />
-                    )}
-                    <div style={{ padding: theme.spacing.md }}>
-                        <div
-                            style={{
-                                fontSize: theme.typography.headline.fontSize,
-                                fontWeight: theme.typography.headline.fontWeight,
-                                color: theme.colors.textPrimary,
-                                marginBottom: theme.spacing.xs,
-                                display: "-webkit-box",
-                                WebkitLineClamp: 2,
-                                WebkitBoxOrient: "vertical",
-                                overflow: "hidden",
-                            }}
-                        >
-                            {linkPreview.title}
-                        </div>
-                        <div
-                            style={{
-                                fontSize: theme.typography.caption.fontSize,
-                                color: theme.colors.textSecondary,
-                            }}
-                        >
-                            {linkPreview.domain}
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* Reactions & Comments Row */}
-            {(totalReactions > 0 || commentCount > 0 || repostCount > 0) && (
-                <div
-                    style={{
-                        padding: `${theme.spacing.sm}px ${theme.spacing.cardPadding}px`,
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "space-between",
-                    }}
-                >
-                    {/* Reactions */}
-                    <div
-                        style={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: theme.spacing.xs,
-                            cursor: "pointer",
-                        }}
-                    >
-                        {activeReactions.length > 0 && <ReactionStack reactions={activeReactions} size={16} />}
-                        {totalReactions > 0 && (
-                            <span
-                                style={{
-                                    fontSize: theme.typography.caption.fontSize,
-                                    color: theme.colors.textSecondary,
-                                }}
-                            >
-                                {formatReactionText(totalReactions, authorName)}
-                            </span>
-                        )}
-                    </div>
-
-                    {/* Comments & Reposts */}
-                    <div
-                        style={{
-                            display: "flex",
-                            gap: theme.spacing.md,
-                            fontSize: theme.typography.caption.fontSize,
-                            color: theme.colors.textSecondary,
-                        }}
-                    >
-                        {commentCount > 0 && (
-                            <span style={{ cursor: "pointer" }}>
-                                {commentCount} comment{commentCount !== 1 ? "s" : ""}
-                            </span>
-                        )}
-                        {repostCount > 0 && (
-                            <span style={{ cursor: "pointer" }}>
-                                {repostCount} repost{repostCount !== 1 ? "s" : ""}
-                            </span>
-                        )}
-                    </div>
-                </div>
-            )}
-
-            {/* Action Bar */}
-            <ActionBar
-                likeCount={reactions.like ?? 0}
-                commentCount={commentCount}
-                repostCount={repostCount}
-                isLiked={isLiked}
-            />
+          <div
+            style={{
+              marginTop: theme.spacing.md,
+              fontSize: theme.typography.body.fontSize,
+              lineHeight: theme.typography.body.lineHeight,
+              color: theme.colors.textPrimary,
+              whiteSpace: "pre-wrap",
+            }}
+          >
+            {renderLinkedInText(displayContent, theme.colors.accent)}
+            {needsTruncation && !isExpanded ? (
+              <span
+                onClick={() => setIsExpanded(true)}
+                style={{
+                  color: theme.colors.textSecondary,
+                  cursor: "pointer",
+                  fontWeight: 600,
+                }}
+              >
+                {" "}see more
+              </span>
+            ) : null}
+          </div>
         </div>
-    );
+      </div>
+
+      {image ? (
+        <div
+          style={{
+            width: "100%",
+            height: theme.spacing.postMediaHeight,
+            background: `url(${image}) center/cover`,
+            backgroundColor: theme.colors.skeleton,
+          }}
+        />
+      ) : null}
+
+      {linkPreview ? (
+        <div
+          style={{
+            margin: `0 ${theme.spacing.cardPadding}px ${theme.spacing.cardPadding}px`,
+            border: `1px solid ${theme.colors.border}`,
+            borderRadius: theme.radius.md,
+            overflow: "hidden",
+            background: theme.colors.surfaceHover,
+          }}
+        >
+          {linkPreview.image ? (
+            <div
+              style={{
+                width: "100%",
+                height: 140,
+                background: `url(${linkPreview.image}) center/cover`,
+                backgroundColor: theme.colors.skeleton,
+              }}
+            />
+          ) : null}
+          <div style={{ padding: theme.spacing.md }}>
+            <div
+              style={{
+                fontSize: theme.typography.headline.fontSize,
+                fontWeight: theme.typography.headline.fontWeight,
+                color: theme.colors.textPrimary,
+              }}
+            >
+              {linkPreview.title}
+            </div>
+            <div
+              style={{
+                fontSize: theme.typography.caption.fontSize,
+                color: theme.colors.textSecondary,
+                marginTop: 4,
+              }}
+            >
+              {linkPreview.domain}
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {(totalReactions > 0 || commentCount > 0 || repostCount > 0) ? (
+        <div
+          style={{
+            padding: `0 ${theme.spacing.cardPadding}px ${theme.spacing.sm}px`,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: theme.spacing.sm,
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: theme.spacing.xs,
+              color: theme.colors.textSecondary,
+              fontSize: theme.typography.caption.fontSize,
+            }}
+          >
+            {activeReactions.length > 0 ? <ReactionStack reactions={activeReactions} size={16} /> : null}
+            {totalReactions > 0 ? <span>{formatCompact(totalReactions)}</span> : null}
+          </div>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: theme.spacing.md,
+              color: theme.colors.textSecondary,
+              fontSize: theme.typography.caption.fontSize,
+            }}
+          >
+            {commentCount > 0 ? <span>{formatCompact(commentCount)} comments</span> : null}
+            {repostCount > 0 ? <span>{formatCompact(repostCount)} reposts</span> : null}
+          </div>
+        </div>
+      ) : null}
+
+      {commentPreview.length > 0 ? (
+        <div
+          style={{
+            padding: `0 ${theme.spacing.cardPadding}px ${theme.spacing.sm}px`,
+            display: "flex",
+            flexDirection: "column",
+            gap: 4,
+          }}
+        >
+          {commentCount > commentPreview.length ? (
+            <div
+              style={{
+                fontSize: theme.typography.caption.fontSize,
+                color: theme.colors.textSecondary,
+                fontWeight: 600,
+              }}
+            >
+              View all {formatCompact(commentCount)} comments
+            </div>
+          ) : null}
+          {commentPreview.map((comment, index) => (
+            <div
+              key={`${comment.authorName}-${index}`}
+              style={{
+                fontSize: theme.typography.caption.fontSize,
+                color: theme.colors.textSecondary,
+                whiteSpace: "nowrap",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+              }}
+            >
+              <span style={{ color: theme.colors.textPrimary, fontWeight: 600 }}>{comment.authorName}</span>{" "}
+              {comment.text}
+            </div>
+          ))}
+        </div>
+      ) : null}
+
+      <ActionBar
+        likeCount={reactions.like ?? 0}
+        commentCount={commentCount}
+        repostCount={repostCount}
+        isLiked={isLiked}
+      />
+    </article>
+  );
 };
 
-// Helper to format reaction text like "John and 42 others"
-function formatReactionText(count: number, _authorName: string): string {
-    if (count === 1) return "1";
-    if (count < 100) return count.toString();
-    if (count < 1000) return count.toString();
-    return `${Math.floor(count / 1000)}K`;
+function renderLinkedInText(text: string, accent: string): React.ReactNode {
+  return text.split(/([#@][\w.-]+)/g).map((part, index) => {
+    if (part.startsWith("#") || part.startsWith("@")) {
+      return (
+        <span key={index} style={{ color: accent, fontWeight: 600 }}>
+          {part}
+        </span>
+      );
+    }
+    return <React.Fragment key={index}>{part}</React.Fragment>;
+  });
 }
 
-// Simple globe icon for visibility indicator
+function formatCompact(value: number): string {
+  if (value >= 1000000) return `${(value / 1000000).toFixed(value >= 10000000 ? 0 : 1)}M`;
+  if (value >= 1000) return `${(value / 1000).toFixed(value >= 10000 ? 0 : 1)}K`;
+  return `${value}`;
+}
+
 const GlobeIcon: React.FC<{ size: number; color: string }> = ({ size, color }) => (
-    <svg width={size} height={size} viewBox="0 0 16 16" fill="none">
-        <circle cx="8" cy="8" r="6.5" stroke={color} strokeWidth="1.5" />
-        <ellipse cx="8" cy="8" rx="3" ry="6.5" stroke={color} strokeWidth="1.5" />
-        <path d="M1.5 8h13M2.5 4.5h11M2.5 11.5h11" stroke={color} strokeWidth="1" />
-    </svg>
+  <svg width={size} height={size} viewBox="0 0 16 16" fill="none">
+    <circle cx="8" cy="8" r="6.5" stroke={color} strokeWidth="1.5" />
+    <ellipse cx="8" cy="8" rx="3" ry="6.5" stroke={color} strokeWidth="1.5" />
+    <path d="M1.5 8h13M2.5 4.5h11M2.5 11.5h11" stroke={color} strokeWidth="1" />
+  </svg>
 );

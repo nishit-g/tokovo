@@ -7,8 +7,13 @@ export interface LIUser {
   handle: string;
   headline?: string;
   avatarUrl?: string;
+  location?: string;
+  company?: string;
+  about?: string;
   connections: number;
   followers: number;
+  profileViews?: number;
+  impressionCount?: number;
   connectionIds: string[];
   followerIds: string[];
 }
@@ -54,16 +59,27 @@ export interface LIPost {
 
 export interface LINotification {
   id: string;
-  type: "reaction" | "comment" | "repost" | "connection" | "follow";
+  type: "reaction" | "comment" | "repost" | "connection" | "follow" | "message";
   actorId: string;
   postId?: string;
+  threadId?: string;
+  title?: string;
+  body?: string;
   createdAt: number;
+  unread: boolean;
 }
 
 export interface LIDMThread {
   id: string;
   participantIds: string[];
   messageIds: string[];
+  title?: string;
+  unreadCount: number;
+  pinned: boolean;
+  lastMessageId?: string | null;
+  lastMessageAt?: number | null;
+  draftText: string;
+  typingParticipantIds: string[];
 }
 
 export interface LIDMMessage {
@@ -136,4 +152,3 @@ export function createLinkedInInitialState(): LinkedInState {
     themeMode: "light",
   };
 }
-
