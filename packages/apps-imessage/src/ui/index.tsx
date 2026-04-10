@@ -1,4 +1,5 @@
 import React, { useEffect } from "react";
+import { Img } from "remotion";
 import type { PluginViewProps } from "@tokovo/core";
 import { useKeyboardState } from "@tokovo/react";
 import { Header, InputBar, MessageBubble, TypingIndicator, ScreenEffect, SearchBar } from "../components/index.js";
@@ -96,7 +97,16 @@ const ChatView: React.FC<{
   safeAreaBottom?: number;
   activeScreenEffect?: ScreenEffectType;
   searchQuery?: string;
-}> = ({ world, deviceId, t, conversation, safeAreaTop, safeAreaBottom, activeScreenEffect, searchQuery }) => {
+}> = ({
+  world: _world,
+  deviceId: _deviceId,
+  t: _t,
+  conversation,
+  safeAreaTop,
+  safeAreaBottom,
+  activeScreenEffect,
+  searchQuery,
+}) => {
   const theme = useIMessageTheme();
 
   if (!conversation) {
@@ -287,7 +297,7 @@ const ConversationListItem: React.FC<{
         }}
       >
         {conversation.avatar ? (
-          <img
+          <Img
             src={conversation.avatar}
             alt={conversation.title ?? conversation.id}
             style={{ width: "100%", height: "100%", objectFit: "cover" }}

@@ -1,7 +1,9 @@
 import React, { memo } from "react";
 import { Img, staticFile } from "remotion";
+import { resolveStaticAssetSrc } from "@tokovo/core";
 import { MediaBubbleBase, TimestampRow, TimestampOverlay } from "./shared.js";
 import { useTheme } from "../../theme/ThemeContext.js";
+import type { DeliveryStage } from "../../utils/status.js";
 
 export interface LocationMessageBubbleProps {
   latitude: number;
@@ -18,6 +20,7 @@ export interface LocationMessageBubbleProps {
   readAt?: number;
   status?: "sending" | "sent" | "delivered" | "read";
   starred?: boolean;
+  deliveryStage?: DeliveryStage;
 }
 
 /** Draws a stylized static map grid when no thumbnail is provided. */
@@ -82,12 +85,12 @@ export const LocationMessageBubble = memo(function LocationMessageBubble({
   readAt,
   status,
   starred = false,
+  deliveryStage,
 }: LocationMessageBubbleProps) {
   const theme = useTheme();
-  const resolvedMapThumbnailUrl =
-    mapThumbnailUrl && mapThumbnailUrl.startsWith("/")
-      ? staticFile(mapThumbnailUrl)
-      : mapThumbnailUrl;
+  const resolvedMapThumbnailUrl = mapThumbnailUrl
+    ? resolveStaticAssetSrc(mapThumbnailUrl, staticFile)
+    : mapThumbnailUrl;
   const paddingH = theme.spacing.messagePaddingHorizontal - 4;
   const hasCaption = !!(locationName || locationAddress);
 
@@ -120,6 +123,7 @@ export const LocationMessageBubble = memo(function LocationMessageBubble({
             <Img
               src={resolvedMapThumbnailUrl}
               alt="Map"
+              pauseWhenLoading
               style={{
                 width: "100%",
                 height: "100%",
@@ -160,6 +164,7 @@ export const LocationMessageBubble = memo(function LocationMessageBubble({
             deliveredAt={deliveredAt}
             readAt={readAt}
             status={status}
+            deliveryStage={deliveryStage}
           />
         )}
       </div>
@@ -202,6 +207,7 @@ export const LocationMessageBubble = memo(function LocationMessageBubble({
             deliveredAt={deliveredAt}
             readAt={readAt}
             status={status}
+            deliveryStage={deliveryStage}
           />
         </div>
       )}

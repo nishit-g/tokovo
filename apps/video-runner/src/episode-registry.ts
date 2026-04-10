@@ -10,7 +10,7 @@ import {
 
 function registerEpisodeCatalog(
   registry: EpisodeRegistry,
-  episodes: EpisodeDefinition[],
+  episodes: readonly EpisodeDefinition[],
 ): void {
   for (const ep of episodes) {
     registry.register(ep);

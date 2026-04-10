@@ -5,9 +5,12 @@
   "type": "module",
   "scripts": {
     "build": "turbo run build",
-    "build:video": "turbo run build --filter=video-runner...",
+    "build:video": "turbo run build --filter=video-runner... --filter=@tokovo/render-service",
     "dev": "turbo run dev --concurrency 15",
     "dev:video": "pnpm build:video && pnpm --filter video-runner dev",
+    "render:doctor": "pnpm --filter @tokovo/render-service run doctor",
+    "render:smoke": "pnpm --filter @tokovo/render-service run smoke",
+    "render:episode": "pnpm --filter @tokovo/render-service run render",
     "watch:video": "turbo watch build --filter=video-runner...",
     "lint": "turbo run lint",
     "camera:lint": "pnpm --filter @tokovo/device-camera build && pnpm --filter @tokovo/device-camera camera:lint",
@@ -25,8 +28,9 @@
     "lint:unsafe:phase1": "bash -lc 'if rg -n \"as\\\\s+unknown\\\\s+as|as\\\\s+any\\\\b|:\\\\s*any\\\\b|<any>\" packages/{ir,dsl,compiler,episodes}/src --glob '!**/*.test.ts' --glob '!**/__tests__/**'; then echo \"Unsafe typing policy violated in phase1 targets\"; exit 1; fi'",
     "build:phase1": "pnpm --filter @tokovo/ir build && pnpm --filter @tokovo/dsl build && pnpm --filter @tokovo/compiler build && pnpm --filter @tokovo/episodes build",
     "ci:phase1": "pnpm lint:unsafe:phase1 && pnpm test:phase1 && pnpm test:determinism:phase1 && pnpm build:phase1",
-    "ci": "pnpm lint && pnpm typecheck && pnpm test && pnpm build",
-    "validate": "pnpm --filter @tokovo/episodes validate"
+    "verify": "pnpm lint && pnpm typecheck && pnpm validate && pnpm test && pnpm build",
+    "ci:repo": "pnpm verify",
+    "validate": "pnpm --filter @tokovo/episodes validate:workspace"
   },
   "devDependencies": {
     "@eslint/js": "^9.0.0",
@@ -47,8 +51,7 @@
   },
   "pnpm": {
     "overrides": {
-      "react": "18.3.1",
-      "react-dom": "18.3.1"
+      "baseline-browser-mapping": "^2.10.17"
     }
   }
 }

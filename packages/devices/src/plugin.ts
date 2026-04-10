@@ -177,7 +177,6 @@ export function registerDevicesPlugin(
         hasDynamicIsland: true,
     });
 
-    console.warn("[DevicesPlugin] Registered");
 }
 
 export default DevicesPlugin;

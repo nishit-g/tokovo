@@ -6,6 +6,7 @@ const meta = {
   "getting-started": "Getting Started",
   architecture: "Architecture",
   concepts: "Concepts",
+  guides: "Guides",
   packages: "Packages",
 };
 

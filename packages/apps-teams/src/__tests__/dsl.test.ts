@@ -1,63 +1,67 @@
 import { describe, expect, it } from "vitest";
 import { TeamsDslError } from "../errors.js";
-import { createTeamsTrackBuilder } from "../dsl/track-builder.js";
+import {
+  TeamsTrackBuilderV2,
+  createTeamsTrackBuilder,
+  dmTarget,
+  threadTarget,
+} from "../dsl/index.js";
 
-describe("teams dsl", () => {
-  it("emits deterministic event sequence for switchDm + dmSend", () => {
+describe("teams dsl v2", () => {
+  it("emits deterministic navigation and message events", () => {
     let order = 0;
     const builder = createTeamsTrackBuilder(30, "phone", () => ++order);
 
-    builder.switchDm("dm_1", "1s");
-    builder.at("2s").dmSend({
-      dmId: "dm_1",
-      senderId: "me",
-      senderName: "Me",
+    builder.openDm("dm_exec", "1s");
+    builder.at("2s").sendMessage({
+      target: dmTarget("dm_exec"),
+      text: "hello",
+      typed: true,
+    });
+
+    expect(builder._events.map((event) => event.type)).toEqual([
+      "TEAMS_OPEN_DM",
+      "TEAMS_MESSAGE_SEND",
+    ]);
+    expect(builder._events[1].payload).toMatchObject({
+      target: { kind: "dm", dmId: "dm_exec" },
       text: "hello",
     });
-
-    expect(builder._events.map((e) => e.type)).toEqual([
-      "TEAMS_SET_ACTIVE_CHAT",
-      "TEAMS_NAVIGATE_SCREEN",
-      "TEAMS_DM_SEND",
-    ]);
-    expect(builder._events[2].payload).toMatchObject({ dmId: "dm_1", text: "hello" });
   });
 
-  it("throws typed error on invalid payload", () => {
+  it("supports enterprise thread flows", () => {
     let order = 0;
-    const builder = createTeamsTrackBuilder(30, "phone", () => ++order);
+    const builder = new TeamsTrackBuilderV2(30, "phone", () => ++order);
 
-    expect(() => {
-      builder.at(10).dmSend({
-        dmId: "",
-        senderId: "me",
-        senderName: "Me",
-        text: "hello",
-      });
-    }).toThrowError(TeamsDslError);
-  });
+    builder.at("1s").openThread("launch", "t1");
+    builder.at("2s").receiveMessage({
+      target: threadTarget("launch", "t1"),
+      senderId: "u_pm",
+      text: "Ship only on green checks.",
+      mentionedUserIds: ["u_me"],
+    });
+    builder.at("3s").setDraft(threadTarget("launch", "t1"), "Draft response");
 
-  it("emits mention event and validates call participants", () => {
-    let order = 0;
-    const builder = createTeamsTrackBuilder(30, "phone", () => ++order);
-
-    builder.at("3s").mention("thread_1", "message_1", "user_1");
-    expect(builder._events[0]).toMatchObject({
-      type: "TEAMS_MENTION_ADD",
+    expect(builder._events[1]).toMatchObject({
+      type: "TEAMS_MESSAGE_RECEIVE",
       payload: {
-        threadId: "thread_1",
-        messageId: "message_1",
-        targetUserId: "user_1",
-        targetType: "user",
+        target: { kind: "thread", channelId: "launch", threadId: "t1" },
+        mentionedUserIds: ["u_me"],
       },
     });
+  });
+
+  it("throws typed errors for invalid call input", () => {
+    let order = 0;
+    const builder = createTeamsTrackBuilder(30, "phone", () => ++order);
 
     expect(() => {
       builder.at("4s").startCall({
         callId: "call_1",
         participantIds: [],
-        scope: "channel",
+        scope: "thread",
         channelId: "eng",
+        threadId: "th_1",
       });
     }).toThrowError(TeamsDslError);
   });

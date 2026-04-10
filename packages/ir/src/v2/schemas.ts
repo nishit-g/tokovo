@@ -1,35 +1,5 @@
 import { z } from "zod";
 
-export const ConversationConfigSchema = z.object({
-  id: z.string(),
-  name: z.string(),
-  avatar: z.string().optional(),
-  type: z.enum(["dm", "group"]).optional(),
-  participants: z.array(z.string()).optional(),
-  unreadCount: z.number().optional(),
-  isMuted: z.boolean().optional(),
-  isPinned: z.boolean().optional(),
-  hasStatus: z.boolean().optional(),
-  description: z.string().optional(),
-  isLocked: z.boolean().optional(),
-  businessLabel: z.string().optional(),
-  isVerifiedBusiness: z.boolean().optional(),
-  isChannel: z.boolean().optional(),
-  isFollowed: z.boolean().optional(),
-  channelUnreadCount: z.number().optional(),
-  channelDescription: z.string().optional(),
-  channelLatestSnippet: z.string().optional(),
-  channelFollowersLabel: z.string().optional(),
-  channelCategory: z.string().optional(),
-  pinnedMessage: z
-    .object({
-      text: z.string(),
-      from: z.string().optional(),
-    })
-    .optional(),
-  disappearingMessagesLabel: z.string().optional(),
-});
-
 export const OSConfigSchema = z.object({
   time: z.union([z.date(), z.number()]).optional(),
   battery: z.number().min(0).max(100).optional(),
@@ -43,7 +13,6 @@ export const DeviceConfigSchema = z.object({
   id: z.string(),
   profile: z.string(),
   app: z.string(),
-  conversations: z.array(ConversationConfigSchema).optional(),
   os: OSConfigSchema.optional(),
   theme: z.string().optional(),
   locked: z.boolean().optional(),
@@ -57,6 +26,20 @@ export const DeviceConfigSchema = z.object({
     })
     .optional(),
   screenRecording: z.boolean().optional(),
+});
+
+export const AppSnapshotEntrySchema = z.object({
+  appId: z.string(),
+  deviceId: z.string(),
+  snapshotVersion: z.number().int().positive(),
+  snapshot: z.unknown(),
+});
+
+export const AppInitialViewEntrySchema = z.object({
+  appId: z.string(),
+  deviceId: z.string(),
+  viewVersion: z.number().int().positive(),
+  view: z.unknown(),
 });
 
 export const MarkerSchema = z.object({
@@ -110,6 +93,8 @@ export const TrackEpisodeIRSchema = z.object({
   title: z.string().optional(),
   description: z.string().optional(),
   devices: z.array(DeviceConfigSchema).min(1),
+  appSnapshots: z.array(AppSnapshotEntrySchema).default([]),
+  initialViews: z.array(AppInitialViewEntrySchema).default([]),
   events: z.array(TrackEventSchema),
   markers: z.array(MarkerSchema),
   sections: z.array(SectionSchema),

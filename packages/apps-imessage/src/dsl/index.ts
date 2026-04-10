@@ -3,6 +3,7 @@ export {
   IMessagePointBuilder,
   createIMessageTrackBuilder,
 } from "./track-builder.js";
+export { iMessageDsl, type IMessageDslApi } from "./extension.js";
 
 export type {
   SendMessageInput,
@@ -14,4 +15,3 @@ export type {
   SendContactInput,
   SendCalendarInput,
 } from "./track-builder.js";
-

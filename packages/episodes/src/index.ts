@@ -90,11 +90,6 @@ export {
 export type { SchemaExport } from "./json-schema.js";
 
 // =============================================================================
-// STORY KIT (persona/assets/styles/devices authoring layer)
-// =============================================================================
-export * from "./story-kit/index.js";
-
-// =============================================================================
 // LEGACY EPISODES
 // =============================================================================
 // Note: Legacy V1 episodes are NOT exported - they use old DSL patterns

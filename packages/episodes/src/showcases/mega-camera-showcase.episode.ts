@@ -21,6 +21,13 @@ export default defineEpisode({
     episode("mega-camera-showcase", { fps: 30, duration: "40s" })
       .device("phone", "iphone16", {
         app: "app_whatsapp",
+        os: {
+          time: new Date("2024-12-20T22:15:00"),
+          battery: 73,
+          network: "5G",
+        },
+      })
+      .snapshot("app_whatsapp", "phone", {
         conversations: [
           {
             id: "dm_sarah",
@@ -28,11 +35,6 @@ export default defineEpisode({
             avatar: "/avatars/sarah.jpg",
           },
         ],
-        os: {
-          time: new Date("2024-12-20T22:15:00"),
-          battery: 73,
-          network: "5G",
-        },
       })
 
       .track(

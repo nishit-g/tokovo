@@ -7,6 +7,10 @@ import { SnapchatView } from "./ui/index.js";
 import { snapchatV2Lowering } from "./lowering/index.js";
 import { snapchatLayoutStrategies } from "./layout/index.js";
 import { SnapchatAnchorProvider } from "./anchors/provider.js";
+import { snapchatBootstrap } from "./bootstrap.js";
+import { collectSnapchatAssetRefs } from "./asset-refs.js";
+import { snapchatDsl, type SnapchatDslApi } from "./dsl/index.js";
+import { snapchatNotificationAdapter } from "./notifications/adapter.js";
 
 const snapchatViews: PluginViews = {
     AppRoot: SnapchatView,
@@ -75,6 +79,7 @@ export const SnapchatPlugin: TokovoPluginContract<"app_snapchat"> & {
     reducer: snapchatReducer,
     views: snapchatViews,
     createInitialState: createSnapchatInitialState,
+    bootstrap: snapchatBootstrap,
     eventKinds: [
         "SNAPCHAT_CONVERSATION_CREATE",
         "SNAPCHAT_CONVERSATION_OPEN",
@@ -87,6 +92,7 @@ export const SnapchatPlugin: TokovoPluginContract<"app_snapchat"> & {
         "SNAPCHAT_TYPING_END",
         "SNAPCHAT_STREAK_UPDATE",
         "SNAPCHAT_SET_SCREEN",
+        "SNAPCHAT_SET_DRAFT",
         "SNAPCHAT_MESSAGE_STATUS_SET",
         "SNAPCHAT_SCREENSHOT",
         "SNAPCHAT_SAVE_MESSAGE",
@@ -99,6 +105,9 @@ export const SnapchatPlugin: TokovoPluginContract<"app_snapchat"> & {
     v2Lowering: snapchatV2Lowering,
     layouts: snapchatLayoutStrategies,
     anchorProvider: SnapchatAnchorProvider,
+    dsl: snapchatDsl,
+    collectAssetRefs: collectSnapchatAssetRefs,
+    notificationAdapter: snapchatNotificationAdapter,
 };
 
 const registeredManagers = new WeakSet<PluginManagerClass>();
@@ -110,3 +119,4 @@ export function registerSnapchatPlugin(pluginManager: PluginManagerClass): void 
 }
 
 export default SnapchatPlugin;
+export type { SnapchatDslApi };

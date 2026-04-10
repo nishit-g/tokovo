@@ -1,87 +1,13 @@
-# Anchors + DSL Reference (WhatsApp, X, iMessage)
+# Anchors and DSL Reference
 
-This page is the production-facing inventory for anchor IDs, DSL APIs, and plugin surfaces used in episode authoring.
+Use anchors when a scene should target semantic UI regions instead of raw coordinates.
 
-Full deep audit lives in:
+Use the DSL when a scene needs explicit timing and choreography.
 
-- `docs/ANCHORS_DSL_PLUGIN_AUDIT.md`
+Use compile-time plugins when repetitive behavior should be generated consistently rather than written by hand.
 
-## Anchor IDs
+## Practical Rule
 
-### WhatsApp (`app_whatsapp`)
-
-- Core: `device`, `app`, `content`, `header`, `profile`
-- Input/typing: `input_area` (`inputArea` alias), `typing_indicator` (`typingIndicator` alias)
-- Message targeting: `lastMessage`, `message-N`, plus semantic message IDs from conversation runtime
-
-### X (`app_x`)
-
-- `device`, `app`, `nav_bar`
-- `timeline_header`, `timeline_feed`, `tweet_card`, `metrics_row`
-- `reply_composer`, `compose_fab`
-- `profile_header`, `notifications_list`, `dm_thread`
-
-### iMessage (`app_imessage`)
-
-- `device`, `app`
-- `imessage_list_header`, `imessage_list`
-- `imessage_thread`, `imessage_composer`
-- `imessage_info`, `imessage_media`
-
-### Notifications (`app_notification`)
-
-- `headsUpNotification`
-- `dynamicIsland`
-- `device`
-
-## Camera DSL Surface
-
-`@tokovo/dsl` camera operations:
-
-- Point API (`cam.at(...)`): `set`, `zoom`, `pan`, `animate`, `focus`, `shake`, `reset`, `punchZoom`, `dutchTilt`, `flash`, `whipPan`
-- Span API (`cam.span(...)`): `track(anchorId, { scale?, smoothing?, deadZonePx?, maxVelocityPxPerSec?, predictiveLookaheadFrames? })`
-- Preset helpers: `trackCinematic`, `trackDrama`, `trackFastBeat`, `trackCalm`
-
-## App DSL Surface
-
-### `@tokovo/apps-whatsapp`
-
-- Messaging/media: `receive`, `send`, image/video/voice/gif/sticker/document/contact/location variants
-- Realtime states: `typing`, `read`, `react`
-- Message ops: `forward`, `editMessage`, `deleteMessage`
-- Navigation: `switchTo`, `openChatList`, `openStatus`, `openCalls`, `openCommunities`, `openSettings`, `openProfile`, `goBack`
-- Group DSL: member/admin/name/info operations (`GroupBuilder`)
-
-### `@tokovo/apps-x`
-
-- Social graph: `createUser`, `setCurrentUser`, `followUser`, `unfollowUser`
-- Tweets: `postTweet`, `replyTweet`, `quoteTweet`, `repostTweet`, `likeTweet`, `viewTweet`, `bookmarkTweet`, `shareTweet`
-- Navigation/state: `navigate`, `goBack`, `setComposeDraft`, `setNotificationsTab`, `setThemeMode`
-- Messaging/notifications: `addNotification`, `createThread`, `sendMessage`
-- Bootstrap: `seed`
-
-### `@tokovo/apps-imessage`
-
-- Conversation lifecycle: create/update/open/pin/mute/group updates
-- Messaging: send/receive text+attachments, read/status, edit/delete/unsend
-- Reactions/effects: tapbacks, bubble/screen effects
-- UI state: `setScreen`, `setDraft`, `clearDraft`, `search`, `clearSearch`, `setThemeMode`
-
-## Plugin Runtime Surface
-
-- WhatsApp plugin: `packages/apps-whatsapp/src/plugin.ts`
-- X plugin: `packages/apps-x/src/plugin.ts`
-- iMessage plugin: `packages/apps-imessage/src/plugin.ts`
-
-These define reducer wiring, event kinds, lowering, layouts, audio rules, and anchors.
-
-## Camera Authoring Rules for Episodes
-
-- Prefer long `track("lastMessage")` spans over repeated `focus + reset`.
-- During typing phases, layer `track("typingIndicator")` or `track("inputArea")`.
-- For notifications: `focus("headsUpNotification")` then re-focus to conversation anchor, not `reset`.
-- Keep zoom scale moderate (`1.06` to `1.2`) for readability.
-
-Reference episode:
-
-- `packages/episodes/src/showcases/tennis-group-organic.episode.ts`
+- anchors: stable targeting
+- DSL: explicit beats
+- plugins: repetitive authoring acceleration

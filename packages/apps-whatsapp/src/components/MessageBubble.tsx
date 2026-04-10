@@ -130,6 +130,7 @@ export const MessageBubble = memo(function MessageBubble({
           readAt={message.readAt}
           status={message.status}
           starred={message.starred}
+          deliveryStage={deliveryStage}
         />
 
         {message.reactions && message.reactions.length > 0 && (
@@ -308,6 +309,7 @@ export const MessageBubble = memo(function MessageBubble({
             readAt={message.readAt}
             status={message.status}
             starred={message.starred}
+            deliveryStage={deliveryStage}
           />
         </div>
 

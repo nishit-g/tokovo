@@ -7,5 +7,7 @@ export function createSnapchatInitialState(): SnapchatState {
         currentScreen: "chat_list",
         activeConversationId: undefined,
         conversations: {},
+        drafts: {},
+        lastNavFrame: 0,
     };
 }

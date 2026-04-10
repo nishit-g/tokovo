@@ -255,9 +255,9 @@ export function useLayoutEngine(input: LayoutEngineInput): LayoutEngineOutput {
     const cached = cachedResult.current;
     if (
       cached &&
-      cached.frame === t &&
       cached.deviceId === deviceId &&
-      cached.worldSignature === worldSignature
+      cached.worldSignature === worldSignature &&
+      (cached.frame === t || cached.output.layout.cacheHint === "static")
     ) {
       return cached.output;
     }

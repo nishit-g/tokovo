@@ -1,11 +1,12 @@
 import React, { useMemo, useCallback, useRef } from "react";
-import { Audio, Sequence, staticFile } from "remotion";
+import { Html5Audio, Sequence, staticFile } from "remotion";
 import {
   WorldState,
   SoundCue,
   MusicBed,
   DEFAULT_BUS_CONFIG,
   AudioBus,
+  resolveStaticAssetSrc,
 } from "@tokovo/core";
 import { getSoundPath } from "@tokovo/core";
 import { computeSoundVolume, computeBusStates, BusState } from "@tokovo/core";
@@ -13,12 +14,13 @@ import { computeCrossfade } from "@tokovo/core";
 import { useRendererRegistries } from "./RegistryContext.js";
 
 const VOLUME_THRESHOLD = 0.001;
-const PREMOUNT_FRAMES = 30;
+export const AUDIO_PREMOUNT_FRAMES = 30;
 
 interface AudioLayerProps {
   readonly world: WorldState;
   readonly t: number;
   readonly focusDeviceId?: string;
+  readonly musicDuckMultiplierOverride?: number;
 }
 
 function ensureBuses(audio: NonNullable<WorldState["audio"]>) {
@@ -70,16 +72,18 @@ const SoundInstance: React.FC<SoundInstanceProps> = React.memo(
       <Sequence
         from={sound.startFrame}
         durationInFrames={sound.duration || undefined}
-        premountFor={PREMOUNT_FRAMES}
+        premountFor={AUDIO_PREMOUNT_FRAMES}
       >
-        <Audio
-          src={staticFile(
+        <Html5Audio
+          src={resolveStaticAssetSrc(
             getSoundPath(sound.soundId, registries.plugins.sounds),
+            staticFile,
           )}
           volume={volumeCallback}
           loop={sound.loop}
-          startFrom={sound.audioStartFrom}
+          trimBefore={sound.audioStartFrom}
           playbackRate={sound.playbackRate}
+          pauseWhenBuffering
           muted={isMuted}
         />
       </Sequence>
@@ -118,25 +122,35 @@ const MusicBedInstance: React.FC<MusicBedInstanceProps> = React.memo(
     return (
       <>
         {outgoingBed && (
-          <Sequence from={outgoingBed.startFrame} premountFor={PREMOUNT_FRAMES}>
-            <Audio
-              src={staticFile(
+          <Sequence
+            from={outgoingBed.startFrame}
+            premountFor={AUDIO_PREMOUNT_FRAMES}
+          >
+            <Html5Audio
+              src={resolveStaticAssetSrc(
                 getSoundPath(outgoingBed.soundId, registries.plugins.sounds),
+                staticFile,
               )}
               volume={outgoingFinalVolume}
               loop={outgoingBed.loop}
+              pauseWhenBuffering
               muted={isOutgoingMuted}
             />
           </Sequence>
         )}
 
-        <Sequence from={musicBed.startFrame} premountFor={PREMOUNT_FRAMES}>
-          <Audio
-            src={staticFile(
+        <Sequence
+          from={musicBed.startFrame}
+          premountFor={AUDIO_PREMOUNT_FRAMES}
+        >
+          <Html5Audio
+            src={resolveStaticAssetSrc(
               getSoundPath(musicBed.soundId, registries.plugins.sounds),
+              staticFile,
             )}
             volume={incomingFinalVolume}
             loop={musicBed.loop}
+            pauseWhenBuffering
             muted={isIncomingMuted}
           />
         </Sequence>
@@ -151,6 +165,7 @@ export const AudioLayer: React.FC<AudioLayerProps> = ({
   world,
   t,
   focusDeviceId,
+  musicDuckMultiplierOverride,
 }) => {
   const rawAudio = world.audio;
   if (!rawAudio) {
@@ -163,6 +178,23 @@ export const AudioLayer: React.FC<AudioLayerProps> = ({
     () => computeBusStates(audio, t),
     [audio, t],
   ) as Record<AudioBus, BusState>;
+
+  const effectiveBusStates = useMemo(() => {
+    if (musicDuckMultiplierOverride === undefined) {
+      return busStates;
+    }
+
+    return {
+      ...busStates,
+      music: {
+        ...busStates.music,
+        duckMultiplier: Math.min(
+          busStates.music.duckMultiplier,
+          musicDuckMultiplierOverride,
+        ),
+      },
+    };
+  }, [busStates, musicDuckMultiplierOverride]);
 
   const activeSounds = useMemo(() => {
     return Object.entries(audio.activeSounds).filter(([_, sound]) => {
@@ -180,7 +212,7 @@ export const AudioLayer: React.FC<AudioLayerProps> = ({
           instanceId={instanceId}
           sound={sound}
           compositionFrame={t}
-          busStates={busStates}
+          busStates={effectiveBusStates}
         />
       ))}
 
@@ -189,7 +221,7 @@ export const AudioLayer: React.FC<AudioLayerProps> = ({
           musicBed={audio.musicBed}
           outgoingBed={audio.outgoingMusicBed}
           compositionFrame={t}
-          busStates={busStates}
+          busStates={effectiveBusStates}
         />
       )}
     </>

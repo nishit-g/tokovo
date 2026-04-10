@@ -1,8 +1,14 @@
 # @tokovo/devices
 
-Device profiles and reducers.
+`@tokovo/devices` owns device profiles, shell rendering contracts, and device registration helpers.
 
-## Features
-- **Profiles**: `iPhone16Profile` with high-res assets.
-- **Components**: `iPhone16Frame`, `StatusBar`.
-- **Reducer**: `deviceReducer` for handling device events (LOCK, UNLOCK, OPEN_APP).
+## Responsibilities
+
+- device profile definitions
+- device registry wiring
+- device-shell rendering support
+- device-level runtime behavior used across episodes
+
+## Role In Tokovo
+
+This package is the device and OS shell layer between core runtime state and the renderer.

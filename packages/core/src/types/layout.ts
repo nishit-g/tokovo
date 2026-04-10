@@ -176,6 +176,11 @@ export interface TransitionLayoutConfig {
 export interface BaseLayoutState {
   kind: ViewKind;
   semantic?: SemanticLayoutState;
+  /**
+   * Whether the layout output is safe to reuse across frames while the world
+   * signature stays unchanged. Dynamic layouts should leave this unset.
+   */
+  cacheHint?: "static";
 }
 
 export type LayoutState =

@@ -25,13 +25,20 @@ export default defineEpisode({
       .device("phone", "iphone16", {
         app: "app_whatsapp",
         theme: "whatsapp-ghibli",
+        os: {
+          time: new Date("2025-02-02T17:20:00"),
+          battery: 76,
+          network: "5G",
+        },
+      })
+      .snapshot("app_whatsapp", "phone", {
         conversations: [
           {
             id: "dm_totoro",
             name: "Totoro",
             avatar: "/avatars/totoro.jpg",
             hasStatus: true,
-            initialMessages: [
+            messages: [
               {
                 from: "system",
                 type: "system",
@@ -61,16 +68,11 @@ export default defineEpisode({
             avatar: "/avatars/group-forest.jpg",
             type: "group",
             hasStatus: true,
-            initialMessages: [
+            messages: [
               { from: "Soot", text: "Tea at dusk?", timestamp: -3600 },
             ],
           },
         ],
-        os: {
-          time: new Date("2025-02-02T17:20:00"),
-          battery: 76,
-          network: "5G",
-        },
       })
       .background({ type: "image", src: "/backgrounds/ghibli-forest.png" })
       .track(

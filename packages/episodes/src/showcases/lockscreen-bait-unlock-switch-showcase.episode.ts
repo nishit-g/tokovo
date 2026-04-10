@@ -37,6 +37,13 @@ export default defineEpisode({
         locked: true,
         screenRecording: true,
         installedApps: ["app_whatsapp", "app_x", "app_camera"],
+        os: {
+          time: new Date("2025-02-10T21:08:00"),
+          battery: 62,
+          network: "5G",
+        },
+      })
+      .snapshot("app_whatsapp", "phone", {
         conversations: [
           {
             id: "dm_bait",
@@ -45,13 +52,40 @@ export default defineEpisode({
             unreadCount: 1,
           },
         ],
-        os: {
-          time: new Date("2025-02-10T21:08:00"),
-          battery: 62,
-          network: "5G",
-        },
       })
       .background({ type: "image", src: "/backgrounds/neon-city.png" })
+      .snapshot("app_x", "phone", {
+        users: [
+          {
+            id: "u_me",
+            name: "Me",
+            handle: "me",
+            followers: 2200,
+            following: 180,
+            verified: null,
+          },
+          {
+            id: "u_him",
+            name: "Him",
+            handle: "him",
+            followers: 19000,
+            following: 400,
+            verified: "blue",
+          },
+        ],
+        tweets: [
+          {
+            id: "tw_1",
+            authorId: "u_him",
+            text: "Receipts drop tonight.",
+            createdAt: new Date("2025-02-10T21:07:40").getTime(),
+            viewCount: 32600,
+            shareCount: 330,
+            bookmarkCount: 910,
+          },
+        ],
+      })
+      .view("app_x", "phone", { screen: "timeline" })
       .track(
         "app_whatsapp",
         (getOrder) => new WhatsAppTrackBuilder(30, "phone", "dm_bait", getOrder),
@@ -68,37 +102,6 @@ export default defineEpisode({
         "app_x",
         (getOrder) => new XTrackBuilder(30, "phone", getOrder),
         (x) => {
-          x.seed({
-            users: [
-              {
-                id: "u_me",
-                name: "Me",
-                handle: "me",
-                followers: 2200,
-                following: 180,
-                verified: null,
-              },
-              {
-                id: "u_him",
-                name: "Him",
-                handle: "him",
-                followers: 19000,
-                following: 400,
-                verified: "blue",
-              },
-            ],
-            tweets: [
-              {
-                id: "tw_1",
-                authorId: "u_him",
-                text: "Receipts drop tonight.",
-                createdAt: new Date("2025-02-10T21:07:40").getTime(),
-                viewCount: 32600,
-                shareCount: 330,
-                bookmarkCount: 910,
-              },
-            ],
-          });
           x.at("14.2s").navigate("timeline");
           x.at("16.0s").likeTweet("tw_1", "u_me");
           x.at("17.0s").navigate("tweet", { tweetId: "tw_1" });

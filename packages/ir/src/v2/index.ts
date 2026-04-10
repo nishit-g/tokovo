@@ -57,9 +57,10 @@ export {
 
 // Episode IR
 export type {
-  ConversationConfig,
   OSConfig,
   DeviceConfig,
+  AppSnapshotEntry,
+  AppInitialViewEntry,
   Marker,
   Section,
   DirectorStyle,

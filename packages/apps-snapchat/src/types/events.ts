@@ -72,6 +72,12 @@ export interface StreakUpdatePayload {
 export interface ScreenPayload {
     screen: SnapchatScreen;
     conversationId?: string;
+    snapId?: string;
+}
+
+export interface DraftPayload {
+    conversationId: string;
+    text: string;
 }
 
 export interface MessageStatusPayload {
@@ -106,6 +112,7 @@ export type SnapchatEventMap = {
     SNAPCHAT_TYPING_END: TypingPayload;
     SNAPCHAT_STREAK_UPDATE: StreakUpdatePayload;
     SNAPCHAT_SET_SCREEN: ScreenPayload;
+    SNAPCHAT_SET_DRAFT: DraftPayload;
     SNAPCHAT_MESSAGE_STATUS_SET: MessageStatusPayload;
     SNAPCHAT_SCREENSHOT: ScreenshotPayload;
     SNAPCHAT_SAVE_MESSAGE: SaveMessagePayload;

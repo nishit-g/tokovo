@@ -39,6 +39,10 @@ export function createRegistry<K extends string | symbol, V>(
   return {
     register(key: K, value: V): void {
       if (items.has(key)) {
+        const existing = items.get(key);
+        if (Object.is(existing, value)) {
+          return;
+        }
         const isStrict = options.strict ?? globalStrictMode;
         if (isStrict) {
           throw new Error(

@@ -85,6 +85,17 @@ export function getCachedStateForFrame(
     return { state: cache.lastState, fromFrame: t };
   }
 
+  if (
+    cache.lastState &&
+    cache.lastComputedFrame >= 0 &&
+    cache.lastComputedFrame < t
+  ) {
+    return {
+      state: cache.lastState,
+      fromFrame: cache.lastComputedFrame,
+    };
+  }
+
   const nearestKeyframe =
     Math.floor(t / cache.keyframeInterval) * cache.keyframeInterval;
   const cached = cache.keyframeStates.get(nearestKeyframe);
@@ -93,13 +104,22 @@ export function getCachedStateForFrame(
     return { state: cached, fromFrame: nearestKeyframe };
   }
 
-  for (let i = cache.sortedFrames.length - 1; i >= 0; i--) {
+  let low = 0;
+  let high = cache.sortedFrames.length;
+  while (low < high) {
+    const mid = (low + high) >>> 1;
+    if (cache.sortedFrames[mid] < t) {
+      low = mid + 1;
+    } else {
+      high = mid;
+    }
+  }
+
+  for (let i = low - 1; i >= 0; i--) {
     const frame = cache.sortedFrames[i];
-    if (frame < t) {
-      const state = cache.keyframeStates.get(frame);
-      if (state) {
-        return { state, fromFrame: frame };
-      }
+    const state = cache.keyframeStates.get(frame);
+    if (state) {
+      return { state, fromFrame: frame };
     }
   }
 

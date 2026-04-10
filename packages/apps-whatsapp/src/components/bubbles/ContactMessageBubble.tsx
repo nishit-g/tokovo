@@ -1,8 +1,9 @@
 import React, { memo } from "react";
-import { Img, staticFile, useCurrentFrame } from "remotion";
+import { Img, staticFile } from "remotion";
+import { resolveStaticAssetSrc } from "@tokovo/core";
 import { MediaBubbleBase, DoubleCheckIcon } from "./shared.js";
 import { useTheme } from "../../theme/ThemeContext.js";
-import { resolveDeliveryStage } from "../../utils/status.js";
+import type { DeliveryStage } from "../../utils/status.js";
 
 export interface ContactMessageBubbleProps {
   contactName: string;
@@ -18,6 +19,7 @@ export interface ContactMessageBubbleProps {
   status?: "sending" | "sent" | "delivered" | "read";
   starred?: boolean;
   platform?: string;
+  deliveryStage?: DeliveryStage;
 }
 
 export const ContactMessageBubble = memo(function ContactMessageBubble({
@@ -33,23 +35,10 @@ export const ContactMessageBubble = memo(function ContactMessageBubble({
   readAt,
   status,
   starred = false,
+  deliveryStage,
 }: ContactMessageBubbleProps) {
   const theme = useTheme();
-  const currentFrame = useCurrentFrame();
   const paddingH = theme.spacing.messagePaddingHorizontal - 4;
-  const deliveryStage =
-    isMe
-      ? resolveDeliveryStage(
-        {
-          from: "me",
-          at: messageAt,
-          deliveredAt,
-          readAt,
-          status,
-        },
-        currentFrame,
-      )
-      : undefined;
 
   return (
     <MediaBubbleBase
@@ -62,6 +51,7 @@ export const ContactMessageBubble = memo(function ContactMessageBubble({
       readAt={readAt}
       status={status}
       starred={starred}
+      deliveryStage={deliveryStage}
       overlayTimestamp
       noPadding
       minWidth={200}
@@ -77,11 +67,7 @@ export const ContactMessageBubble = memo(function ContactMessageBubble({
       >
         {contactAvatarUrl ? (
           <Img
-            src={
-              contactAvatarUrl.startsWith("/")
-                ? staticFile(contactAvatarUrl)
-                : contactAvatarUrl
-            }
+            src={resolveStaticAssetSrc(contactAvatarUrl, staticFile)}
             alt=""
             style={{
               width: 44,
@@ -90,6 +76,7 @@ export const ContactMessageBubble = memo(function ContactMessageBubble({
               objectFit: "cover",
               flexShrink: 0,
             }}
+            pauseWhenLoading
           />
         ) : (
           <div

@@ -275,9 +275,13 @@ export const linkedInReducer: PluginReducer<"app_linkedin"> = (
     }
     case "LINKEDIN_ADD_DM_MESSAGE": {
       const payload = event.payload as LIDMMessage;
-      const thread = app.dmThreads.find((t) => t.id === payload.threadId);
+      let thread = app.dmThreads.find((t) => t.id === payload.threadId);
       if (!thread) {
         app.dmThreads.push({ id: payload.threadId, participantIds: [], messageIds: [] });
+        thread = app.dmThreads.find((t) => t.id === payload.threadId);
+      }
+      if (!thread) {
+        break;
       }
       const msg: LIDMMessage = {
         id: payload.id,
@@ -287,8 +291,7 @@ export const linkedInReducer: PluginReducer<"app_linkedin"> = (
         createdAt: payload.createdAt ?? event.at,
       };
       app.dmMessages.push(msg);
-      const th = app.dmThreads.find((t) => t.id === payload.threadId)!;
-      th.messageIds.push(msg.id);
+      thread.messageIds.push(msg.id);
       break;
     }
     default:

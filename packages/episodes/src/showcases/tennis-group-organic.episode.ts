@@ -26,6 +26,13 @@ export default defineEpisode({
     })
       .device("phone", "iphone16", {
         app: "app_whatsapp",
+        os: {
+          time: new Date("2025-02-07T18:30:00"),
+          battery: 79,
+          network: "5G",
+        },
+      })
+      .snapshot("app_whatsapp", "phone", {
         conversations: [
           {
             id: "group_weekend_tennis",
@@ -35,11 +42,6 @@ export default defineEpisode({
             participants: ["me", "Alex", "Nia", "Jay"],
           },
         ],
-        os: {
-          time: new Date("2025-02-07T18:30:00"),
-          battery: 79,
-          network: "5G",
-        },
       })
       .track(
         "app_whatsapp",

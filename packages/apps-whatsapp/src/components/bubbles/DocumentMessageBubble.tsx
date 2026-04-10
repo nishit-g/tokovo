@@ -1,6 +1,7 @@
 import React, { memo } from "react";
 import { MediaBubbleBase } from "./shared.js";
 import { useTheme } from "../../theme/ThemeContext.js";
+import type { DeliveryStage } from "../../utils/status.js";
 
 export interface DocumentMessageBubbleProps {
   fileName: string;
@@ -17,6 +18,7 @@ export interface DocumentMessageBubbleProps {
   status?: "sending" | "sent" | "delivered" | "read";
   starred?: boolean;
   platform?: string;
+  deliveryStage?: DeliveryStage;
 }
 
 export const DocumentMessageBubble = memo(function DocumentMessageBubble({
@@ -33,6 +35,7 @@ export const DocumentMessageBubble = memo(function DocumentMessageBubble({
   readAt,
   status,
   starred = false,
+  deliveryStage,
 }: DocumentMessageBubbleProps) {
   const theme = useTheme();
   const getIconColor = () => {
@@ -57,6 +60,7 @@ export const DocumentMessageBubble = memo(function DocumentMessageBubble({
       readAt={readAt}
       status={status}
       starred={starred}
+      deliveryStage={deliveryStage}
       minWidth={200}
       maxWidth={280}
     >

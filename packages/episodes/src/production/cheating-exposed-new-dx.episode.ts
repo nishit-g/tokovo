@@ -29,12 +29,19 @@ export default defineEpisode({
     })
       .device("phone", "iphone16", {
         app: "app_whatsapp",
+        os: {
+          time: new Date("2024-12-18T09:15:00"),
+          battery: 78,
+          network: "5G",
+        },
+      })
+      .snapshot("app_whatsapp", "phone", {
         conversations: [
           {
             id: "dm_jake",
             name: "Jake ❤️",
             avatar: "/avatars/jake.png",
-            initialMessages: [
+            messages: [
               { from: "Jake", text: "goodnight babe 😘", timestamp: -86400 },
               { from: "Me", text: "goodnight 💕", timestamp: -86300 },
             ],
@@ -43,14 +50,9 @@ export default defineEpisode({
             id: "dm_sarah",
             name: "Sarah 💕",
             avatar: "/avatars/sarah.png",
-            initialMessages: [],
+            messages: [],
           },
         ],
-        os: {
-          time: new Date("2024-12-18T09:15:00"),
-          battery: 78,
-          network: "5G",
-        },
       })
       .background({ type: "image", src: "/backgrounds/cozy-bedroom.png" })
 

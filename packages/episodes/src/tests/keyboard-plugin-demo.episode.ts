@@ -24,6 +24,8 @@ export default defineEpisode({
     episode("keyboard-plugin-demo", { fps: 30, duration: "30s" })
       .device("phone", "iphone16", {
         app: "app_whatsapp",
+      })
+      .snapshot("app_whatsapp", "phone", {
         conversations: [
           { id: "dm_sarah", name: "Sarah", avatar: "/avatars/sarah.jpg" },
         ],

@@ -29,6 +29,13 @@ export default defineEpisode({
       .device("phone", "iphone16", {
         app: "app_whatsapp",
         theme: "whatsapp-cyberpunk",
+        os: {
+          time: new Date("2077-11-21T23:45:00"),
+          battery: 77,
+          network: "5G",
+        },
+      })
+      .snapshot("app_whatsapp", "phone", {
         conversations: [
           {
             id: "netrunner_chat",
@@ -36,11 +43,6 @@ export default defineEpisode({
             avatar: "/avatars/netrunner.jpg",
           },
         ],
-        os: {
-          time: new Date("2077-11-21T23:45:00"),
-          battery: 77,
-          network: "5G",
-        },
       })
       .background({ type: "video", src: "/backgrounds/bokeh-loop.mp4" })
 

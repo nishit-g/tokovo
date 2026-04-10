@@ -25,6 +25,13 @@ export default defineEpisode({
     })
       .device("phone", "iphone16", {
         app: "app_whatsapp",
+        os: {
+          time: new Date("2025-02-10T21:08:00"),
+          battery: 64,
+          network: "5G",
+        },
+      })
+      .snapshot("app_whatsapp", "phone", {
         conversations: [
           {
             id: "dm_alert",
@@ -33,13 +40,83 @@ export default defineEpisode({
             unreadCount: 4,
           },
         ],
-        os: {
-          time: new Date("2025-02-10T21:08:00"),
-          battery: 64,
-          network: "5G",
-        },
       })
       .background({ type: "image", src: "/backgrounds/neon-city.png" })
+      .snapshot("app_x", "phone", {
+        users: [
+          {
+            id: "u_me",
+            name: "Nishit",
+            handle: "nishit",
+            bio: "Building narrative engines.",
+            followers: 25600,
+            following: 530,
+            verified: "blue",
+          },
+          {
+            id: "u_maya",
+            name: "Maya",
+            handle: "maya_ops",
+            bio: "Growth and distribution",
+            followers: 11800,
+            following: 640,
+            verified: "gold",
+          },
+          {
+            id: "u_zen",
+            name: "Zen",
+            handle: "zenclips",
+            bio: "Edits and viral cuts",
+            followers: 54000,
+            following: 420,
+            verified: "blue",
+          },
+        ],
+        follows: [
+          { followerId: "u_me", followingId: "u_maya" },
+          { followerId: "u_me", followingId: "u_zen" },
+        ],
+        currentUserId: "u_me",
+        tweets: [
+          {
+            id: "tw_hot_1",
+            authorId: "u_zen",
+            text: "This UI camera pacing is CRAZY good. Who made this?",
+            createdAt: new Date("2025-02-10T21:05:10").getTime(),
+            hashtags: ["viral", "ui"],
+            mentions: ["u_me"],
+            viewCount: 32600,
+            shareCount: 330,
+            bookmarkCount: 910,
+          },
+          {
+            id: "tw_hot_2",
+            authorId: "u_me",
+            text: "Part 2 dropping now. Anchor-driven cuts only.",
+            createdAt: new Date("2025-02-10T21:06:00").getTime(),
+            hashtags: ["buildinpublic"],
+            mentions: [],
+            viewCount: 16200,
+            shareCount: 180,
+            bookmarkCount: 402,
+          },
+        ],
+        notifications: [
+          {
+            id: "nt_hot_1",
+            type: "mention",
+            actorId: "u_zen",
+            tweetId: "tw_hot_1",
+            isMention: true,
+            createdAt: new Date("2025-02-10T21:06:40").getTime(),
+          },
+        ],
+      })
+      .view("app_x", "phone", {
+        screen: "timeline",
+        notificationsTab: "all",
+        composeDraft: "",
+      })
       .track(
         "app_whatsapp",
         (getOrder) => new WhatsAppTrackBuilder(30, "phone", "dm_alert", getOrder),
@@ -57,83 +134,6 @@ export default defineEpisode({
         "app_x",
         (getOrder) => new XTrackBuilder(30, "phone", getOrder),
         (x) => {
-          x.seed(
-            {
-              users: [
-                {
-                  id: "u_me",
-                  name: "Nishit",
-                  handle: "nishit",
-                  bio: "Building narrative engines.",
-                  followers: 25600,
-                  following: 530,
-                  verified: "blue",
-                },
-                {
-                  id: "u_maya",
-                  name: "Maya",
-                  handle: "maya_ops",
-                  bio: "Growth and distribution",
-                  followers: 11800,
-                  following: 640,
-                  verified: "gold",
-                },
-                {
-                  id: "u_zen",
-                  name: "Zen",
-                  handle: "zenclips",
-                  bio: "Edits and viral cuts",
-                  followers: 54000,
-                  following: 420,
-                  verified: "blue",
-                },
-              ],
-              follows: [
-                { followerId: "u_me", followingId: "u_maya" },
-                { followerId: "u_me", followingId: "u_zen" },
-              ],
-              currentUserId: "u_me",
-              tweets: [
-                {
-                  id: "tw_hot_1",
-                  authorId: "u_zen",
-                  text: "This UI camera pacing is CRAZY good. Who made this?",
-                  createdAt: new Date("2025-02-10T21:05:10").getTime(),
-                  hashtags: ["viral", "ui"],
-                  mentions: ["u_me"],
-                  viewCount: 32600,
-                  shareCount: 330,
-                  bookmarkCount: 910,
-                },
-                {
-                  id: "tw_hot_2",
-                  authorId: "u_me",
-                  text: "Part 2 dropping now. Anchor-driven cuts only.",
-                  createdAt: new Date("2025-02-10T21:06:00").getTime(),
-                  hashtags: ["buildinpublic"],
-                  mentions: [],
-                  viewCount: 16200,
-                  shareCount: 180,
-                  bookmarkCount: 402,
-                },
-              ],
-              notifications: [
-                {
-                  id: "nt_hot_1",
-                  type: "mention",
-                  actorId: "u_zen",
-                  tweetId: "tw_hot_1",
-                  isMention: true,
-                  createdAt: new Date("2025-02-10T21:06:40").getTime(),
-                },
-              ],
-              screen: "timeline",
-              notificationsTab: "all",
-              composeDraft: "",
-            },
-            "0s",
-          );
-
           x.at("6.4s").navigate("timeline");
           x.at("7s").setComposeDraft("Part 2 live. Timeline + breakdown below.");
           x.at("7.4s").postTweet({

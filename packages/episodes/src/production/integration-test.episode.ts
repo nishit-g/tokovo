@@ -44,15 +44,17 @@ export default defineEpisode({
       })
       .device("phone", "iphone16", {
         app: "app_whatsapp",
-        conversations: [
-          { id: "dm_alice", name: "Alice", avatar: "/avatars/alice.png" },
-          { id: "dm_bob", name: "Bob", avatar: "/avatars/bob.png" },
-        ],
         os: {
           time: new Date("2025-01-29T14:30:00"),
           battery: 85,
           network: "wifi",
         },
+      })
+      .snapshot("app_whatsapp", "phone", {
+        conversations: [
+          { id: "dm_alice", name: "Alice", avatar: "/avatars/alice.png" },
+          { id: "dm_bob", name: "Bob", avatar: "/avatars/bob.png" },
+        ],
       })
 
       .track(

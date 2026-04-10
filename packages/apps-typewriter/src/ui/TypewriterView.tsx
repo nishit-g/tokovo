@@ -3,7 +3,7 @@ import type { AppViewProps } from "@tokovo/react";
 import { Easing, interpolate, useVideoConfig } from "remotion";
 
 import { TYPEWRITER_APP_ID } from "../constants.js";
-import type { TypewriterState } from "../runtime/state.js";
+import type { TypewriterGlyph, TypewriterPage, TypewriterState } from "../runtime/state.js";
 import { resolveTypewriterTheme } from "../theme/resolve.js";
 import { computeTypewriterGeometry } from "../anchors/geometry.js";
 import { TYPEWRITER_KEYBOARD_ROWS, type TypewriterKeyId } from "../keyboard/index.js";
@@ -61,8 +61,12 @@ export const TypewriterView: React.FC<AppViewProps> = ({ world, t = 0 }) => {
   const rows = Math.max(1, Math.floor(theme.layout.maxRows));
   const cols = Math.max(1, Math.floor(theme.layout.maxCols));
   const total = rows * cols;
-  const page = (s.pages?.[pageIndex] ?? { index: pageIndex, cells: [] }) as any;
-  const cells: Array<any> = Array.isArray(page.cells) && page.cells.length === total ? page.cells : new Array(total).fill(null);
+  const fallbackPage: TypewriterPage = { index: pageIndex, cells: [] };
+  const page = s.pages?.[pageIndex] ?? fallbackPage;
+  const cells: Array<TypewriterGlyph | null> =
+    Array.isArray(page.cells) && page.cells.length === total
+      ? page.cells
+      : new Array<TypewriterGlyph | null>(total).fill(null);
 
   const cursorRow = Math.max(0, Math.min(rows - 1, Math.floor(s.cursor.row ?? 0)));
   const cursorCol = Math.max(0, Math.min(cols - 1, Math.floor(s.cursor.col ?? 0)));

@@ -24,6 +24,13 @@ export default defineEpisode({
     })
       .device("phone", "iphone16", {
         app: "app_whatsapp",
+        os: {
+          time: new Date("2025-02-14T21:30:00"),
+          battery: 45,
+          network: "5G",
+        },
+      })
+      .snapshot("app_whatsapp", "phone", {
         conversations: [
           {
             id: "dm_riya",
@@ -32,11 +39,6 @@ export default defineEpisode({
             unreadCount: 1,
           },
         ],
-        os: {
-          time: new Date("2025-02-14T21:30:00"),
-          battery: 45,
-          network: "5G",
-        },
       })
       .background({ type: "solid", color: "#1a1a2e" })
       .track(
@@ -50,8 +52,6 @@ export default defineEpisode({
           return builder;
         },
         (wa) => {
-          const fps = 30;
-
           // Scene 1: Opening Match
           wa.openChatList("0s");
           wa.switchTo("dm_riya", "1.5s");

@@ -8,6 +8,7 @@
 // Preparation
 export { prepareTrackEpisode } from "./prepare.js";
 export type { PreparedTrackEpisode } from "./prepare.js";
+export { collectEpisodeAssetRefs } from "./asset-refs.js";
 
 // Lowering
 export {

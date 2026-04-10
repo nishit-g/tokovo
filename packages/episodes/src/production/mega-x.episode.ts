@@ -1,9 +1,5 @@
 import { defineEpisode } from "@tokovo/episodes";
-import {
-  applyStudioStoryKitConfig,
-  storyEpisode,
-} from "../story-kit/index.js";
-import { megaXStoryKitConfig } from "./mega-x.story-kit.js";
+import { episode } from "../code-first-episode.js";
 
 export default defineEpisode({
   meta: {
@@ -20,236 +16,196 @@ export default defineEpisode({
     apps: ["app_x"],
   },
   build: () => {
-    const ep = applyStudioStoryKitConfig(storyEpisode("mega-x", {
+    const baseTs = new Date("2025-02-14T22:10:00").getTime();
+
+    return episode("mega-x", {
       fps: 30,
       duration: "25s",
       title: "Mega X",
-    }), megaXStoryKitConfig);
-
-    const kit = ep.kit();
-    const meUser = kit.project.xUser("me", {
-      bio: "Shipping, screenshotting, and surviving founder takes.",
-      followers: 18300,
-      following: 489,
-      verified: "blue",
-    });
-    const founderUser = kit.project.xUser("founder", {
-      bio: "Founder. Visionary. Sleep is a legacy tax.",
-      followers: 97200,
-      following: 91,
-      verified: "gold",
-    });
-    const memeUser = kit.project.xUser("meme", {
-      bio: "Screenshots > strategy decks.",
-      followers: 41200,
-      following: 699,
-      verified: null,
-    });
-    const vcUser = kit.project.xUser("vc", {
-      bio: "Early stage investor. Strong opinions, weak coffee.",
-      followers: 28500,
-      following: 411,
-      verified: "grey",
-    });
-    const phone = kit.project.device("main_phone", {
-      profile: "iphone16",
-      app: "app_x",
-      os: {
-        time: new Date("2025-02-14T22:12:00"),
-        battery: 68,
-        network: "5G",
-      },
-    });
-    const baseTs = new Date("2025-02-14T22:10:00").getTime();
-
-    return ep
-      .background(kit.background ?? { type: "image", src: "/backgrounds/night-window.png" })
-      .device("phone", phone.profile, phone.options)
-      .x("phone", (x) => {
-        x.seed(
+    })
+      .device("phone", "iphone16", {
+        app: "app_x",
+        installedApps: ["app_x"],
+        os: {
+          time: new Date("2025-02-14T22:12:00"),
+          battery: 68,
+          network: "5G",
+        },
+      })
+      .background({ type: "image", src: "/backgrounds/night-window.png" })
+      .snapshot("app_x", "phone", {
+        currentUserId: "u_me",
+        users: [
           {
-            users: [meUser, founderUser, memeUser, vcUser],
-            follows: [
-              { followerId: meUser.id, followingId: founderUser.id },
-              { followerId: meUser.id, followingId: memeUser.id },
-              { followerId: meUser.id, followingId: vcUser.id },
-            ],
-            currentUserId: meUser.id,
-            tweets: [
-              {
-                id: "tw-hook",
-                authorId: founderUser.id,
-                text:
-                  "Hiring Founding Intern (unpaid): 20 hrs/day, no weekends, must own backend+frontend+founder therapy. Equity in vibes.",
-                hashtags: ["hiring", "startup"],
-                media: {
-                  type: "image",
-                  aspect: "wide",
-                  urls: [kit.asset("founder_whiteboard")],
-                },
-                createdAt: baseTs - 170_000,
-                viewCount: 182400,
-                shareCount: 1730,
-                bookmarkCount: 4200,
-              },
-              {
-                id: "tw-link",
-                authorId: vcUser.id,
-                text: "Thread: Why founders confuse urgency with leadership.",
-                hashtags: ["startups", "leadership"],
-                linkPreview: {
-                  url: "https://example.com/essay/founder-urgency",
-                  domain: "example.com",
-                  title: "Urgency Theater Is Not Leadership",
-                  description:
-                    "A practical guide to avoiding burnout culture disguised as ambition.",
-                  imageUrl: kit.asset("blog_launch", "linkPreviewImages"),
-                },
-                createdAt: baseTs - 260_000,
-                viewCount: 43100,
-                shareCount: 512,
-                bookmarkCount: 1700,
-              },
-              {
-                id: "tw-meme",
-                authorId: memeUser.id,
-                text: "Bro posted a job description or a hostage note?",
-                mentions: [founderUser.id],
-                createdAt: baseTs - 90_000,
-                viewCount: 98200,
-                shareCount: 980,
-                bookmarkCount: 2700,
-              },
-            ],
-            threads: [
-              {
-                id: "dm-fire",
-                participantIds: [
-                  meUser.id,
-                  founderUser.id,
-                  memeUser.id,
-                  vcUser.id,
-                ],
-              },
-            ],
-            messages: [
-              {
-                id: "msg-seed-1",
-                threadId: "dm-fire",
-                senderId: founderUser.id,
-                text: "Need damage control. Fast.",
-                createdAt: baseTs - 50_000,
-              },
-            ],
-            notifications: [
-              {
-                id: "nt-seed-1",
-                type: "mention",
-                actorId: memeUser.id,
-                tweetId: "tw-hook",
-                isMention: true,
-                createdAt: baseTs - 35_000,
-              },
-            ],
+            id: "u_me",
+            name: "Me",
+            handle: "operator",
+            bio: "Shipping, screenshotting, and surviving founder takes.",
+            followers: 18300,
+            following: 489,
+            verified: "blue",
           },
-          "0s",
-        );
-
-        // Hook: react to the absurd hiring tweet.
-        x.at("1.5s").likeTweet("tw-hook", meUser.id);
-        x.at("1.8s").shareTweet("tw-hook", meUser.id);
-        x.at("2.2s").navigate("tweet", { tweetId: "tw-hook" });
-
-        // Compose a savage quote-post (typed).
+          {
+            id: "u_founder",
+            name: "Founder",
+            handle: "foundervibes",
+            bio: "Visionary. Sleep is a legacy tax.",
+            followers: 97200,
+            following: 91,
+            verified: "gold",
+          },
+          {
+            id: "u_meme",
+            name: "Meme",
+            handle: "deckleaks",
+            bio: "Screenshots > strategy decks.",
+            followers: 41200,
+            following: 699,
+            verified: null,
+          },
+          {
+            id: "u_vc",
+            name: "VC",
+            handle: "termcheetah",
+            bio: "Early stage investor. Strong opinions, weak coffee.",
+            followers: 28500,
+            following: 411,
+            verified: "grey",
+          },
+        ],
+        follows: [
+          { followerId: "u_me", followingId: "u_founder" },
+          { followerId: "u_me", followingId: "u_meme" },
+          { followerId: "u_me", followingId: "u_vc" },
+        ],
+        tweets: [
+          {
+            id: "tw_hook",
+            authorId: "u_founder",
+            text:
+              "Hiring Founding Intern (unpaid): 20 hrs/day, no weekends, must own backend+frontend+founder therapy. Equity in vibes.",
+            createdAt: baseTs - 170_000,
+            viewCount: 182400,
+            shareCount: 1730,
+            bookmarkCount: 4200,
+            hashtags: ["hiring", "startup"],
+            media: {
+              type: "image",
+              aspect: "wide",
+              urls: ["/placeholders/media.svg"],
+            },
+          },
+          {
+            id: "tw_meme",
+            authorId: "u_meme",
+            text: "Bro posted a job description or a hostage note?",
+            createdAt: baseTs - 90_000,
+            viewCount: 98200,
+            shareCount: 980,
+            bookmarkCount: 2700,
+            mentions: ["u_founder"],
+          },
+        ],
+        threads: [
+          {
+            id: "dm_fire",
+            participantIds: ["u_me", "u_founder", "u_meme", "u_vc"],
+          },
+        ],
+        messages: [
+          {
+            id: "msg_seed_1",
+            threadId: "dm_fire",
+            senderId: "u_founder",
+            text: "Need damage control. Fast.",
+            createdAt: baseTs - 50_000,
+          },
+        ],
+        notifications: [
+          {
+            id: "nt_seed_1",
+            type: "mention",
+            actorId: "u_meme",
+            tweetId: "tw_hook",
+            isMention: true,
+            createdAt: baseTs - 35_000,
+          },
+        ],
+      })
+      .view("app_x", "phone", { screen: "timeline" })
+      .x("phone", (x) => {
+        x.at("1.5s").likeTweet("tw_hook", "u_me");
+        x.at("1.8s").shareTweet("tw_hook", "u_me");
+        x.at("2.2s").navigate("tweet", { tweetId: "tw_hook" });
         x.at("4.8s").navigate("compose");
         x.at("5.2s").postTweet({
-          id: "tw-quote-burn",
-          authorId: meUser.id,
-          quoteTweetId: "tw-hook",
+          id: "tw_quote_burn",
+          authorId: "u_me",
+          quoteTweetId: "tw_hook",
           text:
             "Founding intern? Brother this is not a role, this is a side quest boss fight.",
           typed: true,
-          charDelay: 1.8,
+          charDelay: 2,
           createdAt: baseTs + 90_000,
           hashtags: ["startup", "founderlogic"],
-          mentions: [founderUser.id],
+          mentions: ["u_founder"],
         });
-        x.at("6.6s").navigate("tweet", { tweetId: "tw-quote-burn" });
-
-        // Explosion: notifications pile in.
-        x.at("7.1s").addNotification({
-          id: "nt-burst-1",
+        x.at("6.8s").navigate("tweet", { tweetId: "tw_quote_burn" });
+        x.at("7.3s").addNotification({
+          id: "nt_burst_1",
           type: "like",
-          actorId: vcUser.id,
-          tweetId: "tw-quote-burn",
+          actorId: "u_vc",
+          tweetId: "tw_quote_burn",
         });
-        x.at("7.25s").addNotification({
-          id: "nt-burst-2",
+        x.at("7.5s").addNotification({
+          id: "nt_burst_2",
           type: "repost",
-          actorId: memeUser.id,
-          tweetId: "tw-quote-burn",
+          actorId: "u_meme",
+          tweetId: "tw_quote_burn",
         });
-        x.at("7.4s").addNotification({
-          id: "nt-burst-3",
-          type: "mention",
-          actorId: vcUser.id,
-          tweetId: "tw-hook",
-          isMention: true,
-        });
-        x.at("7.55s").addNotification({
-          id: "nt-burst-4",
+        x.at("7.8s").addNotification({
+          id: "nt_burst_3",
           type: "follow",
-          actorId: vcUser.id,
+          actorId: "u_vc",
         });
-        x.at("8.1s").navigate("notifications");
-        x.at("8.9s").setNotificationsTab("mentions");
-
-        // Damage control: group DM starts melting.
-        x.at("10s").navigate("messages");
-        x.at("10.8s").sendMessage({
-          id: "msg-fire-2",
-          threadId: "dm-fire",
-          senderId: vcUser.id,
+        x.at("8.4s").navigate("notifications");
+        x.at("9.0s").setNotificationsTab("mentions");
+        x.at("10.2s").navigate("messages");
+        x.at("11.0s").sendMessage({
+          id: "msg_fire_2",
+          threadId: "dm_fire",
+          senderId: "u_vc",
           text: "Bro your post is now in three investor WhatsApp groups.",
           createdAt: baseTs + 155_000,
         });
-        x.at("11.2s").sendMessage({
-          id: "msg-fire-3",
-          threadId: "dm-fire",
-          senderId: memeUser.id,
-          text: "Delete tweet or delete company. pick one.",
+        x.at("11.5s").sendMessage({
+          id: "msg_fire_3",
+          threadId: "dm_fire",
+          senderId: "u_meme",
+          text: "Delete tweet or delete company. Pick one.",
           createdAt: baseTs + 165_000,
         });
-        x.at("11.9s").navigate("thread", { threadId: "dm-fire" });
-        x.at("12.3s").sendMessage({
-          id: "msg-fire-4",
-          threadId: "dm-fire",
-          senderId: founderUser.id,
+        x.at("11.9s").navigate("thread", { threadId: "dm_fire" });
+        x.at("12.6s").sendMessage({
+          id: "msg_fire_4",
+          threadId: "dm_fire",
+          senderId: "u_founder",
           text: "Can we call it an experiment in founder stamina?",
           createdAt: baseTs + 181_000,
         });
-        x.at("12.9s").sendMessage({
-          id: "msg-fire-5",
-          threadId: "dm-fire",
-          senderId: meUser.id,
+        x.at("13.2s").sendMessage({
+          id: "msg_fire_5",
+          threadId: "dm_fire",
+          senderId: "u_me",
           text: "Call it what it is: unpaid internship cosplay.",
           createdAt: baseTs + 190_000,
           typed: true,
-          charDelay: 1.6,
+          charDelay: 2,
         });
-        x.at("13.8s").sendMessage({
-          id: "msg-fire-6",
-          threadId: "dm-fire",
-          senderId: vcUser.id,
-          text: "PR draft: 'that was satire' and maybe touch grass.",
-          createdAt: baseTs + 204_000,
-        });
-
-        // Expose the persona.
-        x.at("15.2s").navigate("profile", { userId: founderUser.id });
+        x.at("15.2s").navigate("profile", { userId: "u_founder" });
         x.at("16.8s").postTweet({
-          id: "tw-founder-apology",
-          authorId: founderUser.id,
+          id: "tw_founder_apology",
+          authorId: "u_founder",
           text:
             "Clarification: previous intern post was satire. We deeply value sleep, labor law, and human knees.",
           createdAt: baseTs + 228_000,
@@ -259,67 +215,18 @@ export default defineEpisode({
             title: "Culture Update",
             description:
               "We are committed to healthy work rhythms and clear hiring practices.",
-            imageUrl: kit.asset("product_hunt", "linkPreviewImages"),
+            imageUrl: "/placeholders/media.svg",
           },
-          viewCount: 9400,
-          shareCount: 210,
-          bookmarkCount: 410,
         });
-
-        // Payoff.
-        x.at("18.1s").navigate("timeline");
-        x.at("19.2s").navigate("tweet", { tweetId: "tw-founder-apology" });
-        x.at("21.4s").navigate("timeline");
-        x.at("22.2s").replyTweet({
-          id: "tw-final-punch",
-          authorId: meUser.id,
-          replyToId: "tw-founder-apology",
-          text: "Series A in vibes, Series Z in common sense.",
-          createdAt: baseTs + 296_000,
-        });
+        x.at("18.4s").navigate("tweet", { tweetId: "tw_founder_apology" });
       })
       .camera((cam) => {
-        // Hook -> inspect -> compose -> explosion -> damage control -> expose -> payoff.
-        cam.at("0s").focus("timeline_primary_content", {
-          scale: 1.09,
-          duration: "0.45s",
-        });
-        cam.at("2.2s").focus("tweet_detail_media", {
-          scale: 1.08,
-          duration: "0.42s",
-        });
-        cam.at("4.9s").focus("compose_editor", {
-          scale: 1.08,
-          duration: "0.45s",
-        });
-        cam.at("8.1s").focus("notifications_row_0_content", {
-          scale: 1.11,
-          duration: "0.34s",
-        });
-        cam.at("8.2s").shake({
-          intensityX: 1.6,
-          intensityY: 1.2,
-          frequency: 19,
-          decay: 0.9,
-          duration: "0.24s",
-        });
-        cam.at("10s").focus("dm_row_0_content", {
-          scale: 1.08,
-          duration: "0.38s",
-        });
-        cam.at("12.9s").focus("reply_input", {
-          scale: 1.1,
-          duration: "0.4s",
-        });
-        cam.at("15.2s").focus("profile_avatar", {
-          scale: 1.09,
-          duration: "0.4s",
-        });
-        cam.at("18.1s").focus("timeline_primary_actions", {
-          scale: 1.08,
-          duration: "0.4s",
-        });
-        cam.at("21.4s").focus("device", { scale: 1.02, duration: "0.42s" });
+        cam.at("0s").focus("device", { scale: 1.02, duration: "0.35s" });
+        cam.at("2.25s").focus("tweet_card", { scale: 1.1, duration: "0.45s" });
+        cam.span("5.2s", "6.6s").trackCinematic("keyboard", { scale: 1.14, smoothing: 0.18 });
+        cam.at("8.45s").focus("notification_card", { scale: 1.1, duration: "0.35s" });
+        cam.at("11.95s").focus("dm_thread", { scale: 1.08, duration: "0.35s" });
+        cam.at("18.45s").focus("tweet_card", { scale: 1.08, duration: "0.4s" });
       })
       .build();
   },

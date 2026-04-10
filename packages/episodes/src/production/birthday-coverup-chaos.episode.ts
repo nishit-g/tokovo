@@ -1,24 +1,6 @@
-/**
- * Birthday Cover-Up Chaos - Production
- *
- * A WhatsApp story that jumps between a disaster group chat planning a surprise
- * and the DM with the person who thinks everyone forgot.
- */
-
-import { WhatsAppTrackBuilder } from "@tokovo/apps-whatsapp";
-import { KeyboardPlugin, OSDirectorPlugin } from "@tokovo/compiler";
-import {
-  cozyChat,
-  creatorPhonesV1,
-  socialAssetsV1,
-  startupChaos,
-  storyEpisode,
-} from "../story-kit/index.js";
-
+import { KeyboardPlugin } from "@tokovo/compiler";
 import { defineEpisode } from "../types/episode-definition.js";
-
-let orderCounter = 0;
-const getOrder = () => orderCounter++;
+import { episode } from "../code-first-episode.js";
 
 export default defineEpisode({
   meta: {
@@ -31,319 +13,113 @@ export default defineEpisode({
   },
   config: {
     format: "1080x1920",
-    durationInFrames: 2340,
+    durationInFrames: 1260,
     apps: ["app_whatsapp"],
   },
-  build: () => {
-    const ep = storyEpisode("birthday-coverup-chaos", {
+  build: () =>
+    episode("birthday-coverup-chaos", {
       fps: 30,
-      duration: "78s",
+      duration: "42s",
       title: "Birthday Cover-Up Chaos 🎂",
       description:
-        "One group is trying to save a surprise, while the DM is one text away from disaster.",
+        "One group is trying to save a surprise while the DM gets more suspicious by the second.",
     })
-      .usePacks({
-        personas: startupChaos,
-        assets: socialAssetsV1,
-        styles: cozyChat,
-        devices: creatorPhonesV1,
-      })
-      .cast({
-        me: {
-          persona: "builder",
-          device: "main_phone",
-          overrides: {
-            name: "me",
-            handle: "@me",
-          },
-          assetOverrides: {
-            avatar: "avatars:kabir",
-          },
-        },
-        sid: {
-          persona: "founder",
-          device: "main_phone",
-          overrides: {
-            name: "Sid",
-            handle: "@sid",
-          },
-          assetOverrides: {
-            avatar: "avatars:arjun",
-          },
-        },
-        tara: {
-          persona: "investor",
-          device: "main_phone",
-          overrides: {
-            name: "Tara",
-            handle: "@tara",
-          },
-          assetOverrides: {
-            avatar: "avatars:neha",
-          },
-        },
-        neel: {
-          persona: "meme_account",
-          device: "main_phone",
-          overrides: {
-            name: "Neel",
-            handle: "@neel",
-          },
-          assetOverrides: {
-            avatar: "avatars:meme_daily",
-          },
-        },
-        rhea: {
-          persona: "investor",
-          device: "main_phone",
-          overrides: {
-            name: "Rhea",
-            handle: "@rhea",
-          },
-          assetOverrides: {
-            avatar: "avatars:neha",
-          },
-        },
-        mom: {
-          persona: "founder",
-          device: "main_phone",
-          overrides: {
-            name: "Mom ❤️",
-            handle: "@mom",
-          },
-          assetOverrides: {
-            avatar: "avatars:arjun",
-          },
-        },
-      })
-      .device("main_phone", {
-        profile: "iphone16",
+      .device("phone", "iphone16", {
         app: "app_whatsapp",
-      });
-
-    const kit = ep.kit();
-    const sid = kit.actor("sid").name;
-    const tara = kit.actor("tara").name;
-    const neel = kit.actor("neel").name;
-    const rhea = kit.actor("rhea").name;
-    const mom = kit.actor("mom").name;
-    const mainPhone = kit.project.device("main_phone", {
-      profile: "iphone16",
-      app: "app_whatsapp",
-      conversations: [
-        kit.project.whatsappConversation({
-          id: "dm_rhea",
-          name: rhea,
-          avatarRole: "rhea",
-          unreadCount: 1,
-          isPinned: true,
-          initialMessages: [
-            {
-              from: rhea,
-              text: "kal pakka free rehna",
-              timestamp: -7200,
-            },
-          ],
-        }),
-        kit.project.whatsappConversation({
-          id: "group_ops",
-          name: "Operation Rhea",
-          avatarRole: "sid",
-          type: "group",
-          unreadCount: 3,
-          participantRoles: ["me", "sid", "tara", "neel"],
-          description: `${sid}, ${tara}, ${neel}`,
-          pinnedMessage: {
-            from: sid,
-            text: "No one wishes before the balcony cue.",
-          },
-          disappearingMessagesLabel:
-            "Disappearing messages are on. New messages will vanish after 24 hours.",
-          initialMessages: [
-            {
-              from: sid,
-              text: "candles kisne uthayi",
-              timestamp: -1800,
-            },
-            {
-              from: tara,
-              text: "speaker charge pe hai",
-              timestamp: -1700,
-            },
-          ],
-        }),
-        kit.project.whatsappConversation({
-          id: "dm_mom",
-          name: mom,
-          avatarRole: "mom",
-          unreadCount: 1,
-          isLocked: true,
-          isPinned: true,
-          initialMessages: [
-            {
-              from: mom,
-              text: "ghar aate waqt bread le aana",
-              timestamp: -2400,
-            },
-          ],
-        }),
-        kit.project.whatsappConversation({
-          id: "group_flatmates",
-          name: "Flat 4A",
-          type: "group",
-          unreadCount: 2,
-          initialMessages: [
-            {
-              from: "Kush",
-              text: "kisne geyser on chhoda",
-              timestamp: -3000,
-            },
-          ],
-        }),
-      ],
-      os: {
-        time: new Date("2025-02-22T19:38:00"),
-        battery: 58,
-        network: "5G",
-      },
-    });
-
-    return ep
-      .device("main_phone", mainPhone.profile, mainPhone.options)
-      .track(
-        "app_whatsapp",
-        () => new WhatsAppTrackBuilder(30, "main_phone", "group_ops", getOrder),
-        (wa) => {
-          wa.openChatList("0s");
-
-          wa.switchTo("group_ops", "2.4s");
-          wa.at("3s").receive(sid, "situation kharab hai");
-          wa.at("3.9s").receive(tara, `${rhea} ko genuinely lag raha hai sab bhool gaye`);
-          wa.at("4.8s").receive(neel, "cake tilt pe hai but morally stable hai");
-
-          wa.span("5.8s", "7.2s").typing("me");
-          wa.at("7.2s").send("koi bhi usko wish mat karo jab tak main bolu");
-
-          wa.span("8.2s", "9.4s").typing(tara);
-          wa.at("9.4s").receive(
-            tara,
-            "too late उसने status dala 'another normal day :)'",
-            { replyTo: { index: -1 } },
-          );
-
-          wa.openChatList("10.8s");
-          wa.switchTo("dm_rhea", "12.2s");
-          wa.at("12.8s").receive(rhea, "nice");
-          wa.at("13.5s").receive(rhea, "even you forgot");
-
-          wa.span("14.4s", "16.6s").typing("me");
-          wa.at("16.6s").send("pagal hai kya, office me atka hua hu");
-
-          wa.span("17.6s", "18.8s").typing(rhea);
-          wa.at("18.8s").receive(rhea, "haan obviously");
-          wa.at("19.6s").receive(rhea, "12 ghante se atke hue ho");
-
-          wa.openChatList("21.2s");
-          wa.switchTo("group_ops", "22.8s");
-          wa.at("23.4s").receiveImage(neel, "/placeholders/media.svg", {
-            caption: "cake update",
-          });
-          wa.at("24.6s").receive(sid, "bakery ne likh diya happy retirement reha");
-          wa.at("25.8s").receive(tara, "florist condolence bouquet bhej gaya");
-
-          wa.span("27s", "28.6s").typing("me");
-          wa.at("28.6s").send("scrape the r. make it look intentional.");
-
-          wa.span("29.6s", "30.8s").typing(sid);
-          wa.at("30.8s").receive(sid, "bro bouquet pe deepest condolences bhi likha hai");
-
-          wa.openChatList("32.4s");
-          wa.switchTo("dm_rhea", "33.8s");
-          wa.at("34.4s").receive(rhea, "it's fine");
-          wa.at("35.1s").receive(rhea, "i booked dinner for one");
-          wa.at("35.9s").receive(rhea, "don't worry, i am used to this");
-
-          wa.span("37s", "39.4s").typing("me");
-          wa.at("39.4s").send("drama band kar aur 20 min de mujhe");
-
-          wa.span("40.4s", "41.2s").typing(rhea);
-          wa.at("41.2s").receive(rhea, "kyu", { replyTo: { index: -1 } });
-
-          wa.openChatList("42.6s");
-          wa.switchTo("group_ops", "44s");
-          wa.at("44.6s").receive(sid, "we are downstairs");
-          wa.at("45.4s").receive(neel, "watchman ne bola bouquet gaadi me chhupa do");
-          wa.at("46.2s").receive(tara, "cake abhi bhi rehab jaisa lag raha hai");
-
-          wa.span("47.4s", "49.6s").typing("me");
-          wa.at("49.6s").send("lights off rakho. bouquet hide karo. neel ko kuch mat touch karne do");
-
-          wa.span("50.6s", "51.8s").typing(sid);
-          wa.at("51.8s").receive(sid, "too late. usne ribbon kaat diya");
-
-          wa.openChatList("53.4s");
-          wa.switchTo("dm_rhea", "54.8s");
-          wa.span("55.2s", "57.4s").typing("me");
-          wa.at("57.4s").send("balcony pe aa 2 min");
-
-          wa.span("58.2s", "59.2s").typing(rhea);
-          wa.at("59.2s").receive(rhea, "why");
-
-          wa.span("60s", "62.4s").typing("me");
-          wa.at("62.4s").send("bas aa. aur mood mat lana");
-
-          wa.span("63.2s", "64.4s").typing(rhea);
-          wa.at("64.4s").receive(rhea, "this better be insane");
-
-          wa.openChatList("65.8s");
-          wa.switchTo("group_ops", "67.2s");
-          wa.at("67.8s").receive(sid, "positions ready");
-          wa.at("68.6s").receive(tara, "3... 2... 1...");
-
-          wa.openChatList("69.8s");
-          wa.switchTo("dm_rhea", "71s");
-          wa.span("71.2s", "73.4s").typing("me");
-          wa.at("73.4s").send("ab neeche dekh");
-
-          wa.span("74.4s", "75.8s").typing(rhea);
-          wa.at("75.8s").receive(rhea, "WHAT", { replyTo: { index: -1 } });
-          wa.at("76.6s").receive(rhea, "you idiots planned all this?");
-
-          wa.span("77.1s", "78s").typing("me");
-          wa.at("78s").send("haan. cake ko judge mat karna bas");
+        installedApps: ["app_whatsapp"],
+        os: {
+          time: new Date("2025-02-22T19:38:00"),
+          battery: 58,
+          network: "5G",
         },
-      )
-      .camera((cam) => {
-        cam.at("0s").focus("device", { scale: 1.01, duration: "0.3s" });
-        cam.at("3s").focus("lastMessage", { scale: 1.08, duration: "0.4s" });
-        cam.at("13.5s").focus("lastMessage", { scale: 1.1, duration: "0.45s" });
-        cam.at("24.6s").focus("lastMessage", { scale: 1.12, duration: "0.45s" });
-        cam.at("35.9s").focus("lastMessage", { scale: 1.11, duration: "0.45s" });
-        cam.at("45.4s").focus("lastMessage", { scale: 1.09, duration: "0.4s" });
-        cam.at("75.8s").focus("lastMessage", { scale: 1.14, duration: "0.5s" });
       })
-      .audio((audio) => {
-        audio.span("0s", "78s").bgm("/music/ambient-track.mp3", {
-          volume: 0.14,
-          fadeIn: "2s",
-          fadeOut: "2s",
+      .snapshot("app_whatsapp", "phone", {
+        conversations: [
+          {
+            id: "dm_rhea",
+            name: "Rhea",
+            avatar: "/avatars/avatar-maya.jpg",
+            unreadCount: 1,
+            isPinned: true,
+          },
+          {
+            id: "group_ops",
+            name: "Operation Rhea",
+            type: "group",
+            unreadCount: 4,
+            participants: ["me", "Sid", "Tara", "Neel"],
+            description: "Sid, Tara, Neel",
+          },
+          {
+            id: "dm_mom",
+            name: "Mom ❤️",
+            unreadCount: 1,
+            isLocked: true,
+            isPinned: true,
+          },
+        ],
+      })
+      .background({ type: "image", src: "/backgrounds/cozy-bedroom.png" })
+      .whatsapp("phone", "group_ops", (wa) => {
+        wa.openChatList("0s");
+        wa.switchTo("group_ops", "1.8s");
+        wa.at("2.6s").receive("Sid", "Situation kharab hai.");
+        wa.at("3.8s").receive("Tara", "Rhea thinks everyone forgot.");
+        wa.at("5.0s").receive("Neel", "Cake is leaning but emotionally stable.");
+        wa.span("6.2s", "7.8s").typing("me");
+        wa.at("7.8s").send("Nobody wishes till I say so.", {
+          typed: true,
+          charDelay: 2,
         });
+        wa.at("9.4s").receive("Tara", "Too late. She posted 'another normal day :)'");
+        wa.openChatList("11.2s");
+        wa.switchTo("dm_rhea", "12.4s");
+        wa.at("13.0s").receive("Rhea", "Nice.");
+        wa.at("13.8s").receive("Rhea", "Even you forgot.");
+        wa.span("15.2s", "17.4s").typing("me");
+        wa.at("17.4s").send("Office me atka hu. Give me 20 mins.", {
+          typed: true,
+          charDelay: 2,
+        });
+        wa.at("19.6s").receive("Rhea", "Obviously.");
+        wa.at("20.4s").receive("Rhea", "You have been 'at office' for 12 hours.");
+        wa.openChatList("22.0s");
+        wa.switchTo("group_ops", "23.2s");
+        wa.at("24.0s").receiveImage("Neel", "/placeholders/media.svg", {
+          caption: "Cake update",
+        });
+        wa.at("25.4s").receive("Sid", "Bakery wrote happy retirement reha.");
+        wa.at("26.8s").receive("Tara", "Florist sent condolence bouquet.");
+        wa.span("28.2s", "30.4s").typing("me");
+        wa.at("30.4s").send("Hide bouquet. Scrape the cake. Neel touches nothing.", {
+          typed: true,
+          charDelay: 2,
+        });
+        wa.openChatList("32.4s");
+        wa.switchTo("dm_rhea", "33.6s");
+        wa.at("34.4s").receive("Rhea", "I booked dinner for one.");
+        wa.span("35.8s", "37.8s").typing("me");
+        wa.at("37.8s").send("Drama band kar. Wear something nice.", {
+          typed: true,
+          charDelay: 2,
+        });
+        wa.at("39.4s").receive("Rhea", "Why?");
+        wa.at("40.4s").send("Because I am still not letting this flop.");
       })
-      .use(
-        new OSDirectorPlugin({
-          startTime: new Date("2025-02-22T19:38:00"),
-          startBattery: 58,
-          batteryDrainRate: 0.45,
-          updateInterval: "15s",
-        }),
-      )
+      .camera((cam) => {
+        cam.at("0s").focus("device", { scale: 1.02, duration: "0.4s" });
+        cam.at("2.7s").focus("chat_header", { scale: 1.08, duration: "0.4s" });
+        cam.span("6.2s", "8.2s").trackCinematic("keyboard", { scale: 1.12, smoothing: 0.16 });
+        cam.at("13.1s").focus("lastMessage", { scale: 1.14, duration: "0.35s" });
+        cam.span("28.2s", "30.5s").trackCinematic("keyboard", { scale: 1.12, smoothing: 0.18 });
+        cam.at("37.9s").focus("lastMessage", { scale: 1.1, duration: "0.35s" });
+      })
       .use(
         new KeyboardPlugin({
           onlyForSentMessages: true,
           defaultCharDelay: 3,
-          excludeShortMessages: 3,
+          excludeShortMessages: 2,
         }),
       )
-      .build();
-  },
+      .build(),
 });

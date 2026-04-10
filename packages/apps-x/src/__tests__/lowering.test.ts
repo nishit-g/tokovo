@@ -130,4 +130,63 @@ describe("X lowering", () => {
       (appPayload(quoteEvents, "ADD_TWEET") as { quoteTweetId?: string } | undefined)?.quoteTweetId,
     ).toBe("tw-create");
   });
+
+  it("supports typed replies after opening tweet detail", () => {
+    const ctx = {};
+    lower(
+      {
+        at: 10,
+        kind: "APP",
+        appId: "app_x",
+        type: "NAVIGATE",
+        deviceId: "device-1",
+        payload: { screen: "tweet", tweetId: "tw-1" },
+      },
+      ctx,
+    );
+
+    const events = lower(
+      {
+        at: 30,
+        kind: "APP",
+        appId: "app_x",
+        type: "TWEET_REPLY",
+        deviceId: "device-1",
+        payload: {
+          id: "tw-2",
+          authorId: "u1",
+          text: "reply",
+          replyToId: "tw-1",
+          typed: true,
+        },
+      },
+      ctx,
+    );
+
+    expect(events.some((event) => event.kind === "DEVICE")).toBe(true);
+    expect((appPayload(events, "ADD_TWEET") as { replyToId?: string } | undefined)?.replyToId).toBe(
+      "tw-1",
+    );
+  });
+
+  it("lowers notifications into app and device runtime events", () => {
+    const events = lower({
+      at: 40,
+      kind: "APP",
+      appId: "app_x",
+      type: "NOTIFICATION_ADD",
+      deviceId: "device-1",
+      payload: {
+        id: "nt-1",
+        type: "mention",
+        actorId: "u2",
+        tweetId: "tw-1",
+        title: "Avery mentioned you",
+        body: "Check the thread",
+      },
+    });
+
+    expect(appEvents(events, "ADD_NOTIFICATION")).toHaveLength(1);
+    expect(events.some((event) => event.kind === "DEVICE" && event.type === "SHOW_NOTIFICATION")).toBe(true);
+  });
 });

@@ -31,131 +31,125 @@ export default defineEpisode({
         },
       })
       .background({ type: "image", src: "/backgrounds/cafe-lofi.png" })
+      .snapshot("app_linkedin", "phone", {
+        users: [
+          {
+            id: "me",
+            name: "Nishit",
+            handle: "nishit",
+            headline: "Building Tokovo | Video DSL + plugins",
+            avatarUrl: "/placeholders/app-icon.svg",
+            connections: 512,
+            followers: 1800,
+          },
+          {
+            id: "u1",
+            name: "Ava Patel",
+            handle: "ava",
+            headline: "Product | Platforms",
+            avatarUrl: "/placeholders/app-icon.svg",
+            connections: 803,
+            followers: 9200,
+          },
+          {
+            id: "u2",
+            name: "Kai Chen",
+            handle: "kai",
+            headline: "Design Systems",
+            avatarUrl: "/placeholders/app-icon.svg",
+            connections: 1200,
+            followers: 11400,
+          },
+          {
+            id: "u3",
+            name: "Rin Okada",
+            handle: "rin",
+            headline: "Cameras + storytelling",
+            avatarUrl: "/placeholders/app-icon.svg",
+            connections: 344,
+            followers: 4200,
+          },
+          {
+            id: "u4",
+            name: "Maya Singh",
+            handle: "maya",
+            headline: "Growth | Content",
+            avatarUrl: "/placeholders/app-icon.svg",
+            connections: 640,
+            followers: 7600,
+          },
+        ],
+        connections: [
+          { a: "me", b: "u1" },
+          { a: "me", b: "u2" },
+          { a: "me", b: "u3" },
+        ],
+        currentUserId: "me",
+        posts: [
+          {
+            id: "p1",
+            authorId: "u2",
+            text:
+              "A clean feed is a design system problem.\n\nAnchors + tokens make it deterministic.",
+            hashtags: ["designsystems", "ui"],
+            createdAt: new Date("2025-02-06T08:58:00").getTime(),
+            linkPreview: {
+              url: "https://example.com/tokens",
+              domain: "example.com",
+              title: "Tokens: the boring part that wins",
+              description: "Make UI predictable. Then make it beautiful.",
+            },
+          },
+          {
+            id: "p2",
+            authorId: "u3",
+            text:
+              "Camera tip: focus on semantic regions, not pixels.\n\nYour episodes become resilient.",
+            createdAt: new Date("2025-02-06T09:01:00").getTime(),
+          },
+          {
+            id: "p3",
+            authorId: "u4",
+            text:
+              "If your UI demo doesn't tell a story, it won't convert.\n\nSeed the world state like it matters.",
+            createdAt: new Date("2025-02-06T09:04:00").getTime(),
+          },
+          {
+            id: "p4",
+            authorId: "me",
+            text:
+              "Shipping a new LinkedIn plugin for Tokovo.\n\nNext: richer comments + faster authoring DSL.",
+            createdAt: new Date("2025-02-06T09:07:00").getTime(),
+          },
+        ],
+        notifications: [
+          { id: "nt-1", type: "reaction", actorId: "u1", postId: "p4" },
+          { id: "nt-2", type: "comment", actorId: "u2", postId: "p4" },
+          { id: "nt-3", type: "connection", actorId: "u4" },
+        ],
+        threads: [{ id: "dm-1", participantIds: ["me", "u2"] }],
+        messages: [
+          {
+            id: "dm-msg-1",
+            threadId: "dm-1",
+            senderId: "u2",
+            text: "This LinkedIn look is clean. Anchors stable?",
+            createdAt: new Date("2025-02-06T09:05:00").getTime(),
+          },
+          {
+            id: "dm-msg-2",
+            threadId: "dm-1",
+            senderId: "me",
+            text: "Yep. Semantic regions first, heuristics fallback.",
+            createdAt: new Date("2025-02-06T09:06:00").getTime(),
+          },
+        ],
+      })
+      .view("app_linkedin", "phone", { screen: "feed" })
       .track(
         "app_linkedin",
         (getOrder) => new LinkedInTrackBuilder(30, "phone", getOrder),
         (li) => {
-          // =============================================================================
-          // SEED (0s): users, posts, notifs, dm thread
-          // =============================================================================
-          li.seed(
-            {
-              users: [
-                {
-                  id: "me",
-                  name: "Nishit",
-                  handle: "nishit",
-                  headline: "Building Tokovo | Video DSL + plugins",
-                  avatarUrl: "/placeholders/app-icon.svg",
-                  connections: 512,
-                  followers: 1800,
-                },
-                {
-                  id: "u1",
-                  name: "Ava Patel",
-                  handle: "ava",
-                  headline: "Product | Platforms",
-                  avatarUrl: "/placeholders/app-icon.svg",
-                  connections: 803,
-                  followers: 9200,
-                },
-                {
-                  id: "u2",
-                  name: "Kai Chen",
-                  handle: "kai",
-                  headline: "Design Systems",
-                  avatarUrl: "/placeholders/app-icon.svg",
-                  connections: 1200,
-                  followers: 11400,
-                },
-                {
-                  id: "u3",
-                  name: "Rin Okada",
-                  handle: "rin",
-                  headline: "Cameras + storytelling",
-                  avatarUrl: "/placeholders/app-icon.svg",
-                  connections: 344,
-                  followers: 4200,
-                },
-                {
-                  id: "u4",
-                  name: "Maya Singh",
-                  handle: "maya",
-                  headline: "Growth | Content",
-                  avatarUrl: "/placeholders/app-icon.svg",
-                  connections: 640,
-                  followers: 7600,
-                },
-              ],
-              connections: [
-                { a: "me", b: "u1" },
-                { a: "me", b: "u2" },
-                { a: "me", b: "u3" },
-              ],
-              currentUserId: "me",
-              posts: [
-                {
-                  id: "p1",
-                  authorId: "u2",
-                  text:
-                    "A clean feed is a design system problem.\n\nAnchors + tokens make it deterministic.",
-                  hashtags: ["designsystems", "ui"],
-                  createdAt: new Date("2025-02-06T08:58:00").getTime(),
-                  linkPreview: {
-                    url: "https://example.com/tokens",
-                    domain: "example.com",
-                    title: "Tokens: the boring part that wins",
-                    description: "Make UI predictable. Then make it beautiful.",
-                  },
-                },
-                {
-                  id: "p2",
-                  authorId: "u3",
-                  text:
-                    "Camera tip: focus on semantic regions, not pixels.\n\nYour episodes become resilient.",
-                  createdAt: new Date("2025-02-06T09:01:00").getTime(),
-                },
-                {
-                  id: "p3",
-                  authorId: "u4",
-                  text:
-                    "If your UI demo doesn't tell a story, it won't convert.\n\nSeed the world state like it matters.",
-                  createdAt: new Date("2025-02-06T09:04:00").getTime(),
-                },
-                {
-                  id: "p4",
-                  authorId: "me",
-                  text:
-                    "Shipping a new LinkedIn plugin for Tokovo.\n\nNext: richer comments + faster authoring DSL.",
-                  createdAt: new Date("2025-02-06T09:07:00").getTime(),
-                },
-              ],
-              notifications: [
-                { id: "nt-1", type: "reaction", actorId: "u1", postId: "p4" },
-                { id: "nt-2", type: "comment", actorId: "u2", postId: "p4" },
-                { id: "nt-3", type: "connection", actorId: "u4" },
-              ],
-              threads: [{ id: "dm-1", participantIds: ["me", "u2"] }],
-              messages: [
-                {
-                  id: "dm-msg-1",
-                  threadId: "dm-1",
-                  senderId: "u2",
-                  text: "This LinkedIn look is clean. Anchors stable?",
-                  createdAt: new Date("2025-02-06T09:05:00").getTime(),
-                },
-                {
-                  id: "dm-msg-2",
-                  threadId: "dm-1",
-                  senderId: "me",
-                  text: "Yep. Semantic regions first, heuristics fallback.",
-                  createdAt: new Date("2025-02-06T09:06:00").getTime(),
-                },
-              ],
-            },
-            "0s",
-          );
-
           // =============================================================================
           // FLOW: engagement -> post detail -> profile -> notifications -> messages -> compose
           // =============================================================================

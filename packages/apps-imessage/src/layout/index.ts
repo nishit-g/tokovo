@@ -55,6 +55,21 @@ function computeIMessageFeedLayout(ctx: LayoutContext): FeedLayoutState {
       rect: rect(0, listY, w, listH),
       tags: ["list"],
     };
+    regions.imessage_list_row_0 = {
+      id: "imessage_list_row_0",
+      rect: rect(px(16), listY + px(8), Math.max(0, w - px(32)), px(72)),
+      tags: ["list", "row"],
+    };
+    regions.imessage_list_row_0_avatar = {
+      id: "imessage_list_row_0_avatar",
+      rect: rect(px(16), listY + px(14), px(46), px(46)),
+      tags: ["list", "avatar"],
+    };
+    regions.imessage_list_row_0_content = {
+      id: "imessage_list_row_0_content",
+      rect: rect(px(74), listY + px(18), Math.max(0, w - px(90)), px(42)),
+      tags: ["list", "content"],
+    };
   } else {
     // Defensive: if state/viewMode mismatched, still emit list anchors.
     regions.imessage_list_header = {
@@ -72,6 +87,7 @@ function computeIMessageFeedLayout(ctx: LayoutContext): FeedLayoutState {
 
   return {
     kind: "FEED",
+    cacheHint: "static",
     scrollY: 0,
     contentHeight: h,
     isAtBottom: false,
@@ -97,10 +113,21 @@ function computeIMessageChatLayout(ctx: LayoutContext): ChatLayoutState {
   const regions: Record<string, SemanticRegion> = {
     device: { id: "device", rect: rect(0, 0, w, h), tags: ["device"] },
     app: { id: "app", rect: rect(0, 0, w, h), tags: ["app"] },
+    imessage_chat_header: {
+      id: "imessage_chat_header",
+      rect: rect(0, 0, w, headerH),
+      tags: ["header", "sticky"],
+      metadata: { sticky: true },
+    },
     imessage_thread: {
       id: "imessage_thread",
       rect: rect(0, threadY, w, threadH),
       tags: ["thread"],
+    },
+    imessage_last_message: {
+      id: "imessage_last_message",
+      rect: rect(px(16), threadY + Math.max(0, threadH - px(118)), Math.max(0, w - px(32)), px(70)),
+      tags: ["thread", "message", "latest"],
     },
     imessage_composer: {
       id: "imessage_composer",
@@ -108,10 +135,16 @@ function computeIMessageChatLayout(ctx: LayoutContext): ChatLayoutState {
       tags: ["composer", "sticky"],
       metadata: { sticky: true },
     },
+    imessage_input: {
+      id: "imessage_input",
+      rect: rect(px(44), composerY + px(10), Math.max(0, w - px(88)), px(38)),
+      tags: ["composer", "input"],
+    },
   };
 
   return {
     kind: "CHAT",
+    cacheHint: "static",
     scrollY: 0,
     contentHeight: h,
     isAtBottom: true,
@@ -140,12 +173,24 @@ function computeIMessageFullscreenLayout(ctx: LayoutContext): FullscreenLayoutSt
   };
 
   if (screen === "media") {
+    regions.imessage_fullscreen_header = {
+      id: "imessage_fullscreen_header",
+      rect: rect(0, 0, w, topY),
+      tags: ["header", "sticky"],
+      metadata: { sticky: true },
+    };
     regions.imessage_media = {
       id: "imessage_media",
       rect: rect(0, topY, w, contentH),
       tags: ["media"],
     };
   } else {
+    regions.imessage_fullscreen_header = {
+      id: "imessage_fullscreen_header",
+      rect: rect(0, 0, w, topY),
+      tags: ["header", "sticky"],
+      metadata: { sticky: true },
+    };
     regions.imessage_info = {
       id: "imessage_info",
       rect: rect(0, topY, w, contentH),
@@ -155,6 +200,7 @@ function computeIMessageFullscreenLayout(ctx: LayoutContext): FullscreenLayoutSt
 
   return {
     kind: "FULLSCREEN",
+    cacheHint: "static",
     meta: {},
     semantic: buildSemantic(regions),
   };

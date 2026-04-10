@@ -144,7 +144,6 @@ function createKeyboardClearEvent(
   } as RuntimeEvent;
 }
 
-type WhatsAppLoweringScratchpad = { lastEventAtByConversation: Map<string, number> };
 const TIMING_HELPER_EVENT_TYPES = new Set<WhatsAppEventType>([
   "TYPING_START",
   "TYPING_END",

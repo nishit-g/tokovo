@@ -1,5 +1,6 @@
 import React from "react";
 import { Img, staticFile } from "remotion";
+import { resolveStaticAssetSrc } from "@tokovo/core";
 import { useTheme } from "../../theme/ThemeContext.js";
 
 interface MessageBubbleProps {
@@ -159,13 +160,14 @@ export const Avatar = React.memo(function Avatar({
   };
 
   if (src) {
-    const resolvedSrc = src.startsWith("/") ? staticFile(src) : src;
+    const resolvedSrc = resolveStaticAssetSrc(src, staticFile);
     return (
       <div style={avatarStyle}>
         <Img
           src={resolvedSrc}
           alt={name}
           style={{ width: "100%", height: "100%", objectFit: "cover" }}
+          pauseWhenLoading
         />
       </div>
     );

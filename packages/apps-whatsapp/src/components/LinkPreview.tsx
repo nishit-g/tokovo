@@ -1,5 +1,6 @@
 import React from "react";
 import { Img, staticFile } from "remotion";
+import { resolveStaticAssetSrc } from "@tokovo/core";
 import { useTheme } from "../theme/ThemeContext.js";
 
 export interface LinkPreviewData {
@@ -26,10 +27,9 @@ export const LinkPreview: React.FC<LinkPreviewProps> = ({
   const bgColor = isMyMessage
     ? `${theme.colors.sentBubbleText}12`
     : `${theme.colors.divider}55`;
-  const resolvedImage =
-    preview.image && preview.image.startsWith("/")
-      ? staticFile(preview.image)
-      : preview.image;
+  const resolvedImage = preview.image
+    ? resolveStaticAssetSrc(preview.image, staticFile)
+    : preview.image;
 
   return (
     <div
@@ -43,6 +43,7 @@ export const LinkPreview: React.FC<LinkPreviewProps> = ({
       {resolvedImage && (
         <Img
           src={resolvedImage}
+          pauseWhenLoading
           style={{
             width: "100%",
             height: compact ? 80 : 120,
@@ -68,12 +69,9 @@ export const LinkPreview: React.FC<LinkPreviewProps> = ({
           >
             {preview.favicon && (
               <Img
-                src={
-                  preview.favicon.startsWith("/")
-                    ? staticFile(preview.favicon)
-                    : preview.favicon
-                }
+                src={resolveStaticAssetSrc(preview.favicon, staticFile)}
                 alt=""
+                pauseWhenLoading
                 style={{
                   width: 12,
                   height: 12,

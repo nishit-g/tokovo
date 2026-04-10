@@ -1,12 +1,25 @@
 import type { TokovoPluginContract, PluginViews } from "@tokovo/core";
 import type { PluginManagerClass } from "@tokovo/react";
-import { TEAMS_APP_ID, TEAMS_DISPLAY_NAME, TEAMS_VERSION } from "./constants.js";
+import {
+  TEAMS_APP_ID,
+  TEAMS_DEFAULT_DEVICE_WIDTH,
+  TEAMS_DISPLAY_NAME,
+  TEAMS_VERSION,
+} from "./constants.js";
 import { teamsReducer } from "./runtime/reducer.js";
 import { createTeamsInitialState } from "./runtime/initial-state.js";
 import { TeamsView } from "./ui/index.js";
 import { teamsV2Lowering } from "./lowering/index.js";
 import { teamsLayoutStrategies } from "./layout/index.js";
 import { TeamsAnchorProvider } from "./anchors/provider.js";
+import { TEAMS_EVENT_TYPES } from "./schemas/index.js";
+import { teamsAudioRules } from "./assets/audio-rules.js";
+import { TeamsMetadata } from "./assets/metadata.js";
+import { teamsDsl, type TeamsDslApi } from "./dsl/index.js";
+import { collectTeamsAssetRefs } from "./asset-refs.js";
+import { TeamsBehavior } from "./camera/index.js";
+import { teamsNotificationAdapter } from "./notifications/adapter.js";
+import { teamsBootstrap } from "./bootstrap.js";
 
 const teamsViews: PluginViews = {
   AppRoot: TeamsView,
@@ -23,87 +36,48 @@ const teamsAssets = {
     "app_teams.message_out": "plugins/teams/sent.wav",
     "app_teams.call_start": "plugins/teams/call_start.wav",
     "app_teams.call_end": "plugins/teams/call_end.wav",
-    "app_teams.notify": "plugins/teams/notify.wav"
+    "app_teams.notify": "plugins/teams/notify.wav",
   },
   icons: {
     app_icon: "/icons/teams.svg",
   },
+  designWidth: TEAMS_DEFAULT_DEVICE_WIDTH,
 };
 
-const teamsAudioRules: NonNullable<TokovoPluginContract["audioRules"]> = [
-  {
-    match: { kind: "APP", appId: TEAMS_APP_ID, type: "TEAMS_DM_SEND" },
-    action: "PLAY_ONE_SHOT",
-    sound: "app_teams.message_out",
-    bus: "ui",
-  },
-  {
-    match: { kind: "APP", appId: TEAMS_APP_ID, type: "TEAMS_DM_RECEIVE" },
-    action: "PLAY_ONE_SHOT",
-    sound: "app_teams.message_in",
-    bus: "ui",
-  },
-  {
-    match: { kind: "APP", appId: TEAMS_APP_ID, type: "TEAMS_NOTIFICATION_PUSH" },
-    action: "PLAY_ONE_SHOT",
-    sound: "app_teams.notify",
-    bus: "ui",
-  },
-  {
-    match: { kind: "APP", appId: TEAMS_APP_ID, type: "TEAMS_CALL_START" },
-    action: "PLAY_ONE_SHOT",
-    sound: "app_teams.call_start",
-    bus: "ui",
-  },
-  {
-    match: { kind: "APP", appId: TEAMS_APP_ID, type: "TEAMS_CALL_END" },
-    action: "PLAY_ONE_SHOT",
-    sound: "app_teams.call_end",
-    bus: "ui",
-  },
-];
-
-export const TeamsPlugin: TokovoPluginContract<"app_teams"> & {
+export const TeamsPluginV2: TokovoPluginContract<"app_teams"> & {
   v2Lowering: typeof teamsV2Lowering;
+  behaviors: typeof TeamsBehavior;
 } = {
   id: TEAMS_APP_ID,
   version: TEAMS_VERSION,
   displayName: TEAMS_DISPLAY_NAME,
+  themeColor: TeamsMetadata.themeColor,
+  icon: TeamsMetadata.icon,
   reducer: teamsReducer,
   views: teamsViews,
   createInitialState: createTeamsInitialState,
-  eventKinds: [
-    "TEAMS_DM_SEND",
-    "TEAMS_DM_RECEIVE",
-    "TEAMS_CHANNEL_POST",
-    "TEAMS_CHANNEL_REPLY",
-    "TEAMS_THREAD_OPEN",
-    "TEAMS_THREAD_CLOSE",
-    "TEAMS_SET_ACTIVE_CHAT",
-    "TEAMS_SET_ACTIVE_CHANNEL",
-    "TEAMS_MENTION_ADD",
-    "TEAMS_PRESENCE_SET",
-    "TEAMS_CALL_START",
-    "TEAMS_CALL_END",
-    "TEAMS_NOTIFICATION_PUSH",
-    "TEAMS_NAVIGATE_SCREEN",
-  ] as const,
-  assets: {
-    ...teamsAssets,
-    designWidth: 393,
-  },
+  bootstrap: teamsBootstrap,
+  eventKinds: TEAMS_EVENT_TYPES,
+  assets: teamsAssets,
   audioRules: teamsAudioRules,
   v2Lowering: teamsV2Lowering,
   layouts: teamsLayoutStrategies,
+  dsl: teamsDsl,
+  collectAssetRefs: collectTeamsAssetRefs,
   anchorProvider: TeamsAnchorProvider,
+  notificationAdapter: teamsNotificationAdapter,
+  behaviors: TeamsBehavior,
 };
+
+export const TeamsPlugin = TeamsPluginV2;
 
 const registeredManagers = new WeakSet<PluginManagerClass>();
 
 export function registerTeamsPlugin(pluginManager: PluginManagerClass): void {
   if (registeredManagers.has(pluginManager)) return;
   registeredManagers.add(pluginManager);
-  pluginManager.register(TeamsPlugin);
+  pluginManager.register(TeamsPluginV2);
 }
 
-export default TeamsPlugin;
+export default TeamsPluginV2;
+export type { TeamsDslApi };

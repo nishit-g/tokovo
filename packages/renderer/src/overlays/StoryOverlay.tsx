@@ -1,4 +1,6 @@
 import React from "react";
+import { AnimatedImage, Img } from "remotion";
+import type { WorldState } from "@tokovo/core";
 
 type OverlayVariant =
   | "hook"
@@ -147,8 +149,12 @@ function getChipStyle(variant: OverlayVariant): React.CSSProperties {
   return {};
 }
 
+function isGifAsset(src: string): boolean {
+  return /\.gif($|\?)/i.test(src);
+}
+
 export const StoryOverlay: React.FC<{
-  world: any;
+  world: WorldState;
   t: number;
   width: number;
   height: number;
@@ -207,9 +213,10 @@ export const StoryOverlay: React.FC<{
         };
 
         if (it.variant === "reactionGif" && it.mediaSrc) {
+          const MediaComponent = isGifAsset(it.mediaSrc) ? AnimatedImage : Img;
           return (
             <div key={it.id} style={containerStyle}>
-              <img
+              <MediaComponent
                 src={it.mediaSrc}
                 alt=""
                 style={{
@@ -239,4 +246,3 @@ export const StoryOverlay: React.FC<{
     </div>
   );
 };
-

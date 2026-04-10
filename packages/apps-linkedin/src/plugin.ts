@@ -7,6 +7,8 @@ import { LinkedInView } from "./ui/index.js";
 import { linkedInLowering } from "./lowering/index.js";
 import { linkedInLayoutStrategies } from "./layout/index.js";
 import { LinkedInAnchorProvider } from "./anchors/provider.js";
+import { collectLinkedInAssetRefs } from "./asset-refs.js";
+import { linkedInBootstrap } from "./bootstrap.js";
 
 const views: PluginViews = {
   AppRoot: LinkedInView,
@@ -21,6 +23,7 @@ export const LinkedInPlugin: TokovoPluginContract<"app_linkedin"> & {
   views,
   reducer: linkedInReducer as PluginReducer<"app_linkedin">,
   createInitialState: createLinkedInInitialState,
+  bootstrap: linkedInBootstrap,
   eventKinds: [
     "LINKEDIN_ADD_USER",
     "LINKEDIN_SET_CURRENT_USER",
@@ -48,6 +51,7 @@ export const LinkedInPlugin: TokovoPluginContract<"app_linkedin"> & {
   },
   v2Lowering: linkedInLowering,
   layouts: linkedInLayoutStrategies,
+  collectAssetRefs: collectLinkedInAssetRefs,
   anchorProvider: LinkedInAnchorProvider,
 };
 

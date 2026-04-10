@@ -13,12 +13,14 @@
  */
 
 import React, { useEffect, useRef } from "react";
+import { Img } from "remotion";
 import { useKeyboardHeight, useKeyboardState, useSafeAreaInsets } from "@tokovo/react";
 import type { PluginViewProps } from "@tokovo/core";
 import { SNAPCHAT_APP_ID } from "../constants.js";
 import type { SnapchatState } from "../types/state.js";
 import type { SnapchatConversation } from "../types/conversation.js";
 import type { SnapchatMessage } from "../types/messages.js";
+import { selectConversations } from "../runtime/selectors.js";
 import { snapchatColors } from "../config/colors.js";
 import { snapchatSpacing } from "../config/tokens.js";
 import {
@@ -200,7 +202,7 @@ const BitmojiAvatar: React.FC<{ name: string; avatar?: string; size: number }> =
     return (
         <div style={bitmojiCircleStyle(size)}>
             {avatar ? (
-                <img
+                <Img
                     src={avatar}
                     alt={name}
                     style={{ width: size, height: size, borderRadius: size / 2, objectFit: "cover" }}
@@ -345,7 +347,7 @@ const ChatListScreen: React.FC<{
     safeBottom,
     world,
 }) => {
-    const conversations = Object.values(state.conversations ?? {});
+    const conversations = selectConversations(world);
 
     return (
         <div
@@ -445,6 +447,20 @@ const ChatListRow: React.FC<{
                     >
                         {name}
                     </span>
+                    {conversation.pinned ? (
+                        <span
+                            style={{
+                                fontSize: 10,
+                                fontWeight: 700,
+                                color: snapchatColors.indicatorBlue,
+                                fontFamily: FONT,
+                                letterSpacing: 0.4,
+                                marginRight: 6,
+                            }}
+                        >
+                            PINNED
+                        </span>
+                    ) : null}
                     {/* Streak right-aligned */}
                     {conversation.streak !== null && conversation.streak !== undefined && conversation.streak > 0 && (
                         <StreakBadge streak={conversation.streak} />
@@ -467,8 +483,33 @@ const ChatListRow: React.FC<{
                             · {timeStr}
                         </span>
                     )}
+                    {conversation.muted ? (
+                        <span style={{ fontSize: 11, color: snapchatColors.textTimestamp, fontFamily: FONT }}>
+                            · Muted
+                        </span>
+                    ) : null}
                 </div>
             </div>
+            {hasUnread ? (
+                <div
+                    style={{
+                        minWidth: 20,
+                        height: 20,
+                        padding: "0 6px",
+                        borderRadius: 10,
+                        backgroundColor: snapchatColors.indicatorBlue,
+                        color: snapchatColors.white,
+                        fontSize: 11,
+                        fontWeight: 700,
+                        fontFamily: FONT,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                    }}
+                >
+                    {conversation.unreadCount}
+                </div>
+            ) : null}
         </div>
     );
 };
@@ -508,7 +549,8 @@ const ChatScreen: React.FC<{
         .filter(([, v]) => v)
         .map(([k]) => k);
     const keyboardState = useKeyboardState();
-    const composerText = keyboardState.inputText;
+    const storedDraft = conversationId ? state.drafts?.[conversationId] ?? "" : "";
+    const composerText = keyboardState.inputText || storedDraft;
     const showKeyboardCursor = keyboardState.isKeyboardVisible;
 
     const messageListRef = useRef<HTMLDivElement>(null);
@@ -718,22 +760,88 @@ const MessageRow: React.FC<{ message: SnapchatMessage }> = ({ message }) => {
 // SNAP VIEW
 // =============================================================================
 
-const SnapViewScreen: React.FC = () => (
-    <div
-        style={{
-            width: "100%",
-            height: "100%",
-            backgroundColor: snapchatColors.black,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-        }}
-    >
-        <span style={{ color: snapchatColors.white, fontSize: 18, fontFamily: FONT }}>
-            Viewing Snap...
-        </span>
-    </div>
-);
+const SnapViewScreen: React.FC<{ state: SnapchatState }> = ({ state }) => {
+    const conversation = state.activeConversationId
+        ? state.conversations?.[state.activeConversationId]
+        : undefined;
+    const snap = conversation?.messages.find((message) => message.id === state.activeSnapId);
+    const media = snap?.attachments?.[0];
+
+    return (
+        <div
+            style={{
+                width: "100%",
+                height: "100%",
+                backgroundColor: snapchatColors.black,
+                display: "flex",
+                flexDirection: "column",
+                position: "relative",
+                overflow: "hidden",
+            }}
+        >
+            {media?.url ? (
+                <Img
+                    src={media.url}
+                    alt=""
+                    style={{
+                        position: "absolute",
+                        inset: 0,
+                        width: "100%",
+                        height: "100%",
+                        objectFit: "cover",
+                        opacity: 0.92,
+                    }}
+                />
+            ) : null}
+            <div
+                style={{
+                    position: "absolute",
+                    inset: 0,
+                    background: "linear-gradient(180deg, rgba(0,0,0,0.42) 0%, rgba(0,0,0,0.08) 32%, rgba(0,0,0,0.48) 100%)",
+                }}
+            />
+            <div
+                style={{
+                    position: "relative",
+                    zIndex: 1,
+                    padding: "18px 16px",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 10,
+                }}
+            >
+                <BackArrowIcon size={22} color={snapchatColors.white} />
+                <BitmojiAvatar
+                    name={conversation?.title ?? conversation?.participants[0]?.name ?? "Snap"}
+                    avatar={conversation?.avatar ?? conversation?.participants[0]?.avatar}
+                    size={34}
+                />
+                <div style={{ color: snapchatColors.white, fontFamily: FONT }}>
+                    <div style={{ fontSize: 15, fontWeight: 700 }}>
+                        {conversation?.title ?? conversation?.participants[0]?.name ?? "Snap"}
+                    </div>
+                    <div style={{ fontSize: 12, opacity: 0.85 }}>
+                        {snap?.snapType === "video" ? "Video Snap" : "Photo Snap"}
+                    </div>
+                </div>
+            </div>
+            <div
+                style={{
+                    position: "relative",
+                    zIndex: 1,
+                    marginTop: "auto",
+                    padding: "18px 16px 26px",
+                    color: snapchatColors.white,
+                    fontFamily: FONT,
+                }}
+            >
+                <div style={{ fontSize: 13, opacity: 0.85 }}>
+                    {snap?.snapOpened ? "Opened" : "Tap to hold"}
+                </div>
+            </div>
+        </div>
+    );
+};
 
 // =============================================================================
 // MAIN
@@ -761,7 +869,7 @@ export const SnapchatView: React.FC<PluginViewProps> = (props) => {
                 />
             );
         case "snap_view":
-            return <SnapViewScreen />;
+            return <SnapViewScreen state={state} />;
         case "chat_list":
         default:
             return (

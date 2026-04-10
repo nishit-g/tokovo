@@ -1,5 +1,6 @@
 import React, { memo } from "react";
 import { Img, staticFile } from "remotion";
+import { resolveStaticAssetSrc } from "@tokovo/core";
 import {
   MediaBubbleBase,
   TimestampRow,
@@ -7,6 +8,7 @@ import {
   formatDuration,
 } from "./shared.js";
 import { useTheme } from "../../theme/ThemeContext.js";
+import type { DeliveryStage } from "../../utils/status.js";
 
 export interface VideoMessageBubbleProps {
   thumbnailUrl: string;
@@ -24,6 +26,7 @@ export interface VideoMessageBubbleProps {
   status?: "sending" | "sent" | "delivered" | "read";
   starred?: boolean;
   platform?: string;
+  deliveryStage?: DeliveryStage;
 }
 
 export const VideoMessageBubble = memo(function VideoMessageBubble({
@@ -41,11 +44,10 @@ export const VideoMessageBubble = memo(function VideoMessageBubble({
   readAt,
   status,
   starred = false,
+  deliveryStage,
 }: VideoMessageBubbleProps) {
   const theme = useTheme();
-  const resolvedThumbnailUrl = thumbnailUrl.startsWith("/")
-    ? staticFile(thumbnailUrl)
-    : thumbnailUrl;
+  const resolvedThumbnailUrl = resolveStaticAssetSrc(thumbnailUrl, staticFile);
 
   return (
     <MediaBubbleBase
@@ -64,6 +66,7 @@ export const VideoMessageBubble = memo(function VideoMessageBubble({
       <div style={{ position: "relative", overflow: "hidden" }}>
         <Img
           src={resolvedThumbnailUrl}
+          pauseWhenLoading
           style={{
             width: "100%",
             height: "auto",
@@ -134,6 +137,7 @@ export const VideoMessageBubble = memo(function VideoMessageBubble({
             deliveredAt={deliveredAt}
             readAt={readAt}
             status={status}
+            deliveryStage={deliveryStage}
           />
         )}
 
@@ -186,6 +190,7 @@ export const VideoMessageBubble = memo(function VideoMessageBubble({
             deliveredAt={deliveredAt}
             readAt={readAt}
             status={status}
+            deliveryStage={deliveryStage}
           />
         </div>
       )}

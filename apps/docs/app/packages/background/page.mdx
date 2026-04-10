@@ -1,0 +1,26 @@
+# @tokovo/background
+
+Background rendering layer used by video surfaces. It resolves preset/object configs and renders solid, gradient, image, video, or particle backgrounds.
+
+## Install
+
+```bash
+pnpm add @tokovo/background
+```
+
+## Example
+
+```tsx
+import { BackgroundLayer } from "@tokovo/background";
+
+export function SceneBackground({ frame }: { frame: number }) {
+  return <BackgroundLayer config="ambient-night" frame={frame} fps={30} />;
+}
+```
+
+## Useful Exports
+
+- `BackgroundLayer`, `PresetBackground`, `ImageBackground`, `VideoBackground`
+- `resolveBackground(...)`
+- `BACKGROUND_PRESETS`, `listPresets(...)`
+

@@ -1,80 +1,30 @@
-# Tokovo Camera V1 Reference
+# Tokovo Camera Reference
 
-Last updated: 2026-02-05
+This document captures the current camera-authoring expectations for Tokovo.
 
-## V1 Principles
+## Principles
 
-- Decoupled architecture: camera depends on `@tokovo/core` contracts only.
-- Track-first choreography: use long `track()` spans with sparse interrupt `focus()`.
-- Semantic anchors only: no unstable `message-N` anchors in production/showcases.
-- Deterministic execution: canonical effect names and strict lowering.
+- camera behavior must stay deterministic
+- semantic anchors are preferred over brittle element-specific guesses
+- long tracking spans are usually better than repeated focus-reset choreography
 
-## Breaking Changes
+## Current Controls
 
-1. `track(..., { lag })` removed.
-Use `track(..., { smoothing })`.
-2. Canonical effect names only:
-`focus`, `track`, `zoom`, `shake`, `reset`, `punch-zoom`, `dutch-tilt`, `flash`, `whip-pan`.
-3. Reducer aliases `anchor-focus` and `anchor-track` removed.
-4. Unknown camera/device event types now fail fast in lowering.
+Tokovo supports two main camera paths:
 
-## Track V1 Controls
+- compile-time direction through `CameraDirectorPlugin`
+- explicit scene choreography through the camera DSL
 
-```ts
-cam.span("2s", "12s").track("lastMessage", {
-  scale: 1.12,
-  smoothing: 0.2,
-  deadZonePx: 12,
-  maxVelocityPxPerSec: 900,
-  predictiveLookaheadFrames: 2,
-});
-```
+## Good Practice
 
-- `smoothing`: interpolation intensity.
-- `deadZonePx`: ignore micro jitter near target.
-- `maxVelocityPxPerSec`: clamp tracking speed per frame.
-- `predictiveLookaheadFrames`: lead motion slightly for bursty messaging.
+- use anchor-focused camera work
+- prefer semantic targets like `lastMessage`, `typingIndicator`, `inputArea`, or other stable app anchors
+- use explicit camera code for special beats and climactic moments
 
-## Camera DX CLI
+## Tooling
 
-```bash
-tokovo-camera lint packages/episodes/src
-tokovo-camera doctor
-tokovo-camera preview packages/episodes/src/production/whatsapp-to-x.episode.ts
-tokovo-camera migrate-v1 packages/episodes/src
-```
+`@tokovo/device-camera` ships the `tokovo-camera` CLI for linting, previewing, and migration support.
 
-## Live Camera Debug (Preview)
+## Constraint
 
-Enable live camera telemetry in `apps/video-runner`:
-
-```bash
-TOKOVO_CAMERA_DEBUG=1 pnpm --filter video-runner dev
-```
-
-When enabled, the preview shows:
-- current camera transform (`scale`, `origin`, `translate`, `rotation`, `shake`)
-- active camera effect type
-- current requested/resolved anchor
-- a red box around the currently focused/tracked anchor
-- fallback indicator when anchor resolution falls back
-- app-level panel in `apps/video-runner` (top-left toggle) with per-frame trace data
-- `Show All Anchors` mode to render every anchor rect + label
-- warning badges for `fallback_used`, `dead_zone_active`, `velocity_clamped`, `anchor_snapshot_missing`
-- effect timeline strip (current frame cursor + active effect highlight)
-- `Export Trace JSON` for frame-by-frame camera diagnostics
-- `Copy Repro Packet` for bug reports (episode, frame, URL, nearby trace window)
-
-## Multiple Devices vs Multiple Cameras
-
-- Multi-device rendering is supported today (split, vertical split, pip layouts).
-- Independent multi-camera timelines (separate camera engines per device at the same time) are not a first-class DSL/runtime feature yet.
-- Current model uses one camera state with active device/layout control, while renderer can display multiple devices.
-
-## CI Gates
-
-- `pnpm camera:lint`
-- `pnpm camera:bench`
-- `pnpm camera:ci`
-
-`camera:ci` must pass for merge.
+Tokovo currently treats camera as a single render-time system across the composition, even when multiple devices are visible.

@@ -1,7 +1,7 @@
 import React, { memo } from "react";
 import { useCurrentFrame } from "remotion";
 import { useTheme } from "../../theme/ThemeContext.js";
-import { resolveDeliveryStage } from "../../utils/status.js";
+import { type DeliveryStage, resolveDeliveryStage } from "../../utils/status.js";
 
 export interface MediaBubbleBaseProps {
   isMe: boolean;
@@ -16,6 +16,7 @@ export interface MediaBubbleBaseProps {
   showTimestampOverlay?: boolean;
   overlayTimestamp?: boolean;
   noPadding?: boolean;
+  deliveryStage?: DeliveryStage;
   children: React.ReactNode;
   footer?: React.ReactNode;
   width?: string | number;
@@ -23,15 +24,15 @@ export interface MediaBubbleBaseProps {
   maxWidth?: number;
 }
 
-export const MediaBubbleBase = memo(function MediaBubbleBase({
+interface MediaBubbleBaseInnerProps extends MediaBubbleBaseProps {
+  resolvedDeliveryStage?: DeliveryStage;
+}
+
+const MediaBubbleBaseInner = memo(function MediaBubbleBaseInner({
   isMe,
   senderName,
   timestamp = "10:42",
   read = false,
-  messageAt,
-  deliveredAt,
-  readAt,
-  status,
   starred = false,
   overlayTimestamp = false,
   noPadding = false,
@@ -40,23 +41,10 @@ export const MediaBubbleBase = memo(function MediaBubbleBase({
   width = "100%",
   minWidth,
   maxWidth,
-}: MediaBubbleBaseProps) {
+  resolvedDeliveryStage,
+}: MediaBubbleBaseInnerProps) {
   const theme = useTheme();
-  const currentFrame = useCurrentFrame();
   const paddingH = theme.spacing.messagePaddingHorizontal - 4;
-  const deliveryStage =
-    isMe
-      ? resolveDeliveryStage(
-        {
-          from: "me",
-          at: messageAt,
-          deliveredAt,
-          readAt,
-          status,
-        },
-        currentFrame,
-      )
-      : undefined;
 
   return (
     <div
@@ -108,7 +96,7 @@ export const MediaBubbleBase = memo(function MediaBubbleBase({
           isMe={isMe}
           read={read}
           starred={starred}
-          deliveryStage={deliveryStage}
+          deliveryStage={resolvedDeliveryStage}
         />
       )}
 
@@ -117,43 +105,60 @@ export const MediaBubbleBase = memo(function MediaBubbleBase({
   );
 });
 
-export const TimestampRow = memo(function TimestampRow({
+const MediaBubbleBaseDynamic = memo(function MediaBubbleBaseDynamic(
+  props: MediaBubbleBaseProps,
+) {
+  const currentFrame = useCurrentFrame();
+  const resolvedDeliveryStage =
+    props.deliveryStage ??
+    resolveDeliveryStage(
+      {
+        from: "me",
+        at: props.messageAt,
+        deliveredAt: props.deliveredAt,
+        readAt: props.readAt,
+        status: props.status,
+      },
+      currentFrame,
+    );
+
+  return (
+    <MediaBubbleBaseInner
+      {...props}
+      resolvedDeliveryStage={resolvedDeliveryStage}
+    />
+  );
+});
+
+export const MediaBubbleBase = memo(function MediaBubbleBase(
+  props: MediaBubbleBaseProps,
+) {
+  if (props.deliveryStage !== undefined || props.overlayTimestamp || !props.isMe) {
+    return (
+      <MediaBubbleBaseInner
+        {...props}
+        resolvedDeliveryStage={props.deliveryStage}
+      />
+    );
+  }
+
+  return <MediaBubbleBaseDynamic {...props} />;
+});
+
+const TimestampRowStatic = memo(function TimestampRowStatic({
   timestamp,
   isMe,
   read,
   starred = false,
   deliveryStage,
-  messageAt,
-  deliveredAt,
-  readAt,
-  status,
 }: {
   timestamp: string;
   isMe: boolean;
   read: boolean;
   starred?: boolean;
-  deliveryStage?: "sent" | "delivered" | "read";
-  messageAt?: number;
-  deliveredAt?: number;
-  readAt?: number;
-  status?: "sending" | "sent" | "delivered" | "read";
+  deliveryStage?: DeliveryStage;
 }) {
   const theme = useTheme();
-  const currentFrame = useCurrentFrame();
-  const resolvedStage =
-    deliveryStage ??
-    (isMe
-      ? resolveDeliveryStage(
-        {
-          from: "me",
-          at: messageAt,
-          deliveredAt,
-          readAt,
-          status,
-        },
-        currentFrame,
-      )
-      : undefined);
   return (
     <div
       style={{
@@ -178,50 +183,75 @@ export const TimestampRow = memo(function TimestampRow({
       )}
       {isMe && (
         <DoubleCheckIcon
-          stage={resolvedStage ?? (read ? "read" : "delivered")}
+          stage={deliveryStage ?? (read ? "read" : "delivered")}
         />
       )}
     </div>
   );
 });
 
-export const TimestampOverlay = memo(function TimestampOverlay({
-  timestamp,
-  isMe,
-  read,
-  starred = false,
-  deliveryStage,
-  messageAt,
-  deliveredAt,
-  readAt,
-  status,
-}: {
+const TimestampRowDynamic = memo(function TimestampRowDynamic(props: {
   timestamp: string;
   isMe: boolean;
   read: boolean;
   starred?: boolean;
-  deliveryStage?: "sent" | "delivered" | "read";
+  deliveryStage?: DeliveryStage;
   messageAt?: number;
   deliveredAt?: number;
   readAt?: number;
   status?: "sending" | "sent" | "delivered" | "read";
 }) {
-  const theme = useTheme();
   const currentFrame = useCurrentFrame();
-  const resolvedStage =
-    deliveryStage ??
-    (isMe
+  const deliveryStage =
+    props.deliveryStage ??
+    (props.isMe
       ? resolveDeliveryStage(
         {
           from: "me",
-          at: messageAt,
-          deliveredAt,
-          readAt,
-          status,
+          at: props.messageAt,
+          deliveredAt: props.deliveredAt,
+          readAt: props.readAt,
+          status: props.status,
         },
         currentFrame,
       )
       : undefined);
+
+  return <TimestampRowStatic {...props} deliveryStage={deliveryStage} />;
+});
+
+export const TimestampRow = memo(function TimestampRow(props: {
+  timestamp: string;
+  isMe: boolean;
+  read: boolean;
+  starred?: boolean;
+  deliveryStage?: DeliveryStage;
+  messageAt?: number;
+  deliveredAt?: number;
+  readAt?: number;
+  status?: "sending" | "sent" | "delivered" | "read";
+}) {
+  if (props.deliveryStage !== undefined || !props.isMe) {
+    return <TimestampRowStatic {...props} />;
+  }
+
+  return <TimestampRowDynamic {...props} />;
+});
+
+const TimestampOverlayStatic = memo(function TimestampOverlayStatic({
+  timestamp,
+  isMe,
+  read,
+  starred = false,
+  deliveryStage,
+}: {
+  timestamp: string;
+  isMe: boolean;
+  read: boolean;
+  starred?: boolean;
+  deliveryStage?: DeliveryStage;
+}) {
+  const theme = useTheme();
   return (
     <div
       style={{
@@ -248,12 +278,60 @@ export const TimestampOverlay = memo(function TimestampOverlay({
       {starred && <span style={{ color: "#FFFFFF", fontSize: 10 }}>★</span>}
       {isMe && (
         <DoubleCheckIcon
-          stage={resolvedStage ?? (read ? "read" : "delivered")}
+          stage={deliveryStage ?? (read ? "read" : "delivered")}
           light
         />
       )}
     </div>
   );
+});
+
+const TimestampOverlayDynamic = memo(function TimestampOverlayDynamic(props: {
+  timestamp: string;
+  isMe: boolean;
+  read: boolean;
+  starred?: boolean;
+  deliveryStage?: DeliveryStage;
+  messageAt?: number;
+  deliveredAt?: number;
+  readAt?: number;
+  status?: "sending" | "sent" | "delivered" | "read";
+}) {
+  const currentFrame = useCurrentFrame();
+  const deliveryStage =
+    props.deliveryStage ??
+    (props.isMe
+      ? resolveDeliveryStage(
+        {
+          from: "me",
+          at: props.messageAt,
+          deliveredAt: props.deliveredAt,
+          readAt: props.readAt,
+          status: props.status,
+        },
+        currentFrame,
+      )
+      : undefined);
+
+  return <TimestampOverlayStatic {...props} deliveryStage={deliveryStage} />;
+});
+
+export const TimestampOverlay = memo(function TimestampOverlay(props: {
+  timestamp: string;
+  isMe: boolean;
+  read: boolean;
+  starred?: boolean;
+  deliveryStage?: DeliveryStage;
+  messageAt?: number;
+  deliveredAt?: number;
+  readAt?: number;
+  status?: "sending" | "sent" | "delivered" | "read";
+}) {
+  if (props.deliveryStage !== undefined || !props.isMe) {
+    return <TimestampOverlayStatic {...props} />;
+  }
+
+  return <TimestampOverlayDynamic {...props} />;
 });
 
 export const DoubleCheckIcon = memo(function DoubleCheckIcon({

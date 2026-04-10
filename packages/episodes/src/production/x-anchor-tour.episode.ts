@@ -29,62 +29,60 @@ export default defineEpisode({
           network: "5G",
         },
       })
+      .snapshot("app_x", "phone", {
+        users: [
+          {
+            id: "u_me",
+            name: "Nishit",
+            handle: "nishit",
+            bio: "Narrative systems",
+            followers: 21300,
+            following: 520,
+            verified: "blue",
+          },
+          {
+            id: "u_lee",
+            name: "Lee",
+            handle: "lee_ui",
+            bio: "UI and motion",
+            followers: 10800,
+            following: 410,
+            verified: "gold",
+          },
+        ],
+        currentUserId: "u_me",
+        tweets: [
+          {
+            id: "tw_1",
+            authorId: "u_lee",
+            text: "Anchor-based camera is massively cleaner than manual keyframes.",
+            createdAt: new Date("2025-02-11T19:15:00").getTime(),
+            hashtags: ["camera", "ui"],
+            mentions: [],
+            viewCount: 9300,
+            shareCount: 102,
+            bookmarkCount: 240,
+          },
+        ],
+        notifications: [
+          {
+            id: "nt_1",
+            type: "mention",
+            actorId: "u_lee",
+            tweetId: "tw_1",
+            isMention: true,
+            createdAt: new Date("2025-02-11T19:18:00").getTime(),
+          },
+        ],
+      })
+      .view("app_x", "phone", {
+        screen: "timeline",
+        notificationsTab: "all",
+      })
       .track(
         "app_x",
         (getOrder) => new XTrackBuilder(30, "phone", getOrder),
         (x) => {
-          x.seed(
-            {
-              users: [
-                {
-                  id: "u_me",
-                  name: "Nishit",
-                  handle: "nishit",
-                  bio: "Narrative systems",
-                  followers: 21300,
-                  following: 520,
-                  verified: "blue",
-                },
-                {
-                  id: "u_lee",
-                  name: "Lee",
-                  handle: "lee_ui",
-                  bio: "UI and motion",
-                  followers: 10800,
-                  following: 410,
-                  verified: "gold",
-                },
-              ],
-              currentUserId: "u_me",
-              tweets: [
-                {
-                  id: "tw_1",
-                  authorId: "u_lee",
-                  text: "Anchor-based camera is massively cleaner than manual keyframes.",
-                  createdAt: new Date("2025-02-11T19:15:00").getTime(),
-                  hashtags: ["camera", "ui"],
-                  mentions: [],
-                  viewCount: 9300,
-                  shareCount: 102,
-                  bookmarkCount: 240,
-                },
-              ],
-              notifications: [
-                {
-                  id: "nt_1",
-                  type: "mention",
-                  actorId: "u_lee",
-                  tweetId: "tw_1",
-                  isMention: true,
-                  createdAt: new Date("2025-02-11T19:18:00").getTime(),
-                },
-              ],
-              screen: "timeline",
-              notificationsTab: "all",
-            },
-            "0s",
-          );
-
           x.at("2.8s").navigate("tweet", { tweetId: "tw_1" });
           x.at("5.2s").navigate("notifications");
           x.at("6.8s").navigate("messages");
@@ -112,4 +110,3 @@ export default defineEpisode({
       })
       .build(),
 });
-

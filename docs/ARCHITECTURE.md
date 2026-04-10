@@ -1,80 +1,60 @@
 # Tokovo Architecture Guide
 
-This document describes the architectural decisions and package boundaries in Tokovo.
+This document describes the package boundaries that keep Tokovo deterministic while staying code-first.
 
-## Package Hierarchy
+## Runtime Hierarchy
 
-```
-@tokovo/core       Pure logic layer (no React, no UI)
-     ↓
-@tokovo/react      React bindings, UI types, registries
-     ↓
-@tokovo/renderer   React components for rendering
-     ↓
-@tokovo/apps-*     App-specific plugins (WhatsApp, etc.)
+```text
+Episodes and DSL
+  -> compiler and ir
+  -> core replay
+  -> react and renderer
+  -> video-runner
 ```
 
 ## Core Principles
 
-### 1. Core is Headless
-`@tokovo/core` contains pure business logic with **zero React dependencies**:
-- Engine replay functions
-- Event handlers
-- Type definitions
-- Config management
+### 1. Core Is Headless
 
-**ESLint enforces this** - importing `react`, `@tokovo/react`, or `@tokovo/renderer` from core will fail linting.
+`@tokovo/core` contains pure runtime logic with zero React dependencies.
 
-### 2. Immutable Config
-The global config is deeply frozen via `createConfig()`:
-```typescript
-import { createConfig, TokovoConfig } from "@tokovo/core";
+### 2. Determinism Is Non-Negotiable
 
-// Default config is immutable (frozen)
-TokovoConfig.timing.defaultTransitionDuration = 100; // Throws!
+Renders must depend on committed manifest artifacts, committed episode code, and explicit runtime registration, not on live CMS reads or hidden mutable state.
 
-// Create custom config for testing/overrides
-const customConfig = createConfig({ timing: { ... } });
-```
+### 3. Code Is Canonical For Authoring Data
 
-### 3. Render Mode Safety
-In render mode, the engine enforces strict requirements:
-- `replay()` throws - use `replayIncremental()` with StateCache
-- Missing devices throw instead of silently failing
-- Missing view state throws instead of guessing
+Episodes, app snapshots, initial views, assets, and per-device theme choices live in checked-in TypeScript.
 
-### 4. Layout Caching
-Two levels of caching:
-1. **Per-conversation cache** (WhatsApp): Hashes message content, edits, reactions, previews
-2. **Per-frame cache** (renderer): Caches layout output by world signature
+### 4. Story Logic Stays In Code
 
-## Package Boundaries (Enforced by ESLint)
+`*.episode.ts` files own scene choreography, timing, camera direction, audio direction, and app sequencing.
 
-| From Package | Cannot Import |
-|--------------|---------------|
-| `@tokovo/core` | `@tokovo/react`, `@tokovo/renderer`, `react` |
-| `@tokovo/renderer` | `@tokovo/apps-*` (use registries) |
+## Frame-0 Bootstrap Model
 
-## Episode Registry
+Tokovo supports exactly one bootstrap model:
 
-```typescript
-import { createEpisodeRegistry } from "@tokovo/episodes";
-const registry = createEpisodeRegistry();
+- `device()` defines device and OS state only
+- `snapshot(appId, deviceId, data)` defines plugin-owned app data before frame 0
+- `view(appId, deviceId, data)` defines the explicit frame-0 UI route
+- timeline events define live mutations after frame 0
 
-// Get snapshot for multi-process pipelines
-const episodes = getEpisodeRegistrySnapshot(registry);
-```
+Legacy device-owned app history is not supported. The compiler does not synthesize app conversations, feeds, or threads.
 
-## Legacy Exports
+## Plugin Ownership
 
-Deprecated exports are in `@tokovo/devices/legacy`:
-```typescript
-// ⚠️ Deprecated - use registries instead
-import { iPhone16Frame } from "@tokovo/devices/legacy";
-```
+Each app plugin owns:
 
-## Test Coverage
+- the snapshot schema
+- the initial-view schema
+- version migration rules for those schemas
+- validation before hydration
+- hydration into runtime state
 
-- **Core**: Comprehensive unit tests
-- **Renderer**: `layout-engine.test.ts` - determinism tests
-- **Apps**: `layout-cache.test.ts` - hash invalidation tests
+This keeps app-domain logic inside app packages and keeps `@tokovo/compiler` orchestration-only.
+
+## Local Workflow
+
+1. edit episode code
+2. build the video surface
+3. preview or render from the checked-in repo state

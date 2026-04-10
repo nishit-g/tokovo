@@ -13,6 +13,7 @@
 
 export {
   prepareTrackEpisode,
+  collectEpisodeAssetRefs,
   lowerTrackEvent,
   lowerTrackEvents,
   lowerEpisode,

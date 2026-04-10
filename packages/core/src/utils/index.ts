@@ -24,3 +24,7 @@ export {
 export * from "./state-cache.js";
 
 export * from "./result.js";
+
+export * from "./public-asset.js";
+
+export * from "./bootstrap-schema.js";

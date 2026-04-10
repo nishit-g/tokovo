@@ -12,14 +12,19 @@
  * @see docs-v2/EPISODE-ARCH.md
  */
 
-import React, { useMemo, useState, useEffect, useRef, useCallback } from "react";
+import React, {
+  useMemo,
+  useState,
+  useRef,
+  useCallback,
+  useEffect,
+} from "react";
 import {
   AbsoluteFill,
   useCurrentFrame,
+  useDelayRender,
+  useRemotionEnvironment,
   useVideoConfig,
-  delayRender,
-  continueRender,
-  staticFile,
 } from "remotion";
 import { BackgroundLayer } from "@tokovo/background";
 import {
@@ -28,10 +33,6 @@ import {
   createStateCache,
   createConfig,
 } from "@tokovo/core";
-import {
-  prepareTrackEpisode,
-  type PreparedTrackEpisode,
-} from "@tokovo/compiler";
 import {
   TokovoRenderer,
   AudioLayer,
@@ -42,100 +43,25 @@ import {
 import {
   SimpleVoiceLayer,
   VoiceLayer,
-  type VoiceManifest,
   type VoicePlayEvent,
-  voiceScheduleToSoundCues,
+  computeVoiceDuckingRanges,
 } from "@tokovo/voice";
-import type { VoiceConfig, BackgroundConfigIR } from "@tokovo/ir";
-import {
-  ensureCanvasProfile,
-  getDeviceProfile,
-  resolveCanvasProfileId,
-} from "@tokovo/devices";
-import {
-  getFormat,
-  type EpisodeDefinition,
-  type FormatId,
-} from "@tokovo/episodes";
-import type { PluginManagerClass } from "@tokovo/react";
+import { getDeviceProfile } from "@tokovo/devices";
+import type { EpisodeRendererProps } from "./episode-renderer-contract";
 import { ErrorBoundary } from "./ErrorBoundary";
-import { useVideoRunnerRuntime } from "./RuntimeContext";
-import { createVideoRunnerEpisodeRegistry } from "./episode-registry";
-
-const METADATA_EPISODE_REGISTRY = createVideoRunnerEpisodeRegistry();
+import { useVideoRunnerRuntime } from "./RuntimeSharedContext";
+import {
+  getCachedEpisodeRenderData,
+  getEpisodeRenderData,
+  type EpisodeRenderData,
+} from "./render-data";
+import { computeVoiceDuckMultiplierAtFrame } from "./voice-ducking";
+import { useEpisodeAssetPrefetch } from "./asset-prefetch";
 
 const CAMERA_DEBUG_ENABLED = process.env.TOKOVO_CAMERA_DEBUG === "1";
 const MAX_DEBUG_TRACE_FRAMES = 5000;
 
-// =============================================================================
-// TYPES
-// =============================================================================
-
-export type EpisodeRendererProps = {
-  episodeId: string;
-};
-
 type CameraTraceStore = Map<number, CameraDebugFrame>;
-
-// =============================================================================
-// CALCULATE METADATA (for Remotion's calculateMetadata prop)
-// =============================================================================
-
-/**
- * Calculate metadata for dynamic composition configuration.
- * Used by Remotion's calculateMetadata prop.
- */
-export async function calculateEpisodeMetadata({
-  props,
-}: {
-  props: EpisodeRendererProps;
-}) {
-  const episode = METADATA_EPISODE_REGISTRY.get(props.episodeId);
-  if (!episode) {
-    console.warn(
-      `[calculateEpisodeMetadata] Episode not found: ${props.episodeId}`,
-    );
-    return {};
-  }
-
-  const format =
-    typeof episode.config.format === "string"
-      ? getFormat(episode.config.format as FormatId)
-      : episode.config.format;
-
-  return {
-    durationInFrames: episode.config.durationInFrames,
-    fps: format.fps,
-    width: format.width,
-    height: format.height,
-  };
-}
-
-// =============================================================================
-// PLUGIN RESOLVER
-// =============================================================================
-
-function resolvePlugins(
-  pluginManager: PluginManagerClass,
-  appIds: string[],
-) {
-  const missing: string[] = [];
-  const plugins = appIds
-    .map((appId) => {
-      const plugin = pluginManager.get(appId);
-      if (!plugin) missing.push(appId);
-      return plugin;
-    })
-    .filter(
-      (plugin): plugin is NonNullable<typeof plugin> => plugin !== undefined,
-    );
-  if (missing.length > 0) {
-    console.warn(
-      `[Video-Runner] Missing plugins for appIds: ${missing.join(", ")}`,
-    );
-  }
-  return plugins;
-}
 
 // =============================================================================
 // EPISODE RENDERER COMPONENT
@@ -144,17 +70,17 @@ function resolvePlugins(
 // Wrapper that forces remount when episodeId changes
 export const EpisodeRenderer: React.FC<EpisodeRendererProps> = ({
   episodeId,
+  renderDataKey,
+  renderData,
 }) => {
-  const videoConfig = useVideoConfig();
-  const activeCompositionId = (videoConfig as { id?: string }).id;
-
-  if (activeCompositionId && activeCompositionId !== episodeId) {
-    return null;
-  }
-
   return (
     <ErrorBoundary>
-      <EpisodeRendererInner key={episodeId} episodeId={episodeId} />
+      <EpisodeRendererInner
+        key={episodeId}
+        episodeId={episodeId}
+        renderDataKey={renderDataKey}
+        renderData={renderData}
+      />
     </ErrorBoundary>
   );
 };
@@ -162,20 +88,21 @@ export const EpisodeRenderer: React.FC<EpisodeRendererProps> = ({
 // Inner component that does the actual rendering
 const EpisodeRendererInner: React.FC<EpisodeRendererProps> = ({
   episodeId,
+  renderDataKey,
+  renderData: renderDataProp,
 }) => {
-  const { episodeRegistry, pluginManager, rendererRegistries, tokovoRegistries } =
+  const { pluginManager, rendererRegistries, tokovoRegistries } =
     useVideoRunnerRuntime();
+  const { delayRender, continueRender, cancelRender } = useDelayRender();
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
-  const [handle] = useState(() => delayRender(`Loading episode: ${episodeId}`));
-  const [prepared, setPrepared] = useState<PreparedTrackEpisode | null>(null);
-  const [episode, setEpisode] = useState<EpisodeDefinition | null>(null);
-  const [voiceManifest, setVoiceManifest] = useState<VoiceManifest | null>(
-    null,
+  const env = useRemotionEnvironment();
+  const renderMode = env.isRendering ? "render" : "preview";
+  const [renderData, setRenderData] = useState<EpisodeRenderData | null>(() =>
+    renderDataProp ?? getCachedEpisodeRenderData(renderDataKey),
   );
-  const [voiceConfig, setVoiceConfig] = useState<VoiceConfig | null>(null);
-  const [backgroundConfig, setBackgroundConfig] = useState<BackgroundConfigIR | null>(null);
-  const [error, setError] = useState<Error | null>(null);
+  const [renderDataError, setRenderDataError] = useState<Error | null>(null);
+  const loadingHandleRef = useRef<number | null>(null);
   const [cameraDebugFrame, setCameraDebugFrame] = useState<CameraDebugFrame | null>(null);
   const debugFromUrl = useMemo(() => {
     if (typeof window === "undefined") return false;
@@ -184,7 +111,8 @@ const EpisodeRendererInner: React.FC<EpisodeRendererProps> = ({
     const value = raw.toLowerCase();
     return value === "1" || value === "true" || value === "yes";
   }, []);
-  const cameraDebugEnabled = CAMERA_DEBUG_ENABLED || debugFromUrl;
+  const cameraDebugEnabled =
+    !env.isRendering && (CAMERA_DEBUG_ENABLED || debugFromUrl);
   const [showCameraPanel, setShowCameraPanel] = useState(cameraDebugEnabled);
   const [showAllAnchors, setShowAllAnchors] = useState(false);
   const [debugActionMessage, setDebugActionMessage] = useState<string>("");
@@ -192,6 +120,82 @@ const EpisodeRendererInner: React.FC<EpisodeRendererProps> = ({
   const [traceVersion, setTraceVersion] = useState(0);
 
   const config = useMemo(() => createConfig(), []);
+
+  useEffect(() => {
+    if (renderDataProp) {
+      setRenderData(renderDataProp);
+      setRenderDataError(null);
+      return;
+    }
+
+    const cached = getCachedEpisodeRenderData(renderDataKey);
+    if (cached) {
+      setRenderData(cached);
+      setRenderDataError(null);
+      return;
+    }
+
+    if (env.isRendering) {
+      const error = new Error(
+        `Missing prepared render data for episode ${episodeId}. Rendering must pass renderData from calculateMetadata().`,
+      );
+      setRenderDataError(error);
+      cancelRender(error);
+      return;
+    }
+
+    const handle = delayRender(`load render data for ${episodeId}`);
+    loadingHandleRef.current = handle;
+    let cancelled = false;
+
+    getEpisodeRenderData(episodeId)
+      .then((nextRenderData) => {
+        if (cancelled) {
+          return;
+        }
+        setRenderData(nextRenderData);
+        setRenderDataError(null);
+        continueRender(handle);
+        loadingHandleRef.current = null;
+      })
+      .catch((error: unknown) => {
+        if (cancelled) {
+          return;
+        }
+        const nextError =
+          error instanceof Error ? error : new Error(String(error));
+        setRenderDataError(nextError);
+        if (env.isRendering) {
+          cancelRender(nextError);
+        } else {
+          continueRender(handle);
+        }
+        loadingHandleRef.current = null;
+      });
+
+    return () => {
+      cancelled = true;
+      if (loadingHandleRef.current !== null) {
+        continueRender(loadingHandleRef.current);
+        loadingHandleRef.current = null;
+      }
+    };
+  }, [
+    cancelRender,
+    continueRender,
+    delayRender,
+    env.isRendering,
+    episodeId,
+    renderDataKey,
+    renderDataProp,
+  ]);
+
+  useEpisodeAssetPrefetch({
+    assetRefs: renderData?.prepared.assetRefs ?? [],
+    frame,
+    fps,
+    disabled: env.isRendering || !renderData,
+  });
 
   const handleCameraDebugFrame = useCallback((entry: CameraDebugFrame) => {
     setCameraDebugFrame(entry);
@@ -212,7 +216,7 @@ const EpisodeRendererInner: React.FC<EpisodeRendererProps> = ({
       .map(([, value]) => value);
   }, [traceVersion]);
 
-  const timelineDurationInFrames = episode?.config.durationInFrames ?? 1;
+  const timelineDurationInFrames = renderData?.durationInFrames ?? 1;
 
   const exportTraceJson = useCallback(() => {
     if (!cameraDebugFrame) return;
@@ -253,138 +257,33 @@ const EpisodeRendererInner: React.FC<EpisodeRendererProps> = ({
     }
   }, [cameraDebugFrame, episodeId, sortedTrace]);
 
-  // === PREPARE EPISODE (runs once on mount) ===
-  useEffect(() => {
-    async function prepare() {
-      try {
-        const ep = episodeRegistry.get(episodeId);
-        if (!ep) {
-          throw new Error(`Episode not found: ${episodeId}`);
-        }
-        setEpisode(ep);
-
-        const ir = ep.build();
-
-        // Resolve placeholder canvas device profiles deterministically from episode format.
-        const fmt =
-          typeof ep.config.format === "string"
-            ? getFormat(ep.config.format as FormatId)
-            : ep.config.format;
-        for (const d of ir.devices ?? []) {
-          if (d.profile === "canvas") {
-            const canvasId = resolveCanvasProfileId({
-              width: fmt.width,
-              height: fmt.height,
-            });
-            d.profile = canvasId;
-            ensureCanvasProfile(rendererRegistries.devices, canvasId, {
-              width: fmt.width,
-              height: fmt.height,
-            });
-          }
-        }
-
-        // Store background config
-        if (ir.background) {
-          setBackgroundConfig(ir.background);
-        }
-
-        if (ir.voice) {
-          setVoiceConfig(ir.voice);
-
-          if (ir.voice.segments && ir.voice.segments.length > 0) {
-            const embeddedManifest: VoiceManifest = {
-              scriptId: episodeId,
-              audioFile: ir.voice.audioPath,
-              durationMs: ir.voice.durationMs || 0,
-              generatedAt: new Date().toISOString(),
-              provider: "embedded",
-              model: "embedded",
-              contentHash: "embedded",
-              segments: ir.voice.segments.map((seg, index) => ({
-                index,
-                id: seg.id,
-                speaker: seg.speaker,
-                text: seg.text || "",
-                startMs: seg.startMs,
-                endMs: seg.endMs,
-                durationMs: seg.durationMs ?? seg.endMs - seg.startMs,
-              })),
-            };
-            setVoiceManifest(embeddedManifest);
-          } else if (ir.voice.manifestPath) {
-            const manifestUrl = ir.voice.manifestPath.startsWith("/")
-              ? staticFile(ir.voice.manifestPath)
-              : ir.voice.manifestPath;
-            const manifestResponse = await fetch(manifestUrl);
-            if (!manifestResponse.ok) {
-              throw new Error(
-                `Voice manifest failed to load: ${ir.voice.manifestPath} (HTTP ${manifestResponse.status})`,
-              );
-            }
-            const manifest = await manifestResponse.json();
-            setVoiceManifest(manifest);
-          } else {
-            throw new Error(
-              `Voice config invalid: must have either embedded segments or manifestPath`,
-            );
-          }
-        }
-
-        const plugins = resolvePlugins(pluginManager, ep.config.apps);
-        const result = prepareTrackEpisode(ir, plugins, {
-          config,
-          validate: true,
-          log: false,
-        });
-
-        setPrepared(result);
-        continueRender(handle);
-      } catch (e) {
-        console.error(`[EpisodeRenderer] Failed to prepare: ${episodeId}`, e);
-        setError(e as Error);
-        continueRender(handle);
-      }
-    }
-    prepare();
-  }, [
-    episodeId,
-    handle,
-    config,
-    episodeRegistry,
-    pluginManager,
-    rendererRegistries.devices,
-  ]);
-
-  // === ALL HOOKS MUST BE CALLED BEFORE CONDITIONAL RETURNS ===
-  // (React rules of hooks - hooks must be called unconditionally)
-
   // === CREATE EVENT INDEX + STATE CACHE ===
   const keyframedEventIndex = useMemo(() => {
-    if (!prepared) return null;
-    return (
-      prepared.keyframedEventIndex ??
-      createKeyframedEventIndex(
-        prepared.events,
+    if (!renderData) return null;
+    return createKeyframedEventIndex(
+      renderData.prepared.events,
+      renderData.prepared.keyframeInterval ??
         config.rendering.cacheKeyframeInterval,
-      )
     );
-  }, [prepared, config.rendering.cacheKeyframeInterval]);
+  }, [renderData, config.rendering.cacheKeyframeInterval]);
 
   const stateCache = useMemo(() => {
-    if (!prepared) return null;
-    return createStateCache(config.rendering.cacheKeyframeInterval);
-  }, [prepared, config.rendering.cacheKeyframeInterval]);
+    if (!renderData) return null;
+    return createStateCache(
+      renderData.prepared.keyframeInterval ??
+        config.rendering.cacheKeyframeInterval,
+    );
+  }, [renderData, config.rendering.cacheKeyframeInterval]);
 
   // === RUN EPISODE AT CURRENT FRAME ===
   const world = useMemo(() => {
-    if (!prepared || !keyframedEventIndex || !stateCache) return null;
+    if (!renderData || !keyframedEventIndex || !stateCache) return null;
     return replayIncremental(
-      prepared.initialWorld,
-      prepared.events,
+      renderData.prepared.initialWorld,
+      renderData.prepared.events,
       frame,
       {
-        mode: "preview",
+        mode: renderMode,
         fps,
         registries: tokovoRegistries.engine,
         config,
@@ -392,12 +291,21 @@ const EpisodeRendererInner: React.FC<EpisodeRendererProps> = ({
       keyframedEventIndex,
       stateCache,
     );
-  }, [prepared, keyframedEventIndex, stateCache, frame, fps, config]);
+  }, [
+    renderData,
+    keyframedEventIndex,
+    stateCache,
+    frame,
+    fps,
+    config,
+    renderMode,
+    tokovoRegistries.engine,
+  ]);
 
   // === BUILD VOICE EVENTS FOR PER-SEGMENT CONTROL ===
   const voiceEvents = useMemo((): VoicePlayEvent[] => {
-    if (!voiceConfig?.usePerSegmentControl) return [];
-    const schedule = voiceConfig.segmentSchedule;
+    if (!renderData?.voiceConfig?.usePerSegmentControl) return [];
+    const schedule = renderData.voiceConfig.segmentSchedule;
     if (!schedule) return [];
 
     return schedule.map((s) => ({
@@ -410,50 +318,44 @@ const EpisodeRendererInner: React.FC<EpisodeRendererProps> = ({
         speed: s.speed,
       },
     }));
-  }, [voiceConfig]);
+  }, [renderData]);
 
-  const voiceSoundCues = useMemo(() => {
-    if (!voiceConfig?.segmentSchedule || !voiceConfig.segments) {
+  const voiceDuckingRanges = useMemo(() => {
+    if (!renderData?.voiceManifest || voiceEvents.length === 0) {
       return [];
     }
-    return voiceScheduleToSoundCues(
-      voiceConfig.segmentSchedule,
-      voiceConfig.segments,
-      { fps, audioPath: voiceConfig.audioPath },
-    );
-  }, [voiceConfig, fps]);
 
-  const worldWithVoice = useMemo(() => {
-    if (!world) return null;
-    if (voiceSoundCues.length === 0) return world;
-    const voiceCueRecord: Record<string, (typeof voiceSoundCues)[number]> = {};
-    voiceSoundCues.forEach((cue, i) => {
-      voiceCueRecord[`voice-${i}`] = cue;
-    });
-    return {
-      ...world,
-      audio: {
-        ...world.audio,
-        activeSounds: { ...world.audio.activeSounds, ...voiceCueRecord },
-      },
-    };
-  }, [world, voiceSoundCues]);
+    return computeVoiceDuckingRanges(voiceEvents, renderData.voiceManifest, fps)
+      .map(({ startFrame, endFrame }) => ({ startFrame, endFrame }))
+      .sort((a, b) => a.startFrame - b.startFrame);
+  }, [renderData, voiceEvents, fps]);
+
+  const musicDuckMultiplier = useMemo(() => {
+    return computeVoiceDuckMultiplierAtFrame(frame, voiceDuckingRanges);
+  }, [frame, voiceDuckingRanges]);
+
+  const backgroundUsesTimeline = useMemo(() => {
+    const backgroundConfig = renderData?.backgroundConfig;
+    const type =
+      backgroundConfig && typeof backgroundConfig === "object"
+        ? backgroundConfig.type
+        : null;
+    return type === "particles" || type === "ambient";
+  }, [renderData?.backgroundConfig]);
 
   // === CALCULATE FORMAT AND SCALE ===
   const fmt = useMemo((): { width: number; height: number; fps: number } => {
-    if (!episode) return { width: 1080, height: 1920, fps: 30 };
-    return typeof episode.config.format === "string"
-      ? getFormat(episode.config.format as FormatId)
-      : episode.config.format;
-  }, [episode]);
+    if (!renderData) return { width: 1080, height: 1920, fps: 30 };
+    return renderData.format;
+  }, [renderData]);
 
   const { scale } = useMemo(() => {
-    if (!episode) return { scale: 1 };
+    if (!renderData) return { scale: 1 };
     const deviceId =
-      worldWithVoice?.camera?.activeDeviceId ||
-      Object.keys(worldWithVoice?.devices ?? {})[0];
+      world?.camera?.activeDeviceId ||
+      Object.keys(world?.devices ?? {})[0];
     const profileId =
-      (deviceId && worldWithVoice?.devices?.[deviceId]?.profileId) ||
+      (deviceId && world?.devices?.[deviceId]?.profileId) ||
       "iphone16";
     const profile = getDeviceProfile(rendererRegistries.devices, profileId);
     // Scale device to fit in canvas with some margin for background visibility
@@ -465,15 +367,15 @@ const EpisodeRendererInner: React.FC<EpisodeRendererProps> = ({
     // Canvas devices should fill the video. Phones keep a margin for background visibility.
     const s = isCanvas ? fitScale : fitScale * 0.85;
     return { scale: s };
-  }, [episode, fmt.height, fmt.width, worldWithVoice, rendererRegistries.devices]);
+  }, [renderData, fmt.height, fmt.width, world, rendererRegistries.devices]);
 
-  // === ERROR STATE ===
-  if (error) {
+  // === LOADING STATE ===
+  if (renderDataError) {
     return (
       <AbsoluteFill style={errorStyle}>
         <div style={{ fontSize: 80, marginBottom: 24 }}>⚠️</div>
         <h1 style={{ color: "#FF6B6B", fontSize: 32, marginBottom: 16 }}>
-          Episode Failed to Load
+          Episode Render Failed
         </h1>
         <div style={{ color: "#8892B0", fontSize: 18, marginBottom: 32 }}>
           Episode: <code>{episodeId}</code>
@@ -482,23 +384,26 @@ const EpisodeRendererInner: React.FC<EpisodeRendererProps> = ({
           <code
             style={{ color: "#FF6B6B", fontSize: 14, whiteSpace: "pre-wrap" }}
           >
-            {error.message}
+            {renderDataError.message}
           </code>
         </div>
-        {error.stack && (
-          <details style={{ marginTop: 24, color: "#8892B0", maxWidth: 800 }}>
-            <summary style={{ cursor: "pointer" }}>Stack Trace</summary>
-            <pre style={{ fontSize: 10, overflow: "auto", maxHeight: 150 }}>
-              {error.stack}
-            </pre>
-          </details>
-        )}
       </AbsoluteFill>
     );
   }
 
-  // === LOADING STATE ===
-  if (!prepared || !episode || !worldWithVoice || !keyframedEventIndex) {
+  if (!renderData) {
+    const opacity = 0.5 + 0.5 * Math.sin((frame * Math.PI) / 30);
+    return (
+      <AbsoluteFill style={loadingStyle}>
+        <div style={{ fontSize: 48, marginBottom: 16 }}>🎬</div>
+        <div style={{ fontSize: 20, color: "#8696A0", opacity }}>
+          Preparing {episodeId}...
+        </div>
+      </AbsoluteFill>
+    );
+  }
+
+  if (!world || !keyframedEventIndex) {
     const opacity = 0.5 + 0.5 * Math.sin((frame * Math.PI) / 30);
     return (
       <AbsoluteFill style={loadingStyle}>
@@ -510,7 +415,7 @@ const EpisodeRendererInner: React.FC<EpisodeRendererProps> = ({
     );
   }
 
-  const hasDevices = Object.keys(worldWithVoice.devices ?? {}).length > 0;
+  const hasDevices = Object.keys(world.devices ?? {}).length > 0;
 
   // Log which audio path is being used (only on first few frames to avoid spam)
   // === RENDER ===
@@ -524,29 +429,36 @@ const EpisodeRendererInner: React.FC<EpisodeRendererProps> = ({
     >
       {/* === BACKGROUND LAYER === */}
       <BackgroundLayer
-        config={backgroundConfig as Parameters<typeof BackgroundLayer>[0]['config'] ?? "ambient-night"}
-        frame={frame}
-        fps={fps}
+        config={
+          renderData.backgroundConfig as Parameters<
+            typeof BackgroundLayer
+          >[0]["config"] ?? "ambient-night"
+        }
+        frame={backgroundUsesTimeline ? frame : undefined}
+        fps={backgroundUsesTimeline ? fps : undefined}
       />
 
       <RendererRegistryProvider registries={rendererRegistries}>
-        <AudioLayer world={worldWithVoice} t={frame} />
-        {voiceManifest &&
-          voiceConfig?.audioPath &&
-          voiceSoundCues.length === 0 &&
-          (voiceConfig.usePerSegmentControl && voiceEvents.length > 0 ? (
+        <AudioLayer
+          world={world}
+          t={frame}
+          musicDuckMultiplierOverride={musicDuckMultiplier}
+        />
+        {renderData.voiceManifest &&
+          renderData.voiceConfig?.audioPath &&
+          (renderData.voiceConfig.usePerSegmentControl && voiceEvents.length > 0 ? (
             <VoiceLayer
-              manifest={voiceManifest}
-              audioUrl={voiceConfig.audioPath}
+              manifest={renderData.voiceManifest}
+              audioUrl={renderData.voiceConfig.audioPath}
               events={voiceEvents}
-              volume={voiceConfig.volume ?? 1}
+              volume={renderData.voiceConfig.volume ?? 1}
             />
           ) : (
             <SimpleVoiceLayer
-              manifest={voiceManifest}
-              audioUrl={voiceConfig.audioPath}
-              startFrame={voiceConfig.startFrame ?? 0}
-              volume={voiceConfig.volume ?? 1}
+              manifest={renderData.voiceManifest}
+              audioUrl={renderData.voiceConfig.audioPath}
+              startFrame={renderData.voiceConfig.startFrame ?? 0}
+              volume={renderData.voiceConfig.volume ?? 1}
             />
           ))}
         {hasDevices && (
@@ -557,15 +469,14 @@ const EpisodeRendererInner: React.FC<EpisodeRendererProps> = ({
             }}
           >
             <TokovoRenderer
-              world={worldWithVoice}
+              world={world}
               t={frame}
               fps={fps}
               debug={cameraDebugEnabled}
+              mode={renderMode}
               config={config}
               layoutCacheKey={
-                prepared
-                  ? `${prepared.id}:${prepared.eventSignature ?? "unknown"}`
-                  : undefined
+                `${renderData.prepared.id}:${renderData.prepared.eventSignature ?? "unknown"}`
               }
               eventIndex={keyframedEventIndex}
               pluginManager={pluginManager}
@@ -576,7 +487,7 @@ const EpisodeRendererInner: React.FC<EpisodeRendererProps> = ({
           </div>
         )}
         <StoryOverlay
-          world={worldWithVoice}
+          world={world}
           t={frame}
           width={fmt.width}
           height={fmt.height}

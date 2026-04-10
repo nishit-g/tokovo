@@ -33,6 +33,13 @@ export default defineEpisode({
     })
       .device("phone", "iphone16", {
         app: "app_whatsapp",
+        os: {
+          time: new Date("2024-12-20T19:30:00"),
+          battery: 78,
+          network: "5G",
+        },
+      })
+      .snapshot("app_whatsapp", "phone", {
         conversations: [
           {
             id: "dm_dramatic",
@@ -40,11 +47,6 @@ export default defineEpisode({
             avatar: "/avatars/alex.jpg",
           },
         ],
-        os: {
-          time: new Date("2024-12-20T19:30:00"),
-          battery: 78,
-          network: "5G",
-        },
       })
 
       .track(

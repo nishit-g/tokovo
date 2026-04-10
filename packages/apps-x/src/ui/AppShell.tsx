@@ -10,6 +10,7 @@ interface AppShellProps {
 export const AppShell: React.FC<AppShellProps> = ({ children }) => {
   const theme = useXTheme();
   const safeArea = useSafeAreaInsets();
+  const isGhibli = theme.mode === "ghibli";
 
   React.useEffect(() => {
     injectXStyles();
@@ -30,22 +31,24 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
         flexDirection: "column",
         position: "relative",
         overflow: "hidden",
-        backgroundImage:
-          "radial-gradient(circle at 20% 10%, rgba(29,155,240,0.08), transparent 45%), radial-gradient(circle at 80% 5%, rgba(255,255,255,0.03), transparent 55%)",
+        backgroundImage: isGhibli
+          ? "linear-gradient(180deg, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0) 18%), radial-gradient(circle at 20% 8%, rgba(74,124,89,0.12), transparent 32%)"
+          : "linear-gradient(180deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0) 18%)",
+        border: `1px solid ${theme.colors.border}`,
       }}
     >
-      {/* Line texture overlay */}
       <div
         style={{
           position: "absolute",
           inset: 0,
-          backgroundImage:
-            "repeating-linear-gradient(135deg, rgba(255,255,255,0.015) 0, rgba(255,255,255,0.015) 1px, transparent 1px, transparent 6px)",
+          background:
+            isGhibli
+              ? "radial-gradient(circle at top, rgba(255,255,255,0.16), transparent 42%)"
+              : "linear-gradient(180deg, rgba(255,255,255,0.02), transparent 20%)",
           pointerEvents: "none",
         }}
       />
 
-      {/* Main content area - scrollable */}
       <div
         style={{
           position: "relative",
@@ -53,7 +56,8 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
           display: "flex",
           flexDirection: "column",
           flex: 1,
-          overflow: "auto",
+          minHeight: 0,
+          overflow: "hidden",
           paddingBottom: safeArea.bottom,
         }}
       >

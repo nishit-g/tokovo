@@ -27,13 +27,9 @@
       "types": "./dist/tests/index.d.ts",
       "default": "./dist/tests/index.js"
     },
-    "./story-kit": {
-      "types": "./dist/story-kit/index.d.ts",
-      "default": "./dist/story-kit/index.js"
-    },
-    "./studio": {
-      "types": "./dist/studio/index.d.ts",
-      "default": "./dist/studio/index.js"
+    "./code-first-episode": {
+      "types": "./dist/code-first-episode.d.ts",
+      "default": "./dist/code-first-episode.js"
     }
   },
   "files": [
@@ -45,14 +41,13 @@
     "typecheck": "tsc --noEmit",
     "lint": "eslint . --ext .ts,.tsx",
     "validate": "tsx src/cli.ts",
+    "validate:workspace": "tsx src/validate-workspace.ts",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
-    "@tokovo/creator": "workspace:*",
     "@tokovo/dsl": "workspace:*",
     "@tokovo/ir": "workspace:*",
-    "@tokovo/packs": "workspace:*",
     "@tokovo/compiler": "workspace:*",
     "@tokovo/voice": "workspace:*",
     "@tokovo/apps-whatsapp": "workspace:*",

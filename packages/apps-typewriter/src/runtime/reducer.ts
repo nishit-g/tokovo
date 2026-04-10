@@ -17,17 +17,15 @@ function clamp(n: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, n));
 }
 
-function prunePressedKeys(map: Record<string, number>, now: number): void {
+function prunePressedKeys(map: Record<string, number>, now: number): Record<string, number> {
   const cutoff = now - 18;
-  for (const [k, v] of Object.entries(map)) {
-    if (v < cutoff) {
-      delete map[k];
-    }
-  }
+  return Object.fromEntries(
+    Object.entries(map).filter(([, frame]) => frame >= cutoff),
+  );
 }
 
 function registerKeyPresses(state: TypewriterState, ch: string, at: number): void {
-  prunePressedKeys(state.fx.pressedKeys, at);
+  state.fx.pressedKeys = prunePressedKeys(state.fx.pressedKeys, at);
   const press = deriveKeyPressFromChar(ch);
   for (const k of press.keys) {
     state.fx.pressedKeys[k] = at;
@@ -58,7 +56,11 @@ function cellIndex(state: TypewriterState, row: number, col: number): number {
 
 function currentPage(state: TypewriterState) {
   ensurePageCells(state, state.cursor.page);
-  return state.pages[state.cursor.page]!;
+  const page = state.pages[state.cursor.page];
+  if (!page) {
+    throw new Error(`Missing typewriter page ${state.cursor.page}`);
+  }
+  return page;
 }
 
 function clampCursorToBounds(state: TypewriterState): void {
@@ -93,7 +95,7 @@ function deriveSettingsFromThemeConfig(
 ): Partial<TypewriterState["settings"]> {
   const preset = theme?.preset ?? "classic";
   const base = TYPEWRITER_THEME_PRESETS[preset] ?? TYPEWRITER_THEME_PRESETS.classic;
-  const merged = deepMerge(base, (theme?.overrides ?? {}) as any) as TypewriterThemeTokens;
+  const merged: TypewriterThemeTokens = deepMerge(base, theme?.overrides);
   return {
     maxCols: merged.layout.maxCols,
     maxRows: merged.layout.maxRows,
@@ -195,9 +197,7 @@ export const typewriterReducer: PluginReducer<typeof TYPEWRITER_APP_ID> = (
     }
 
     case "TYPEWRITER_NEWLINE": {
-      const maxRows = Math.max(1, Math.floor(s.settings.maxRows));
       const maxCols = Math.max(1, Math.floor(s.settings.maxCols));
-      const row = clamp(Math.floor(s.cursor.row), 0, maxRows - 1);
       const col = clamp(Math.floor(s.cursor.col), 0, maxCols - 1);
 
       hardNewline(s, event.at, col);
@@ -232,7 +232,10 @@ export const typewriterReducer: PluginReducer<typeof TYPEWRITER_APP_ID> = (
       }
 
       ensurePageCells(s, nextPage);
-      const page = s.pages[nextPage]!;
+      const page = s.pages[nextPage];
+      if (!page) {
+        throw new Error(`Missing typewriter page ${nextPage}`);
+      }
       const idx = cellIndex(s, nextRow, nextCol);
       page.cells[idx] = null;
       s.cursor = { page: nextPage, row: nextRow, col: nextCol };

@@ -19,7 +19,7 @@ export const XView: React.FC<PluginViewProps> = ({ world, deviceId, t }) => {
   const renderScreen = () => {
     switch (screen) {
       case "tweet":
-        return <TweetDetail world={world} />;
+        return <TweetDetail world={world} deviceId={deviceId} t={t} />;
       case "compose":
         return <Compose world={world} deviceId={deviceId} t={t} />;
       case "profile":
@@ -29,7 +29,7 @@ export const XView: React.FC<PluginViewProps> = ({ world, deviceId, t }) => {
       case "messages":
         return <Messages world={world} />;
       case "thread":
-        return <MessageThread world={world} />;
+        return <MessageThread world={world} deviceId={deviceId} t={t} />;
       case "timeline":
       default:
         return <Timeline world={world} />;

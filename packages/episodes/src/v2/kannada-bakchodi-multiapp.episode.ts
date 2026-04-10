@@ -1,5 +1,5 @@
 import { defineEpisode } from "../types/episode-definition.js";
-import { episode } from "@tokovo/creator";
+import { episode } from "../code-first-episode.js";
 
 export default defineEpisode({
   meta: {
@@ -20,6 +20,49 @@ export default defineEpisode({
       .device("phone", "iphone16", {
         app: "app_whatsapp",
         installedApps: ["app_whatsapp", "app_x", "app_imessage"],
+        os: { time: new Date("2025-06-26T21:41:00"), battery: 48, network: "5G" },
+      })
+      .snapshot("app_x", "phone", {
+        users: [
+          { id: "u_me", name: "Me", handle: "naanu", followers: 4200, following: 300, verified: null },
+          { id: "u_op", name: "OP", handle: "guru_gossip", followers: 54000, following: 900, verified: "blue" },
+          { id: "u_1", name: "ಅಪ್ಪು", handle: "appu", followers: 12000, following: 980, verified: null },
+          { id: "u_2", name: "ಸೂಪರ್‌ಸೀನ್", handle: "superscene", followers: 8800, following: 420, verified: null },
+        ],
+        tweets: [
+          {
+            id: "tw_op",
+            authorId: "u_op",
+            text: "‘Timing strategic’ ಅಂತೆ. Mysuru style: late with full confidence 😂",
+            viewCount: 180000,
+            shareCount: 3100,
+            bookmarkCount: 12000,
+          },
+        ],
+        replies: [
+          {
+            id: "tw_r1",
+            authorId: "u_1",
+            text: "Late ಅಲ್ಲ ಅಂತೆ… clock-ne resign ಕೊಡಬೇಕು 😂",
+            replyToId: "tw_op",
+            viewCount: 92000,
+            shareCount: 1100,
+            bookmarkCount: 3600,
+          },
+          {
+            id: "tw_r2",
+            authorId: "u_2",
+            text: "Confidence 100. Logic 0. Mysuru filter on 😂",
+            replyToId: "tw_op",
+            viewCount: 76000,
+            shareCount: 900,
+            bookmarkCount: 3100,
+          },
+        ],
+        currentUserId: "u_me",
+      })
+      .view("app_x", "phone", { screen: "timeline" })
+      .snapshot("app_whatsapp", "phone", {
         conversations: [
           {
             id: "grp_bakchodi",
@@ -37,7 +80,6 @@ export default defineEpisode({
             type: "dm",
           },
         ],
-        os: { time: new Date("2025-06-26T21:41:00"), battery: 48, network: "5G" },
       })
       .background({ type: "image", src: "/backgrounds/neon-city.png" })
 
@@ -128,47 +170,6 @@ export default defineEpisode({
       // X (roast thread)
       // ============================================
       .x("phone", (x) => {
-        x.seed({
-          users: [
-            { id: "u_me", name: "Me", handle: "naanu", followers: 4200, following: 300, verified: null },
-            { id: "u_op", name: "OP", handle: "guru_gossip", followers: 54000, following: 900, verified: "blue" },
-            { id: "u_1", name: "ಅಪ್ಪು", handle: "appu", followers: 12000, following: 980, verified: null },
-            { id: "u_2", name: "ಸೂಪರ್‌ಸೀನ್", handle: "superscene", followers: 8800, following: 420, verified: null },
-          ],
-          tweets: [
-            {
-              id: "tw_op",
-              authorId: "u_op",
-              text: "‘Timing strategic’ ಅಂತೆ. Mysuru style: late with full confidence 😂",
-              viewCount: 180000,
-              shareCount: 3100,
-              bookmarkCount: 12000,
-            },
-          ],
-          replies: [
-            {
-              id: "tw_r1",
-              authorId: "u_1",
-              text: "Late ಅಲ್ಲ ಅಂತೆ… clock-ne resign ಕೊಡಬೇಕು 😂",
-              replyToId: "tw_op",
-              viewCount: 92000,
-              shareCount: 1100,
-              bookmarkCount: 3600,
-            },
-            {
-              id: "tw_r2",
-              authorId: "u_2",
-              text: "Confidence 100. Logic 0. Mysuru filter on 😂",
-              replyToId: "tw_op",
-              viewCount: 76000,
-              shareCount: 900,
-              bookmarkCount: 3100,
-            },
-          ],
-          currentUserId: "u_me",
-          screen: "timeline",
-        });
-
         x.at("16.4s").navigate("tweet", { tweetId: "tw_op" });
         x.at("18.0s").viewTweet("tw_op");
 

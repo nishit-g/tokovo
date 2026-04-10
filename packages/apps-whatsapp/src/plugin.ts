@@ -9,14 +9,13 @@
  * @see docs/ARCHITECTURE.md
  */
 
-import type { PluginReducer } from "@tokovo/core";
-import type { PluginManagerClass } from "@tokovo/react";
 import { WHATSAPP_APP_ID } from "./constants.js";
 import type {
   TokovoPluginContract,
   PluginViews,
-  PluginLayoutStrategy,
+  PluginReducer,
 } from "@tokovo/core";
+import type { PluginManagerClass } from "@tokovo/react";
 
 // Runtime Layer
 import { whatsappReducer } from "./runtime/reducer.js";
@@ -40,6 +39,8 @@ import { whatsappAudioRules } from "./assets/audio-rules.js";
 // Camera
 import { WhatsAppBehavior } from "./camera/index.js";
 import { WhatsAppAnchorProvider } from "./anchors/provider.js";
+import { collectWhatsAppAssetRefs } from "./asset-refs.js";
+import { whatsappBootstrap } from "./bootstrap.js";
 
 // =============================================================================
 // PLUGIN VIEWS
@@ -93,6 +94,7 @@ export const WhatsAppPluginV2: TokovoPluginContract<"app_whatsapp"> & {
   reducer: whatsappReducer as PluginReducer<"app_whatsapp">,
   views: whatsappViews,
   createInitialState: createWhatsAppInitialState,
+  bootstrap: whatsappBootstrap,
 
   // === TIER A: Event Routing ===
   eventKinds: [
@@ -161,6 +163,7 @@ export const WhatsAppPluginV2: TokovoPluginContract<"app_whatsapp"> & {
 
   // === TIER B: Behaviors ===
   behaviors: WhatsAppBehavior,
+  collectAssetRefs: collectWhatsAppAssetRefs,
 
   // === TIER C: DSL ===
   dsl: whatsappDsl,

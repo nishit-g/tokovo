@@ -1,4 +1,6 @@
 import type {
+  AppInitialViewEntry,
+  AppSnapshotEntry,
   DeviceConfig,
   TrackEpisodeIR,
   VoiceConfig,
@@ -10,6 +12,8 @@ export interface CanonicalTrackEpisodeFixtureOptions {
   fps?: number;
   durationInFrames?: number;
   devices?: DeviceConfig[];
+  appSnapshots?: AppSnapshotEntry[];
+  initialViews?: AppInitialViewEntry[];
   events?: TrackEvent[];
   voice?: VoiceConfig;
 }
@@ -19,12 +23,6 @@ export function createCanonicalDeviceConfig(overrides: Partial<DeviceConfig> = {
     id: "phone",
     profile: "iphone16",
     app: "app_whatsapp",
-    conversations: [
-      {
-        id: "dm_alex",
-        name: "Alex",
-      },
-    ],
     ...overrides,
   };
 }
@@ -39,6 +37,8 @@ export function createCanonicalTrackEpisodeIR(
     title: "Fixture Episode",
     description: "Canonical fixture for contract tests",
     devices: overrides.devices ?? [createCanonicalDeviceConfig()],
+    appSnapshots: overrides.appSnapshots ?? [],
+    initialViews: overrides.initialViews ?? [],
     events: overrides.events ?? [
       {
         at: 0,

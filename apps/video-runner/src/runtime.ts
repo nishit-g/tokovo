@@ -35,6 +35,8 @@ export type VideoRunnerRuntime = {
   episodeRegistry: EpisodeRegistry;
 };
 
+let sharedRuntime: VideoRunnerRuntime | null = null;
+
 export function createVideoRunnerRuntime(): VideoRunnerRuntime {
   const tokovoRegistries = createTokovoRegistries();
   const deviceRegistries = createDeviceRegistries();
@@ -68,4 +70,13 @@ export function createVideoRunnerRuntime(): VideoRunnerRuntime {
     rendererRegistries,
     episodeRegistry,
   };
+}
+
+export function getSharedVideoRunnerRuntime(): VideoRunnerRuntime {
+  if (sharedRuntime) {
+    return sharedRuntime;
+  }
+
+  sharedRuntime = createVideoRunnerRuntime();
+  return sharedRuntime;
 }

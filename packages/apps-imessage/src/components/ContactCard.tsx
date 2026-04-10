@@ -4,6 +4,7 @@
  */
 
 import React from "react";
+import { Img } from "remotion";
 import { useIMessageTheme } from "../ui/ThemeContext.js";
 import { iMessageSpacing, iMessageTypography } from "../config/tokens.js";
 import { iOS_COLORS } from "../config/colors.js";
@@ -73,7 +74,7 @@ export const ContactCard: React.FC<ContactCardProps> = ({ contact, fromMe }) => 
                     }}
                 >
                     {contact.avatarUrl ? (
-                        <img
+                        <Img
                             src={contact.avatarUrl}
                             alt={contact.name}
                             style={{ width: "100%", height: "100%", objectFit: "cover" }}

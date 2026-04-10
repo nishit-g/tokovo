@@ -1,0 +1,32 @@
+# docs
+
+Tokovo documentation site built with Next.js and Nextra.
+
+## Location
+
+- `apps/docs`
+
+## What It Covers
+
+- Architecture and package references.
+- Guides for DSL authoring, plugins, and rendering.
+- Repo-specific workflows and conventions.
+
+## Common Commands
+
+From repo root:
+
+```bash
+pnpm --filter docs dev
+pnpm --filter docs build
+pnpm --filter docs typecheck
+```
+
+## Package Reference Navigation
+
+The package reference sidebar is driven by:
+
+- `apps/docs/app/packages/_meta.js`
+
+Add a folder under `apps/docs/app/packages/<name>/page.mdx` and include the key in `_meta.js` to surface it in navigation.
+

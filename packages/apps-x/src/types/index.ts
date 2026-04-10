@@ -25,10 +25,17 @@ export type {
   TweetSharePayload,
   NavigatePayload,
   ComposeDraftPayload,
+  ThreadDraftPayload,
+  ThreadTypingPayload,
+  TimelineTabPayload,
+  ProfileTabPayload,
   NotificationsTabPayload,
   NotificationAddPayload,
   DMThreadCreatePayload,
   DMSendPayload,
+  TimelineTab,
+  ProfileTab,
+  XThemeMode,
 } from "./events.js";
 
 import "./module-augmentation.js";

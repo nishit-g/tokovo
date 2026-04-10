@@ -4,6 +4,7 @@
  * iOS 17 style navigation header with frosted glass effect
  */
 import React from "react";
+import { Img } from "remotion";
 import { useIMessageTheme } from "../ui/ThemeContext.js";
 import { iMessageSpacing, iMessageTypography } from "../config/tokens.js";
 import type { IMessageTheme } from "../config/imessage-theme.js";
@@ -91,7 +92,7 @@ export const Header: React.FC<HeaderProps> = ({
         }}
       >
         {avatar ? (
-          <img
+          <Img
             src={avatar}
             alt={name}
             style={{ width: "100%", height: "100%", objectFit: "cover" }}

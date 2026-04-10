@@ -16,6 +16,10 @@ export type XEventType =
   | "NAVIGATE"
   | "NAVIGATE_BACK"
   | "SET_COMPOSE_DRAFT"
+  | "SET_THREAD_DRAFT"
+  | "SET_THREAD_TYPING"
+  | "SET_TIMELINE_TAB"
+  | "SET_PROFILE_TAB"
   | "SET_NOTIFICATIONS_TAB"
   | "NOTIFICATION_ADD"
   | "DM_THREAD_CREATE"
@@ -37,6 +41,10 @@ export type XEventKind =
   | "SET_ACTIVE_USER"
   | "SET_ACTIVE_THREAD"
   | "SET_COMPOSE_DRAFT"
+  | "SET_THREAD_DRAFT"
+  | "SET_THREAD_TYPING"
+  | "SET_TIMELINE_TAB"
+  | "SET_PROFILE_TAB"
   | "SET_NOTIFICATIONS_TAB"
   | "ADD_NOTIFICATION"
   | "ADD_DM_THREAD"
@@ -54,6 +62,9 @@ export type XScreen =
   | "thread";
 
 export type NotificationsTab = "all" | "mentions";
+export type TimelineTab = "forYou" | "following";
+export type ProfileTab = "posts" | "replies" | "media" | "likes";
+export type XThemeMode = "dark" | "light" | "ghibli";
 
 export type MediaType = "image" | "video" | "link" | "poll";
 
@@ -174,6 +185,24 @@ export interface ComposeDraftPayload {
   text: string;
 }
 
+export interface ThreadDraftPayload {
+  threadId: string;
+  text: string;
+}
+
+export interface ThreadTypingPayload {
+  threadId: string;
+  userId: string | null;
+}
+
+export interface TimelineTabPayload {
+  tab: TimelineTab;
+}
+
+export interface ProfileTabPayload {
+  tab: ProfileTab;
+}
+
 export interface NotificationsTabPayload {
   tab: NotificationsTab;
 }
@@ -192,11 +221,17 @@ export interface NotificationAddPayload {
   tweetId?: string;
   isMention?: boolean;
   createdAt?: number;
+  title?: string;
+  body?: string;
+  read?: boolean;
 }
 
 export interface DMThreadCreatePayload {
   id: string;
   participantIds: string[];
+  title?: string;
+  unreadCount?: number;
+  pinned?: boolean;
 }
 
 export interface DMSendPayload {
@@ -225,11 +260,15 @@ export type XEventPayloadMap = {
   NAVIGATE: NavigatePayload;
   NAVIGATE_BACK: Record<string, never>;
   SET_COMPOSE_DRAFT: ComposeDraftPayload;
+  SET_THREAD_DRAFT: ThreadDraftPayload;
+  SET_THREAD_TYPING: ThreadTypingPayload;
+  SET_TIMELINE_TAB: TimelineTabPayload;
+  SET_PROFILE_TAB: ProfileTabPayload;
   SET_NOTIFICATIONS_TAB: NotificationsTabPayload;
   NOTIFICATION_ADD: NotificationAddPayload;
   DM_THREAD_CREATE: DMThreadCreatePayload;
   DM_SEND: DMSendPayload;
-  SET_THEME_MODE: { mode: "dark" | "light" | "ghibli" };
+  SET_THEME_MODE: { mode: XThemeMode };
 };
 
 export type XTrackEventFor<T extends XEventType> = TrackEventBase & {

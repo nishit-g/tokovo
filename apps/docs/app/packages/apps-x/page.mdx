@@ -1,49 +1,24 @@
 # @tokovo/apps-x
 
-The X (Twitter) app simulation plugin. Provides UI views, reducer logic, DSL track builder, and optional lowering for compiled episodes.
+The X plugin package for Tokovo.
 
-## Install
+## Responsibilities
 
-```bash
-pnpm add @tokovo/apps-x
-```
+- X runtime reducer and initial state
+- X snapshot and initial-view schema ownership
+- snapshot/view validation and migration hooks
+- X React views
+- feed and thread layout support
+- anchor integration
+- authoring helpers and track builder support
 
-## Register
+## Runtime Registration
 
-```typescript
-import { createTokovoRegistries, PluginManagerClass } from "@tokovo/react";
-import { registerXPlugin } from "@tokovo/apps-x";
+`video-runner` registers this plugin explicitly at startup. The package should remain a normal plugin package rather than depending on import-time side effects.
 
-const registries = createTokovoRegistries();
-const pluginManager = new PluginManagerClass(registries.plugins);
+## Key Exports
 
-registerXPlugin(pluginManager);
-```
-
-## Use In Episodes
-
-```typescript
-import { episode } from "@tokovo/dsl";
-import { XTrackBuilder } from "@tokovo/apps-x";
-
-episode("x-demo", { fps: 30, duration: "20s" })
-  .device("phone", "iphone16", { app: "app_x" })
-  .track(
-    "app_x",
-    (getOrder) => new XTrackBuilder(30, "phone", getOrder),
-    (x) => {
-      x.at("1s").post(
-        { id: "alice", name: "Alice", handle: "alice" },
-        "hello world",
-      );
-      x.at("3s").openNotifications();
-    },
-  );
-```
-
-## Related
-
-- [Plugin System](/concepts/plugins)
-- [DSL Guide](/guides/episode-authoring-dsl)
-- [Anchors + DSL Reference](/guides/anchors-dsl-plugin-reference)
-- [@tokovo/apps-whatsapp](/packages/apps-whatsapp)
+- plugin registration: `registerXPlugin`
+- runtime state and selectors
+- `XTrackBuilder`
+- type exports for users, tweets, notifications, DM threads, and routes

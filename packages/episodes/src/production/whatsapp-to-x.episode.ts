@@ -25,6 +25,13 @@ export default defineEpisode({
     })
       .device("phone", "iphone16", {
         app: "app_whatsapp",
+        os: {
+          time: new Date("2025-02-08T20:15:00"),
+          battery: 71,
+          network: "5G",
+        },
+      })
+      .snapshot("app_whatsapp", "phone", {
         conversations: [
           {
             id: "dm_launch",
@@ -33,13 +40,83 @@ export default defineEpisode({
             unreadCount: 2,
           },
         ],
-        os: {
-          time: new Date("2025-02-08T20:15:00"),
-          battery: 71,
-          network: "5G",
-        },
       })
       .background({ type: "image", src: "/backgrounds/dark-studio.png" })
+      .snapshot("app_x", "phone", {
+        users: [
+          {
+            id: "u_me",
+            name: "Nishit",
+            handle: "nishit",
+            bio: "Building episodic engines.",
+            followers: 18240,
+            following: 510,
+            verified: "blue",
+          },
+          {
+            id: "u_ava",
+            name: "Ava",
+            handle: "ava_ops",
+            bio: "Launch ops + distribution",
+            followers: 9400,
+            following: 780,
+            verified: "gold",
+          },
+          {
+            id: "u_rin",
+            name: "Rin",
+            handle: "rin_camera",
+            bio: "Cinematic UI systems",
+            followers: 6100,
+            following: 390,
+            verified: "grey",
+          },
+        ],
+        follows: [
+          { followerId: "u_me", followingId: "u_ava" },
+          { followerId: "u_me", followingId: "u_rin" },
+        ],
+        currentUserId: "u_me",
+        tweets: [
+          {
+            id: "tw_pre_1",
+            authorId: "u_ava",
+            text: "Launch thread in 10. Drop your final assets now.",
+            createdAt: new Date("2025-02-08T20:09:00").getTime(),
+            hashtags: ["launch"],
+            mentions: [],
+            viewCount: 6400,
+            shareCount: 71,
+            bookmarkCount: 124,
+          },
+          {
+            id: "tw_pre_2",
+            authorId: "u_rin",
+            text: "Anchor-first camera makes UI stories watchable.",
+            createdAt: new Date("2025-02-08T20:10:00").getTime(),
+            hashtags: ["camera", "ui"],
+            mentions: [],
+            viewCount: 3700,
+            shareCount: 33,
+            bookmarkCount: 61,
+          },
+        ],
+        notifications: [
+          {
+            id: "nt_pre_1",
+            type: "mention",
+            actorId: "u_ava",
+            tweetId: "tw_pre_1",
+            isMention: true,
+            createdAt: new Date("2025-02-08T20:11:00").getTime(),
+          },
+        ],
+      })
+      .view("app_x", "phone", {
+        screen: "timeline",
+        notificationsTab: "mentions",
+        composeDraft: "",
+      })
       .track(
         "app_whatsapp",
         (getOrder) => new WhatsAppTrackBuilder(30, "phone", "dm_launch", getOrder),
@@ -56,83 +133,6 @@ export default defineEpisode({
         "app_x",
         (getOrder) => new XTrackBuilder(30, "phone", getOrder),
         (x) => {
-          x.seed(
-            {
-              users: [
-                {
-                  id: "u_me",
-                  name: "Nishit",
-                  handle: "nishit",
-                  bio: "Building episodic engines.",
-                  followers: 18240,
-                  following: 510,
-                  verified: "blue",
-                },
-                {
-                  id: "u_ava",
-                  name: "Ava",
-                  handle: "ava_ops",
-                  bio: "Launch ops + distribution",
-                  followers: 9400,
-                  following: 780,
-                  verified: "gold",
-                },
-                {
-                  id: "u_rin",
-                  name: "Rin",
-                  handle: "rin_camera",
-                  bio: "Cinematic UI systems",
-                  followers: 6100,
-                  following: 390,
-                  verified: "grey",
-                },
-              ],
-              follows: [
-                { followerId: "u_me", followingId: "u_ava" },
-                { followerId: "u_me", followingId: "u_rin" },
-              ],
-              currentUserId: "u_me",
-              tweets: [
-                {
-                  id: "tw_pre_1",
-                  authorId: "u_ava",
-                  text: "Launch thread in 10. Drop your final assets now.",
-                  createdAt: new Date("2025-02-08T20:09:00").getTime(),
-                  hashtags: ["launch"],
-                  mentions: [],
-                  viewCount: 6400,
-                  shareCount: 71,
-                  bookmarkCount: 124,
-                },
-                {
-                  id: "tw_pre_2",
-                  authorId: "u_rin",
-                  text: "Anchor-first camera makes UI stories watchable.",
-                  createdAt: new Date("2025-02-08T20:10:00").getTime(),
-                  hashtags: ["camera", "ui"],
-                  mentions: [],
-                  viewCount: 3700,
-                  shareCount: 33,
-                  bookmarkCount: 61,
-                },
-              ],
-              notifications: [
-                {
-                  id: "nt_pre_1",
-                  type: "mention",
-                  actorId: "u_ava",
-                  tweetId: "tw_pre_1",
-                  isMention: true,
-                  createdAt: new Date("2025-02-08T20:11:00").getTime(),
-                },
-              ],
-              screen: "timeline",
-              notificationsTab: "mentions",
-              composeDraft: "",
-            },
-            "0s",
-          );
-
           x.at("11.2s").navigate("timeline");
           x.at("12.1s").setComposeDraft(
             "Launch recap is live: key moments, outcomes, and next steps.",

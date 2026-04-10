@@ -29,6 +29,13 @@ export default defineEpisode({
       .device("phone", "iphone16", {
         app: "app_whatsapp",
         theme: "whatsapp-ghibli",
+        os: {
+          time: new Date("2024-06-21T15:30:00"),
+          battery: 92,
+          network: "5G",
+        },
+      })
+      .snapshot("app_whatsapp", "phone", {
         conversations: [
           {
             id: "forest_spirits",
@@ -36,11 +43,6 @@ export default defineEpisode({
             avatar: "/avatars/totoro.jpg",
           },
         ],
-        os: {
-          time: new Date("2024-06-21T15:30:00"),
-          battery: 92,
-          network: "5G",
-        },
       })
       .background({ type: "image", src: "/backgrounds/ghibli-forest.png" })
 

@@ -462,6 +462,7 @@ export const ActionBar: React.FC<ActionBarProps> = ({
           color={isLiked ? theme.colors.accent : theme.colors.textSecondary}
         />
         <span>Like</span>
+        {likeCount > 0 ? <span>{likeCount}</span> : null}
       </div>
       <div style={{ ...buttonStyle, color: theme.colors.textSecondary }}>
         <LIIcon
@@ -470,6 +471,7 @@ export const ActionBar: React.FC<ActionBarProps> = ({
           color={theme.colors.textSecondary}
         />
         <span>Comment</span>
+        {commentCount > 0 ? <span>{commentCount}</span> : null}
       </div>
       <div style={{ ...buttonStyle, color: theme.colors.textSecondary }}>
         <LIIcon
@@ -478,6 +480,7 @@ export const ActionBar: React.FC<ActionBarProps> = ({
           color={theme.colors.textSecondary}
         />
         <span>Repost</span>
+        {repostCount > 0 ? <span>{repostCount}</span> : null}
       </div>
       <div style={{ ...buttonStyle, color: theme.colors.textSecondary }}>
         <LIIcon

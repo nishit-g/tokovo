@@ -35,6 +35,7 @@ function createRuntimeEvent(
 type XLoweringScratchpad = {
   lastComposeOpenAtByDevice: Map<string, number>;
   lastThreadOpenAtByDeviceThread: Map<string, number>;
+  lastTweetOpenAtByDeviceTweet: Map<string, number>;
 };
 
 type TweetAddPayload = {
@@ -84,7 +85,7 @@ function buildAddTweetPayload(
 function lowerTweetWithOptionalTyping(
   event: TrackEvent & { payload: TweetAddPayload },
   deviceId: string,
-  composeOpenedAt: number | undefined,
+  notBeforeFrame: number | undefined,
   addTweetPayload: Record<string, unknown>,
 ): RuntimeEvent[] {
   const text = event.payload.text ?? "";
@@ -93,8 +94,7 @@ function lowerTweetWithOptionalTyping(
     return [addTweetEvent];
   }
 
-  // Typed compose is only credible after an explicit compose-open beat.
-  if (typeof composeOpenedAt !== "number" || composeOpenedAt > event.at) {
+  if (typeof notBeforeFrame !== "number" || notBeforeFrame > event.at) {
     return [addTweetEvent];
   }
 
@@ -103,7 +103,7 @@ function lowerTweetWithOptionalTyping(
     submitAt: event.at,
     text,
     requestedCharDelay: event.payload.charDelay ?? 2,
-    notBeforeFrame: composeOpenedAt,
+    notBeforeFrame,
     keyboardType: "default",
     returnKeyType: "send",
   });
@@ -133,6 +133,7 @@ export const xLowering: XLoweringHandler = {
       () => ({
         lastComposeOpenAtByDevice: new Map(),
         lastThreadOpenAtByDeviceThread: new Map(),
+        lastTweetOpenAtByDeviceTweet: new Map(),
       }),
     );
 
@@ -171,7 +172,9 @@ export const xLowering: XLoweringHandler = {
         return lowerTweetWithOptionalTyping(
           event,
           deviceId,
-          scratchpad.lastComposeOpenAtByDevice.get(deviceId),
+          scratchpad.lastTweetOpenAtByDeviceTweet.get(
+            `${deviceId}::${event.payload.replyToId}`,
+          ) ?? scratchpad.lastComposeOpenAtByDevice.get(deviceId),
           buildAddTweetPayload(event, { replyToId: event.payload.replyToId }),
         );
       case "TWEET_QUOTE":
@@ -209,6 +212,12 @@ export const xLowering: XLoweringHandler = {
           if (event.payload.screen === "thread" && event.payload.threadId) {
             scratchpad.lastThreadOpenAtByDeviceThread.set(
               `${deviceId}::${event.payload.threadId}`,
+              event.at,
+            );
+          }
+          if (event.payload.screen === "tweet" && event.payload.tweetId) {
+            scratchpad.lastTweetOpenAtByDeviceTweet.set(
+              `${deviceId}::${event.payload.tweetId}`,
               event.at,
             );
           }
@@ -252,6 +261,24 @@ export const xLowering: XLoweringHandler = {
             text: event.payload.text ?? "",
           }),
         ];
+      case "SET_THREAD_DRAFT":
+        return [
+          createRuntimeEvent(event, "SET_THREAD_DRAFT", {
+            threadId: event.payload.threadId,
+            text: event.payload.text ?? "",
+          }),
+        ];
+      case "SET_THREAD_TYPING":
+        return [
+          createRuntimeEvent(event, "SET_THREAD_TYPING", {
+            threadId: event.payload.threadId,
+            userId: event.payload.userId ?? null,
+          }),
+        ];
+      case "SET_TIMELINE_TAB":
+        return [createRuntimeEvent(event, "SET_TIMELINE_TAB", event.payload)];
+      case "SET_PROFILE_TAB":
+        return [createRuntimeEvent(event, "SET_PROFILE_TAB", event.payload)];
       case "SET_NOTIFICATIONS_TAB":
         return [createRuntimeEvent(event, "SET_NOTIFICATIONS_TAB", event.payload)];
       case "NOTIFICATION_ADD":
@@ -263,7 +290,37 @@ export const xLowering: XLoweringHandler = {
             tweetId: event.payload.tweetId,
             isMention: event.payload.isMention,
             createdAt: getTimestamp(event, event.payload.createdAt),
+            title: event.payload.title,
+            body: event.payload.body,
+            read: event.payload.read,
           }),
+          {
+            at: event.at,
+            kind: "DEVICE",
+            type: "SHOW_NOTIFICATION",
+            deviceId,
+            payload: {
+              id: event.payload.id ?? `nt-${event.at}-${event._declarationOrder ?? 0}`,
+              appId: "app_x",
+              title: event.payload.title ?? "X",
+              body:
+                event.payload.body ??
+                (event.payload.type === "mention"
+                  ? "You were mentioned in a post"
+                  : event.payload.type === "reply"
+                    ? "New reply to your post"
+                    : event.payload.type === "follow"
+                      ? "You have a new follower"
+                      : "New activity on X"),
+              threadKey: event.payload.tweetId
+                ? `tweet:${event.payload.tweetId}`
+                : `user:${event.payload.actorId}`,
+              priority:
+                event.payload.type === "mention" || event.payload.type === "reply"
+                  ? "HIGH"
+                  : "DEFAULT",
+            },
+          } as RuntimeEvent,
         ];
       case "DM_THREAD_CREATE":
         return [
@@ -271,6 +328,11 @@ export const xLowering: XLoweringHandler = {
             id: event.payload.id ?? `dm-${event.at}-${event._declarationOrder ?? 0}`,
             participantIds: event.payload.participantIds ?? [],
             messageIds: [],
+            title: event.payload.title,
+            unreadCount: event.payload.unreadCount ?? 0,
+            pinned: event.payload.pinned ?? false,
+            typingUserId: null,
+            lastMessageAt: null,
           }),
         ];
       case "DM_SEND":
@@ -282,12 +344,20 @@ export const xLowering: XLoweringHandler = {
             ) ?? 0;
 
           const after: RuntimeEvent[] = [
+            createRuntimeEvent(event, "SET_THREAD_DRAFT", {
+              threadId: event.payload.threadId,
+              text,
+            }),
             createRuntimeEvent(event, "ADD_DM_MESSAGE", {
               id: event.payload.id ?? `msg-${event.at}-${event._declarationOrder ?? 0}`,
               threadId: event.payload.threadId,
               senderId: event.payload.senderId,
               text,
               createdAt: getTimestamp(event, event.payload.createdAt),
+            }),
+            createRuntimeEvent(event, "SET_THREAD_DRAFT", {
+              threadId: event.payload.threadId,
+              text: "",
             }),
           ];
 
