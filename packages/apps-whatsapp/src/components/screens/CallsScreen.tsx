@@ -67,6 +67,7 @@ export const CallsScreen: React.FC<CallsScreenProps> = ({
       direction: directionLabel,
     };
   });
+  const favoriteEntries = callEntries.filter((entry) => !entry.missed).slice(0, 3);
 
   return (
     <div
@@ -110,8 +111,137 @@ export const CallsScreen: React.FC<CallsScreenProps> = ({
           flex: 1,
           overflow: "auto",
           paddingBottom: spacing.tabBarHeight + safeAreaBottom,
+          backgroundColor: theme.colors.background,
         }}
       >
+        <div
+          style={{
+            margin: `${spacing.sectionGap}px ${spacing.pagePaddingX}px 10px`,
+            padding: 16,
+            borderRadius: 18,
+            backgroundColor: theme.colors.background,
+            border: `1px solid ${theme.colors.divider}`,
+            display: "flex",
+            alignItems: "center",
+            gap: spacing.contentMarginLeft,
+          }}
+        >
+          <div
+            style={{
+              width: 48,
+              height: 48,
+              borderRadius: 16,
+              backgroundColor: `${theme.colors.accent}16`,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              flexShrink: 0,
+            }}
+          >
+            <PhoneCallIcon color={theme.colors.accent} />
+          </div>
+          <div style={{ flex: 1 }}>
+            <div
+              style={{
+                ...typography.headline,
+                color: theme.colors.receivedBubbleText,
+                fontFamily: theme.typography.fontFamily,
+              }}
+            >
+              Create call link
+            </div>
+            <div
+              style={{
+                ...typography.body,
+                color: theme.colors.timestamp,
+                fontFamily: theme.typography.fontFamily,
+              }}
+            >
+              Share a link for your next WhatsApp call
+            </div>
+          </div>
+        </div>
+
+        {favoriteEntries.length > 0 ? (
+          <>
+            <div
+              style={{
+                padding: `0 ${spacing.pagePaddingX}px 8px`,
+                ...typography.caption,
+                color: theme.colors.timestamp,
+                fontFamily: theme.typography.fontFamily,
+                letterSpacing: 0.2,
+              }}
+            >
+              Favorites
+            </div>
+            <div
+              style={{
+                padding: `0 ${spacing.pagePaddingX}px ${spacing.sectionGap}px`,
+                display: "flex",
+                gap: 14,
+                overflowX: "auto",
+              }}
+            >
+              {favoriteEntries.map((entry) => (
+                <div
+                  key={`fav-${entry.id}`}
+                  style={{
+                    minWidth: 96,
+                    maxWidth: 96,
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    gap: 8,
+                  }}
+                >
+                  <div
+                    style={{
+                      width: 64,
+                      height: 64,
+                      borderRadius: "50%",
+                      overflow: "hidden",
+                      backgroundColor: `${theme.colors.divider}66`,
+                    }}
+                  >
+                    <Img
+                      src={resolveAvatarWithFallback(entry.avatar, entry.name)}
+                      alt={entry.name}
+                      style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                    />
+                  </div>
+                  <div
+                    style={{
+                      ...typography.caption,
+                      color: theme.colors.receivedBubbleText,
+                      textAlign: "center",
+                      fontFamily: theme.typography.fontFamily,
+                      whiteSpace: "nowrap",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      width: "100%",
+                    }}
+                  >
+                    {entry.name}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </>
+        ) : null}
+
+        <div
+          style={{
+            padding: `0 ${spacing.pagePaddingX}px 8px`,
+            ...typography.caption,
+            color: theme.colors.timestamp,
+            fontFamily: theme.typography.fontFamily,
+            letterSpacing: 0.2,
+          }}
+        >
+          Recent
+        </div>
+
         {callEntries.map((entry) => (
           <div
             key={entry.id}

@@ -37,6 +37,45 @@ type ChannelCard = {
   unreadCount?: number;
 };
 
+const SectionEmptyState: React.FC<{
+  title: string;
+  subtitle: string;
+}> = ({ title, subtitle }) => {
+  const theme = useTheme();
+
+  return (
+    <div
+      style={{
+        margin: `0 ${spacing.pagePaddingX}px ${spacing.sectionGap}px`,
+        padding: 18,
+        borderRadius: 20,
+        backgroundColor: theme.colors.headerBackground,
+        border: `1px solid ${theme.colors.divider}`,
+      }}
+    >
+      <div
+        style={{
+          ...typography.headline,
+          fontFamily: theme.typography.fontFamily,
+          color: theme.colors.receivedBubbleText,
+          marginBottom: 6,
+        }}
+      >
+        {title}
+      </div>
+      <div
+        style={{
+          ...typography.body,
+          fontFamily: theme.typography.fontFamily,
+          color: theme.colors.timestamp,
+        }}
+      >
+        {subtitle}
+      </div>
+    </div>
+  );
+};
+
 const StatusAvatar: React.FC<{
   name: string;
   avatar?: string;
@@ -235,41 +274,6 @@ const ChannelRow: React.FC<{ channel: ChannelCard }> = ({ channel }) => {
   );
 };
 
-function getDefaultChannels(): ChannelCard[] {
-  return [
-    {
-      id: "default-channel-1",
-      name: "Daily Bakchodi",
-      description: "Campus gossip, overreactions, and catastrophic confidence.",
-      latestSnippet: "Tonight's agenda: make uncle think you own a startup.",
-      followersLabel: "218K followers",
-      category: "Comedy",
-      verified: true,
-      isFollowed: true,
-      unreadCount: 3,
-    },
-    {
-      id: "default-channel-2",
-      name: "Delhi Food Radar",
-      description: "Late-night finds, fake premium cafes, and elite chai intel.",
-      latestSnippet: "New drop: cafes charging 320 for vibes and regret.",
-      followersLabel: "81K followers",
-      category: "Food",
-      unreadCount: 1,
-    },
-    {
-      id: "default-channel-3",
-      name: "Cricket Mood Swings",
-      description: "Three overs of form, three days of agenda.",
-      latestSnippet: "Breaking: one innings has ended three careers on Twitter.",
-      followersLabel: "430K followers",
-      category: "Sports",
-      verified: true,
-      isFollowed: true,
-    },
-  ];
-}
-
 export const UpdatesScreen: React.FC<UpdatesScreenProps> = ({
   world,
   safeAreaInsets,
@@ -291,7 +295,7 @@ export const UpdatesScreen: React.FC<UpdatesScreenProps> = ({
     .sort((a, b) => (b.lastMessageAt ?? 0) - (a.lastMessageAt ?? 0));
 
   const channelConversations = conversations
-    .filter((conv) => conv.isChannel || conv.isVerifiedBusiness)
+    .filter((conv) => conv.isChannel)
     .map((conv): ChannelCard => ({
       id: conv.id,
       name: conv.name || "Channel",
@@ -300,7 +304,7 @@ export const UpdatesScreen: React.FC<UpdatesScreenProps> = ({
         conv.channelDescription ||
         conv.description ||
         conv.pinnedMessage?.text ||
-        "Latest drops and updates.",
+        "Latest updates.",
       latestSnippet:
         conv.channelLatestSnippet ||
         normalizeMessages(
@@ -309,17 +313,13 @@ export const UpdatesScreen: React.FC<UpdatesScreenProps> = ({
           (conv.messages || []) as unknown[],
           deviceId,
         ).slice(-1)[0]?.text,
-      followersLabel: conv.channelFollowersLabel || "Growing fast",
+      followersLabel: conv.channelFollowersLabel || "Channel",
       category: conv.channelCategory,
       isMuted: conv.isMuted,
       verified: conv.isVerifiedBusiness,
       isFollowed: conv.isFollowed ?? false,
       unreadCount: conv.channelUnreadCount ?? 0,
     }));
-
-  const channels = channelConversations.length > 0
-    ? channelConversations
-    : getDefaultChannels();
 
   return (
     <div
@@ -503,6 +503,13 @@ export const UpdatesScreen: React.FC<UpdatesScreenProps> = ({
           })}
         </div>
 
+        {statusConversations.length === 0 ? (
+          <SectionEmptyState
+            title="No recent status updates"
+            subtitle="Status posts from your contacts will appear here when they share photos, video, or text."
+          />
+        ) : null}
+
         <div
           style={{
             padding: `${spacing.sectionGap}px ${spacing.pagePaddingX}px 8px`,
@@ -533,7 +540,7 @@ export const UpdatesScreen: React.FC<UpdatesScreenProps> = ({
               marginBottom: 6,
             }}
           >
-            Find channels worth stalking
+            Find channels worth following
           </div>
           <div
             style={{
@@ -542,13 +549,20 @@ export const UpdatesScreen: React.FC<UpdatesScreenProps> = ({
               color: theme.colors.timestamp,
             }}
           >
-            Follow creators, brands, and local chaos without dumping it in your main chats.
+            Follow creators, teams, and brands without mixing every update into your main chats.
           </div>
         </div>
 
-        {channels.map((channel) => (
+        {channelConversations.map((channel) => (
           <ChannelRow key={channel.id} channel={channel} />
         ))}
+
+        {channelConversations.length === 0 ? (
+          <SectionEmptyState
+            title="No channels yet"
+            subtitle="Followed channels will appear here with their latest posts and unread counts."
+          />
+        ) : null}
       </div>
 
       <TabNavigation activeTab="updates" safeAreaBottom={safeAreaBottom} />

@@ -38,6 +38,7 @@ import voiceDemo from "./voice-demo.episode.js";
 import whatsappGhibli from "./whatsapp-ghibli.episode.js";
 import whatsappToXViral from "./whatsapp-to-x-viral.episode.js";
 import whatsappToX from "./whatsapp-to-x.episode.js";
+import whatsappV1Flagship from "./whatsapp-v1-flagship.episode.js";
 import whtEpi from "./wht-epi.episode.js";
 import xAnchorTour from "./x-anchor-tour.episode.js";
 
@@ -80,6 +81,7 @@ export const productionEpisodes: EpisodeDefinition[] = [
   whatsappGhibli,
   whatsappToXViral,
   whatsappToX,
+  whatsappV1Flagship,
   whtEpi,
   xAnchorTour,
 ];
@@ -125,6 +127,7 @@ export {
   whatsappGhibli,
   whatsappToXViral,
   whatsappToX,
+  whatsappV1Flagship,
   whtEpi,
   xAnchorTour,
 };

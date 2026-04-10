@@ -2,6 +2,8 @@ import {
   expectArray,
   expectObjectRecord,
   expectOneOf,
+  expectOptionalBoolean,
+  expectOptionalNumber,
   expectOptionalString,
   expectString,
 } from "@tokovo/core";
@@ -84,6 +86,51 @@ function validateWhatsAppSnapshot(
     expectOptionalString(
       conversation.avatar,
       `snapshot.conversations[${index}].avatar`,
+      errors,
+    );
+    expectOptionalBoolean(
+      conversation.hasStatus,
+      `snapshot.conversations[${index}].hasStatus`,
+      errors,
+    );
+    expectOptionalBoolean(
+      conversation.isChannel,
+      `snapshot.conversations[${index}].isChannel`,
+      errors,
+    );
+    expectOptionalBoolean(
+      conversation.isFollowed,
+      `snapshot.conversations[${index}].isFollowed`,
+      errors,
+    );
+    expectOptionalBoolean(
+      conversation.isVerifiedBusiness,
+      `snapshot.conversations[${index}].isVerifiedBusiness`,
+      errors,
+    );
+    expectOptionalString(
+      conversation.channelDescription,
+      `snapshot.conversations[${index}].channelDescription`,
+      errors,
+    );
+    expectOptionalString(
+      conversation.channelLatestSnippet,
+      `snapshot.conversations[${index}].channelLatestSnippet`,
+      errors,
+    );
+    expectOptionalString(
+      conversation.channelFollowersLabel,
+      `snapshot.conversations[${index}].channelFollowersLabel`,
+      errors,
+    );
+    expectOptionalString(
+      conversation.channelCategory,
+      `snapshot.conversations[${index}].channelCategory`,
+      errors,
+    );
+    expectOptionalNumber(
+      conversation.channelUnreadCount,
+      `snapshot.conversations[${index}].channelUnreadCount`,
       errors,
     );
 
