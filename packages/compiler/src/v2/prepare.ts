@@ -528,6 +528,8 @@ function buildHomeScreenConfig(input: {
         return { label: "WhatsApp", icon: "💬" };
       case "app_x":
         return { label: "X", icon: "𝕏" };
+      case "app_instagram":
+        return { label: "Instagram", icon: "◎" };
       case "app_imessage":
         return { label: "Messages", icon: "💬" };
       case "app_camera":

@@ -237,6 +237,40 @@ export class EpisodeBuilder {
   }
 
   /**
+   * Seed app-owned snapshot state at frame 0.
+   * The target plugin is responsible for lowering "__SNAPSHOT__".
+   */
+  snapshot(appId: string, deviceId: string, snapshot: unknown): this {
+    this._events.push({
+      at: 0,
+      kind: "APP",
+      appId,
+      deviceId,
+      type: "__SNAPSHOT__",
+      payload: snapshot,
+      _declarationOrder: this._declarationOrder++,
+    } as unknown as TrackEvent);
+    return this;
+  }
+
+  /**
+   * Seed the initial app view at frame 0.
+   * The target plugin is responsible for lowering "__VIEW__".
+   */
+  view(appId: string, deviceId: string, view: unknown): this {
+    this._events.push({
+      at: 0,
+      kind: "APP",
+      appId,
+      deviceId,
+      type: "__VIEW__",
+      payload: view,
+      _declarationOrder: this._declarationOrder++,
+    } as unknown as TrackEvent);
+    return this;
+  }
+
+  /**
    * Enable auto-camera director.
    */
   director(style: DirectorStyle): this {

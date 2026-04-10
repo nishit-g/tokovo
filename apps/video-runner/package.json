@@ -7,7 +7,7 @@
     "dev": "npx remotion studio",
     "dev:catalog": "TOKOVO_STUDIO_CATALOG=1 npx remotion studio",
     "benchmark": "npx remotion benchmark src/index.ts episode-render --props='{\"episodeId\":\"v2-enterprise-long-showcase\"}'",
-    "render:fast": "node scripts/render-fast.mjs",
+    "render:fast": "sh scripts/render-fast.sh",
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "upgrade": "remotion upgrade",
@@ -21,6 +21,7 @@
     "@remotion/renderer": "4.0.409",
     "@tokovo/background": "workspace:*",
     "@tokovo/compiler": "workspace:*",
+    "@tokovo/apps-instagram": "workspace:*",
     "@tokovo/apps-imessage": "workspace:*",
     "@tokovo/apps-linkedin": "workspace:*",
     "@tokovo/apps-snapchat": "workspace:*",
@@ -37,6 +38,7 @@
     "@tokovo/overlay": "workspace:*",
     "@tokovo/episodes": "workspace:*",
     "@tokovo/ir": "workspace:*",
+    "@tokovo/publishing": "workspace:*",
     "@tokovo/react": "workspace:*",
     "@tokovo/renderer": "workspace:*",
     "@tokovo/voice": "workspace:*",
@@ -50,6 +52,7 @@
     "@types/web": "^0.0.61",
     "eslint": "^9.0.0",
     "prettier": "^3.0.0",
+    "tsx": "^4.20.6",
     "typescript": "^5.0.0",
     "vitest": "^1.0.0"
   }

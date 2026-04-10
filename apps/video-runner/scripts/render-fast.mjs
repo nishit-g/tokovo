@@ -47,10 +47,8 @@ function parseConcurrency(rawValue) {
       `CONCURRENCY must be a positive number, received: ${rawValue}`,
     );
   }
-
   return Math.floor(parsed);
 }
-
 const concurrency = parseConcurrency(process.env.CONCURRENCY);
 
 function readJson(filePath) {

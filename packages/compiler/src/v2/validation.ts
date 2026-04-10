@@ -84,6 +84,23 @@ function hasXThreadNavigationBefore(
   });
 }
 
+function hasInstagramThreadNavigationBefore(
+  events: AnyRuntimeEvent[],
+  firstChatFrame: number,
+): boolean {
+  return events.some((e) => {
+    if (!isAppEvent(e)) return false;
+    if (e.appId !== "app_instagram") return false;
+    if (typeof e.at !== "number" || e.at > firstChatFrame) return false;
+
+    if (e.type === "SET_ACTIVE_THREAD") return true;
+    if (e.type === "SET_SCREEN") {
+      return getPayloadScreen(e) === "thread";
+    }
+    return false;
+  });
+}
+
 /**
  * V1 runtime authoring validation.
  *
@@ -200,6 +217,28 @@ export function validateV1RuntimeEpisode(
           `X emits DM messages before entering a thread by frame ${firstFrame}. ` +
           `This may be intentional (background DM arrival), but if camera/anchors target DM thread, ` +
           `ensure you set screen=thread and activeThreadId before focusing.`,
+      });
+    }
+  }
+
+  const firstInstagramDM = evs
+    .filter((e) => isAppEvent(e) && e.appId === "app_instagram")
+    .filter((e) => typeof e.at === "number")
+    .filter((e) => e.type === "ADD_DM_MESSAGE")
+    .sort((a, b) => (a.at as number) - (b.at as number))[0];
+
+  if (firstInstagramDM) {
+    const firstFrame = firstInstagramDM.at as number;
+    if (!hasInstagramThreadNavigationBefore(evs, firstFrame)) {
+      issues.push({
+        severity: "warning",
+        appId: "app_instagram",
+        type: firstInstagramDM.type,
+        at: firstFrame,
+        message:
+          `Instagram emits DM messages before entering a thread by frame ${firstFrame}. ` +
+          `This may be background inbox activity, but if the scene expects DM-thread camera focus or story-reply handoff, ` +
+          `open the thread first.`,
       });
     }
   }

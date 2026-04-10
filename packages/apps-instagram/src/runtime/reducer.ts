@@ -221,6 +221,10 @@ export const instagramReducer: PluginReducer<"app_instagram"> = (
   const state = getAppState(draft);
 
   switch (event.type) {
+    case "HYDRATE_STATE": {
+      draft.appState.app_instagram = event.payload as InstagramState;
+      break;
+    }
     case "ADD_USER": {
       const payload = event.payload as Partial<InstagramUser>;
       upsertById(state.users, ensureUser(payload));

@@ -1,0 +1,40 @@
+export const instagramColors = {
+  background: "#FFFFFF",
+  backgroundAlt: "#FAFAFA",
+  surface: "#FFFFFF",
+  surfaceRaised: "#F4F4F5",
+  border: "#DBDBDB",
+  borderStrong: "#C7C7CC",
+  textPrimary: "#111111",
+  textSecondary: "#6B7280",
+  textMuted: "#9CA3AF",
+  accent: "#E1306C",
+  accentSoft: "rgba(225,48,108,0.12)",
+  accentWarm: "#F77737",
+  accentCool: "#5851DB",
+  success: "#16A34A",
+  storyRingA: "#F9CE34",
+  storyRingB: "#EE2A7B",
+  storyRingC: "#6228D7",
+} as const;
+
+export const instagramTypography = {
+  display: { fontSize: 24, fontWeight: "700" as const, letterSpacing: -0.4 },
+  title: { fontSize: 18, fontWeight: "700" as const, letterSpacing: -0.2 },
+  headline: { fontSize: 16, fontWeight: "600" as const, letterSpacing: -0.15 },
+  body: { fontSize: 14, fontWeight: "400" as const, letterSpacing: -0.05 },
+  bodyStrong: { fontSize: 14, fontWeight: "600" as const, letterSpacing: -0.05 },
+  caption: { fontSize: 12, fontWeight: "500" as const, letterSpacing: 0.1 },
+} as const;
+
+export const instagramSpacing = {
+  screenPadding: 16,
+  headerHeight: 54,
+  tabBarHeight: 52,
+  storyTrayHeight: 104,
+  avatarSize: 32,
+  storyAvatarSize: 62,
+  storyGap: 14,
+  postGap: 16,
+  composerHeight: 96,
+} as const;

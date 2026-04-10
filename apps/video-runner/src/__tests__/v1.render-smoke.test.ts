@@ -37,6 +37,7 @@ import { registerWhatsAppPlugin } from "@tokovo/apps-whatsapp";
 import { registerXPlugin } from "@tokovo/apps-x";
 import { registerIMessagePlugin } from "@tokovo/apps-imessage";
 import { registerLinkedInPlugin } from "@tokovo/apps-linkedin";
+import { registerInstagramPlugin } from "@tokovo/apps-instagram";
 import { registerTypewriterPlugin } from "@tokovo/apps-typewriter";
 import { registerTeamsPlugin } from "@tokovo/apps-teams";
 
@@ -60,6 +61,7 @@ function createRuntimeForSmoke(): {
   registerXPlugin(pluginManager);
   registerIMessagePlugin(pluginManager);
   registerLinkedInPlugin(pluginManager);
+  registerInstagramPlugin(pluginManager);
   registerTypewriterPlugin(pluginManager);
   registerTeamsPlugin(pluginManager);
   registerNotificationPlugin(tokovoRegistries.engine);

@@ -23,6 +23,7 @@ render
 .env.production.local
 *.env
 *.env.*
+!.env.example
 
 # Logs
 npm-debug.log*
@@ -44,3 +45,4 @@ Thumbs.db
 
 # OpenClaw agent files (machine-specific, not source code)
 memory/
+.tokovo/publishing/

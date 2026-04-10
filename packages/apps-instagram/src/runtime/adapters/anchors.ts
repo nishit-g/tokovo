@@ -1,0 +1,35 @@
+import type { PluginAnchorRegistry } from "@tokovo/core";
+
+export const instagramAnchors: PluginAnchorRegistry = {
+  providers: {
+    default: () => null,
+  },
+  framing: {
+    home_header: { anchorPoint: { x: 0.5, y: 0.08 }, paddingPx: 8, targetFill: 0.9 },
+    stories_tray: { anchorPoint: { x: 0.5, y: 0.17 }, paddingPx: 10, targetFill: 0.84 },
+    feed_list: { anchorPoint: { x: 0.5, y: 0.5 }, paddingPx: 12, targetFill: 0.82 },
+    feed_post_0: { anchorPoint: { x: 0.5, y: 0.42 }, paddingPx: 12, targetFill: 0.82 },
+    feed_post_0_media: { anchorPoint: { x: 0.5, y: 0.44 }, paddingPx: 10, targetFill: 0.74 },
+    feed_post_0_actions: { anchorPoint: { x: 0.5, y: 0.64 }, paddingPx: 8, targetFill: 0.68 },
+    story_viewer: { anchorPoint: { x: 0.5, y: 0.5 }, paddingPx: 0, targetFill: 1 },
+    story_progress: { anchorPoint: { x: 0.5, y: 0.06 }, paddingPx: 6, targetFill: 0.9 },
+    story_reply_bar: { anchorPoint: { x: 0.5, y: 0.9 }, paddingPx: 8, targetFill: 0.7 },
+    notifications_list: { anchorPoint: { x: 0.5, y: 0.46 }, paddingPx: 14, targetFill: 0.82 },
+    notifications_row_0: { anchorPoint: { x: 0.5, y: 0.22 }, paddingPx: 10, targetFill: 0.76 },
+    inbox_list: { anchorPoint: { x: 0.5, y: 0.48 }, paddingPx: 14, targetFill: 0.84 },
+    dm_row_0: { anchorPoint: { x: 0.5, y: 0.24 }, paddingPx: 10, targetFill: 0.76 },
+    thread_header: { anchorPoint: { x: 0.5, y: 0.1 }, paddingPx: 8, targetFill: 0.9 },
+    dm_thread: { anchorPoint: { x: 0.5, y: 0.54 }, paddingPx: 14, targetFill: 0.84 },
+    dm_message_latest: { anchorPoint: { x: 0.5, y: 0.7 }, paddingPx: 8, targetFill: 0.74 },
+    reply_input: { anchorPoint: { x: 0.42, y: 0.87 }, paddingPx: 8, targetFill: 0.66 },
+    reply_send_button: { anchorPoint: { x: 0.82, y: 0.87 }, paddingPx: 8, targetFill: 0.4 },
+    profile_header: { anchorPoint: { x: 0.5, y: 0.24 }, paddingPx: 10, targetFill: 0.84 },
+    profile_grid: { anchorPoint: { x: 0.5, y: 0.68 }, paddingPx: 12, targetFill: 0.84 },
+    profile_grid_0: { anchorPoint: { x: 0.18, y: 0.54 }, paddingPx: 8, targetFill: 0.34 },
+    composer_surface: { anchorPoint: { x: 0.5, y: 0.5 }, paddingPx: 6, targetFill: 0.96 },
+    composer_media: { anchorPoint: { x: 0.5, y: 0.36 }, paddingPx: 10, targetFill: 0.72 },
+    composer_caption_input: { anchorPoint: { x: 0.5, y: 0.82 }, paddingPx: 8, targetFill: 0.72 },
+    bottom_nav: { anchorPoint: { x: 0.5, y: 0.95 }, paddingPx: 6, targetFill: 0.64 },
+    device: { anchorPoint: { x: 0.5, y: 0.5 }, paddingPx: 0, targetFill: 1 },
+  },
+};
