@@ -5,6 +5,7 @@ const meta = {
   "episode-authoring-dsl": "Episode Authoring DSL",
   "anchors-dsl-plugin-reference": "Anchors + DSL Reference",
   performance: "Performance",
+  "private-r2-assets": "Private R2 Assets",
   "rendering-at-scale": "Rendering at Scale",
 };
 

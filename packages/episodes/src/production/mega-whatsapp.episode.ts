@@ -1,17 +1,7 @@
 import { defineEpisode } from "../types/episode-definition.js";
 import { episode, parseTimeToFrames } from "@tokovo/dsl";
-import { WhatsAppTrackBuilder, GroupBuilder } from "@tokovo/apps-whatsapp";
+import { WhatsAppTrackBuilder } from "@tokovo/apps-whatsapp";
 import { KeyboardPlugin } from "@tokovo/compiler";
-
-type GroupOp = {
-  at: number;
-  kind: "Custom";
-  deviceId: string;
-  appId: string;
-  eventType: string;
-  payload: unknown;
-  _declarationOrder?: number;
-};
 
 export default defineEpisode({
   meta: {
@@ -34,6 +24,13 @@ export default defineEpisode({
     })
       .device("phone", "iphone16", {
         app: "app_whatsapp",
+        os: {
+          time: new Date("2025-01-12T19:45:00"),
+          battery: 78,
+          network: "5G",
+        },
+      })
+      .snapshot("app_whatsapp", "phone", {
         conversations: [
           {
             id: "dm_alex",
@@ -54,11 +51,6 @@ export default defineEpisode({
             type: "group",
           },
         ],
-        os: {
-          time: new Date("2025-01-12T19:45:00"),
-          battery: 78,
-          network: "5G",
-        },
       })
       .background({ type: "image", src: "/backgrounds/neon-city.png" })
       .track(
@@ -76,37 +68,45 @@ export default defineEpisode({
           const maybeOrder = Reflect.get(wa, "_getOrder");
           const getOrder =
             typeof maybeOrder === "function" ? (maybeOrder as () => number) : (() => 0);
-          let groupFrame = 0;
-          const group = new GroupBuilder(
-            "group_design",
-            () => groupFrame,
-            (op: GroupOp) => {
-              const rawEvents = Reflect.get(wa, "_events") as unknown;
-              if (Array.isArray(rawEvents)) {
-                (rawEvents as unknown[]).push({
-                ...op,
-                _declarationOrder: getOrder(),
-                });
-              }
-            },
-            { deviceId: "phone", appId: "app_whatsapp" },
-          );
-          const atGroup = (time: string | number) => {
-            groupFrame = parseTimeToFrames(time, fps);
-            return group;
+          const rawEvents = Reflect.get(wa, "_events");
+
+          const addGroupMember = (
+            time: string | number,
+            member: { id: string; name: string; avatar?: string },
+            addedBy = "me",
+          ) => {
+            if (!Array.isArray(rawEvents)) return;
+            rawEvents.push({
+              at: parseTimeToFrames(time, fps),
+              deviceId: "phone",
+              kind: "APP",
+              appId: "app_whatsapp",
+              type: "GROUP_MEMBER_ADDED",
+              conversationId: "group_design",
+              payload: {
+                conversationId: "group_design",
+                memberId: member.id,
+                memberName: member.name,
+                addedBy,
+              },
+              _declarationOrder: getOrder(),
+            });
           };
 
           wa.openChatList("0s");
 
-          atGroup("0s").addMember(
+          addGroupMember(
+            "0s",
             { id: "ava", name: "Ava", avatar: "/avatars/avatar-ava.jpg" },
             "me",
           );
-          atGroup("0s").addMember(
+          addGroupMember(
+            "0s",
             { id: "ken", name: "Ken", avatar: "/avatars/avatar-ken.jpg" },
             "me",
           );
-          atGroup("0s").addMember(
+          addGroupMember(
+            "0s",
             { id: "ria", name: "Ria", avatar: "/avatars/avatar-ria.jpg" },
             "me",
           );
@@ -172,12 +172,19 @@ export default defineEpisode({
           wa.switchTo("group_design", "22s");
           wa.at("22.6s").send("Team, live demo kicks off in 30 mins.");
 
-          atGroup("23s").addMember(
+          addGroupMember(
+            "23s",
             { id: "leo", name: "Leo", avatar: "/avatars/avatar-leo.jpg" },
             "me",
           );
-          atGroup("23.8s").makeAdmin("ava", "me");
-          atGroup("24.6s").updateInfo("name", "Design Sprint ⚡ Launch", "ken");
+          wa.at("23.8s").receive(
+            "Ava",
+            "Perfect. I’ve got admin now, so I’ll run the screen share and pin the final deck.",
+          );
+          wa.at("24.6s").receive(
+            "Ken",
+            'Renamed us to "Design Sprint ⚡ Launch" so the latest runbook is easier to spot.',
+          );
 
           wa.span("25s", "26.2s").typing("Ava");
           wa.at("26.4s").receive("Ava", "On it. I’ll run the screen share.");

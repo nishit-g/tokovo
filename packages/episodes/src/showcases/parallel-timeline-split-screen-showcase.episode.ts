@@ -34,6 +34,13 @@ export default defineEpisode({
         app: "app_whatsapp",
         screenRecording: true,
         installedApps: ["app_whatsapp"],
+        os: {
+          time: new Date("2025-02-10T22:10:00"),
+          battery: 78,
+          network: "5G",
+        },
+      })
+      .snapshot("app_whatsapp", "phone_her", {
         conversations: [
           {
             id: "dm_her",
@@ -42,11 +49,6 @@ export default defineEpisode({
             unreadCount: 2,
           },
         ],
-        os: {
-          time: new Date("2025-02-10T22:10:00"),
-          battery: 78,
-          network: "5G",
-        },
       })
       .device("phone_him", "iphone16", {
         app: "app_x",
@@ -59,6 +61,39 @@ export default defineEpisode({
         },
       })
       .background({ type: "image", src: "/backgrounds/dark-studio.png" })
+      .snapshot("app_x", "phone_him", {
+        users: [
+          {
+            id: "u_me",
+            name: "Me",
+            handle: "me",
+            followers: 5600,
+            following: 320,
+            verified: null,
+          },
+          {
+            id: "u_target",
+            name: "Target",
+            handle: "target",
+            followers: 88000,
+            following: 210,
+            verified: "blue",
+          },
+        ],
+        tweets: [
+          {
+            id: "tw_del",
+            authorId: "u_target",
+            text: "Deleting this in 5 minutes.",
+            createdAt: new Date("2025-02-10T22:09:58").getTime(),
+            viewCount: 8200,
+            shareCount: 88,
+            bookmarkCount: 140,
+          },
+        ],
+        currentUserId: "u_me",
+      })
+      .view("app_x", "phone_him", { screen: "timeline" })
       .track(
         "app_whatsapp",
         (getOrder) => new WhatsAppTrackBuilder(30, "phone_her", "dm_her", getOrder),
@@ -75,38 +110,6 @@ export default defineEpisode({
         "app_x",
         (getOrder) => new XTrackBuilder(30, "phone_him", getOrder),
         (x) => {
-          x.seed({
-            users: [
-              {
-                id: "u_me",
-                name: "Me",
-                handle: "me",
-                followers: 5600,
-                following: 320,
-                verified: null,
-              },
-              {
-                id: "u_target",
-                name: "Target",
-                handle: "target",
-                followers: 88000,
-                following: 210,
-                verified: "blue",
-              },
-            ],
-            tweets: [
-              {
-                id: "tw_del",
-                authorId: "u_target",
-                text: "Deleting this in 5 minutes.",
-                createdAt: new Date("2025-02-10T22:09:58").getTime(),
-                viewCount: 8200,
-                shareCount: 88,
-                bookmarkCount: 140,
-              },
-            ],
-            currentUserId: "u_me",
-          });
           x.at("0.8s").navigate("timeline");
           x.at("6.6s").navigate("tweet", { tweetId: "tw_del" });
           x.at("6.65s").viewTweet("tw_del");

@@ -17,6 +17,9 @@ export interface SnapchatState {
     conversations?: Record<string, SnapchatConversation>;
     /** Currently viewing snap ID */
     activeSnapId?: string;
+    /** Draft text keyed by conversation */
+    drafts?: Record<string, string>;
+    lastNavFrame?: number;
 }
 
 export function asSnapchatState(

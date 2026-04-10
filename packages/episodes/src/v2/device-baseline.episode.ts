@@ -1,5 +1,5 @@
 import { defineEpisode } from "../types/episode-definition.js";
-import { episode } from "@tokovo/creator";
+import { episode } from "../code-first-episode.js";
 
 export default defineEpisode({
   meta: {
@@ -30,14 +30,16 @@ export default defineEpisode({
         locked: true,
         screenRecording: true,
         installedApps: ["app_whatsapp", "app_x", "app_camera"],
-        conversations: [
-          { id: "dm_bait", name: "Mina", avatar: "/avatars/avatar-maya.jpg" },
-        ],
         os: {
           time: new Date("2025-06-26T09:41:00"),
           battery: 81,
           network: "5G",
         },
+      })
+      .snapshot("app_whatsapp", "phone", {
+        conversations: [
+          { id: "dm_bait", name: "Mina", avatar: "/avatars/avatar-maya.jpg" },
+        ],
       })
       .background({ type: "image", src: "/backgrounds/cozy-bedroom.png" })
       .deviceTrack("phone", (d) => {
@@ -66,37 +68,38 @@ export default defineEpisode({
           transition: { durationFrames: 18, style: "iosZoom" },
         });
       })
+      .snapshot("app_x", "phone", {
+        users: [
+          {
+            id: "u_me",
+            name: "Me",
+            handle: "me",
+            followers: 2100,
+            following: 120,
+            verified: null,
+          },
+          {
+            id: "u_him",
+            name: "Him",
+            handle: "him",
+            followers: 54000,
+            following: 500,
+            verified: "blue",
+          },
+        ],
+        tweets: [
+          {
+            id: "tw_1",
+            authorId: "u_him",
+            text: "Receipts at 10.",
+            viewCount: 84000,
+            shareCount: 1400,
+            bookmarkCount: 5200,
+          },
+        ],
+      })
+      .view("app_x", "phone", { screen: "timeline" })
       .x("phone", (x) => {
-        x.seed({
-          users: [
-            {
-              id: "u_me",
-              name: "Me",
-              handle: "me",
-              followers: 2100,
-              following: 120,
-              verified: null,
-            },
-            {
-              id: "u_him",
-              name: "Him",
-              handle: "him",
-              followers: 54000,
-              following: 500,
-              verified: "blue",
-            },
-          ],
-          tweets: [
-            {
-              id: "tw_1",
-              authorId: "u_him",
-              text: "Receipts at 10.",
-              viewCount: 84000,
-              shareCount: 1400,
-              bookmarkCount: 5200,
-            },
-          ],
-        });
         x.at("12.0s").navigate("timeline");
         x.at("13.2s").navigate("tweet", { tweetId: "tw_1" });
       })

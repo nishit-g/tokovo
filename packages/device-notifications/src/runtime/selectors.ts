@@ -30,6 +30,9 @@ interface SelectorConfig {
   sortDirection: "asc" | "desc";
 }
 
+const EMPTY_NOTIFICATIONS: NotificationAnimationInfo[] = [];
+const EMPTY_STACKED_NOTIFICATIONS: StackedNotificationInfo[] = [];
+
 const animationConfigCache = new WeakMap<
   NotificationTokens,
   Map<number, AnimationConfig>
@@ -106,6 +109,13 @@ function createNotificationSelector(defaultConfig: SelectorConfig) {
     const notifications = (device.notifications ??
       []) as NotificationInstance[];
 
+    if (notifications.length === 0) {
+      lastNotifications = notifications;
+      lastFrame = currentFrame;
+      lastResult = EMPTY_NOTIFICATIONS;
+      return EMPTY_NOTIFICATIONS;
+    }
+
     const notificationsChanged = notifications !== lastNotifications;
     const frameChanged = currentFrame !== lastFrame;
 
@@ -144,11 +154,13 @@ function createNotificationSelector(defaultConfig: SelectorConfig) {
       });
     }
 
-    result.sort((a, b) => {
-      const diff =
-        (a.notification.shownAtFrame ?? 0) - (b.notification.shownAtFrame ?? 0);
-      return config.sortDirection === "asc" ? diff : -diff;
-    });
+    if (result.length > 1) {
+      result.sort((a, b) => {
+        const diff =
+          (a.notification.shownAtFrame ?? 0) - (b.notification.shownAtFrame ?? 0);
+        return config.sortDirection === "asc" ? diff : -diff;
+      });
+    }
 
     lastResult = result;
     return result;
@@ -207,6 +219,12 @@ export function createSelectors(tokens: NotificationTokens) {
       }
 
       lastBannerResult = visible;
+
+      if (visible.length === 0) {
+        stackIndexHistory.clear();
+        lastStackedResult = EMPTY_STACKED_NOTIFICATIONS;
+        return lastStackedResult;
+      }
 
       lastStackedResult = visible.map((info, index) => {
         const id = info.notification.id;

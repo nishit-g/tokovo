@@ -1,5 +1,5 @@
 import { defineEpisode } from "../types/episode-definition.js";
-import { episode } from "@tokovo/creator";
+import { episode } from "../code-first-episode.js";
 import { TypewriterTrackBuilder } from "@tokovo/apps-typewriter";
 import type { TypewriterThemeConfig } from "@tokovo/apps-typewriter";
 

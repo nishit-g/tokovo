@@ -8,9 +8,10 @@
  * ```typescript
  * const ir = episode("demo", { fps: 30, duration: "60s" })
  *   .device("phone", "iphone16", {
- *     app: "app_whatsapp",
- *     conversations: [{ id: "dm_sarah", name: "Sarah" }]
+ *     app: "app_whatsapp"
  *   })
+ *   .snapshot("app_whatsapp", "phone", { conversations: [] })
+ *   .view("app_whatsapp", "phone", { screen: "chat-list" })
  *   .track("camera", cam => {
  *     cam.at("0s").set({ scale: 1 });
  *     cam.at("1s").animate({ scale: 1.2, duration: "0.5s" });
@@ -25,7 +26,8 @@ import {
   TrackEpisodeIR,
   TrackEpisodeConfig,
   DeviceConfig,
-  ConversationConfig,
+  AppSnapshotEntry,
+  AppInitialViewEntry,
   OSConfig,
   Marker,
   Section,
@@ -49,7 +51,6 @@ import { OverlayTrackBuilder } from "./overlay-track.js";
 
 export interface DeviceOptions {
   app: string;
-  conversations?: ConversationConfig[];
   os?: OSConfig;
   /** UI theme/strategy to use (e.g., "whatsapp-ghibli") */
   theme?: string;
@@ -72,6 +73,14 @@ export interface TrackBuilder {
   _events: TrackEvent[];
   at: (time: string | number) => unknown;
   span: (start: string | number, end: string | number) => unknown;
+}
+
+export interface SnapshotOptions {
+  version?: number;
+}
+
+export interface ViewOptions {
+  version?: number;
 }
 
 // Track factory function type for app-specific builders.
@@ -136,6 +145,8 @@ export class EpisodeBuilder {
   private _title?: string;
   private _description?: string;
   private _devices: DeviceConfig[] = [];
+  private _appSnapshots: AppSnapshotEntry[] = [];
+  private _initialViews: AppInitialViewEntry[] = [];
   private _events: TrackEvent[] = [];
   private _markers: Marker[] = [];
   private _sections: Section[] = [];
@@ -179,13 +190,48 @@ export class EpisodeBuilder {
       id,
       profile,
       app: options.app,
-      conversations: options.conversations,
       os: options.os,
       theme: options.theme,
       locked: options.locked,
       installedApps: options.installedApps,
       homeScreen: options.homeScreen,
       screenRecording: options.screenRecording,
+    });
+    return this;
+  }
+
+  snapshot(
+    appId: string,
+    deviceId: string,
+    snapshot: unknown,
+    options: SnapshotOptions = {},
+  ): this {
+    this._appSnapshots = this._appSnapshots.filter(
+      (entry) => !(entry.appId === appId && entry.deviceId === deviceId),
+    );
+    this._appSnapshots.push({
+      appId,
+      deviceId,
+      snapshotVersion: options.version ?? 1,
+      snapshot,
+    });
+    return this;
+  }
+
+  view(
+    appId: string,
+    deviceId: string,
+    view: unknown,
+    options: ViewOptions = {},
+  ): this {
+    this._initialViews = this._initialViews.filter(
+      (entry) => !(entry.appId === appId && entry.deviceId === deviceId),
+    );
+    this._initialViews.push({
+      appId,
+      deviceId,
+      viewVersion: options.version ?? 1,
+      view,
     });
     return this;
   }
@@ -401,6 +447,8 @@ export class EpisodeBuilder {
       title: this._title,
       description: this._description,
       devices: this._devices,
+      appSnapshots: this._appSnapshots,
+      initialViews: this._initialViews,
       events: sortedEvents,
       markers: this._markers,
       sections: this._sections,

@@ -6,7 +6,7 @@
 import React from "react";
 import type { WorldState } from "@tokovo/core";
 import { useLinkedInTheme } from "./ThemeContext.js";
-import { Header, LIAvatar, LIIcon } from "./components.js";
+import { LIAvatar, LIIcon } from "./components.js";
 import { getActiveThread, getThreadMessages, getUserById } from "../runtime/selectors.js";
 
 export const MessageThread: React.FC<{ world: WorldState }> = ({ world }) => {

@@ -39,14 +39,16 @@ export default defineEpisode({
         // Configure device with WhatsApp
         .device("phone", "iphone16", {
             app: "app_whatsapp",
-            conversations: [
-                { id: "dm_sarah", name: "Sarah ❤️", avatar: "/avatars/avatar-sarah.jpg" },
-            ],
             os: {
                 time: new Date("2024-12-17T19:30:00"),
                 battery: 87,
                 network: "5G",
             },
+        })
+        .snapshot("app_whatsapp", "phone", {
+            conversations: [
+                { id: "dm_sarah", name: "Sarah ❤️", avatar: "/avatars/avatar-sarah.jpg" },
+            ],
         })
         .background({ type: "image", src: "/backgrounds/cozy-bedroom.png" })
 

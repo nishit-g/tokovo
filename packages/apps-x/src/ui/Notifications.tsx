@@ -1,7 +1,10 @@
 import React from "react";
 import type { WorldState } from "@tokovo/core";
 import { useXTheme } from "./ThemeContext.js";
-import { getNotifications, getXState } from "../runtime/selectors.js";
+import {
+  getVisibleNotifications,
+  getXState,
+} from "../runtime/selectors.js";
 import { AppShell } from "./AppShell.js";
 import { Avatar, XIcon, VerifiedBadge, TabButton, formatTimestamp } from "./components.js";
 import { ScreenTransition } from "./ScreenTransition.js";
@@ -11,282 +14,165 @@ interface NotificationsProps {
   world: WorldState;
 }
 
-// Notification icon based on type
-const NotificationIcon: React.FC<{ type: string }> = ({ type }) => {
-  const theme = useXTheme();
-
-  switch (type) {
-    case "like":
-      return (
-        <div
-          style={{
-            width: 30,
-            height: 30,
-            borderRadius: "50%",
-            backgroundColor: "rgba(249,24,128,0.1)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-          }}
-        >
-          <XIcon name="likeFilled" size={16} color={theme.colors.likeActive} />
-        </div>
-      );
-    case "repost":
-      return (
-        <div
-          style={{
-            width: 30,
-            height: 30,
-            borderRadius: "50%",
-            backgroundColor: "rgba(0,186,124,0.1)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-          }}
-        >
-          <XIcon name="repost" size={16} color={theme.colors.repostActive} />
-        </div>
-      );
-    case "follow":
-      return (
-        <div
-          style={{
-            width: 30,
-            height: 30,
-            borderRadius: "50%",
-            backgroundColor: "rgba(29,155,240,0.1)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-          }}
-        >
-          <svg width={16} height={16} viewBox="0 0 24 24" fill={theme.colors.accent}>
-            <path d="M17.863 13.44c1.477 1.58 2.366 3.8 2.632 6.46l.11 1.1H3.395l.11-1.1c.266-2.66 1.155-4.88 2.632-6.46C7.627 11.85 9.648 11 12 11s4.373.85 5.863 2.44zM12 2C9.791 2 8 3.79 8 6s1.791 4 4 4 4-1.79 4-4-1.791-4-4-4z" />
-          </svg>
-        </div>
-      );
-    case "mention":
-    case "reply":
-      return (
-        <div
-          style={{
-            width: 30,
-            height: 30,
-            borderRadius: "50%",
-            backgroundColor: "rgba(29,155,240,0.1)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-          }}
-        >
-          <XIcon name="reply" size={16} color={theme.colors.accent} />
-        </div>
-      );
-    default:
-      return (
-        <div
-          style={{
-            width: 30,
-            height: 30,
-            borderRadius: "50%",
-            backgroundColor: "rgba(29,155,240,0.1)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-          }}
-        >
-          <XIcon name="bell" size={16} color={theme.colors.accent} />
-        </div>
-      );
-  }
-};
-
-// Get notification text based on type
-const getNotificationText = (type: string, count: number = 1): string => {
-  switch (type) {
-    case "like":
-      return count > 1 ? "liked your post" : "liked your post";
-    case "repost":
-      return "reposted your post";
-    case "follow":
-      return "followed you";
-    case "mention":
-      return "mentioned you";
-    case "reply":
-      return "replied to your post";
-    default:
-      return "interacted with your post";
-  }
-};
+function iconNameForType(type: string) {
+  if (type === "like") return "likeFilled";
+  if (type === "repost") return "repost";
+  if (type === "follow") return "mail";
+  return "reply";
+}
 
 export const Notifications: React.FC<NotificationsProps> = ({ world }) => {
   const theme = useXTheme();
   const state = getXState(world);
-  const notifications = getNotifications(world);
+  const notifications = getVisibleNotifications(world);
   const users = state?.users ?? [];
   const tweets = state?.tweets ?? [];
   const tab = state?.notificationsTab ?? "all";
-  const referenceNowMs = notifications.reduce(
-    (max, notification) => Math.max(max, notification.createdAt),
-    0,
-  );
-
-  const getUser = (id: string | undefined) => users.find((u) => u.id === id);
-  const getTweet = (id: string | undefined) => tweets.find((t) => t.id === id);
-
-  const filtered =
-    tab === "mentions"
-      ? notifications.filter((n) => n.isMention || n.type === "mention")
-      : notifications;
+  const nowMs = notifications.reduce((max, item) => Math.max(max, item.createdAt), 0);
 
   return (
     <AppShell>
-      {/* Header */}
       <div
         style={{
-          height: theme.spacing.headerHeight,
+          flex: 1,
+          minHeight: 0,
           display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          borderBottom: `1px solid ${theme.colors.border}`,
-          backgroundColor: "rgba(0,0,0,0.65)",
-          backdropFilter: "blur(12px)",
-          position: "sticky",
-          top: 0,
-          zIndex: 10,
+          flexDirection: "column",
+          overflow: "hidden",
         }}
       >
-        <span
+        <div
           style={{
-            fontSize: 17,
-            fontWeight: 700,
-            color: theme.colors.textPrimary,
+            position: "sticky",
+            top: 0,
+            zIndex: 10,
+            backgroundColor: theme.colors.background,
+            flexShrink: 0,
           }}
         >
-          Notifications
-        </span>
-      </div>
-
-      {/* Tab Bar */}
-      <div
-        style={{
-          display: "flex",
-          borderBottom: `1px solid ${theme.colors.border}`,
-        }}
-      >
-        <TabButton label="All" active={tab === "all"} />
-        <TabButton label="Mentions" active={tab === "mentions"} />
-      </div>
-
-      <ScreenTransition lastNavFrame={state?.lastNavFrame}>
-        <div style={{ flex: 1 }}>
-          {filtered.length === 0 && (
-            <div
+          <div
+            style={{
+              height: theme.spacing.headerHeight,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              borderBottom: `1px solid ${theme.colors.border}`,
+            }}
+          >
+            <span
               style={{
-                padding: 32,
-                textAlign: "center",
-                color: theme.colors.textSecondary,
+                fontSize: 17,
+                fontWeight: 700,
+                color: theme.colors.textPrimary,
               }}
             >
-              <div style={{ fontSize: 31, fontWeight: 800, color: theme.colors.textPrimary }}>
-                Nothing to see here — yet
-              </div>
-              <div style={{ marginTop: 8, fontSize: 15 }}>
-                {tab === "mentions"
-                  ? "When someone mentions you, you'll find it here."
-                  : "From likes to reposts and a whole lot more, this is where all the action happens."}
-              </div>
-            </div>
-          )}
+              Notifications
+            </span>
+          </div>
+          <div
+            style={{
+              display: "flex",
+              borderBottom: `1px solid ${theme.colors.border}`,
+            }}
+          >
+            <TabButton label="All" active={tab === "all"} />
+            <TabButton label="Mentions" active={tab === "mentions"} />
+          </div>
+        </div>
 
-          {filtered.map((notification) => {
-            const actor = getUser(notification.actorId);
-            const tweet = getTweet(notification.tweetId);
-
-            return (
+        <ScreenTransition lastNavFrame={state?.lastNavFrame}>
+          <div style={{ flex: 1, minHeight: 0, overflow: "auto" }}>
+            {notifications.length === 0 ? (
               <div
-                key={notification.id}
                 style={{
-                  display: "flex",
-                  padding: `${theme.spacing.tweetPaddingV}px ${theme.spacing.tweetPaddingH}px`,
-                  borderBottom: `1px solid ${theme.colors.border}`,
-                  gap: 12,
+                  padding: 32,
+                  color: theme.colors.textSecondary,
                 }}
               >
-                {/* Notification Icon */}
-                <div style={{ width: 40, display: "flex", justifyContent: "center" }}>
-                  <NotificationIcon type={notification.type} />
+                <div
+                  style={{
+                    fontSize: 31,
+                    lineHeight: 1.1,
+                    fontWeight: 800,
+                    color: theme.colors.textPrimary,
+                  }}
+                >
+                  Nothing to see here yet
                 </div>
+                <div style={{ marginTop: 10, fontSize: 15, lineHeight: 1.45 }}>
+                  Likes, mentions, follows, and replies will surface here once
+                  the scene starts generating activity.
+                </div>
+              </div>
+            ) : null}
 
-                {/* Content */}
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    {/* Actor Avatar */}
-                  <Avatar size={32} src={actor?.avatarUrl} />
-
-                  {/* Notification Text */}
-                  <div style={{ marginTop: 8 }}>
-                    <span
-                      style={{
-                        fontSize: 15,
-                        fontWeight: 700,
-                        color: theme.colors.textPrimary,
-                      }}
-                    >
-                      {actor?.name ?? "Someone"}
-                    </span>
-                    {actor?.verified && (
-                      <VerifiedBadge variant={actor.verified} size={16} />
-                    )}
-                    <span
-                      style={{
-                        fontSize: 15,
-                        color: theme.colors.textSecondary,
-                        marginLeft: 4,
-                      }}
-                    >
-                      {getNotificationText(notification.type)}
-                    </span>
+            {notifications.map((notification) => {
+              const actor = users.find((user) => user.id === notification.actorId);
+              const tweet = tweets.find((item) => item.id === notification.tweetId);
+              return (
+                <div
+                  key={notification.id}
+                  style={{
+                    display: "flex",
+                    gap: 12,
+                    padding: `${theme.spacing.tweetPaddingV}px ${theme.spacing.tweetPaddingH}px`,
+                    borderBottom: `1px solid ${theme.colors.border}`,
+                    backgroundColor: notification.read ? "transparent" : theme.colors.accentSoft,
+                  }}
+                >
+                  <div style={{ width: 36, display: "flex", justifyContent: "center" }}>
+                    <XIcon
+                      name={iconNameForType(notification.type) as "likeFilled" | "repost" | "mail" | "reply"}
+                      size={18}
+                      color={
+                        notification.type === "like"
+                          ? theme.colors.likeActive
+                          : notification.type === "repost"
+                            ? theme.colors.repostActive
+                            : theme.colors.accent
+                      }
+                    />
                   </div>
-
-                  {/* Tweet Preview */}
-                  {tweet && notification.type !== "follow" && (
-                    <div
-                      style={{
-                        marginTop: 8,
-                        fontSize: 15,
-                        color: theme.colors.textSecondary,
-                        display: "-webkit-box",
-                        WebkitLineClamp: 2,
-                        WebkitBoxOrient: "vertical",
-                        overflow: "hidden",
-                      }}
-                    >
-                      {tweet.text}
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <Avatar size={34} src={actor?.avatarUrl} />
+                    <div style={{ marginTop: 10, fontSize: 15, lineHeight: 1.42 }}>
+                      <span style={{ fontWeight: 700, color: theme.colors.textPrimary }}>
+                        {actor?.name ?? "Someone"}
+                      </span>
+                      {actor?.verified ? (
+                        <span style={{ marginLeft: 4, verticalAlign: "middle" }}>
+                          <VerifiedBadge variant={actor.verified} size={16} />
+                        </span>
+                      ) : null}
+                      <span style={{ marginLeft: 4, color: theme.colors.textSecondary }}>
+                        {notification.body ??
+                          (notification.type === "follow"
+                            ? "followed you"
+                            : notification.type === "mention"
+                              ? "mentioned you"
+                              : notification.type === "reply"
+                                ? "replied to your post"
+                                : notification.type === "repost"
+                                  ? "reposted your post"
+                                  : "liked your post")}
+                      </span>
                     </div>
-                  )}
-
-                  {/* Follow button for follow notifications */}
-                  {notification.type === "follow" && (
-                    <button
-                      style={{
-                        marginTop: 12,
-                        padding: "6px 16px",
-                        borderRadius: 20,
-                        border: `1px solid ${theme.colors.border}`,
-                        backgroundColor: "transparent",
-                        color: theme.colors.textPrimary,
-                        fontSize: 14,
-                        fontWeight: 700,
-                        cursor: "pointer",
-                      }}
-                    >
-                      Follow back
-                    </button>
-                  )}
-
-                  {/* Timestamp */}
-                  {notification.createdAt && (
+                    {tweet ? (
+                      <div
+                        style={{
+                          marginTop: 6,
+                          fontSize: 15,
+                          lineHeight: 1.38,
+                          color: theme.colors.textSecondary,
+                          display: "-webkit-box",
+                          WebkitLineClamp: 2,
+                          WebkitBoxOrient: "vertical",
+                          overflow: "hidden",
+                        }}
+                      >
+                        {tweet.text}
+                      </div>
+                    ) : null}
                     <div
                       style={{
                         marginTop: 8,
@@ -294,15 +180,15 @@ export const Notifications: React.FC<NotificationsProps> = ({ world }) => {
                         color: theme.colors.textMuted,
                       }}
                     >
-                      {formatTimestamp(notification.createdAt, { nowMs: referenceNowMs })}
+                      {formatTimestamp(notification.createdAt, { nowMs })}
                     </div>
-                  )}
+                  </div>
                 </div>
-              </div>
-            );
-          })}
-        </div>
-      </ScreenTransition>
+              );
+            })}
+          </div>
+        </ScreenTransition>
+      </div>
 
       <BottomNav active="bell" />
     </AppShell>

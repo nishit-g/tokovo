@@ -1,5 +1,7 @@
 import React, { useMemo, useState } from "react";
-import { Img, Video, staticFile } from "remotion";
+import { Video } from "@remotion/media";
+import { Img, staticFile } from "remotion";
+import { resolveStaticAssetSrc } from "@tokovo/core";
 import { whatsappColors } from "./theme.js";
 
 export interface MediaViewerProps {
@@ -34,7 +36,7 @@ export const MediaViewer: React.FC<MediaViewerProps> = ({
   const [isPlaying, setIsPlaying] = useState(false);
   const [showControls, setShowControls] = useState(true);
   const resolvedMediaUrl = useMemo(
-    () => (mediaUrl.startsWith("/") ? staticFile(mediaUrl) : mediaUrl),
+    () => resolveStaticAssetSrc(mediaUrl, staticFile),
     [mediaUrl],
   );
 
@@ -181,6 +183,7 @@ export const MediaViewer: React.FC<MediaViewerProps> = ({
           <Img
             src={resolvedMediaUrl}
             alt=""
+            pauseWhenLoading
             style={{
               maxWidth: "100%",
               maxHeight: "100%",
@@ -204,6 +207,9 @@ export const MediaViewer: React.FC<MediaViewerProps> = ({
                 maxWidth: "100%",
                 maxHeight: "100%",
                 objectFit: "contain",
+              }}
+              fallbackOffthreadVideoProps={{
+                pauseWhenBuffering: true,
               }}
             />
 

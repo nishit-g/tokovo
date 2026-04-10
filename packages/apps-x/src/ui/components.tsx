@@ -1,4 +1,5 @@
 import React from "react";
+import { Img, OffthreadVideo } from "remotion";
 import { useXTheme } from "./ThemeContext.js";
 
 // =============================================================================
@@ -21,19 +22,37 @@ export const Avatar: React.FC<{
   ring?: boolean;
 }> = ({ size = 40, src, ring }) => {
   const theme = useXTheme();
+  const resolvedSrc = resolveAssetUrl(src);
   return (
     <div
       style={{
+        position: "relative",
         width: size,
         height: size,
         borderRadius: "50%",
-        background: src
-          ? `url(${src}) center/cover`
+        overflow: "hidden",
+        background: resolvedSrc
+          ? theme.colors.surfaceRaised
           : "linear-gradient(135deg, #2F3336 0%, #1D1F23 100%)",
         border: ring ? `2px solid ${theme.colors.accent}` : "none",
         flexShrink: 0,
       }}
-    />
+    >
+      {resolvedSrc ? (
+        <Img
+          src={resolvedSrc}
+          alt=""
+          pauseWhenLoading
+          style={{
+            position: "absolute",
+            inset: 0,
+            width: "100%",
+            height: "100%",
+            objectFit: "cover",
+          }}
+        />
+      ) : null}
+    </div>
   );
 };
 
@@ -61,13 +80,19 @@ const aspectToHeight = (
   return base;
 };
 
+const resolveAssetUrl = (url: string | undefined): string | undefined => {
+  if (!url) return undefined;
+  if (!url.startsWith("/")) return url;
+  return url.startsWith("/public/") ? url : `/public${url}`;
+};
+
 export const MediaCard: React.FC<{
   media: XMediaCardPayload;
   variant?: "timeline" | "detail";
 }> = ({ media, variant = "timeline" }) => {
   const theme = useXTheme();
   const height = aspectToHeight(media.aspect, variant);
-  const firstUrl = media.urls?.[0];
+  const firstUrl = resolveAssetUrl(media.urls?.[0]);
   const canRenderAsset = Boolean(firstUrl);
 
   if (media.type === "image" && canRenderAsset) {
@@ -79,12 +104,23 @@ export const MediaCard: React.FC<{
           border: `1px solid ${theme.colors.border}`,
           overflow: "hidden",
           height,
-          backgroundImage: `url(${firstUrl})`,
-          backgroundSize: "cover",
-          backgroundPosition: "center",
-          backgroundRepeat: "no-repeat",
+          position: "relative",
+          backgroundColor: theme.colors.surfaceRaised,
         }}
-      />
+      >
+        <Img
+          src={firstUrl!}
+          alt=""
+          pauseWhenLoading
+          style={{
+            position: "absolute",
+            inset: 0,
+            width: "100%",
+            height: "100%",
+            objectFit: "cover",
+          }}
+        />
+      </div>
     );
   }
 
@@ -101,11 +137,10 @@ export const MediaCard: React.FC<{
           backgroundColor: theme.colors.surfaceRaised,
         }}
       >
-        <video
-          src={firstUrl}
+        <OffthreadVideo
+          src={firstUrl!}
           muted
-          playsInline
-          preload="metadata"
+          pauseWhenBuffering
           style={{ width: "100%", height: "100%", objectFit: "cover" }}
         />
         <div
@@ -146,6 +181,7 @@ export const LinkPreviewCard: React.FC<{
   preview: XLinkPreviewCardPayload;
 }> = ({ preview }) => {
   const theme = useXTheme();
+  const previewImageUrl = resolveAssetUrl(preview.imageUrl);
   const domain = preview.domain || (() => {
     try {
       return new URL(preview.url).hostname;
@@ -164,16 +200,27 @@ export const LinkPreviewCard: React.FC<{
         backgroundColor: theme.colors.surface,
       }}
     >
-      {preview.imageUrl ? (
+      {previewImageUrl ? (
         <div
           style={{
             height: 120,
-            backgroundImage: `url(${preview.imageUrl})`,
-            backgroundSize: "cover",
-            backgroundPosition: "center",
-            backgroundRepeat: "no-repeat",
+            position: "relative",
+            backgroundColor: theme.colors.surfaceRaised,
           }}
-        />
+        >
+          <Img
+            src={previewImageUrl}
+            alt=""
+            pauseWhenLoading
+            style={{
+              position: "absolute",
+              inset: 0,
+              width: "100%",
+              height: "100%",
+              objectFit: "cover",
+            }}
+          />
+        </div>
       ) : (
         <div
           style={{

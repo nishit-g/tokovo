@@ -10,15 +10,15 @@ import {
 type OverlayEvent = TimelineEvent & {
   kind: "OVERLAY";
   type: "SHOW" | "HIDE" | "CLEAR" | (string & {});
-  payload?: any;
+  payload?: unknown;
 };
 
 function getOverlayState(draft: WorldState): OverlayState {
-  if (!draft.appState) draft.appState = {} as any;
-  if (!draft.appState[OVERLAY_STATE_KEY]) {
-    draft.appState[OVERLAY_STATE_KEY] = createInitialOverlayState();
+  const appState = draft.appState as Record<string, unknown>;
+  if (!appState[OVERLAY_STATE_KEY]) {
+    appState[OVERLAY_STATE_KEY] = createInitialOverlayState();
   }
-  return draft.appState[OVERLAY_STATE_KEY] as OverlayState;
+  return appState[OVERLAY_STATE_KEY] as OverlayState;
 }
 
 function cleanupExpired(state: OverlayState, frame: number): void {
@@ -104,4 +104,3 @@ export const overlayFeatureReducer: FeatureReducer = (draft, event) => {
       return;
   }
 };
-

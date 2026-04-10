@@ -36,6 +36,7 @@ export {
   selectLastMessage,
   selectTypingMembers,
 } from "./runtime/index.js";
+export type { WhatsAppSnapshot, WhatsAppInitialView } from "./bootstrap.js";
 
 // =============================================================================
 // VIEWS

@@ -1,0 +1,27 @@
+# @tokovo/overlay
+
+Feature-reducer package for cinematic overlays. This is not an app plugin; it registers an `OVERLAY` feature reducer in engine registries.
+
+## Install
+
+```bash
+pnpm add @tokovo/overlay
+```
+
+## Register
+
+```ts
+import { createTokovoRegistries } from "@tokovo/react";
+import { registerOverlayPlugin } from "@tokovo/overlay";
+
+const tokovoRegistries = createTokovoRegistries();
+registerOverlayPlugin(tokovoRegistries.engine);
+```
+
+## Exports
+
+- `registerOverlayPlugin(...)`
+- `OVERLAY_STATE_KEY`
+- `createInitialOverlayState(...)`
+- `getDefaultDurationFrames(...)`
+

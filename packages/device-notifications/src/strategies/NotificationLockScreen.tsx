@@ -1,4 +1,5 @@
 import React from "react";
+import { Img } from "remotion";
 import type { NotificationLockScreenProps } from "./types.js";
 
 export const NotificationLockScreen: React.FC<NotificationLockScreenProps> = ({
@@ -85,16 +86,27 @@ export const NotificationLockScreen: React.FC<NotificationLockScreenProps> = ({
               {ir.icon ? (
                 <div
                   style={{
+                    position: "relative",
                     width: icon.size * scale * iconScale,
                     height: icon.size * scale * iconScale,
                     borderRadius: icon.borderRadius * scale * iconScale,
-                    backgroundImage: `url(${ir.icon})`,
-                    backgroundSize: "cover",
-                    backgroundPosition: "center",
+                    overflow: "hidden",
                     boxShadow: icon.shadow,
                     flexShrink: 0,
                   }}
-                />
+                >
+                  <Img
+                    src={ir.icon}
+                    alt=""
+                    style={{
+                      position: "absolute",
+                      inset: 0,
+                      width: "100%",
+                      height: "100%",
+                      objectFit: "cover",
+                    }}
+                  />
+                </div>
               ) : (
                 <div
                   style={{

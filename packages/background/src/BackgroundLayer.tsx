@@ -5,7 +5,7 @@
  * Routes to appropriate renderer based on background type.
  */
 
-import React from "react";
+import React, { useMemo } from "react";
 import { AbsoluteFill } from "remotion";
 import type { BackgroundConfig, BackgroundPresetId } from "./types.js";
 import { FALLBACK_COLOR } from "./types.js";
@@ -47,13 +47,13 @@ export interface BackgroundLayerProps {
 // COMPONENT
 // =============================================================================
 
-export const BackgroundLayer: React.FC<BackgroundLayerProps> = ({
+export const BackgroundLayer: React.FC<BackgroundLayerProps> = React.memo(({
     config,
     frame = 0,
     fps = 30,
 }) => {
     // Resolve config (expand presets, apply defaults, validate)
-    const resolved = resolveBackground(config);
+    const resolved = useMemo(() => resolveBackground(config), [config]);
 
     // Route to appropriate renderer
     switch (resolved.type) {
@@ -80,7 +80,7 @@ export const BackgroundLayer: React.FC<BackgroundLayerProps> = ({
                 <AbsoluteFill style={{ backgroundColor: FALLBACK_COLOR }} />
             );
     }
-};
+});
 
 // =============================================================================
 // CONVENIENCE EXPORTS

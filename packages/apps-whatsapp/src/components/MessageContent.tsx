@@ -1,5 +1,6 @@
 import React from "react";
 import { LinkPreviewData, MessageData } from "../types/index.js";
+import type { DeliveryStage } from "../utils/status.js";
 import {
   ContactMessageBubble,
   DocumentMessageBubble,
@@ -23,6 +24,7 @@ interface TimingProps {
   readAt?: number;
   status?: DeliveryStatus;
   starred?: boolean;
+  deliveryStage?: DeliveryStage;
 }
 
 const TextContent: React.FC<{ text: string }> = ({ text }) => {
@@ -62,6 +64,7 @@ const ImageContent: React.FC<
   readAt,
   status,
   starred,
+  deliveryStage,
 }) => (
   <ImageMessageBubble
     imageUrl={url}
@@ -74,6 +77,7 @@ const ImageContent: React.FC<
     readAt={readAt}
     status={status}
     starred={starred}
+    deliveryStage={deliveryStage}
   />
 );
 
@@ -99,6 +103,7 @@ const VideoContent: React.FC<
   readAt,
   status,
   starred,
+  deliveryStage,
 }) => (
   <VideoMessageBubble
     thumbnailUrl={thumbnail || "https://placehold.co/300x200?text=Video"}
@@ -112,6 +117,7 @@ const VideoContent: React.FC<
     readAt={readAt}
     status={status}
     starred={starred}
+    deliveryStage={deliveryStage}
   />
 );
 
@@ -136,6 +142,7 @@ const VoiceContent: React.FC<
   readAt,
   status,
   starred,
+  deliveryStage,
 }) => (
   <VoiceMessageBubble
     duration={duration}
@@ -149,6 +156,7 @@ const VoiceContent: React.FC<
     readAt={readAt}
     status={status}
     starred={starred}
+    deliveryStage={deliveryStage}
   />
 );
 
@@ -168,6 +176,7 @@ const StickerContent: React.FC<
   deliveredAt,
   readAt,
   status,
+  deliveryStage,
 }) => (
   <StickerMessageBubble
     stickerUrl={url}
@@ -178,6 +187,7 @@ const StickerContent: React.FC<
     deliveredAt={deliveredAt}
     readAt={readAt}
     status={status}
+    deliveryStage={deliveryStage}
   />
 );
 
@@ -198,6 +208,7 @@ const GifContent: React.FC<
   readAt,
   status,
   starred,
+  deliveryStage,
 }) => (
   <GifMessageBubble
     gifUrl={url}
@@ -209,6 +220,7 @@ const GifContent: React.FC<
     readAt={readAt}
     status={status}
     starred={starred}
+    deliveryStage={deliveryStage}
   />
 );
 
@@ -235,6 +247,7 @@ const DocumentContent: React.FC<
   readAt,
   status,
   starred,
+  deliveryStage,
 }) => (
   <DocumentMessageBubble
     fileName={fileName}
@@ -249,6 +262,7 @@ const DocumentContent: React.FC<
     readAt={readAt}
     status={status}
     starred={starred}
+    deliveryStage={deliveryStage}
   />
 );
 
@@ -560,6 +574,7 @@ export const MessageContent: React.FC<MessageContentProps> = ({
   readAt,
   status,
   starred = false,
+  deliveryStage,
 }) => {
   const theme = useTheme();
 
@@ -580,6 +595,7 @@ export const MessageContent: React.FC<MessageContentProps> = ({
           readAt={readAt}
           status={status}
           starred={starred}
+          deliveryStage={deliveryStage}
         />
       );
 
@@ -598,6 +614,7 @@ export const MessageContent: React.FC<MessageContentProps> = ({
           readAt={readAt}
           status={status}
           starred={starred}
+          deliveryStage={deliveryStage}
         />
       );
 
@@ -615,6 +632,7 @@ export const MessageContent: React.FC<MessageContentProps> = ({
           readAt={readAt}
           status={status}
           starred={starred}
+          deliveryStage={deliveryStage}
         />
       );
 
@@ -639,6 +657,7 @@ export const MessageContent: React.FC<MessageContentProps> = ({
           deliveredAt={deliveredAt}
           readAt={readAt}
           status={status}
+          deliveryStage={deliveryStage}
         />
       );
 
@@ -654,6 +673,7 @@ export const MessageContent: React.FC<MessageContentProps> = ({
           readAt={readAt}
           status={status}
           starred={starred}
+          deliveryStage={deliveryStage}
         />
       );
 
@@ -672,6 +692,7 @@ export const MessageContent: React.FC<MessageContentProps> = ({
           readAt={readAt}
           status={status}
           starred={starred}
+          deliveryStage={deliveryStage}
         />
       );
 
@@ -689,6 +710,7 @@ export const MessageContent: React.FC<MessageContentProps> = ({
           readAt={readAt}
           status={status}
           starred={starred}
+          deliveryStage={deliveryStage}
         />
       );
 
@@ -708,6 +730,7 @@ export const MessageContent: React.FC<MessageContentProps> = ({
           readAt={readAt}
           status={status}
           starred={starred}
+          deliveryStage={deliveryStage}
         />
       );
 

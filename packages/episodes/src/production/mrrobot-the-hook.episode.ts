@@ -106,14 +106,16 @@ export default defineEpisode({
       // WhatsApp social engineering begins
       .device("phone", "iphone16", {
         app: "app_whatsapp",
-        conversations: [
-          { id: "dm_hr", name: "HR - Nexus", avatar: "/avatars/hr.png" },
-        ],
         os: {
           time: new Date("2024-12-18T16:15:00"),
           battery: 72,
           network: "5G",
         },
+      })
+      .snapshot("app_whatsapp", "phone", {
+        conversations: [
+          { id: "dm_hr", name: "HR - Nexus", avatar: "/avatars/hr.png" },
+        ],
       })
       
       .track(

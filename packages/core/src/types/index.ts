@@ -39,6 +39,7 @@ export * from "./compiled-episode.js";
 
 // Plugin Contract - Tiered plugin system
 export * from "./plugin-contract.js";
+export * from "./asset-ref.js";
 
 // Anchor types - V2 camera positioning
 export * from "./anchor.js";

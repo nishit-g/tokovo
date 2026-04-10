@@ -25,14 +25,16 @@ export default defineEpisode({
     episode("camera-director-full", { fps: 30, duration: "20s" })
       .device("phone", "iphone16", {
         app: "app_whatsapp",
-        conversations: [
-          { id: "dm_breakup", name: "Alex", avatar: "/avatars/alex.jpg" },
-        ],
         os: {
           time: new Date("2024-12-20T21:30:00"),
           battery: 87,
           network: "5G",
         },
+      })
+      .snapshot("app_whatsapp", "phone", {
+        conversations: [
+          { id: "dm_breakup", name: "Alex", avatar: "/avatars/alex.jpg" },
+        ],
       })
 
       .track(

@@ -129,11 +129,15 @@ export function normalizeMessage(
   raw: Record<string, unknown>,
   { conversationId, index, baseTime }: NormalizeOptions,
 ): WhatsAppMessage {
-  const from =
+  const rawFrom =
     (raw.from as string) ??
     (raw.sender as string) ??
     (raw.actor as string) ??
     "unknown";
+  const from =
+    rawFrom === "Me" || rawFrom === "You"
+      ? "me"
+      : rawFrom;
 
   const type =
     (raw.type as string) ??

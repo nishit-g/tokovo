@@ -1,11 +1,28 @@
 import type { WorldState, PluginReducer, RuntimeEvent } from "@tokovo/core";
-import type { XState, XTweet, XUser, XNotification, XDMThread, XDMMessage, XRoute } from "./state.js";
+import type {
+  ProfileTab,
+  TimelineTab,
+  XDMMessage,
+  XDMThread,
+  XNotification,
+  XRoute,
+  XState,
+  XTweet,
+  XUser,
+} from "./state.js";
 import { createXInitialState } from "./state.js";
 
 function ensureMutableArray<T>(value: T[] | undefined | null): T[] {
   if (!Array.isArray(value)) return [];
   // Some seed payloads may carry frozen arrays. Avoid runtime reducer crashes.
   return Object.isExtensible(value) ? value : [...value];
+}
+
+function ensureMutableRecord<T extends Record<string, unknown>>(
+  value: T | undefined | null,
+): T {
+  if (!value || typeof value !== "object") return {} as T;
+  return Object.isExtensible(value) ? value : { ...value };
 }
 
 function syncViewMode(state: XState): void {
@@ -48,12 +65,24 @@ function getAppState(draft: WorldState): XState {
   state.activeThreadId ??= null;
   state.currentUserId ??= null;
   state.notificationsTab ??= "all";
+  state.timelineTab ??= "forYou";
+  state.profileTab ??= "posts";
   state.navigationStack ??= [];
   state.lastNavFrame ??= 0;
   state.statusBarTheme ??= "dark";
   state.themeMode ??= "dark";
+  state.threadDrafts = ensureMutableRecord(state.threadDrafts);
   state.viewMode ??= "FEED";
   state.conversationId ??= undefined;
+  for (const notification of state.notifications) {
+    notification.read ??= false;
+  }
+  for (const thread of state.dmThreads) {
+    thread.unreadCount ??= 0;
+    thread.pinned ??= false;
+    thread.typingUserId ??= null;
+    thread.lastMessageAt ??= null;
+  }
   syncViewMode(state);
   return state;
 }
@@ -118,6 +147,23 @@ function insertTopLevelTweetByCreatedAt(
   state.timeline.push(tweetId);
 }
 
+function markNotificationsRead(state: XState): void {
+  for (const notification of state.notifications) {
+    notification.read = true;
+  }
+}
+
+function markThreadRead(state: XState, threadId: string | null | undefined): void {
+  if (!threadId) return;
+  const thread = state.dmThreads.find((item) => item.id === threadId);
+  if (!thread) return;
+  thread.unreadCount = 0;
+}
+
+function getThreadById(state: XState, threadId: string): XDMThread | undefined {
+  return state.dmThreads.find((thread) => thread.id === threadId);
+}
+
 export const xReducer: PluginReducer<"app_x"> = (
   draft: WorldState,
   event: RuntimeEvent & { kind: "APP"; appId: "app_x" }
@@ -127,8 +173,10 @@ export const xReducer: PluginReducer<"app_x"> = (
   switch (event.type) {
     case "ADD_USER": {
       const payload = event.payload as Partial<XUser>;
-      const exists = appState.users.find((u) => u.id === payload.id);
-      if (!exists) {
+      const existing = appState.users.find((u) => u.id === payload.id);
+      if (existing) {
+        Object.assign(existing, ensureUserDefaults({ ...existing, ...payload }));
+      } else {
         appState.users.push(ensureUserDefaults(payload));
       }
       break;
@@ -204,8 +252,12 @@ export const xReducer: PluginReducer<"app_x"> = (
         bookmarkCount: payload.bookmarkCount ?? 0,
         shareCount: payload.shareCount ?? 0,
       };
-
-      appState.tweets.push(tweet);
+      const existingIndex = appState.tweets.findIndex((item) => item.id === tweet.id);
+      if (existingIndex >= 0) {
+        appState.tweets.splice(existingIndex, 1, tweet);
+      } else {
+        appState.tweets.push(tweet);
+      }
       const shouldAppearInTimeline = !tweet.replyToId;
       if (shouldAppearInTimeline) {
         insertTopLevelTweetByCreatedAt(appState, tweet.id, tweet.createdAt);
@@ -213,7 +265,7 @@ export const xReducer: PluginReducer<"app_x"> = (
 
       if (tweet.replyToId) {
         const parent = appState.tweets.find((t) => t.id === tweet.replyToId);
-        if (parent) parent.replyIds.push(tweet.id);
+        if (parent && !parent.replyIds.includes(tweet.id)) parent.replyIds.push(tweet.id);
       }
 
       if (tweet.repostOfId) {
@@ -273,6 +325,12 @@ export const xReducer: PluginReducer<"app_x"> = (
       appState.activeUserId = payload.userId ?? null;
       appState.activeThreadId = payload.threadId ?? null;
       appState.lastNavFrame = event.at;
+      if (payload.screen === "notifications") {
+        markNotificationsRead(appState);
+      }
+      if (payload.screen === "thread") {
+        markThreadRead(appState, payload.threadId ?? null);
+      }
       syncViewMode(appState);
       break;
     }
@@ -301,6 +359,7 @@ export const xReducer: PluginReducer<"app_x"> = (
     case "SET_ACTIVE_THREAD": {
       const payload = event.payload as { threadId: string | null };
       appState.activeThreadId = payload.threadId;
+      markThreadRead(appState, payload.threadId);
       syncViewMode(appState);
       break;
     }
@@ -309,20 +368,59 @@ export const xReducer: PluginReducer<"app_x"> = (
       appState.composeDraft = payload.text;
       break;
     }
+    case "SET_THREAD_DRAFT": {
+      const payload = event.payload as { threadId: string; text: string };
+      appState.threadDrafts[payload.threadId] = payload.text;
+      break;
+    }
+    case "SET_THREAD_TYPING": {
+      const payload = event.payload as { threadId: string; userId: string | null };
+      const thread = getThreadById(appState, payload.threadId);
+      if (thread) {
+        thread.typingUserId = payload.userId;
+      }
+      break;
+    }
+    case "SET_TIMELINE_TAB": {
+      const payload = event.payload as { tab: TimelineTab };
+      appState.timelineTab = payload.tab;
+      break;
+    }
+    case "SET_PROFILE_TAB": {
+      const payload = event.payload as { tab: ProfileTab };
+      appState.profileTab = payload.tab;
+      break;
+    }
     case "SET_NOTIFICATIONS_TAB": {
       const payload = event.payload as { tab: XState["notificationsTab"] };
       appState.notificationsTab = payload.tab;
+      if (appState.currentScreen === "notifications") {
+        markNotificationsRead(appState);
+      }
       break;
     }
     case "ADD_NOTIFICATION": {
       const payload = event.payload as XNotification;
-      appState.notifications.unshift(payload);
+      appState.notifications = appState.notifications.filter((item) => item.id !== payload.id);
+      appState.notifications.unshift({
+        ...payload,
+        read:
+          payload.read ??
+          appState.currentScreen === "notifications",
+      });
       break;
     }
     case "ADD_DM_THREAD": {
       const payload = event.payload as XDMThread;
-      const exists = appState.dmThreads.find((t) => t.id === payload.id);
-      if (!exists) {
+      const existing = appState.dmThreads.find((t) => t.id === payload.id);
+      if (existing) {
+        existing.participantIds = Array.isArray(payload.participantIds)
+          ? [...payload.participantIds]
+          : existing.participantIds;
+        existing.title = payload.title ?? existing.title;
+        existing.unreadCount = payload.unreadCount ?? existing.unreadCount;
+        existing.pinned = payload.pinned ?? existing.pinned;
+      } else {
         appState.dmThreads.push({
           ...payload,
           // Payload arrays can be frozen (seed data). Clone to keep reducer safe.
@@ -330,6 +428,11 @@ export const xReducer: PluginReducer<"app_x"> = (
             ? [...payload.participantIds]
             : [],
           messageIds: Array.isArray(payload.messageIds) ? [...payload.messageIds] : [],
+          title: payload.title,
+          unreadCount: payload.unreadCount ?? 0,
+          pinned: payload.pinned ?? false,
+          typingUserId: payload.typingUserId ?? null,
+          lastMessageAt: payload.lastMessageAt ?? null,
         });
       }
       break;
@@ -338,11 +441,28 @@ export const xReducer: PluginReducer<"app_x"> = (
       const payload = event.payload as XDMMessage;
       // Defensive: some upstream seed data / previous frames may contain frozen arrays.
       appState.dmMessages = ensureMutableArray(appState.dmMessages);
-      appState.dmMessages.push(payload);
+      if (!appState.dmMessages.find((message) => message.id === payload.id)) {
+        appState.dmMessages.push(payload);
+      }
       const thread = appState.dmThreads.find((t) => t.id === payload.threadId);
       if (thread) {
         thread.messageIds = ensureMutableArray(thread.messageIds);
-        thread.messageIds.push(payload.id);
+        if (!thread.messageIds.includes(payload.id)) {
+          thread.messageIds.push(payload.id);
+        }
+        thread.lastMessageAt =
+          thread.lastMessageAt == null
+            ? payload.createdAt
+            : Math.max(thread.lastMessageAt, payload.createdAt);
+        if (thread.typingUserId === payload.senderId) {
+          thread.typingUserId = null;
+        }
+        const isActiveThread =
+          appState.currentScreen === "thread" &&
+          appState.activeThreadId === payload.threadId;
+        if (payload.senderId !== appState.currentUserId && !isActiveThread) {
+          thread.unreadCount += 1;
+        }
       }
       break;
     }

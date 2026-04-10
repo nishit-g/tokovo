@@ -4,6 +4,12 @@ export function createTeamsInitialState(): TeamsState {
   return {
     viewMode: "FEED",
     screen: "chat_list",
+    ui: {
+      surface: "chat_list",
+      activeListFilter: "all",
+      activeTab: "chat",
+      notificationIds: [],
+    },
     activeDmId: undefined,
     activeChannelId: undefined,
     activeThreadId: undefined,
@@ -14,6 +20,8 @@ export function createTeamsInitialState(): TeamsState {
     threads: {},
     messages: {},
     notifications: {},
+    drafts: {},
+    typing: {},
     presence: {},
     calls: {},
   };

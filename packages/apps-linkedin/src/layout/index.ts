@@ -145,6 +145,7 @@ function computeFeedLayout(ctx: LayoutContext): FeedLayoutState {
 
   return {
     kind: "FEED",
+    cacheHint: "static",
     scrollY: 0,
     contentHeight: h,
     isAtBottom: false,
@@ -185,6 +186,7 @@ function computeChatLayout(ctx: LayoutContext): ChatLayoutState {
 
   return {
     kind: "CHAT",
+    cacheHint: "static",
     scrollY: 0,
     contentHeight: h,
     isAtBottom: true,
@@ -216,6 +218,7 @@ function computeFullscreenLayout(ctx: LayoutContext): FullscreenLayoutState {
 
   return {
     kind: "FULLSCREEN",
+    cacheHint: "static",
     meta: {},
     semantic: buildSemantic(regions),
   };
@@ -226,4 +229,3 @@ export const linkedInLayoutStrategies: PluginLayoutStrategy[] = [
   { viewKind: "CHAT", computeLayout: computeChatLayout },
   { viewKind: "FULLSCREEN", computeLayout: computeFullscreenLayout },
 ];
-

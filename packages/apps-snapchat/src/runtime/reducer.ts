@@ -26,6 +26,7 @@ const SNAPCHAT_EVENT_TYPES: readonly SnapchatEventType[] = [
   "SNAPCHAT_TYPING_END",
   "SNAPCHAT_STREAK_UPDATE",
   "SNAPCHAT_SET_SCREEN",
+  "SNAPCHAT_SET_DRAFT",
   "SNAPCHAT_MESSAGE_STATUS_SET",
   "SNAPCHAT_SCREENSHOT",
   "SNAPCHAT_SAVE_MESSAGE",
@@ -68,6 +69,8 @@ function createInitialSnapchatState(): SnapchatState {
     currentScreen: "chat_list",
     activeConversationId: undefined,
     conversations: {},
+    drafts: {},
+    lastNavFrame: 0,
   };
 }
 
@@ -80,6 +83,8 @@ function getAppState(draft: WorldState): SnapchatState {
   state.conversationId ??= undefined;
   state.currentScreen ??= "chat_list";
   state.conversations ??= {};
+  state.drafts ??= {};
+  state.lastNavFrame ??= 0;
   syncViewMode(state);
   return state;
 }
@@ -97,6 +102,8 @@ function ensureConversation(
       typing: {},
       unreadCount: 0,
       isGroup: false,
+      pinned: false,
+      muted: false,
     };
   }
   return state.conversations[conversationId] as SnapchatConversation;
@@ -220,6 +227,8 @@ export const snapchatReducer: PluginReducer<typeof SNAPCHAT_APP_ID> = (
         messages: conv.messages ?? [],
         typing: conv.typing ?? {},
         unreadCount: conv.unreadCount ?? 0,
+        pinned: conv.pinned ?? false,
+        muted: conv.muted ?? false,
       };
       break;
     }
@@ -228,6 +237,7 @@ export const snapchatReducer: PluginReducer<typeof SNAPCHAT_APP_ID> = (
       const conv = ensureConversation(state, targetConversationId);
       state.currentScreen = "chat";
       state.activeConversationId = targetConversationId;
+      state.lastNavFrame = at;
       conv.unreadCount = 0;
       syncViewMode(state);
       break;
@@ -250,6 +260,7 @@ export const snapchatReducer: PluginReducer<typeof SNAPCHAT_APP_ID> = (
           status: "sent",
         }),
       );
+      state.drafts![conversationId] = "";
       break;
     }
     case "SNAPCHAT_MESSAGE_RECEIVE": {
@@ -336,6 +347,11 @@ export const snapchatReducer: PluginReducer<typeof SNAPCHAT_APP_ID> = (
         target.snapOpened = true;
         target.status = "opened";
       }
+      state.currentScreen = "snap_view";
+      state.activeConversationId = conversationId;
+      state.activeSnapId = event.payload.messageId;
+      state.lastNavFrame = at;
+      syncViewMode(state);
       break;
     }
     case "SNAPCHAT_TYPING_START": {
@@ -358,12 +374,21 @@ export const snapchatReducer: PluginReducer<typeof SNAPCHAT_APP_ID> = (
     }
     case "SNAPCHAT_SET_SCREEN": {
       state.currentScreen = event.payload.screen;
+      state.activeSnapId = event.payload.snapId;
+      state.lastNavFrame = at;
       if (event.payload.conversationId) {
         state.activeConversationId = event.payload.conversationId;
+        if (event.payload.screen === "chat") {
+          ensureConversation(state, event.payload.conversationId).unreadCount = 0;
+        }
       } else if (event.payload.screen === "chat_list") {
         state.activeConversationId = undefined;
       }
       syncViewMode(state);
+      break;
+    }
+    case "SNAPCHAT_SET_DRAFT": {
+      state.drafts![event.payload.conversationId] = event.payload.text;
       break;
     }
     case "SNAPCHAT_MESSAGE_STATUS_SET": {

@@ -92,9 +92,11 @@ export const SnapchatAnchorProvider: AnchorProvider = {
   framing: {
     snapchat_header: { anchorPoint: { x: 0.5, y: 0.5 }, paddingPx: 24, targetFill: 0.82 },
     snapchat_chat_list: { anchorPoint: { x: 0.5, y: 0.42 }, paddingPx: 22, targetFill: 0.86 },
+    snapchat_chat_row_0: { anchorPoint: { x: 0.5, y: 0.5 }, paddingPx: 18, targetFill: 0.88 },
     snapchat_thread: { anchorPoint: { x: 0.52, y: 0.56 }, paddingPx: 20, targetFill: 0.86 },
     snapchat_composer: { anchorPoint: { x: 0.5, y: 0.5 }, paddingPx: 18, targetFill: 0.8 },
     snapchat_snap_viewer: { anchorPoint: { x: 0.5, y: 0.5 }, paddingPx: 12, targetFill: 0.94 },
+    snapchat_last_message: { anchorPoint: { x: 0.58, y: 0.58 }, paddingPx: 18, targetFill: 0.9 },
     lastMessage: { anchorPoint: { x: 0.58, y: 0.58 }, paddingPx: 18, targetFill: 0.9 },
   },
 
@@ -127,6 +129,24 @@ export const SnapchatAnchorProvider: AnchorProvider = {
         width,
         height: Math.max(0, height - (safeTop + 104) - safeBottom),
       };
+      anchors.snapchat_chat_row_0 ??= {
+        x: 16,
+        y: safeTop + 114,
+        width: width - 32,
+        height: 72,
+      };
+      anchors.snapchat_chat_row_0_avatar ??= {
+        x: 16,
+        y: safeTop + 124,
+        width: 54,
+        height: 54,
+      };
+      anchors.snapchat_chat_row_0_content ??= {
+        x: 82,
+        y: safeTop + 128,
+        width: width - 98,
+        height: 42,
+      };
     }
 
     if (screen === "chat") {
@@ -143,10 +163,17 @@ export const SnapchatAnchorProvider: AnchorProvider = {
         width,
         height: safeBottom + 66,
       };
+      anchors.snapchat_input ??= {
+        x: 56,
+        y: height - (safeBottom + 56),
+        width: width - 122,
+        height: 36,
+      };
     }
 
     if (screen === "snap_view") {
       anchors.snapchat_snap_viewer ??= { x: 0, y: 0, width, height };
+      anchors.snapchat_snap_content ??= { x: 0, y: 0, width, height };
     }
 
     // Semantic aliases for cross-app camera scripts.
@@ -154,8 +181,10 @@ export const SnapchatAnchorProvider: AnchorProvider = {
     aliasAnchor(anchors, "content", "snapchat_chat_list");
     aliasAnchor(anchors, "content", "snapchat_thread");
     aliasAnchor(anchors, "inputArea", "snapchat_composer");
+    aliasAnchor(anchors, "inputArea", "snapchat_input");
 
     addLastMessageAnchor(anchors, state);
+    aliasAnchor(anchors, "lastMessage", "snapchat_last_message");
 
     return { anchors, deviceId, appId: APP_ID };
   },

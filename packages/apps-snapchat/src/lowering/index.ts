@@ -35,6 +35,7 @@ const ALLOWED_TYPES: readonly SnapchatEventType[] = [
   "SNAPCHAT_TYPING_END",
   "SNAPCHAT_STREAK_UPDATE",
   "SNAPCHAT_SET_SCREEN",
+  "SNAPCHAT_SET_DRAFT",
   "SNAPCHAT_MESSAGE_STATUS_SET",
   "SNAPCHAT_SCREENSHOT",
   "SNAPCHAT_SAVE_MESSAGE",
@@ -64,6 +65,39 @@ function createKeyboardClearEvent(deviceId: string, at: number): RuntimeEvent {
     deviceId,
     payload: {},
   } as RuntimeEvent;
+}
+
+function createNotificationEvents(
+  event: Extract<
+    SnapchatTrackEvent,
+    { type: "SNAPCHAT_MESSAGE_RECEIVE" | "SNAPCHAT_SNAP_RECEIVE" }
+  >,
+): RuntimeEvent[] {
+  const title = event.payload.from;
+  const body =
+    event.type === "SNAPCHAT_SNAP_RECEIVE"
+      ? event.payload.snapType === "video"
+        ? "sent you a video Snap"
+        : "sent you a Snap"
+      : event.payload.text ?? "sent you a chat";
+
+  return [
+    createRuntimeEvent(event),
+    {
+      at: event.at,
+      kind: "DEVICE",
+      type: "SHOW_NOTIFICATION",
+      deviceId: event.deviceId,
+      payload: {
+        id: event.payload.messageId ?? `snapchat_notification_${event.at}`,
+        appId: "app_snapchat",
+        title,
+        body,
+        threadKey: `conversation:${event.payload.conversationId}`,
+        priority: event.type === "SNAPCHAT_SNAP_RECEIVE" ? "HIGH" : "DEFAULT",
+      },
+    } as RuntimeEvent,
+  ];
 }
 
 function expandTypedSend(
@@ -110,8 +144,30 @@ function expandTypedSend(
     showEv,
     typeEv,
     pressEv,
+    {
+      at: event.at,
+      kind: "APP",
+      appId: "app_snapchat",
+      type: "SNAPCHAT_SET_DRAFT",
+      payload: {
+        conversationId: event.payload.conversationId,
+        text,
+      },
+      deviceId,
+    } as RuntimeEvent,
     createRuntimeEvent(event),
     createKeyboardClearEvent(deviceId, sendAt),
+    {
+      at: hideEv.at,
+      kind: "APP",
+      appId: "app_snapchat",
+      type: "SNAPCHAT_SET_DRAFT",
+      payload: {
+        conversationId: event.payload.conversationId,
+        text: "",
+      },
+      deviceId,
+    } as RuntimeEvent,
     hideEv,
   ];
 }
@@ -126,6 +182,10 @@ export const snapchatV2Lowering: SnapchatLoweringHandler = {
 
     if (event.type === "SNAPCHAT_MESSAGE_SEND" && event.payload.typed) {
       return expandTypedSend(event, ctx);
+    }
+
+    if (event.type === "SNAPCHAT_MESSAGE_RECEIVE" || event.type === "SNAPCHAT_SNAP_RECEIVE") {
+      return createNotificationEvents(event);
     }
 
     const conversationId =

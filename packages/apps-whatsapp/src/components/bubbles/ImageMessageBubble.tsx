@@ -1,7 +1,9 @@
 import React, { memo } from "react";
 import { Img, staticFile } from "remotion";
+import { resolveStaticAssetSrc } from "@tokovo/core";
 import { MediaBubbleBase, TimestampOverlay } from "./shared.js";
 import { useTheme } from "../../theme/ThemeContext.js";
+import type { DeliveryStage } from "../../utils/status.js";
 
 export interface ImageMessageBubbleProps {
   imageUrl: string;
@@ -16,6 +18,7 @@ export interface ImageMessageBubbleProps {
   status?: "sending" | "sent" | "delivered" | "read";
   starred?: boolean;
   platform?: string;
+  deliveryStage?: DeliveryStage;
 }
 
 export const ImageMessageBubble = memo(function ImageMessageBubble({
@@ -30,11 +33,10 @@ export const ImageMessageBubble = memo(function ImageMessageBubble({
   readAt,
   status,
   starred = false,
+  deliveryStage,
 }: ImageMessageBubbleProps) {
   const theme = useTheme();
-  const resolvedImageUrl = imageUrl.startsWith("/")
-    ? staticFile(imageUrl)
-    : imageUrl;
+  const resolvedImageUrl = resolveStaticAssetSrc(imageUrl, staticFile);
 
   return (
     <MediaBubbleBase
@@ -59,6 +61,7 @@ export const ImageMessageBubble = memo(function ImageMessageBubble({
       >
         <Img
           src={resolvedImageUrl}
+          pauseWhenLoading
           style={{
             width: "100%",
             height: "auto",
@@ -80,6 +83,7 @@ export const ImageMessageBubble = memo(function ImageMessageBubble({
             deliveredAt={deliveredAt}
             readAt={readAt}
             status={status}
+            deliveryStage={deliveryStage}
           />
         )}
       </div>

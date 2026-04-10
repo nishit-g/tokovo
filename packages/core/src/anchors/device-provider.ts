@@ -129,8 +129,8 @@ export const DeviceAnchorProvider: AnchorProvider = {
     // Heads-up notification banner: if any active notification is not lockscreen-only
     const notifications = device?.notifications ?? [];
     const activeHeadsUp = notifications.find((n) => {
-      if ((n as any).dismissedAtFrame !== undefined) return false;
-      const mode = (n as any).mode || "both";
+      if (n.dismissedAtFrame !== undefined) return false;
+      const mode = n.mode || "both";
       return mode !== "lockscreen";
     });
 

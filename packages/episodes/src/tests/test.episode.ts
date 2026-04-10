@@ -36,6 +36,8 @@ title: "Testing Episode",
 })
 .device("phone", "iphone16", {
 app: "app_whatsapp",
+})
+.snapshot("app_whatsapp", "phone", {
 conversations: [
 { id: "dm_contact", name: "Contact", avatar: "" },
 ],

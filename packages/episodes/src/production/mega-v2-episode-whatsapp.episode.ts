@@ -1,23 +1,6 @@
-/**
- * Mega V2 WhatsApp Showcase
- *
- * A dense WhatsApp-only episode that mixes a real comedy story with broad UI
- * coverage: chat list chrome, top-level screens, group chaos, verified
- * business DM, locked family chat, replies, media, docs, contact cards,
- * locations, voice/video, group info, and camera emphasis on the actual beats.
- */
-
-import { WhatsAppTrackBuilder } from "@tokovo/apps-whatsapp";
-import { KeyboardPlugin, OSDirectorPlugin } from "@tokovo/compiler";
-import {
-  applyStudioStoryKitConfig,
-  storyEpisode,
-} from "../story-kit/index.js";
+import { KeyboardPlugin } from "@tokovo/compiler";
 import { defineEpisode } from "../types/episode-definition.js";
-import { megaV2EpisodeWhatsAppStoryKitConfig } from "./mega-v2-episode-whatsapp.story-kit.js";
-
-let orderCounter = 0;
-const getOrder = () => orderCounter++;
+import { episode } from "../code-first-episode.js";
 
 export default defineEpisode({
   meta: {
@@ -26,452 +9,151 @@ export default defineEpisode({
     description:
       "A guy tries to look classy before meeting Naina's parents while every WhatsApp chat around him collapses in public.",
     category: "production",
-    tags: [
-      "whatsapp",
-      "mega",
-      "showcase",
-      "comedy",
-      "group-chat",
-      "camera",
-    ],
+    tags: ["whatsapp", "mega", "showcase", "comedy", "group-chat", "camera"],
   },
   config: {
     format: "1080x1920",
-    durationInFrames: 2880,
+    durationInFrames: 1620,
     apps: ["app_whatsapp"],
   },
-  build: () => {
-    const ep = applyStudioStoryKitConfig(storyEpisode("mega-v2-episode-whatsapp", {
+  build: () =>
+    episode("mega-v2-episode-whatsapp", {
       fps: 30,
-      duration: "96s",
+      duration: "54s",
       title: "Mega V2 WhatsApp: Rishta Damage Control",
       description:
         "Full WhatsApp chaos before the first parent meet goes spectacularly off-script.",
-    }), megaV2EpisodeWhatsAppStoryKitConfig);
-
-    const kit = ep.kit();
-    const naina = kit.actor("naina");
-    const sid = kit.actor("sid");
-    const tara = kit.actor("tara");
-    const monty = kit.actor("monty");
-    const aashi = kit.actor("aashi");
-    const mom = kit.actor("mom");
-    const bakery = kit.actor("bakery");
-    const hr = kit.actor("hr");
-    const rohit = kit.actor("rohit");
-    const phone = kit.project.device("main_phone", {
-      profile: "iphone16",
-      app: "app_whatsapp",
-      installedApps: ["app_whatsapp"],
-      conversations: [
-        kit.project.whatsappConversation({
-          id: "dm_naina",
-          name: `${naina.name} ✨`,
-          unreadCount: 2,
-          isPinned: true,
-          hasStatus: true,
-          avatarRole: "naina",
-          initialMessages: [
-            {
-              from: naina.name,
-              text: "7:30 sharp. papa notices lateness like income tax.",
-              timestamp: -4200,
-            },
-          ],
-        }),
-        kit.project.whatsappConversation({
-          id: "group_rishta_ops",
-          name: "Rishta Damage Control",
-          type: "group",
-          unreadCount: 14,
-          hasStatus: true,
-          participants: ["me", sid.name, tara.name, monty.name, aashi.name],
-          description: `${sid.name}, ${tara.name}, ${monty.name}, ${aashi.name}`,
-          pinnedMessage: {
-            from: tara.name,
-            text: "Nobody says bro in front of uncle.",
-          },
-          disappearingMessagesLabel:
-            "Disappearing messages are on. New messages will vanish after 24 hours.",
-          initialMessages: [
-            {
-              from: sid.name,
-              text: "borrowed blazer 10 baje tak wapas chahiye",
-              timestamp: -3600,
-            },
-            {
-              from: tara.name,
-              text: "bakery is asking if 'future son-in-law' stays on cake",
-              timestamp: -3480,
-            },
-          ],
-        }),
-        kit.project.whatsappConversation({
-          id: "dm_bakery",
-          name: bakery.name,
-          unreadCount: 1,
-          businessLabel: "Business account",
-          isVerifiedBusiness: true,
-          isChannel: true,
-          isFollowed: true,
-          channelUnreadCount: 4,
-          channelDescription: "Custom cakes, wedding saves, and dessert propaganda.",
-          channelLatestSnippet:
-            "Topper ready. Please stop editing the name every 3 minutes.",
-          channelFollowersLabel: "412K followers",
-          channelCategory: "Food & Events",
-          avatarRole: "bakery",
-          initialMessages: [
-            {
-              from: bakery.name,
-              text: "Order confirmed for 7:10 PM pickup.",
-              timestamp: -3000,
-            },
-          ],
-        }),
-        kit.project.whatsappConversation({
-          id: "dm_mom",
-          name: `${mom.name} ❤️`,
-          unreadCount: 1,
-          isLocked: true,
-          isPinned: true,
-          hasStatus: true,
-          avatarRole: "mom",
-          initialMessages: [
-            {
-              from: mom.name,
-              type: "call_missed",
-              callType: "voice",
-              timestamp: -2400,
-            },
-            {
-              from: mom.name,
-              text: "shirt pe perfume maar ke jaana, phenyl nahi",
-              timestamp: -2280,
-            },
-          ],
-        }),
-        kit.project.whatsappConversation({
-          id: "group_society",
-          name: "Block C Boys",
-          type: "group",
-          unreadCount: 4,
-          isMuted: true,
-          initialMessages: [
-            {
-              from: rohit.name,
-              text: "lift phir atak gayi",
-              timestamp: -5000,
-            },
-          ],
-        }),
-        kit.project.whatsappConversation({
-          id: "dm_hr",
-          name: "Internship HR",
-          unreadCount: 0,
-          isChannel: true,
-          isFollowed: false,
-          channelUnreadCount: 1,
-          channelDescription:
-            "Corporate optimism, deadlines, and reimbursement despair.",
-          channelLatestSnippet:
-            "Reminder: confidence is not a reimbursable expense.",
-          channelFollowersLabel: "37K followers",
-          channelCategory: "Work",
-          avatarRole: "hr",
-          initialMessages: [
-            {
-              from: hr.name,
-              text: "Please fill reimbursement form by EOD.",
-              timestamp: -9000,
-            },
-          ],
-        }),
-      ],
-      os: {
-        time: new Date("2025-03-07T18:42:00"),
-        battery: 64,
-        network: "5G",
-      },
-    });
-
-    return ep
-      .device("phone", phone.profile, phone.options)
-      .track(
-        "app_whatsapp",
-        () => new WhatsAppTrackBuilder(30, "phone", "group_rishta_ops", getOrder),
-        (wa) => {
-          wa.openStatus("0s");
-          wa.openCalls("1.2s");
-          wa.openCommunities("2.4s");
-          wa.openSettings("3.6s");
-          wa.openChatList("4.8s");
-
-          wa.switchTo("group_rishta_ops", "6.2s");
-          wa.at("6.8s").receive(
-            sid.name,
-            "catastrophe. bakery wrote congratulations neha aunty",
-          );
-          wa.at("7.6s").receive(
-            tara.name,
-            "and Monty booked family table under Damage Control Squad",
-          );
-          wa.at("8.4s").receive(monty.name, "rich people should know confidence");
-
-          wa.span("10s", "12s").typing("me");
-          wa.at("12s").send(
-            "listen carefully. koi bro, scene, ya jugaad word use nahi karega",
-          );
-
-          wa.span("12.6s", "13.6s").typing(aashi.name);
-          wa.at("13.6s").receive(
-            aashi.name,
-            "Monty already told uncle 'scene set hai'",
-            { replyTo: { index: -1 } },
-          );
-
-          wa.at("14.6s").receiveImage(sid.name, "/placeholders/media.svg", {
-            caption: "meet the cake",
-          });
-
-          wa.span("15.4s", "16.8s").typing("me");
-          wa.at("16.8s").send("why does it say Happy 25th Tax Audit", {
-            replyTo: { index: -1 },
-          });
-
-          wa.openChatList("18s");
-
-          wa.switchTo("dm_naina", "19.4s");
-          wa.at("20s").receive(
-            naina.name,
-            "you left me on delivered and mom is iron-proofing your shirt",
-          );
-          wa.at("21s").receive(naina.name, "good. papa hates chaos");
-
-          wa.span("22s", "24s").typing("me");
-          wa.at("24s").send("I am calm. mature. absolutely under control.");
-          wa.at("24.8s").read();
-
-          wa.openChatList("26s");
-
-          wa.switchTo("dm_bakery", "27.4s");
-          wa.at("28s").receive(
-            bakery.name,
-            "Hello sir, your custom topper 'Naina ji ke papa please trust me' is ready.",
-          );
-          wa.at("29.2s").receiveDocument(bakery.name, {
-            fileName: "Order_7184_Trust_Me_Uncle.pdf",
-            fileSize: "1.4 MB",
-            fileType: "pdf",
-          });
-
-          wa.span("30.2s", "32.2s").typing("me");
-          wa.at("32.2s").send("delete topper delete family delete order");
-
-          wa.at("33.2s").receiveLocation(bakery.name, {
-            latitude: 28.6139,
-            longitude: 77.209,
-            locationName: "SweetCrust Pickup Counter",
-            locationAddress: "Rajouri Garden",
-            mapThumbnailUrl: "/placeholders/map.svg",
-          });
-
-          wa.openCalls("34.8s");
-          wa.openChatList("36.2s");
-
-          wa.switchTo("dm_mom", "37.2s");
-          wa.at("37.8s").receive(mom.name, "where are you");
-          wa.at("38.6s").receiveVoice(mom.name, 5);
-
-          wa.span("39.4s", "40.6s").typing("me");
-          wa.at("40.6s").send("5 min");
-
-          wa.openChatList("41.8s");
-
-          wa.switchTo("group_rishta_ops", "43s");
-          wa.at("43.6s").receive(
-            tara.name,
-            "Naina just posted status 'if tonight flops I'm becoming spiritual'",
-          );
-          wa.at("44.4s").receiveSticker(sid.name, "/placeholders/media.svg");
-          wa.at("45.2s").receiveDocument(monty.name, {
-            fileName: "Dinner_Conversation_Safe_Topics_v7.pdf",
-            fileSize: "2.1 MB",
-            fileType: "pdf",
-          });
-
-          wa.span("46s", "47.2s").typing("me");
-          wa.at("47.2s").send("who made safe topic number 3 crypto");
-
-          wa.at("48.2s").receiveContact(aashi.name, {
-            contactName: "Bunty Valet",
-            contactPhone: "+91 98989 11223",
-          });
-          wa.at("49s").receiveLocation(sid.name, {
-            latitude: 28.6315,
-            longitude: 77.2167,
-            locationName: "Cafe Laltain",
-            locationAddress: "Connaught Place",
-            mapThumbnailUrl: "/placeholders/map.svg",
-          });
-
-          wa.span("49.8s", "51.4s").typing("me");
-          wa.at("51.4s").send("make sure sign says Malhotra not Madhotra", {
-            replyTo: { index: -1 },
-          });
-
-          wa.at("52.4s").receiveVoice(monty.name, 6);
-
-          wa.span("53s", "54.6s").typing("me");
-          wa.at("54.6s").send("why is he whispering like witness protection");
-
-          wa.openProfile("56s");
-          wa.goBack("60s");
-          wa.openChatList("61s");
-
-          wa.switchTo("dm_naina", "62.2s");
-          wa.at("62.8s").receive(
-            naina.name,
-            "why did bakery guy just call me bhabhi",
-            { replyTo: { index: -1 } },
-          );
-
-          wa.span("63.8s", "65.4s").typing("me");
-          wa.at("65.4s").send("long story. hilarious from distance.");
-
-          wa.at("66.4s").receive(naina.name, "my father is smiling. that is worse.");
-
-          wa.openChatList("67.6s");
-
-          wa.switchTo("dm_bakery", "68.8s");
-          wa.at("69.4s").receiveImage(bakery.name, "/placeholders/media.svg", {
-            caption: "final cake sir",
-          });
-          wa.at("70.4s").receive(
-            bakery.name,
-            "Could not remove topper. edible gold glued.",
-          );
-
-          wa.span("71.2s", "72.6s").typing("me");
-          wa.at("72.6s").send("bring plain knife. we perform surgery.");
-
-          wa.openChatList("73.8s");
-
-          wa.switchTo("group_rishta_ops", "75s");
-          wa.at("75.6s").receive(sid.name, "update: uncle has arrived 23 mins early");
-          wa.at("76.4s").receive(
-            tara.name,
-            "Monty called uncle 'legend sir'",
-            { replyTo: { index: -1 } },
-          );
-
-          wa.span("77.2s", "78.6s").typing("me");
-          wa.at("78.6s").send("at this point marry Mom off, save my slot");
-
-          wa.at("79.6s").receiveVideo(aashi.name, "/placeholders/media.svg", {
-            duration: 7,
-            caption: "live from disaster zone",
-          });
-          wa.at("80.4s").react({ index: -1 }, "😂");
-
-          wa.openChatList("81.8s");
-
-          wa.switchTo("dm_naina", "83s");
-          wa.at("83.6s").receive(naina.name, "small update");
-          wa.at("84.4s").receive(
-            naina.name,
-            "mom and dad love your mother. they think SHE trained you",
-          );
-
-          wa.span("85.2s", "86.8s").typing("me");
-          wa.at("86.8s").send("correct. i am franchise model.");
-
-          wa.at("87.8s").receive(
-            naina.name,
-            "also cake says Trust Me Uncle",
-            { replyTo: { index: -1 } },
-          );
-
-          wa.span("88.6s", "89.8s").typing("me");
-          wa.at("89.8s").send("then honesty won.");
-
-          wa.openChatList("90.8s");
-
-          wa.switchTo("group_rishta_ops", "91.8s");
-          wa.at("92.2s").receive(sid.name, "bro");
-
-          wa.span("92.4s", "93s").typing("me");
-          wa.at("93s").send("YOU SAID BRO??");
-
-          wa.at("93.8s").receive(monty.name, "uncle replied 'same bro'");
-
-          wa.openChatList("94.6s");
-          wa.switchTo("dm_naina", "95.2s");
-          wa.at("95.6s").receive(naina.name, "congrats");
-          wa.at("96s").receive(naina.name, "papa added you to family group himself");
+    })
+      .device("phone", "iphone16", {
+        app: "app_whatsapp",
+        installedApps: ["app_whatsapp"],
+        os: {
+          time: new Date("2025-03-07T18:42:00"),
+          battery: 64,
+          network: "5G",
         },
-      )
+      })
+      .snapshot("app_whatsapp", "phone", {
+        conversations: [
+          {
+            id: "dm_naina",
+            name: "Naina ✨",
+            unreadCount: 2,
+            isPinned: true,
+            hasStatus: true,
+          },
+          {
+            id: "group_rishta_ops",
+            name: "Rishta Damage Control",
+            type: "group",
+            unreadCount: 14,
+            participants: ["me", "Sid", "Tara", "Monty", "Aashi"],
+            description: "Sid, Tara, Monty, Aashi",
+          },
+          {
+            id: "dm_bakery",
+            name: "Bakery Boss",
+            unreadCount: 1,
+            businessLabel: "Business account",
+            isVerifiedBusiness: true,
+          },
+          {
+            id: "dm_mom",
+            name: "Mom ❤️",
+            unreadCount: 1,
+            isLocked: true,
+            isPinned: true,
+            hasStatus: true,
+          },
+        ],
+      })
+      .background({ type: "image", src: "/backgrounds/cozy-bedroom.png" })
+      .whatsapp("phone", "group_rishta_ops", (wa) => {
+        wa.openStatus("0s");
+        wa.openCalls("1.0s");
+        wa.openCommunities("2.0s");
+        wa.openSettings("3.0s");
+        wa.openChatList("4.0s");
+        wa.switchTo("group_rishta_ops", "5.2s");
+        wa.at("6.0s").receive("Sid", "Catastrophe. Bakery wrote congratulations Neha aunty.");
+        wa.at("7.2s").receive("Tara", "And Monty booked family table under Damage Control Squad.");
+        wa.at("8.4s").receive("Monty", "Rich people should know confidence.");
+        wa.span("9.8s", "11.8s").typing("me");
+        wa.at("11.8s").send(
+          "Nobody says bro, scene, ya jugaad in front of uncle.",
+          { typed: true, charDelay: 2 },
+        );
+        wa.at("13.0s").receive("Aashi", "Monty already told uncle 'scene set hai'.");
+        wa.at("14.4s").receiveImage("Sid", "/placeholders/media.svg", {
+          caption: "Meet the cake",
+        });
+        wa.span("15.6s", "17.2s").typing("me");
+        wa.at("17.2s").send("Why does it say Happy 25th Tax Audit?", {
+          typed: true,
+          charDelay: 2,
+        });
+        wa.openChatList("18.8s");
+        wa.switchTo("dm_naina", "20.0s");
+        wa.at("20.8s").receive(
+          "Naina",
+          "You left me on delivered and mom is iron-proofing your shirt.",
+        );
+        wa.at("22.0s").receive("Naina", "Good. Papa hates chaos.");
+        wa.span("23.4s", "25.0s").typing("me");
+        wa.at("25.0s").send("I am calm. Mature. Absolutely under control.", {
+          typed: true,
+          charDelay: 2,
+        });
+        wa.read();
+        wa.openChatList("26.8s");
+        wa.switchTo("dm_bakery", "28.0s");
+        wa.at("28.8s").receive(
+          "Bakery Boss",
+          "Your topper 'Naina ji ke papa please trust me' is ready.",
+        );
+        wa.at("30.0s").receiveDocument("Bakery Boss", {
+          fileName: "Trust_Me_Topper_Final_FINAL.pdf",
+          fileSize: "640 KB",
+          fileType: "pdf",
+        });
+        wa.span("31.4s", "33.2s").typing("me");
+        wa.at("33.2s").send("Cancel topper. Write simple congratulations.", {
+          typed: true,
+          charDelay: 2,
+        });
+        wa.openChatList("34.8s");
+        wa.switchTo("dm_mom", "36.0s");
+        wa.at("36.8s").receive("Mom ❤️", "Perfume laga ke jaana. Phenyl nahi.");
+        wa.at("38.0s").receive("Mom ❤️", "And sit straight. Don't over-smile.");
+        wa.span("39.6s", "41.2s").typing("me");
+        wa.at("41.2s").send("Maa I am a calm sophisticated man.", {
+          typed: true,
+          charDelay: 2,
+        });
+        wa.openChatList("42.8s");
+        wa.switchTo("group_rishta_ops", "44.0s");
+        wa.at("44.8s").receive("Tara", "Update: uncle asked why cake says tax audit.");
+        wa.at("46.0s").receive("Sid", "Need backup plan now.");
+        wa.span("47.2s", "49.4s").typing("me");
+        wa.at("49.4s").send(
+          "New plan. No cake text. No Monty speeches. Everybody smile and lie professionally.",
+          { typed: true, charDelay: 2 },
+        );
+      })
       .camera((cam) => {
-        cam.at("0s").focus("device", { scale: 1, duration: "0.35s" });
-        cam.at("1.2s").animate({ scale: 1.03, duration: "0.28s", easing: "easeOut" });
-        cam.at("2.4s").animate({ scale: 1.01, duration: "0.28s", easing: "easeOut" });
-        cam.at("4.8s").focus("device", { scale: 1.02, duration: "0.35s" });
-
-        cam.span("6.7s", "16.9s").trackCinematic("lastMessage", {
-          scale: 1.12,
-          smoothing: 0.18,
-          deadZonePx: 18,
-          maxVelocityPxPerSec: 430,
-          predictiveLookaheadFrames: 1,
-        });
-
-        cam.at("20s").focus("lastMessage", { scale: 1.1, duration: "0.42s" });
-        cam.span("22s", "24.1s").trackCinematic("inputArea", {
-          scale: 1.06,
-          smoothing: 0.18,
-        });
-
-        cam.at("28s").focus("lastMessage", { scale: 1.11, duration: "0.45s" });
-        cam.at("33.2s").focus("lastMessage", { scale: 1.09, duration: "0.42s" });
-
-        cam.span("43.5s", "54.8s").trackCinematic("lastMessage", {
-          scale: 1.13,
-          smoothing: 0.16,
-          deadZonePx: 20,
-          maxVelocityPxPerSec: 420,
-        });
-
-        cam.at("56s").focus("profile", { scale: 1.08, duration: "0.45s" });
-        cam.at("60s").focus("device", { scale: 1.02, duration: "0.35s" });
-
-        cam.at("62.8s").focus("lastMessage", { scale: 1.13, duration: "0.48s" });
-        cam.at("69.4s").focus("lastMessage", { scale: 1.12, duration: "0.45s" });
-        cam.at("75.6s").focus("lastMessage", { scale: 1.1, duration: "0.4s" });
-        cam.at("79.6s").focus("lastMessage", { scale: 1.12, duration: "0.42s" });
-        cam.at("95.6s").focus("lastMessage", { scale: 1.15, duration: "0.5s" });
+        cam.at("0s").focus("device", { scale: 1.02, duration: "0.35s" });
+        cam.at("6.1s").focus("lastMessage", { scale: 1.1, duration: "0.35s" });
+        cam.span("9.8s", "11.9s").trackCinematic("keyboard", { scale: 1.12, smoothing: 0.16 });
+        cam.at("20.9s").focus("chat_header", { scale: 1.08, duration: "0.35s" });
+        cam.at("28.9s").focus("document_card", { scale: 1.08, duration: "0.35s" });
+        cam.at("44.9s").focus("lastMessage", { scale: 1.08, duration: "0.35s" });
       })
-      .audio((audio) => {
-        audio.span("0s", "96s").bgm("/music/ambient-track.mp3", {
-          volume: 0.14,
-          fadeIn: "2s",
-          fadeOut: "2s",
-        });
-      })
-      .use(
-        new OSDirectorPlugin({
-          startTime: new Date("2025-03-07T18:42:00"),
-          startBattery: 64,
-          batteryDrainRate: 0.42,
-          updateInterval: "15s",
-        }),
-      )
       .use(
         new KeyboardPlugin({
           onlyForSentMessages: true,
           defaultCharDelay: 3,
-          excludeShortMessages: 3,
+          excludeShortMessages: 2,
         }),
       )
-      .build();
-  },
+      .build(),
 });

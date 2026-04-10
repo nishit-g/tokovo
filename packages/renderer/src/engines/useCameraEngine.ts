@@ -64,6 +64,7 @@ export interface CameraEngineInput {
    * Used in multi-device layouts where only the active device should be camera-driven.
    */
   disabled?: boolean;
+  debug?: boolean;
 }
 
 export interface CameraEngineOutput {
@@ -127,7 +128,15 @@ export interface CameraEngineOutput {
 type CameraEffect = Parameters<typeof processActiveEffects>[1][number];
 
 export function useCameraEngine(input: CameraEngineInput): CameraEngineOutput {
-  const { world, t, layoutOutput, eventIndex, disabled, fps = 30 } = input;
+  const {
+    world,
+    t,
+    layoutOutput,
+    eventIndex,
+    disabled,
+    fps = 30,
+    debug,
+  } = input;
   const registries = useRendererRegistries();
 
   return useMemo(() => {
@@ -144,55 +153,20 @@ export function useCameraEngine(input: CameraEngineInput): CameraEngineOutput {
         transform,
         cameraStyle: buildCameraCSS(transform, viewport),
         deviceStyle: buildDeviceCSS(layout),
-        debugInfo: {
-          fallbackUsed: false,
-          warnings: ["camera_disabled"],
-          effectTimeline: [],
-        },
+        ...(debug
+          ? {
+            debugInfo: {
+              fallbackUsed: false,
+              warnings: ["camera_disabled"],
+              effectTimeline: [],
+            },
+          }
+          : {}),
       };
     }
 
     // =====================================================================
-    // 1. GET ANCHOR SNAPSHOT
-    // =====================================================================
-    let anchorSnapshot: AnchorSnapshot | undefined;
-    const anchorContext: AnchorProviderContext = {
-      getDeviceProfile: (profileId?: string) => {
-        if (!profileId) return undefined;
-        return (
-          registries.devices.devices.get(profileId) ??
-          registries.devices.devices.get("iphone16")
-        );
-      },
-      getDeviceShell: (profileId?: string) => {
-        if (!profileId) return undefined;
-        return registries.devices.shells.get(profileId);
-      },
-    };
-
-    if (appId) {
-      anchorSnapshot = getAnchorsForApp(
-        registries.plugins.anchors,
-        appId,
-        world,
-        layout,
-        deviceId,
-        anchorContext,
-      );
-    } else {
-      // Lockscreen / homescreen still need device-level anchors for camera effects.
-      anchorSnapshot = getAnchorsForApp(
-        registries.plugins.anchors,
-        "app_device",
-        world,
-        layout,
-        deviceId,
-        anchorContext,
-      );
-    }
-
-    // =====================================================================
-    // 2. GET EFFECTS FROM STATE (flat CameraEffect[] - no wrapper)
+    // 1. GET EFFECTS FROM STATE (flat CameraEffect[] - no wrapper)
     // =====================================================================
     // Note: world.camera is BaseCameraState in core, but may be extended with activeEffects by device-camera
     const cameraWithEffects = world.camera as unknown as {
@@ -203,6 +177,59 @@ export function useCameraEngine(input: CameraEngineInput): CameraEngineOutput {
     )
       ? cameraWithEffects.activeEffects
       : [];
+
+    const hasEffects = effects.length > 0;
+
+    // Fast path: no active effects and debug is disabled.
+    if (!hasEffects && !debug) {
+      const transform = { ...DEFAULT_TRANSFORM };
+      return {
+        transform,
+        cameraStyle: buildCameraCSS(transform, viewport),
+        deviceStyle: buildDeviceCSS(layout),
+      };
+    }
+
+    // =====================================================================
+    // 2. GET ANCHOR SNAPSHOT
+    // =====================================================================
+    let anchorSnapshot: AnchorSnapshot | undefined;
+    if (hasEffects || debug) {
+      const anchorContext: AnchorProviderContext = {
+        getDeviceProfile: (profileId?: string) => {
+          if (!profileId) return undefined;
+          return (
+            registries.devices.devices.get(profileId) ??
+            registries.devices.devices.get("iphone16")
+          );
+        },
+        getDeviceShell: (profileId?: string) => {
+          if (!profileId) return undefined;
+          return registries.devices.shells.get(profileId);
+        },
+      };
+
+      if (appId) {
+        anchorSnapshot = getAnchorsForApp(
+          registries.plugins.anchors,
+          appId,
+          world,
+          layout,
+          deviceId,
+          anchorContext,
+        );
+      } else {
+        // Lockscreen / homescreen still need device-level anchors for camera effects.
+        anchorSnapshot = getAnchorsForApp(
+          registries.plugins.anchors,
+          "app_device",
+          world,
+          layout,
+          deviceId,
+          anchorContext,
+        );
+      }
+    }
 
     // =====================================================================
     // 3. PROCESS EFFECTS THROUGH REGISTRY
@@ -230,6 +257,15 @@ export function useCameraEngine(input: CameraEngineInput): CameraEngineOutput {
     // =====================================================================
     const cameraStyle = buildCameraCSS(transform, viewport);
     const deviceStyle = buildDeviceCSS(layout);
+
+    if (!debug) {
+      return {
+        transform,
+        cameraStyle,
+        deviceStyle,
+        directorSkipped,
+      };
+    }
 
     const activeAnchorEffect = effects
       .filter(
@@ -367,7 +403,7 @@ export function useCameraEngine(input: CameraEngineInput): CameraEngineOutput {
       anchorSnapshot,
       debugInfo,
     };
-  }, [world, t, layoutOutput, eventIndex, registries, fps]);
+  }, [world, t, layoutOutput, eventIndex, registries, fps, debug]);
 }
 
 // =============================================================================

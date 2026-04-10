@@ -1,5 +1,5 @@
 import { defineEpisode } from "../types/episode-definition.js";
-import { episode } from "@tokovo/creator";
+import { episode } from "../code-first-episode.js";
 
 /**
  * Long-form v2 showcase that exercises the "enterprise v1" surface in one place:
@@ -45,6 +45,13 @@ export default defineEpisode({
         locked: true,
         screenRecording: true,
         installedApps: ["app_whatsapp", "app_x", "app_imessage", "app_camera"],
+        os: {
+          time: new Date("2025-06-26T21:08:00"),
+          battery: 62,
+          network: "5G",
+        },
+      })
+      .snapshot("app_whatsapp", "phone", {
         conversations: [
           {
             id: "wa_grp",
@@ -61,13 +68,76 @@ export default defineEpisode({
             unreadCount: 1,
           },
         ],
-        os: {
-          time: new Date("2025-06-26T21:08:00"),
-          battery: 62,
-          network: "5G",
-        },
       })
       .background({ type: "image", src: "/backgrounds/cozy-bedroom.png" })
+      .snapshot("app_x", "phone", {
+        users: [
+          {
+            id: "u_me",
+            name: "Me",
+            handle: "me",
+            followers: 3400,
+            following: 240,
+            verified: null,
+          },
+          {
+            id: "u_op",
+            name: "OP",
+            handle: "op",
+            followers: 98000,
+            following: 600,
+            verified: "blue",
+          },
+          {
+            id: "u_1",
+            name: "Rhea",
+            handle: "rhea",
+            followers: 12000,
+            following: 980,
+            verified: null,
+          },
+          {
+            id: "u_2",
+            name: "Omar",
+            handle: "omar",
+            followers: 8800,
+            following: 420,
+            verified: null,
+          },
+        ],
+        tweets: [
+          {
+            id: "tw_op",
+            authorId: "u_op",
+            text: "I never lie. I just remix the truth.",
+            viewCount: 214000,
+            shareCount: 4100,
+            bookmarkCount: 18000,
+          },
+        ],
+        replies: [
+          {
+            id: "tw_r1",
+            authorId: "u_1",
+            text: "DJ Cap back on the decks.",
+            replyToId: "tw_op",
+            viewCount: 82000,
+            shareCount: 1100,
+            bookmarkCount: 3600,
+          },
+          {
+            id: "tw_r2",
+            authorId: "u_2",
+            text: "Remix is crazy. That's just lying with reverb.",
+            replyToId: "tw_op",
+            viewCount: 76000,
+            shareCount: 900,
+            bookmarkCount: 3100,
+          },
+        ],
+        currentUserId: "u_me",
+      })
+      .view("app_x", "phone", { screen: "timeline" })
 
       .overlay((ov) => {
         ov.at("0.0s").hook("Wake up. It started.", {
@@ -187,75 +257,6 @@ export default defineEpisode({
       // X: post -> replies -> compose -> quote roast (typed)
       // ---------------------------------------------------------------------
       .x("phone", (x) => {
-        x.seed({
-          users: [
-            {
-              id: "u_me",
-              name: "Me",
-              handle: "me",
-              followers: 3400,
-              following: 240,
-              verified: null,
-            },
-            {
-              id: "u_op",
-              name: "OP",
-              handle: "op",
-              followers: 98000,
-              following: 600,
-              verified: "blue",
-            },
-            {
-              id: "u_1",
-              name: "Rhea",
-              handle: "rhea",
-              followers: 12000,
-              following: 980,
-              verified: null,
-            },
-            {
-              id: "u_2",
-              name: "Omar",
-              handle: "omar",
-              followers: 8800,
-              following: 420,
-              verified: null,
-            },
-          ],
-          tweets: [
-            {
-              id: "tw_op",
-              authorId: "u_op",
-              text: "I never lie. I just remix the truth.",
-              viewCount: 214000,
-              shareCount: 4100,
-              bookmarkCount: 18000,
-            },
-          ],
-          replies: [
-            {
-              id: "tw_r1",
-              authorId: "u_1",
-              text: "DJ Cap back on the decks.",
-              replyToId: "tw_op",
-              viewCount: 82000,
-              shareCount: 1100,
-              bookmarkCount: 3600,
-            },
-            {
-              id: "tw_r2",
-              authorId: "u_2",
-              text: "Remix is crazy. That's just lying with reverb.",
-              replyToId: "tw_op",
-              viewCount: 76000,
-              shareCount: 900,
-              bookmarkCount: 3100,
-            },
-          ],
-          currentUserId: "u_me",
-          screen: "timeline",
-        });
-
         x.at("30.0s").navigate("timeline");
         x.at("32.0s").navigate("tweet", { tweetId: "tw_op" });
         x.at("33.0s").viewTweet("tw_op");

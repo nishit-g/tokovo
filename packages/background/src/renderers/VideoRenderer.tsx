@@ -3,7 +3,9 @@
  */
 
 import React from "react";
-import { AbsoluteFill, Video, staticFile } from "remotion";
+import { Video } from "@remotion/media";
+import { AbsoluteFill, staticFile } from "remotion";
+import { resolveStaticAssetSrc } from "@tokovo/core";
 import type { ResolvedBackgroundConfig } from "../types.js";
 
 interface VideoRendererProps {
@@ -17,9 +19,7 @@ export const VideoRenderer: React.FC<VideoRendererProps> = ({ config }) => {
     }
 
     // Resolve path - if it starts with / assume it's a static file
-    const videoSrc = config.src.startsWith("/")
-        ? staticFile(config.src)
-        : config.src;
+    const videoSrc = resolveStaticAssetSrc(config.src, staticFile);
 
     const containerStyle: React.CSSProperties = {
         opacity: config.opacity ?? 1,
@@ -62,7 +62,11 @@ export const VideoRenderer: React.FC<VideoRendererProps> = ({ config }) => {
                 style={videoStyle}
                 loop
                 muted
-            // startFrom and endAt can be added for more control
+                name="Background video"
+                fallbackOffthreadVideoProps={{
+                    pauseWhenBuffering: true,
+                }}
+            // trimBefore and trimAfter can be added for more control
             />
         </AbsoluteFill>
     );

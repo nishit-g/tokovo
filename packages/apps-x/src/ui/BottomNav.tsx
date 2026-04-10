@@ -25,7 +25,7 @@ export const BottomNav: React.FC<{ active?: NavItem }> = ({
         alignItems: "center",
         justifyContent: "space-around",
         borderTop: `1px solid ${theme.colors.border}`,
-        backgroundColor: "rgba(0,0,0,0.85)",
+        backgroundColor: theme.colors.background,
         backdropFilter: "blur(12px)",
         marginTop: "auto",
         flexShrink: 0,
@@ -43,6 +43,8 @@ export const BottomNav: React.FC<{ active?: NavItem }> = ({
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
+              width: 44,
+              height: 44,
             }}
           >
             <XIcon

@@ -38,7 +38,7 @@ export const PostCard: React.FC<PostCardProps> = ({
     authorName,
     authorHeadline,
     authorAvatar,
-    authorFollowers,
+    authorFollowers: _authorFollowers,
     timeAgo = "1h",
     content,
     image,

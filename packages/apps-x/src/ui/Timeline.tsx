@@ -1,8 +1,11 @@
 import React from "react";
 import type { WorldState } from "@tokovo/core";
-import { getXTheme } from "../config/theme.js";
 import { useXTheme } from "./ThemeContext.js";
-import { getTimelineTweets, getXState } from "../runtime/selectors.js";
+import {
+  getTimelineTab,
+  getTimelineTweets,
+  getXState,
+} from "../runtime/selectors.js";
 import { AppShell } from "./AppShell.js";
 import {
   Avatar,
@@ -22,76 +25,68 @@ interface TimelineProps {
   world: WorldState;
 }
 
-// Rich text rendering for hashtags and mentions
-const renderRichText = (
-  text: string,
-  theme: ReturnType<typeof getXTheme>
-): React.ReactNode => {
-  const parts = text.split(/(#[\w_]+|@[\w_]+)/g);
-  return parts.map((part, index) => {
+function renderRichText(text: string, accent: string): React.ReactNode {
+  return text.split(/(#[\w_]+|@[\w_]+)/g).map((part, index) => {
     if (part.startsWith("#") || part.startsWith("@")) {
       return (
-        <span key={index} style={{ color: theme.colors.accent }}>
+        <span key={`${part}-${index}`} style={{ color: accent }}>
           {part}
         </span>
       );
     }
-    return <span key={index}>{part}</span>;
+    return <span key={`${part}-${index}`}>{part}</span>;
   });
-};
+}
 
-// Tweet Card Component - Real X layout
-const TweetCard: React.FC<{
-  tweet: ReturnType<typeof getTimelineTweets>[0];
-  author:
-    | {
-        name: string;
-        handle: string;
-        verified?: "blue" | "gold" | "grey" | null;
-        avatarUrl?: string;
-      }
-    | undefined;
-  liked: boolean;
-  theme: ReturnType<typeof getXTheme>;
+const TimelineTweetRow: React.FC<{
+  tweet: ReturnType<typeof getTimelineTweets>[number];
+  currentUserId: string | null;
+  users: NonNullable<ReturnType<typeof getXState>>["users"];
   nowMs: number;
-}> = ({ tweet, author, liked, theme, nowMs }) => {
+}> = ({ tweet, currentUserId, users, nowMs }) => {
+  const theme = useXTheme();
+  const author = users.find((user) => user.id === tweet.authorId);
+  const liked = currentUserId ? tweet.likedBy.includes(currentUserId) : false;
+
   return (
     <div
       style={{
         display: "flex",
+        gap: 12,
         padding: `${theme.spacing.tweetPaddingV}px ${theme.spacing.tweetPaddingH}px`,
         borderBottom: `1px solid ${theme.colors.border}`,
-        gap: theme.spacing.avatarGap,
       }}
     >
-      {/* Avatar Column */}
-      <Avatar size={theme.spacing.avatarSize} src={author?.avatarUrl} />
-
-      {/* Content Column */}
+      <Avatar size={40} src={author?.avatarUrl} />
       <div style={{ flex: 1, minWidth: 0 }}>
-        {/* Header: Name, badge, handle, time, more */}
         <div
           style={{
             display: "flex",
             alignItems: "center",
             gap: 4,
-            marginBottom: 2,
+            minWidth: 0,
           }}
         >
           <span
             style={{
-              fontWeight: 700,
               fontSize: 15,
+              fontWeight: 700,
               color: theme.colors.textPrimary,
+              whiteSpace: "nowrap",
             }}
           >
             {author?.name ?? "Unknown"}
           </span>
-          {author?.verified && <VerifiedBadge variant={author.verified} size={16} />}
+          {author?.verified ? (
+            <VerifiedBadge variant={author.verified} size={16} />
+          ) : null}
           <span
             style={{
               fontSize: 15,
               color: theme.colors.textSecondary,
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              whiteSpace: "nowrap",
             }}
           >
             @{author?.handle ?? "unknown"}
@@ -101,6 +96,7 @@ const TweetCard: React.FC<{
             style={{
               fontSize: 15,
               color: theme.colors.textSecondary,
+              whiteSpace: "nowrap",
             }}
           >
             {formatTimestamp(tweet.createdAt, { nowMs })}
@@ -110,109 +106,29 @@ const TweetCard: React.FC<{
           </div>
         </div>
 
-        {/* Repost indicator */}
-        {tweet.repostOfId && (
-          <div
-            style={{
-              fontSize: 13,
-              color: theme.colors.textSecondary,
-              marginBottom: 4,
-              display: "flex",
-              alignItems: "center",
-              gap: 4,
-            }}
-          >
-            <XIcon name="repost" size={14} color={theme.colors.textSecondary} />
-            Reposted
-          </div>
-        )}
-
-        {/* Tweet Text */}
         <div
           style={{
+            marginTop: 2,
             fontSize: 15,
-            lineHeight: 1.4,
+            lineHeight: 1.42,
             color: theme.colors.textPrimary,
             whiteSpace: "pre-wrap",
             wordBreak: "break-word",
           }}
         >
-          {renderRichText(tweet.text, theme)}
+          {renderRichText(tweet.text, theme.colors.accent)}
         </div>
 
-        {/* Media */}
-        {tweet.media && <MediaCard media={tweet.media} variant="timeline" />}
+        {tweet.media ? <MediaCard media={tweet.media} variant="timeline" /> : null}
+        {tweet.linkPreview ? <LinkPreviewCard preview={tweet.linkPreview} /> : null}
 
-        {/* Link Preview */}
-        {tweet.linkPreview && <LinkPreviewCard preview={tweet.linkPreview} />}
-
-        {/* Poll */}
-        {tweet.poll && (() => {
-          const poll = tweet.poll;
-          const totalVotes = poll.totalVotes || 1;
-          return (
-          <div
-            style={{
-              marginTop: 12,
-              display: "flex",
-              flexDirection: "column",
-              gap: 8,
-            }}
-          >
-            {poll.options.map((opt) => {
-              const percent = Math.round((opt.votes / totalVotes) * 100);
-              return (
-                <div
-                  key={opt.label}
-                  style={{
-                    position: "relative",
-                    padding: "10px 12px",
-                    borderRadius: 8,
-                    border: `1px solid ${theme.colors.border}`,
-                    overflow: "hidden",
-                  }}
-                >
-                  <div
-                    style={{
-                      position: "absolute",
-                      left: 0,
-                      top: 0,
-                      bottom: 0,
-                      width: `${percent}%`,
-                      backgroundColor: theme.colors.accentSoft,
-                    }}
-                  />
-                  <div
-                    style={{
-                      position: "relative",
-                      display: "flex",
-                      justifyContent: "space-between",
-                    }}
-                  >
-                    <span style={{ fontSize: 15, color: theme.colors.textPrimary }}>
-                      {opt.label}
-                    </span>
-                    <span style={{ fontSize: 15, color: theme.colors.textSecondary }}>
-                      {percent}%
-                    </span>
-                  </div>
-                </div>
-              );
-            })}
-            <div style={{ fontSize: 13, color: theme.colors.textSecondary }}>
-              {poll.totalVotes} votes
-            </div>
-          </div>
-          );
-        })()}
-
-        {/* Action Row */}
         <div
           style={{
             display: "flex",
             justifyContent: "space-between",
+            gap: 8,
             marginTop: 12,
-            maxWidth: 425,
+            maxWidth: 430,
           }}
         >
           <ActionButton icon="reply" count={tweet.replyIds.length} />
@@ -220,7 +136,7 @@ const TweetCard: React.FC<{
           <ActionButton icon="like" count={tweet.likeCount} active={liked} />
           <ActionButton icon="view" count={tweet.viewCount} />
           <div style={{ display: "flex", gap: 12 }}>
-            <ActionButton icon="bookmark" count={tweet.bookmarkCount > 0 ? tweet.bookmarkCount : undefined} />
+            <ActionButton icon="bookmark" count={tweet.bookmarkCount || undefined} />
             <ActionButton icon="share" />
           </div>
         </div>
@@ -233,89 +149,98 @@ export const Timeline: React.FC<TimelineProps> = ({ world }) => {
   const theme = useXTheme();
   const state = getXState(world);
   const tweets = getTimelineTweets(world);
-  const referenceNowMs = tweets.reduce(
-    (max, tweet) => Math.max(max, tweet.createdAt),
-    0,
-  );
+  const timelineTab = getTimelineTab(world);
   const users = state?.users ?? [];
-  const currentUserId = state?.currentUserId ?? null;
-  const currentUser = currentUserId
-    ? users.find((user) => user.id === currentUserId)
-    : undefined;
-
-  const getUser = (id: string | undefined) => users.find((u) => u.id === id);
+  const currentUser = users.find((user) => user.id === state?.currentUserId);
+  const nowMs = tweets.reduce((max, tweet) => Math.max(max, tweet.createdAt), 0);
 
   return (
     <AppShell>
-      {/* Header */}
       <div
         style={{
-          height: theme.spacing.headerHeight,
+          flex: 1,
+          minHeight: 0,
           display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          padding: `0 ${theme.spacing.screenPadding}px`,
-          borderBottom: `1px solid ${theme.colors.border}`,
-          backgroundColor: "rgba(0,0,0,0.65)",
-          backdropFilter: "blur(12px)",
-          position: "sticky",
-          top: 0,
-          zIndex: 10,
+          flexDirection: "column",
+          overflow: "hidden",
         }}
       >
-        <Avatar size={32} src={currentUser?.avatarUrl} />
-        <XLogo size={28} />
-        <XIcon name="grok" size={24} color={theme.colors.textPrimary} />
-      </div>
+        <div
+          style={{
+            position: "sticky",
+            top: 0,
+            zIndex: 10,
+            backgroundColor: theme.colors.background,
+            backdropFilter: "blur(12px)",
+            flexShrink: 0,
+          }}
+        >
+          <div
+            style={{
+              height: theme.spacing.headerHeight,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              padding: `0 ${theme.spacing.screenPadding}px`,
+              borderBottom: `1px solid ${theme.colors.border}`,
+            }}
+          >
+            <Avatar size={32} src={currentUser?.avatarUrl} />
+            <XLogo size={28} />
+            <XIcon name="grok" size={22} color={theme.colors.textPrimary} />
+          </div>
+          <div
+            style={{
+              display: "flex",
+              borderBottom: `1px solid ${theme.colors.border}`,
+            }}
+          >
+            <TabButton label="For you" active={timelineTab === "forYou"} />
+            <TabButton label="Following" active={timelineTab === "following"} />
+          </div>
+        </div>
 
-      {/* Tab Bar */}
-      <div
-        style={{
-          display: "flex",
-          borderBottom: `1px solid ${theme.colors.border}`,
-        }}
-      >
-        <TabButton label="For you" active />
-        <TabButton label="Following" />
-      </div>
+        <ScreenTransition lastNavFrame={state?.lastNavFrame}>
+          <div style={{ flex: 1, minHeight: 0, overflow: "auto" }}>
+            {tweets.length === 0 ? (
+              <div
+                style={{
+                  padding: 32,
+                  color: theme.colors.textSecondary,
+                }}
+              >
+                <div
+                  style={{
+                    fontSize: 31,
+                    lineHeight: 1.1,
+                    fontWeight: 800,
+                    color: theme.colors.textPrimary,
+                  }}
+                >
+                  Nothing in your timeline yet
+                </div>
+                <div style={{ marginTop: 10, fontSize: 15, lineHeight: 1.45 }}>
+                  Follow accounts, switch tabs, or seed posts into the scene to
+                  make the timeline feel live.
+                </div>
+              </div>
+            ) : null}
 
-      <ScreenTransition lastNavFrame={state?.lastNavFrame}>
-        <div style={{ flex: 1 }}>
-          {tweets.length === 0 && (
-            <div
-              style={{
-                padding: 32,
-                textAlign: "center",
-                color: theme.colors.textSecondary,
-              }}
-            >
-              Welcome to X! Your timeline is empty.
-            </div>
-          )}
-
-          {tweets.map((tweet) => {
-            const author = getUser(tweet.authorId);
-            const liked = currentUserId
-              ? tweet.likedBy.includes(currentUserId)
-              : false;
-
-            return (
-              <TweetCard
+            {tweets.map((tweet) => (
+              <TimelineTweetRow
                 key={tweet.id}
                 tweet={tweet}
-                author={author}
-                liked={liked}
-                theme={theme}
-                nowMs={referenceNowMs}
+                currentUserId={state?.currentUserId ?? null}
+                users={users}
+                nowMs={nowMs}
               />
-            );
-          })}
-        </div>
-      </ScreenTransition>
+            ))}
+          </div>
+        </ScreenTransition>
+      </div>
 
       <BottomNav active="home" />
 
-      {/* FAB Compose */}
       <div
         style={{
           position: "absolute",
@@ -328,8 +253,8 @@ export const Timeline: React.FC<TimelineProps> = ({ world }) => {
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          boxShadow: "0 4px 12px rgba(29,155,240,0.4)",
-          zIndex: 10,
+          boxShadow: "0 12px 28px rgba(29,155,240,0.32)",
+          zIndex: 12,
         }}
       >
         <XIcon name="compose" size={24} color="#FFFFFF" />

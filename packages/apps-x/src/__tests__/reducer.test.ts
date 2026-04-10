@@ -186,4 +186,74 @@ describe("X Reducer", () => {
     if (!appState) throw new Error("Missing X app state after reducer run");
     expect(appState.timeline).toEqual(["tw-newer", "tw-older"]);
   });
+
+  it("increments thread unread count for incoming messages on inactive threads", () => {
+    const state = createTestWorldState();
+    const withUser = runReducer(state, {
+      at: 0,
+      kind: "APP",
+      appId: "app_x",
+      type: "SET_CURRENT_USER",
+      payload: { userId: "u1" },
+    });
+    const withThread = runReducer(withUser, {
+      at: 1,
+      kind: "APP",
+      appId: "app_x",
+      type: "ADD_DM_THREAD",
+      payload: {
+        id: "dm-1",
+        participantIds: ["u1", "u2"],
+        messageIds: [],
+        unreadCount: 0,
+        pinned: false,
+        typingUserId: null,
+        lastMessageAt: null,
+      },
+    });
+
+    const withMessage = runReducer(withThread, {
+      at: 2,
+      kind: "APP",
+      appId: "app_x",
+      type: "ADD_DM_MESSAGE",
+      payload: {
+        id: "msg-1",
+        threadId: "dm-1",
+        senderId: "u2",
+        text: "hello",
+        createdAt: 2,
+      },
+    });
+
+    const appState = getXState(withMessage);
+    expect(appState?.dmThreads[0]?.unreadCount).toBe(1);
+  });
+
+  it("marks notifications read when notifications screen opens", () => {
+    const state = createTestWorldState();
+    const withNotification = runReducer(state, {
+      at: 0,
+      kind: "APP",
+      appId: "app_x",
+      type: "ADD_NOTIFICATION",
+      payload: {
+        id: "nt-1",
+        type: "mention",
+        actorId: "u2",
+        createdAt: 0,
+        read: false,
+      },
+    });
+
+    const opened = runReducer(withNotification, {
+      at: 1,
+      kind: "APP",
+      appId: "app_x",
+      type: "SET_SCREEN",
+      payload: { screen: "notifications" },
+    });
+
+    expect(getXState(opened)?.notifications[0]?.read).toBe(true);
+  });
 });

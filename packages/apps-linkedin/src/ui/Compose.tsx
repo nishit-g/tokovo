@@ -7,7 +7,7 @@ import React from "react";
 import type { WorldState } from "@tokovo/core";
 import { getTypedTextProgress } from "@tokovo/device-keyboard";
 import { useLinkedInTheme } from "./ThemeContext.js";
-import { LIAvatar, LIIcon, Button } from "./components.js";
+import { LIAvatar, LIIcon } from "./components.js";
 import type { LinkedInState } from "../runtime/state.js";
 import { getActiveUser } from "../runtime/selectors.js";
 

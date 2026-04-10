@@ -1,62 +1,18 @@
 # @tokovo/apps-imessage
 
-iMessage app simulation plugin for Tokovo. Includes reducer/runtime, UI views, DSL track builder, v2 lowering, layouts, audio rules, and camera anchor framing.
+The iMessage plugin package.
 
-## Install
+## Responsibilities
 
-```bash
-pnpm add @tokovo/apps-imessage
-```
+- iMessage runtime reducer
+- iMessage snapshot and initial-view schema ownership
+- snapshot/view validation and migration hooks
+- iMessage React views
+- layout and anchor integration
+- authoring helpers
 
-## Register
+## Key Exports
 
-```typescript
-import { createTokovoRegistries, PluginManagerClass } from "@tokovo/react";
-import { registerIMessagePlugin } from "@tokovo/apps-imessage";
-
-const registries = createTokovoRegistries();
-const pluginManager = new PluginManagerClass(registries.plugins);
-
-registerIMessagePlugin(pluginManager);
-```
-
-## Use in Episodes
-
-```typescript
-import { episode } from "@tokovo/dsl";
-import { IMessageTrackBuilder } from "@tokovo/apps-imessage";
-
-episode("imessage-demo", { fps: 30, duration: "20s" })
-  .device("phone", "iphone16", { app: "app_imessage" })
-  .track(
-    "app_imessage",
-    (getOrder) => new IMessageTrackBuilder(30, "phone", "group_chat", getOrder),
-    (im) => {
-      im.at("1s").openConversation("group_chat");
-      im.at("2s").receive("Alex", "Brunch Saturday?");
-      im.at("4s").send("I am in.");
-    },
-  )
-  .camera((cam) => {
-    cam.span("1s", "18s").track("imessage_thread", { scale: 1.1, lag: 0.2 });
-  })
-  .build();
-```
-
-## Anchor IDs
-
-- `imessage_list_header`
-- `imessage_list`
-- `imessage_thread`
-- `imessage_composer`
-- `imessage_info`
-- `imessage_media`
-- `device`
-
-## Related
-
-- [Anchors + DSL Reference](/guides/anchors-dsl-plugin-reference)
-- [Cinematic Camera](/guides/cinematic-camera)
-- [@tokovo/apps-whatsapp](/packages/apps-whatsapp)
-- [@tokovo/apps-x](/packages/apps-x)
-
+- plugin surface from `plugin.ts`
+- runtime and DSL exports
+- UI exports and constants

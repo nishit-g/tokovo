@@ -164,6 +164,15 @@ export {
 // =============================================================================
 
 export type { WorldState, TouchState } from "./types/world-state.js";
+export type {
+  EpisodeAssetKind,
+  EpisodeAssetOwner,
+  EpisodeAssetUsage,
+  EpisodeAssetPrefetchStrategy,
+  EpisodeAssetRef,
+  PluginAssetCollectorContext,
+  PluginAssetCollector,
+} from "./types/asset-ref.js";
 
 // =============================================================================
 // EVENT TYPE - UNIFIED

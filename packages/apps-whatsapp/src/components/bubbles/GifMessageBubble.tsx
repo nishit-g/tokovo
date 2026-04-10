@@ -1,7 +1,9 @@
 import React, { memo } from "react";
 import { Img, staticFile } from "remotion";
+import { resolveStaticAssetSrc } from "@tokovo/core";
 import { MediaBubbleBase, TimestampOverlay } from "./shared.js";
 import { useTheme } from "../../theme/ThemeContext.js";
+import type { DeliveryStage } from "../../utils/status.js";
 
 export interface GifMessageBubbleProps {
   gifUrl: string;
@@ -15,6 +17,7 @@ export interface GifMessageBubbleProps {
   status?: "sending" | "sent" | "delivered" | "read";
   starred?: boolean;
   platform?: string;
+  deliveryStage?: DeliveryStage;
 }
 
 export const GifMessageBubble = memo(function GifMessageBubble({
@@ -28,9 +31,10 @@ export const GifMessageBubble = memo(function GifMessageBubble({
   readAt,
   status,
   starred = false,
+  deliveryStage,
 }: GifMessageBubbleProps) {
   const theme = useTheme();
-  const resolvedGifUrl = gifUrl.startsWith("/") ? staticFile(gifUrl) : gifUrl;
+  const resolvedGifUrl = resolveStaticAssetSrc(gifUrl, staticFile);
 
   return (
     <MediaBubbleBase
@@ -49,6 +53,7 @@ export const GifMessageBubble = memo(function GifMessageBubble({
       <div style={{ position: "relative", overflow: "hidden" }}>
         <Img
           src={resolvedGifUrl}
+          pauseWhenLoading
           style={{
             width: "100%",
             height: "auto",
@@ -92,6 +97,7 @@ export const GifMessageBubble = memo(function GifMessageBubble({
           deliveredAt={deliveredAt}
           readAt={readAt}
           status={status}
+          deliveryStage={deliveryStage}
         />
       </div>
     </MediaBubbleBase>

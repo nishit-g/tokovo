@@ -40,6 +40,8 @@ function createMessageId(frame: number, order: number): string {
 type UserInput = Omit<LIEventPayloadMap["USER_CREATE"], "id"> & { id?: string };
 type PostInput = Omit<LIEventPayloadMap["POST_CREATE"], "id"> & { id?: string };
 type CommentInput = Omit<LIEventPayloadMap["POST_COMMENT"], "id"> & { id?: string };
+type NotificationInput = Omit<LIEventPayloadMap["NOTIFICATION_ADD"], "id"> & { id?: string };
+type MessageInput = Omit<LIEventPayloadMap["DM_SEND"], "id"> & { id?: string };
 
 class LIPointBuilder {
   constructor(
@@ -103,8 +105,8 @@ class LIPointBuilder {
       linkPreview: data.linkPreview,
       hashtags: data.hashtags,
       mentions: data.mentions,
-      typed: (data as any)?.typed,
-      charDelay: (data as any)?.charDelay,
+      typed: data.typed,
+      charDelay: data.charDelay,
     }));
   }
 
@@ -129,8 +131,8 @@ class LIPointBuilder {
       authorId: data.authorId,
       text: data.text,
       createdAt: data.createdAt,
-      typed: (data as any)?.typed,
-      charDelay: (data as any)?.charDelay,
+      typed: data.typed,
+      charDelay: data.charDelay,
     }));
   }
 
@@ -142,7 +144,7 @@ class LIPointBuilder {
     screen: LIScreen,
     opts: { postId?: string; userId?: string; threadId?: string } = {},
   ): void {
-    this._push("NAVIGATE", { screen, ...opts } as any);
+    this._push("NAVIGATE", { screen, ...opts });
   }
 
   goBack(): void {
@@ -153,7 +155,7 @@ class LIPointBuilder {
     this._push("SET_COMPOSE_DRAFT", { text });
   }
 
-  addNotification(data: { id?: string; type: any; actorId: string; postId?: string; createdAt?: number }): void {
+  addNotification(data: NotificationInput): void {
     this._push("NOTIFICATION_ADD", (order) => ({
       id: data.id ?? createNotificationId(this._frame, order),
       type: data.type,
@@ -219,34 +221,6 @@ class LISpanBuilder {
   }
 }
 
-type SeedInput = {
-  users?: UserInput[];
-  posts?: PostInput[];
-  comments?: CommentInput[];
-  notifications?: Array<{
-    id?: string;
-    type: LIEventPayloadMap["NOTIFICATION_ADD"]["type"];
-    actorId: string;
-    postId?: string;
-    createdAt?: number;
-  }>;
-  threads?: Array<{ id?: string; participantIds: string[] }>;
-  messages?: Array<{
-    id?: string;
-    threadId: string;
-    senderId: string;
-    text: string;
-    createdAt?: number;
-  }>;
-  connections?: Array<{ a: string; b: string }>;
-  currentUserId?: string;
-  composeDraft?: string;
-  screen?: LIScreen;
-  activePostId?: string;
-  activeUserId?: string;
-  activeThreadId?: string;
-};
-
 export class LinkedInTrackBuilder {
   _events: LITrackEvent[] = [];
 
@@ -266,25 +240,5 @@ export class LinkedInTrackBuilder {
     const endFrame = typeof end === "number" ? end : parseTimeToFrames(end, this._fps);
     const duration = Math.max(0, endFrame - startFrame);
     return new LISpanBuilder(startFrame, duration, this._deviceId, this._events, this._getOrder);
-  }
-
-  seed(data: SeedInput, time: string | number = 0): void {
-    const point = this.at(time);
-    data.users?.forEach((u) => point.createUser(u));
-    if (data.currentUserId) point.setCurrentUser(data.currentUserId);
-    data.connections?.forEach((c) => point.connect(c.a, c.b));
-    data.posts?.forEach((p) => point.post(p));
-    data.comments?.forEach((c) => point.comment(c));
-    data.notifications?.forEach((n) => point.addNotification(n as any));
-    data.threads?.forEach((t) => point.createThread(t.participantIds, t.id));
-    data.messages?.forEach((m) => point.sendDM(m as any));
-    if (data.composeDraft !== undefined) point.setComposeDraft(data.composeDraft);
-    if (data.screen) {
-      point.navigate(data.screen, {
-        postId: data.activePostId,
-        userId: data.activeUserId,
-        threadId: data.activeThreadId,
-      });
-    }
   }
 }

@@ -1,5 +1,5 @@
 import type { ViewKind } from "@tokovo/core";
-import type { TeamsCall, TeamsEntityMaps } from "./conversation.js";
+import type { TeamsEntityMaps } from "./conversation.js";
 
 export type TeamsScreen =
   | "chat_list"
@@ -9,15 +9,25 @@ export type TeamsScreen =
   | "call_overlay";
 
 export type TeamsPresence = "available" | "busy" | "away" | "offline";
+export type TeamsListFilter = "all" | "unread" | "chat" | "channels" | "meetings" | "muted";
+export type TeamsTab = "chat" | "teams" | "calendar" | "calls" | "more";
+
+export interface TeamsUiState {
+  surface: TeamsScreen;
+  previousSurface?: TeamsScreen;
+  activeListFilter: TeamsListFilter;
+  activeTab: TeamsTab;
+  notificationIds: string[];
+}
 
 export interface TeamsState extends TeamsEntityMaps {
   viewMode: ViewKind;
   screen: TeamsScreen;
+  ui: TeamsUiState;
   activeDmId?: string;
   activeChannelId?: string;
   activeThreadId?: string;
   activeCallId?: string;
-  calls: Record<string, TeamsCall>;
   presence: Record<string, TeamsPresence>;
 }
 

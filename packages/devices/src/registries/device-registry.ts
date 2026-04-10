@@ -39,7 +39,14 @@ export class DeviceRegistryClass {
 
         // Auto-register device sounds if provided
         if (profile.sounds && options.soundRegistry) {
-            options.soundRegistry.registerMany(profile.sounds);
+            Object.entries(profile.sounds).forEach(([soundId, soundPath]) => {
+                // Device profiles currently share generic sound IDs like
+                // `device.notification`. Keep the first registration to avoid
+                // noisy overwrite logs while the engine remains globally keyed.
+                if (!options.soundRegistry?.has(soundId)) {
+                    options.soundRegistry?.register(soundId, soundPath);
+                }
+            });
         }
     }
 

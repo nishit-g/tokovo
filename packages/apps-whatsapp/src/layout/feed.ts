@@ -293,6 +293,7 @@ export function computeFeedLayout(ctx: LayoutContext): FeedLayoutState {
 
   return {
     kind: "FEED",
+    cacheHint: "static",
     scrollY: 0,
     contentHeight: h,
     isAtBottom: false,

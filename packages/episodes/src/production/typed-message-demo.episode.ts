@@ -32,6 +32,8 @@ export default defineEpisode({
           battery: 85,
           network: "5G",
         },
+      })
+      .snapshot("app_whatsapp", "phone", {
         conversations: [
           {
             id: "dm_friend",

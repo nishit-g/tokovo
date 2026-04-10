@@ -13,7 +13,8 @@
         "@tokovo/ir": "workspace:*",
         "@tokovo/react": "workspace:*",
         "react": "18.3.1",
-        "react-dom": "18.3.1"
+        "react-dom": "18.3.1",
+        "remotion": "4.0.409"
     },
     "devDependencies": {
         "@types/node": "^20.0.0",

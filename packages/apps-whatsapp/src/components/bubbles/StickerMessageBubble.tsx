@@ -1,8 +1,9 @@
 import React, { memo } from "react";
-import { Img, staticFile, useCurrentFrame } from "remotion";
+import { Img, staticFile } from "remotion";
+import { resolveStaticAssetSrc } from "@tokovo/core";
 import { DoubleCheckIcon } from "./shared.js";
 import { useTheme } from "../../theme/ThemeContext.js";
-import { resolveDeliveryStage } from "../../utils/status.js";
+import type { DeliveryStage } from "../../utils/status.js";
 
 export interface StickerMessageBubbleProps {
   stickerUrl: string;
@@ -13,6 +14,7 @@ export interface StickerMessageBubbleProps {
   deliveredAt?: number;
   readAt?: number;
   status?: "sending" | "sent" | "delivered" | "read";
+  deliveryStage?: DeliveryStage;
 }
 
 export const StickerMessageBubble = memo(function StickerMessageBubble({
@@ -24,30 +26,16 @@ export const StickerMessageBubble = memo(function StickerMessageBubble({
   deliveredAt,
   readAt,
   status,
+  deliveryStage,
 }: StickerMessageBubbleProps) {
   const theme = useTheme();
-  const currentFrame = useCurrentFrame();
-  const resolvedStickerUrl = stickerUrl.startsWith("/")
-    ? staticFile(stickerUrl)
-    : stickerUrl;
-  const deliveryStage =
-    isMe
-      ? resolveDeliveryStage(
-        {
-          from: "me",
-          at: messageAt,
-          deliveredAt,
-          readAt,
-          status,
-        },
-        currentFrame,
-      )
-      : undefined;
+  const resolvedStickerUrl = resolveStaticAssetSrc(stickerUrl, staticFile);
 
   return (
     <div style={{ position: "relative", width: 136, height: 136 }}>
       <Img
         src={resolvedStickerUrl}
+        pauseWhenLoading
         style={{
           width: "100%",
           height: "100%",

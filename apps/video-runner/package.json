@@ -5,7 +5,8 @@
   "scripts": {
     "start": "npx remotion studio",
     "dev": "npx remotion studio",
-    "benchmark": "npx remotion benchmark src/index.ts v2-enterprise-long-showcase",
+    "dev:catalog": "TOKOVO_STUDIO_CATALOG=1 npx remotion studio",
+    "benchmark": "npx remotion benchmark src/index.ts episode-render --props='{\"episodeId\":\"v2-enterprise-long-showcase\"}'",
     "render:fast": "node scripts/render-fast.mjs",
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
@@ -15,7 +16,9 @@
     "lint": "eslint src"
   },
   "dependencies": {
+    "@remotion/bundler": "4.0.409",
     "@remotion/cli": "4.0.409",
+    "@remotion/renderer": "4.0.409",
     "@tokovo/background": "workspace:*",
     "@tokovo/compiler": "workspace:*",
     "@tokovo/apps-imessage": "workspace:*",

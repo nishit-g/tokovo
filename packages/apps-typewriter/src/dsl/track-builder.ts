@@ -186,7 +186,7 @@ function deriveDefaultAudioFromTheme(
 ): NonNullable<TypeTextOptions["audio"]> | undefined {
   const preset = theme?.preset ?? "classic";
   const base = TYPEWRITER_THEME_PRESETS[preset] ?? TYPEWRITER_THEME_PRESETS.classic;
-  const merged = deepMerge(base, (theme?.overrides ?? {}) as any);
+  const merged = deepMerge(base, theme?.overrides);
   return {
     ...merged.audio,
     bellColsFromRight: merged.layout.bellColsFromRight,
@@ -198,7 +198,7 @@ function deriveDefaultSettingsFromTheme(
 ): Partial<TypewriterSettings> | undefined {
   const preset = theme?.preset ?? "classic";
   const base = TYPEWRITER_THEME_PRESETS[preset] ?? TYPEWRITER_THEME_PRESETS.classic;
-  const merged = deepMerge(base, (theme?.overrides ?? {}) as any);
+  const merged = deepMerge(base, theme?.overrides);
   return {
     maxCols: merged.layout.maxCols,
     maxRows: merged.layout.maxRows,

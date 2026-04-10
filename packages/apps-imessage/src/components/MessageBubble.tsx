@@ -1,4 +1,5 @@
 import React from "react";
+import { AnimatedImage, Img } from "remotion";
 import type { IMessageMessage, IMessageTapbackType } from "../types/index.js";
 import { iOS_IMESSAGE_LIGHT, LAYOUT_CONSTANTS } from "../config/index.js";
 import { AudioMessage } from "./AudioMessage.js";
@@ -194,6 +195,7 @@ function renderAttachments(
   if (!primary) return null;
 
   if (primary.kind === "image" || primary.kind === "gif") {
+    const MediaComponent = primary.kind === "gif" ? AnimatedImage : Img;
     return (
       <div
         style={{
@@ -204,7 +206,7 @@ function renderAttachments(
           padding: 2,
         }}
       >
-        <img
+        <MediaComponent
           src={primary.url}
           alt=""
           style={{
@@ -258,7 +260,7 @@ function renderAttachments(
           marginBottom: LAYOUT_CONSTANTS.BUBBLE_GAP,
         }}
       >
-        <img src={primary.url} alt="sticker" style={{ width: 50 }} />
+        <Img src={primary.url} alt="sticker" style={{ width: 50 }} />
       </div>
     );
   }

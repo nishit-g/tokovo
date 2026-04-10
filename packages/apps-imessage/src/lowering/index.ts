@@ -13,10 +13,6 @@ function isIMessageTrackEvent(event: TrackEvent): event is IMessageTrackEvent {
   );
 }
 
-function clampFrame(frame: number): number {
-  return Math.max(0, Math.round(frame));
-}
-
 function createRuntimeEvent(
   event: TrackEvent,
   type: IMessageEventType,
@@ -40,6 +36,30 @@ function createKeyboardClearEvent(deviceId: string, at: number): RuntimeEvent {
     deviceId,
     payload: {},
   } as RuntimeEvent;
+}
+
+function createNotificationEvents(
+  event: Extract<IMessageTrackEvent, { type: "IMESSAGE_MESSAGE_RECEIVE" }>,
+): RuntimeEvent[] {
+  const title = event.payload.from;
+  const body = event.payload.text ?? "sent you a message";
+  return [
+    createRuntimeEvent(event, event.type as IMessageEventType, event.payload as IMessageEventPayload),
+    {
+      at: event.at,
+      kind: "DEVICE",
+      type: "SHOW_NOTIFICATION",
+      deviceId: event.deviceId,
+      payload: {
+        id: event.payload.messageId ?? `imessage_notification_${event.at}`,
+        appId: "app_imessage",
+        title,
+        body,
+        threadKey: `conversation:${event.payload.conversationId}`,
+        priority: "HIGH",
+      },
+    } as RuntimeEvent,
+  ];
 }
 
 type IMessageLoweringScratchpad = { lastEventAtByConversation: Map<string, number> };
@@ -143,6 +163,10 @@ export const iMessageV2Lowering: IMessageLoweringHandler = {
 
     if (type === "IMESSAGE_MESSAGE_SEND" && (payload as { typed?: boolean }).typed) {
       return expandTypedSend(event as IMessageTrackEvent, ctx);
+    }
+
+    if (type === "IMESSAGE_MESSAGE_RECEIVE" && !(payload as { silent?: boolean }).silent) {
+      return createNotificationEvents(event as Extract<IMessageTrackEvent, { type: "IMESSAGE_MESSAGE_RECEIVE" }>);
     }
 
     // Update last-seen timestamp for conversation-scoped timing heuristics.

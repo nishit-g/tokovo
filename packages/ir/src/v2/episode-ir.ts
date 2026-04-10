@@ -9,51 +9,8 @@
 import type { TrackEvent } from "./track-event.js";
 
 // =============================================================================
-// DEVICE CONFIG
+// DEVICE + APP BOOTSTRAP CONFIG
 // =============================================================================
-
-export interface Message {
-  from: string;
-  type?: string;
-  systemType?: string;
-  callType?: "voice" | "video";
-  text?: string;
-  image?: string;
-  video?: string;
-  voice?: string;
-  duration?: number;
-  timestamp?: number; // Negative = before episode start
-}
-
-export interface ConversationConfig {
-  id: string;
-  name: string;
-  avatar?: string;
-  type?: "dm" | "group";
-  participants?: string[];
-  /** Pre-existing messages in the conversation (chat history) */
-  initialMessages?: Message[];
-  unreadCount?: number;
-  isMuted?: boolean;
-  isPinned?: boolean;
-  hasStatus?: boolean;
-  description?: string;
-  isLocked?: boolean;
-  businessLabel?: string;
-  isVerifiedBusiness?: boolean;
-  isChannel?: boolean;
-  isFollowed?: boolean;
-  channelUnreadCount?: number;
-  channelDescription?: string;
-  channelLatestSnippet?: string;
-  channelFollowersLabel?: string;
-  channelCategory?: string;
-  pinnedMessage?: {
-    text: string;
-    from?: string;
-  };
-  disappearingMessagesLabel?: string;
-}
 
 export interface OSConfig {
   time?: Date | number;
@@ -68,7 +25,6 @@ export interface DeviceConfig {
   id: string;
   profile: string;
   app: string;
-  conversations?: ConversationConfig[];
   os?: OSConfig;
   /** UI theme/strategy to use (e.g., "whatsapp-ghibli") */
   theme?: string;
@@ -85,6 +41,20 @@ export interface DeviceConfig {
   };
   /** Start with screen recording indicator enabled */
   screenRecording?: boolean;
+}
+
+export interface AppSnapshotEntry<AppId extends string = string> {
+  appId: AppId;
+  deviceId: string;
+  snapshotVersion: number;
+  snapshot: unknown;
+}
+
+export interface AppInitialViewEntry<AppId extends string = string> {
+  appId: AppId;
+  deviceId: string;
+  viewVersion: number;
+  view: unknown;
 }
 
 // =============================================================================
@@ -220,6 +190,12 @@ export interface TrackEpisodeIR {
 
   /** Device configurations */
   devices: DeviceConfig[];
+
+  /** Plugin-owned app snapshots to hydrate before frame 0 */
+  appSnapshots: AppSnapshotEntry[];
+
+  /** Explicit plugin-owned initial views at frame 0 */
+  initialViews: AppInitialViewEntry[];
 
   /** All track events (sorted by frame + declaration order) */
   events: TrackEvent[];

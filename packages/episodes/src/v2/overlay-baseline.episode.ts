@@ -1,5 +1,5 @@
 import { defineEpisode } from "../types/episode-definition.js";
-import { episode } from "@tokovo/creator";
+import { episode } from "../code-first-episode.js";
 
 export default defineEpisode({
   meta: {
@@ -20,6 +20,9 @@ export default defineEpisode({
       .device("phone", "iphone16", {
         app: "app_whatsapp",
         installedApps: ["app_whatsapp"],
+        os: { time: new Date("2025-06-26T21:12:00"), battery: 54, network: "5G" },
+      })
+      .snapshot("app_whatsapp", "phone", {
         conversations: [
           {
             id: "grp_receipts",
@@ -30,7 +33,6 @@ export default defineEpisode({
             participants: ["Me", "Rhea", "Omar", "Tina", "Jay"],
           },
         ],
-        os: { time: new Date("2025-06-26T21:12:00"), battery: 54, network: "5G" },
       })
       .background({ type: "image", src: "/backgrounds/neon-city.png" })
       .overlay((ov) => {
@@ -57,4 +59,3 @@ export default defineEpisode({
       })
       .build(),
 });
-

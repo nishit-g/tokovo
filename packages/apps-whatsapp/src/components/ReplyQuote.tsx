@@ -1,5 +1,6 @@
 import React from "react";
 import { Camera, Mic, Video } from "lucide-react";
+import { Img } from "remotion";
 import type { WhatsAppMessageType } from "../types/index.js";
 import { useTheme } from "../theme/ThemeContext.js";
 
@@ -115,15 +116,27 @@ export const ReplyQuote: React.FC<ReplyQuoteProps> = ({
         {replyTo.thumbnailUrl && (
           <div
             style={{
+              position: "relative",
               width: 40,
               height: 40,
               borderRadius: 4,
-              backgroundImage: `url(${replyTo.thumbnailUrl})`,
-              backgroundSize: "cover",
-              backgroundPosition: "center",
+              overflow: "hidden",
               flexShrink: 0,
             }}
-          />
+          >
+            <Img
+              src={replyTo.thumbnailUrl}
+              alt=""
+              pauseWhenLoading
+              style={{
+                position: "absolute",
+                inset: 0,
+                width: "100%",
+                height: "100%",
+                objectFit: "cover",
+              }}
+            />
+          </div>
         )}
       </div>
     </div>

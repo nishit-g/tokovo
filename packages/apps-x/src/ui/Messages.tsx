@@ -1,9 +1,13 @@
 import React from "react";
 import type { WorldState } from "@tokovo/core";
 import { useXTheme } from "./ThemeContext.js";
-import { getDMThreads, getXState } from "../runtime/selectors.js";
+import {
+  getDMThreads,
+  getThreadDraft,
+  getXState,
+} from "../runtime/selectors.js";
 import { AppShell } from "./AppShell.js";
-import { Avatar, XIcon, formatTimestamp } from "./components.js";
+import { Avatar, VerifiedBadge, XIcon, formatTimestamp } from "./components.js";
 import { ScreenTransition } from "./ScreenTransition.js";
 import { BottomNav } from "./BottomNav.js";
 
@@ -15,115 +19,78 @@ export const Messages: React.FC<MessagesProps> = ({ world }) => {
   const theme = useXTheme();
   const state = getXState(world);
   const threads = getDMThreads(world);
-  const referenceNowMs =
-    (state?.dmMessages ?? []).reduce(
-      (max, message) => Math.max(max, message.createdAt),
-      0,
-    );
-
-  const getUserName = (id: string) =>
-    state?.users.find((u) => u.id === id)?.name ?? "Unknown";
-
-  const getUser = (id: string) => state?.users.find((u) => u.id === id);
-
-  const getLastMessage = (threadId: string) => {
-    const messages =
-      state?.dmMessages.filter((m) => m.threadId === threadId) ?? [];
-    return messages[messages.length - 1];
-  };
-
-  const getParticipantsLabel = (participantIds: string[]): string => {
-    const names = participantIds.map(getUserName);
-    if (names.length <= 2) return names.join(", ");
-    return `${names.slice(0, 2).join(", ")} +${names.length - 2}`;
-  };
-
-  const getThreadMeta = (participantIds: string[]): string => {
-    if (participantIds.length <= 1) return "";
-    if (participantIds.length === 2) {
-      const handles = participantIds
-        .map((id) => getUser(id)?.handle)
-        .filter(Boolean) as string[];
-      return handles.length > 0 ? `@${handles.join(", @")}` : "";
-    }
-    return `${participantIds.length} people`;
-  };
+  const users = state?.users ?? [];
+  const currentUser = users.find((user) => user.id === state?.currentUserId);
+  const nowMs = (state?.dmMessages ?? []).reduce(
+    (max, message) => Math.max(max, message.createdAt),
+    0,
+  );
 
   return (
     <AppShell>
-      {/* Header */}
       <div
         style={{
-          height: theme.spacing.headerHeight,
+          flex: 1,
+          minHeight: 0,
           display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          padding: `0 ${theme.spacing.screenPadding}px`,
-          borderBottom: `1px solid ${theme.colors.border}`,
-          backgroundColor: "rgba(0,0,0,0.65)",
-          backdropFilter: "blur(12px)",
-          position: "sticky",
-          top: 0,
-          zIndex: 10,
+          flexDirection: "column",
+          overflow: "hidden",
         }}
       >
-        <Avatar size={32} />
-        <span
+        <div
           style={{
-            fontSize: 17,
-            fontWeight: 700,
-            color: theme.colors.textPrimary,
+            height: theme.spacing.headerHeight,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            padding: `0 ${theme.spacing.screenPadding}px`,
+            borderBottom: `1px solid ${theme.colors.border}`,
+            backgroundColor: theme.colors.background,
+            flexShrink: 0,
           }}
         >
-          Messages
-        </span>
-        <XIcon name="compose" size={22} color={theme.colors.textPrimary} />
-      </div>
+          <Avatar size={32} src={currentUser?.avatarUrl} />
+          <span
+            style={{
+              fontSize: 17,
+              fontWeight: 700,
+              color: theme.colors.textPrimary,
+            }}
+          >
+            Messages
+          </span>
+          <XIcon name="compose" size={22} color={theme.colors.textPrimary} />
+        </div>
 
-      {/* Search Bar */}
-      <div style={{ padding: `12px ${theme.spacing.screenPadding}px` }}>
+        <div style={{ padding: `12px ${theme.spacing.screenPadding}px`, flexShrink: 0 }}>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 10,
+              padding: "10px 14px",
+              borderRadius: 999,
+              backgroundColor: theme.colors.surfaceRaised,
+              border: `1px solid ${theme.colors.border}`,
+            }}
+          >
+            <XIcon name="search" size={18} color={theme.colors.textSecondary} />
+            <span style={{ fontSize: 15, color: theme.colors.textSecondary }}>
+              Search Direct Messages
+            </span>
+          </div>
+        </div>
+
         <div
           style={{
             display: "flex",
             alignItems: "center",
-            gap: 12,
-            padding: "10px 16px",
-            borderRadius: 20,
-            backgroundColor: theme.colors.surfaceRaised,
-            border: `1px solid ${theme.colors.border}`,
+            justifyContent: "space-between",
+            padding: `0 ${theme.spacing.screenPadding}px 12px`,
+            borderBottom: `1px solid ${theme.colors.border}`,
+            flexShrink: 0,
           }}
         >
-          <XIcon name="search" size={18} color={theme.colors.textSecondary} />
-          <span style={{ fontSize: 15, color: theme.colors.textSecondary }}>
-            Search Direct Messages
-          </span>
-        </div>
-      </div>
-
-      {/* Requests Banner */}
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          padding: `12px ${theme.spacing.screenPadding}px`,
-          borderBottom: `1px solid ${theme.colors.border}`,
-        }}
-      >
-        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          <div
-            style={{
-              width: 40,
-              height: 40,
-              borderRadius: "50%",
-              backgroundColor: theme.colors.surfaceRaised,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-          >
-            <XIcon name="mail" size={20} color={theme.colors.textSecondary} />
-          </div>
           <div>
             <div
               style={{
@@ -134,160 +101,151 @@ export const Messages: React.FC<MessagesProps> = ({ world }) => {
             >
               Message requests
             </div>
-            <div style={{ fontSize: 13, color: theme.colors.textSecondary }}>
-              0 requests
+            <div style={{ marginTop: 2, fontSize: 13, color: theme.colors.textSecondary }}>
+              Keep spam and unknown senders separate from your inbox.
             </div>
           </div>
+          <XIcon name="mail" size={20} color={theme.colors.textSecondary} />
         </div>
-        <XIcon name="more" size={18} color={theme.colors.textSecondary} />
-      </div>
 
-      <ScreenTransition lastNavFrame={state?.lastNavFrame}>
-        <div style={{ flex: 1 }}>
-          {threads.length === 0 && (
-            <div
-              style={{
-                padding: 32,
-                textAlign: "center",
-              }}
-            >
+        <ScreenTransition lastNavFrame={state?.lastNavFrame}>
+          <div style={{ flex: 1, minHeight: 0, overflow: "auto" }}>
+            {threads.length === 0 ? (
               <div
                 style={{
-                  fontSize: 31,
-                  fontWeight: 800,
-                  color: theme.colors.textPrimary,
-                }}
-              >
-                Welcome to your inbox!
-              </div>
-              <div
-                style={{
-                  marginTop: 8,
-                  fontSize: 15,
+                  padding: 32,
                   color: theme.colors.textSecondary,
                 }}
               >
-                Drop a line, share posts and more with private conversations
-                between you and others on X.
+                <div
+                  style={{
+                    fontSize: 31,
+                    lineHeight: 1.1,
+                    fontWeight: 800,
+                    color: theme.colors.textPrimary,
+                  }}
+                >
+                  Welcome to your inbox
+                </div>
+                <div style={{ marginTop: 10, fontSize: 15, lineHeight: 1.45 }}>
+                  Seed DM threads and messages to show private conversations,
+                  unread states, and typing previews.
+                </div>
               </div>
-              <button
-                style={{
-                  marginTop: 24,
-                  padding: "12px 32px",
-                  borderRadius: 9999,
-                  border: "none",
-                  backgroundColor: theme.colors.accent,
-                  color: "#FFFFFF",
-                  fontSize: 17,
-                  fontWeight: 700,
-                  cursor: "pointer",
-                }}
-              >
-                Write a message
-              </button>
-            </div>
-          )}
+            ) : null}
 
-          {threads.map((thread) => {
-            const lastMessage = getLastMessage(thread.id);
-            const otherParticipants = thread.participantIds.filter(
-              (id) => id !== state?.currentUserId
-            );
-            const mainParticipant = getUser(otherParticipants[0] ?? "");
-            const isGroup = otherParticipants.length > 1;
-            const participantLabel = getParticipantsLabel(otherParticipants);
-            const threadMeta = getThreadMeta(otherParticipants);
+            {threads.map((thread) => {
+              const participants = thread.participantIds.filter(
+                (id) => id !== state?.currentUserId,
+              );
+              const mainParticipant = users.find((user) => user.id === participants[0]);
+              const lastMessageId = thread.messageIds[thread.messageIds.length - 1];
+              const lastMessage = state?.dmMessages.find((message) => message.id === lastMessageId);
+              const draft = getThreadDraft(world, thread.id);
+              const title =
+                thread.title ??
+                (participants.length > 1
+                  ? participants
+                      .map((id) => users.find((user) => user.id === id)?.name ?? "Unknown")
+                      .join(", ")
+                  : mainParticipant?.name ?? "Unknown");
+              const preview = thread.typingUserId
+                ? `${users.find((user) => user.id === thread.typingUserId)?.name ?? "Someone"} is typing…`
+                : draft
+                  ? `Draft: ${draft}`
+                  : lastMessage?.text ?? "No messages yet";
 
-            return (
-              <div
-                key={thread.id}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  padding: `12px ${theme.spacing.screenPadding}px`,
-                  borderBottom: `1px solid ${theme.colors.border}`,
-                  gap: 12,
-                }}
-              >
-                {/* Avatar */}
-                <Avatar size={48} src={mainParticipant?.avatarUrl} />
-
-                {/* Content */}
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 4,
-                    }}
-                  >
-                    <span
+              return (
+                <div
+                  key={thread.id}
+                  style={{
+                    display: "flex",
+                    gap: 12,
+                    padding: `${theme.spacing.tweetPaddingV}px ${theme.spacing.tweetPaddingH}px`,
+                    borderBottom: `1px solid ${theme.colors.border}`,
+                  }}
+                >
+                  <Avatar size={48} src={mainParticipant?.avatarUrl} />
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div
                       style={{
-                        fontSize: 15,
-                        fontWeight: 700,
-                        color: theme.colors.textPrimary,
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 4,
                       }}
                     >
-                      {isGroup ? participantLabel : mainParticipant?.name ?? "Unknown"}
-                    </span>
-                    {mainParticipant?.verified && !isGroup && (
-                      <svg width={16} height={16} viewBox="0 0 22 22" fill="none">
-                        <circle cx="11" cy="11" r="11" fill="#1D9BF0" />
-                        <path
-                          d="M9.64 12.5l-2.14-2.14 1.06-1.06 1.08 1.08 3.54-3.54 1.06 1.06z"
-                          fill="#fff"
-                        />
-                      </svg>
-                    )}
-                    {threadMeta && (
+                      {thread.pinned ? (
+                        <span
+                          style={{
+                            fontSize: 12,
+                            color: theme.colors.accent,
+                            fontWeight: 700,
+                            letterSpacing: 0.2,
+                          }}
+                        >
+                          PINNED
+                        </span>
+                      ) : null}
                       <span
                         style={{
                           fontSize: 15,
-                          color: theme.colors.textSecondary,
+                          fontWeight: 700,
+                          color: theme.colors.textPrimary,
                         }}
                       >
-                        {threadMeta}
+                        {title}
                       </span>
-                    )}
-                    <span
+                      {mainParticipant?.verified && participants.length === 1 ? (
+                        <VerifiedBadge variant={mainParticipant.verified} size={16} />
+                      ) : null}
+                      <div style={{ marginLeft: "auto", fontSize: 13, color: theme.colors.textSecondary }}>
+                        {thread.lastMessageAt
+                          ? formatTimestamp(thread.lastMessageAt, { nowMs })
+                          : ""}
+                      </div>
+                    </div>
+                    <div
                       style={{
+                        marginTop: 4,
                         fontSize: 15,
-                        color: theme.colors.textSecondary,
+                        color: thread.typingUserId
+                          ? theme.colors.accent
+                          : thread.unreadCount > 0
+                            ? theme.colors.textPrimary
+                            : theme.colors.textSecondary,
+                        whiteSpace: "nowrap",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
                       }}
                     >
-                      ·
-                    </span>
-                    <span
+                      {preview}
+                    </div>
+                  </div>
+                  {thread.unreadCount > 0 ? (
+                    <div
                       style={{
-                        fontSize: 15,
-                        color: theme.colors.textSecondary,
+                        minWidth: 22,
+                        height: 22,
+                        borderRadius: 999,
+                        backgroundColor: theme.colors.accent,
+                        color: "#FFFFFF",
+                        fontSize: 12,
+                        fontWeight: 700,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        alignSelf: "center",
                       }}
                     >
-                      {lastMessage?.createdAt
-                        ? formatTimestamp(lastMessage.createdAt, { nowMs: referenceNowMs })
-                        : ""}
-                    </span>
-                  </div>
-                  <div
-                    style={{
-                      fontSize: 15,
-                      color: theme.colors.textSecondary,
-                      marginTop: 2,
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
-                      whiteSpace: "nowrap",
-                    }}
-                  >
-                    {lastMessage?.text ?? "No messages yet"}
-                  </div>
+                      {thread.unreadCount}
+                    </div>
+                  ) : null}
                 </div>
-
-                {/* Unread indicator (if needed) */}
-              </div>
-            );
-          })}
-        </div>
-      </ScreenTransition>
+              );
+            })}
+          </div>
+        </ScreenTransition>
+      </div>
 
       <BottomNav active="mail" />
     </AppShell>

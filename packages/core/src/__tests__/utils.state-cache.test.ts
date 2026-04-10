@@ -29,7 +29,7 @@ describe("state cache", () => {
     expect(exact?.fromFrame).toBe(3);
 
     const nearest = getCachedStateForFrame(cache, 5);
-    expect(nearest?.fromFrame).toBe(2);
+    expect(nearest?.fromFrame).toBe(3);
   });
 
   it("invalidates and clears cached frames", () => {

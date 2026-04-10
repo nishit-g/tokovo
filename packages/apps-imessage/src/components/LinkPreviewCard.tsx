@@ -4,6 +4,7 @@
  */
 
 import React from "react";
+import { Img } from "remotion";
 import { useIMessageTheme } from "../ui/ThemeContext.js";
 import { iMessageSpacing, iMessageTypography } from "../config/tokens.js";
 import { iOS_COLORS } from "../config/colors.js";
@@ -44,7 +45,7 @@ export const LinkPreviewCard: React.FC<LinkPreviewCardProps> = ({ preview, fromM
         >
             {/* Thumbnail */}
             {preview.thumbnail && (
-                <img
+                <Img
                     src={preview.thumbnail}
                     alt={preview.title || "Link preview"}
                     style={{
@@ -74,7 +75,7 @@ export const LinkPreviewCard: React.FC<LinkPreviewCardProps> = ({ preview, fromM
                     }}
                 >
                     {preview.favicon && (
-                        <img
+                        <Img
                             src={preview.favicon}
                             alt=""
                             style={{ width: iMessageSpacing.bubblePaddingH, height: iMessageSpacing.bubblePaddingH, borderRadius: 2 }}

@@ -1,0 +1,33 @@
+{
+  "name": "@tokovo/render-service",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./profiles": "./src/profiles.ts",
+    "./render": "./src/render.ts",
+    "./artifacts": "./src/artifacts.ts"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json --noEmit",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "doctor": "node --import tsx src/cli.ts doctor",
+    "smoke": "node --import tsx src/cli.ts smoke",
+    "render": "node --import tsx src/cli.ts render",
+    "artifact-urls": "node --import tsx src/cli.ts artifact-urls"
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "3.1028.0",
+    "@aws-sdk/s3-request-presigner": "3.1028.0",
+    "@remotion/bundler": "4.0.409",
+    "@remotion/renderer": "4.0.409"
+  },
+  "devDependencies": {
+    "@types/node": "^24.1.0",
+    "tsx": "^4.20.5",
+    "typescript": "^5.9.3"
+  }
+}

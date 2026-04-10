@@ -1,360 +1,741 @@
-/**
- * Microsoft Teams CSS-in-JS Styles — 1:1 Pixel-accurate
- *
- * Real Teams mobile visual signatures:
- * - Segoe UI Variable font stack
- * - Fluent UI color tokens
- * - Linear message feed (ALL messages left-aligned with avatar, name, text)
- * - No sent/received bubble color distinction — flat cards
- * - Header: hamburger left, title left-aligned, bell + avatar right
- * - All/Unread/Muted filter tabs (not Chat/Channels)
- * - Compose bar: paperclip, text, smiley, mic/send
- * - Bottom tab bar with Fluent icons
- * - Avatar circles with presence indicator dots
- */
-
 import type { CSSProperties } from "react";
-import { TEAMS_THEME_PRESETS } from "./config/theme.js";
+import type { TeamsDesignTokens } from "./config/theme.js";
 
-const t = TEAMS_THEME_PRESETS.light;
+export const teamsFontFamily =
+  'var(--teams-font-family, "Aptos", "Segoe UI Variable", "Segoe UI", system-ui, sans-serif)';
 
-export const teamsTheme = t;
+let injected = false;
 
-const FONT = "'Segoe UI Variable', 'Segoe UI', system-ui, -apple-system, sans-serif";
+function px(value: number): string {
+  return `${value}px`;
+}
 
-// =============================================================================
-// SHELL
-// =============================================================================
+function token(name: string, fallback?: string): string {
+  return fallback ? `var(${name}, ${fallback})` : `var(${name})`;
+}
 
-export const shellBaseStyle: CSSProperties = {
+export function createTeamsRootVars(theme: TeamsDesignTokens): CSSProperties {
+  return {
+    "--teams-font-family": theme.typography.fontFamily,
+    "--teams-font-family-mono": theme.typography.fontFamilyMono,
+    "--teams-bg": theme.color.bg,
+    "--teams-shell-start": theme.color.shellStart,
+    "--teams-shell-end": theme.color.shellEnd,
+    "--teams-shell-aurora": theme.color.shellAurora,
+    "--teams-surface": theme.color.surface,
+    "--teams-surface-elevated": theme.color.surfaceElevated,
+    "--teams-surface-overlay": theme.color.surfaceOverlay,
+    "--teams-surface-muted": theme.color.surfaceMuted,
+    "--teams-border": theme.color.border,
+    "--teams-border-strong": theme.color.borderStrong,
+    "--teams-text-primary": theme.color.textPrimary,
+    "--teams-text-secondary": theme.color.textSecondary,
+    "--teams-text-muted": theme.color.textMuted,
+    "--teams-text-inverse": theme.color.textInverse,
+    "--teams-brand": theme.color.brand,
+    "--teams-brand-strong": theme.color.brandStrong,
+    "--teams-brand-soft": theme.color.brandSoft,
+    "--teams-brand-glow": theme.color.brandGlow,
+    "--teams-success": theme.color.success,
+    "--teams-warning": theme.color.warning,
+    "--teams-danger": theme.color.danger,
+    "--teams-info": theme.color.info,
+    "--teams-presence-available": theme.color.presenceAvailable,
+    "--teams-presence-busy": theme.color.presenceBusy,
+    "--teams-presence-away": theme.color.presenceAway,
+    "--teams-presence-offline": theme.color.presenceOffline,
+    "--teams-hover": theme.color.hover,
+    "--teams-pressed": theme.color.pressed,
+    "--teams-focus-ring": theme.color.focusRing,
+    "--teams-selected": theme.color.selected,
+    "--teams-unread-badge": theme.color.unreadBadge,
+    "--teams-mention-badge": theme.color.mentionBadge,
+    "--teams-sent-bubble": theme.color.sentBubble,
+    "--teams-sent-bubble-border": theme.color.sentBubbleBorder,
+    "--teams-received-bubble": theme.color.receivedBubble,
+    "--teams-received-bubble-border": theme.color.receivedBubbleBorder,
+    "--teams-reply-preview-bg": theme.color.replyPreviewBg,
+    "--teams-reply-preview-text": theme.color.replyPreviewText,
+    "--teams-compose-bar": theme.color.composeBar,
+    "--teams-input-surface": theme.color.inputSurface,
+    "--teams-input-placeholder": theme.color.inputPlaceholder,
+    "--teams-tab-bar": theme.color.tabBar,
+    "--teams-tab-active": theme.color.tabBarActive,
+    "--teams-tab-inactive": theme.color.tabBarInactive,
+    "--teams-call-backdrop-start": theme.color.callBackdropStart,
+    "--teams-call-backdrop-end": theme.color.callBackdropEnd,
+    "--teams-call-hero": theme.color.callHero,
+    "--teams-call-tile": theme.color.callTile,
+    "--teams-call-tile-border": theme.color.callTileBorder,
+    "--teams-call-control": theme.color.callControl,
+    "--teams-call-control-border": theme.color.callControlBorder,
+    "--teams-shadow-card": theme.shadow.card,
+    "--teams-shadow-panel": theme.shadow.panel,
+    "--teams-shadow-overlay": theme.shadow.overlay,
+    "--teams-shadow-bubble": theme.shadow.bubble,
+    "--teams-shadow-glow": theme.shadow.glow,
+    "--teams-space-xxs": px(theme.spacing.xxs),
+    "--teams-space-xs": px(theme.spacing.xs),
+    "--teams-space-sm": px(theme.spacing.sm),
+    "--teams-space-md": px(theme.spacing.md),
+    "--teams-space-lg": px(theme.spacing.lg),
+    "--teams-space-xl": px(theme.spacing.xl),
+    "--teams-space-xxl": px(theme.spacing.xxl),
+    "--teams-radius-chip": px(theme.radius.chip),
+    "--teams-radius-card": px(theme.radius.card),
+    "--teams-radius-input": px(theme.radius.input),
+    "--teams-radius-panel": px(theme.radius.panel),
+    "--teams-radius-call-banner": px(theme.radius.callBanner),
+    "--teams-radius-avatar": px(theme.radius.avatar),
+    "--teams-radius-bubble": px(theme.radius.bubble),
+    "--teams-radius-pill": px(theme.radius.pill),
+    "--teams-type-title": px(theme.typography.title),
+    "--teams-type-subtitle": px(theme.typography.subtitle),
+    "--teams-type-body": px(theme.typography.body),
+    "--teams-type-caption": px(theme.typography.caption),
+    "--teams-type-meta": px(theme.typography.meta),
+    "--teams-type-badge": px(theme.typography.badge),
+    "--teams-type-hero": px(theme.typography.hero),
+    "--teams-line-body": px(theme.typography.lineHeightBody),
+    "--teams-line-caption": px(theme.typography.lineHeightCaption),
+    "--teams-motion-fast": `${theme.motion.fastMs}ms`,
+    "--teams-motion-normal": `${theme.motion.normalMs}ms`,
+    "--teams-motion-slow": `${theme.motion.slowMs}ms`,
+    "--teams-motion-easing": theme.motion.easing,
+  } as CSSProperties;
+}
+
+export function injectTeamsStyles(): void {
+  if (typeof document === "undefined" || injected) return;
+  const style = document.createElement("style");
+  style.setAttribute("data-tokovo-teams", "true");
+  style.textContent = `
+    .tokovo-teams-scrollbar::-webkit-scrollbar { width: 0; height: 0; }
+    .tokovo-teams, .tokovo-teams * { box-sizing: border-box; }
+    .tokovo-teams {
+      position: relative;
+      isolation: isolate;
+    }
+    .tokovo-teams::before {
+      content: "";
+      position: absolute;
+      inset: -15% -12% auto 48%;
+      height: 34%;
+      border-radius: 999px;
+      background: radial-gradient(circle, var(--teams-shell-aurora) 0%, rgba(255,255,255,0) 72%);
+      pointer-events: none;
+      filter: blur(22px);
+      z-index: 0;
+    }
+    .tokovo-teams > * {
+      position: relative;
+      z-index: 1;
+    }
+    @keyframes tokovoTeamsBlink {
+      0%, 49% { opacity: 1; }
+      50%, 100% { opacity: 0; }
+    }
+    @keyframes tokovoTeamsRiseIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes tokovoTeamsMessageIn {
+      from { opacity: 0; transform: translateY(12px) scale(0.985); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+    @keyframes tokovoTeamsDotBounce {
+      0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+      30% { transform: translateY(-4px); opacity: 1; }
+    }
+    @keyframes tokovoTeamsSpeakerPulse {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(123,131,235,0.26); }
+      70% { box-shadow: 0 0 0 10px rgba(123,131,235,0); }
+    }
+  `;
+  document.head.appendChild(style);
+  injected = true;
+}
+
+export const shellStyle: CSSProperties = {
   width: "100%",
   height: "100%",
-  color: t.color.textPrimary,
-  fontFamily: FONT,
   display: "flex",
   flexDirection: "column",
-  boxSizing: "border-box",
   overflow: "hidden",
-  backgroundColor: t.color.bg,
+  background: `linear-gradient(180deg, ${token("--teams-shell-start")} 0%, ${token("--teams-shell-end")} 100%)`,
+  color: token("--teams-text-primary"),
+  fontFamily: teamsFontFamily,
 };
 
 export const appBodyStyle: CSSProperties = {
   display: "flex",
   flexDirection: "column",
   flex: 1,
-  overflow: "hidden",
+  minHeight: 0,
 };
 
-// =============================================================================
-// HEADER — hamburger left, title left, bell + avatar right
-// =============================================================================
+export const topSurfaceStyle: CSSProperties = {
+  backgroundColor: token("--teams-surface-overlay"),
+  backdropFilter: "blur(18px) saturate(115%)",
+  borderBottom: `1px solid ${token("--teams-border")}`,
+  boxShadow: token("--teams-shadow-panel"),
+};
 
-export const headerStyle: CSSProperties = {
-  minHeight: 48,
+export const headerRowStyle: CSSProperties = {
   display: "flex",
   alignItems: "center",
-  padding: `0 ${t.spacing.lg}px`,
-  backgroundColor: t.color.surface,
-  borderBottom: `1px solid ${t.color.border}`,
-  gap: t.spacing.md,
+  gap: token("--teams-space-md"),
+  padding: `12px ${token("--teams-space-lg")} 14px`,
 };
 
-export const headerTitleStyle: CSSProperties = {
-  fontSize: 20,
+export const headerTitleWrapStyle: CSSProperties = {
+  flex: 1,
+  minWidth: 0,
+  display: "flex",
+  flexDirection: "column",
+  gap: 3,
+};
+
+export const titleStyle: CSSProperties = {
+  fontSize: token("--teams-type-title"),
   fontWeight: 700,
-  fontFamily: FONT,
-  color: t.color.textPrimary,
+  letterSpacing: -0.4,
+  color: token("--teams-text-primary"),
+};
+
+export const subtitleStyle: CSSProperties = {
+  fontSize: token("--teams-type-caption"),
+  lineHeight: token("--teams-line-caption"),
+  color: token("--teams-text-secondary"),
+};
+
+export const chipRowStyle: CSSProperties = {
+  display: "flex",
+  gap: token("--teams-space-sm"),
+  padding: `0 ${token("--teams-space-lg")} ${token("--teams-space-sm")}`,
+  overflowX: "auto",
+};
+
+export const chipStyle = (active: boolean): CSSProperties => ({
+  border: `1px solid ${active ? token("--teams-border-strong") : "transparent"}`,
+  background: active ? token("--teams-selected") : "transparent",
+  color: active ? token("--teams-brand-strong") : token("--teams-text-secondary"),
+  boxShadow: active ? token("--teams-shadow-glow") : "none",
+  borderRadius: token("--teams-radius-chip"),
+  padding: "6px 12px",
+  fontSize: token("--teams-type-caption"),
+  fontWeight: active ? 700 : 600,
+  whiteSpace: "nowrap",
+});
+
+export const searchPillStyle: CSSProperties = {
+  margin: `0 ${token("--teams-space-lg")} ${token("--teams-space-sm")}`,
+  padding: "12px 14px",
+  display: "flex",
+  alignItems: "center",
+  gap: 10,
+  borderRadius: 14,
+  background: `linear-gradient(135deg, ${token("--teams-surface-muted")} 0%, ${token("--teams-surface")} 100%)`,
+  border: `1px solid ${token("--teams-border")}`,
+  color: token("--teams-text-secondary"),
+  fontSize: token("--teams-type-caption"),
+  boxShadow: token("--teams-shadow-card"),
+};
+
+export const statsRowStyle: CSSProperties = {
+  display: "grid",
+  gridTemplateColumns: "repeat(3, 1fr)",
+  gap: 10,
+  padding: `0 ${token("--teams-space-lg")} ${token("--teams-space-md")}`,
+};
+
+export const statCardStyle: CSSProperties = {
+  padding: "12px 12px 11px",
+  borderRadius: 14,
+  background: token("--teams-surface-elevated"),
+  border: `1px solid ${token("--teams-border")}`,
+  boxShadow: "none",
+};
+
+export const statValueStyle: CSSProperties = {
+  fontSize: 18,
+  fontWeight: 700,
+  color: token("--teams-text-primary"),
   letterSpacing: -0.3,
+};
+
+export const statLabelStyle: CSSProperties = {
+  marginTop: 2,
+  fontSize: token("--teams-type-meta"),
+  color: token("--teams-text-secondary"),
+};
+
+export const contentScrollStyle: CSSProperties = {
   flex: 1,
-};
-
-export const headerMetaStyle: CSSProperties = {
-  fontSize: t.typography.caption,
-  color: t.color.textSecondary,
-  fontFamily: FONT,
-};
-
-// =============================================================================
-// FILTER TABS — All / Unread / Muted
-// =============================================================================
-
-export const filterTabsContainerStyle: CSSProperties = {
-  display: "flex",
-  gap: 0,
-  padding: `0 ${t.spacing.lg}px`,
-  backgroundColor: t.color.surface,
-  borderBottom: `1px solid ${t.color.border}`,
-};
-
-export const filterTabStyle = (active: boolean): CSSProperties => ({
-  fontSize: 14,
-  fontWeight: active ? 600 : 400,
-  color: active ? t.color.brand : t.color.textSecondary,
-  fontFamily: FONT,
-  padding: `${t.spacing.sm}px ${t.spacing.lg}px`,
-  borderBottom: active ? `2px solid ${t.color.brand}` : "2px solid transparent",
-  cursor: "pointer",
-});
-
-// =============================================================================
-// CHAT LIST
-// =============================================================================
-
-export const listViewportStyle: CSSProperties = {
-  flex: 1,
-  overflow: "auto",
-};
-
-export const chatRowStyle: CSSProperties = {
-  display: "flex",
-  alignItems: "center",
-  gap: t.spacing.md,
-  padding: `${t.spacing.md}px ${t.spacing.lg}px`,
-  minHeight: 64,
-  borderBottom: `0.5px solid ${t.color.border}`,
-};
-
-export const unreadBadgeStyle: CSSProperties = {
-  minWidth: 18,
-  height: 18,
-  borderRadius: 9,
-  padding: "0 5px",
-  display: "inline-flex",
-  alignItems: "center",
-  justifyContent: "center",
-  backgroundColor: t.color.unreadBadge,
-  color: "#ffffff",
-  fontSize: t.typography.badge,
-  fontWeight: 700,
-  fontFamily: FONT,
-};
-
-export const rowMetaStyle: CSSProperties = {
-  fontSize: t.typography.caption,
-  color: t.color.textSecondary,
-  fontFamily: FONT,
-};
-
-// =============================================================================
-// THREAD — LINEAR MESSAGE FEED (all left-aligned)
-// =============================================================================
-
-export const threadPaneStyle: CSSProperties = {
-  flex: 1,
+  minHeight: 0,
   overflowY: "auto",
-  overflowX: "hidden",
-  padding: `${t.spacing.sm}px 0`,
-  backgroundColor: t.color.bg,
 };
 
-/** Each message is a full-width row: avatar | name+text+time */
-export const messageRowStyle: CSSProperties = {
-  display: "flex",
-  alignItems: "flex-start",
-  gap: t.spacing.sm,
-  padding: `${t.spacing.sm}px ${t.spacing.lg}px`,
+export const sectionLabelStyle: CSSProperties = {
+  fontSize: token("--teams-type-caption"),
+  fontWeight: 700,
+  color: token("--teams-text-secondary"),
+  letterSpacing: -0.1,
+  padding: `18px ${token("--teams-space-lg")} 10px`,
 };
 
-export const messageSenderStyle: CSSProperties = {
-  fontSize: 13,
-  fontWeight: 600,
-  color: t.color.textPrimary,
-  fontFamily: FONT,
-};
-
-export const messageTextStyle: CSSProperties = {
-  fontSize: t.typography.body,
-  lineHeight: "20px",
-  fontFamily: FONT,
-  color: t.color.textPrimary,
-  marginTop: 2,
-};
-
-export const messageTimeStyle: CSSProperties = {
-  fontSize: t.typography.meta,
-  color: t.color.textMuted,
-  marginTop: 2,
-  fontFamily: FONT,
-};
-
-// =============================================================================
-// COMPOSE BAR — paperclip, text field, smiley, mic/send
-// =============================================================================
-
-export const composerStyle: CSSProperties = {
-  display: "flex",
-  alignItems: "center",
-  gap: t.spacing.sm,
-  padding: `${t.spacing.sm}px ${t.spacing.lg}px`,
-  backgroundColor: t.color.composeBar,
-  borderTop: `1px solid ${t.color.border}`,
-};
-
-export const composerInputStyle: CSSProperties = {
-  flex: 1,
-  height: 38,
-  borderRadius: t.radius.input,
-  backgroundColor: t.color.hover,
-  border: `1px solid ${t.color.border}`,
-  display: "flex",
-  alignItems: "center",
-  padding: `0 ${t.spacing.md}px`,
-  color: t.color.textMuted,
-  fontSize: t.typography.body,
-  fontFamily: FONT,
-};
-
-// =============================================================================
-// BOTTOM TAB BAR
-// =============================================================================
-
-export const tabBarStyle: CSSProperties = {
-  height: 52,
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "space-around",
-  backgroundColor: t.color.tabBar,
-  borderTop: `1px solid ${t.color.border}`,
-  flexShrink: 0,
-};
-
-export const tabItemStyle = (active: boolean): CSSProperties => ({
+export const listSectionStyle: CSSProperties = {
   display: "flex",
   flexDirection: "column",
-  alignItems: "center",
-  gap: 2,
-  color: active ? t.color.tabBarActive : t.color.tabBarInactive,
-  fontSize: 10,
-  fontWeight: active ? 600 : 400,
-  fontFamily: FONT,
-  flex: 1,
-  position: "relative",
-});
-
-// =============================================================================
-// AVATAR + PRESENCE DOT
-// =============================================================================
-
-export const avatarStyle = (size: number): CSSProperties => ({
-  width: size,
-  height: size,
-  borderRadius: size / 2,
-  backgroundColor: t.color.brand,
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
-  color: "#ffffff",
-  fontWeight: 600,
-  fontSize: size * 0.38,
-  fontFamily: FONT,
-  position: "relative",
-  flexShrink: 0,
-});
-
-export const presenceDotStyle = (status: string, avatarSize: number): CSSProperties => {
-  const dotSize = Math.max(10, avatarSize * 0.28);
-  let bg = t.color.presenceOffline;
-  if (status === "available") bg = t.color.presenceAvailable;
-  if (status === "busy") bg = t.color.presenceBusy;
-  if (status === "away") bg = t.color.presenceAway;
-
-  return {
-    position: "absolute",
-    bottom: -1,
-    right: -1,
-    width: dotSize,
-    height: dotSize,
-    borderRadius: dotSize / 2,
-    backgroundColor: bg,
-    border: `2px solid ${t.color.surface}`,
-  };
+  gap: 0,
+  padding: `0 ${token("--teams-space-lg")} ${token("--teams-space-lg")}`,
+  background: token("--teams-surface"),
+  borderRadius: 18,
+  overflow: "hidden",
+  boxShadow: token("--teams-shadow-card"),
 };
 
-// =============================================================================
-// CALL OVERLAY
-// =============================================================================
+export const rowCardStyle = (
+  active = false,
+  emphasized = false,
+): CSSProperties => ({
+  display: "flex",
+  alignItems: "center",
+  gap: token("--teams-space-md"),
+  padding: "12px 16px",
+  borderRadius: 0,
+  border: "none",
+  borderBottom: `0.5px solid ${active ? token("--teams-border-strong") : token("--teams-border")}`,
+  background: active ? token("--teams-selected") : "transparent",
+  boxShadow: "none",
+  position: "relative",
+  minHeight: emphasized ? 76 : 72,
+  animation: "tokovoTeamsRiseIn var(--teams-motion-normal) var(--teams-motion-easing) both",
+});
 
-export const callSurfaceStyle: CSSProperties = {
+export const rowMainStyle: CSSProperties = {
   flex: 1,
-  background: "linear-gradient(180deg, #292b4a 0%, #1b1d33 50%, #141527 100%)",
+  minWidth: 0,
   display: "flex",
   flexDirection: "column",
+  gap: 4,
 };
 
-export const callHeaderStyle: CSSProperties = {
-  minHeight: 64,
-  padding: `${t.spacing.sm}px ${t.spacing.lg}px`,
-  color: "#ffffff",
+export const rowTitleStyle: CSSProperties = {
+  fontSize: 15,
+  fontWeight: 700,
+  color: token("--teams-text-primary"),
+};
+
+export const rowSubtitleStyle: CSSProperties = {
+  fontSize: token("--teams-type-caption"),
+  lineHeight: token("--teams-line-caption"),
+  color: token("--teams-text-secondary"),
+  overflow: "hidden",
+  textOverflow: "ellipsis",
+  display: "-webkit-box",
+  WebkitLineClamp: 1,
+  WebkitBoxOrient: "vertical",
+};
+
+export const rowAuxTextStyle: CSSProperties = {
+  fontSize: token("--teams-type-meta"),
+  color: token("--teams-text-muted"),
+};
+
+export const rowFooterStyle: CSSProperties = {
   display: "flex",
   alignItems: "center",
   justifyContent: "space-between",
-  borderBottom: "1px solid rgba(255,255,255,0.1)",
+  gap: 10,
+  marginTop: 4,
+};
+
+export const badgeStyle = (
+  tone: "unread" | "mention" | "muted",
+): CSSProperties => ({
+  minWidth: tone === "muted" ? 22 : 24,
+  height: 24,
+  borderRadius: token("--teams-radius-pill"),
+  padding: "0 8px",
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
+  backgroundColor:
+    tone === "mention"
+      ? token("--teams-mention-badge")
+      : tone === "muted"
+        ? token("--teams-surface-muted")
+        : token("--teams-unread-badge"),
+  color: tone === "muted" ? token("--teams-text-secondary") : token("--teams-text-inverse"),
+  fontSize: token("--teams-type-badge"),
+  fontWeight: 700,
+});
+
+export const threadViewportStyle: CSSProperties = {
+  flex: 1,
+  minHeight: 0,
+  overflowY: "auto",
+  padding: `${token("--teams-space-md")} ${token("--teams-space-lg")} ${token("--teams-space-lg")}`,
+  display: "flex",
+  flexDirection: "column",
+  gap: token("--teams-space-md"),
+};
+
+export const threadContextCardStyle: CSSProperties = {
+  marginBottom: 4,
+  padding: "12px 14px",
+  borderRadius: 14,
+  background: token("--teams-surface"),
+  border: `1px solid ${token("--teams-border")}`,
+  boxShadow: token("--teams-shadow-card"),
+};
+
+export const threadContextTitleStyle: CSSProperties = {
+  fontSize: token("--teams-type-caption"),
+  fontWeight: 700,
+  color: token("--teams-text-primary"),
+};
+
+export const threadContextMetaStyle: CSSProperties = {
+  marginTop: 3,
+  fontSize: token("--teams-type-meta"),
+  color: token("--teams-text-secondary"),
+};
+
+export const threadDatePillStyle: CSSProperties = {
+  alignSelf: "center",
+  padding: "4px 10px",
+  borderRadius: 999,
+  background: token("--teams-surface-muted"),
+  color: token("--teams-text-secondary"),
+  fontSize: token("--teams-type-meta"),
+  border: `1px solid ${token("--teams-border")}`,
+};
+
+export const unreadDividerStyle: CSSProperties = {
+  display: "inline-flex",
+  alignItems: "center",
+  alignSelf: "center",
+  gap: 8,
+  padding: "5px 10px",
+  borderRadius: 999,
+  background: token("--teams-brand-soft"),
+  color: token("--teams-brand-strong"),
+  fontSize: token("--teams-type-meta"),
+  fontWeight: 700,
+};
+
+export const messageClusterWrapStyle = (isMine: boolean): CSSProperties => ({
+  display: "flex",
+  justifyContent: isMine ? "flex-end" : "flex-start",
+  animation: "tokovoTeamsMessageIn var(--teams-motion-normal) var(--teams-motion-easing) both",
+});
+
+export const messageCardStyle = (isMine: boolean): CSSProperties => ({
+  maxWidth: "86%",
+  display: "flex",
+  gap: 10,
+  alignItems: "flex-end",
+  flexDirection: isMine ? "row-reverse" : "row",
+});
+
+export const bubbleStyle = (
+  isMine: boolean,
+  clusterPosition: "single" | "start" | "middle" | "end" = "single",
+): CSSProperties => ({
+  padding: "10px 12px",
+  borderRadius:
+    clusterPosition === "single"
+      ? isMine
+        ? "18px 18px 4px 18px"
+        : "18px 18px 18px 4px"
+      : clusterPosition === "start"
+        ? isMine
+          ? "18px 18px 4px 18px"
+          : "18px 18px 18px 4px"
+        : clusterPosition === "middle"
+          ? isMine
+            ? "18px 4px 4px 18px"
+            : "4px 18px 18px 4px"
+          : isMine
+            ? "18px 4px 18px 18px"
+            : "4px 18px 18px 18px",
+  background: isMine ? token("--teams-sent-bubble") : token("--teams-received-bubble"),
+  color: token("--teams-text-primary"),
+  border: `1px solid ${
+    isMine ? token("--teams-sent-bubble-border") : token("--teams-received-bubble-border")
+  }`,
+  boxShadow: token("--teams-shadow-bubble"),
+});
+
+export const bubbleSenderStyle = (isMine: boolean): CSSProperties => ({
+  fontSize: token("--teams-type-meta"),
+  fontWeight: 700,
+  marginBottom: 4,
+  color: isMine ? "rgba(255,255,255,0.92)" : token("--teams-brand"),
+});
+
+export const replyPreviewStyle = (isMine: boolean): CSSProperties => ({
+  padding: "7px 9px",
+  borderRadius: 10,
+  background: isMine ? token("--teams-surface") : token("--teams-reply-preview-bg"),
+  color: token("--teams-reply-preview-text"),
+  marginBottom: 8,
+  fontSize: token("--teams-type-meta"),
+  lineHeight: "15px",
+});
+
+export const bubbleTextStyle = (isMine: boolean): CSSProperties => ({
+  fontSize: token("--teams-type-body"),
+  lineHeight: token("--teams-line-body"),
+  color: isMine ? token("--teams-text-inverse") : token("--teams-text-primary"),
+  whiteSpace: "pre-wrap",
+});
+
+export const bubbleMetaStyle = (isMine: boolean): CSSProperties => ({
+  marginTop: 6,
+  fontSize: token("--teams-type-meta"),
+  color: isMine ? "rgba(249,251,255,0.78)" : token("--teams-text-muted"),
+  opacity: 1,
+  textAlign: "right",
+});
+
+export const reactionBarStyle = (isMine: boolean): CSSProperties => ({
+  display: "flex",
+  justifyContent: isMine ? "flex-end" : "flex-start",
+  gap: 4,
+  marginTop: -8,
+  marginLeft: isMine ? 0 : 42,
+  marginRight: isMine ? 42 : 0,
+  position: "relative",
+  zIndex: 2,
+});
+
+export const reactionChipStyle = (active = false): CSSProperties => ({
+  display: "inline-flex",
+  alignItems: "center",
+  gap: 4,
+  padding: "3px 7px",
+  borderRadius: 999,
+  background: active ? token("--teams-brand-soft") : token("--teams-surface"),
+  border: `1px solid ${active ? token("--teams-border-strong") : token("--teams-border")}`,
+  boxShadow: "0 2px 6px rgba(16,24,40,0.08)",
+  fontSize: 11,
+  fontWeight: 700,
+  lineHeight: 1,
+  color: active ? token("--teams-brand-strong") : token("--teams-text-secondary"),
+});
+
+export const typingStripStyle: CSSProperties = {
+  display: "inline-flex",
+  alignItems: "center",
+  gap: 8,
+  padding: "8px 12px",
+  borderRadius: token("--teams-radius-pill"),
+  background: token("--teams-surface"),
+  border: `1px solid ${token("--teams-border")}`,
+  fontSize: token("--teams-type-caption"),
+  color: token("--teams-text-secondary"),
+  boxShadow: token("--teams-shadow-card"),
+};
+
+export const typingDotsStyle: CSSProperties = {
+  display: "inline-flex",
+  alignItems: "center",
+  gap: 4,
+};
+
+export const typingDotStyle = (delayMs: number): CSSProperties => ({
+  width: 6,
+  height: 6,
+  borderRadius: 999,
+  background: token("--teams-brand"),
+  animation: `tokovoTeamsDotBounce 1.1s ease-in-out ${delayMs}ms infinite`,
+});
+
+export const composerWrapStyle: CSSProperties = {
+  padding: `10px ${token("--teams-space-lg")} 14px`,
+  background: token("--teams-compose-bar"),
+  borderTop: `1px solid ${token("--teams-border")}`,
+  backdropFilter: "blur(18px) saturate(110%)",
+};
+
+export const composerToolbarStyle: CSSProperties = {
+  display: "flex",
+  alignItems: "center",
+  gap: 8,
+  paddingBottom: 8,
+  overflowX: "auto",
+};
+
+export const composerToolStyle = (active = false): CSSProperties => ({
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
+  minWidth: 28,
+  height: 28,
+  borderRadius: 8,
+  border: `1px solid ${active ? token("--teams-border-strong") : "transparent"}`,
+  background: active ? token("--teams-selected") : "transparent",
+  color: active ? token("--teams-brand-strong") : token("--teams-text-secondary"),
+  fontSize: token("--teams-type-meta"),
+  fontWeight: 700,
+});
+
+export const composerInnerStyle: CSSProperties = {
+  display: "flex",
+  alignItems: "center",
+  gap: 10,
+  padding: 10,
+  borderRadius: 12,
+  background: token("--teams-input-surface"),
+  border: `1px solid ${token("--teams-border")}`,
+  boxShadow: token("--teams-shadow-card"),
+};
+
+export const composerInputStyle = (hasText: boolean): CSSProperties => ({
+  flex: 1,
+  minHeight: 24,
+  display: "flex",
+  alignItems: "center",
+  gap: 2,
+  fontSize: token("--teams-type-body"),
+  lineHeight: token("--teams-line-body"),
+  color: hasText ? token("--teams-text-primary") : token("--teams-input-placeholder"),
+  whiteSpace: "pre-wrap",
+});
+
+export const composerCursorStyle: CSSProperties = {
+  width: 1.5,
+  height: 18,
+  background: token("--teams-brand"),
+  borderRadius: 999,
+  animation: "tokovoTeamsBlink 1s steps(1) infinite",
+  flexShrink: 0,
+};
+
+export const composerActionsRowStyle: CSSProperties = {
+  display: "flex",
+  alignItems: "center",
+  gap: 14,
+  paddingTop: 10,
+  color: token("--teams-text-secondary"),
+};
+
+export const composerSendButtonStyle: CSSProperties = {
+  width: 34,
+  height: 34,
+  borderRadius: 999,
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
+  background: token("--teams-brand"),
+  color: token("--teams-text-inverse"),
+  boxShadow: token("--teams-shadow-glow"),
+};
+
+export const tabBarStyle: CSSProperties = {
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "space-around",
+  padding: "6px 10px calc(6px + env(safe-area-inset-bottom, 0px))",
+  background: token("--teams-tab-bar"),
+  borderTop: `1px solid ${token("--teams-border")}`,
+  backdropFilter: "blur(18px) saturate(110%)",
+};
+
+export const tabItemStyle = (active: boolean): CSSProperties => ({
+  flex: 1,
+  display: "flex",
+  flexDirection: "column",
+  alignItems: "center",
+  gap: 4,
+  color: active ? token("--teams-tab-active") : token("--teams-tab-inactive"),
+  fontSize: 10,
+  fontWeight: active ? 700 : 600,
+});
+
+export const callSurfaceStyle: CSSProperties = {
+  flex: 1,
+  display: "flex",
+  flexDirection: "column",
+  padding: 20,
+  background: `radial-gradient(circle at top, ${token("--teams-call-backdrop-start")} 0%, ${token("--teams-call-backdrop-end")} 58%, #04060c 100%)`,
+  color: token("--teams-text-inverse"),
+};
+
+export const callHeroStyle: CSSProperties = {
+  padding: "18px 16px",
+  borderRadius: token("--teams-radius-panel"),
+  border: `1px solid ${token("--teams-call-tile-border")}`,
+  background: token("--teams-call-hero"),
+  backdropFilter: "blur(28px) saturate(135%)",
+  boxShadow: token("--teams-shadow-overlay"),
 };
 
 export const callGridStyle: CSSProperties = {
-  flex: 1,
-  padding: `${t.spacing.lg}px ${t.spacing.md}px`,
   display: "grid",
-  gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
-  gap: t.spacing.md,
-  alignContent: "start",
+  gridTemplateColumns: "1fr 1fr",
+  gap: 14,
+  marginTop: 20,
+  flex: 1,
 };
 
-export const participantCardStyle: CSSProperties = {
-  minHeight: 140,
-  borderRadius: t.radius.panel,
-  border: "1px solid rgba(255,255,255,0.12)",
-  background: "rgba(255,255,255,0.06)",
+export const callTileStyle: CSSProperties = {
   display: "flex",
   flexDirection: "column",
-  alignItems: "center",
-  justifyContent: "center",
+  justifyContent: "flex-end",
   gap: 8,
-  color: "#ffffff",
-  fontFamily: FONT,
+  minHeight: 140,
+  borderRadius: token("--teams-radius-panel"),
+  padding: 16,
+  background: token("--teams-call-tile"),
+  border: `1px solid ${token("--teams-call-tile-border")}`,
+  boxShadow: token("--teams-shadow-overlay"),
+  backdropFilter: "blur(20px) saturate(120%)",
 };
+
+export const callSpeakerRingStyle = (active: boolean): CSSProperties => ({
+  display: "inline-flex",
+  borderRadius: 999,
+  padding: 4,
+  border: active ? `1px solid ${token("--teams-brand")}` : "1px solid transparent",
+  animation: active ? "tokovoTeamsSpeakerPulse 1.4s ease-out infinite" : "none",
+});
+
+export const callWaveformStyle = (active: boolean): CSSProperties => ({
+  display: "flex",
+  alignItems: "flex-end",
+  gap: 3,
+  height: 14,
+  opacity: active ? 1 : 0.4,
+});
+
+export const callWaveBarStyle = (height: number, delayMs: number): CSSProperties => ({
+  width: 3,
+  height,
+  borderRadius: 999,
+  background: "rgba(255,255,255,0.88)",
+  animation: `tokovoTeamsDotBounce 1.1s ease-in-out ${delayMs}ms infinite`,
+});
 
 export const callControlsWrapStyle: CSSProperties = {
   display: "flex",
-  justifyContent: "center",
-  gap: t.spacing.lg,
-  padding: `${t.spacing.md}px ${t.spacing.lg}px ${t.spacing.xl}px`,
+  justifyContent: "space-between",
+  gap: 10,
+  paddingTop: 18,
 };
 
-export const callControlStyle: CSSProperties = {
-  width: 48,
-  height: 48,
-  borderRadius: 24,
-  background: "rgba(255,255,255,0.12)",
-  color: "#ffffff",
+export const callControlStyle = (critical = false): CSSProperties => ({
+  flex: 1,
   display: "flex",
   flexDirection: "column",
   alignItems: "center",
-  justifyContent: "center",
-  gap: 2,
-  fontSize: 10,
-  fontFamily: FONT,
-};
-
-export const endCallControlStyle: CSSProperties = {
-  ...callControlStyle,
-  width: 56,
-  borderRadius: 28,
-  background: t.color.danger,
-};
-
-/** Inject @keyframes for any Teams CSS animations */
-export function injectTeamsStyles(): void {
-  if (typeof document === "undefined") return;
-  const id = "teams-css-animations";
-  if (document.getElementById(id)) return;
-  const style = document.createElement("style");
-  style.id = id;
-  style.textContent = `
-    @keyframes teams-presence-pulse {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.6; }
-    }
-  `;
-  document.head.appendChild(style);
-}
+  gap: 6,
+  padding: "12px 8px",
+  borderRadius: 18,
+  color: token("--teams-text-inverse"),
+  background: critical ? token("--teams-danger") : token("--teams-call-control"),
+  border: critical ? "none" : `1px solid ${token("--teams-call-control-border")}`,
+});

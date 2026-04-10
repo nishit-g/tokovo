@@ -13,7 +13,6 @@ const baseInput = {
     {
       deviceId: "phone",
       appId: "app",
-      conversations: [{ id: "c1", name: "One" }],
     },
   ],
 };
@@ -91,7 +90,6 @@ describe("prepare episode", () => {
           {
             id: "phone",
             appId: "app",
-            conversations: [{ id: "c1" }],
           },
           {
             id: "tablet",
@@ -106,8 +104,7 @@ describe("prepare episode", () => {
     );
 
     expect(world.devices.tablet.foregroundAppId).toBeUndefined();
-    expect((world.appState as any).app.conversations.c1.name).toBe("c1");
-    expect((world.appState as any).app.conversations.c1.type).toBe("dm");
+    expect(world.appState.app).toBeUndefined();
 
     const emptyWorld = mod.deriveInitialWorld({ id: "empty" } as any, registry);
     expect(emptyWorld.devices).toEqual({});

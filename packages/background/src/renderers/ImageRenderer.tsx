@@ -4,6 +4,7 @@
 
 import React from "react";
 import { AbsoluteFill, Img, staticFile } from "remotion";
+import { resolveStaticAssetSrc } from "@tokovo/core";
 import type { ResolvedBackgroundConfig } from "../types.js";
 
 interface ImageRendererProps {
@@ -17,9 +18,7 @@ export const ImageRenderer: React.FC<ImageRendererProps> = ({ config }) => {
     }
 
     // Resolve path - if it starts with / assume it's a static file
-    const imageSrc = config.src.startsWith("/")
-        ? staticFile(config.src)
-        : config.src;
+    const imageSrc = resolveStaticAssetSrc(config.src, staticFile);
 
     const containerStyle: React.CSSProperties = {
         opacity: config.opacity ?? 1,
@@ -57,7 +56,11 @@ export const ImageRenderer: React.FC<ImageRendererProps> = ({ config }) => {
 
     return (
         <AbsoluteFill style={containerStyle}>
-            <Img src={imageSrc} style={imgStyle} />
+            <Img
+                src={imageSrc}
+                style={imgStyle}
+                pauseWhenLoading
+            />
         </AbsoluteFill>
     );
 };

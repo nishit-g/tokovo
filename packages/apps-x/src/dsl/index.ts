@@ -1,16 +1,19 @@
 import { parseTimeToFrames } from "@tokovo/dsl";
 import type {
+  ProfileTab,
   XTrackEvent,
   XTrackEventFor,
   XEventType,
   XEventPayloadMap,
   XScreen,
   NotificationsTab,
+  TimelineTab,
   UserCreatePayload,
   TweetCreatePayload,
   TweetReplyPayload,
   TweetQuotePayload,
   TweetRepostPayload,
+  XThemeMode,
 } from "../types/index.js";
 
 type GetDeclarationOrder = () => number;
@@ -51,11 +54,17 @@ type NotificationInput = {
   tweetId?: string;
   isMention?: boolean;
   createdAt?: number;
+  title?: string;
+  body?: string;
+  read?: boolean;
 };
 
 type ThreadInput = {
   id?: string;
   participantIds: string[];
+  title?: string;
+  unreadCount?: number;
+  pinned?: boolean;
 };
 
 type MessageInput = {
@@ -64,24 +73,6 @@ type MessageInput = {
   senderId: string;
   text: string;
   createdAt?: number;
-};
-
-type SeedInput = {
-  users?: UserInput[];
-  tweets?: TweetInput[];
-  replies?: ReplyInput[];
-  quotes?: QuoteInput[];
-  notifications?: NotificationInput[];
-  threads?: ThreadInput[];
-  messages?: MessageInput[];
-  follows?: Array<{ followerId: string; followingId: string }>;
-  currentUserId?: string;
-  composeDraft?: string;
-  notificationsTab?: NotificationsTab;
-  screen?: XScreen;
-  activeTweetId?: string;
-  activeUserId?: string;
-  activeThreadId?: string;
 };
 
 class XPointBuilder {
@@ -232,18 +223,27 @@ class XPointBuilder {
     this._push("SET_COMPOSE_DRAFT", { text });
   }
 
+  setThreadDraft(threadId: string, text: string): void {
+    this._push("SET_THREAD_DRAFT", { threadId, text });
+  }
+
+  setThreadTyping(threadId: string, userId: string | null): void {
+    this._push("SET_THREAD_TYPING", { threadId, userId });
+  }
+
+  setTimelineTab(tab: TimelineTab): void {
+    this._push("SET_TIMELINE_TAB", { tab });
+  }
+
+  setProfileTab(tab: ProfileTab): void {
+    this._push("SET_PROFILE_TAB", { tab });
+  }
+
   setNotificationsTab(tab: NotificationsTab): void {
     this._push("SET_NOTIFICATIONS_TAB", { tab });
   }
 
-  addNotification(data: {
-    id?: string;
-    type: "like" | "repost" | "reply" | "follow" | "mention";
-    actorId: string;
-    tweetId?: string;
-    isMention?: boolean;
-    createdAt?: number;
-  }): void {
+  addNotification(data: NotificationInput): void {
     this._push("NOTIFICATION_ADD", (order) => ({
       id: data.id ?? createNotificationId(this._frame, order),
       type: data.type,
@@ -251,13 +251,29 @@ class XPointBuilder {
       tweetId: data.tweetId,
       isMention: data.isMention,
       createdAt: data.createdAt,
+      title: data.title,
+      body: data.body,
+      read: data.read,
     }));
   }
 
-  createThread(participantIds: string[], id?: string): void {
+  createThread(participantIds: string[], options?: string | ThreadInput): void {
+    const input =
+      typeof options === "string"
+        ? { id: options, participantIds }
+        : {
+            id: options?.id,
+            participantIds: options?.participantIds ?? participantIds,
+            title: options?.title,
+            unreadCount: options?.unreadCount,
+            pinned: options?.pinned,
+          };
     this._push("DM_THREAD_CREATE", (order) => ({
-      id: id ?? createThreadId(this._frame, order),
-      participantIds,
+      id: input.id ?? createThreadId(this._frame, order),
+      participantIds: input.participantIds,
+      title: input.title,
+      unreadCount: input.unreadCount,
+      pinned: input.pinned,
     }));
   }
 
@@ -281,7 +297,7 @@ class XPointBuilder {
     }));
   }
 
-  setThemeMode(mode: "dark" | "light" | "ghibli"): void {
+  setThemeMode(mode: XThemeMode): void {
     this._push("SET_THEME_MODE", { mode });
   }
 }
@@ -316,6 +332,14 @@ class XSpanBuilder {
   }
 }
 
+export function createXTrackBuilder(
+  fps: number,
+  deviceId: string,
+  getOrder: GetDeclarationOrder,
+): XTrackBuilder {
+  return new XTrackBuilder(fps, deviceId, getOrder);
+}
+
 export class XTrackBuilder {
   _events: XTrackEvent[] = [];
 
@@ -335,33 +359,5 @@ export class XTrackBuilder {
     const endFrame = typeof end === "number" ? end : parseTimeToFrames(end, this._fps);
     const duration = Math.max(0, endFrame - startFrame);
     return new XSpanBuilder(startFrame, duration, this._deviceId, this._events, this._getOrder);
-  }
-
-  seed(data: SeedInput, time: string | number = 0): void {
-    const point = this.at(time);
-    data.users?.forEach((user) => point.createUser(user));
-    data.follows?.forEach((pair) => point.followUser(pair.followerId, pair.followingId));
-    if (data.currentUserId) {
-      point.setCurrentUser(data.currentUserId);
-    }
-    data.tweets?.forEach((tweet) => point.postTweet(tweet));
-    data.replies?.forEach((reply) => point.replyTweet(reply));
-    data.quotes?.forEach((quote) => point.quoteTweet(quote));
-    data.notifications?.forEach((note) => point.addNotification(note));
-    data.threads?.forEach((thread) => point.createThread(thread.participantIds, thread.id));
-    data.messages?.forEach((message) => point.sendMessage(message));
-    if (data.composeDraft !== undefined) {
-      point.setComposeDraft(data.composeDraft);
-    }
-    if (data.notificationsTab !== undefined) {
-      point.setNotificationsTab(data.notificationsTab);
-    }
-    if (data.screen) {
-      point.navigate(data.screen, {
-        tweetId: data.activeTweetId,
-        userId: data.activeUserId,
-        threadId: data.activeThreadId,
-      });
-    }
   }
 }

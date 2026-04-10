@@ -171,6 +171,7 @@ const TokovoRendererInner: React.FC<TokovoRendererProps> = ({
     layoutOutput,
     eventIndex,
     disabled: disableCamera,
+    debug,
   });
 
   const { cameraStyle, deviceStyle, transform, debugInfo } = cameraOutput;

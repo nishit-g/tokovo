@@ -32,6 +32,7 @@ import {
   CompilerSchemaValidationError,
   RuntimeValidationError,
 } from "./errors.js";
+import { collectEpisodeAssetRefs } from "./asset-refs.js";
 
 // =============================================================================
 // TYPES
@@ -48,6 +49,7 @@ export interface PreparedTrackEpisode {
   eventSignature?: string;
   initialWorld: WorldState;
   plugins: TokovoPlugin[];
+  assetRefs: import("@tokovo/core").EpisodeAssetRef[];
   metadata: {
     title?: string;
     description?: string;
@@ -155,12 +157,19 @@ export function prepareTrackEpisode(
       trackEvents: ir.events.length,
       runtimeEvents: runtimeEvents.length,
       devices: ir.devices.length,
-      conversations: ir.devices.flatMap((d) => d.conversations || []).length,
+      appSnapshots: ir.appSnapshots.length,
+      initialViews: ir.initialViews.length,
     });
   }
 
   const eventSignature = computeEventSignature(sortedEvents);
   const keyframeInterval = config.rendering.cacheKeyframeInterval;
+  const assetRefs = collectEpisodeAssetRefs({
+    ir,
+    initialWorld,
+    events: sortedEvents,
+    plugins,
+  });
 
   return {
     id: ir.id,
@@ -176,6 +185,7 @@ export function prepareTrackEpisode(
     eventSignature,
     initialWorld,
     plugins,
+    assetRefs,
     metadata,
   };
 }
@@ -231,7 +241,14 @@ function buildInitialWorld(ir: TrackEpisodeIR, plugins: TokovoPlugin[]): WorldSt
   }
 
   const firstDeviceId = ir.devices[0]?.id || "main_phone";
-  const camera = { ...DEFAULT_CAMERA_STATE, activeDeviceId: firstDeviceId };
+  const camera = {
+    ...DEFAULT_CAMERA_STATE,
+    activeDeviceId: firstDeviceId,
+    layout: {
+      ...(DEFAULT_CAMERA_STATE.layout ?? { mode: "SINGLE", primaryDeviceId: firstDeviceId }),
+      primaryDeviceId: firstDeviceId,
+    },
+  };
   const audio = { ...DEFAULT_AUDIO_STATE };
 
   const pluginsById = new Map<string, TokovoPlugin>(
@@ -239,10 +256,24 @@ function buildInitialWorld(ir: TrackEpisodeIR, plugins: TokovoPlugin[]): WorldSt
   );
 
   const appState: Record<string, unknown> = {};
+  const snapshotEntries = new Map<string, import("@tokovo/ir").AppSnapshotEntry>();
+  const initialViewEntries = new Map<string, import("@tokovo/ir").AppInitialViewEntry>();
+
+  for (const entry of ir.appSnapshots) {
+    snapshotEntries.set(`${entry.appId}:${entry.deviceId}`, entry);
+  }
+
+  for (const entry of ir.initialViews) {
+    initialViewEntries.set(`${entry.appId}:${entry.deviceId}`, entry);
+  }
+
   for (const device of ir.devices) {
     if (device.app) {
       const appId = device.app;
       const plugin = pluginsById.get(appId);
+      const bootstrapKey = `${appId}:${device.id}`;
+      const snapshot = snapshotEntries.get(bootstrapKey);
+      const initialView = initialViewEntries.get(bootstrapKey);
       const baseState = (() => {
         try {
           const created = plugin?.createInitialState?.();
@@ -252,67 +283,62 @@ function buildInitialWorld(ir: TrackEpisodeIR, plugins: TokovoPlugin[]): WorldSt
         }
         return {};
       })();
+      const bootstrapContext = {
+        appId,
+        deviceId: device.id,
+        device,
+        ir,
+        baseState,
+        snapshot: resolveBootstrapSnapshotEntry({
+          appId,
+          deviceId: device.id,
+          entry: snapshot,
+          plugin,
+          baseContext: {
+            appId,
+            deviceId: device.id,
+            device,
+            ir,
+            baseState,
+            snapshot,
+            initialView,
+          },
+        }),
+        initialView: resolveBootstrapViewEntry({
+          appId,
+          deviceId: device.id,
+          entry: initialView,
+          plugin,
+          baseContext: {
+            appId,
+            deviceId: device.id,
+            device,
+            ir,
+            baseState,
+            snapshot,
+            initialView,
+          },
+        }),
+      };
 
-      const hasConversations = (device.conversations?.length ?? 0) > 0;
-      const firstConversation = device.conversations?.[0];
-
-      // Build conversations for this app
-      const conversations: Record<string, unknown> = {};
-      for (const conv of device.conversations || []) {
-        conversations[conv.id] = {
-          id: conv.id,
-          name: conv.name,
-          avatar: conv.avatar || "",
-          type: conv.type || "dm",
-          participants: conv.participants || [],
-          messages: conv.initialMessages || [],
-          typing: null,
-          unreadCount: conv.unreadCount ?? 0,
-          isMuted: conv.isMuted ?? false,
-          isPinned: conv.isPinned ?? false,
-          hasStatus: conv.hasStatus ?? false,
-          description: conv.description,
-          isLocked: conv.isLocked ?? false,
-          businessLabel: conv.businessLabel,
-          isVerifiedBusiness: conv.isVerifiedBusiness ?? false,
-          isChannel: conv.isChannel ?? false,
-          isFollowed: conv.isFollowed ?? false,
-          channelUnreadCount: conv.channelUnreadCount ?? 0,
-          channelDescription: conv.channelDescription,
-          channelLatestSnippet: conv.channelLatestSnippet,
-          channelFollowersLabel: conv.channelFollowersLabel,
-          channelCategory: conv.channelCategory,
-          pinnedMessage: conv.pinnedMessage,
-          disappearingMessagesLabel: conv.disappearingMessagesLabel,
-        };
+      const validation = plugin?.bootstrap?.validate?.(bootstrapContext);
+      if (validation?.errors && validation.errors.length > 0) {
+        throw new RuntimeValidationError(
+          `[prepareTrackEpisode] bootstrap validation failed for ${appId} on ${device.id}\n${validation.errors.map((error: string) => `- ${error}`).join("\n")}`,
+        );
       }
 
-      const merged = {
-        ...baseState,
-        ...(hasConversations ? { conversations } : {}),
-      } as Record<string, unknown>;
-
-      // Ensure viewMode is always present (required by LayoutEngine in render mode)
-      if (typeof merged.viewMode !== "string") {
-        merged.viewMode = hasConversations ? "CHAT" : "FEED";
+      if (validation?.warnings && validation.warnings.length > 0) {
+        for (const warning of validation.warnings) {
+          console.warn(`[prepareTrackEpisode] [warn] ${appId} bootstrap: ${warning}`);
+        }
       }
 
-      // If conversations exist but conversationId is missing, set it deterministically.
-      if (
-        hasConversations &&
-        merged.viewMode === "CHAT" &&
-        typeof merged.conversationId !== "string" &&
-        typeof firstConversation?.id === "string"
-      ) {
-        merged.conversationId = firstConversation.id;
-      }
+      const hydrated = plugin?.bootstrap?.hydrate
+        ? plugin.bootstrap.hydrate(bootstrapContext)
+        : baseState;
 
-      // If no conversations, still ensure conversations key exists if base state expects it.
-      if (!hasConversations && merged.conversations === undefined) {
-        merged.conversations = conversations;
-      }
-
-      appState[appId] = merged;
+      appState[appId] = hydrated as Record<string, unknown>;
     }
   }
 
@@ -324,6 +350,162 @@ function buildInitialWorld(ir: TrackEpisodeIR, plugins: TokovoPlugin[]): WorldSt
   };
 
   return worldState;
+}
+
+function resolveBootstrapSnapshotEntry(input: {
+  appId: string;
+  deviceId: string;
+  entry?: import("@tokovo/ir").AppSnapshotEntry;
+  plugin?: TokovoPlugin;
+  baseContext: import("@tokovo/core").PluginBootstrapContext;
+}): import("@tokovo/ir").AppSnapshotEntry | undefined {
+  if (!input.entry) {
+    return undefined;
+  }
+
+  const schema = input.plugin?.bootstrap?.snapshot;
+  if (!schema) {
+    throw new RuntimeValidationError(
+      `[prepareTrackEpisode] snapshot bootstrap schema missing for ${input.appId} on ${input.deviceId}`,
+    );
+  }
+
+  const resolved = resolveVersionedBootstrapValue({
+    appId: input.appId,
+    deviceId: input.deviceId,
+    kind: "snapshot",
+    version: input.entry.snapshotVersion,
+    value: input.entry.snapshot,
+    schema,
+    context: input.baseContext,
+  });
+
+  return {
+    ...input.entry,
+    snapshotVersion: resolved.version,
+    snapshot: resolved.value,
+  };
+}
+
+function resolveBootstrapViewEntry(input: {
+  appId: string;
+  deviceId: string;
+  entry?: import("@tokovo/ir").AppInitialViewEntry;
+  plugin?: TokovoPlugin;
+  baseContext: import("@tokovo/core").PluginBootstrapContext;
+}): import("@tokovo/ir").AppInitialViewEntry | undefined {
+  if (!input.entry) {
+    return undefined;
+  }
+
+  const schema = input.plugin?.bootstrap?.view;
+  if (!schema) {
+    throw new RuntimeValidationError(
+      `[prepareTrackEpisode] initial view schema missing for ${input.appId} on ${input.deviceId}`,
+    );
+  }
+
+  const resolved = resolveVersionedBootstrapValue({
+    appId: input.appId,
+    deviceId: input.deviceId,
+    kind: "initial view",
+    version: input.entry.viewVersion,
+    value: input.entry.view,
+    schema,
+    context: input.baseContext,
+  });
+
+  return {
+    ...input.entry,
+    viewVersion: resolved.version,
+    view: resolved.value,
+  };
+}
+
+function resolveVersionedBootstrapValue(input: {
+  appId: string;
+  deviceId: string;
+  kind: "snapshot" | "initial view";
+  version: number;
+  value: unknown;
+  schema: NonNullable<TokovoPlugin["bootstrap"]>["snapshot"];
+  context: import("@tokovo/core").PluginBootstrapContext;
+}): { version: number; value: unknown } {
+  if (!input.schema) {
+    throw new RuntimeValidationError(
+      `[prepareTrackEpisode] ${input.kind} schema missing for ${input.appId} on ${input.deviceId}`,
+    );
+  }
+
+  let version = input.version;
+  let value = input.value;
+  let migrationSteps = 0;
+
+  if (!Number.isInteger(version) || version < 1) {
+    throw new RuntimeValidationError(
+      `[prepareTrackEpisode] ${input.kind} version for ${input.appId} on ${input.deviceId} must be a positive integer`,
+    );
+  }
+
+  if (version > input.schema.currentVersion) {
+    throw new RuntimeValidationError(
+      `[prepareTrackEpisode] ${input.kind} version ${version} for ${input.appId} on ${input.deviceId} is newer than supported version ${input.schema.currentVersion}`,
+    );
+  }
+
+  while (version < input.schema.currentVersion) {
+    if (!input.schema.migrate) {
+      throw new RuntimeValidationError(
+        `[prepareTrackEpisode] ${input.kind} version ${version} for ${input.appId} on ${input.deviceId} cannot be migrated to ${input.schema.currentVersion}`,
+      );
+    }
+
+    const migrated = input.schema.migrate({
+      appId: input.appId,
+      version,
+      value,
+      context: input.context,
+    });
+
+    if (!Number.isInteger(migrated.version) || migrated.version <= version) {
+      throw new RuntimeValidationError(
+        `[prepareTrackEpisode] ${input.kind} migration for ${input.appId} on ${input.deviceId} must advance version numbers`,
+      );
+    }
+
+    version = migrated.version;
+    value = migrated.value;
+    migrationSteps += 1;
+
+    if (migrationSteps > 16) {
+      throw new RuntimeValidationError(
+        `[prepareTrackEpisode] ${input.kind} migration for ${input.appId} on ${input.deviceId} exceeded safe migration depth`,
+      );
+    }
+  }
+
+  const validation = input.schema.validate?.({
+    appId: input.appId,
+    version,
+    value,
+    context: input.context,
+  });
+
+  if (validation?.errors && validation.errors.length > 0) {
+    throw new RuntimeValidationError(
+      `[prepareTrackEpisode] ${input.kind} validation failed for ${input.appId} on ${input.deviceId}\n${validation.errors.map((error) => `- ${error}`).join("\n")}`,
+    );
+  }
+
+  if (validation?.warnings && validation.warnings.length > 0) {
+    for (const warning of validation.warnings) {
+      console.warn(
+        `[prepareTrackEpisode] [warn] ${input.appId} ${input.kind}: ${warning}`,
+      );
+    }
+  }
+
+  return { version, value };
 }
 
 const DEFAULT_DEVICE_SFX_RULES: AutoSoundRule[] = [

@@ -1,5 +1,5 @@
 import { defineEpisode } from "../types/episode-definition.js";
-import { episode } from "@tokovo/creator";
+import { episode } from "../code-first-episode.js";
 
 export default defineEpisode({
   meta: {
@@ -33,6 +33,64 @@ export default defineEpisode({
       .device("phone", "iphone16", {
         app: "app_whatsapp",
         installedApps: ["app_whatsapp", "app_x"],
+        os: {
+          time: new Date("2025-07-12T19:21:00"),
+          battery: 62,
+          network: "5G",
+        },
+      })
+      .snapshot("app_x", "phone", {
+        users: [
+          {
+            id: "u_me",
+            name: "Me",
+            handle: "mainCharacter",
+            followers: 5100,
+            following: 260,
+            verified: null,
+          },
+          {
+            id: "u_op",
+            name: "OP",
+            handle: "pun_ka_papa",
+            followers: 78000,
+            following: 900,
+            verified: "blue",
+          },
+          {
+            id: "u_r1",
+            name: "Riya",
+            handle: "riya",
+            followers: 12400,
+            following: 780,
+            verified: null,
+          },
+        ],
+        tweets: [
+          {
+            id: "tw_op",
+            authorId: "u_op",
+            text: "‘Dramatic timing’ bolke meeting me 45 min late aaya. Main character syndrome is real 😭",
+            viewCount: 310000,
+            shareCount: 6200,
+            bookmarkCount: 21000,
+          },
+        ],
+        replies: [
+          {
+            id: "tw_r1",
+            authorId: "u_r1",
+            text: "Bhai ka dramatic timing = traffic + delusion 🫡",
+            replyToId: "tw_op",
+            viewCount: 132000,
+            shareCount: 2100,
+            bookmarkCount: 7200,
+          },
+        ],
+        currentUserId: "u_me",
+      })
+      .view("app_x", "phone", { screen: "timeline" })
+      .snapshot("app_whatsapp", "phone", {
         conversations: [
           {
             id: "grp_backchod",
@@ -43,11 +101,6 @@ export default defineEpisode({
             participants: ["main", "Aman", "Riya", "Sahil", "Vivek"],
           },
         ],
-        os: {
-          time: new Date("2025-07-12T19:21:00"),
-          battery: 62,
-          network: "5G",
-        },
       })
       .background({ type: "image", src: "/backgrounds/neon-city.png" })
 
@@ -126,58 +179,6 @@ export default defineEpisode({
       // X (roast thread)
       // ============================================
       .x("phone", (x) => {
-        x.seed({
-          users: [
-            {
-              id: "u_me",
-              name: "Me",
-              handle: "mainCharacter",
-              followers: 5100,
-              following: 260,
-              verified: null,
-            },
-            {
-              id: "u_op",
-              name: "OP",
-              handle: "pun_ka_papa",
-              followers: 78000,
-              following: 900,
-              verified: "blue",
-            },
-            {
-              id: "u_r1",
-              name: "Riya",
-              handle: "riya",
-              followers: 12400,
-              following: 780,
-              verified: null,
-            },
-          ],
-          tweets: [
-            {
-              id: "tw_op",
-              authorId: "u_op",
-              text: "‘Dramatic timing’ bolke meeting me 45 min late aaya. Main character syndrome is real 😭",
-              viewCount: 310000,
-              shareCount: 6200,
-              bookmarkCount: 21000,
-            },
-          ],
-          replies: [
-            {
-              id: "tw_r1",
-              authorId: "u_r1",
-              text: "Bhai ka dramatic timing = traffic + delusion 🫡",
-              replyToId: "tw_op",
-              viewCount: 132000,
-              shareCount: 2100,
-              bookmarkCount: 7200,
-            },
-          ],
-          currentUserId: "u_me",
-          screen: "timeline",
-        });
-
         x.at("9.4s").navigate("tweet", { tweetId: "tw_op" });
         x.at("10.6s").viewTweet("tw_op");
 

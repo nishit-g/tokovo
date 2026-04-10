@@ -7,6 +7,10 @@ import { IMessageView } from "./ui/index.js";
 import { iMessageV2Lowering } from "./lowering/index.js";
 import { iMessageLayoutStrategies } from "./layout/index.js";
 import { IMessageAnchorProvider } from "./anchors/provider.js";
+import { iMessageBootstrap } from "./bootstrap.js";
+import { iMessageDsl, type IMessageDslApi } from "./dsl/index.js";
+import { collectIMessageAssetRefs } from "./asset-refs.js";
+import { iMessageNotificationAdapter } from "./notifications/adapter.js";
 
 const iMessageViews: PluginViews = {
   AppRoot: IMessageView,
@@ -67,6 +71,7 @@ export const IMessagePlugin: TokovoPluginContract<"app_imessage"> & {
   reducer: iMessageReducer as PluginReducer<"app_imessage">,
   views: iMessageViews,
   createInitialState: createIMessageInitialState,
+  bootstrap: iMessageBootstrap,
   eventKinds: [
     "IMESSAGE_CONVERSATION_CREATE",
     "IMESSAGE_CONVERSATION_UPDATE",
@@ -94,6 +99,10 @@ export const IMessagePlugin: TokovoPluginContract<"app_imessage"> & {
     "IMESSAGE_SET_DRAFT",
     "IMESSAGE_CLEAR_DRAFT",
     "IMESSAGE_OPEN_MEDIA",
+    "IMESSAGE_SET_THEME_MODE",
+    "IMESSAGE_SEARCH_START",
+    "IMESSAGE_SEARCH_CLEAR",
+    "IMESSAGE_SCREEN_EFFECT",
   ] as const,
   assets: {
     ...iMessageAssets,
@@ -103,6 +112,9 @@ export const IMessagePlugin: TokovoPluginContract<"app_imessage"> & {
   v2Lowering: iMessageV2Lowering,
   layouts: iMessageLayoutStrategies,
   anchorProvider: IMessageAnchorProvider,
+  dsl: iMessageDsl,
+  collectAssetRefs: collectIMessageAssetRefs,
+  notificationAdapter: iMessageNotificationAdapter,
 };
 
 const registeredManagers = new WeakSet<PluginManagerClass>();
@@ -114,3 +126,4 @@ export function registerIMessagePlugin(pluginManager: PluginManagerClass): void 
 }
 
 export default IMessagePlugin;
+export type { IMessageDslApi };

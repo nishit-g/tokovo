@@ -36,14 +36,16 @@ export default defineEpisode({
       })
       .device("phone", "iphone16", {
         app: "app_whatsapp",
-        conversations: [
-          { id: "dm_sarah", name: "Sarah", avatar: "/avatars/sarah.png" },
-        ],
         os: {
           time: new Date("2024-12-18T21:30:00"),
           battery: 64,
           network: "5G",
         },
+      })
+      .snapshot("app_whatsapp", "phone", {
+        conversations: [
+          { id: "dm_sarah", name: "Sarah", avatar: "/avatars/sarah.png" },
+        ],
       })
       .background({ type: "image", src: "/backgrounds/night-window.png" })
 

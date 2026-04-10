@@ -1,31 +1,44 @@
 import React from "react";
 import type { WorldState } from "@tokovo/core";
+import { getTypedTextProgress } from "@tokovo/device-keyboard";
 import { useXTheme } from "./ThemeContext.js";
 import {
   getActiveThread,
+  getThreadDraft,
   getThreadMessages,
   getXState,
 } from "../runtime/selectors.js";
 import { AppShell } from "./AppShell.js";
-import { Avatar, XIcon, VerifiedBadge, formatTimestamp } from "./components.js";
+import { Avatar, VerifiedBadge, XIcon, formatTimestamp } from "./components.js";
 import { ScreenTransition } from "./ScreenTransition.js";
 import { BottomNav } from "./BottomNav.js";
 
 interface MessageThreadProps {
   world: WorldState;
+  deviceId?: string;
+  t?: number;
 }
 
-export const MessageThread: React.FC<MessageThreadProps> = ({ world }) => {
+export const MessageThread: React.FC<MessageThreadProps> = ({
+  world,
+  deviceId,
+  t,
+}) => {
   const theme = useXTheme();
   const state = getXState(world);
   const thread = getActiveThread(world);
   const messages = getThreadMessages(world, thread?.id ?? null);
-  const referenceNowMs = messages.reduce(
-    (max, message) => Math.max(max, message.createdAt),
-    0,
-  );
-
-  const getUser = (id: string) => state?.users.find((u) => u.id === id);
+  const users = state?.users ?? [];
+  const focusedDevice =
+    (deviceId && world.devices?.[deviceId]) ||
+    world.devices?.[Object.keys(world.devices ?? {})[0]];
+  const keyboard = focusedDevice?.keyboard;
+  const storedDraft = getThreadDraft(world, thread?.id ?? null);
+  const typedDraft =
+    keyboard?.visible && keyboard.typingAnimation
+      ? getTypedTextProgress(keyboard, t ?? 0)
+      : storedDraft;
+  const nowMs = messages.reduce((max, message) => Math.max(max, message.createdAt), 0);
 
   if (!thread) {
     return (
@@ -42,241 +55,231 @@ export const MessageThread: React.FC<MessageThreadProps> = ({ world }) => {
     );
   }
 
-  const otherParticipants = thread.participantIds.filter(
-    (id) => id !== state?.currentUserId
-  );
-  const participantUsers = otherParticipants.map((id) => getUser(id)).filter(Boolean);
-  const mainParticipant = participantUsers[0];
-  const isGroup = otherParticipants.length > 1;
-  const title = isGroup
-    ? participantUsers.map((user) => user?.name ?? "Unknown").join(", ")
-    : mainParticipant?.name ?? "Unknown";
-  const subtitle = isGroup
-    ? `${otherParticipants.length} participants`
-    : `@${mainParticipant?.handle ?? "unknown"}`;
-  const groupBio = isGroup
-    ? `${participantUsers
-        .map((user) => `@${user?.handle ?? "unknown"}`)
-        .join(", ")}`
-    : (mainParticipant?.bio ?? "");
+  const participants = thread.participantIds.filter((id) => id !== state?.currentUserId);
+  const mainParticipant = users.find((user) => user.id === participants[0]);
+  const title =
+    thread.title ??
+    (participants.length > 1
+      ? participants
+          .map((id) => users.find((user) => user.id === id)?.name ?? "Unknown")
+          .join(", ")
+      : mainParticipant?.name ?? "Unknown");
+  const subtitle =
+    participants.length > 1
+      ? `${participants.length} participants`
+      : `@${mainParticipant?.handle ?? "unknown"}`;
+  const typingUser = thread.typingUserId
+    ? users.find((user) => user.id === thread.typingUserId)
+    : null;
 
   return (
     <AppShell>
-      {/* Header */}
       <div
         style={{
-          height: theme.spacing.headerHeight,
+          flex: 1,
+          minHeight: 0,
           display: "flex",
-          alignItems: "center",
-          padding: `0 ${theme.spacing.screenPadding}px`,
-          gap: 16,
-          borderBottom: `1px solid ${theme.colors.border}`,
-          backgroundColor: "rgba(0,0,0,0.65)",
-          backdropFilter: "blur(12px)",
-          position: "sticky",
-          top: 0,
-          zIndex: 10,
+          flexDirection: "column",
+          overflow: "hidden",
         }}
       >
-        <XIcon name="back" size={20} color={theme.colors.textPrimary} />
-        <Avatar size={32} src={mainParticipant?.avatarUrl} />
-        <div style={{ flex: 1 }}>
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 4,
-            }}
-          >
-            <span
-              style={{
-                fontSize: 15,
-                fontWeight: 700,
-                color: theme.colors.textPrimary,
-              }}
-            >
-              {title}
-            </span>
-            {mainParticipant?.verified && !isGroup && (
-              <VerifiedBadge variant={mainParticipant.verified} size={16} />
-            )}
-          </div>
-          <div style={{ fontSize: 13, color: theme.colors.textSecondary }}>
-            {subtitle}
-          </div>
-        </div>
-        <XIcon name="more" size={20} color={theme.colors.textPrimary} />
-      </div>
-
-      <ScreenTransition lastNavFrame={state?.lastNavFrame}>
-        {/* Participant Profile Card */}
         <div
           style={{
-            padding: 24,
+            height: theme.spacing.headerHeight,
             display: "flex",
-            flexDirection: "column",
             alignItems: "center",
+            gap: 14,
+            padding: `0 ${theme.spacing.screenPadding}px`,
             borderBottom: `1px solid ${theme.colors.border}`,
+            backgroundColor: theme.colors.background,
+            flexShrink: 0,
           }}
         >
-          <Avatar size={64} src={mainParticipant?.avatarUrl} />
-          <div
-            style={{
-              marginTop: 8,
-              display: "flex",
-              alignItems: "center",
-              gap: 4,
-            }}
-          >
-            <span
-              style={{
-                fontSize: 17,
-                fontWeight: 800,
-                color: theme.colors.textPrimary,
-              }}
-            >
-              {title}
-            </span>
-            {mainParticipant?.verified && !isGroup && (
-              <VerifiedBadge variant={mainParticipant.verified} size={18} />
-            )}
+          <XIcon name="back" size={20} color={theme.colors.textPrimary} />
+          <Avatar size={32} src={mainParticipant?.avatarUrl} />
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+              <span
+                style={{
+                  fontSize: 15,
+                  fontWeight: 700,
+                  color: theme.colors.textPrimary,
+                  whiteSpace: "nowrap",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                }}
+              >
+                {title}
+              </span>
+              {mainParticipant?.verified && participants.length === 1 ? (
+                <VerifiedBadge variant={mainParticipant.verified} size={16} />
+              ) : null}
+            </div>
+            <div style={{ fontSize: 13, color: theme.colors.textSecondary }}>
+              {typingUser ? `${typingUser.name} is typing…` : subtitle}
+            </div>
           </div>
-          <div style={{ fontSize: 15, color: theme.colors.textSecondary }}>
-            {subtitle}
-          </div>
-          <div
-            style={{
-              marginTop: 8,
-              fontSize: 15,
-              color: theme.colors.textSecondary,
-            }}
-            >
-            {groupBio}
-          </div>
-          <div
-            style={{
-              marginTop: 12,
-              fontSize: 13,
-              color: theme.colors.textMuted,
-            }}
-            >
-            {isGroup
-              ? `${participantUsers.length} members`
-              : `${mainParticipant?.followers ?? 0} Followers`}
-          </div>
+          <XIcon name="more" size={20} color={theme.colors.textPrimary} />
         </div>
 
-        {/* Messages */}
-        <div
-          style={{
-            flex: 1,
-            padding: theme.spacing.screenPadding,
-            display: "flex",
-            flexDirection: "column",
-            gap: 4,
-          }}
-        >
-          {messages.length === 0 && (
-            <div
-              style={{
-                textAlign: "center",
-                color: theme.colors.textSecondary,
-                fontSize: 15,
-                marginTop: 24,
-              }}
-            >
-              Start your conversation
-            </div>
-          )}
+        <ScreenTransition lastNavFrame={state?.lastNavFrame}>
+          <div
+            style={{
+              flex: 1,
+              minHeight: 0,
+              overflow: "auto",
+              padding: `${theme.spacing.screenPadding}px`,
+              display: "flex",
+              flexDirection: "column",
+              gap: 8,
+            }}
+          >
+            {messages.length === 0 ? (
+              <div
+                style={{
+                  marginTop: 24,
+                  fontSize: 15,
+                  color: theme.colors.textSecondary,
+                  textAlign: "center",
+                }}
+              >
+                Start your conversation.
+              </div>
+            ) : null}
 
-          {messages.map((message, index) => {
-            const isSelf = message.senderId === state?.currentUserId;
-            const prevMessage = messages[index - 1];
-            const showTimestamp =
-              !prevMessage ||
-              message.createdAt - prevMessage.createdAt > 3600 * 1000;
+            {messages.map((message, index) => {
+              const isSelf = message.senderId === state?.currentUserId;
+              const previous = messages[index - 1];
+              const showDayBreak =
+                !previous || message.createdAt - previous.createdAt > 60 * 60 * 1000;
+              const sender = users.find((user) => user.id === message.senderId);
+              return (
+                <React.Fragment key={message.id}>
+                  {showDayBreak ? (
+                    <div
+                      style={{
+                        alignSelf: "center",
+                        margin: "8px 0 4px",
+                        padding: "6px 12px",
+                        borderRadius: 999,
+                        backgroundColor: theme.colors.surfaceRaised,
+                        color: theme.colors.textSecondary,
+                        fontSize: 13,
+                      }}
+                    >
+                      {formatTimestamp(message.createdAt, { nowMs })}
+                    </div>
+                  ) : null}
 
-            return (
-              <React.Fragment key={message.id}>
-                {showTimestamp && (
+                  {!isSelf && participants.length > 1 ? (
+                    <div
+                      style={{
+                        marginLeft: 44,
+                        fontSize: 12,
+                        color: theme.colors.textSecondary,
+                      }}
+                    >
+                      {sender?.name ?? "Unknown"}
+                    </div>
+                  ) : null}
+
                   <div
                     style={{
-                      textAlign: "center",
-                      fontSize: 13,
-                      color: theme.colors.textMuted,
-                      marginTop: 16,
-                      marginBottom: 8,
+                      display: "flex",
+                      justifyContent: isSelf ? "flex-end" : "flex-start",
                     }}
                   >
-                    {formatTimestamp(message.createdAt, { nowMs: referenceNowMs })}
-                  </div>
-                )}
-                <div
-                  style={{
-                    alignSelf: isSelf ? "flex-end" : "flex-start",
-                    maxWidth: "75%",
-                  }}
-                >
-                  <div
-                    style={{
-                      padding: "12px 16px",
-                      borderRadius: 24,
-                      borderBottomRightRadius: isSelf ? 4 : 24,
-                      borderBottomLeftRadius: isSelf ? 24 : 4,
-                      backgroundColor: isSelf
-                        ? theme.colors.accent
-                        : theme.colors.surfaceRaised,
-                      color: isSelf ? "#FFFFFF" : theme.colors.textPrimary,
-                    }}
-                  >
-                    <div style={{ fontSize: 15, lineHeight: 1.4 }}>
+                    <div
+                      style={{
+                        maxWidth: "78%",
+                        padding: "12px 14px",
+                        borderRadius: 18,
+                        borderBottomRightRadius: isSelf ? 6 : 18,
+                        borderBottomLeftRadius: isSelf ? 18 : 6,
+                        backgroundColor: isSelf ? theme.colors.accent : theme.colors.surfaceRaised,
+                        color: isSelf ? "#FFFFFF" : theme.colors.textPrimary,
+                        fontSize: 15,
+                        lineHeight: 1.4,
+                        whiteSpace: "pre-wrap",
+                        wordBreak: "break-word",
+                      }}
+                    >
                       {message.text}
                     </div>
                   </div>
-                </div>
-              </React.Fragment>
-            );
-          })}
-        </div>
-      </ScreenTransition>
+                </React.Fragment>
+              );
+            })}
 
-      {/* Message Input */}
+            {typingUser ? (
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 8,
+                  marginTop: 6,
+                }}
+              >
+                <Avatar size={28} src={typingUser.avatarUrl} />
+                <div
+                  style={{
+                    display: "inline-flex",
+                    gap: 4,
+                    padding: "10px 12px",
+                    borderRadius: 18,
+                    backgroundColor: theme.colors.surfaceRaised,
+                  }}
+                >
+                  <div className="x-typing-dot" style={{ width: 6, height: 6, borderRadius: "50%", backgroundColor: theme.colors.textSecondary }} />
+                  <div className="x-typing-dot" style={{ width: 6, height: 6, borderRadius: "50%", backgroundColor: theme.colors.textSecondary, animationDelay: "0.15s" }} />
+                  <div className="x-typing-dot" style={{ width: 6, height: 6, borderRadius: "50%", backgroundColor: theme.colors.textSecondary, animationDelay: "0.3s" }} />
+                </div>
+              </div>
+            ) : null}
+          </div>
+        </ScreenTransition>
+      </div>
+
       <div
         style={{
-          padding: `12px ${theme.spacing.screenPadding}px`,
+          padding: `10px ${theme.spacing.screenPadding}px`,
           borderTop: `1px solid ${theme.colors.border}`,
-          backgroundColor: "rgba(0,0,0,0.65)",
-          backdropFilter: "blur(12px)",
+          backgroundColor: theme.colors.background,
           display: "flex",
           alignItems: "center",
-          gap: 12,
+          gap: 10,
         }}
       >
         <div
           style={{
-            width: 32,
-            height: 32,
+            width: 34,
+            height: 34,
             borderRadius: "50%",
-            backgroundColor: theme.colors.accent,
+            border: `1px solid ${theme.colors.border}`,
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
+            color: theme.colors.accent,
+            flexShrink: 0,
           }}
         >
-          <XIcon name="compose" size={16} color="#FFFFFF" />
+          <XIcon name="compose" size={16} color={theme.colors.accent} />
         </div>
         <div
           style={{
             flex: 1,
-            padding: "10px 16px",
-            borderRadius: 20,
-            backgroundColor: theme.colors.surfaceRaised,
+            minHeight: 42,
+            padding: "10px 14px",
+            borderRadius: 999,
             border: `1px solid ${theme.colors.border}`,
-            color: theme.colors.textSecondary,
+            backgroundColor: theme.colors.surfaceRaised,
+            color: typedDraft ? theme.colors.textPrimary : theme.colors.textSecondary,
             fontSize: 15,
+            display: "flex",
+            alignItems: "center",
           }}
         >
-          Start a new message
+          {typedDraft || "Start a new message"}
         </div>
         <XIcon name="mail" size={22} color={theme.colors.textSecondary} />
       </div>

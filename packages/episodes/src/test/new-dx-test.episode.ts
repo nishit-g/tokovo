@@ -2,7 +2,7 @@
  * New DX Test Episode
  *
  * Exercises:
- * - initialMessages
+ * - seeded message history
  * - openChat()/goBack()
  * - pause()/now()
  * - reply()
@@ -37,16 +37,18 @@ export default defineEpisode({
       duration: "60s",
       title: "New DX Test - Initial Messages + Context Switching + Relative Timing",
       description:
-        "Tests: initialMessages, openChat(), pause(), now(), reply()",
+        "Tests: seeded message history, openChat(), pause(), now(), reply()",
     })
       .device("phone", "iphone16", {
         app: "app_whatsapp",
+      })
+      .snapshot("app_whatsapp", "phone", {
         conversations: [
           {
             id: "dm_alex",
             name: "Alex",
             avatar: "https://i.pravatar.cc/150?img=1",
-            initialMessages: [
+            messages: [
               {
                 from: "Alex",
                 text: "Hey! See you tomorrow at 2pm?",
@@ -65,7 +67,7 @@ export default defineEpisode({
             id: "dm_sarah",
             name: "Sarah",
             avatar: "https://i.pravatar.cc/150?img=2",
-            initialMessages: [],
+            messages: [],
           },
         ],
       })
@@ -98,4 +100,3 @@ export default defineEpisode({
       })
       .build(),
 });
-

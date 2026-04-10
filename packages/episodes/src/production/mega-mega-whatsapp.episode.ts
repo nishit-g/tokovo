@@ -1,17 +1,7 @@
 import { defineEpisode } from "../types/episode-definition.js";
 import { episode, parseTimeToFrames } from "@tokovo/dsl";
-import { WhatsAppTrackBuilder, GroupBuilder } from "@tokovo/apps-whatsapp";
+import { WhatsAppTrackBuilder } from "@tokovo/apps-whatsapp";
 import { KeyboardPlugin } from "@tokovo/compiler";
-
-type GroupOp = {
-  at: number;
-  kind: "Custom";
-  deviceId: string;
-  appId: string;
-  eventType: string;
-  payload: unknown;
-  _declarationOrder?: number;
-};
 
 export default defineEpisode({
   meta: {
@@ -35,6 +25,13 @@ export default defineEpisode({
     })
       .device("phone", "iphone16", {
         app: "app_whatsapp",
+        os: {
+          time: new Date("2025-02-01T18:45:00"),
+          battery: 82,
+          network: "5G",
+        },
+      })
+      .snapshot("app_whatsapp", "phone", {
         conversations: [
           {
             id: "dm_alex",
@@ -42,7 +39,7 @@ export default defineEpisode({
             avatar: "/avatars/avatar-alex.jpg",
             unreadCount: 2,
             hasStatus: true,
-            initialMessages: [
+            messages: [
               {
                 from: "system",
                 type: "system",
@@ -85,7 +82,7 @@ export default defineEpisode({
             avatar: "/avatars/avatar-mom.jpg",
             unreadCount: 1,
             hasStatus: true,
-            initialMessages: [
+            messages: [
               { from: "Mom", text: "Dinner at 8?", timestamp: -3600 },
             ],
           },
@@ -95,7 +92,7 @@ export default defineEpisode({
             avatar: "/avatars/group-design.jpg",
             type: "group",
             hasStatus: true,
-            initialMessages: [
+            messages: [
               { from: "Ava", text: "Agenda is in the doc", timestamp: -8400 },
               { from: "Ken", text: "We go live at 7pm", timestamp: -8300 },
             ],
@@ -105,16 +102,11 @@ export default defineEpisode({
             name: "Weekend Crew",
             avatar: "/avatars/group-weekend.jpg",
             type: "group",
-            initialMessages: [
+            messages: [
               { from: "Jess", text: "Brunch plan?", timestamp: -5400 },
             ],
           },
         ],
-        os: {
-          time: new Date("2025-02-01T18:45:00"),
-          battery: 82,
-          network: "5G",
-        },
       })
       .background({ type: "image", src: "/backgrounds/cafe-lofi.png" })
       .track(
@@ -132,24 +124,29 @@ export default defineEpisode({
           const maybeOrder = Reflect.get(wa, "_getOrder");
           const getOrder =
             typeof maybeOrder === "function" ? (maybeOrder as () => number) : (() => 0);
-          let groupFrame = 0;
-          const group = new GroupBuilder(
-            "group_design",
-            () => groupFrame,
-            (op: GroupOp) => {
-              const rawEvents = Reflect.get(wa, "_events") as unknown;
-              if (Array.isArray(rawEvents)) {
-                (rawEvents as unknown[]).push({
-                ...op,
-                _declarationOrder: getOrder(),
-                });
-              }
-            },
-            { deviceId: "phone", appId: "app_whatsapp" },
-          );
-          const atGroup = (time: string | number) => {
-            groupFrame = parseTimeToFrames(time, fps);
-            return group;
+          const rawEvents = Reflect.get(wa, "_events");
+
+          const addGroupMember = (
+            time: string | number,
+            member: { id: string; name: string; avatar?: string },
+            addedBy = "me",
+          ) => {
+            if (!Array.isArray(rawEvents)) return;
+            rawEvents.push({
+              at: parseTimeToFrames(time, fps),
+              deviceId: "phone",
+              kind: "APP",
+              appId: "app_whatsapp",
+              type: "GROUP_MEMBER_ADDED",
+              conversationId: "group_design",
+              payload: {
+                conversationId: "group_design",
+                memberId: member.id,
+                memberName: member.name,
+                addedBy,
+              },
+              _declarationOrder: getOrder(),
+            });
           };
 
           // Tour the top-level screens
@@ -212,12 +209,19 @@ export default defineEpisode({
           wa.at("39s").send("Adding now.");
           wa.at("39.6s").forward(-1, { forwardedFrom: "Analytics" });
 
-          atGroup("40.2s").addMember(
+          addGroupMember(
+            "40.2s",
             { id: "leo", name: "Leo", avatar: "/avatars/avatar-leo.jpg" },
             "me",
           );
-          atGroup("41s").makeAdmin("ava", "me");
-          atGroup("41.8s").updateInfo("name", "Design Sprint ⚡ Launch", "Ken");
+          wa.at("41s").receive(
+            "Ava",
+            "I’m admin now, so I’ll pin the checklist and keep the launch thread tidy.",
+          );
+          wa.at("41.8s").receive(
+            "Ken",
+            'Renamed us to "Design Sprint ⚡ Launch" so nobody opens the stale planning thread.',
+          );
 
           wa.goBack("44s");
 

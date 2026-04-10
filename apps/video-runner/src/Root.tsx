@@ -16,8 +16,18 @@ import {
   type EpisodeDefinition,
   type FormatId,
 } from "@tokovo/episodes";
-import { EpisodeRenderer, calculateEpisodeMetadata } from "./EpisodeRenderer";
-import { VideoRunnerRuntimeProvider, useVideoRunnerRuntime } from "./RuntimeContext";
+import { EpisodeRenderer } from "./EpisodeRenderer";
+import { calculateEpisodeMetadata } from "./episode-metadata";
+import { VideoRunnerRuntimeProvider } from "./RuntimeContext";
+import { useVideoRunnerRuntime } from "./RuntimeSharedContext";
+
+export const RELEASE_COMPOSITION_ID = "episode-render";
+const INCLUDE_EPISODE_CATALOG = process.env.TOKOVO_STUDIO_CATALOG !== "0";
+const episodeRendererSchema = z.object({
+  episodeId: z.string(),
+  renderDataKey: z.string().optional(),
+  renderData: z.unknown().optional(),
+});
 
 // =============================================================================
 // MAIN COMPONENT
@@ -36,22 +46,31 @@ const RemotionRootInner: React.FC = () => {
   const production = episodeRegistry.filter({ category: "production" });
   const showcases = episodeRegistry.filter({ category: "showcase" });
   const tests = episodeRegistry.filter({ category: "test" });
-
-  console.warn("[Video-Runner] Episodes loaded:", {
-    production: production.length,
-    showcases: showcases.length,
-    tests: tests.length,
-  });
+  const fallbackEpisodeId =
+    production[0]?.meta.id ?? showcases[0]?.meta.id ?? tests[0]?.meta.id ?? "v2-device-baseline";
 
   return (
     <>
-      {production.length > 0 && (
+      <Folder name="System">
+        <Composition
+          id={RELEASE_COMPOSITION_ID}
+          component={EpisodeRenderer}
+          durationInFrames={300}
+          fps={30}
+          width={1080}
+          height={1920}
+          defaultProps={{ episodeId: fallbackEpisodeId }}
+          calculateMetadata={calculateEpisodeMetadata}
+          schema={episodeRendererSchema as any}
+        />
+      </Folder>
+      {INCLUDE_EPISODE_CATALOG && production.length > 0 && (
         <Folder name="Production">{production.map(renderEpisode)}</Folder>
       )}
-      {showcases.length > 0 && (
+      {INCLUDE_EPISODE_CATALOG && showcases.length > 0 && (
         <Folder name="Showcases">{showcases.map(renderEpisode)}</Folder>
       )}
-      {tests.length > 0 && (
+      {INCLUDE_EPISODE_CATALOG && tests.length > 0 && (
         <Folder name="Tests">{tests.map(renderEpisode)}</Folder>
       )}
     </>
@@ -72,14 +91,14 @@ function renderEpisode(ep: EpisodeDefinition) {
     <Composition
       key={ep.meta.id}
       id={ep.meta.id}
-      component={EpisodeRenderer}
+      lazyComponent={() => import("./EpisodeRenderer")}
       durationInFrames={ep.config.durationInFrames}
       fps={format.fps}
       width={format.width}
       height={format.height}
       defaultProps={{ episodeId: ep.meta.id }}
       calculateMetadata={calculateEpisodeMetadata}
-      schema={z.object({ episodeId: z.string() })}
+      schema={episodeRendererSchema as any}
     />
   );
 }

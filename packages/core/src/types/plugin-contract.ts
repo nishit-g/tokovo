@@ -14,6 +14,55 @@ import type { Platform } from "../tokens.js";
 import type { AnchorFraming } from "./anchor.js";
 import type { LayoutContext, LayoutState, ViewKind } from "./layout.js";
 import type { AnchorProvider } from "./anchor.js";
+import type { EpisodeAssetRef, PluginAssetCollector } from "./asset-ref.js";
+
+export interface PluginBootstrapValidationResult {
+  errors?: string[];
+  warnings?: string[];
+}
+
+export interface PluginBootstrapMigrationResult<TValue = unknown> {
+  version: number;
+  value: TValue;
+}
+
+export interface PluginBootstrapSchemaContext<AppId extends string = string> {
+  appId: AppId;
+  version: number;
+  value: unknown;
+  context: PluginBootstrapContext<AppId>;
+}
+
+export interface PluginBootstrapSchemaContract<AppId extends string = string> {
+  currentVersion: number;
+  migrate?: (
+    input: PluginBootstrapSchemaContext<AppId>,
+  ) => PluginBootstrapMigrationResult;
+  validate?: (
+    input: PluginBootstrapSchemaContext<AppId>,
+  ) => PluginBootstrapValidationResult;
+}
+
+export interface PluginBootstrapContext<AppId extends string = string> {
+  appId: AppId;
+  deviceId: string;
+  device: import("@tokovo/ir").DeviceConfig;
+  ir: import("@tokovo/ir").TrackEpisodeIR;
+  baseState: InitialStateForApp<AppId>;
+  snapshot?: import("@tokovo/ir").AppSnapshotEntry<AppId>;
+  initialView?: import("@tokovo/ir").AppInitialViewEntry<AppId>;
+}
+
+export interface PluginBootstrapContract<AppId extends string = string> {
+  snapshot?: PluginBootstrapSchemaContract<AppId>;
+  view?: PluginBootstrapSchemaContract<AppId>;
+  hydrate: (
+    context: PluginBootstrapContext<AppId>,
+  ) => InitialStateForApp<AppId>;
+  validate?: (
+    context: PluginBootstrapContext<AppId>,
+  ) => PluginBootstrapValidationResult;
+}
 // =============================================================================
 // LAYOUT CONSTANTS - App-specific UI metrics
 // =============================================================================
@@ -283,6 +332,7 @@ export interface TokovoPluginContract<AppId extends string = string> {
 
   // === TIER A: Initial State ===
   createInitialState?: () => InitialStateForApp<AppId>;
+  bootstrap?: PluginBootstrapContract<AppId>;
 
   // === TIER B: Lowering (OPTIONAL) ===
   lowering?: LoweringHandler;
@@ -295,6 +345,7 @@ export interface TokovoPluginContract<AppId extends string = string> {
 
   // === TIER D: Compiler (OPTIONAL) ===
   compileHandlers?: unknown;
+  collectAssetRefs?: PluginAssetCollector<AppId>;
 
   // === Camera Anchors ===
   anchors?: PluginAnchorRegistry;

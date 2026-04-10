@@ -80,12 +80,6 @@ interface DeviceDefinition {
   appId?: string;
   profileId?: string;
   theme?: string;
-  conversations?: Array<{
-    id: string;
-    name?: string;
-    type?: "dm" | "group";
-    avatar?: string;
-  }>;
 }
 
 interface SceneIRLike {
@@ -122,36 +116,6 @@ export function deriveInitialWorld(
       os: { ...DEFAULT_OS_STATE },
       appTheme: deviceDef.theme,
     };
-
-    if (appId) {
-      if (!world.appState[appId]) {
-        world.appState[appId] = { conversations: {} };
-      }
-      const appState = world.appState[appId] as {
-        conversations: Record<
-          string,
-          {
-            id: string;
-            name: string;
-            type: string;
-            avatar?: string;
-            messages: unknown[];
-            typing: Record<string, unknown>;
-          }
-        >;
-      };
-
-      for (const convDef of deviceDef.conversations || []) {
-        appState.conversations[convDef.id] = {
-          id: convDef.id,
-          name: convDef.name || convDef.id,
-          type: convDef.type || "dm",
-          avatar: convDef.avatar,
-          messages: [],
-          typing: {},
-        };
-      }
-    }
 
     for (const plugin of registry.plugins) {
       if (plugin.createInitialState) {
@@ -368,12 +332,6 @@ export interface EpisodeDefinition {
     platform?: "ios" | "android";
     appId?: string;
     profileId?: string;
-    conversations?: Array<{
-      id: string;
-      name?: string;
-      type?: "dm" | "group";
-      avatar?: string;
-    }>;
     beats?: Array<{
       id?: string;
       at?: number;
@@ -424,7 +382,6 @@ export function prepareEpisode(
       platform: d.platform,
       appId: d.appId,
       profileId: d.profileId,
-      conversations: d.conversations,
     })),
   };
 

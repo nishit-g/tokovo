@@ -4,3 +4,4 @@ export * from "./types/index.js";
 export * from "./runtime/index.js";
 export * from "./dsl/index.js";
 export * from "./ui/index.js";
+export type { SnapchatSnapshot, SnapchatInitialView } from "./bootstrap.js";

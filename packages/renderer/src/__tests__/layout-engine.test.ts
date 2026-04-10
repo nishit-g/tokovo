@@ -149,25 +149,36 @@ describe("LayoutEngine", () => {
     });
 
     describe("Cache Behavior", () => {
-        it("cache key includes frame number", () => {
-            const cacheKey1 = buildTestCacheKey(60, "device_1", "sig_abc");
-            const cacheKey2 = buildTestCacheKey(90, "device_1", "sig_abc");
-
-            expect(cacheKey1).not.toBe(cacheKey2);
+        it("reuses static layout output across frames when signature is unchanged", () => {
+            expect(
+                shouldReuseCachedLayout({
+                    cachedFrame: 60,
+                    nextFrame: 90,
+                    worldSignatureMatches: true,
+                    cacheHint: "static",
+                }),
+            ).toBe(true);
         });
 
-        it("cache key includes device ID", () => {
-            const cacheKey1 = buildTestCacheKey(60, "device_1", "sig_abc");
-            const cacheKey2 = buildTestCacheKey(60, "device_2", "sig_abc");
-
-            expect(cacheKey1).not.toBe(cacheKey2);
+        it("does not reuse dynamic layout output across different frames", () => {
+            expect(
+                shouldReuseCachedLayout({
+                    cachedFrame: 60,
+                    nextFrame: 90,
+                    worldSignatureMatches: true,
+                }),
+            ).toBe(false);
         });
 
-        it("cache key includes world signature", () => {
-            const cacheKey1 = buildTestCacheKey(60, "device_1", "sig_abc");
-            const cacheKey2 = buildTestCacheKey(60, "device_1", "sig_xyz");
-
-            expect(cacheKey1).not.toBe(cacheKey2);
+        it("does not reuse cached layout when signature changes", () => {
+            expect(
+                shouldReuseCachedLayout({
+                    cachedFrame: 60,
+                    nextFrame: 90,
+                    worldSignatureMatches: false,
+                    cacheHint: "static",
+                }),
+            ).toBe(false);
         });
     });
 });
@@ -206,6 +217,14 @@ function computeTestWorldSignature(
     return parts.join("|");
 }
 
-function buildTestCacheKey(frame: number, deviceId: string, worldSignature: string): string {
-    return `${frame}:${deviceId}:${worldSignature}`;
+function shouldReuseCachedLayout(input: {
+    cachedFrame: number;
+    nextFrame: number;
+    worldSignatureMatches: boolean;
+    cacheHint?: "static";
+}): boolean {
+    return (
+        input.worldSignatureMatches &&
+        (input.cachedFrame === input.nextFrame || input.cacheHint === "static")
+    );
 }

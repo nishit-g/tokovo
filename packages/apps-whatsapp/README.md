@@ -1,34 +1,19 @@
 # @tokovo/apps-whatsapp
 
-WhatsApp app plugin for Tokovo (runtime + UI + layouts + anchors + audio + DSL).
+`@tokovo/apps-whatsapp` is the WhatsApp plugin package for Tokovo.
 
-## What This Plugin Provides
-- Runtime reducer + initial state (`viewMode` invariants enforced).
-- UI root view (`WhatsappChatView`) and iOS strategy wiring.
-- Layout strategies:
-  - `FEED`: chat list + tab screens (status/calls/communities/settings)
-  - `CHAT`: deterministic message layout + semantic regions
-- Anchor provider (`anchorProvider`) exposing layout semantic anchors for the camera engine.
-- Audio rules + sound assets.
-- DSL extension for episode authoring.
+## Responsibilities
 
-## App State Invariants (Contract)
-- `appState.app_whatsapp.viewMode` is required.
-- When `viewMode === "CHAT"`, `conversationId` must be set.
-- Screen mapping (canonical):
-  - `currentScreen === "chat"` => `viewMode = "CHAT"`
-  - everything else => `viewMode = "FEED"`
+- WhatsApp runtime reducer and initial state
+- WhatsApp React views
+- deterministic chat and feed layout support
+- anchor integration for camera work
+- audio rules and assets
+- DSL track-builder support
 
-## Anchors (Authoring Contract)
-See `ANCHORS.md`.
+## State Contract
 
-## Tokens / Theme
-- Design tokens: `src/config/tokens.ts`
-- Theme API: `src/config/theme.ts`
-- Theme context: `src/ui/ThemeContext.tsx`
+- `viewMode` is required
+- when the app is in chat mode, a conversation context must be available
 
-## Tests
-```bash
-pnpm --filter @tokovo/apps-whatsapp test
-pnpm --filter @tokovo/apps-whatsapp build
-```
+See `ANCHORS.md` for anchor IDs and `LAYOUT_LOGIC.md` for layout-specific notes.

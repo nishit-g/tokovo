@@ -26,4 +26,6 @@ export interface SnapchatConversation {
     lastSnapAt?: number;
     /** Last message timestamp */
     lastMessageAt?: number;
+    pinned?: boolean;
+    muted?: boolean;
 }

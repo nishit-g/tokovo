@@ -1,20 +1,38 @@
 import { describe, expect, it } from "vitest";
-import { TEAMS_THEME_PRESETS } from "../config/theme.js";
+import { getTheme, TEAMS_THEME_PRESETS } from "../config/theme.js";
 
-function hexToRgb(hex: string): { r: number; g: number; b: number } {
-  const normalized = hex.replace("#", "");
-  const value = Number.parseInt(normalized.length === 3
-    ? normalized.split("").map((c) => `${c}${c}`).join("")
-    : normalized, 16);
-  return {
-    r: (value >> 16) & 255,
-    g: (value >> 8) & 255,
-    b: value & 255,
-  };
+function parseColor(input: string): { r: number; g: number; b: number } {
+  if (input.startsWith("#")) {
+    const normalized = input.replace("#", "");
+    const value = Number.parseInt(
+      normalized.length === 3
+        ? normalized
+            .split("")
+            .map((c) => `${c}${c}`)
+            .join("")
+        : normalized,
+      16,
+    );
+    return {
+      r: (value >> 16) & 255,
+      g: (value >> 8) & 255,
+      b: value & 255,
+    };
+  }
+
+  const rgbaMatch = input.match(/rgba?\(([^)]+)\)/i);
+  if (!rgbaMatch) {
+    throw new Error(`Unsupported color format: ${input}`);
+  }
+  const [r, g, b] = rgbaMatch[1]
+    .split(",")
+    .slice(0, 3)
+    .map((channel) => Number.parseFloat(channel.trim()));
+  return { r, g, b };
 }
 
 function luminance(hex: string): number {
-  const { r, g, b } = hexToRgb(hex);
+  const { r, g, b } = parseColor(hex);
   const channels = [r, g, b].map((channel) => {
     const c = channel / 255;
     return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
@@ -42,5 +60,14 @@ describe("teams theme", () => {
     for (const [fg, bg] of pairs) {
       expect(contrastRatio(fg, bg)).toBeGreaterThanOrEqual(4.5);
     }
+  });
+
+  it("resolves theme variants without losing platform defaults", () => {
+    const theme = getTheme("ios", false, "ghibli");
+
+    expect(theme.id).toBe("teams-ghibli");
+    expect(theme.platform).toBe("ios");
+    expect(theme.color.brand).not.toBe(TEAMS_THEME_PRESETS.light.color.brand);
+    expect(theme.typography.fontFamily).toContain("Aptos");
   });
 });

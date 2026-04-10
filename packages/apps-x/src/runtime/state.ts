@@ -74,12 +74,20 @@ export interface XNotification {
   tweetId?: string;
   isMention?: boolean;
   createdAt: number;
+  title?: string;
+  body?: string;
+  read: boolean;
 }
 
 export interface XDMThread {
   id: string;
   participantIds: string[];
   messageIds: string[];
+  title?: string;
+  unreadCount: number;
+  pinned: boolean;
+  typingUserId: string | null;
+  lastMessageAt: number | null;
 }
 
 export interface XDMMessage {
@@ -100,6 +108,8 @@ export type XScreen =
   | "thread";
 
 export type NotificationsTab = "all" | "mentions";
+export type TimelineTab = "forYou" | "following";
+export type ProfileTab = "posts" | "replies" | "media" | "likes";
 
 export interface XRoute {
   screen: XScreen;
@@ -127,7 +137,10 @@ export interface XState {
   activeThreadId: string | null;
   currentUserId: string | null;
   composeDraft: string;
+  threadDrafts: Record<string, string>;
   notificationsTab: NotificationsTab;
+  timelineTab: TimelineTab;
+  profileTab: ProfileTab;
   navigationStack: XRoute[];
   lastNavFrame: number;
   statusBarTheme?: "light" | "dark";
@@ -150,7 +163,10 @@ export function createXInitialState(): XState {
     activeThreadId: null,
     currentUserId: null,
     composeDraft: "",
+    threadDrafts: {},
     notificationsTab: "all",
+    timelineTab: "forYou",
+    profileTab: "posts",
     navigationStack: [],
     lastNavFrame: 0,
     statusBarTheme: "dark",
