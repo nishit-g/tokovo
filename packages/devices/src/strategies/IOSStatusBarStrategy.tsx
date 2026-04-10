@@ -16,6 +16,7 @@ import {
     NetworkTypeLabel,
     formatTime,
 } from "./shared-icons.js";
+import { getIOSChromeMetrics } from "../ios/chrome-metrics.js";
 
 /**
  * Resolve theme prop to actual colors.
@@ -43,6 +44,7 @@ export const IOSStatusBarStrategy: React.FC<StatusBarStrategyProps> = ({
     time = "9:41",
     theme = "light",
     batteryPercentage = 100,
+    deviceProfile,
 }) => {
     // Read from device.os if available, otherwise use props
     const displayTime = os ? formatTime(os.clock) : time;
@@ -55,15 +57,29 @@ export const IOSStatusBarStrategy: React.FC<StatusBarStrategyProps> = ({
 
     // Resolve theme to actual colors
     const { textColor, bgColor } = resolveThemeColors(theme);
+    const metrics = deviceProfile
+        ? getIOSChromeMetrics(deviceProfile)
+        : null;
+    const pointScale = metrics?.pointScale ?? 3;
+    const statusBar = metrics?.statusBar ?? {
+        height: 132,
+        paddingTop: 45,
+        paddingX: 72,
+        timeFontSize: 51,
+        timeLetterSpacing: 0.5,
+        iconGap: 15,
+        iconOffsetY: 6,
+        networkFontSize: 36,
+    };
 
     return (
         <div style={{
             width: "100%",
-            height: 132,
+            height: statusBar.height,
             display: "flex",
             justifyContent: "space-between",
             alignItems: "flex-start",
-            padding: "45px 72px 0 72px",
+            padding: `${statusBar.paddingTop}px ${statusBar.paddingX}px 0 ${statusBar.paddingX}px`,
             boxSizing: "border-box",
             color: textColor,
             backgroundColor: bgColor,
@@ -74,10 +90,10 @@ export const IOSStatusBarStrategy: React.FC<StatusBarStrategyProps> = ({
         }}>
             {/* Left side - Time */}
             <div style={{
-                fontSize: 51,
+                fontSize: statusBar.timeFontSize,
                 fontWeight: "600",
                 fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif",
-                letterSpacing: 0.5
+                letterSpacing: statusBar.timeLetterSpacing
             }}>
                 {displayTime}
             </div>
@@ -85,15 +101,28 @@ export const IOSStatusBarStrategy: React.FC<StatusBarStrategyProps> = ({
             {/* Right side - Status icons */}
             <div style={{
                 display: "flex",
-                gap: 15,
+                gap: statusBar.iconGap,
                 alignItems: "center",
-                marginTop: 6
+                marginTop: statusBar.iconOffsetY
             }}>
-                {isDND && <DNDIcon color={textColor} />}
-                {network !== "wifi" && <NetworkTypeLabel network={network} color={textColor} />}
-                <SignalBarsIcon color={textColor} strength={cellStrength} />
-                {network === "wifi" && <WifiIcon color={textColor} strength={wifiStrength} />}
-                <BatteryIcon color={textColor} percentage={displayBattery} charging={isCharging} />
+                {isDND && <DNDIcon color={textColor} scale={pointScale} />}
+                {network !== "wifi" && (
+                    <NetworkTypeLabel
+                        network={network}
+                        color={textColor}
+                        fontSize={statusBar.networkFontSize}
+                    />
+                )}
+                <SignalBarsIcon color={textColor} strength={cellStrength} scale={pointScale} />
+                {network === "wifi" && (
+                    <WifiIcon color={textColor} strength={wifiStrength} scale={pointScale} />
+                )}
+                <BatteryIcon
+                    color={textColor}
+                    percentage={displayBattery}
+                    charging={isCharging}
+                    scale={pointScale}
+                />
             </div>
         </div>
     );

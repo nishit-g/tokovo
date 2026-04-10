@@ -99,6 +99,13 @@ export { IOSStatusBarStrategy, AndroidStatusBarStrategy } from "./strategies/ind
 
 export { iPhone16Profile } from "./iphone16/profile.js";
 export { PixelProfile } from "./pixel/profile.js";
+export {
+  getIOSChromeMetrics,
+  getIOSLogicalDimensions,
+  getIOSPointScale,
+  pointsToDevicePx,
+  type IOSChromeMetrics,
+} from "./ios/chrome-metrics.js";
 
 // =============================================================================
 // CANVAS (FRAMELESS) DEVICE SUPPORT

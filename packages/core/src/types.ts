@@ -7,6 +7,8 @@ export type {
   AppCallTypes,
   BaseAppState,
   BackgroundAppState,
+  ScreenRecordingMode,
+  ScreenRecordingState,
   CallDisplayMode,
   CallType,
   CallerMetadata,

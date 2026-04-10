@@ -182,6 +182,8 @@ export interface NotificationCenterState {
   headsUp: string | null;
   headsUpQueue: string[];
   groups: NotificationGroup[];
+  isOpen: boolean;
+  openedAtFrame: number | null;
 }
 
 export const DEFAULT_NOTIFICATION_CENTER: NotificationCenterState = {
@@ -189,6 +191,8 @@ export const DEFAULT_NOTIFICATION_CENTER: NotificationCenterState = {
   headsUp: null,
   headsUpQueue: [],
   groups: [],
+  isOpen: false,
+  openedAtFrame: null,
 };
 
 // =============================================================================

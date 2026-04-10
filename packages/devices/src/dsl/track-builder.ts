@@ -27,6 +27,9 @@ interface IncomingCallPayload extends Record<string, unknown> {
     callerName: string;
     callerAvatar?: string;
     isVideo?: boolean;
+    callType?: string;
+    displayMode?: string;
+    callerMetadata?: Record<string, unknown>;
 }
 
 interface BackgroundAppPayload extends Record<string, unknown> {

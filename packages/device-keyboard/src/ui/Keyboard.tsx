@@ -3,6 +3,7 @@ import { KeyRow } from "./KeyRow.js";
 import { Key } from "./Key.js";
 import type { KeyboardState } from "../runtime/state.js";
 import { isKeyActive, getKeyboardSlideProgress } from "../runtime/selectors.js";
+import { splitGraphemes } from "../runtime/graphemes.js";
 import {
   keyboardTypography,
   keyboardSpacing,
@@ -76,14 +77,15 @@ export const Keyboard: React.FC<KeyboardProps> = ({
 
     if (state.typingAnimation) {
       const { text, startFrame, charDelay } = state.typingAnimation;
+      const graphemes = splitGraphemes(text);
       const elapsed = currentFrame - startFrame;
       if (elapsed >= 0) {
         const charIndex = Math.floor(elapsed / charDelay);
         const frameInChar = elapsed % charDelay;
         const keyPressDuration = Math.min(charDelay, 6);
 
-        if (charIndex < text.length && frameInChar < keyPressDuration) {
-          const activeChar = text[charIndex];
+        if (charIndex < graphemes.length && frameInChar < keyPressDuration) {
+          const activeChar = graphemes[charIndex];
           const matches =
             activeChar.toLowerCase() === keyLower ||
             (activeChar === " " && keyLower === "space");

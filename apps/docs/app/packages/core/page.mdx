@@ -9,6 +9,7 @@ The deterministic runtime layer.
 - engine registries
 - shared runtime types
 - audio primitives
+- plugin contracts used by compiler, renderer, and app packages
 
 ## Boundary
 
@@ -23,3 +24,8 @@ The deterministic runtime layer.
 - config: `TokovoConfig`, `EngineConfig`
 - validation and logging helpers
 - shared runtime and event types
+
+## Design Rule
+
+If a feature can be expressed as a pure runtime transition, it belongs here. If it needs JSX,
+device chrome, or visual composition, it belongs in renderer or a plugin UI layer instead.

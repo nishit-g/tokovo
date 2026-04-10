@@ -67,6 +67,8 @@ export const DeviceFrame: React.FC<DeviceFrameProps> = ({
       <StatusBarStrategy
         os={device?.os}
         theme={platform === "android" ? "dark" : "light"}
+        screenRecording={device?.screenRecording}
+        currentFrame={currentFrame}
       />
     )
   );

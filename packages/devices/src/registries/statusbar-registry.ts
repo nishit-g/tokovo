@@ -12,7 +12,12 @@
  */
 
 import type React from "react";
-import type { DeviceOSState, ResolvedStatusBarTheme } from "@tokovo/core";
+import type {
+    DeviceOSState,
+    ResolvedStatusBarTheme,
+    ScreenRecordingState,
+} from "@tokovo/core";
+import type { DeviceProfile } from "../types.js";
 
 // =============================================================================
 // TYPES
@@ -43,6 +48,12 @@ export interface StatusBarStrategyProps {
     batteryPercentage?: number;
     /** Notification icons (Android) */
     notificationIcons?: StatusBarNotificationIcon[];
+    /** Device screen recording state */
+    screenRecording?: ScreenRecordingState;
+    /** Current frame for time-sensitive chrome like recording */
+    currentFrame?: number;
+    /** Active device profile for device-aware chrome sizing */
+    deviceProfile?: DeviceProfile;
 }
 
 export type StatusBarStrategyComponent = React.FC<StatusBarStrategyProps>;

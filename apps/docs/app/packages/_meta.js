@@ -11,6 +11,7 @@ const meta = {
   overlay: "@tokovo/overlay",
   background: "@tokovo/background",
   "apps-imessage": "@tokovo/apps-imessage",
+  "apps-instagram": "@tokovo/apps-instagram",
   "apps-linkedin": "@tokovo/apps-linkedin",
   "apps-whatsapp": "@tokovo/apps-whatsapp",
   "apps-x": "@tokovo/apps-x",

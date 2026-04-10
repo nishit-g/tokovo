@@ -6,7 +6,8 @@ The React and Remotion rendering layer for Tokovo.
 
 - render devices and app surfaces from runtime state
 - compute deterministic layouts
-- render camera and audio layers
+- render camera, overlays, and OS chrome layers
+- host system surfaces such as lockscreen, notifications, Dynamic Island, and call overlays
 
 Renderer should render through registries, not by hardcoding app behavior.
 
@@ -16,3 +17,7 @@ Renderer should render through registries, not by hardcoding app behavior.
 - overlays: notification, call, and story overlays
 - layout and engines: `computeLayout`, `useLayoutEngine`, `useCameraEngine`, `useAudioEngine`
 - registry integration: `RendererRegistryProvider`
+
+## V1 Rule
+
+System chrome must scale from device-aware metrics and safe areas, not ad hoc render-pixel constants.

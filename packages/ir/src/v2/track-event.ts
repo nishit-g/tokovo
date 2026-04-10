@@ -224,6 +224,9 @@ export type DeviceTrackEvent = TrackEventBase & {
         type: "SET_SCREEN_RECORDING";
         payload: DevicePayloads["SET_SCREEN_RECORDING"];
       }
+    | { type: "INCOMING_CALL"; payload: DevicePayloads["INCOMING_CALL"] }
+    | { type: "CALL_ANSWERED"; payload: DevicePayloads["CALL_ANSWERED"] }
+    | { type: "CALL_ENDED"; payload: DevicePayloads["CALL_ENDED"] }
   );
 
 /**

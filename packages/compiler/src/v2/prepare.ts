@@ -234,8 +234,13 @@ function buildInitialWorld(ir: TrackEpisodeIR, plugins: TokovoPlugin[]): WorldSt
             pages: device.homeScreen?.pages,
           })
         : undefined,
-      dynamicIsland: device.screenRecording
-        ? { visible: true, mode: "compact", activeContent: "recording" }
+      screenRecording: device.screenRecording
+        ? {
+            enabled: true,
+            mode: "compact",
+            startedAtFrame: 0,
+            activeSinceFrame: 0,
+          }
         : undefined,
     } as DeviceState;
   }

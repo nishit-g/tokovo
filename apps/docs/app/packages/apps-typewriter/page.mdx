@@ -1,42 +1,17 @@
 # @tokovo/apps-typewriter
 
-Typewriter simulation plugin for Tokovo. Includes reducer/runtime, themed UI, deterministic text lowering, anchors, and DSL track builders.
+Typewriter simulation plugin for Tokovo.
 
-## Install
+## Responsibilities
 
-```bash
-pnpm add @tokovo/apps-typewriter
-```
+- deterministic text runtime and lowering
+- theme-driven paper, desk, and typography system
+- anchor integration for text area and typing focus
+- DSL track builder for document setup and typing actions
 
-## Register
+## Key Exports
 
-```ts
-import { createTokovoRegistries, PluginManagerClass } from "@tokovo/react";
-import { registerTypewriterPlugin } from "@tokovo/apps-typewriter";
-
-const registries = createTokovoRegistries();
-const pluginManager = new PluginManagerClass(registries.plugins);
-
-registerTypewriterPlugin(pluginManager);
-```
-
-## Use In Episodes
-
-```ts
-import { episode } from "@tokovo/dsl";
-import { TypewriterTrackBuilder } from "@tokovo/apps-typewriter";
-
-episode("typewriter-demo", { fps: 30, duration: "20s" })
-  .device("phone", "canvas", { app: "app_typewriter" })
-  .track(
-    "app_typewriter",
-    (getOrder) => new TypewriterTrackBuilder(30, "phone", getOrder),
-    (tw) => {
-      tw.at("1s").initLetter({ subject: "Incident Report" });
-      tw.span("2s", "8s").typeText("Everything looked calm until notifications exploded.");
-      tw.at("9s").newline();
-      tw.span("10s", "14s").typeText("Escalation acknowledged. Shipping patch now.");
-    },
-  );
-```
-
+- plugin registration: `registerTypewriterPlugin`
+- runtime state and DSL exports
+- theme presets and theme helpers
+- UI and anchor exports

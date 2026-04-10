@@ -1,5 +1,6 @@
 import React, { useMemo } from "react";
 import { iPhone16Profile, iPhone16Constants } from "./profile.js";
+import { getIOSChromeMetrics } from "../ios/chrome-metrics.js";
 
 interface FrameProps {
   children: React.ReactNode;
@@ -12,6 +13,7 @@ export const iPhone16Frame: React.FC<FrameProps> = ({
 }) => {
   const { width, height } = iPhone16Profile.dimensions;
   const C = iPhone16Constants;
+  const metrics = getIOSChromeMetrics(iPhone16Profile);
 
   const containerStyle = useMemo(
     () => ({
@@ -34,29 +36,29 @@ export const iPhone16Frame: React.FC<FrameProps> = ({
       top: 0,
       left: 0,
       right: 0,
-      height: C.STATUS_BAR_HEIGHT,
+      height: metrics.statusBar.height,
       zIndex: 1000,
       pointerEvents: "none" as const,
       display: "flex" as const,
       justifyContent: "space-between" as const,
-      padding: `${C.STATUS_BAR_PADDING_TOP}px ${C.STATUS_BAR_PADDING_X}px 0 ${C.STATUS_BAR_PADDING_X}px`,
+      padding: `${metrics.statusBar.paddingTop}px ${metrics.statusBar.paddingX}px 0 ${metrics.statusBar.paddingX}px`,
     }),
-    [],
+    [metrics.statusBar.height, metrics.statusBar.paddingTop, metrics.statusBar.paddingX],
   );
 
   const dynamicIslandStyle = useMemo(
     () => ({
       position: "absolute" as const,
-      top: C.DYNAMIC_ISLAND_TOP,
+      top: metrics.dynamicIsland?.topY ?? C.DYNAMIC_ISLAND_TOP,
       left: "50%",
       transform: "translateX(-50%)",
-      width: C.DYNAMIC_ISLAND_WIDTH,
-      height: C.DYNAMIC_ISLAND_HEIGHT,
+      width: metrics.dynamicIsland?.collapsedWidth ?? C.DYNAMIC_ISLAND_WIDTH,
+      height: metrics.dynamicIsland?.collapsedHeight ?? C.DYNAMIC_ISLAND_HEIGHT,
       backgroundColor: "black",
-      borderRadius: C.DYNAMIC_ISLAND_RADIUS,
+      borderRadius: metrics.dynamicIsland?.cornerRadius ?? C.DYNAMIC_ISLAND_RADIUS,
       zIndex: 1001,
     }),
-    [],
+    [metrics.dynamicIsland],
   );
 
   const screenStyle = useMemo(
@@ -78,17 +80,17 @@ export const iPhone16Frame: React.FC<FrameProps> = ({
   const homeIndicatorStyle = useMemo(
     () => ({
       position: "absolute" as const,
-      bottom: C.HOME_INDICATOR_BOTTOM,
+      bottom: metrics.homeIndicator.bottom,
       left: "50%",
       transform: "translateX(-50%)",
-      width: C.HOME_INDICATOR_WIDTH,
-      height: C.HOME_INDICATOR_HEIGHT,
+      width: metrics.homeIndicator.width,
+      height: metrics.homeIndicator.height,
       backgroundColor: "rgba(0, 0, 0, 0.3)",
-      borderRadius: C.HOME_INDICATOR_RADIUS,
+      borderRadius: metrics.homeIndicator.radius,
       zIndex: 9999,
       pointerEvents: "none" as const,
     }),
-    [],
+    [metrics.homeIndicator.bottom, metrics.homeIndicator.width, metrics.homeIndicator.height, metrics.homeIndicator.radius],
   );
 
   return (

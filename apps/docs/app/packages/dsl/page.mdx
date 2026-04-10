@@ -5,18 +5,33 @@ The TypeScript authoring API for Tokovo episodes.
 ## Responsibilities
 
 - episode builders
-- device bootstrap authoring
-- app snapshot and initial-view authoring
-- camera and audio choreography entrypoints
+- device and OS setup
+- plugin-owned app snapshot and initial-view authoring
+- app-track, camera, audio, overlay, and device-track entrypoints
+- compiler-plugin wiring from authored episodes
 
-Use `@tokovo/dsl` for scene timing and sequencing.
+Use `@tokovo/dsl` for deterministic scene timing and sequencing.
 
 ## Role In The Stack
 
-`@tokovo/dsl` is the primary authoring surface before compilation. It should stay expressive and deterministic without turning into a CMS abstraction layer.
+`@tokovo/dsl` is the primary authoring surface before compilation. It should stay expressive and
+deterministic without turning into a CMS abstraction layer.
 
-Bootstrap rule:
+## Core Model
+
+Tokovo v1 does not use beat-based authoring. The authoring model is:
+
+- `device()` for device and OS state
+- `snapshot()` for plugin-owned pre-seeded app data
+- `view()` for explicit frame-0 app routing
+- `track()` for app and system mutations after frame 0
+- `camera()`, `audio()`, `overlay()`, and `deviceTrack()` for supporting direction
+- `.use(...)` for compiler plugins such as keyboard helpers
+
+## Bootstrap Rules
 
 - `device()` is only for device/OS state
 - `snapshot()` is only for plugin-owned previous app data
 - `view()` is only for explicit frame-0 app routing
+
+The DSL should not synthesize conversations, feeds, or threads through device state.

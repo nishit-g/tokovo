@@ -91,7 +91,7 @@ describe("enterprise episode taxonomy", () => {
 
   it("ships the full new-only curated wave", () => {
     expect(appShowcaseEpisodes).toHaveLength(21);
-    expect(systemShowcaseEpisodes).toHaveLength(5);
+    expect(systemShowcaseEpisodes).toHaveLength(7);
     expect(storyEpisodes).toHaveLength(8);
   });
 

@@ -8,6 +8,7 @@ import { registerWhatsAppPlugin } from "@tokovo/apps-whatsapp";
 import { registerXPlugin } from "@tokovo/apps-x";
 import { registerIMessagePlugin } from "@tokovo/apps-imessage";
 import { registerLinkedInPlugin } from "@tokovo/apps-linkedin";
+import { registerInstagramPlugin } from "@tokovo/apps-instagram";
 import { registerTypewriterPlugin } from "@tokovo/apps-typewriter";
 import { registerSnapchatPlugin } from "@tokovo/apps-snapchat";
 import { registerTeamsPlugin } from "@tokovo/apps-teams";
@@ -50,6 +51,7 @@ export function createRenderRuntime(): VideoRunnerRuntime {
   registerXPlugin(pluginManager);
   registerIMessagePlugin(pluginManager);
   registerLinkedInPlugin(pluginManager);
+  registerInstagramPlugin(pluginManager);
   registerTypewriterPlugin(pluginManager);
   registerSnapchatPlugin(pluginManager);
   registerTeamsPlugin(pluginManager);

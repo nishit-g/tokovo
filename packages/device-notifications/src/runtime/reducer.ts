@@ -1,10 +1,12 @@
 import { produce } from "immer";
 import type { Draft } from "immer";
+import { DEFAULT_NOTIFICATION_CENTER } from "@tokovo/core";
 import type {
   WorldState,
   NotificationInstance,
   NotificationIR,
   DynamicIslandState,
+  NotificationGroup,
 } from "@tokovo/core";
 
 export type NotificationMode = "headsup" | "lockscreen" | "both";
@@ -82,6 +84,15 @@ export interface NotificationPolicy {
   headsUpDuration: number;
   cleanupDelayFrames: number;
   autoOpenOnTap: boolean;
+}
+
+interface NotificationCenterRuntimeState {
+  items: NotificationInstance[];
+  groups: NotificationGroup[];
+  headsUp: string | null;
+  headsUpQueue: string[];
+  isOpen?: boolean;
+  openedAtFrame?: number | null;
 }
 
 export const DEFAULT_POLICY: NotificationPolicy = {
@@ -195,6 +206,53 @@ function findNotificationById(
   return draft.find((n) => n.id === id);
 }
 
+function buildNotificationGroups(
+  notifications: NotificationInstance[],
+): NotificationGroup[] {
+  const groups = new Map<string, NotificationGroup>();
+
+  for (const notification of notifications) {
+    if (notification.state === "dismissed") continue;
+
+    const key =
+      notification.ir.groupKey ||
+      (notification.ir.threadKey
+        ? `${notification.appId}_${notification.ir.threadKey}`
+        : notification.appId);
+
+    let group = groups.get(key);
+    if (!group) {
+      group = {
+        key,
+        appId: notification.appId,
+        notifications: [],
+        collapsed: true,
+        count: 0,
+        latestAt: 0,
+      };
+      groups.set(key, group);
+    }
+
+    group.notifications.push(notification);
+    group.count += 1;
+    group.latestAt = Math.max(
+      group.latestAt,
+      notification.shownAtFrame ?? notification.createdAtFrame ?? 0,
+    );
+  }
+
+  return Array.from(groups.values())
+    .map((group) => ({
+      ...group,
+      notifications: [...group.notifications].sort(
+        (a, b) =>
+          (b.shownAtFrame ?? b.createdAtFrame ?? 0) -
+          (a.shownAtFrame ?? a.createdAtFrame ?? 0),
+      ),
+    }))
+    .sort((a, b) => b.latestAt - a.latestAt);
+}
+
 function applyNotificationEventToDraft(
   draft: Draft<NotificationInstance[]>,
   event: NotificationEvent,
@@ -297,6 +355,26 @@ export function applyNotificationEvent(
   if (!device.notifications) {
     device.notifications = [];
   }
+  if (!device.notificationCenter) {
+    device.notificationCenter = {
+      ...DEFAULT_NOTIFICATION_CENTER,
+      items: [],
+      groups: [],
+      headsUpQueue: [],
+    };
+  }
+  const notificationCenter =
+    device.notificationCenter as Draft<NotificationCenterRuntimeState>;
+
+  if (
+    event.type === "OPEN_APP" ||
+    event.type === "GO_HOME" ||
+    event.type === "LOCK" ||
+    event.type === "UNLOCK"
+  ) {
+    notificationCenter.isOpen = false;
+    notificationCenter.openedAtFrame = null;
+  }
 
   const notifEvent: NotificationEvent = {
     kind: "DEVICE",
@@ -321,6 +399,16 @@ export function applyNotificationEvent(
     return;
   }
 
+  if (event.type === "TOGGLE_NOTIFICATION_PANEL") {
+    const payload = event.payload as { open?: boolean } | undefined;
+    const open =
+      typeof payload?.open === "boolean"
+        ? payload.open
+        : !notificationCenter.isOpen;
+    notificationCenter.isOpen = open;
+    notificationCenter.openedAtFrame = open ? event.at : null;
+  }
+
   if (event.type === "TAP_NOTIFICATION" || event.type === "NOTIFICATION_TAP") {
     const tapPayload = notifEvent.payload;
     if (policy.autoOpenOnTap && isTapPayload(tapPayload)) {
@@ -328,6 +416,8 @@ export function applyNotificationEvent(
       const notification = notifications.find((n) => n.id === tapPayload.id);
       if (notification?.ir?.appId) {
         device.foregroundAppId = notification.ir.appId;
+        notificationCenter.isOpen = false;
+        notificationCenter.openedAtFrame = null;
       }
     }
   }
@@ -348,4 +438,23 @@ export function applyNotificationEvent(
     const effectiveEndFrame = n.dismissedAtFrame ?? n.expiresAtFrame ?? 0;
     return effectiveEndFrame > cleanupThreshold;
   });
+
+  notificationCenter.items = device.notifications as NotificationInstance[];
+  notificationCenter.groups = buildNotificationGroups(
+    notificationCenter.items as NotificationInstance[],
+  );
+  notificationCenter.headsUp = notificationCenter.items.find(
+    (notification) =>
+      notification.state !== "dismissed" &&
+      notification.mode !== "lockscreen" &&
+      notification.mode !== "silent",
+  )?.id ?? null;
+  notificationCenter.headsUpQueue = notificationCenter.items
+    .filter(
+      (notification) =>
+        notification.state !== "dismissed" &&
+        notification.mode !== "lockscreen" &&
+        notification.mode !== "silent",
+    )
+    .map((notification) => notification.id);
 }

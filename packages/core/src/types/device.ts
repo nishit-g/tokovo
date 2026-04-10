@@ -49,6 +49,21 @@ export interface BackgroundAppState {
 }
 
 // =============================================================================
+// SCREEN RECORDING
+// =============================================================================
+
+export type ScreenRecordingMode = "minimal" | "compact";
+
+export interface ScreenRecordingState {
+  enabled: boolean;
+  mode: ScreenRecordingMode;
+  startedAtFrame?: number;
+  activeSinceFrame?: number;
+  stoppedAtFrame?: number;
+  stopFeedbackUntilFrame?: number;
+}
+
+// =============================================================================
 // CALL STATE
 // =============================================================================
 
@@ -250,6 +265,7 @@ export interface DeviceState {
   notificationCenter?: NotificationCenterState;
   dynamicIsland?: DynamicIslandState;
   statusBarIcons?: StatusBarIcon[];
+  screenRecording?: ScreenRecordingState;
 
   // Background apps
   backgroundApps?: BackgroundAppState[];

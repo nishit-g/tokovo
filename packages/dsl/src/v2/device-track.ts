@@ -66,6 +66,16 @@ export interface NotificationShowOptions extends DeviceEventMetaOptions {
   metadata?: Record<string, unknown>;
 }
 
+export interface IncomingCallOptions extends DeviceEventMetaOptions {
+  callerId: string;
+  callerName: string;
+  callerAvatar?: string;
+  isVideo?: boolean;
+  callType?: string;
+  displayMode?: string;
+  callerMetadata?: Record<string, unknown>;
+}
+
 // =============================================================================
 // POINT BUILDER
 // =============================================================================
@@ -274,6 +284,30 @@ export class DevicePointBuilderV2 {
 
   keyboardTapSuggestion(index: number, options?: DeviceEventMetaOptions): void {
     this.emitDevice("KEYBOARD_TAP_SUGGESTION", { index }, options);
+  }
+
+  incomingCall(options: IncomingCallOptions): void {
+    this.emitDevice(
+      "INCOMING_CALL",
+      {
+        callerId: options.callerId,
+        callerName: options.callerName,
+        callerAvatar: options.callerAvatar,
+        isVideo: options.isVideo,
+        callType: options.callType,
+        displayMode: options.displayMode,
+        callerMetadata: options.callerMetadata,
+      },
+      options,
+    );
+  }
+
+  answerCall(options?: DeviceEventMetaOptions): void {
+    this.emitDevice("CALL_ANSWERED", {}, options);
+  }
+
+  endCall(options?: DeviceEventMetaOptions): void {
+    this.emitDevice("CALL_ENDED", {}, options);
   }
 }
 

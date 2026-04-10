@@ -1,6 +1,11 @@
 import { produce } from "immer";
 import type { KeyboardState, KeyPressState } from "./state.js";
 import { createKeyboardInitialState } from "./state.js";
+import {
+  countGraphemes,
+  insertGraphemeAt,
+  removeGraphemeAt,
+} from "./graphemes.js";
 
 interface KeyboardShowPayload {
   keyboardType?: KeyboardState["keyboardType"];
@@ -120,24 +125,27 @@ export function keyboardReducer(
 
         if (key === "backspace") {
           if (draft.cursorPosition > 0) {
-            draft.inputText =
-              draft.inputText.slice(0, draft.cursorPosition - 1) +
-              draft.inputText.slice(draft.cursorPosition);
+            draft.inputText = removeGraphemeAt(
+              draft.inputText,
+              draft.cursorPosition,
+            );
             draft.cursorPosition--;
           }
         } else if (key === "return" || key === "send") {
           // Return key - apps handle this via their own handlers
         } else if (key === "space") {
-          draft.inputText =
-            draft.inputText.slice(0, draft.cursorPosition) +
-            " " +
-            draft.inputText.slice(draft.cursorPosition);
+          draft.inputText = insertGraphemeAt(
+            draft.inputText,
+            draft.cursorPosition,
+            " ",
+          );
           draft.cursorPosition++;
-        } else if (key.length === 1) {
-          draft.inputText =
-            draft.inputText.slice(0, draft.cursorPosition) +
-            key +
-            draft.inputText.slice(draft.cursorPosition);
+        } else if (countGraphemes(key) === 1) {
+          draft.inputText = insertGraphemeAt(
+            draft.inputText,
+            draft.cursorPosition,
+            key,
+          );
           draft.cursorPosition++;
         }
         break;
@@ -157,7 +165,7 @@ export function keyboardReducer(
           charDelay,
         };
         draft.inputText = text;
-        draft.cursorPosition = text.length;
+        draft.cursorPosition = countGraphemes(text);
         break;
       }
 
@@ -186,7 +194,7 @@ export function keyboardReducer(
             draft.inputText =
               draft.inputText.slice(0, lastSpaceIndex + 1) + word + " ";
           }
-          draft.cursorPosition = draft.inputText.length;
+          draft.cursorPosition = countGraphemes(draft.inputText);
         }
         break;
       }

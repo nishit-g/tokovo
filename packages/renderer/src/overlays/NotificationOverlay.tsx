@@ -11,6 +11,19 @@ interface LayoutState {
   notificationLayouts?: NotificationLayout[];
 }
 
+function formatNotificationAge(
+  currentFrame: number,
+  shownAtFrame?: number,
+  fps: number = 30,
+): string {
+  if (shownAtFrame === undefined) return "now";
+  const seconds = Math.max(0, Math.floor((currentFrame - shownAtFrame) / fps));
+  if (seconds < 8) return "now";
+  if (seconds < 60) return `${seconds}s`;
+  const minutes = Math.floor(seconds / 60);
+  return `${minutes}m`;
+}
+
 // =============================================================================
 // GROUPING LOGIC
 // =============================================================================
@@ -68,6 +81,7 @@ interface GroupCardProps {
   opacity: number;
   translateY: number;
   variant: "ios" | "android";
+  currentFrame: number;
 }
 
 const GroupCard: React.FC<GroupCardProps> = ({
@@ -76,6 +90,7 @@ const GroupCard: React.FC<GroupCardProps> = ({
   opacity,
   translateY,
   variant,
+  currentFrame,
 }) => {
   const isAndroid = variant === "android";
   const registries = useRendererRegistries();
@@ -202,7 +217,7 @@ const GroupCard: React.FC<GroupCardProps> = ({
             <span
               style={{ marginLeft: "auto", fontSize: 28, fontWeight: "normal" }}
             >
-              now
+              {formatNotificationAge(currentFrame, latestNotif.shownAtFrame)}
             </span>
           </div>
 
@@ -257,12 +272,14 @@ interface NotificationOverlayProps {
   notifications?: NotificationInstance[];
   variant?: "ios" | "android";
   layout?: LayoutState;
+  currentFrame?: number;
 }
 
 export const NotificationOverlay: React.FC<NotificationOverlayProps> = ({
   notifications = [],
   variant = "ios",
   layout,
+  currentFrame = 0,
 }) => {
   // Only render on lockscreen with layout
   const lockscreenLayout =
@@ -303,6 +320,7 @@ export const NotificationOverlay: React.FC<NotificationOverlayProps> = ({
             opacity={layoutInfo.opacity}
             translateY={layoutInfo.translateY}
             variant={variant}
+            currentFrame={currentFrame}
           />
         );
       })}

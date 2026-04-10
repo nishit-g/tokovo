@@ -633,6 +633,7 @@ function lowerDeviceEvent(event: TrackEvent): RuntimeEvent[] {
         {
           ...base,
           type: "TOGGLE_NOTIFICATION_PANEL",
+          payload: { open: true },
         } as DeviceRuntimeEvent,
       ];
 
@@ -641,6 +642,7 @@ function lowerDeviceEvent(event: TrackEvent): RuntimeEvent[] {
         {
           ...base,
           type: "TOGGLE_NOTIFICATION_PANEL",
+          payload: { open: false },
         } as DeviceRuntimeEvent,
       ];
 

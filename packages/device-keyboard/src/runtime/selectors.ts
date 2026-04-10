@@ -1,5 +1,6 @@
 import type { KeyboardState } from "./state.js";
 import { keyboardSpacing } from "../ui/tokens.js";
+import { sliceGraphemes, splitGraphemes } from "./graphemes.js";
 
 export function isKeyboardVisible(state: KeyboardState): boolean {
   return state.visible;
@@ -32,14 +33,15 @@ export function isKeyActive(
   // Check typingAnimation (optimized bulk typing)
   if (state.typingAnimation) {
     const { text, startFrame, charDelay } = state.typingAnimation;
+    const graphemes = splitGraphemes(text);
     const elapsed = currentFrame - startFrame;
     if (elapsed >= 0) {
       const charIndex = Math.floor(elapsed / charDelay);
       const frameInChar = elapsed % charDelay;
       const keyPressDuration = Math.min(charDelay, 6);
 
-      if (charIndex < text.length && frameInChar < keyPressDuration) {
-        const activeChar = text[charIndex];
+      if (charIndex < graphemes.length && frameInChar < keyPressDuration) {
+        const activeChar = graphemes[charIndex];
         if (activeChar.toLowerCase() === keyLower) {
           return true;
         }
@@ -99,9 +101,10 @@ export function getTypedTextProgress(
 
   const { text, startFrame, charDelay } = state.typingAnimation;
   const elapsed = currentFrame - startFrame;
+  const graphemes = splitGraphemes(text);
 
   if (elapsed < 0) return "";
 
   const charsTyped = Math.floor(elapsed / Math.max(charDelay, Number.EPSILON));
-  return text.slice(0, Math.min(charsTyped, text.length));
+  return sliceGraphemes(text, 0, Math.min(charsTyped, graphemes.length));
 }

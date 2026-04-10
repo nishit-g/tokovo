@@ -1,51 +1,20 @@
 # @tokovo/apps-teams
 
-Microsoft Teams app simulation plugin for Tokovo. Includes reducer/runtime, UI views, v2 lowering, layouts, anchors, and DSL track builders.
+Microsoft Teams enterprise collaboration plugin for Tokovo.
 
-## Install
+## Responsibilities
 
-```bash
-pnpm add @tokovo/apps-teams
-```
+- Teams runtime reducer and selectors
+- snapshot and initial-view schema ownership
+- bootstrap validation and hydration
+- DMs, channels, threads, typing, notifications, and call surfaces
+- semantic layouts, anchors, camera behaviors, and themes
+- v2 DSL and lowering
 
-## Register
+## Key Exports
 
-```ts
-import { createTokovoRegistries, PluginManagerClass } from "@tokovo/react";
-import { registerTeamsPlugin } from "@tokovo/apps-teams";
-
-const registries = createTokovoRegistries();
-const pluginManager = new PluginManagerClass(registries.plugins);
-
-registerTeamsPlugin(pluginManager);
-```
-
-## Use In Episodes
-
-```ts
-import { episode } from "@tokovo/dsl";
-import { TeamsTrackBuilder } from "@tokovo/apps-teams";
-
-episode("teams-demo", { fps: 30, duration: "20s" })
-  .device("phone", "iphone16", { app: "app_teams" })
-  .track(
-    "app_teams",
-    (getOrder) => new TeamsTrackBuilder(30, "phone", getOrder),
-    (teams) => {
-      teams.switchDm("dm_eng", "1s");
-      teams.at("2s").dmReceive({
-        dmId: "dm_eng",
-        fromId: "ava",
-        fromName: "Ava",
-        text: "Can we ship this today?",
-      });
-      teams.at("4s").dmSend({
-        dmId: "dm_eng",
-        senderId: "me",
-        senderName: "You",
-        text: "Yes, rollout starts now.",
-      });
-    },
-  );
-```
-
+- plugin registration: `registerTeamsPlugin`
+- runtime state, selectors, and layout helpers
+- bootstrap types
+- DSL helpers and Teams track builder
+- theme/config/audio-rule exports

@@ -5,7 +5,12 @@ The canonical schema and type layer for Tokovo.
 ## Responsibilities
 
 - shared event and authored-data contracts
-- `devices`, `appSnapshots`, `initialViews`, and timeline event contracts
+- `devices`, `appSnapshots`, `initialViews`, and track-event contracts
 - canonical type definitions used across authoring and compilation
 
 This package should stay stable and boring. It is the contract layer, not the feature layer.
+
+## Boundary
+
+`@tokovo/ir` should describe authored data and event shapes, not app behavior. App semantics belong in
+plugin packages and runtime reducers.

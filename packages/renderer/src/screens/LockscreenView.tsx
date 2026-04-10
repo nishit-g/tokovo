@@ -1,5 +1,7 @@
 import React from "react";
 import { LayoutState, LockscreenLayoutState, Notification } from "@tokovo/core";
+import type { DeviceProfile } from "@tokovo/devices";
+import { getIOSChromeMetrics } from "@tokovo/devices";
 import { useRendererRegistries } from "../RegistryContext.js";
 
 /**
@@ -20,6 +22,7 @@ interface LockscreenViewProps {
   time?: string;
   date?: string;
   timestampMs?: number;
+  deviceProfile?: DeviceProfile;
 }
 
 export const LockscreenView: React.FC<LockscreenViewProps> = ({
@@ -29,8 +32,11 @@ export const LockscreenView: React.FC<LockscreenViewProps> = ({
   time,
   date,
   timestampMs,
+  deviceProfile,
 }) => {
   const isAndroid = variant === "android";
+  const iosMetrics =
+    !isAndroid && deviceProfile ? getIOSChromeMetrics(deviceProfile) : null;
   const lockscreenLayout =
     layout?.kind === "LOCKSCREEN" ? (layout as LockscreenLayoutState) : null;
   const clockMs = timestampMs ?? DEFAULT_CLOCK_MS;
@@ -52,9 +58,10 @@ export const LockscreenView: React.FC<LockscreenViewProps> = ({
         right: 0,
         bottom: 0,
         background: [
+          "radial-gradient(1100px 820px at 50% -6%, rgba(255,255,255,0.18) 0%, rgba(255,255,255,0.04) 28%, rgba(0,0,0,0) 66%)",
           "radial-gradient(1200px 900px at 20% 15%, rgba(120, 180, 255, 0.22) 0%, rgba(0,0,0,0) 55%)",
           "radial-gradient(1100px 800px at 85% 30%, rgba(255, 120, 200, 0.14) 0%, rgba(0,0,0,0) 60%)",
-          "linear-gradient(180deg, #050507 0%, #121218 55%, #08080b 100%)",
+          "linear-gradient(180deg, #040507 0%, #10131b 45%, #07090d 100%)",
         ].join(", "),
         display: "flex",
         flexDirection: "column",
@@ -79,27 +86,41 @@ export const LockscreenView: React.FC<LockscreenViewProps> = ({
       </div>
 
       {/* Time block */}
-      <div style={{ marginTop: 168, textAlign: "center" }}>
+      <div
+        style={{
+          marginTop: iosMetrics?.lockscreen.clockTop ?? 168,
+          textAlign: "center",
+        }}
+      >
         <div
           style={{
-            fontSize: 208,
+            fontSize: iosMetrics?.lockscreen.clockFontSize ?? 208,
             fontWeight: 200,
-            letterSpacing: -8,
+            letterSpacing: iosMetrics?.lockscreen.clockLetterSpacing ?? -8,
             lineHeight: 0.92,
             fontVariantNumeric: "tabular-nums",
-            textShadow: "0 22px 70px rgba(0,0,0,0.55)",
+            textShadow: "0 18px 54px rgba(0,0,0,0.42)",
           }}
         >
           {displayTime}
         </div>
         <div
           style={{
-            marginTop: 16,
-            fontSize: 44,
+            marginTop: iosMetrics?.lockscreen.dateMarginTop ?? 16,
+            fontSize: iosMetrics?.lockscreen.dateFontSize ?? 44,
             fontWeight: 600,
             opacity: 0.92,
             letterSpacing: -0.2,
-            textShadow: "0 16px 50px rgba(0,0,0,0.45)",
+            textShadow: "0 10px 26px rgba(0,0,0,0.3)",
+            display: "inline-flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: `${2.5 * (iosMetrics?.pointScale ?? 3)}px ${7 * (iosMetrics?.pointScale ?? 3)}px`,
+            borderRadius: 999,
+            background: "rgba(255,255,255,0.08)",
+            border: "1px solid rgba(255,255,255,0.08)",
+            backdropFilter: "blur(20px) saturate(150%)",
+            WebkitBackdropFilter: "blur(20px) saturate(150%)",
           }}
         >
           {displayDate}
@@ -113,9 +134,10 @@ export const LockscreenView: React.FC<LockscreenViewProps> = ({
       {activeNotifications.length > 0 && (
         <div
           style={{
-            paddingBottom: 250,
-            paddingLeft: 42,
-            paddingRight: 42,
+            paddingBottom:
+              iosMetrics?.lockscreen.notificationBottomPadding ?? 250,
+            paddingLeft: iosMetrics?.lockscreen.notificationSideInset ?? 42,
+            paddingRight: iosMetrics?.lockscreen.notificationSideInset ?? 42,
           }}
         >
           {activeNotifications
@@ -127,14 +149,18 @@ export const LockscreenView: React.FC<LockscreenViewProps> = ({
               );
               const opacity = nl?.opacity ?? 1;
               const translateY = nl?.translateY ?? 0;
-              const stackOffset = index * 12;
+              const stackOffset =
+                index * (iosMetrics?.lockscreen.notificationStackOffset ?? 12);
               const stackScale = 1 - index * 0.018;
 
               return (
                 <div
                   key={notification.id}
                   style={{
-                    marginBottom: index === 0 ? 0 : -110,
+                    marginBottom:
+                      index === 0
+                        ? 0
+                        : -(iosMetrics?.lockscreen.notificationOverlap ?? 110),
                     opacity: opacity * (1 - index * 0.2),
                     transform: `translateY(${translateY + stackOffset}px) scale(${stackScale})`,
                     transformOrigin: "bottom center",
@@ -142,7 +168,10 @@ export const LockscreenView: React.FC<LockscreenViewProps> = ({
                     filter: index === 0 ? "none" : "saturate(0.92)",
                   }}
                 >
-                  <NotificationCard notification={notification} />
+                  <NotificationCard
+                    notification={notification}
+                    pointScale={iosMetrics?.pointScale ?? 3}
+                  />
                 </div>
               );
             })}
@@ -170,17 +199,25 @@ export const LockscreenView: React.FC<LockscreenViewProps> = ({
           bottom: 0,
           left: 0,
           right: 0,
-          height: 270,
+          height: iosMetrics?.lockscreen.bottomControlsHeight ?? 270,
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
-          padding: "0 60px",
+          padding: `0 ${iosMetrics?.lockscreen.bottomControlsPaddingX ?? 60}px`,
         }}
       >
         {!isAndroid && (
           <>
-            <LockscreenButton icon="flashlight" />
-            <LockscreenButton icon="camera" />
+            <LockscreenButton
+              icon="flashlight"
+              size={iosMetrics?.lockscreen.bottomButtonSize}
+              iconSize={iosMetrics?.lockscreen.bottomButtonIconSize}
+            />
+            <LockscreenButton
+              icon="camera"
+              size={iosMetrics?.lockscreen.bottomButtonSize}
+              iconSize={iosMetrics?.lockscreen.bottomButtonIconSize}
+            />
           </>
         )}
       </div>
@@ -189,13 +226,13 @@ export const LockscreenView: React.FC<LockscreenViewProps> = ({
       <div
         style={{
           position: "absolute",
-          bottom: 26,
+          bottom: iosMetrics?.homeIndicator.bottom ?? 26,
           left: "50%",
           transform: "translateX(-50%)",
-          width: 380,
-          height: 12,
+          width: iosMetrics?.homeIndicator.width ?? 380,
+          height: iosMetrics?.homeIndicator.height ?? 12,
           backgroundColor: "rgba(255, 255, 255, 0.46)",
-          borderRadius: 999,
+          borderRadius: iosMetrics?.homeIndicator.radius ?? 999,
           boxShadow: "0 10px 30px rgba(0,0,0,0.35)",
         }}
       />
@@ -206,30 +243,37 @@ export const LockscreenView: React.FC<LockscreenViewProps> = ({
 /**
  * Lockscreen control button
  */
-const LockscreenButton: React.FC<{ icon: "flashlight" | "camera" }> = ({
+const LockscreenButton: React.FC<{
+  icon: "flashlight" | "camera";
+  size?: number;
+  iconSize?: number;
+}> = ({
   icon,
+  size = 150,
+  iconSize = 54,
 }) => (
   <div
     style={{
-      width: 150,
-      height: 150,
+      width: size,
+      height: size,
       borderRadius: "50%",
-      backgroundColor: "rgba(255, 255, 255, 0.14)",
-      backdropFilter: "blur(28px)",
-      WebkitBackdropFilter: "blur(28px)",
-      border: "1px solid rgba(255, 255, 255, 0.16)",
-      boxShadow: "0 18px 60px rgba(0,0,0,0.55)",
+      background:
+        "linear-gradient(180deg, rgba(255,255,255,0.18) 0%, rgba(255,255,255,0.11) 100%)",
+      backdropFilter: "blur(30px) saturate(160%)",
+      WebkitBackdropFilter: "blur(30px) saturate(160%)",
+      border: "1px solid rgba(255, 255, 255, 0.14)",
+      boxShadow: "0 16px 44px rgba(0,0,0,0.42)",
       display: "flex",
       alignItems: "center",
       justifyContent: "center",
     }}
   >
     {icon === "flashlight" ? (
-      <svg width="54" height="54" viewBox="0 0 24 24" fill="white">
+      <svg width={iconSize} height={iconSize} viewBox="0 0 24 24" fill="white">
         <path d="M9 2h6v6l2 2v12H7V10l2-2V2zm2 2v4h2V4h-2zm-1 7.5v8h4v-8l-2-2-2 2z" />
       </svg>
     ) : (
-      <svg width="54" height="54" viewBox="0 0 24 24" fill="white">
+      <svg width={iconSize} height={iconSize} viewBox="0 0 24 24" fill="white">
         <circle
           cx="12"
           cy="12"
@@ -249,7 +293,8 @@ const LockscreenButton: React.FC<{ icon: "flashlight" | "camera" }> = ({
  */
 const NotificationCard: React.FC<{
   notification: Notification; // Is actually NotificationInstance
-}> = ({ notification }) => {
+  pointScale?: number;
+}> = ({ notification, pointScale = 3 }) => {
   const registries = useRendererRegistries();
   const ir = notification.ir;
   if (!ir) return null; // Safety check
@@ -264,14 +309,14 @@ const NotificationCard: React.FC<{
     typeof meta.icon === "string" ? (
       <div
         style={{
-          width: 66,
-          height: 66,
-          borderRadius: 15,
+          width: 22 * pointScale,
+          height: 22 * pointScale,
+          borderRadius: 5 * pointScale,
           background: meta.themeColor || "#8E8E93",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          fontSize: 30,
+          fontSize: 10 * pointScale,
           color: "white",
         }}
       >
@@ -288,14 +333,14 @@ const NotificationCard: React.FC<{
     <div
       style={{
         background:
-          "linear-gradient(180deg, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0.07) 100%)",
-        backdropFilter: "blur(70px) saturate(1.25)",
-        WebkitBackdropFilter: "blur(70px) saturate(1.25)",
-        borderRadius: 50,
-        padding: "32px 38px",
+          "linear-gradient(180deg, rgba(255,255,255,0.18) 0%, rgba(255,255,255,0.09) 100%)",
+        backdropFilter: "blur(54px) saturate(1.45)",
+        WebkitBackdropFilter: "blur(54px) saturate(1.45)",
+        borderRadius: 16 * pointScale,
+        padding: `${10 * pointScale}px ${12.5 * pointScale}px`,
         color: "white",
         border: "1px solid rgba(255,255,255,0.12)",
-        boxShadow: "0 26px 90px rgba(0,0,0,0.55)",
+        boxShadow: "0 20px 72px rgba(0,0,0,0.42)",
       }}
     >
       {/* Header */}
@@ -303,31 +348,51 @@ const NotificationCard: React.FC<{
         style={{
           display: "flex",
           alignItems: "center",
-          gap: 18,
-          marginBottom: 14,
+          gap: 6 * pointScale,
+          marginBottom: 4.5 * pointScale,
         }}
       >
         {appIcon}
         <span
           style={{
-            fontSize: 28,
+            fontSize: 9 * pointScale,
             opacity: 0.66,
             fontWeight: 600,
-            letterSpacing: 1.3,
+            letterSpacing: 0.4 * pointScale,
           }}
         >
           {appName.toUpperCase()}
         </span>
-        <span style={{ marginLeft: "auto", fontSize: 26, opacity: 0.42 }}>
+        <span
+          style={{
+            marginLeft: "auto",
+            fontSize: 8.5 * pointScale,
+            opacity: 0.42,
+          }}
+        >
           now
         </span>
       </div>
 
       {/* Content */}
-      <div style={{ fontSize: 42, fontWeight: 700, marginBottom: 10 }}>
+      <div
+        style={{
+          fontSize: 13.5 * pointScale,
+          fontWeight: 700,
+          marginBottom: 3.4 * pointScale,
+          letterSpacing: -0.4,
+        }}
+      >
         {ir.title}
       </div>
-      <div style={{ fontSize: 40, opacity: 0.92, lineHeight: 1.32 }}>
+      <div
+        style={{
+          fontSize: 12.4 * pointScale,
+          opacity: 0.92,
+          lineHeight: 1.3,
+          letterSpacing: -0.22,
+        }}
+      >
         {ir.body}
       </div>
     </div>

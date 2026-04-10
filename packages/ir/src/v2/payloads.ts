@@ -375,6 +375,17 @@ export interface DevicePayloads {
     enabled: boolean;
     mode?: "minimal" | "compact";
   };
+  INCOMING_CALL: {
+    callerId: string;
+    callerName: string;
+    callerAvatar?: string;
+    isVideo?: boolean;
+    callType?: string;
+    displayMode?: string;
+    callerMetadata?: Record<string, unknown>;
+  };
+  CALL_ANSWERED: Record<string, never>;
+  CALL_ENDED: Record<string, never>;
 }
 
 // =============================================================================

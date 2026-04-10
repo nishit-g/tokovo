@@ -1,21 +1,21 @@
 # @tokovo/apps-whatsapp
 
-The WhatsApp plugin package.
+The flagship messaging plugin package for Tokovo.
 
 ## Responsibilities
 
 - WhatsApp runtime reducer
-- WhatsApp snapshot and initial-view schema ownership
-- snapshot/view validation and migration hooks
-- WhatsApp React views
-- chat and feed layout support
-- anchor integration
-- authoring helpers
+- snapshot and initial-view schema ownership
+- bootstrap validation and hydration
+- v2 lowering and DSL helpers
+- chat, updates, calls, and channel surfaces
+- semantic layout and anchor integration
+- notification and audio behavior
 
 ## Key Exports
 
 - plugin registration: `registerWhatsAppPlugin`
-- reducer and selectors
-- track builders: `WhatsAppTrackBuilder`, `WhatsAppPointBuilder`, `WhatsAppSpanBuilder`
-- group helper: `GroupBuilder`
-- layout helper: `computeChatLayout`
+- runtime state and selectors
+- bootstrap types
+- track builders and DSL helpers
+- layouts, anchors, themes, and audio rules

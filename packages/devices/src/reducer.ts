@@ -13,6 +13,9 @@ import {
 } from "@tokovo/core";
 import type { EngineRegistries } from "@tokovo/core";
 
+const SCREEN_RECORDING_COUNTDOWN_FRAMES = 45;
+const SCREEN_RECORDING_STOP_FEEDBACK_FRAMES = 30;
+
 // =============================================================================
 // DEVICE REDUCER
 // =============================================================================
@@ -166,15 +169,32 @@ export function deviceReducer(
         );
         const mode = (event as unknown as { payload?: { mode?: unknown } })
           .payload?.mode as "minimal" | "compact" | undefined;
-        if (!device.dynamicIsland)
-          device.dynamicIsland = { ...DEFAULT_DYNAMIC_ISLAND };
         if (enabled) {
-          device.dynamicIsland.visible = true;
-          device.dynamicIsland.activeContent = "recording";
-          device.dynamicIsland.mode = mode ?? "compact";
+          if (device.screenRecording?.enabled) {
+            device.screenRecording.mode = mode ?? device.screenRecording.mode;
+            device.screenRecording.stopFeedbackUntilFrame = undefined;
+            device.screenRecording.stoppedAtFrame = undefined;
+            break;
+          }
+          device.screenRecording = {
+            enabled: true,
+            mode: mode ?? "compact",
+            startedAtFrame: event.at,
+            activeSinceFrame: event.at + SCREEN_RECORDING_COUNTDOWN_FRAMES,
+            stoppedAtFrame: undefined,
+            stopFeedbackUntilFrame: undefined,
+          };
         } else {
-          // Only clear recording content; leave other system content alone.
-          if (device.dynamicIsland.activeContent === "recording") {
+          device.screenRecording = {
+            enabled: false,
+            mode: device.screenRecording?.mode ?? mode ?? "compact",
+            startedAtFrame: device.screenRecording?.startedAtFrame,
+            activeSinceFrame: device.screenRecording?.activeSinceFrame,
+            stoppedAtFrame: event.at,
+            stopFeedbackUntilFrame:
+              event.at + SCREEN_RECORDING_STOP_FEEDBACK_FRAMES,
+          };
+          if (device.dynamicIsland?.activeContent === "recording") {
             device.dynamicIsland.activeContent = null;
             device.dynamicIsland.mode = "idle";
           }
@@ -191,8 +211,17 @@ export function deviceReducer(
           callerName: e.payload?.callerName || "Unknown",
           callerAvatar: e.payload?.callerAvatar,
           isVideo: e.payload?.isVideo || false,
-          callType: "voice",
-          displayMode: "fullscreen",
+          callType:
+            (e.payload as unknown as { callType?: string })?.callType ??
+            (e.payload?.isVideo ? "video" : "voice"),
+          displayMode:
+            ((e.payload as unknown as { displayMode?: string })?.displayMode as
+              | "overlay"
+              | "fullscreen"
+              | string
+              | undefined) ?? "fullscreen",
+          callerMetadata: (e.payload as unknown as { callerMetadata?: unknown })
+            ?.callerMetadata as Record<string, unknown> | undefined,
           startedAt: e.at,
         };
         break;
@@ -201,6 +230,7 @@ export function deviceReducer(
       case "CALL_ANSWERED":
         if (device.call && device.call.status === "incoming") {
           device.call.status = "active";
+          device.call.answeredAt = event.at;
         }
         break;
 

@@ -1,43 +1,19 @@
 # @tokovo/apps-snapchat
 
-Snapchat app simulation plugin for Tokovo. Includes reducer/runtime, UI views, v2 lowering, layouts, anchors, and DSL track builders.
+Snapchat plugin package for Tokovo.
 
-## Install
+## Responsibilities
 
-```bash
-pnpm add @tokovo/apps-snapchat
-```
+- Snapchat runtime reducer
+- snapshot and initial-view schema ownership
+- bootstrap validation and hydration
+- inbox, chat thread, and snap-viewer surfaces
+- semantic layouts and anchors
+- notification integration and DSL helpers
 
-## Register
+## Key Exports
 
-```ts
-import { createTokovoRegistries, PluginManagerClass } from "@tokovo/react";
-import { registerSnapchatPlugin } from "@tokovo/apps-snapchat";
-
-const registries = createTokovoRegistries();
-const pluginManager = new PluginManagerClass(registries.plugins);
-
-registerSnapchatPlugin(pluginManager);
-```
-
-## Use In Episodes
-
-```ts
-import { episode } from "@tokovo/dsl";
-import { SnapchatTrackBuilder } from "@tokovo/apps-snapchat";
-
-episode("snapchat-demo", { fps: 30, duration: "20s" })
-  .device("phone", "iphone16", { app: "app_snapchat" })
-  .track(
-    "app_snapchat",
-    (getOrder) => new SnapchatTrackBuilder(30, "phone", "friends", getOrder),
-    (snap) => {
-      snap.at("1s").openConversation("friends");
-      snap.at("2s").receive("Ava", "Where are you?");
-      snap.at("3s").typingStart("Ava");
-      snap.at("4s").typingEnd("Ava");
-      snap.at("5s").send("On my way.");
-    },
-  );
-```
-
+- plugin registration: `registerSnapchatPlugin`
+- runtime state and selectors
+- bootstrap types
+- Snapchat track builder and UI exports

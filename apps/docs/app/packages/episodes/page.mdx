@@ -5,5 +5,22 @@ Canonical Tokovo episode surface.
 It owns:
 
 - episode definitions
-- production and test episode catalogs
+- catalog taxonomy and metadata
+- curated app showcases, system showcases, and stories
+- legacy episode exports during migration
 - validation helpers
+
+## Catalog Model
+
+Tokovo now uses a storybook-style catalog model with canonical `catalogType` values:
+
+- `app_showcase_flagship`
+- `app_showcase_exhaustive`
+- `app_showcase_theme`
+- `system_showcase`
+- `story`
+- `test`
+- `legacy`
+
+Compatibility `category` values still exist for older callers, but new browsing and filtering should
+use `catalogType`.

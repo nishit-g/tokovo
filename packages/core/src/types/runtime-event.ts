@@ -225,7 +225,7 @@ export type DeviceRuntimeEvent =
   | BaseDeviceRuntimeEvent<"UPDATE_NOTIFICATION">
   | BaseDeviceRuntimeEvent<"SWIPE_NOTIFICATION">
   | BaseDeviceRuntimeEvent<"REPLY_NOTIFICATION">
-  | BaseDeviceRuntimeEvent<"TOGGLE_NOTIFICATION_PANEL">
+  | BaseDeviceRuntimeEvent<"TOGGLE_NOTIFICATION_PANEL", { open?: boolean }>
   | BaseDeviceRuntimeEvent<"CLEAR_ALL_NOTIFICATIONS">
   | BaseDeviceRuntimeEvent<"KEYBOARD_SHOW", { returnKeyType?: string }>
   | BaseDeviceRuntimeEvent<"KEYBOARD_HIDE">

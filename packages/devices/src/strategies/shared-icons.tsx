@@ -6,15 +6,21 @@
 
 import React from "react";
 
+interface ScaledIconProps {
+    color?: string;
+    scale?: number;
+}
+
 // =============================================================================
 // SIGNAL BARS
 // =============================================================================
 
-export const SignalBarsIcon: React.FC<{ color?: string; strength?: number }> = ({
+export const SignalBarsIcon: React.FC<ScaledIconProps & { strength?: number }> = ({
     color = "currentColor",
-    strength = 4 // 0-4
+    strength = 4, // 0-4
+    scale = 1,
 }) => (
-    <svg width="51" height="33" viewBox="0 0 17 11" fill={color}>
+    <svg width={17 * scale} height={11 * scale} viewBox="0 0 17 11" fill={color}>
         <rect x="0" y="8" width="3" height="3" rx="0.5" opacity={strength >= 1 ? 1 : 0.3} />
         <rect x="4.5" y="5.5" width="3" height="5.5" rx="0.5" opacity={strength >= 2 ? 1 : 0.3} />
         <rect x="9" y="3" width="3" height="8" rx="0.5" opacity={strength >= 3 ? 1 : 0.3} />
@@ -26,11 +32,20 @@ export const SignalBarsIcon: React.FC<{ color?: string; strength?: number }> = (
 // WIFI
 // =============================================================================
 
-export const WifiIcon: React.FC<{ color?: string; strength?: number }> = ({
+export const WifiIcon: React.FC<ScaledIconProps & { strength?: number }> = ({
     color = "currentColor",
-    strength = 3 // 0-3
+    strength = 3, // 0-3
+    scale = 1,
 }) => (
-    <svg width="48" height="36" viewBox="0 0 16 12" fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round">
+    <svg
+        width={16 * scale}
+        height={12 * scale}
+        viewBox="0 0 16 12"
+        fill="none"
+        stroke={color}
+        strokeWidth="1.5"
+        strokeLinecap="round"
+    >
         <path d="M1 4C4 1 12 1 15 4" opacity={strength >= 3 ? 1 : 0.3} />
         <path d="M3.5 6.5C5.5 4.5 10.5 4.5 12.5 6.5" opacity={strength >= 2 ? 1 : 0.3} />
         <path d="M6 9C7 8 9 8 10 9" opacity={strength >= 1 ? 1 : 0.3} />
@@ -42,12 +57,13 @@ export const WifiIcon: React.FC<{ color?: string; strength?: number }> = ({
 // BATTERY
 // =============================================================================
 
-export const BatteryIcon: React.FC<{ color?: string; percentage?: number; charging?: boolean }> = ({
+export const BatteryIcon: React.FC<ScaledIconProps & { percentage?: number; charging?: boolean }> = ({
     color = "currentColor",
     percentage = 100,
-    charging = false
+    charging = false,
+    scale = 1,
 }) => (
-    <svg width="75" height="36" viewBox="0 0 25 12" fill="none">
+    <svg width={25 * scale} height={12 * scale} viewBox="0 0 25 12" fill="none">
         {/* Battery body */}
         <rect x="0.5" y="0.5" width="21" height="11" rx="2.5" stroke={color} strokeWidth="1" />
         {/* Battery fill */}
@@ -72,15 +88,19 @@ export const BatteryIcon: React.FC<{ color?: string; percentage?: number; chargi
 // NETWORK TYPE LABEL
 // =============================================================================
 
-export const NetworkTypeLabel: React.FC<{ network: string; color: string }> = ({ network, color }) => {
+export const NetworkTypeLabel: React.FC<{ network: string; color: string; fontSize?: number }> = ({
+    network,
+    color,
+    fontSize = 12,
+}) => {
     const label = network === "wifi" ? null : network.toUpperCase();
     if (!label) return null;
     return (
         <span style={{
-            fontSize: 36,
+            fontSize,
             fontWeight: 600,
             fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif",
-            marginRight: 6,
+            marginRight: fontSize * 0.16,
             color,
         }}>
             {label}
@@ -92,8 +112,8 @@ export const NetworkTypeLabel: React.FC<{ network: string; color: string }> = ({
 // DND MOON
 // =============================================================================
 
-export const DNDIcon: React.FC<{ color: string }> = ({ color }) => (
-    <svg width="36" height="36" viewBox="0 0 24 24" fill={color}>
+export const DNDIcon: React.FC<{ color: string; scale?: number }> = ({ color, scale = 1 }) => (
+    <svg width={12 * scale} height={12 * scale} viewBox="0 0 24 24" fill={color}>
         <path d="M12 3C7.03 3 3 7.03 3 12C3 16.97 7.03 21 12 21C16.97 21 21 16.97 21 12C21 11.54 20.96 11.09 20.89 10.65C20.16 12.36 18.46 13.52 16.5 13.52C13.74 13.52 11.5 11.28 11.5 8.52C11.5 6.56 12.66 4.86 14.37 4.13C13.93 4.05 13.47 4 13 4C12.34 4 12 3.66 12 3Z" />
     </svg>
 );
