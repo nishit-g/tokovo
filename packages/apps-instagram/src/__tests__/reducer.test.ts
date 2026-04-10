@@ -22,7 +22,7 @@ describe("instagram reducer", () => {
       at: 0,
       kind: "APP",
       appId: "app_instagram",
-      type: "ADD_POST",
+      type: "INSTAGRAM_ADD_POST",
       deviceId: "phone",
       payload: {
         id: "p1",
@@ -37,7 +37,7 @@ describe("instagram reducer", () => {
       at: 1,
       kind: "APP",
       appId: "app_instagram",
-      type: "ADD_COMMENT",
+      type: "INSTAGRAM_ADD_COMMENT",
       deviceId: "phone",
       payload: {
         id: "c1",
@@ -59,7 +59,7 @@ describe("instagram reducer", () => {
       at: 0,
       kind: "APP",
       appId: "app_instagram",
-      type: "ADD_DM_THREAD",
+      type: "INSTAGRAM_ADD_DM_THREAD",
       deviceId: "phone",
       payload: {
         id: "thread1",
@@ -72,7 +72,7 @@ describe("instagram reducer", () => {
       at: 1,
       kind: "APP",
       appId: "app_instagram",
-      type: "ADD_DM_MESSAGE",
+      type: "INSTAGRAM_ADD_DM_MESSAGE",
       deviceId: "phone",
       payload: {
         id: "m1",
@@ -90,7 +90,7 @@ describe("instagram reducer", () => {
       at: 2,
       kind: "APP",
       appId: "app_instagram",
-      type: "SET_SCREEN",
+      type: "INSTAGRAM_SET_SCREEN",
       deviceId: "phone",
       payload: { screen: "thread", threadId: "thread1" },
     } as never);

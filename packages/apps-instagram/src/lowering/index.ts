@@ -1,7 +1,6 @@
 import type { TrackEvent } from "@tokovo/ir";
 import { getLoweringScratchpad, planTypedKeyboard, type RuntimeEvent } from "@tokovo/core";
 import type { InstagramDMMessagePayload, InstagramPostPayload, InstagramTrackEvent } from "../types/index.js";
-import { lowerInstagramInitialView, lowerInstagramSnapshot } from "../bootstrap.js";
 import { isInstagramTrackEvent } from "../schemas/index.js";
 
 type Scratchpad = {
@@ -33,7 +32,7 @@ function lowerTypedPost(
   deviceId: string,
   notBeforeFrame: number | undefined,
 ): RuntimeEvent[] {
-  const addEvent = createRuntimeEvent(event, "ADD_POST", {
+  const addEvent = createRuntimeEvent(event, "INSTAGRAM_ADD_POST", {
     id: event.payload.id ?? `ig-post-${event.at}-${event._declarationOrder ?? 0}`,
     authorId: event.payload.authorId,
     imageUrl: event.payload.imageUrl,
@@ -60,13 +59,13 @@ function lowerTypedPost(
   });
 
   const after: RuntimeEvent[] = [
-    createRuntimeEvent(event, "SET_COMPOSER_DRAFT", {
+    createRuntimeEvent(event, "INSTAGRAM_SET_COMPOSER_DRAFT", {
       caption: event.payload.caption,
       imageUrl: event.payload.imageUrl,
       location: event.payload.location,
     }),
     addEvent,
-    createRuntimeEvent(event, "SET_COMPOSER_DRAFT", { caption: "", imageUrl: undefined }),
+    createRuntimeEvent(event, "INSTAGRAM_SET_COMPOSER_DRAFT", { caption: "", imageUrl: undefined }),
   ];
 
   if (!plan.ok) return after;
@@ -82,7 +81,7 @@ function lowerTypedDM(
   deviceId: string,
   notBeforeFrame: number | undefined,
 ): RuntimeEvent[] {
-  const addEvent = createRuntimeEvent(event, "ADD_DM_MESSAGE", {
+  const addEvent = createRuntimeEvent(event, "INSTAGRAM_ADD_DM_MESSAGE", {
     id: event.payload.id ?? `ig-msg-${event.at}-${event._declarationOrder ?? 0}`,
     threadId: event.payload.threadId,
     senderId: event.payload.senderId,
@@ -106,12 +105,12 @@ function lowerTypedDM(
   });
 
   const after: RuntimeEvent[] = [
-    createRuntimeEvent(event, "SET_THREAD_DRAFT", {
+    createRuntimeEvent(event, "INSTAGRAM_SET_THREAD_DRAFT", {
       threadId: event.payload.threadId,
       text: event.payload.text,
     }),
     addEvent,
-    createRuntimeEvent(event, "SET_THREAD_DRAFT", {
+    createRuntimeEvent(event, "INSTAGRAM_SET_THREAD_DRAFT", {
       threadId: event.payload.threadId,
       text: "",
     }),
@@ -125,22 +124,6 @@ export const instagramLowering = {
   lower(event: TrackEvent, ctx?: unknown): RuntimeEvent[] {
     if ((event as { kind?: string }).kind !== "APP" || (event as { appId?: string }).appId !== "app_instagram") {
       return [];
-    }
-
-    if ((event as { type?: string }).type === "__SNAPSHOT__") {
-      return lowerInstagramSnapshot(
-        (event as { payload?: unknown }).payload,
-        event.at,
-        event.deviceId,
-      );
-    }
-
-    if ((event as { type?: string }).type === "__VIEW__") {
-      return lowerInstagramInitialView(
-        (event as { payload?: unknown }).payload,
-        event.at,
-        event.deviceId,
-      );
     }
 
     if (!isInstagramTrackEvent(event)) return [];
@@ -157,11 +140,11 @@ export const instagramLowering = {
 
     switch (event.type) {
       case "USER_ADD":
-        return [createRuntimeEvent(event, "ADD_USER", event.payload)];
+        return [createRuntimeEvent(event, "INSTAGRAM_ADD_USER", event.payload)];
       case "SET_CURRENT_USER":
-        return [createRuntimeEvent(event, "SET_CURRENT_USER", event.payload)];
+        return [createRuntimeEvent(event, "INSTAGRAM_SET_CURRENT_USER", event.payload)];
       case "FOLLOW_USER":
-        return [createRuntimeEvent(event, "FOLLOW_USER", event.payload)];
+        return [createRuntimeEvent(event, "INSTAGRAM_FOLLOW_USER", event.payload)];
       case "POST_ADD":
         return lowerTypedPost(
           event,
@@ -169,14 +152,14 @@ export const instagramLowering = {
           scratchpad.lastComposerOpenAtByDevice.get(deviceId),
         );
       case "POST_LIKE":
-        return [createRuntimeEvent(event, "LIKE_POST", event.payload)];
+        return [createRuntimeEvent(event, "INSTAGRAM_LIKE_POST", event.payload)];
       case "POST_COMMENT":
-        return [createRuntimeEvent(event, "ADD_COMMENT", {
+        return [createRuntimeEvent(event, "INSTAGRAM_ADD_COMMENT", {
           ...event.payload,
           createdAt: timestamp(event, event.payload.createdAt),
         })];
       case "STORY_SET_ADD":
-        return [createRuntimeEvent(event, "ADD_STORY_SET", {
+        return [createRuntimeEvent(event, "INSTAGRAM_ADD_STORY_SET", {
           id: event.payload.id,
           userId: event.payload.userId,
           storyIds: event.payload.items.map((item) => item.id),
@@ -191,26 +174,26 @@ export const instagramLowering = {
         })];
       case "STORY_OPEN":
         return [
-          createRuntimeEvent(event, "SET_SCREEN", {
+          createRuntimeEvent(event, "INSTAGRAM_SET_SCREEN", {
             screen: "story",
             storySetId: event.payload.storySetId,
             storyId: event.payload.storyId,
           }),
-          createRuntimeEvent(event, "OPEN_STORY", event.payload),
+          createRuntimeEvent(event, "INSTAGRAM_OPEN_STORY", event.payload),
         ];
       case "STORY_ADVANCE":
-        return [createRuntimeEvent(event, "ADVANCE_STORY", event.payload)];
+        return [createRuntimeEvent(event, "INSTAGRAM_ADVANCE_STORY", event.payload)];
       case "STORY_REPLY": {
         scratchpad.lastThreadOpenAtByDeviceThread.set(
           `${deviceId}::${event.payload.threadId}`,
           event.at,
         );
         const openEvents: RuntimeEvent[] = [
-          createRuntimeEvent(event, "SET_SCREEN", {
+          createRuntimeEvent(event, "INSTAGRAM_SET_SCREEN", {
             screen: "thread",
             threadId: event.payload.threadId,
           }),
-          createRuntimeEvent(event, "SET_ACTIVE_THREAD", {
+          createRuntimeEvent(event, "INSTAGRAM_SET_ACTIVE_THREAD", {
             threadId: event.payload.threadId,
           }),
         ];
@@ -236,7 +219,7 @@ export const instagramLowering = {
         ];
       }
       case "DM_THREAD_ADD":
-        return [createRuntimeEvent(event, "ADD_DM_THREAD", {
+        return [createRuntimeEvent(event, "INSTAGRAM_ADD_DM_THREAD", {
           ...event.payload,
           messageIds: [],
           typingUserId: null,
@@ -251,9 +234,9 @@ export const instagramLowering = {
           ),
         );
       case "SET_THREAD_DRAFT":
-        return [createRuntimeEvent(event, "SET_THREAD_DRAFT", event.payload)];
+        return [createRuntimeEvent(event, "INSTAGRAM_SET_THREAD_DRAFT", event.payload)];
       case "SET_THREAD_TYPING":
-        return [createRuntimeEvent(event, "SET_THREAD_TYPING", event.payload)];
+        return [createRuntimeEvent(event, "INSTAGRAM_SET_THREAD_TYPING", event.payload)];
       case "NOTIFICATION_ADD": {
         const id = event.payload.id ?? `ig-nt-${event.at}-${event._declarationOrder ?? 0}`;
         const body =
@@ -266,7 +249,7 @@ export const instagramLowering = {
                 ? "replied to your story"
                 : "interacted with your post");
         return [
-          createRuntimeEvent(event, "ADD_NOTIFICATION", {
+          createRuntimeEvent(event, "INSTAGRAM_ADD_NOTIFICATION", {
             ...event.payload,
             id,
             createdAt: timestamp(event, event.payload.createdAt),
@@ -296,7 +279,7 @@ export const instagramLowering = {
       }
       case "NOTIFICATION_DISMISS":
         return [
-          createRuntimeEvent(event, "DISMISS_NOTIFICATION", event.payload),
+          createRuntimeEvent(event, "INSTAGRAM_DISMISS_NOTIFICATION", event.payload),
           {
             at: event.at,
             kind: "DEVICE",
@@ -315,32 +298,32 @@ export const instagramLowering = {
             event.at,
           );
         }
-        const events: RuntimeEvent[] = [createRuntimeEvent(event, "SET_SCREEN", event.payload)];
+        const events: RuntimeEvent[] = [createRuntimeEvent(event, "INSTAGRAM_SET_SCREEN", event.payload)];
         if (event.payload.postId) {
-          events.push(createRuntimeEvent(event, "SET_ACTIVE_POST", { postId: event.payload.postId }));
+          events.push(createRuntimeEvent(event, "INSTAGRAM_SET_ACTIVE_POST", { postId: event.payload.postId }));
         }
         if (event.payload.profileId) {
-          events.push(createRuntimeEvent(event, "SET_ACTIVE_PROFILE", { profileId: event.payload.profileId }));
+          events.push(createRuntimeEvent(event, "INSTAGRAM_SET_ACTIVE_PROFILE", { profileId: event.payload.profileId }));
         }
         if (event.payload.threadId) {
-          events.push(createRuntimeEvent(event, "SET_ACTIVE_THREAD", { threadId: event.payload.threadId }));
+          events.push(createRuntimeEvent(event, "INSTAGRAM_SET_ACTIVE_THREAD", { threadId: event.payload.threadId }));
         }
         if (event.payload.storySetId) {
-          events.push(createRuntimeEvent(event, "SET_ACTIVE_STORY_SET", { storySetId: event.payload.storySetId }));
+          events.push(createRuntimeEvent(event, "INSTAGRAM_SET_ACTIVE_STORY_SET", { storySetId: event.payload.storySetId }));
         }
         if (event.payload.storyId) {
-          events.push(createRuntimeEvent(event, "SET_ACTIVE_STORY", { storyId: event.payload.storyId }));
+          events.push(createRuntimeEvent(event, "INSTAGRAM_SET_ACTIVE_STORY", { storyId: event.payload.storyId }));
         }
         return events;
       }
       case "NAVIGATE_BACK":
-        return [createRuntimeEvent(event, "NAVIGATE_BACK", {})];
+        return [createRuntimeEvent(event, "INSTAGRAM_NAVIGATE_BACK", {})];
       case "SET_COMPOSER_DRAFT":
-        return [createRuntimeEvent(event, "SET_COMPOSER_DRAFT", event.payload)];
+        return [createRuntimeEvent(event, "INSTAGRAM_SET_COMPOSER_DRAFT", event.payload)];
       case "SET_PROFILE_TAB":
-        return [createRuntimeEvent(event, "SET_PROFILE_TAB", event.payload)];
+        return [createRuntimeEvent(event, "INSTAGRAM_SET_PROFILE_TAB", event.payload)];
       case "SET_THEME_MODE":
-        return [createRuntimeEvent(event, "SET_THEME_MODE", event.payload)];
+        return [createRuntimeEvent(event, "INSTAGRAM_SET_THEME_MODE", event.payload)];
       default:
         return [];
     }

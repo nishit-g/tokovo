@@ -10,6 +10,7 @@ import { instagramLayoutStrategies } from "./layout/index.js";
 import { InstagramAnchorProvider } from "./anchors/provider.js";
 import { instagramDsl, type InstagramDslApi } from "./dsl/extension.js";
 import { instagramNotificationAdapter } from "./notifications/adapter.js";
+import { instagramBootstrap } from "./bootstrap.js";
 
 const instagramViews: PluginViews = {
   AppRoot: InstagramView,
@@ -24,8 +25,8 @@ export const InstagramPlugin: TokovoPluginContract<"app_instagram"> & {
   views: instagramViews,
   reducer: instagramReducer,
   createInitialState: createInstagramInitialState,
+  bootstrap: instagramBootstrap,
   eventKinds: [
-    "INSTAGRAM_HYDRATE_STATE",
     "INSTAGRAM_ADD_USER",
     "INSTAGRAM_SET_CURRENT_USER",
     "INSTAGRAM_FOLLOW_USER",

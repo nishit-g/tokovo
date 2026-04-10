@@ -221,21 +221,17 @@ export const instagramReducer: PluginReducer<"app_instagram"> = (
   const state = getAppState(draft);
 
   switch (event.type) {
-    case "HYDRATE_STATE": {
-      draft.appState.app_instagram = event.payload as InstagramState;
-      break;
-    }
-    case "ADD_USER": {
+    case "INSTAGRAM_ADD_USER": {
       const payload = event.payload as Partial<InstagramUser>;
       upsertById(state.users, ensureUser(payload));
       break;
     }
-    case "SET_CURRENT_USER": {
+    case "INSTAGRAM_SET_CURRENT_USER": {
       const payload = event.payload as { userId: string };
       state.currentUserId = payload.userId;
       break;
     }
-    case "FOLLOW_USER": {
+    case "INSTAGRAM_FOLLOW_USER": {
       const payload = event.payload as { followerId: string; followingId: string };
       const follower = state.users.find((item) => item.id === payload.followerId);
       const following = state.users.find((item) => item.id === payload.followingId);
@@ -249,7 +245,7 @@ export const instagramReducer: PluginReducer<"app_instagram"> = (
       }
       break;
     }
-    case "ADD_POST": {
+    case "INSTAGRAM_ADD_POST": {
       const payload = event.payload as Partial<InstagramPost> & {
         id: string;
         authorId: string;
@@ -261,7 +257,7 @@ export const instagramReducer: PluginReducer<"app_instagram"> = (
       state.posts.sort((a, b) => b.createdAt - a.createdAt);
       break;
     }
-    case "LIKE_POST": {
+    case "INSTAGRAM_LIKE_POST": {
       const payload = event.payload as { postId: string; userId: string };
       const post = state.posts.find((item) => item.id === payload.postId);
       if (post && !post.likedBy.includes(payload.userId)) {
@@ -270,7 +266,7 @@ export const instagramReducer: PluginReducer<"app_instagram"> = (
       }
       break;
     }
-    case "ADD_COMMENT": {
+    case "INSTAGRAM_ADD_COMMENT": {
       const payload = event.payload as Partial<InstagramComment> & {
         id: string;
         postId: string;
@@ -287,7 +283,7 @@ export const instagramReducer: PluginReducer<"app_instagram"> = (
       }
       break;
     }
-    case "ADD_STORY_SET": {
+    case "INSTAGRAM_ADD_STORY_SET": {
       const payload = event.payload as Partial<InstagramStorySet> & {
         id: string;
         userId: string;
@@ -302,7 +298,7 @@ export const instagramReducer: PluginReducer<"app_instagram"> = (
       upsertById(state.storySets, ensureStorySet(payload));
       break;
     }
-    case "OPEN_STORY": {
+    case "INSTAGRAM_OPEN_STORY": {
       const payload = event.payload as { storySetId: string; storyId?: string };
       const storySet = state.storySets.find((item) => item.id === payload.storySetId);
       const nextStoryId = payload.storyId ?? storySet?.storyIds[0] ?? null;
@@ -315,7 +311,7 @@ export const instagramReducer: PluginReducer<"app_instagram"> = (
       syncViewMode(state);
       break;
     }
-    case "ADVANCE_STORY": {
+    case "INSTAGRAM_ADVANCE_STORY": {
       const payload = event.payload as { storySetId: string; direction?: "next" | "prev" };
       const set = state.storySets.find((item) => item.id === payload.storySetId);
       if (!set) break;
@@ -328,7 +324,7 @@ export const instagramReducer: PluginReducer<"app_instagram"> = (
       if (nextStoryId) set.lastViewedStoryId = nextStoryId;
       break;
     }
-    case "ADD_DM_THREAD": {
+    case "INSTAGRAM_ADD_DM_THREAD": {
       const payload = event.payload as Partial<InstagramDMThread> & {
         id: string;
         participantIds: string[];
@@ -336,7 +332,7 @@ export const instagramReducer: PluginReducer<"app_instagram"> = (
       upsertById(state.dmThreads, ensureThread(payload));
       break;
     }
-    case "ADD_DM_MESSAGE": {
+    case "INSTAGRAM_ADD_DM_MESSAGE": {
       const payload = event.payload as Partial<InstagramDMMessage> & {
         id: string;
         threadId: string;
@@ -356,18 +352,18 @@ export const instagramReducer: PluginReducer<"app_instagram"> = (
       }
       break;
     }
-    case "SET_THREAD_DRAFT": {
+    case "INSTAGRAM_SET_THREAD_DRAFT": {
       const payload = event.payload as { threadId: string; text: string };
       state.threadDrafts[payload.threadId] = payload.text;
       break;
     }
-    case "SET_THREAD_TYPING": {
+    case "INSTAGRAM_SET_THREAD_TYPING": {
       const payload = event.payload as { threadId: string; userId: string | null };
       const thread = state.dmThreads.find((item) => item.id === payload.threadId);
       if (thread) thread.typingUserId = payload.userId;
       break;
     }
-    case "ADD_NOTIFICATION": {
+    case "INSTAGRAM_ADD_NOTIFICATION": {
       const payload = event.payload as InstagramNotification;
       state.notifications = state.notifications.filter((item) => item.id !== payload.id);
       state.notifications.unshift({
@@ -377,12 +373,12 @@ export const instagramReducer: PluginReducer<"app_instagram"> = (
       });
       break;
     }
-    case "DISMISS_NOTIFICATION": {
+    case "INSTAGRAM_DISMISS_NOTIFICATION": {
       const payload = event.payload as { id: string };
       state.notifications = state.notifications.filter((item) => item.id !== payload.id);
       break;
     }
-    case "SET_SCREEN": {
+    case "INSTAGRAM_SET_SCREEN": {
       const payload = event.payload as InstagramRoute;
       const currentRoute = buildRoute(state);
       if (!routesEqual(currentRoute, payload)) {
@@ -401,34 +397,34 @@ export const instagramReducer: PluginReducer<"app_instagram"> = (
       syncViewMode(state);
       break;
     }
-    case "SET_ACTIVE_POST": {
+    case "INSTAGRAM_SET_ACTIVE_POST": {
       const payload = event.payload as { postId: string | null };
       state.activePostId = payload.postId;
       break;
     }
-    case "SET_ACTIVE_PROFILE": {
+    case "INSTAGRAM_SET_ACTIVE_PROFILE": {
       const payload = event.payload as { profileId: string | null };
       state.activeProfileId = payload.profileId;
       break;
     }
-    case "SET_ACTIVE_THREAD": {
+    case "INSTAGRAM_SET_ACTIVE_THREAD": {
       const payload = event.payload as { threadId: string | null };
       state.activeThreadId = payload.threadId;
       markThreadRead(state, payload.threadId);
       syncViewMode(state);
       break;
     }
-    case "SET_ACTIVE_STORY_SET": {
+    case "INSTAGRAM_SET_ACTIVE_STORY_SET": {
       const payload = event.payload as { storySetId: string | null };
       state.activeStorySetId = payload.storySetId;
       break;
     }
-    case "SET_ACTIVE_STORY": {
+    case "INSTAGRAM_SET_ACTIVE_STORY": {
       const payload = event.payload as { storyId: string | null };
       state.activeStoryId = payload.storyId;
       break;
     }
-    case "NAVIGATE_BACK": {
+    case "INSTAGRAM_NAVIGATE_BACK": {
       const previous = state.navigationStack.pop();
       if (!previous) break;
       state.currentScreen = previous.screen;
@@ -442,7 +438,7 @@ export const instagramReducer: PluginReducer<"app_instagram"> = (
       syncViewMode(state);
       break;
     }
-    case "SET_COMPOSER_DRAFT": {
+    case "INSTAGRAM_SET_COMPOSER_DRAFT": {
       const payload = event.payload as {
         caption?: string;
         imageUrl?: string;
@@ -455,12 +451,12 @@ export const instagramReducer: PluginReducer<"app_instagram"> = (
       };
       break;
     }
-    case "SET_PROFILE_TAB": {
+    case "INSTAGRAM_SET_PROFILE_TAB": {
       const payload = event.payload as { tab: InstagramState["profileTab"] };
       state.profileTab = payload.tab;
       break;
     }
-    case "SET_THEME_MODE": {
+    case "INSTAGRAM_SET_THEME_MODE": {
       const payload = event.payload as { mode: InstagramState["themeMode"] };
       state.themeMode = payload.mode;
       break;

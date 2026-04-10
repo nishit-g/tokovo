@@ -22,7 +22,7 @@ describe("instagram lowering", () => {
     });
 
     expect(events.some((event) => event.kind === "DEVICE" && event.type === "SHOW_NOTIFICATION")).toBe(true);
-    expect(events.some((event) => event.kind === "APP" && event.type === "ADD_NOTIFICATION")).toBe(true);
+    expect(events.some((event) => event.kind === "APP" && event.type === "INSTAGRAM_ADD_NOTIFICATION")).toBe(true);
   });
 
   it("uses keyboard lowering for typed composer posts after compose navigation", () => {
@@ -58,6 +58,6 @@ describe("instagram lowering", () => {
     );
 
     expect(events.some((event) => event.kind === "DEVICE")).toBe(true);
-    expect(events.some((event) => event.kind === "APP" && event.type === "ADD_POST")).toBe(true);
+    expect(events.some((event) => event.kind === "APP" && event.type === "INSTAGRAM_ADD_POST")).toBe(true);
   });
 });

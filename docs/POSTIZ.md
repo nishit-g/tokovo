@@ -21,6 +21,13 @@ Tokovo uses Postiz as the publishing control plane. Social credentials and OAuth
    - provider credentials for the platforms you will actually use
    - keep `DISABLE_REGISTRATION=false` for the first login, then switch it back to `true` after creating the initial admin account if you want to lock the instance down
 
+Important provider notes:
+
+- The Postiz auth page's "Continue with Google" uses `YOUTUBE_CLIENT_ID` and `YOUTUBE_CLIENT_SECRET`.
+- Instagram and Facebook integrations use `FACEBOOK_APP_ID` and `FACEBOOK_APP_SECRET`.
+- Threads integration uses `THREADS_APP_ID` and `THREADS_APP_SECRET`.
+- If those are blank or invalid, provider OAuth will fail with app-id style errors even if the base Postiz stack is healthy.
+
 3. Start Postiz with persistent volumes:
 
    `docker compose --env-file deploy/postiz/postiz.env -f deploy/postiz/docker-compose.yml up -d`

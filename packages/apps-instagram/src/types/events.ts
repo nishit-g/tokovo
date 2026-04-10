@@ -194,7 +194,6 @@ export type InstagramEventType =
   | "SET_THEME_MODE";
 
 export type InstagramEventKind =
-  | "INSTAGRAM_HYDRATE_STATE"
   | "INSTAGRAM_ADD_USER"
   | "INSTAGRAM_SET_CURRENT_USER"
   | "INSTAGRAM_FOLLOW_USER"
