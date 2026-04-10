@@ -1,7 +1,7 @@
 import React from "react";
 import type { WorldState } from "@tokovo/core";
 import { AppShell } from "./AppShell.js";
-import { Avatar, BottomNav, Icon, formatRelativeTime } from "./components.js";
+import { Avatar, Icon, formatRelativeTime } from "./components.js";
 import { useInstagramTheme } from "./ThemeContext.js";
 import { getCurrentUser, getInboxThreads, getInstagramState, getThreadDraft, getUserById } from "../runtime/selectors.js";
 
@@ -132,8 +132,6 @@ export const Inbox: React.FC<{ world: WorldState }> = ({ world }) => {
           );
         })}
       </div>
-
-      <BottomNav active="send" />
     </AppShell>
   );
 };

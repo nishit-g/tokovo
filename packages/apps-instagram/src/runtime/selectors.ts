@@ -40,6 +40,12 @@ export function getVisibleFeedPosts(world: WorldState): InstagramPost[] {
   );
 }
 
+export function getFocusedFeedPostId(world: WorldState): string | null {
+  const state = getInstagramState(world);
+  if (!state || state.currentScreen !== "home") return null;
+  return state.activePostId ?? null;
+}
+
 export function getCommentsForPost(world: WorldState, postId: string | null): InstagramComment[] {
   if (!postId) return [];
   return [...(getInstagramState(world)?.comments ?? [])]

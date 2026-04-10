@@ -2,7 +2,7 @@ import React from "react";
 import type { WorldState } from "@tokovo/core";
 import { getTypedTextProgress } from "@tokovo/device-keyboard";
 import { AppShell } from "./AppShell.js";
-import { Avatar, BottomNav, Icon, formatRelativeTime } from "./components.js";
+import { Avatar, Icon, formatRelativeTime } from "./components.js";
 import { useInstagramTheme } from "./ThemeContext.js";
 import { getActiveThread, getCurrentUser, getInstagramState, getThreadDraft, getUserById, getVisibleDMMessages } from "../runtime/selectors.js";
 
@@ -218,10 +218,8 @@ export const DMThread: React.FC<{
         >
           {typedDraft || "Message…"}
         </div>
-        <Icon name="heart" />
+        <Icon name="heart" size={24} />
       </div>
-
-      <BottomNav active="send" />
     </AppShell>
   );
 };

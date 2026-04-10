@@ -39,7 +39,6 @@ export const AppShell: React.FC<{
         boxSizing: "border-box",
         paddingTop: immersive ? 0 : safeArea.top,
         paddingBottom: immersive ? 0 : safeArea.bottom,
-        border: `1px solid ${immersive ? "rgba(255,255,255,0.06)" : theme.colors.border}`,
       }}
     >
       {!immersive ? (
@@ -49,8 +48,8 @@ export const AppShell: React.FC<{
             inset: 0,
             background:
               theme.mode === "ghibli"
-                ? "radial-gradient(circle at top, rgba(255,255,255,0.18), transparent 30%)"
-                : "linear-gradient(180deg, rgba(0,0,0,0.02), transparent 18%)",
+                ? "radial-gradient(circle at top, rgba(255,255,255,0.14), transparent 28%)"
+                : "linear-gradient(180deg, rgba(0,0,0,0.015), transparent 14%)",
             pointerEvents: "none",
           }}
         />

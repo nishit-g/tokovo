@@ -14,6 +14,7 @@ import ghibliWhatsappXCrossover from "./ghibli-whatsapp-x-crossover.episode.js";
 import ghibliShowcase from "./ghibli-showcase.episode.js";
 import imessageAnchorTour from "./imessage-anchor-tour.episode.js";
 import instagramCreatorDrop from "./instagram-creator-drop.episode.js";
+import instagramReelRoast from "./instagram-reel-roast.episode.js";
 import integrationTest from "./integration-test.episode.js";
 import keyboardDemo from "./keyboard-demo.episode.js";
 import launchLeakNightmare from "./launch-leak-nightmare.episode.js";
@@ -55,6 +56,7 @@ export const productionEpisodes: EpisodeDefinition[] = [
   ghibliShowcase,
   imessageAnchorTour,
   instagramCreatorDrop,
+  instagramReelRoast,
   integrationTest,
   keyboardDemo,
   launchLeakNightmare,
@@ -99,6 +101,7 @@ export {
   ghibliShowcase,
   imessageAnchorTour,
   instagramCreatorDrop,
+  instagramReelRoast,
   integrationTest,
   keyboardDemo,
   launchLeakNightmare,

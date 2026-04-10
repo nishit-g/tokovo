@@ -19,7 +19,7 @@ export const instagramColors = {
 } as const;
 
 export const instagramTypography = {
-  display: { fontSize: 24, fontWeight: "700" as const, letterSpacing: -0.4 },
+  display: { fontSize: 26, fontWeight: "700" as const, letterSpacing: -0.45 },
   title: { fontSize: 18, fontWeight: "700" as const, letterSpacing: -0.2 },
   headline: { fontSize: 16, fontWeight: "600" as const, letterSpacing: -0.15 },
   body: { fontSize: 14, fontWeight: "400" as const, letterSpacing: -0.05 },
@@ -29,12 +29,12 @@ export const instagramTypography = {
 
 export const instagramSpacing = {
   screenPadding: 16,
-  headerHeight: 54,
-  tabBarHeight: 52,
-  storyTrayHeight: 104,
-  avatarSize: 32,
-  storyAvatarSize: 62,
-  storyGap: 14,
+  headerHeight: 58,
+  tabBarHeight: 58,
+  storyTrayHeight: 112,
+  avatarSize: 36,
+  storyAvatarSize: 68,
+  storyGap: 16,
   postGap: 16,
   composerHeight: 96,
 } as const;
