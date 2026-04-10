@@ -8,7 +8,7 @@ const getOrder = () => order++;
 
 export default defineEpisode({
   meta: {
-    id: "typing-plugin-demo",
+    id: "typing-plugin-test-demo",
     title: "Typing Indicator Plugin Demo",
     description: "Demonstrates TypingIndicatorPlugin eliminating boilerplate",
     category: "test",
@@ -21,7 +21,7 @@ export default defineEpisode({
   },
 
   build: () =>
-    episode("typing-plugin-demo", { fps: 30, duration: "30s" })
+    episode("typing-plugin-test-demo", { fps: 30, duration: "30s" })
       .device("phone", "iphone16", {
         app: "app_whatsapp",
       })

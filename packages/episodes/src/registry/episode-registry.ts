@@ -7,8 +7,18 @@
  * @see docs-v2/EPISODE-ARCH.md
  */
 
-import type { EpisodeDefinition } from "../types/episode-definition.js";
-import { EpisodeDefinitionSchema } from "../types/episode-definition.js";
+import type {
+    EpisodeCategory,
+    EpisodeCatalogType,
+    EpisodeDefinition,
+    EpisodeVisibility,
+} from "../types/episode-definition.js";
+import {
+    EpisodeDefinitionSchema,
+    isShowcaseCatalogType,
+    resolveEpisodeCatalogType,
+    resolveEpisodeCategory,
+} from "../types/episode-definition.js";
 
 export class EpisodeRegistryDuplicateError extends Error {
     constructor(public readonly episodeId: string) {
@@ -83,11 +93,49 @@ export class EpisodeRegistry {
     /**
      * Filter episodes by category or tags.
      */
-    filter(opts?: { category?: string; tags?: string[] }): EpisodeDefinition[] {
+    filter(opts?: {
+        category?: EpisodeCategory;
+        catalogType?: EpisodeCatalogType | EpisodeCatalogType[];
+        appId?: string;
+        legacy?: boolean;
+        visibility?: EpisodeVisibility | EpisodeVisibility[];
+        tags?: string[];
+    }): EpisodeDefinition[] {
         let episodes = this.all();
 
         if (opts?.category) {
-            episodes = episodes.filter(e => e.meta.category === opts.category);
+            episodes = episodes.filter((e) => {
+                const resolvedCategory = resolveEpisodeCategory(e.meta);
+                if (opts.category === "showcase") {
+                    return isShowcaseCatalogType(resolveEpisodeCatalogType(e.meta));
+                }
+                return resolvedCategory === opts.category;
+            });
+        }
+        if (opts?.catalogType) {
+            const allowed = Array.isArray(opts.catalogType)
+                ? opts.catalogType
+                : [opts.catalogType];
+            episodes = episodes.filter((e) =>
+                allowed.includes(resolveEpisodeCatalogType(e.meta)),
+            );
+        }
+        if (typeof opts?.legacy === "boolean") {
+            episodes = episodes.filter((e) => {
+                const isLegacy = resolveEpisodeCatalogType(e.meta) === "legacy";
+                return isLegacy === opts.legacy;
+            });
+        }
+        if (opts?.appId) {
+            episodes = episodes.filter((e) => e.meta.appId === opts.appId);
+        }
+        if (opts?.visibility) {
+            const allowed = Array.isArray(opts.visibility)
+                ? opts.visibility
+                : [opts.visibility];
+            episodes = episodes.filter((e) =>
+                allowed.includes(e.meta.visibility ?? "public"),
+            );
         }
         if (opts?.tags?.length) {
             const tags = opts.tags;
@@ -96,7 +144,14 @@ export class EpisodeRegistry {
             );
         }
 
-        return episodes;
+        return episodes.sort((left, right) => {
+            const sortLeft = left.meta.sortOrder ?? Number.MAX_SAFE_INTEGER;
+            const sortRight = right.meta.sortOrder ?? Number.MAX_SAFE_INTEGER;
+            if (sortLeft !== sortRight) {
+                return sortLeft - sortRight;
+            }
+            return left.meta.title.localeCompare(right.meta.title);
+        });
     }
 
     /**

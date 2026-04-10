@@ -39,6 +39,9 @@ export {
 export { defineEpisode } from "./types/index.js";
 export type {
   EpisodeMeta,
+  EpisodeCategory,
+  EpisodeCatalogType,
+  EpisodeVisibility,
   EpisodeConfig,
   EpisodeDefinition,
   FormatId,
@@ -48,7 +51,16 @@ export {
   EpisodeMetaSchema,
   EpisodeConfigSchema,
   EpisodeDefinitionSchema,
+  SHOWCASE_CATALOG_TYPES,
+  isShowcaseCatalogType,
+  resolveEpisodeCatalogType,
+  resolveEpisodeCategory,
 } from "./types/index.js";
+export {
+  markLegacyEpisode,
+  promoteEpisode,
+  withEpisodeMeta,
+} from "./catalog/index.js";
 
 // =============================================================================
 // FORMAT TEMPLATES
@@ -88,13 +100,3 @@ export {
   generatePromptDocumentation,
 } from "./json-schema.js";
 export type { SchemaExport } from "./json-schema.js";
-
-// =============================================================================
-// LEGACY EPISODES
-// =============================================================================
-// Note: Legacy V1 episodes are NOT exported - they use old DSL patterns
-// and will cause runtime errors. Access them directly if needed:
-//   import { bakchodiGangEpisode } from "@tokovo/episodes/episodes/bakchodi-gang"
-//
-// To create new episodes, use the V2 pattern with defineEpisode():
-//   import { defineEpisode } from "@tokovo/episodes";

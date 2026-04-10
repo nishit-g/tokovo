@@ -15,9 +15,33 @@
       "types": "./dist/production/index.d.ts",
       "default": "./dist/production/index.js"
     },
+    "./stories": {
+      "types": "./dist/stories/index.d.ts",
+      "default": "./dist/stories/index.js"
+    },
     "./showcases": {
       "types": "./dist/showcases/index.d.ts",
       "default": "./dist/showcases/index.js"
+    },
+    "./showcases/apps": {
+      "types": "./dist/showcases/apps/index.d.ts",
+      "default": "./dist/showcases/apps/index.js"
+    },
+    "./showcases/system": {
+      "types": "./dist/showcases/system/index.d.ts",
+      "default": "./dist/showcases/system/index.js"
+    },
+    "./legacy": {
+      "types": "./dist/legacy/index.d.ts",
+      "default": "./dist/legacy/index.js"
+    },
+    "./legacy/production": {
+      "types": "./dist/legacy/production/index.d.ts",
+      "default": "./dist/legacy/production/index.js"
+    },
+    "./legacy/showcases": {
+      "types": "./dist/legacy/showcases/index.d.ts",
+      "default": "./dist/legacy/showcases/index.js"
     },
     "./v2": {
       "types": "./dist/v2/index.d.ts",

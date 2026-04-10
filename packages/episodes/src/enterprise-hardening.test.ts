@@ -2,8 +2,8 @@ import { describe, expect, it } from "vitest";
 import { prepareTrackEpisode } from "@tokovo/compiler";
 import { WhatsAppPlugin } from "@tokovo/apps-whatsapp";
 import { TypewriterPlugin } from "@tokovo/apps-typewriter";
-import flirtyWhatsappRomance from "./production/flirty-whatsapp-romance.episode.js";
-import typewriterLetter from "./production/typewriter-letter.episode.js";
+import flirtyWhatsappRomance from "./legacy/production/flirty-whatsapp-romance.episode.js";
+import typewriterLetter from "./legacy/production/typewriter-letter.episode.js";
 import type { EpisodeDefinition } from "./types/episode-definition.js";
 import {
   EpisodeRegistry,
@@ -48,6 +48,7 @@ describe("episodes integration and registry guarantees", () => {
         id: "Bad ID",
         title: "Bad",
         category: "production" as const,
+        catalogType: "story" as const,
       },
       config: {
         format: "1080x1920",

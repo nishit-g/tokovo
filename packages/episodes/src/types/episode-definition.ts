@@ -45,6 +45,26 @@ export interface CustomFormat {
 /**
  * Episode metadata - describes the episode for UI and discovery.
  */
+export type EpisodeCategory = "production" | "showcase" | "test";
+
+export type EpisodeCatalogType =
+  | "app_showcase_flagship"
+  | "app_showcase_exhaustive"
+  | "app_showcase_theme"
+  | "system_showcase"
+  | "story"
+  | "test"
+  | "legacy";
+
+export type EpisodeVisibility = "public" | "internal";
+
+export const SHOWCASE_CATALOG_TYPES = [
+  "app_showcase_flagship",
+  "app_showcase_exhaustive",
+  "app_showcase_theme",
+  "system_showcase",
+] as const satisfies readonly EpisodeCatalogType[];
+
 export interface EpisodeMeta {
   /** Unique ID (kebab-case, e.g., "whatsapp-drama") */
   id: string;
@@ -55,8 +75,29 @@ export interface EpisodeMeta {
   /** Description of what this episode shows */
   description?: string;
 
-  /** Category for organization */
-  category: "production" | "showcase" | "test";
+  /**
+   * Compatibility category used by older callers.
+   * New catalog browsing should use `catalogType`.
+   */
+  category: EpisodeCategory;
+
+  /** Canonical enterprise catalog type */
+  catalogType?: EpisodeCatalogType;
+
+  /** Primary app surfaced by the episode, when applicable */
+  appId?: string;
+
+  /** Theme identifier for theme-specific showcases */
+  themeId?: string;
+
+  /** Whether this episode belongs to the legacy migration catalog */
+  isLegacy?: boolean;
+
+  /** UI/runtime visibility hint */
+  visibility?: EpisodeVisibility;
+
+  /** Stable ordering inside a folder/catalog */
+  sortOrder?: number;
 
   /** Tags for filtering (e.g., ["whatsapp", "drama"]) */
   tags?: string[];
@@ -125,6 +166,22 @@ export const EpisodeMetaSchema = z.object({
   title: z.string().min(1, "Title is required"),
   description: z.string().optional(),
   category: z.enum(["production", "showcase", "test"]),
+  catalogType: z
+    .enum([
+      "app_showcase_flagship",
+      "app_showcase_exhaustive",
+      "app_showcase_theme",
+      "system_showcase",
+      "story",
+      "test",
+      "legacy",
+    ])
+    .optional(),
+  appId: z.string().optional(),
+  themeId: z.string().optional(),
+  isLegacy: z.boolean().optional(),
+  visibility: z.enum(["public", "internal"]).optional(),
+  sortOrder: z.number().int().optional(),
   tags: z.array(z.string()).optional(),
   thumbnail: z.string().optional(),
   author: z.string().optional(),
@@ -175,6 +232,47 @@ export const EpisodeDefinitionSchema = z.object({
   config: EpisodeConfigSchema,
   build: z.function(),
 });
+
+export function isShowcaseCatalogType(
+  catalogType: EpisodeCatalogType,
+): boolean {
+  return (SHOWCASE_CATALOG_TYPES as readonly string[]).includes(catalogType);
+}
+
+export function resolveEpisodeCatalogType(
+  meta: Pick<EpisodeMeta, "category" | "catalogType" | "appId" | "isLegacy">,
+): EpisodeCatalogType {
+  if (meta.catalogType) {
+    return meta.catalogType;
+  }
+
+  if (meta.isLegacy) {
+    return "legacy";
+  }
+
+  if (meta.category === "test") {
+    return "test";
+  }
+
+  if (meta.category === "production") {
+    return "story";
+  }
+
+  return meta.appId ? "app_showcase_flagship" : "system_showcase";
+}
+
+export function resolveEpisodeCategory(
+  meta: Pick<EpisodeMeta, "category" | "catalogType" | "appId" | "isLegacy">,
+): EpisodeCategory {
+  const catalogType = resolveEpisodeCatalogType(meta);
+  if (catalogType === "story") {
+    return "production";
+  }
+  if (catalogType === "test") {
+    return "test";
+  }
+  return "showcase";
+}
 
 // =============================================================================
 // DEFINE EPISODE HELPER
