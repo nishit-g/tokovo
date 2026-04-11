@@ -18,6 +18,7 @@
     "render:episode": "pnpm --filter @tokovo/render-service run render",
     "postiz:r2-env": "node scripts/postiz/print-postiz-r2-env.mjs",
     "postiz:cloudflare-env": "node scripts/postiz/print-postiz-cloudflare-env.mjs",
+    "postiz:export-coolify-env": "node scripts/postiz/export-coolify-env-from-railway.mjs",
     "postiz:set-railway-storage": "node scripts/postiz/set-railway-postiz-storage.mjs",
     "postiz:set-railway-providers": "node scripts/postiz/set-railway-provider-env.mjs",
     "watch:video": "turbo watch build --filter=video-runner...",

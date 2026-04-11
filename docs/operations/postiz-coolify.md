@@ -53,6 +53,14 @@ Start from:
 
 - `deploy/postiz/postiz.coolify.env.example`
 
+To derive a real Coolify env file from the currently linked Railway project:
+
+- `pnpm postiz:export-coolify-env > deploy/postiz/postiz.coolify.env`
+
+Run that from a Railway-linked Tokovo checkout. If needed:
+
+- `RAILWAY_RUN_CWD=/absolute/path/to/linked/tokovo pnpm postiz:export-coolify-env > deploy/postiz/postiz.coolify.env`
+
 Important production values:
 
 - `MAIN_URL=https://postiz.tokovo.io`
@@ -103,7 +111,8 @@ So the Coolify env should mirror Railway, not the local-only example file.
 Notes:
 
 - Redis is ephemeral and usually does not need a migration.
-- The important state is the Postiz application Postgres data and any persistent uploads/config.
+- The most important state is the Postiz application Postgres data and any persistent uploads/config.
+- If you want to preserve in-flight or already-scheduled Temporal workflow state exactly, also migrate the Temporal Postgres backing store instead of starting it fresh.
 - Because production already uses R2, media storage should not be tied to local disk alone.
 
 ## Best current decision

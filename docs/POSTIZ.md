@@ -62,6 +62,12 @@ For the current production migration path on the shared AWS/Coolify VM, use:
 
 The local compose file remains useful for development, but production should follow the Coolify-specific contract and env template.
 
+If Railway is currently the source of truth, you can derive a Coolify-ready env file with:
+
+- `pnpm postiz:export-coolify-env > deploy/postiz/postiz.coolify.env`
+
+Run it from a Railway-linked Tokovo checkout, or set `RAILWAY_RUN_CWD=/absolute/path/to/linked/tokovo`.
+
 ## Persistence and resets
 
 This compose file uses named Docker volumes for:
