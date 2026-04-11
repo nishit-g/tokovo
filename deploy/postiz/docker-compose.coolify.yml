@@ -2,8 +2,6 @@ services:
   postiz:
     image: ghcr.io/gitroomhq/postiz-app:latest
     restart: unless-stopped
-    env_file:
-      - ./postiz.coolify.env
     environment:
       DATABASE_URL: postgresql://${POSTIZ_DB_USER}:${POSTIZ_DB_PASSWORD}@postiz-postgres:5432/${POSTIZ_DB_NAME}
       REDIS_URL: redis://:${POSTIZ_REDIS_PASSWORD}@postiz-redis:6379
@@ -115,8 +113,9 @@ services:
       TEMPORAL_NAMESPACE: default
     expose:
       - "7233"
-    volumes:
-      - ./dynamicconfig:/etc/temporal/config/dynamicconfig:ro
+    configs:
+      - source: temporal-dynamic-config
+        target: /etc/temporal/config/dynamicconfig/development-sql.yaml
     networks:
       - temporal-network
 
@@ -145,3 +144,10 @@ volumes:
 networks:
   postiz-network:
   temporal-network:
+
+configs:
+  temporal-dynamic-config:
+    content: |
+      system.forceSearchAttributesCacheRefreshOnRead:
+        - value: true
+          constraints: {}
