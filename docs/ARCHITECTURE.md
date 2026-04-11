@@ -24,6 +24,7 @@ The same authored input and the same frame must always produce the same runtime 
 render output.
 
 Tokovo must not depend on:
+
 - live CMS reads
 - hidden mutable state
 - import-time registration side effects
@@ -54,6 +55,7 @@ Tokovo now has one authoring model for frame-0 app state:
 - tracks and timeline events describe mutations after frame 0
 
 This means:
+
 - app history is not authored through device state
 - the compiler does not synthesize conversations, feeds, threads, or notifications
 - plugins validate and hydrate their own snapshots and views
@@ -67,6 +69,7 @@ Canonical authored-data and track-event contracts.
 ### `@tokovo/dsl`
 
 The fluent episode builder:
+
 - devices
 - snapshots and views
 - app tracks
@@ -76,6 +79,7 @@ The fluent episode builder:
 ### `@tokovo/compiler`
 
 Compilation and preparation:
+
 - lower tracks into runtime events
 - run compiler plugins
 - orchestrate plugin-owned bootstrap contracts
@@ -84,15 +88,18 @@ Compilation and preparation:
 ### `@tokovo/core`
 
 Deterministic replay and runtime:
+
 - world state
 - reducer registries
 - event indexing
 - engine contracts
 - device and app runtime types
+- structured logging and observability hooks
 
 ### App Packages
 
 Each app plugin owns:
+
 - snapshot schema
 - initial-view schema
 - bootstrap validation and hydration
@@ -101,9 +108,18 @@ Each app plugin owns:
 - layouts and semantic anchors
 - UI surfaces
 
+When an app package grows large, it must expose explicit domain entrypoints instead of pushing all
+consumers through the root barrel:
+
+- `@tokovo/apps-*/plugin` for runtime registration
+- `@tokovo/apps-*/contract` for bootstrap, schema, and IR contracts
+- `@tokovo/apps-*/dsl` for authoring helpers
+- `@tokovo/apps-*/runtime` for reducer and selector consumers
+
 ### Device / System Packages
 
 System realism packages own:
+
 - devices and chrome metrics
 - keyboard
 - notifications
@@ -115,38 +131,58 @@ System realism packages own:
 Tokovo now exposes a storybook-style episode catalog.
 
 Canonical catalog types:
+
 - `app_showcase_flagship`
 - `app_showcase_exhaustive`
 - `app_showcase_theme`
 - `system_showcase`
 - `story`
 - `test`
-- `legacy`
 
 Visible curated catalogs are:
+
 - `showcases/apps`
 - `showcases/system`
 - `stories`
-
-Legacy content remains runnable under `legacy`, but curated catalogs should contain only new
-enterprise episodes.
 
 ## Runtime Registration
 
 Registration must stay explicit.
 
 That applies to:
+
 - app plugins in `video-runner` and render runtimes
 - episode catalogs in runner registries
 - anchors, behaviors, and lowering contracts
 
 If a plugin is not registered, Tokovo should fail loudly rather than guess.
 
+The canonical runtime path is now:
+
+- `prepareTrackEpisode()` from `@tokovo/compiler`
+- `createTokovoRuntime()` / `getSharedTokovoRuntime()` from `@tokovo/episodes`
+- manifest-driven plugin registration in `packages/episodes/src/runtime/plugin-manifest.ts`
+- catalog modules split into `release` and `studio`
+
+## Build Graph
+
+Tokovo now has two TypeScript policies:
+
+- library packages extend `tsconfig.lib.json`
+- apps extend app-specific tsconfigs and reference the library graph
+
+The repo-level solution build is `tsconfig.solution.json`, and the canonical graph validation command is:
+
+- `pnpm typecheck:solution`
+
+That means Turbo is no longer the only place that knows the dependency graph. TypeScript itself now has an explicit solution build.
+
 ## Device Realism Layer
 
 System chrome is now treated as first-class product surface, not decoration.
 
 That includes:
+
 - status bar
 - Dynamic Island
 - lockscreen
@@ -163,3 +199,5 @@ These surfaces should scale from device logical metrics, not hardcoded render-pi
 3. Build the affected packages.
 4. Preview the episode in `video-runner`.
 5. Render at least one real still or media pass before calling the change done.
+
+For runtime logging controls and operator guidance, see `docs/operations/logging.md`.

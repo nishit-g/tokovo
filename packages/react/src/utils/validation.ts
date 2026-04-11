@@ -1,6 +1,8 @@
 import { z } from "zod";
-import type { TokovoPluginContract } from "@tokovo/core";
+import { createScopedLogger, type TokovoPluginContract } from "@tokovo/core";
 import type { AppMetadata } from "../registries/metadata.js";
+
+const log = createScopedLogger("validation");
 
 // Core built-in sounds are registered by Tokovo itself and intentionally do not
 // require namespacing (e.g. "tap", "notification_soft").
@@ -33,9 +35,7 @@ export const AppMetadataSchema = z.object({
   displayName: z.string(),
   themeColor: z.string().regex(/^#/, "Must be a hex color"),
   icon: z.string(),
-  viewStrategy: z
-    .enum(ViewKindSchema.options)
-    .optional(),
+  viewStrategy: z.enum(ViewKindSchema.options).optional(),
   designWidth: z.number().optional().default(393),
 }) as z.ZodType<Partial<AppMetadata> & { name?: string }>;
 
@@ -81,9 +81,7 @@ export const TokovoPluginSchema = z.object({
   views: z
     .object({
       AppRoot: z.function().optional(),
-      strategies: z
-        .record(z.string(), z.record(z.string(), z.function()))
-        .optional(),
+      strategies: z.record(z.string(), z.record(z.string(), z.function())).optional(),
     })
     .optional(),
   assets: z
@@ -110,9 +108,7 @@ export interface ValidationResult {
   warnings: ValidationError[];
 }
 
-export function validatePlugin<AppId extends string>(
-  plugin: TokovoPluginContract<AppId>,
-): void {
+export function validatePlugin<AppId extends string>(plugin: TokovoPluginContract<AppId>): void {
   const result = validatePluginDetailed(plugin);
 
   if (!result.valid) {
@@ -133,9 +129,12 @@ export function validatePlugin<AppId extends string>(
 
   if (result.warnings.length > 0) {
     result.warnings.forEach((w) => {
-      console.warn(
-        `[PluginValidation] ${plugin.id}: ${w.field} - ${w.message}`,
-      );
+      log.warn(`${plugin.id}: ${w.field} - ${w.message}`, {
+        event: "plugin.validation.warning",
+        pluginId: plugin.id,
+        field: w.field,
+        suggestion: w.suggestion,
+      });
     });
   }
 }
@@ -228,9 +227,7 @@ export function validatePluginDetailed<AppId extends string>(
         suggestion: "Use readonly string array: ['EventA', 'EventB'] as const",
       });
     } else {
-      const invalidKinds = plugin.eventKinds.filter(
-        (k) => typeof k !== "string" || k.length === 0,
-      );
+      const invalidKinds = plugin.eventKinds.filter((k) => typeof k !== "string" || k.length === 0);
       if (invalidKinds.length > 0) {
         errors.push({
           field: "eventKinds",
@@ -267,14 +264,10 @@ export function validatePluginDetailed<AppId extends string>(
   }
 
   if (plugin.anchors) {
-    if (
-      !plugin.anchors.providers ||
-      typeof plugin.anchors.providers !== "object"
-    ) {
+    if (!plugin.anchors.providers || typeof plugin.anchors.providers !== "object") {
       warnings.push({
         field: "anchors.providers",
-        message:
-          "Anchor providers should be an object mapping anchor IDs to provider functions",
+        message: "Anchor providers should be an object mapping anchor IDs to provider functions",
       });
     }
   }
@@ -373,9 +366,7 @@ function getZodSuggestion(issue: z.ZodIssue): string | undefined {
 
 function formatZodPath(path: Array<string | number | symbol>): string {
   if (path.length === 0) return "root";
-  return path
-    .map((part) => (typeof part === "symbol" ? part.toString() : String(part)))
-    .join(".");
+  return path.map((part) => (typeof part === "symbol" ? part.toString() : String(part))).join(".");
 }
 
 export const __test__ = {
@@ -390,14 +381,10 @@ export function assertPluginValid<AppId extends string>(
   const result = validatePluginDetailed(plugin);
 
   if (!result.valid) {
-    throw new Error(
-      `Plugin validation failed: ${result.errors.map((e) => e.message).join("; ")}`,
-    );
+    throw new Error(`Plugin validation failed: ${result.errors.map((e) => e.message).join("; ")}`);
   }
 
   if (options?.throwOnWarning && result.warnings.length > 0) {
-    throw new Error(
-      `Plugin has warnings: ${result.warnings.map((w) => w.message).join("; ")}`,
-    );
+    throw new Error(`Plugin has warnings: ${result.warnings.map((w) => w.message).join("; ")}`);
   }
 }

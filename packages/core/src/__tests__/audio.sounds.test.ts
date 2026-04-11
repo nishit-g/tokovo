@@ -1,7 +1,7 @@
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 import { getSoundPath } from "../audio/sounds.js";
 import { createSoundRegistry } from "../registries/sound.js";
-import { AudioLogger } from "../engine/logger.js";
+import { createLogger, LogCollector, setLogger } from "../logger/index.js";
 
 describe("audio sounds", () => {
   it("resolves sound paths with fallbacks", () => {
@@ -13,9 +13,13 @@ describe("audio sounds", () => {
     registry.register("ding", "ding.mp3");
     expect(getSoundPath("ding", registry)).toBe("sounds/ding.mp3");
 
-    const spy = vi.spyOn(AudioLogger, "soundPathFallback");
+    const collector = new LogCollector();
+    const logger = createLogger({ consoleOutput: false });
+    logger.addSink(collector);
+    setLogger(logger);
     expect(getSoundPath("missing", registry)).toBe("sounds/missing.wav");
-    expect(spy).toHaveBeenCalled();
-    spy.mockRestore();
+    expect(
+      collector.peek().some((entry) => entry.event === "audio.sound_path_fallback"),
+    ).toBe(true);
   });
 });

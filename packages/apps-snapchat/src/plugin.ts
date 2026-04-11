@@ -118,5 +118,13 @@ export function registerSnapchatPlugin(pluginManager: PluginManagerClass): void 
     pluginManager.register(SnapchatPlugin);
 }
 
+export const snapchatRuntimeEntry = {
+    id: "@tokovo/apps-snapchat",
+    scope: "app" as const,
+    register({ pluginManager }: { pluginManager: PluginManagerClass }): void {
+        registerSnapchatPlugin(pluginManager);
+    },
+};
+
 export default SnapchatPlugin;
 export type { SnapchatDslApi };

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import type { PublishVariant } from '@tokovo/publishing'
-import { createVariant } from '@/lib/publishing/service'
+import { createVariant } from '@tokovo/publishing/server'
 
 export async function POST(request: NextRequest) {
   const body = (await request.json()) as {

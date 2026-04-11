@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { scheduleVariant } from '@/lib/publishing/service'
+import { scheduleVariant } from '@tokovo/publishing/server'
 
 export async function POST(request: NextRequest) {
   const body = (await request.json()) as {

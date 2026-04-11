@@ -42,19 +42,13 @@ export type {
 export { createReducerRegistry } from "./engine/registry.js";
 export type { ReducerRegistryClass } from "./engine/registry.js";
 export { EngineConfig } from "./engine/config.js";
-export { EngineLogger } from "./engine/logger.js";
 
 // =============================================================================
 // ANCHOR REGISTRY - Anchor registration and resolution
 // =============================================================================
 export { AnchorRegistryClass, createAnchorRegistry } from "./anchors/registry.js";
 
-export type {
-  AnchorProvider,
-  AnchorSnapshot,
-  AnchorFraming,
-  Rect,
-} from "./anchors/registry.js";
+export type { AnchorProvider, AnchorSnapshot, AnchorFraming, Rect } from "./anchors/registry.js";
 
 // =============================================================================
 // AUDIO - Sound system
@@ -65,11 +59,7 @@ export * from "./audio/index.js";
 // REGISTRIES - All registration systems
 // Named exports to avoid conflicts with ./plugin
 // =============================================================================
-export {
-  createRegistry,
-  createSoundRegistry,
-  createBehaviorRegistry,
-} from "./registries/index.js";
+export { createRegistry, createSoundRegistry, createBehaviorRegistry } from "./registries/index.js";
 export type {
   Registry,
   SoundRegistryAPI,
@@ -132,48 +122,27 @@ export * from "./constants.js";
 export * from "./tokens.js";
 
 // =============================================================================
-// EPISODE PREPARATION
-// =============================================================================
-export {
-  setCompiler,
-  deriveInitialWorld,
-  prepareEpisode,
-  runEpisode,
-} from "./prepare/index.js";
-export type { EpisodeDefinition, RunOptions } from "./prepare/index.js";
-export type {
-  CompiledEpisode,
-  PrepareOptions,
-  AssetManifest,
-} from "./prepare/index.js";
-export type {
-  RuntimeEvent,
-  AppRuntimeEvent,
-  DeviceRuntimeEvent,
-  CameraRuntimeEvent,
-  AudioRuntimeEvent,
-  KeyboardRuntimeEvent,
-} from "./prepare/index.js";
-
-// Note: Legacy container removed in favor of engine + plugin scoped registries.
-
-// =============================================================================
 // LOGGER - Structured logging for debugging AI-generated content
 // =============================================================================
 export {
   getLogger,
   setLogger,
   createLogger,
+  configureLoggerFromEnv,
   createScopedLogger,
+  createConsoleLogSink,
   LogCollector,
+  MemoryLogSink,
   TokovoLogger,
 } from "./logger/index.js";
 export type {
   LogLevel,
   LogComponent,
   LogEntry,
+  LogSink,
   LogSubscriber,
   LoggerConfig,
+  ScopedLogger,
 } from "./logger/index.js";
 
 // =============================================================================
@@ -220,3 +189,4 @@ export type { TokovoConfigType } from "./config/index.js";
 // =============================================================================
 export { createEngine, createEngineRegistries } from "./engine/index.js";
 export type { EngineRegistries } from "./engine/index.js";
+export { registerRuntimeObservability } from "./engine/observability.js";

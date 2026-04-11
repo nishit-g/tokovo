@@ -1,8 +1,39 @@
 {
   "name": "@tokovo/apps-linkedin",
   "version": "0.0.0",
+  "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./plugin": {
+      "types": "./dist/plugin/index.d.ts",
+      "default": "./dist/plugin/index.js"
+    },
+    "./contract": {
+      "types": "./dist/contract/index.d.ts",
+      "default": "./dist/contract/index.js"
+    },
+    "./dsl": {
+      "types": "./dist/dsl/index.d.ts",
+      "default": "./dist/dsl/index.js"
+    },
+    "./lowering": {
+      "types": "./dist/lowering/index.d.ts",
+      "default": "./dist/lowering/index.js"
+    },
+    "./runtime": {
+      "types": "./dist/runtime/index.d.ts",
+      "default": "./dist/runtime/index.js"
+    },
+    "./ui": {
+      "types": "./dist/ui/index.d.ts",
+      "default": "./dist/ui/index.js"
+    }
+  },
   "files": [
     "dist"
   ],
@@ -24,6 +55,7 @@
   },
   "scripts": {
     "build": "tsc",
+    "dev": "tsc --watch",
     "typecheck": "tsc --noEmit",
     "lint": "eslint . --ext .ts,.tsx",
     "test": "vitest run",

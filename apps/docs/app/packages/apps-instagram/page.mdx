@@ -13,7 +13,10 @@ Instagram creator-core plugin for Tokovo.
 
 ## Key Exports
 
-- plugin registration: `registerInstagramPlugin`
-- runtime state, selectors, and UI exports
-- bootstrap types
-- `InstagramTrackBuilder` and related DSL exports
+- root package for authoring DSL and public Instagram types
+- `@tokovo/apps-instagram/plugin` for runtime registration
+- `@tokovo/apps-instagram/contract` for bootstrap, schema, and event contracts
+- `@tokovo/apps-instagram/runtime` for reducer state and selectors
+- `@tokovo/apps-instagram/dsl` for track builders and authoring helpers
+- `@tokovo/apps-instagram/lowering` for event lowering
+- `@tokovo/apps-instagram/ui` for React surfaces

@@ -3,9 +3,9 @@
  *
  * @description The glue between v2 DSL and the runtime engine.
  * Takes TrackEpisodeIR from episode().build() and produces
- * a CompiledEpisode ready for runEpisode().
+ * a PreparedTrackEpisode ready for replayIncremental().
  *
- * @see docs-v2/DSL_REVAMP.md
+ * @see docs/architecture/dsl-v2.md
  */
 
 import type { TrackEpisodeIR } from "@tokovo/ir";
@@ -18,7 +18,11 @@ import type {
   TokovoConfigType,
   AutoSoundRule,
 } from "@tokovo/core";
-import { DEFAULT_CAMERA_STATE, DEFAULT_AUDIO_STATE } from "@tokovo/core";
+import {
+  DEFAULT_CAMERA_STATE,
+  DEFAULT_AUDIO_STATE,
+  createScopedLogger,
+} from "@tokovo/core";
 import {
   compareEvents,
   createEventIndex,
@@ -33,6 +37,8 @@ import {
   RuntimeValidationError,
 } from "./errors.js";
 import { collectEpisodeAssetRefs } from "./asset-refs.js";
+
+const log = createScopedLogger("compiler");
 
 // =============================================================================
 // TYPES
@@ -67,7 +73,7 @@ export interface PreparedTrackEpisode {
  *
  * @param ir - TrackEpisodeIR from episode().build()
  * @param plugins - Array of plugins to use
- * @returns PreparedTrackEpisode ready for runEpisode()
+ * @returns PreparedTrackEpisode ready for replayIncremental()
  */
 export function prepareTrackEpisode(
   ir: TrackEpisodeIR,
@@ -84,10 +90,10 @@ export function prepareTrackEpisode(
   if (shouldValidate) {
     const validation = safeValidateTrackEpisodeIR(ir);
     if (!validation.success) {
-      console.error(
-        "[prepareTrackEpisode] IR validation failed:",
-        validation.error.format(),
-      );
+      log.error("IR validation failed", undefined, {
+        event: "compiler.ir_validation_failed",
+        issues: validation.error.format(),
+      });
       throw new CompilerSchemaValidationError(
         `Invalid TrackEpisodeIR: ${validation.error.message}`,
       );
@@ -130,10 +136,10 @@ export function prepareTrackEpisode(
     if (shouldLog) {
       for (const issue of runtimeIssues) {
         if (issue.severity === "warning") {
-          console.warn(
-            `[prepareTrackEpisode] [warn] ${issue.message}`,
+          log.warn(issue.message, {
+            event: "compiler.runtime_validation_warning",
             issue,
-          );
+          });
         }
       }
     }
@@ -152,7 +158,8 @@ export function prepareTrackEpisode(
   };
 
   if (shouldLog) {
-    console.log("[prepareTrackEpisode] Prepared episode:", {
+    log.info("Prepared episode", {
+      event: "compiler.prepared_episode",
       id: ir.id,
       trackEvents: ir.events.length,
       runtimeEvents: runtimeEvents.length,
@@ -284,7 +291,13 @@ function buildInitialWorld(ir: TrackEpisodeIR, plugins: TokovoPlugin[]): WorldSt
           const created = plugin?.createInitialState?.();
           if (created && typeof created === "object") return { ...(created as Record<string, unknown>) };
         } catch (e) {
-          console.warn(`[prepareTrackEpisode] createInitialState failed for ${appId}`, e);
+          log.warn(`createInitialState failed for ${appId}`, {
+            event: "compiler.create_initial_state_failed",
+            appId,
+            error: e instanceof Error
+              ? { name: e.name, message: e.message, stack: e.stack }
+              : { name: "UnknownError", message: String(e) },
+          });
         }
         return {};
       })();
@@ -335,7 +348,11 @@ function buildInitialWorld(ir: TrackEpisodeIR, plugins: TokovoPlugin[]): WorldSt
 
       if (validation?.warnings && validation.warnings.length > 0) {
         for (const warning of validation.warnings) {
-          console.warn(`[prepareTrackEpisode] [warn] ${appId} bootstrap: ${warning}`);
+          log.warn(`${appId} bootstrap warning`, {
+            event: "compiler.bootstrap_warning",
+            appId,
+            warning,
+          });
         }
       }
 
@@ -504,9 +521,13 @@ function resolveVersionedBootstrapValue(input: {
 
   if (validation?.warnings && validation.warnings.length > 0) {
     for (const warning of validation.warnings) {
-      console.warn(
-        `[prepareTrackEpisode] [warn] ${input.appId} ${input.kind}: ${warning}`,
-      );
+      log.warn(`${input.appId} ${input.kind} warning`, {
+        event: "compiler.bootstrap_schema_warning",
+        appId: input.appId,
+        deviceId: input.deviceId,
+        kind: input.kind,
+        warning,
+      });
     }
   }
 

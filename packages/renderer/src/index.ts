@@ -79,5 +79,6 @@ export type {
 export {
   registerBuiltInAnchorProviders,
   registerOSAnchorProviders,
+  rendererOsAnchorsRuntimeEntry,
   getAllAnchors,
 } from "./anchor-providers/index.js";

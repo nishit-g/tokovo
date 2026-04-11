@@ -61,9 +61,7 @@ export interface AppViewProps {
   };
 }
 
-export type AppViewComponent = (
-  props: AppViewProps,
-) => ReactElement | null;
+export type AppViewComponent = (props: AppViewProps) => ReactElement | null;
 
 export type ScreenComponent = AppViewComponent;
 
@@ -71,11 +69,7 @@ export type ScreenComponent = AppViewComponent;
 // WIDGET TYPES
 // =============================================================================
 
-export type WidgetMode =
-  | "dynamicIsland"
-  | "statusBar"
-  | "lockscreen"
-  | "notification";
+export type WidgetMode = "dynamicIsland" | "statusBar" | "lockscreen" | "notification";
 
 export interface WidgetProps {
   appState: unknown;
@@ -127,9 +121,7 @@ export class PluginManagerClass {
     this.registries = registries;
   }
 
-  register<AppId extends string>(
-    plugin: TokovoPluginContract<AppId>,
-  ): () => void {
+  register<AppId extends string>(plugin: TokovoPluginContract<AppId>): () => void {
     try {
       validatePlugin(plugin);
     } catch (e: unknown) {
@@ -164,30 +156,17 @@ export class PluginManagerClass {
       this.plugins.set(plugin.id, storedPlugin);
 
       if (plugin.reducer) {
-        this.registries.reducers.registerAppReducer(
-          plugin.id,
-          plugin.reducer as AppReducer,
-        );
-        cleanups.push(() =>
-          this.registries.reducers.unregisterAppReducer(plugin.id),
-        );
+        this.registries.reducers.registerAppReducer(plugin.id, plugin.reducer as AppReducer);
+        cleanups.push(() => this.registries.reducers.unregisterAppReducer(plugin.id));
       }
 
       if (plugin.eventKinds && plugin.eventKinds.length > 0) {
-        this.registries.reducers.registerEventKinds(
-          plugin.id,
-          plugin.eventKinds,
-        );
-        cleanups.push(() =>
-          this.registries.reducers.unregisterEventKinds(plugin.id),
-        );
+        this.registries.reducers.registerEventKinds(plugin.id, plugin.eventKinds);
+        cleanups.push(() => this.registries.reducers.unregisterEventKinds(plugin.id));
       }
 
       if (plugin.createInitialState) {
-        this.initialStateCreators.set(
-          plugin.id,
-          plugin.createInitialState as () => unknown,
-        );
+        this.initialStateCreators.set(plugin.id, plugin.createInitialState as () => unknown);
         cleanups.push(() => this.initialStateCreators.delete(plugin.id));
       }
 
@@ -211,9 +190,7 @@ export class PluginManagerClass {
 
       if (plugin.anchorProvider) {
         // Prefer full layout-aware anchor providers when available.
-        this.registries.anchors.register(
-          plugin.anchorProvider as unknown as AnchorProvider,
-        );
+        this.registries.anchors.register(plugin.anchorProvider as unknown as AnchorProvider);
         cleanups.push(() => this.registries.anchors.unregister(plugin.id));
       } else if (plugin.anchors && "providers" in plugin.anchors) {
         const anchorRegistry = plugin.anchors as PluginAnchorRegistry;
@@ -237,26 +214,18 @@ export class PluginManagerClass {
         this.registries.anchors.register({
           appId: plugin.id,
           framing: mergedFraming,
-          getAnchors: (
-            world: WorldState,
-            _layout: unknown,
-            deviceId: string,
-            context,
-          ) => {
+          getAnchors: (world: WorldState, _layout: unknown, deviceId: string, context) => {
             const device = world.devices?.[deviceId];
-            const profileDims =
-              context?.getDeviceProfile?.(device?.profileId)?.dimensions;
-            const dims =
-              profileDims ??
+            const profileDims = context?.getDeviceProfile?.(device?.profileId)?.dimensions;
+            const dims = profileDims ??
               device?.screenDimensions ?? {
                 width: 430,
                 height: 932,
               };
 
-            const anchors: Record<string, { x: number; y: number; width: number; height: number }> = {};
-            for (const [anchorName, provider] of Object.entries(
-              anchorRegistry.providers,
-            )) {
+            const anchors: Record<string, { x: number; y: number; width: number; height: number }> =
+              {};
+            for (const [anchorName, provider] of Object.entries(anchorRegistry.providers)) {
               const bounds = provider(world, deviceId);
               if (!bounds) continue;
               anchors[anchorName] = {
@@ -295,13 +264,8 @@ export class PluginManagerClass {
       }
 
       if (plugin.assets?.sounds) {
-        this.registries.sounds.registerNamespaced(
-          plugin.id,
-          plugin.assets.sounds,
-        );
-        cleanups.push(() =>
-          this.registries.sounds.unregisterNamespaced(plugin.id),
-        );
+        this.registries.sounds.registerNamespaced(plugin.id, plugin.assets.sounds);
+        cleanups.push(() => this.registries.sounds.unregisterNamespaced(plugin.id));
       }
 
       if (plugin.audioRules) {
@@ -310,14 +274,11 @@ export class PluginManagerClass {
           match: { ...rule.match, appId: rule.match.appId ?? plugin.id },
         }));
         this.registries.autoSounds.register(rulesWithAppId);
-        cleanups.push(() =>
-          this.registries.autoSounds.unregisterByAppId(plugin.id),
-        );
+        cleanups.push(() => this.registries.autoSounds.unregisterByAppId(plugin.id));
       }
 
       if (plugin.notificationAdapter) {
-        const pluginAdapter =
-          plugin.notificationAdapter as PluginNotificationAdapter;
+        const pluginAdapter = plugin.notificationAdapter as PluginNotificationAdapter;
         this.registries.notifications.register({
           appId: plugin.id,
           format: (notification: Notification) => {
@@ -330,9 +291,7 @@ export class PluginManagerClass {
             };
           },
         });
-        cleanups.push(() =>
-          this.registries.notifications.unregister(plugin.id),
-        );
+        cleanups.push(() => this.registries.notifications.unregister(plugin.id));
       }
 
       this.cleanupFunctions.set(plugin.id, cleanups);
@@ -376,7 +335,20 @@ export class PluginManagerClass {
   }
 
   get(id: string): TokovoPluginContract<string> | undefined {
-    return this.plugins.get(id);
+    const plugin = this.plugins.get(id);
+    if (!plugin) {
+      log.debug(`Plugin lookup missed: ${id}`, {
+        event: "plugin.lookup.miss",
+        pluginId: id,
+      });
+      return undefined;
+    }
+
+    log.debug(`Plugin lookup hit: ${id}`, {
+      event: "plugin.lookup.hit",
+      pluginId: id,
+    });
+    return plugin;
   }
 
   getView(id: string): AppViewComponent | undefined {
@@ -395,9 +367,7 @@ export class PluginManagerClass {
     return this.plugins.has(id);
   }
 
-  getMetadata(
-    id: string,
-  ): { name: string; icon?: string; color?: string } | undefined {
+  getMetadata(id: string): { name: string; icon?: string; color?: string } | undefined {
     const plugin = this.plugins.get(id);
     if (!plugin) return undefined;
     return {
@@ -421,6 +391,10 @@ export class PluginManagerClass {
     for (const [appId, creator] of this.initialStateCreators) {
       appState[appId] = creator();
     }
+    log.debug("Built initial app state snapshot", {
+      event: "plugin.initial_state.created",
+      appIds: Object.keys(appState),
+    });
     return appState;
   }
 }

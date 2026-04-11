@@ -12,7 +12,7 @@ import {
   checkAllPoliciesPure,
   checkAllPolicies,
 } from "../audio/policies.js";
-import { AudioLogger } from "../engine/logger.js";
+import { createLogger, LogCollector, setLogger } from "../logger/index.js";
 
 describe("audio policies", () => {
   it("checks spam with pure function", () => {
@@ -167,7 +167,10 @@ describe("audio policies", () => {
   });
 
   it("runs combined policies (mutable) and logs drops", () => {
-    const logger = vi.spyOn(AudioLogger, "policyDrop");
+    const collector = new LogCollector();
+    const logger = createLogger({ consoleOutput: false });
+    logger.addSink(collector);
+    setLogger(logger);
     const gate = new SpamGate({ ...DEFAULT_POLICY_CONFIG, spamGateFrames: 5 });
     const cue = { soundId: "ding", bus: "ui", priority: 1 } as SoundCue;
 
@@ -212,8 +215,8 @@ describe("audio policies", () => {
       DEFAULT_POLICY_CONFIG,
     );
     expect(defaultMax.shouldPlay).toBe(true);
-
-    expect(logger).toHaveBeenCalled();
-    logger.mockRestore();
+    expect(
+      collector.peek().some((entry) => entry.event === "audio.policy_drop"),
+    ).toBe(true);
   });
 });

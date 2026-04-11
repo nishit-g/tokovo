@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation'
 import { PublishComposer } from '@/components/publishing/PublishComposer'
 import { PublishingCard, PublishingShell } from '@/components/publishing/PublishingShell'
-import { getArtifact, listChannels, listVariantsForArtifact } from '@/lib/publishing/service'
+import { getArtifact, listChannels, listVariantsForArtifact } from '@tokovo/publishing/server'
 
 type Params = { params: Promise<{ artifactId: string }> }
 

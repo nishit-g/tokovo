@@ -69,5 +69,13 @@ export function registerLinkedInPlugin(pluginManager: PluginManagerClass): void 
   pluginManager.register(LinkedInPlugin);
 }
 
+export const linkedInRuntimeEntry = {
+  id: "@tokovo/apps-linkedin",
+  scope: "app" as const,
+  register({ pluginManager }: { pluginManager: PluginManagerClass }): void {
+    registerLinkedInPlugin(pluginManager);
+  },
+};
+
 export default LinkedInPlugin;
 export type { LinkedInDslApi };

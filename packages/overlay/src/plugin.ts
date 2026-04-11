@@ -16,3 +16,10 @@ export function registerOverlayPlugin(registries: EngineRegistries): void {
   registries.reducers.registerFeatureReducer("OVERLAY", overlayFeatureReducer);
 }
 
+export const overlayRuntimeEntry = {
+  id: "@tokovo/overlay",
+  scope: "engine" as const,
+  register(input: { tokovoRegistries: { engine: EngineRegistries } }): void {
+    registerOverlayPlugin(input.tokovoRegistries.engine);
+  },
+};

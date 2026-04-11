@@ -1,3 +1,4 @@
+import { createScopedLogger } from "@tokovo/core";
 import { CameraContextBuilder } from "./context.js";
 import { BehaviorRegistry } from "./behaviors.js";
 import type {
@@ -8,6 +9,8 @@ import type {
   CameraEffect,
   CameraEvent,
 } from "./types.js";
+
+const log = createScopedLogger("camera");
 
 export class CameraDirector {
   private readonly _registry: BehaviorRegistry;
@@ -58,9 +61,10 @@ export class CameraDirector {
 
       if (!behaviorName) {
         if (this._debug) {
-          console.warn(
-            `[CameraDirector] No behavior configured for event type: ${event.type}`,
-          );
+          log.warn(`No camera behavior configured for ${event.type}`, {
+            event: "camera.behavior.missing",
+            type: event.type,
+          });
         }
         continue;
       }
@@ -77,8 +81,14 @@ export class CameraDirector {
         behaviorStats.set(statKey, (behaviorStats.get(statKey) || 0) + 1);
 
         if (this._debug) {
-          console.warn(
-            `[CameraDirector] Event ${event.id} (${event.type}) → ${eventEffects.length} effects via "${statKey}"`,
+          log.debug(
+            `Camera event ${event.id} produced ${eventEffects.length} effects via ${statKey}`,
+            {
+              event: "camera.behavior.applied",
+              effectCount: eventEffects.length,
+              behavior: statKey,
+              sourceEventType: event.type,
+            },
           );
         }
       }
@@ -88,8 +98,14 @@ export class CameraDirector {
     const deduped = this._deduplicateEffects(sortedEffects);
 
     if (this._debug) {
-      console.warn(
-        `[CameraDirector] Total: ${events.length} events → ${deduped.length} effects (${effects.length - deduped.length} duplicates removed)`,
+      log.info(
+        `Camera choreography processed ${events.length} events into ${deduped.length} effects`,
+        {
+          event: "camera.choreography.complete",
+          eventCount: events.length,
+          effectCount: deduped.length,
+          duplicateCount: effects.length - deduped.length,
+        },
       );
     }
 

@@ -12,14 +12,12 @@ The X plugin package for Tokovo.
 - authoring helpers and track builder support
 - notification adapter and theme support
 
-## Runtime Registration
-
-`video-runner` registers this plugin explicitly at startup. The package should remain a normal plugin package rather than depending on import-time side effects.
-
 ## Key Exports
 
-- plugin registration: `registerXPlugin`
-- runtime state and selectors
-- `XTrackBuilder`
-- bootstrap types and UI exports
-- type exports for users, tweets, notifications, DM threads, and routes
+- root package for authoring DSL and public X types
+- `@tokovo/apps-x/plugin` for runtime registration
+- `@tokovo/apps-x/contract` for bootstrap and event contracts
+- `@tokovo/apps-x/runtime` for reducer state and selectors
+- `@tokovo/apps-x/dsl` for track builders and authoring helpers
+- `@tokovo/apps-x/lowering` for event lowering
+- `@tokovo/apps-x/ui` for React surfaces

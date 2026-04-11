@@ -6,7 +6,7 @@
  *
  * Uses the b.use() pattern - NO prototype mutation.
  *
- * @see docs/FUCKING_MESS.md Section 6.3
+ * @see docs/architecture/core-runtime.md
  */
 
 import type { DslExtension } from "@tokovo/core";

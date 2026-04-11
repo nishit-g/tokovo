@@ -17,68 +17,26 @@ import {
   resetAnchorDiagnostics,
   getAnchorDiagnostics,
 } from "@tokovo/device-camera";
-
-import {
-  createTokovoRegistries,
-  PluginManagerClass,
-  type TokovoRegistries,
-} from "@tokovo/react";
-import {
-  createDeviceRegistries,
-  registerDevicesPlugin,
-  type DeviceRegistries,
-} from "@tokovo/devices";
-import { registerNotificationPlugin } from "@tokovo/device-notifications";
-import { registerCameraPlugin } from "@tokovo/device-camera";
-import { registerKeyboardPlugin } from "@tokovo/device-keyboard";
-import { registerOverlayPlugin } from "@tokovo/overlay";
-
-import { registerWhatsAppPlugin } from "@tokovo/apps-whatsapp";
-import { registerXPlugin } from "@tokovo/apps-x";
-import { registerIMessagePlugin } from "@tokovo/apps-imessage";
-import { registerLinkedInPlugin } from "@tokovo/apps-linkedin";
-import { registerInstagramPlugin } from "@tokovo/apps-instagram";
-import { registerTypewriterPlugin } from "@tokovo/apps-typewriter";
-import { registerTeamsPlugin } from "@tokovo/apps-teams";
-
-import { createVideoRunnerEpisodeRegistry } from "../episode-registry";
 import { ensureCanvasProfile, resolveCanvasProfileId } from "@tokovo/devices";
-import { getFormat, type FormatId } from "@tokovo/episodes";
-
-function createRuntimeForSmoke(): {
-  tokovoRegistries: TokovoRegistries;
-  deviceRegistries: DeviceRegistries;
-  pluginManager: PluginManagerClass;
-  config: ReturnType<typeof createConfig>;
-} {
-  const config = createConfig();
-  const tokovoRegistries = createTokovoRegistries();
-  const deviceRegistries = createDeviceRegistries();
-  const pluginManager = new PluginManagerClass(tokovoRegistries.plugins);
-
-  registerDevicesPlugin(tokovoRegistries, deviceRegistries);
-  registerWhatsAppPlugin(pluginManager);
-  registerXPlugin(pluginManager);
-  registerIMessagePlugin(pluginManager);
-  registerLinkedInPlugin(pluginManager);
-  registerInstagramPlugin(pluginManager);
-  registerTypewriterPlugin(pluginManager);
-  registerTeamsPlugin(pluginManager);
-  registerNotificationPlugin(tokovoRegistries.engine);
-  registerCameraPlugin(pluginManager, tokovoRegistries.engine);
-  registerKeyboardPlugin(tokovoRegistries.engine);
-  registerOverlayPlugin(tokovoRegistries.engine);
-
-  // OS providers only. App providers must come from plugins.
-  // (intentionally not calling registerBuiltInAnchorProviders here)
-  return { tokovoRegistries, deviceRegistries, pluginManager, config };
-}
+import {
+  createEpisodeRegistryForProfiles,
+  createTokovoRuntime,
+  getFormat,
+  type FormatId,
+} from "@tokovo/episodes";
 
 function getPrimaryDeviceId(world: WorldState): string {
-  return world.camera?.activeDeviceId ?? Object.keys(world.devices ?? {})[0] ?? "phone";
+  return (
+    world.camera?.activeDeviceId ??
+    Object.keys(world.devices ?? {})[0] ??
+    "phone"
+  );
 }
 
-function getActiveAppId(world: WorldState, deviceId: string): string | undefined {
+function getActiveAppId(
+  world: WorldState,
+  deviceId: string,
+): string | undefined {
   return world.devices?.[deviceId]?.foregroundAppId;
 }
 
@@ -87,9 +45,16 @@ function getViewKind(world: WorldState, appId: string): string {
   return appState?.viewMode ?? "TRANSITION";
 }
 
-function getConversationId(world: WorldState, appId: string): string | undefined {
-  const appState = world.appState?.[appId] as { conversationId?: string } | undefined;
-  return typeof appState?.conversationId === "string" ? appState.conversationId : undefined;
+function getConversationId(
+  world: WorldState,
+  appId: string,
+): string | undefined {
+  const appState = world.appState?.[appId] as
+    | { conversationId?: string }
+    | undefined;
+  return typeof appState?.conversationId === "string"
+    ? appState.conversationId
+    : undefined;
 }
 
 function getActiveAnchorEffect(
@@ -97,7 +62,12 @@ function getActiveAnchorEffect(
   t: number,
 ): { anchorId?: string; type?: string } | null {
   const cameraWithEffects = world.camera as unknown as {
-    activeEffects?: Array<{ type: string; startFrame: number; endFrame: number; anchorId?: string }>;
+    activeEffects?: Array<{
+      type: string;
+      startFrame: number;
+      endFrame: number;
+      anchorId?: string;
+    }>;
   };
   const effects = Array.isArray(cameraWithEffects.activeEffects)
     ? cameraWithEffects.activeEffects
@@ -116,16 +86,17 @@ function getActiveAnchorEffect(
 }
 
 describe("v1 render smoke", () => {
-  const registry = createVideoRunnerEpisodeRegistry();
-  const runtime = createRuntimeForSmoke();
+  const registry = createEpisodeRegistryForProfiles(["studio"]);
+  const runtime = createTokovoRuntime("studio");
+  const config = createConfig();
 
   // If you add a new flagship episode, add it here. These are your "v1 canaries".
   const smokeEpisodeIds = [
-    "x-anchor-tour",
-    "imessage-anchor-tour",
-    "track-demo-v2",
-    "lockscreen-bait-unlock-switch-showcase",
-    "parallel-timeline-split-screen-showcase",
+    "camera-anchor-exhaustive",
+    "imessage-flagship-v2",
+    "notification-center-exhaustive",
+    "screen-recording-exhaustive",
+    "multi-device-exhaustive",
     "v2-device-baseline",
     "v2-enterprise-long-showcase",
     "v2-overlay-baseline",
@@ -134,7 +105,7 @@ describe("v1 render smoke", () => {
     "v2-mysuru-friends-bakchodi-no-overlay",
     "v2-whatsapp-group-roast-baseline",
     "v2-x-roast-thread-baseline",
-    "typewriter-letter",
+    "typewriter-flagship-v2",
   ] as const;
 
   for (const episodeId of smokeEpisodeIds) {
@@ -171,18 +142,24 @@ describe("v1 render smoke", () => {
       });
 
       const prepared = prepareTrackEpisode(ir, plugins, {
-        config: runtime.config,
+        config,
         validate: true,
         log: false,
       });
 
-      const keyframed = prepared.keyframedEventIndex ?? createKeyframedEventIndex(prepared.events, prepared.keyframeInterval ?? 60);
+      const keyframed =
+        prepared.keyframedEventIndex ??
+        createKeyframedEventIndex(
+          prepared.events,
+          prepared.keyframeInterval ?? 60,
+        );
       const stateCache = createStateCache(prepared.keyframeInterval ?? 60);
 
       const maxFrames = Math.min(prepared.durationInFrames, 300); // ~10s at 30fps
 
       for (let t = 0; t < maxFrames; t++) {
-        const errors: Array<{ frame: number; error: unknown; event: unknown }> = [];
+        const errors: Array<{ frame: number; error: unknown; event: unknown }> =
+          [];
         const world = replayIncremental(
           prepared.initialWorld,
           prepared.events as RuntimeEvent[],
@@ -191,14 +168,17 @@ describe("v1 render smoke", () => {
             mode: "preview",
             fps: prepared.fps,
             registries: runtime.tokovoRegistries.engine,
-            config: runtime.config,
+            config,
             errors,
           },
           keyframed,
           stateCache,
         );
 
-        expect(errors, `engine errors at frame=${t} episode=${episodeId}`).toHaveLength(0);
+        expect(
+          errors,
+          `engine errors at frame=${t} episode=${episodeId}`,
+        ).toHaveLength(0);
 
         const deviceId = getPrimaryDeviceId(world);
         const appId = getActiveAppId(world, deviceId);
@@ -230,8 +210,8 @@ describe("v1 render smoke", () => {
         const anchorContext = {
           getDeviceProfile: (pid?: string) =>
             pid
-              ? runtime.deviceRegistries.devices.get(pid) ??
-                runtime.deviceRegistries.devices.get("iphone16")
+              ? (runtime.deviceRegistries.devices.get(pid) ??
+                runtime.deviceRegistries.devices.get("iphone16"))
               : undefined,
           getDeviceShell: (pid?: string) =>
             pid ? runtime.deviceRegistries.shells.get(pid) : undefined,
@@ -252,7 +232,10 @@ describe("v1 render smoke", () => {
         const resolved = resolveAnchorWithFallback(
           active.anchorId,
           snapshot.anchors ?? {},
-          { width: profile.dimensions.width, height: profile.dimensions.height },
+          {
+            width: profile.dimensions.width,
+            height: profile.dimensions.height,
+          },
         );
 
         // For v1 canaries: no silent fallback. If this fails, you broke anchors.
@@ -263,8 +246,14 @@ describe("v1 render smoke", () => {
       }
 
       const diag = getAnchorDiagnostics();
-      expect(diag.unresolvedCount, `unresolved anchors: ${JSON.stringify(diag.perAnchorUnresolvedCount)}`).toBe(0);
-      expect(diag.fallbackCount, `fallback anchors: ${JSON.stringify(diag.perAnchorFallbackCount)}`).toBe(0);
+      expect(
+        diag.unresolvedCount,
+        `unresolved anchors: ${JSON.stringify(diag.perAnchorUnresolvedCount)}`,
+      ).toBe(0);
+      expect(
+        diag.fallbackCount,
+        `fallback anchors: ${JSON.stringify(diag.perAnchorFallbackCount)}`,
+      ).toBe(0);
     });
   }
 });

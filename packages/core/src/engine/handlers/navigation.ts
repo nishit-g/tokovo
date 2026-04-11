@@ -12,14 +12,14 @@
  * - APP:NAVIGATE_SCREEN
  * - APP:CONVERSATION_OPENED / CONVERSATION_CLOSED
  *
- * @see docs/FUCKING_MESS.md
+ * @see docs/architecture/core-runtime.md
  */
 
 import type { WorldState } from "../../types.js";
-import type {
-  DeviceRuntimeEvent,
-  AppRuntimeEvent,
-} from "../../types/runtime-event.js";
+import type { DeviceRuntimeEvent, AppRuntimeEvent } from "../../types/runtime-event.js";
+import { createScopedLogger } from "../../logger/index.js";
+
+const log = createScopedLogger("engine");
 
 interface NavigationEventPayload {
   deviceId?: string;
@@ -34,9 +34,7 @@ interface NavigationEventPayload {
 
 function isDeviceEvent(event: unknown): event is DeviceRuntimeEvent {
   return (
-    typeof event === "object" &&
-    event !== null &&
-    (event as { kind?: string }).kind === "DEVICE"
+    typeof event === "object" && event !== null && (event as { kind?: string }).kind === "DEVICE"
   );
 }
 
@@ -45,12 +43,9 @@ function isAppNavigationEvent(event: unknown): event is AppRuntimeEvent {
   const e = event as { kind?: string; type?: string };
   return (
     e.kind === "APP" &&
-    [
-      "NAVIGATE_SCREEN",
-      "CONVERSATION_OPENED",
-      "CONVERSATION_CLOSED",
-      "GO_BACK",
-    ].includes(e.type || "")
+    ["NAVIGATE_SCREEN", "CONVERSATION_OPENED", "CONVERSATION_CLOSED", "GO_BACK"].includes(
+      e.type || "",
+    )
   );
 }
 
@@ -62,7 +57,10 @@ export function navigationReducer(draft: WorldState, event: unknown): void {
     const device = draft.devices?.[deviceId || ""];
 
     if (!device) {
-      console.warn(`[navigation-reducer] Device not found: ${deviceId}`);
+      log.warn(`Navigation reducer could not find device ${deviceId}`, {
+        event: "engine.navigation.device_missing",
+        deviceId,
+      });
       return;
     }
 
@@ -82,10 +80,7 @@ export function navigationReducer(draft: WorldState, event: unknown): void {
         device.isLocked = false;
 
         if (appId && draft.appState) {
-          const appState = draft.appState as Record<
-            string,
-            { currentScreen?: string }
-          >;
+          const appState = draft.appState as Record<string, { currentScreen?: string }>;
           if (!appState[appId]) {
             appState[appId] = {
               currentScreen: "main",

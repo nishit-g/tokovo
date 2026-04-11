@@ -4,7 +4,7 @@
  * @description Provides full manual control over camera position, zoom, effects.
  * Supports both instant (point) and animated (span) operations.
  * 
- * @see docs-v2/DSL_REVAMP.md#camera-track---god-mode
+ * @see docs/architecture/dsl-v2.md
  */
 
 import { CameraTrackEvent, CameraPayloads, EasingType } from "@tokovo/ir";

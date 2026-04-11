@@ -1,6 +1,7 @@
 {
   "name": "@tokovo/voice",
   "version": "0.0.1",
+  "type": "module",
   "description": "AI voice generation and rendering for Tokovo video production",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -42,8 +43,8 @@
     "typescript": "^5.0.0"
   },
   "peerDependencies": {
-    "react": "^18.0.0",
-    "react-dom": "^18.0.0",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
     "remotion": "4.0.409"
   }
 }

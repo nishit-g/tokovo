@@ -1,6 +1,7 @@
 {
   "name": "@tokovo/renderer",
   "version": "0.0.0",
+  "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "files": [
@@ -8,6 +9,7 @@
   ],
   "scripts": {
     "build": "tsc",
+    "dev": "tsc --watch",
     "typecheck": "tsc --noEmit",
     "test": "pnpm exec vitest run --passWithNoTests",
     "lint": "eslint . --ext .ts,.tsx"

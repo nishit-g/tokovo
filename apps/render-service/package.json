@@ -13,6 +13,7 @@
   },
   "scripts": {
     "build": "tsc -p tsconfig.json --noEmit",
+    "dev": "tsx watch src/cli.ts doctor",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "doctor": "node --import tsx src/cli.ts doctor",
     "smoke": "node --import tsx src/cli.ts smoke",
@@ -20,13 +21,17 @@
     "artifact-urls": "node --import tsx src/cli.ts artifact-urls"
   },
   "dependencies": {
+    "@tokovo/core": "workspace:*",
     "@aws-sdk/client-s3": "3.1028.0",
     "@aws-sdk/s3-request-presigner": "3.1028.0",
     "@remotion/bundler": "4.0.409",
-    "@remotion/renderer": "4.0.409"
+    "@remotion/renderer": "4.0.409",
+    "video-runner": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "^24.1.0",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
     "tsx": "^4.20.5",
     "typescript": "^5.9.3"
   }

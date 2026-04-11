@@ -1,3 +1,4 @@
+import { createScopedLogger } from "@tokovo/core";
 import type {
   CameraEffect,
   AnimateParams,
@@ -6,6 +7,8 @@ import type {
   ResetParams,
   ZoomParams,
 } from "./types.js";
+
+const log = createScopedLogger("camera");
 
 interface CameraPointBuilder {
   at(time: string): CameraPointBuilder;
@@ -84,9 +87,11 @@ export function applyCameraEffects(
       }
 
       default:
-        console.warn(
-          `[applyCameraEffects] Unsupported effect type: ${effect.type}`,
-        );
+        log.warn(`Unsupported camera effect type ${effect.type}`, {
+          event: "camera.effect.unsupported",
+          type: effect.type,
+          frame: effect.timestamp,
+        });
     }
   }
 }

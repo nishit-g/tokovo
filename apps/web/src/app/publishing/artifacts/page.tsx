@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { PublishingCard, PublishingShell } from '@/components/publishing/PublishingShell'
-import { listArtifacts } from '@/lib/publishing/service'
+import { listArtifacts } from '@tokovo/publishing/server'
 
 export default function PublishingArtifactsPage() {
   const artifacts = listArtifacts()

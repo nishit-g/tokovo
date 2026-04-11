@@ -2,10 +2,25 @@
   "name": "video-runner",
   "version": "0.0.0",
   "private": true,
+  "type": "module",
+  "exports": {
+    ".": {
+      "default": "./src/index.ts"
+    },
+    "./render-data": {
+      "default": "./src/render-data.ts"
+    },
+    "./runtime": {
+      "default": "./src/runtime.ts"
+    },
+    "./episode-registry": {
+      "default": "./src/episode-registry.ts"
+    }
+  },
   "scripts": {
     "start": "npx remotion studio",
     "dev": "npx remotion studio",
-    "dev:catalog": "TOKOVO_STUDIO_CATALOG=1 npx remotion studio",
+    "dev:catalog": "TOKOVO_EPISODE_CATALOG_PROFILE=studio npx remotion studio",
     "benchmark": "npx remotion benchmark src/index.ts episode-render --props='{\"episodeId\":\"v2-enterprise-long-showcase\"}'",
     "render:fast": "sh scripts/render-fast.sh",
     "build": "tsc -p tsconfig.json",
@@ -45,7 +60,7 @@
     "react": "18.3.1",
     "react-dom": "18.3.1",
     "remotion": "4.0.409",
-    "zod": "^3.0.0"
+    "zod": "^4.2.1"
   },
   "devDependencies": {
     "@types/react": "18.3.1",

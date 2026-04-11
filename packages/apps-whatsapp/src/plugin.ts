@@ -189,6 +189,14 @@ export function registerWhatsAppPlugin(
   pluginManager.register(WhatsAppPluginV2);
 }
 
+export const whatsappRuntimeEntry = {
+  id: "@tokovo/apps-whatsapp",
+  scope: "app" as const,
+  register({ pluginManager }: { pluginManager: PluginManagerClass }): void {
+    registerWhatsAppPlugin(pluginManager);
+  },
+};
+
 export default WhatsAppPluginV2;
 
 export type { WhatsAppDslApi };

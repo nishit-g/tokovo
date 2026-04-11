@@ -7,7 +7,7 @@ import {
   listArtifacts,
   listVariantsForArtifact,
   syncArtifactManifestsFromDisk,
-} from './service'
+} from '@tokovo/publishing/server'
 
 const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'tokovo-publishing-'))
 const artifactRoot = path.join(tempRoot, 'out')

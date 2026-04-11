@@ -1,9 +1,16 @@
 {
-  "extends": "../../tsconfig.base.json",
+  "extends": "../../tsconfig.lib.json",
   "compilerOptions": {
     "outDir": "dist",
     "rootDir": "src",
     "jsx": "react-jsx"
   },
+  "references": [
+    { "path": "../core" },
+    { "path": "../dsl" },
+    { "path": "../device-keyboard" },
+    { "path": "../ir" },
+    { "path": "../react" }
+  ],
   "include": ["src/**/*"]
 }

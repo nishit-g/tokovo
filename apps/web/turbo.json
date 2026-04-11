@@ -1,0 +1,31 @@
+{
+  "extends": ["//"],
+  "tasks": {
+    "build": {
+      "inputs": [
+        "package.json",
+        "tsconfig.json",
+        "tsconfig.typecheck.json",
+        "next-env.d.ts",
+        "next.config.ts",
+        "postcss.config.js",
+        ".env.example",
+        "src/**"
+      ]
+    },
+    "typecheck": {
+      "inputs": [
+        "package.json",
+        "tsconfig.json",
+        "tsconfig.typecheck.json",
+        "next-env.d.ts",
+        "next.config.ts",
+        ".env.example",
+        "src/**"
+      ]
+    },
+    "dev": {
+      "with": ["@tokovo/episodes#dev", "@tokovo/publishing#dev"]
+    }
+  }
+}

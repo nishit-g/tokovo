@@ -79,5 +79,13 @@ export function registerTeamsPlugin(pluginManager: PluginManagerClass): void {
   pluginManager.register(TeamsPluginV2);
 }
 
+export const teamsRuntimeEntry = {
+  id: "@tokovo/apps-teams",
+  scope: "app" as const,
+  register({ pluginManager }: { pluginManager: PluginManagerClass }): void {
+    registerTeamsPlugin(pluginManager);
+  },
+};
+
 export default TeamsPluginV2;
 export type { TeamsDslApi };

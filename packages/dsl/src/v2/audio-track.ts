@@ -4,7 +4,7 @@
  * @description Provides control over audio playback including
  * background music spans, one-shot sounds, crossfades, and fades.
  * 
- * @see docs-v2/DSL_REVAMP.md#audio-track
+ * @see docs/architecture/dsl-v2.md
  */
 
 import { AudioTrackEvent } from "@tokovo/ir";

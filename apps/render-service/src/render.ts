@@ -1,46 +1,49 @@
-import fs from 'node:fs/promises'
-import path from 'node:path'
+import fs from "node:fs/promises";
+import path from "node:path";
 
 import {
   createRenderArtifactPaths,
   findLatestRenderArtifact,
   writeRenderMetadata,
   type RenderArtifactMetadata,
-} from './artifacts'
-import { createR2ArtifactUploadTargets, uploadRenderArtifactsToR2 } from './storage'
-import { releaseCompositionId } from './constants'
-import { RenderLogger } from './logger'
-import { assertRenderPreflight } from './preflight'
-import { getRenderProfile, type RenderProfileId } from './profiles'
-import { renderEpisodeMedia } from './remotion'
+} from "./artifacts";
+import {
+  createR2ArtifactUploadTargets,
+  uploadRenderArtifactsToR2,
+} from "./storage";
+import { releaseCompositionId } from "./constants";
+import { RenderLogger } from "./logger";
+import { assertRenderPreflight } from "./preflight";
+import { getRenderProfile, type RenderProfileId } from "./profiles";
+import { renderEpisodeMedia } from "./remotion";
 
 export type RenderEpisodeOptions = {
-  episodeId: string
-  jobId: string
-  profile: RenderProfileId
-}
+  episodeId: string;
+  jobId: string;
+  profile: RenderProfileId;
+};
 
 export type RenderEpisodeResult = {
-  videoPath: string
-  posterPath: string
-  metadataPath: string
-  logsPath: string
-  metadata: RenderArtifactMetadata
-}
+  videoPath: string;
+  posterPath: string;
+  metadataPath: string;
+  logsPath: string;
+  metadata: RenderArtifactMetadata;
+};
 
 async function statSize(filePath: string): Promise<number> {
-  const stat = await fs.stat(filePath)
-  return stat.size
+  const stat = await fs.stat(filePath);
+  return stat.size;
 }
 
 function createArtifactRecord(input: {
-  paths: Awaited<ReturnType<typeof createRenderArtifactPaths>>
-  sizeBytes: number
-  uploadTargets: ReturnType<typeof createR2ArtifactUploadTargets>
-}): RenderArtifactMetadata['artifact'] {
+  paths: Awaited<ReturnType<typeof createRenderArtifactPaths>>;
+  sizeBytes: number;
+  uploadTargets: ReturnType<typeof createR2ArtifactUploadTargets>;
+}): RenderArtifactMetadata["artifact"] {
   if (!input.uploadTargets) {
     return {
-      storageProvider: 'local',
+      storageProvider: "local",
       videoPath: input.paths.relativeVideoPath,
       posterPath: input.paths.relativePosterPath,
       metadataPath: input.paths.relativeMetadataPath,
@@ -50,11 +53,11 @@ function createArtifactRecord(input: {
       metadataUrl: null,
       logsUrl: null,
       sizeBytes: input.sizeBytes,
-    }
+    };
   }
 
   return {
-    storageProvider: 'r2',
+    storageProvider: "r2",
     bucket: input.uploadTargets.bucket,
     keyPrefix: input.uploadTargets.keyPrefix,
     videoPath: input.uploadTargets.video.locator,
@@ -66,27 +69,33 @@ function createArtifactRecord(input: {
     metadataUrl: input.uploadTargets.metadata.publicUrl,
     logsUrl: input.uploadTargets.logs.publicUrl,
     sizeBytes: input.sizeBytes,
-  }
+  };
 }
 
 export async function renderEpisodeArtifact(
   options: RenderEpisodeOptions,
 ): Promise<RenderEpisodeResult> {
-  const startedAt = Date.now()
-  const profile = getRenderProfile(options.profile)
-  const paths = await createRenderArtifactPaths(options)
-  const logger = new RenderLogger(paths.logsPath)
-  await logger.init()
-  await logger.info('render.start', 'Starting render', {
+  const startedAt = Date.now();
+  const profile = getRenderProfile(options.profile);
+  const paths = await createRenderArtifactPaths(options);
+  const logger = new RenderLogger(paths.logsPath, {
     episodeId: options.episodeId,
     jobId: options.jobId,
     profile: profile.id,
-  })
+  });
+  await logger.init();
+  await logger.info("render.start", "Starting render", {
+    episodeId: options.episodeId,
+    jobId: options.jobId,
+    profile: profile.id,
+  });
 
-  const preflightStart = Date.now()
-  await assertRenderPreflight()
-  const preflightMs = Date.now() - preflightStart
-  await logger.info('preflight.ok', 'Render preflight passed', { durationMs: preflightMs })
+  const preflightStart = Date.now();
+  await assertRenderPreflight();
+  const preflightMs = Date.now() - preflightStart;
+  await logger.info("preflight.ok", "Render preflight passed", {
+    durationMs: preflightMs,
+  });
 
   const renderOutput = await renderEpisodeMedia({
     episodeId: options.episodeId,
@@ -94,15 +103,15 @@ export async function renderEpisodeArtifact(
     outputLocation: paths.videoPath,
     posterLocation: paths.posterPath,
     logger,
-  })
+  });
 
-  const sizeBytes = await statSize(paths.videoPath)
-  const uploadTargets = createR2ArtifactUploadTargets(paths.storagePrefix)
+  const sizeBytes = await statSize(paths.videoPath);
+  const uploadTargets = createR2ArtifactUploadTargets(paths.storagePrefix);
   const artifactRecord = createArtifactRecord({
     paths,
     sizeBytes,
     uploadTargets,
-  })
+  });
 
   const metadata: RenderArtifactMetadata = {
     episodeId: options.episodeId,
@@ -129,32 +138,40 @@ export async function renderEpisodeArtifact(
       arch: process.arch,
     },
     createdAt: new Date().toISOString(),
-  }
+  };
 
-  await writeRenderMetadata(paths.metadataPath, metadata)
+  await writeRenderMetadata(paths.metadataPath, metadata);
 
   if (uploadTargets) {
-    await logger.info('storage.upload.start', 'Uploading render artifacts to R2', {
-      bucket: uploadTargets.bucket,
-      keyPrefix: uploadTargets.keyPrefix,
-    })
+    await logger.info(
+      "storage.upload.start",
+      "Uploading render artifacts to R2",
+      {
+        bucket: uploadTargets.bucket,
+        keyPrefix: uploadTargets.keyPrefix,
+      },
+    );
     await uploadRenderArtifactsToR2({
       videoFilePath: paths.videoPath,
       posterFilePath: paths.posterPath,
       metadataFilePath: paths.metadataPath,
       logsFilePath: paths.logsPath,
       targets: uploadTargets,
-    })
-    await logger.info('storage.upload.done', 'Uploaded render artifacts to R2', {
-      bucket: uploadTargets.bucket,
-      keyPrefix: uploadTargets.keyPrefix,
-      videoUrl: uploadTargets.video.publicUrl,
-      posterUrl: uploadTargets.poster.publicUrl,
-      metadataUrl: uploadTargets.metadata.publicUrl,
-    })
+    });
+    await logger.info(
+      "storage.upload.done",
+      "Uploaded render artifacts to R2",
+      {
+        bucket: uploadTargets.bucket,
+        keyPrefix: uploadTargets.keyPrefix,
+        videoUrl: uploadTargets.video.publicUrl,
+        posterUrl: uploadTargets.poster.publicUrl,
+        metadataUrl: uploadTargets.metadata.publicUrl,
+      },
+    );
   }
 
-  await logger.info('render.done', 'Render completed', {
+  await logger.info("render.done", "Render completed", {
     videoPath: paths.videoPath,
     posterPath: paths.posterPath,
     metadataPath: paths.metadataPath,
@@ -164,7 +181,7 @@ export async function renderEpisodeArtifact(
     artifactMetadataPath: metadata.artifact.metadataPath,
     sizeBytes: metadata.artifact.sizeBytes,
     totalMs: metadata.timingMs.total,
-  })
+  });
 
   return {
     videoPath: paths.videoPath,
@@ -172,7 +189,7 @@ export async function renderEpisodeArtifact(
     metadataPath: paths.metadataPath,
     logsPath: paths.logsPath,
     metadata,
-  }
+  };
 }
 
-export { findLatestRenderArtifact }
+export { findLatestRenderArtifact };

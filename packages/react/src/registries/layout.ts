@@ -17,7 +17,15 @@
  * return strategy?.computeLayout(ctx) ?? defaultLayout(ctx);
  */
 
-import type { Platform, LayoutContext, LayoutState, ViewKind } from "@tokovo/core";
+import {
+  createScopedLogger,
+  type Platform,
+  type LayoutContext,
+  type LayoutState,
+  type ViewKind,
+} from "@tokovo/core";
+
+const log = createScopedLogger("plugin");
 
 // Re-export types for convenience
 export type { LayoutContext, LayoutState };
@@ -56,7 +64,11 @@ export class LayoutRegistryClass {
   register(strategy: LayoutStrategy): void {
     const key = `${strategy.appId}:${strategy.viewKind}`;
     if (this.strategies.has(key)) {
-      console.warn(`[LayoutRegistry] Overwriting layout for: ${key}`);
+      log.warn(`Overwriting layout strategy ${key}`, {
+        event: "plugin.layout.overwrite",
+        appId: strategy.appId,
+        viewKind: strategy.viewKind,
+      });
     }
     this.strategies.set(key, strategy);
   }
@@ -85,18 +97,14 @@ export class LayoutRegistryClass {
    * Get all strategies for a viewKind.
    */
   getAllForViewKind(viewKind: ViewKind): LayoutStrategy[] {
-    return Array.from(this.strategies.values()).filter(
-      (s) => s.viewKind === viewKind,
-    );
+    return Array.from(this.strategies.values()).filter((s) => s.viewKind === viewKind);
   }
 
   /**
    * Get all strategies for an app.
    */
   getForApp(appId: string): LayoutStrategy[] {
-    return Array.from(this.strategies.values()).filter(
-      (s) => s.appId === appId,
-    );
+    return Array.from(this.strategies.values()).filter((s) => s.appId === appId);
   }
 
   /**
@@ -132,9 +140,11 @@ export class LayoutRegistryClass {
       this.strategies.delete(key);
     }
     if (keysToDelete.length > 0) {
-      console.warn(
-        `[LayoutRegistry] Unregistered ${keysToDelete.length} layouts for app: ${appId}`,
-      );
+      log.info(`Unregistered ${keysToDelete.length} layouts for ${appId}`, {
+        event: "plugin.layout.unregister",
+        appId,
+        count: keysToDelete.length,
+      });
     }
   }
 

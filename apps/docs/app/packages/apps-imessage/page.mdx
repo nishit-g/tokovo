@@ -13,7 +13,10 @@ The iMessage plugin package.
 
 ## Key Exports
 
-- plugin surface from `plugin.ts`
-- runtime and DSL exports
-- bootstrap types
-- UI exports, themes, and constants
+- root package for authoring DSL and public iMessage types
+- `@tokovo/apps-imessage/plugin` for runtime registration
+- `@tokovo/apps-imessage/contract` for bootstrap and event contracts
+- `@tokovo/apps-imessage/runtime` for reducer state and selectors
+- `@tokovo/apps-imessage/dsl` for track builders and authoring helpers
+- `@tokovo/apps-imessage/lowering` for event lowering
+- `@tokovo/apps-imessage/ui` for React surfaces

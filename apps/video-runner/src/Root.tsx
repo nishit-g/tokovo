@@ -3,9 +3,9 @@
  *
  * MINIMAL CONFIGURATION:
  * - Episodes are loaded explicitly from @tokovo/episodes catalogs
- * - Organized into folders: Apps, System, Stories, Legacy, Tests
+ * - Organized into folders: Apps, System, Stories, Tests
  *
- * @see docs-v2/EPISODE-ARCH.md
+ * @see docs/architecture/episodes.md
  */
 
 import React from "react";
@@ -13,6 +13,7 @@ import { Composition, Folder } from "remotion";
 import { z } from "zod";
 import {
   getFormat,
+  resolveCatalogProfile,
   type EpisodeDefinition,
   type FormatId,
 } from "@tokovo/episodes";
@@ -22,7 +23,11 @@ import { VideoRunnerRuntimeProvider } from "./RuntimeContext";
 import { useVideoRunnerRuntime } from "./RuntimeSharedContext";
 
 export const RELEASE_COMPOSITION_ID = "episode-render";
-const INCLUDE_EPISODE_CATALOG = process.env.TOKOVO_STUDIO_CATALOG !== "0";
+const catalogProfile = resolveCatalogProfile(
+  process.env.TOKOVO_EPISODE_CATALOG_PROFILE,
+  "studio",
+);
+const INCLUDE_EPISODE_CATALOG = catalogProfile !== "release";
 const episodeRendererSchema = z.object({
   episodeId: z.string(),
   renderDataKey: z.string().optional(),
@@ -43,39 +48,26 @@ export const RemotionRoot: React.FC = () => {
 
 const RemotionRootInner: React.FC = () => {
   const { episodeRegistry } = useVideoRunnerRuntime();
-  const stories = episodeRegistry.filter({ catalogType: "story", legacy: false });
+  const stories = episodeRegistry.filter({ catalogType: "story" });
   const appShowcases = episodeRegistry.filter({
     catalogType: [
       "app_showcase_flagship",
       "app_showcase_exhaustive",
       "app_showcase_theme",
     ],
-    legacy: false,
   });
   const systemShowcases = episodeRegistry.filter({
     catalogType: "system_showcase",
-    legacy: false,
   });
-  const legacyEpisodes = episodeRegistry.filter({ catalogType: "legacy" });
   const tests = episodeRegistry.filter({ category: "test" });
   const fallbackEpisodeId =
     stories[0]?.meta.id ??
     appShowcases[0]?.meta.id ??
     systemShowcases[0]?.meta.id ??
-    legacyEpisodes[0]?.meta.id ??
     tests[0]?.meta.id ??
     "v2-device-baseline";
 
   const appFolders = groupByApp(appShowcases);
-  const legacyProduction = legacyEpisodes.filter(
-    (episode) => episode.meta.category === "production",
-  );
-  const legacyShowcases = legacyEpisodes.filter(
-    (episode) => episode.meta.category === "showcase",
-  );
-  const legacyTests = legacyEpisodes.filter(
-    (episode) => episode.meta.category === "test",
-  );
 
   return (
     <>
@@ -106,19 +98,6 @@ const RemotionRootInner: React.FC = () => {
       )}
       {INCLUDE_EPISODE_CATALOG && stories.length > 0 && (
         <Folder name="Stories">{stories.map(renderEpisode)}</Folder>
-      )}
-      {INCLUDE_EPISODE_CATALOG && legacyEpisodes.length > 0 && (
-        <Folder name="Legacy">
-          {legacyProduction.length > 0 && (
-            <Folder name="Production">{legacyProduction.map(renderEpisode)}</Folder>
-          )}
-          {legacyShowcases.length > 0 && (
-            <Folder name="Showcases">{legacyShowcases.map(renderEpisode)}</Folder>
-          )}
-          {legacyTests.length > 0 && (
-            <Folder name="Tests">{legacyTests.map(renderEpisode)}</Folder>
-          )}
-        </Folder>
       )}
       {INCLUDE_EPISODE_CATALOG && tests.length > 0 && (
         <Folder name="Tests">{tests.map(renderEpisode)}</Folder>

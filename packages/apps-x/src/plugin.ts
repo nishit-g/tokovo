@@ -102,4 +102,12 @@ export function registerXPlugin(pluginManager: PluginManagerClass): void {
   pluginManager.register(XPlugin);
 }
 
+export const xRuntimeEntry = {
+  id: "@tokovo/apps-x",
+  scope: "app" as const,
+  register({ pluginManager }: { pluginManager: PluginManagerClass }): void {
+    registerXPlugin(pluginManager);
+  },
+};
+
 export type { XDslApi };

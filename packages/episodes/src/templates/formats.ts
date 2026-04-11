@@ -3,7 +3,7 @@
  * 
  * Predefined video formats for common use cases.
  * 
- * @see docs-v2/EPISODE-ARCH.md
+ * @see docs/architecture/episodes.md
  */
 
 // =============================================================================

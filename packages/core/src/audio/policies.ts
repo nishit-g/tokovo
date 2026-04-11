@@ -8,7 +8,7 @@
  */
 
 import { SoundCue, AudioBus } from "../types.js";
-import { AudioLogger } from "../engine/logger.js";
+import { logAudioPolicyDrop } from "../logger/index.js";
 
 // =============================================================================
 // TYPES
@@ -301,7 +301,7 @@ export function checkAllPolicies(
   const spamResult = spamGate.checkSpam(cue.soundId, frame);
   if (!spamResult.shouldPlay) {
     if (spamResult.alternateSound) {
-      AudioLogger.policyDrop({
+      logAudioPolicyDrop({
         soundId: cue.soundId,
         bus: cue.bus,
         frame,
@@ -315,7 +315,7 @@ export function checkAllPolicies(
         reason: "spam_softened",
       };
     }
-    AudioLogger.policyDrop({
+    logAudioPolicyDrop({
       soundId: cue.soundId,
       bus: cue.bus,
       frame,
@@ -336,7 +336,7 @@ export function checkAllPolicies(
     maxConcurrent,
   );
   if (!concurrencyResult.shouldAdd) {
-    AudioLogger.policyDrop({
+    logAudioPolicyDrop({
       soundId: cue.soundId,
       bus: cue.bus,
       frame,
@@ -352,7 +352,7 @@ export function checkAllPolicies(
 
   if (concurrencyResult.toRemove.length > 0) {
     for (const removed of concurrencyResult.toRemove) {
-      AudioLogger.policyDrop({
+      logAudioPolicyDrop({
         soundId: removed,
         bus: cue.bus,
         frame,

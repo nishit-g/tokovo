@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import type { TimelineEvent, WorldState } from "../types.js";
 import { createReducerRegistry } from "../engine/registry.js";
-import { EngineLogger } from "../engine/logger.js";
+import { createLogger, LogCollector, setLogger } from "../logger/index.js";
 
 describe("ReducerRegistry", () => {
   it("registers and retrieves device reducer", () => {
@@ -14,7 +14,10 @@ describe("ReducerRegistry", () => {
   });
 
   it("registers app reducer and warns on overwrite", () => {
-    const warn = vi.spyOn(EngineLogger, "warn").mockImplementation(() => undefined);
+    const collector = new LogCollector();
+    const logger = createLogger({ consoleOutput: false });
+    logger.addSink(collector);
+    setLogger(logger);
     const registry = createReducerRegistry();
 
     const reducer = vi.fn();
@@ -23,9 +26,9 @@ describe("ReducerRegistry", () => {
     registry.registerAppReducer("app", reducer2);
 
     expect(registry.getAppReducer("app")).toBe(reducer2);
-    expect(warn).toHaveBeenCalled();
-
-    warn.mockRestore();
+    expect(
+      collector.peek().some((entry) => entry.event === "engine.warn"),
+    ).toBe(true);
     registry.reset();
   });
 

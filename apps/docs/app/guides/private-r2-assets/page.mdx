@@ -66,7 +66,7 @@ Tokovo does not require public read access for artifacts.
 To fetch the latest render outputs from a private bucket, mint short-lived URLs on demand:
 
 ```bash
-pnpm --filter @tokovo/render-service run artifact-urls -- --episode payload-first-smoke --expires-in 600
+pnpm --filter @tokovo/render-service run artifact-urls -- --episode render-service-smoke --expires-in 600
 ```
 
 This returns temporary URLs for:
@@ -80,7 +80,7 @@ Use this for internal dashboards, review tools, or one-off downloads.
 
 ## Local Configuration
 
-The render-service reads `.env.payload.local`.
+The render-service reads `apps/render-service/.env.local`.
 
 Minimum private R2 config:
 

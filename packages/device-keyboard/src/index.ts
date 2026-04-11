@@ -53,4 +53,4 @@ export {
 } from "./ui/layouts.js";
 export type { KeyboardLayout, SpecialKeyConfig } from "./ui/layouts.js";
 
-export { registerKeyboardPlugin } from "./plugin.js";
+export { registerKeyboardPlugin, keyboardRuntimeEntry } from "./plugin.js";

@@ -1,5 +1,8 @@
 import React from "react";
 import { AbsoluteFill } from "remotion";
+import { createScopedLogger } from "@tokovo/core";
+
+const log = createScopedLogger("renderer");
 
 interface ErrorBoundaryProps {
   children: React.ReactNode;
@@ -11,10 +14,7 @@ interface ErrorBoundaryState {
   error: Error | null;
 }
 
-export class ErrorBoundary extends React.Component<
-  ErrorBoundaryProps,
-  ErrorBoundaryState
-> {
+export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
   constructor(props: ErrorBoundaryProps) {
     super(props);
     this.state = { hasError: false, error: null };
@@ -25,8 +25,10 @@ export class ErrorBoundary extends React.Component<
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    console.error("[ErrorBoundary] Caught error:", error);
-    console.error("[ErrorBoundary] Component stack:", errorInfo.componentStack);
+    log.error("Video runner error boundary caught a render error", error, {
+      event: "renderer.error_boundary",
+      componentStack: errorInfo.componentStack,
+    });
   }
 
   render() {

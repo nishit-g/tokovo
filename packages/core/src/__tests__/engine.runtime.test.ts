@@ -1,11 +1,25 @@
 import { describe, expect, it, vi } from "vitest";
 import { EngineConfig } from "../engine/config.js";
-import { EngineLogger, AudioLogger } from "../engine/logger.js";
 import {
   SnapshotCache,
   runWithSnapshot,
 } from "../engine/snapshot-cache.js";
 import type { WorldState } from "../types.js";
+import {
+  createLogger,
+  LogCollector,
+  logAudioCrossfade,
+  logAudioDucking,
+  logAudioPlay,
+  logAudioPolicyDrop,
+  logAudioSoundPathFallback,
+  logAudioStop,
+  logEngineError,
+  logEngineEvent,
+  logEnginePerf,
+  logEngineWarn,
+  setLogger,
+} from "../logger/index.js";
 
 const baseWorld = {
   devices: {},
@@ -29,22 +43,19 @@ describe("engine runtime utilities", () => {
     delete (globalThis as any).__TOKOVO_LOG_AUDIO;
   });
 
-  it("logs via EngineLogger and AudioLogger without throwing", () => {
-    const log = vi.spyOn(console, "log").mockImplementation(() => undefined);
-    const warn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
-    const error = vi.spyOn(console, "error").mockImplementation(() => undefined);
+  it("logs via the core runtime logger helpers without throwing", () => {
+    const collector = new LogCollector();
+    const logger = createLogger({ consoleOutput: false });
+    logger.addSink(collector);
+    setLogger(logger);
 
-    (globalThis as any).__TOKOVO_LOG_EVENTS = true;
-    (globalThis as any).__TOKOVO_LOG_PERF = true;
-    (globalThis as any).__TOKOVO_LOG_AUDIO = true;
+    logEngineEvent("APP", "TEST", 1);
+    logEnginePerf("step", 2);
+    logEngineWarn("warn");
+    logEngineError("error");
+    logEngineError("error", undefined, { at: 1, kind: "APP", type: "TEST" });
 
-    EngineLogger.event("APP", "TEST", 1);
-    EngineLogger.perf("step", 2);
-    EngineLogger.warn("warn");
-    EngineLogger.error("error");
-    EngineLogger.error("error", { at: 1, kind: "APP", type: "TEST" } as any);
-
-    AudioLogger.policyDrop({
+    logAudioPolicyDrop({
       soundId: "a",
       bus: "sfx",
       frame: 0,
@@ -52,19 +63,13 @@ describe("engine runtime utilities", () => {
       alternateSound: "a_soft",
       replacedBy: "b",
     });
-    AudioLogger.soundPathFallback("sound", "fallback");
-    AudioLogger.play("sound", "sfx", 1);
-    AudioLogger.stop("sound", 2);
-    AudioLogger.crossfade("a", "b", 10, 1);
-    AudioLogger.ducking("music", 0.5, "ui", 1);
+    logAudioSoundPathFallback("sound", "fallback");
+    logAudioPlay("sound", "sfx", 1);
+    logAudioStop("sound", 2);
+    logAudioCrossfade("a", "b", 10, 1);
+    logAudioDucking("music", 0.5, "ui", 1);
 
-    log.mockRestore();
-    warn.mockRestore();
-    error.mockRestore();
-
-    delete (globalThis as any).__TOKOVO_LOG_EVENTS;
-    delete (globalThis as any).__TOKOVO_LOG_PERF;
-    delete (globalThis as any).__TOKOVO_LOG_AUDIO;
+    expect(collector.peek().length).toBeGreaterThan(0);
   });
 
   it("manages snapshot cache lifecycle", () => {

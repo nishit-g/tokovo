@@ -17,7 +17,6 @@ This checklist defines the current minimum bar for calling Tokovo v1-ready.
 ### Episode Catalog
 
 - curated catalogs contain only new enterprise episodes
-- legacy remains isolated under `legacy`
 - each visible episode has one clear job
 - flagship, exhaustive, system, and story catalogs all render
 

@@ -1,5 +1,5 @@
 import { PublishingCard, PublishingShell } from '@/components/publishing/PublishingShell'
-import { listScheduledPosts } from '@/lib/publishing/service'
+import { listScheduledPosts } from '@tokovo/publishing/server'
 
 export default function ScheduledPostsPage() {
   const scheduledPosts = listScheduledPosts()

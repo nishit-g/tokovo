@@ -1,12 +1,33 @@
 {
-    "extends": "../../tsconfig.base.json",
+    "extends": "../../tsconfig.lib.json",
     "compilerOptions": {
         "outDir": "dist",
         "rootDir": "src",
-        "module": "NodeNext",
-        "moduleResolution": "NodeNext",
         "resolveJsonModule": true
     },
+    "references": [
+        { "path": "../core" },
+        { "path": "../dsl" },
+        { "path": "../ir" },
+        { "path": "../compiler" },
+        { "path": "../voice" },
+        { "path": "../react" },
+        { "path": "../renderer" },
+        { "path": "../devices" },
+        { "path": "../overlay" },
+        { "path": "../apps-whatsapp" },
+        { "path": "../apps-imessage" },
+        { "path": "../apps-instagram" },
+        { "path": "../apps-x" },
+        { "path": "../apps-linkedin" },
+        { "path": "../apps-snapchat" },
+        { "path": "../apps-teams" },
+        { "path": "../apps-typewriter" },
+        { "path": "../device-camera" },
+        { "path": "../device-keyboard" },
+        { "path": "../device-notifications" },
+        { "path": "../publishing" }
+    ],
     "include": [
         "src/**/*"
     ],

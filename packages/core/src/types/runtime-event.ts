@@ -4,7 +4,7 @@
  * ALL plugin-specific data goes in the `payload` field.
  * This prevents the "from/text location mismatch" bugs forever.
  *
- * @see docs/FUCKING_MESS.md Section 4
+ * @see docs/architecture/core-runtime.md
  */
 
 // =============================================================================

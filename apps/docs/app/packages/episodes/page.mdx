@@ -7,7 +7,6 @@ It owns:
 - episode definitions
 - catalog taxonomy and metadata
 - curated app showcases, system showcases, and stories
-- legacy episode exports during migration
 - validation helpers
 
 ## Catalog Model
@@ -20,7 +19,5 @@ Tokovo now uses a storybook-style catalog model with canonical `catalogType` val
 - `system_showcase`
 - `story`
 - `test`
-- `legacy`
 
-Compatibility `category` values still exist for older callers, but new browsing and filtering should
-use `catalogType`.
+Catalog browsing and filtering should use `catalogType`.

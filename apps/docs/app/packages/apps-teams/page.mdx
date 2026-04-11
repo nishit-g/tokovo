@@ -13,8 +13,11 @@ Microsoft Teams enterprise collaboration plugin for Tokovo.
 
 ## Key Exports
 
-- plugin registration: `registerTeamsPlugin`
-- runtime state, selectors, and layout helpers
-- bootstrap types
-- DSL helpers and Teams track builder
-- theme/config/audio-rule exports
+- root package for authoring DSL plus public config and theme helpers
+- `@tokovo/apps-teams/plugin` for runtime registration
+- `@tokovo/apps-teams/contract` for bootstrap, schema, and event contracts
+- `@tokovo/apps-teams/runtime` for reducer state and selectors
+- `@tokovo/apps-teams/dsl` for track builders and authoring helpers
+- `@tokovo/apps-teams/lowering` for event lowering
+- `@tokovo/apps-teams/ui` for React surfaces
+- `@tokovo/apps-teams/theme` for theme tokens and providers

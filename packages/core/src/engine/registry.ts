@@ -6,7 +6,7 @@
 
 import type { WorldState, TimelineEvent, DeviceState } from "../types.js";
 import type { HandlerContext } from "./handlers/types.js";
-import { EngineLogger } from "./logger.js";
+import { logEngineWarn } from "../logger/index.js";
 
 // =============================================================================
 // REDUCER TYPES
@@ -63,7 +63,9 @@ export class ReducerRegistryClass {
    */
   registerAppReducer(appId: string, reducer: AppReducer): void {
     if (this._appReducers.has(appId)) {
-      EngineLogger.warn(`Overwriting reducer for ${appId}`);
+      logEngineWarn(`Overwriting reducer for ${appId}`, {
+        appId,
+      });
     }
     this._appReducers.set(appId, reducer);
   }

@@ -14,8 +14,10 @@ The flagship messaging plugin package for Tokovo.
 
 ## Key Exports
 
-- plugin registration: `registerWhatsAppPlugin`
-- runtime state and selectors
-- bootstrap types
-- track builders and DSL helpers
-- layouts, anchors, themes, and audio rules
+- root package for authoring DSL and public app types
+- `@tokovo/apps-whatsapp/plugin` for runtime registration
+- `@tokovo/apps-whatsapp/contract` for bootstrap and schema contracts
+- `@tokovo/apps-whatsapp/runtime` for reducer state and selectors
+- `@tokovo/apps-whatsapp/dsl` for track builders and authoring helpers
+- `@tokovo/apps-whatsapp/lowering` for event lowering
+- `@tokovo/apps-whatsapp/ui` for React surfaces

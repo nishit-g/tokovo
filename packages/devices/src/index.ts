@@ -114,7 +114,7 @@ export {
 export * from "./canvas/index.js";
 
 // =============================================================================
-// KEYBOARDS (Legacy export)
+// KEYBOARDS
 // =============================================================================
 
 export * from "./keyboards/index.js";
@@ -126,6 +126,7 @@ export * from "./keyboards/index.js";
 export {
   DevicesPlugin,
   registerDevicesPlugin,
+  devicesRuntimeEntry,
   type DevicesPluginContract,
 } from "./plugin.js";
 

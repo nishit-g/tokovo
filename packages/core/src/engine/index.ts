@@ -1,6 +1,6 @@
 // Config and Logger
 export { EngineConfig } from "./config.js";
-export { EngineLogger } from "./logger.js";
+export { registerRuntimeObservability } from "./observability.js";
 
 // Registry
 export { createReducerRegistry } from "./registry.js";

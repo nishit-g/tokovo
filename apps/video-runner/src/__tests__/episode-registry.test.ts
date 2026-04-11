@@ -1,13 +1,16 @@
 import { describe, expect, it } from "vitest";
-import { createVideoRunnerEpisodeRegistry } from "../episode-registry";
-import { resolveEpisodeCatalogType } from "@tokovo/episodes";
+import {
+  createEpisodeRegistryForProfile,
+  createEpisodeRegistryForProfiles,
+  resolveEpisodeCatalogType,
+} from "@tokovo/episodes";
 import appShowcaseEpisodes from "@tokovo/episodes/showcases/apps";
 import systemShowcaseEpisodes from "@tokovo/episodes/showcases/system";
 import storyEpisodes from "@tokovo/episodes/stories";
 
 describe("video-runner enterprise episode registry", () => {
-  it("loads curated and legacy catalogs together", () => {
-    const registry = createVideoRunnerEpisodeRegistry();
+  it("loads the curated studio registry only", () => {
+    const registry = createEpisodeRegistryForProfile("studio");
     const episodes = registry.all();
 
     expect(
@@ -27,24 +30,26 @@ describe("video-runner enterprise episode registry", () => {
     ).toBe(true);
 
     expect(
-      episodes.some(
-        (episode) =>
-          episode.meta.id === "flirty-whatsapp-romance" &&
-          resolveEpisodeCatalogType(episode.meta) === "legacy",
-      ),
-    ).toBe(true);
+      episodes.some((episode) => episode.meta.id === "flirty-whatsapp-romance"),
+    ).toBe(false);
   });
 
-  it("loads the full new-only curated wave", () => {
-    const registry = createVideoRunnerEpisodeRegistry();
+  it("loads the full curated studio wave", () => {
+    const registry = createEpisodeRegistryForProfiles(["studio"]);
     const ids = new Set(registry.all().map((episode) => episode.meta.id));
 
     expect(appShowcaseEpisodes).toHaveLength(21);
     expect(systemShowcaseEpisodes).toHaveLength(7);
     expect(storyEpisodes).toHaveLength(8);
 
-    for (const episode of [...appShowcaseEpisodes, ...systemShowcaseEpisodes, ...storyEpisodes]) {
+    for (const episode of [
+      ...appShowcaseEpisodes,
+      ...systemShowcaseEpisodes,
+      ...storyEpisodes,
+    ]) {
       expect(ids.has(episode.meta.id)).toBe(true);
     }
+
+    expect(ids.has("render-service-smoke")).toBe(true);
   });
 });

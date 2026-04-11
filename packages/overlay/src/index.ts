@@ -1,4 +1,4 @@
-export { registerOverlayPlugin } from "./plugin.js";
+export { registerOverlayPlugin, overlayRuntimeEntry } from "./plugin.js";
 export {
   OVERLAY_STATE_KEY,
   createInitialOverlayState,
@@ -10,4 +10,3 @@ export type {
   OverlayVariant,
   OverlayPlacementPreset,
 } from "./state.js";
-

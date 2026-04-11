@@ -27,11 +27,14 @@ import {
   TokovoConfig,
   type TokovoConfigType,
   type LayoutCacheStore,
+  createScopedLogger,
 } from "@tokovo/core";
 import { getKeyboardSlideProgress } from "@tokovo/device-keyboard";
 import { computeLayout } from "../layout/index.js";
 import type { DeviceProfile, DeviceRegistries } from "@tokovo/devices";
 import { useRendererRegistries } from "../RegistryContext.js";
+
+const log = createScopedLogger("renderer");
 
 // =============================================================================
 // INPUT / OUTPUT TYPES
@@ -104,10 +107,7 @@ const FALLBACK_PROFILE: DeviceProfile = {
   safeArea: { top: 0, bottom: 0, left: 0, right: 0 },
 };
 
-function resolveProfile(
-  registries: DeviceRegistries,
-  profileId?: string,
-): DeviceProfile {
+function resolveProfile(registries: DeviceRegistries, profileId?: string): DeviceProfile {
   if (profileId) {
     const profile = registries.devices.get(profileId);
     if (profile) return profile;
@@ -173,11 +173,7 @@ function computeWorldSignature(
     device?.foregroundAppId ?? "",
     device?.isLocked ? "1" : "0",
     device?.keyboard
-      ? String(
-          Math.round(
-            getKeyboardSlideProgress(device.keyboard, frame, fps) * 100,
-          ),
-        )
+      ? String(Math.round(getKeyboardSlideProgress(device.keyboard, frame, fps) * 100))
       : "0",
     appId ?? "",
     // For chat apps, include conversation and message count
@@ -189,7 +185,8 @@ function computeWorldSignature(
   // For chat apps, include message count for layout invalidation
   const conversationId = (appState as { conversationId?: string } | undefined)?.conversationId;
   if (conversationId && appState) {
-    const conversations = (appState as { conversations?: Record<string, { messages?: unknown[] }> }).conversations;
+    const conversations = (appState as { conversations?: Record<string, { messages?: unknown[] }> })
+      .conversations;
     const convo = conversations?.[conversationId];
     if (convo?.messages) {
       parts.push(String(convo.messages.length));
@@ -218,25 +215,22 @@ export function useLayoutEngine(input: LayoutEngineInput): LayoutEngineOutput {
     const effectiveFps = fps ?? config.rendering.defaultFps;
 
     // 1. Determine active device
-    const deviceId =
-      focusDeviceId ||
-      world.camera?.activeDeviceId ||
-      Object.keys(world.devices)[0];
+    const deviceId = focusDeviceId || world.camera?.activeDeviceId || Object.keys(world.devices)[0];
     const device = world.devices[deviceId];
 
     // Return safe fallback instead of crashing
     if (!device) {
       if (!loggedMissingDevices.current.has(deviceId)) {
         loggedMissingDevices.current.add(deviceId);
-        console.error(
-          `[LayoutEngine] Device "${deviceId}" not found. Returning NULL_LAYOUT.`,
-        );
+        log.error(`Layout engine could not resolve device ${deviceId}`, undefined, {
+          event: "renderer.layout.device_missing",
+          deviceId,
+          mode,
+        });
       }
       const fallbackProfile = resolveProfile(registries.devices);
       if (mode === "render") {
-        throw new Error(
-          `LayoutEngine: Device "${deviceId}" not found in render mode.`,
-        );
+        throw new Error(`LayoutEngine: Device "${deviceId}" not found in render mode.`);
       }
       return buildNullLayoutOutput(fallbackProfile);
     }
@@ -245,13 +239,7 @@ export function useLayoutEngine(input: LayoutEngineInput): LayoutEngineOutput {
 
     // INCREMENTAL CACHE CHECK
     // If world signature hasn't changed for this frame, return cached result
-    const worldSignature = computeWorldSignature(
-      world,
-      deviceId,
-      appId,
-      t,
-      effectiveFps,
-    );
+    const worldSignature = computeWorldSignature(world, deviceId, appId, t, effectiveFps);
     const cached = cachedResult.current;
     if (
       cached &&
@@ -271,21 +259,19 @@ export function useLayoutEngine(input: LayoutEngineInput): LayoutEngineOutput {
       viewKind = "LOCKSCREEN";
     } else if (appId) {
       const meta = registries.plugins.metadata.get(appId);
-      const appState = world.appState?.[
-        appId
-      ] as import("@tokovo/core").BaseAppState | undefined;
+      const appState = world.appState?.[appId] as import("@tokovo/core").BaseAppState | undefined;
 
       if (!appState?.viewMode) {
         if (!loggedMissingViewMode.current.has(appId)) {
           loggedMissingViewMode.current.add(appId);
-          console.warn(
-            `[LayoutEngine] App "${appId}" missing viewMode. Falling back to ${meta.viewStrategy || "TRANSITION"} in preview.`,
-          );
+          log.warn(`App ${appId} is missing viewMode; using preview fallback`, {
+            event: "renderer.layout.view_mode_missing",
+            appId,
+            fallbackViewKind: meta.viewStrategy || "TRANSITION",
+          });
         }
         if (mode === "render") {
-          throw new Error(
-            `LayoutEngine: App "${appId}" did not provide viewMode in render mode.`,
-          );
+          throw new Error(`LayoutEngine: App "${appId}" did not provide viewMode in render mode.`);
         }
         viewKind = meta.viewStrategy || "TRANSITION";
       } else {
@@ -294,25 +280,25 @@ export function useLayoutEngine(input: LayoutEngineInput): LayoutEngineOutput {
 
       if (viewKind === "CHAT") {
         const extendedAppState = appState as typeof appState & { activeConversationId?: string };
-        activeConversationId =
-          appState?.conversationId || extendedAppState?.activeConversationId;
+        activeConversationId = appState?.conversationId || extendedAppState?.activeConversationId;
 
         if (!activeConversationId && mode !== "render") {
           if (!loggedMissingConversation.current.has(appId)) {
             loggedMissingConversation.current.add(appId);
-            console.warn(
-              `[LayoutEngine] App "${appId}" missing conversationId for CHAT view. Using first available conversation in preview.`,
+            log.warn(
+              `App ${appId} is missing conversationId for CHAT view; using preview fallback`,
+              {
+                event: "renderer.layout.conversation_missing",
+                appId,
+              },
             );
           }
-          const conversations = (appState as { conversations?: unknown })
-            ?.conversations;
+          const conversations = (appState as { conversations?: unknown })?.conversations;
           if (conversations) {
             if (Array.isArray(conversations)) {
               activeConversationId = conversations[0]?.id;
             } else {
-              activeConversationId = Object.keys(
-                conversations as Record<string, unknown>,
-              )[0];
+              activeConversationId = Object.keys(conversations as Record<string, unknown>)[0];
             }
           }
         }
@@ -327,9 +313,10 @@ export function useLayoutEngine(input: LayoutEngineInput): LayoutEngineOutput {
         if (!activeStoryId && mode !== "render") {
           if (!loggedMissingStory.current.has(appId)) {
             loggedMissingStory.current.add(appId);
-            console.warn(
-              `[LayoutEngine] App "${appId}" missing activeStoryId for STORY view in preview.`,
-            );
+            log.warn(`App ${appId} is missing activeStoryId for STORY view`, {
+              event: "renderer.layout.story_missing",
+              appId,
+            });
           }
         }
         if (!activeStoryId && mode === "render") {
@@ -358,9 +345,9 @@ export function useLayoutEngine(input: LayoutEngineInput): LayoutEngineOutput {
     const effectiveViewportHeight =
       viewKind === "CHAT"
         ? profile.dimensions.height -
-        LAYOUT.CHAT_HEADER_HEIGHT -
-        LAYOUT.CHAT_INPUT_HEIGHT -
-        keyboardHeight
+          LAYOUT.CHAT_HEADER_HEIGHT -
+          LAYOUT.CHAT_INPUT_HEIGHT -
+          keyboardHeight
         : profile.dimensions.height;
 
     // 5. Build layout context and compute layout
@@ -403,14 +390,5 @@ export function useLayoutEngine(input: LayoutEngineInput): LayoutEngineOutput {
     };
 
     return output;
-  }, [
-    world,
-    t,
-    focusDeviceId,
-    fps,
-    registries,
-    input.mode,
-    input.config,
-    input.layoutCache,
-  ]);
+  }, [world, t, focusDeviceId, fps, registries, input.mode, input.config, input.layoutCache]);
 }

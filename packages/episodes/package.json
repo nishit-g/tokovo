@@ -1,6 +1,7 @@
 {
   "name": "@tokovo/episodes",
   "version": "0.0.0",
+  "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "bin": {
@@ -10,10 +11,6 @@
     ".": {
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
-    },
-    "./production": {
-      "types": "./dist/production/index.d.ts",
-      "default": "./dist/production/index.js"
     },
     "./stories": {
       "types": "./dist/stories/index.d.ts",
@@ -30,18 +27,6 @@
     "./showcases/system": {
       "types": "./dist/showcases/system/index.d.ts",
       "default": "./dist/showcases/system/index.js"
-    },
-    "./legacy": {
-      "types": "./dist/legacy/index.d.ts",
-      "default": "./dist/legacy/index.js"
-    },
-    "./legacy/production": {
-      "types": "./dist/legacy/production/index.d.ts",
-      "default": "./dist/legacy/production/index.js"
-    },
-    "./legacy/showcases": {
-      "types": "./dist/legacy/showcases/index.d.ts",
-      "default": "./dist/legacy/showcases/index.js"
     },
     "./v2": {
       "types": "./dist/v2/index.d.ts",
@@ -70,10 +55,15 @@
     "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
+    "@tokovo/core": "workspace:*",
     "@tokovo/dsl": "workspace:*",
     "@tokovo/ir": "workspace:*",
     "@tokovo/compiler": "workspace:*",
     "@tokovo/voice": "workspace:*",
+    "@tokovo/react": "workspace:*",
+    "@tokovo/renderer": "workspace:*",
+    "@tokovo/devices": "workspace:*",
+    "@tokovo/overlay": "workspace:*",
     "@tokovo/apps-whatsapp": "workspace:*",
     "@tokovo/apps-imessage": "workspace:*",
     "@tokovo/apps-instagram": "workspace:*",
@@ -85,7 +75,7 @@
     "@tokovo/device-camera": "workspace:*",
     "@tokovo/device-keyboard": "workspace:*",
     "@tokovo/device-notifications": "workspace:*",
-    "zod": "^3.0.0",
+    "zod": "^4.2.1",
     "zod-to-json-schema": "^3.23.0"
   },
   "devDependencies": {

@@ -1,4 +1,3 @@
-import { zodToJsonSchema } from "zod-to-json-schema";
 import {
   EpisodeSchemaV1,
   TimelineEventSchema,
@@ -10,6 +9,10 @@ import {
   CustomEventPayloadSchema,
   AppStateSchema,
 } from "./schema.js";
+
+function toJsonSchema(schema: { toJSONSchema: () => object }): object {
+  return schema.toJSONSchema();
+}
 
 export interface SchemaExport {
   $schema: string;
@@ -39,58 +42,25 @@ export function generateJsonSchemas(): SchemaExport {
     version: "1.0.0",
     generatedAt: new Date().toISOString(),
     schemas: {
-      episode: zodToJsonSchema(EpisodeSchemaV1, {
-        name: "Episode",
-        $refStrategy: "none",
-      }),
-      timelineEvent: zodToJsonSchema(TimelineEventSchema, {
-        name: "TimelineEvent",
-        $refStrategy: "none",
-      }),
-      message: zodToJsonSchema(MessageSchema, {
-        name: "Message",
-        $refStrategy: "none",
-      }),
-      deviceState: zodToJsonSchema(DeviceStateSchema, {
-        name: "DeviceState",
-        $refStrategy: "none",
-      }),
-      conversationState: zodToJsonSchema(ConversationStateSchema, {
-        name: "ConversationState",
-        $refStrategy: "none",
-      }),
-      cameraView: zodToJsonSchema(CameraViewSchema, {
-        name: "CameraView",
-        $refStrategy: "none",
-      }),
-      messageMetadata: zodToJsonSchema(MessageMetadataSchema, {
-        name: "MessageMetadata",
-        $refStrategy: "none",
-      }),
-      customEventPayload: zodToJsonSchema(CustomEventPayloadSchema, {
-        name: "CustomEventPayload",
-        $refStrategy: "none",
-      }),
-      appState: zodToJsonSchema(AppStateSchema, {
-        name: "AppState",
-        $refStrategy: "none",
-      }),
+      episode: toJsonSchema(EpisodeSchemaV1),
+      timelineEvent: toJsonSchema(TimelineEventSchema),
+      message: toJsonSchema(MessageSchema),
+      deviceState: toJsonSchema(DeviceStateSchema),
+      conversationState: toJsonSchema(ConversationStateSchema),
+      cameraView: toJsonSchema(CameraViewSchema),
+      messageMetadata: toJsonSchema(MessageMetadataSchema),
+      customEventPayload: toJsonSchema(CustomEventPayloadSchema),
+      appState: toJsonSchema(AppStateSchema),
     },
   };
 }
 
 export function getEpisodeJsonSchema(): object {
-  return zodToJsonSchema(EpisodeSchemaV1, {
-    name: "Episode",
-    $refStrategy: "none",
-  });
+  return toJsonSchema(EpisodeSchemaV1);
 }
 
 export function getTimelineEventJsonSchema(): object {
-  return zodToJsonSchema(TimelineEventSchema, {
-    name: "TimelineEvent",
-    $refStrategy: "none",
-  });
+  return toJsonSchema(TimelineEventSchema);
 }
 
 export function formatSchemaForPrompt(schema: object): string {

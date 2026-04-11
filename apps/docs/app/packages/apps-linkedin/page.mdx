@@ -14,7 +14,10 @@ The LinkedIn plugin package.
 
 ## Key Exports
 
-- plugin registration: `registerLinkedInPlugin`
-- `LinkedInTrackBuilder`
-- runtime state and selectors
-- bootstrap types and UI exports
+- root package for authoring DSL and public LinkedIn types
+- `@tokovo/apps-linkedin/plugin` for runtime registration
+- `@tokovo/apps-linkedin/contract` for bootstrap and event contracts
+- `@tokovo/apps-linkedin/runtime` for reducer state and selectors
+- `@tokovo/apps-linkedin/dsl` for track builders and authoring helpers
+- `@tokovo/apps-linkedin/lowering` for event lowering
+- `@tokovo/apps-linkedin/ui` for React surfaces

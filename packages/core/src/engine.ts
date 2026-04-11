@@ -59,7 +59,6 @@ export type {
 } from "./engine/registry.js";
 export { createReducerRegistry } from "./engine/registry.js";
 export { EngineConfig } from "./engine/config.js";
-export { EngineLogger } from "./engine/logger.js";
 export {
   createEventIndex,
   createKeyframedEventIndex,
@@ -127,7 +126,7 @@ export class PluginError extends Error {
  * Given same `initial`, `events`, and `t`, output is always identical.
  * No side effects except dev logging.
  *
- * @deprecated Use replayIncremental() or runEpisode() with a StateCache.
+ * @deprecated Use replayIncremental() with a StateCache.
  *
  * @param initial - Initial world state
  * @param events - Events to apply
@@ -144,7 +143,7 @@ export function replay(
 ): WorldState {
   if (ctx.mode === "render") {
     throw new Error(
-      "replay() is disabled in render mode. Use replayIncremental() with a StateCache or runEpisode().",
+      "replay() is disabled in render mode. Use replayIncremental() with a StateCache.",
     );
   }
   if (t < 0) {

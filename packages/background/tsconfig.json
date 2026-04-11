@@ -1,5 +1,5 @@
 {
-    "extends": "../../tsconfig.base.json",
+    "extends": "../../tsconfig.lib.json",
     "compilerOptions": {
         "outDir": "./dist",
         "rootDir": "./src",
@@ -7,6 +7,7 @@
         "declarationMap": true,
         "jsx": "react-jsx"
     },
+    "references": [{ "path": "../core" }],
     "include": [
         "src/**/*"
     ],

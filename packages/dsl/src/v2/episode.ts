@@ -19,7 +19,7 @@
  *   .build();
  * ```
  *
- * @see docs-v2/DSL_REVAMP.md
+ * @see docs/architecture/dsl-v2.md
  */
 
 import {

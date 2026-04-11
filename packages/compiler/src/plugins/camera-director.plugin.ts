@@ -1,4 +1,5 @@
 import { CameraDirector } from "@tokovo/device-camera";
+import { createScopedLogger } from "@tokovo/core";
 import type {
   CameraEvent,
   CameraDirectorOptions,
@@ -7,6 +8,8 @@ import type {
 } from "@tokovo/device-camera";
 import type { CompilerPlugin, CompilerContext } from "./types.js";
 import type { EasingType, TrackEvent } from "@tokovo/ir";
+
+const log = createScopedLogger("compiler");
 
 export interface CameraDirectorPluginOptions extends CameraDirectorOptions {
   behaviorConfig?: BehaviorConfig;
@@ -224,9 +227,10 @@ export class CameraDirectorPlugin implements CompilerPlugin {
           },
         } as TrackEvent);
       } else {
-        console.warn(
-          `[CameraDirectorPlugin] Unsupported effect type: ${effect.type}`,
-        );
+        log.warn(`Unsupported camera effect type: ${effect.type}`, {
+          event: "compiler.camera_unsupported_effect",
+          effectType: effect.type,
+        });
       }
     }
 

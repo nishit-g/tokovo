@@ -17,7 +17,11 @@ export {
 
 export { cameraV2Lowering, CAMERA_EVENT_TYPES } from "./lowering/index.js";
 
-export { DeviceCameraPlugin, registerCameraPlugin } from "./plugin.js";
+export {
+  DeviceCameraPlugin,
+  registerCameraPlugin,
+  cameraRuntimeEntry,
+} from "./plugin.js";
 
 export { CameraDirector } from "./director/director.js";
 

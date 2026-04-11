@@ -47,3 +47,14 @@ export function registerCameraPlugin(
     );
   }
 }
+
+export const cameraRuntimeEntry = {
+  id: "@tokovo/device-camera",
+  scope: "engine" as const,
+  register(input: {
+    pluginManager: PluginManagerClass;
+    tokovoRegistries: { engine: EngineRegistries };
+  }): void {
+    registerCameraPlugin(input.pluginManager, input.tokovoRegistries.engine);
+  },
+};

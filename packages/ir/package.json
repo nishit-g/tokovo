@@ -1,6 +1,7 @@
 {
   "name": "@tokovo/ir",
   "version": "0.0.1",
+  "type": "module",
   "description": "Tokovo IR types - Scene IR (semantic) and Timeline IR (execution)",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

@@ -1,10 +1,10 @@
 /**
  * CompiledEpisode - The ONLY input to the runtime
  *
- * This is the single canonical artifact that prepareEpisode() produces.
+ * This is the canonical artifact produced by prepareTrackEpisode().
  * The renderer/engine should NEVER accept raw events or SceneIR.
  *
- * @see docs/FUCKING_MESS.md Section 5
+ * @see docs/architecture/core-runtime.md
  */
 
 import { RuntimeEvent } from "./runtime-event.js";

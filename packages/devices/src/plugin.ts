@@ -179,4 +179,15 @@ export function registerDevicesPlugin(
 
 }
 
+export const devicesRuntimeEntry = {
+    id: "@tokovo/devices",
+    scope: "device" as const,
+    register(input: {
+        tokovoRegistries: TokovoRegistries;
+        deviceRegistries: DeviceRegistries;
+    }): void {
+        registerDevicesPlugin(input.tokovoRegistries, input.deviceRegistries);
+    },
+};
+
 export default DevicesPlugin;

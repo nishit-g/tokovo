@@ -1,6 +1,13 @@
 import type { TrackEvent } from "@tokovo/ir";
-import { getLoweringScratchpad, planTypedKeyboard, type RuntimeEvent } from "@tokovo/core";
+import {
+  createScopedLogger,
+  getLoweringScratchpad,
+  planTypedKeyboard,
+  type RuntimeEvent,
+} from "@tokovo/core";
 import type { WhatsAppTrackEvent, WhatsAppEventType } from "../../types/events.js";
+
+const log = createScopedLogger("app");
 
 export interface V2LoweringHandler {
   lower: (event: TrackEvent, ctx?: unknown) => RuntimeEvent[];
@@ -60,10 +67,7 @@ const EVENT_TYPE_TO_KIND: Record<WhatsAppEventType, true> = {
   VOICE_MESSAGE_RECEIVED: true,
 };
 
-function createRuntimeEvent(
-  event: WhatsAppTrackEvent,
-  overrideType?: string,
-): RuntimeEvent {
+function createRuntimeEvent(event: WhatsAppTrackEvent, overrideType?: string): RuntimeEvent {
   const type = overrideType ?? event.type;
   const payload = (event.payload ?? {}) as Record<string, unknown>;
 
@@ -71,9 +75,7 @@ function createRuntimeEvent(
     at: event.at,
     appId: event.appId,
     deviceId: event.deviceId,
-    conversationId:
-      (payload as { conversationId?: string }).conversationId ??
-      event.conversationId,
+    conversationId: (payload as { conversationId?: string }).conversationId ?? event.conversationId,
     kind: "APP" as const,
     type,
     payload: { ...payload },
@@ -119,8 +121,7 @@ function createRuntimeEvent(
       break;
 
     case "CONVERSATION_OPENED":
-      result.conversationId = (payload as { conversationId?: string })
-        .conversationId;
+      result.conversationId = (payload as { conversationId?: string }).conversationId;
       break;
 
     case "NAVIGATE_SCREEN":
@@ -131,10 +132,7 @@ function createRuntimeEvent(
   return result as unknown as RuntimeEvent;
 }
 
-function createKeyboardClearEvent(
-  deviceId: string,
-  at: number,
-): RuntimeEvent {
+function createKeyboardClearEvent(deviceId: string, at: number): RuntimeEvent {
   return {
     at,
     kind: "DEVICE",
@@ -144,10 +142,7 @@ function createKeyboardClearEvent(
   } as RuntimeEvent;
 }
 
-const TIMING_HELPER_EVENT_TYPES = new Set<WhatsAppEventType>([
-  "TYPING_START",
-  "TYPING_END",
-]);
+const TIMING_HELPER_EVENT_TYPES = new Set<WhatsAppEventType>(["TYPING_START", "TYPING_END"]);
 type AuthoredTypingSpan = { startAt: number; endAt?: number };
 type WhatsAppTypingScratchpad = {
   lastEventAtByConversation: Map<string, number>;
@@ -166,8 +161,7 @@ function shouldTrackConversationTiming(eventType: WhatsAppEventType): boolean {
 
 function getConversationKey(event: WhatsAppTrackEvent): string {
   const conversationId =
-    event.conversationId ??
-    (event.payload as { conversationId?: string })?.conversationId;
+    event.conversationId ?? (event.payload as { conversationId?: string })?.conversationId;
   return `${event.deviceId}::${conversationId ?? "unknown"}`;
 }
 
@@ -178,7 +172,9 @@ function getTypingActor(event: WhatsAppTrackEvent): string | undefined {
 export const whatsappV2Lowering: V2LoweringHandler = {
   lower(event: TrackEvent, ctx?: unknown): RuntimeEvent[] {
     if (!isWhatsAppTrackEvent(event)) {
-      console.warn("[whatsappV2Lowering] Received non-WhatsApp event");
+      log.warn("WhatsApp lowering received non-WhatsApp event", {
+        event: "whatsapp.lowering.non_whatsapp_event",
+      });
       return [];
     }
 
@@ -186,7 +182,10 @@ export const whatsappV2Lowering: V2LoweringHandler = {
     const isKnownType = EVENT_TYPE_TO_KIND[eventType];
 
     if (!isKnownType) {
-      console.warn(`[whatsappV2Lowering] Unknown event type: ${eventType}`);
+      log.warn(`WhatsApp lowering received unknown event type ${eventType}`, {
+        event: "whatsapp.lowering.unknown_event_type",
+        type: eventType,
+      });
       return [];
     }
 
@@ -219,8 +218,7 @@ export const whatsappV2Lowering: V2LoweringHandler = {
     }
 
     if (eventType === "TYPING_END" && getTypingActor(event) === "me") {
-      const activeStart =
-        scratchpad.activeMeTypingStartByConversation.get(key) ?? event.at;
+      const activeStart = scratchpad.activeMeTypingStartByConversation.get(key) ?? event.at;
       scratchpad.activeMeTypingStartByConversation.delete(key);
       scratchpad.recentMeTypingSpanByConversation.set(key, {
         startAt: activeStart,
@@ -230,14 +228,10 @@ export const whatsappV2Lowering: V2LoweringHandler = {
 
     if (eventType === "MESSAGE_SENT" && event.payload?.typed) {
       const prevAt = scratchpad.lastEventAtByConversation.get(key) ?? 0;
-      const activeTypingStart =
-        scratchpad.activeMeTypingStartByConversation.get(key);
-      const recentTypingSpan =
-        scratchpad.recentMeTypingSpanByConversation.get(key);
+      const activeTypingStart = scratchpad.activeMeTypingStartByConversation.get(key);
+      const recentTypingSpan = scratchpad.recentMeTypingSpanByConversation.get(key);
       const authoredTypingStart =
-        recentTypingSpan?.endAt === event.at
-          ? recentTypingSpan.startAt
-          : activeTypingStart;
+        recentTypingSpan?.endAt === event.at ? recentTypingSpan.startAt : activeTypingStart;
       const notBeforeFrame =
         authoredTypingStart !== undefined && authoredTypingStart < event.at
           ? authoredTypingStart

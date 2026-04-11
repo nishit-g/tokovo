@@ -557,7 +557,7 @@ export const ConversationStateSchema = z.object({
   members: z.array(GroupMemberSchema).optional(),
   admins: z.array(z.string()).optional(),
   messages: z.array(MessageSchema),
-  typing: z.record(z.boolean()).optional(),
+  typing: z.record(z.string(), z.boolean()).optional(),
 });
 
 // --- Notification Schema ---
@@ -614,8 +614,8 @@ export const EpisodeSchemaV1 = z.object({
   version: z.literal(1).default(1),
   meta: EpisodeMetaSchema,
   initialWorld: z.object({
-    devices: z.record(DeviceStateSchema),
-    conversations: z.record(ConversationStateSchema),
+    devices: z.record(z.string(), DeviceStateSchema),
+    conversations: z.record(z.string(), ConversationStateSchema),
     appState: AppStateSchema.optional(),
     camera: CameraViewSchema,
   }),

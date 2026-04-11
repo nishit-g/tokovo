@@ -106,13 +106,7 @@ export type TransitionType =
 // HIGHLIGHT SYSTEM TYPES (not camera-specific, stays in core)
 // =============================================================================
 
-export type HighlightStyle =
-  | "pulse"
-  | "glow"
-  | "shake"
-  | "bounce"
-  | "spotlight"
-  | "scale";
+export type HighlightStyle = "pulse" | "glow" | "shake" | "bounce" | "spotlight" | "scale";
 
 // =============================================================================
 // MULTI-DEVICE / POV TYPES (stays in core)
@@ -155,11 +149,7 @@ export type {
   VideoConfig,
 } from "./types/audio.js";
 
-export {
-  DEFAULT_BUS_CONFIG,
-  DEFAULT_AUDIO_STATE,
-  DEFAULT_VIDEO_CONFIG,
-} from "./types/audio.js";
+export { DEFAULT_BUS_CONFIG, DEFAULT_AUDIO_STATE, DEFAULT_VIDEO_CONFIG } from "./types/audio.js";
 
 // =============================================================================
 // TOUCH STATE (for gesture visualization)
@@ -188,12 +178,13 @@ export type {
  * - All app-specific data goes in `payload` field
  * - No more "from/text location mismatch" bugs
  *
- * @see docs/FUCKING_MESS.md Section 4
+ * @see docs/architecture/core-runtime.md
  */
 import type { RuntimeEvent } from "./types/runtime-event.js";
 export type TimelineEvent = RuntimeEvent;
 
 export type {
+  AppRuntimeEvent,
   AudioPlayEvent,
   AudioStopEvent,
   AudioFadeOutEvent,
@@ -257,10 +248,7 @@ export type {
 } from "./types/layout.js";
 
 // StatusBar theming
-export {
-  STATUS_BAR_PRESETS,
-  resolveStatusBarTheme,
-} from "./types/statusbar-theme.js";
+export { STATUS_BAR_PRESETS, resolveStatusBarTheme } from "./types/statusbar-theme.js";
 export type {
   StatusBarPreset,
   StatusBarCustomTheme,

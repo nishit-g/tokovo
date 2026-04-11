@@ -3,14 +3,15 @@
  *
  * Type-safe definitions for the episode registry system.
  *
- * @see docs-v2/EPISODE-ARCH.md
+ * @see docs/architecture/episodes.md
  */
 
+import { createScopedLogger } from "@tokovo/core";
 import { z } from "zod";
-import {
-  type EpisodeRegistry,
-} from "../registry/episode-registry.js";
+import { type EpisodeRegistry } from "../registry/episode-registry.js";
 import type { TrackEpisodeIR } from "@tokovo/ir";
+
+const log = createScopedLogger("validation");
 
 // =============================================================================
 // FORMAT TYPES
@@ -53,8 +54,7 @@ export type EpisodeCatalogType =
   | "app_showcase_theme"
   | "system_showcase"
   | "story"
-  | "test"
-  | "legacy";
+  | "test";
 
 export type EpisodeVisibility = "public" | "internal";
 
@@ -89,9 +89,6 @@ export interface EpisodeMeta {
 
   /** Theme identifier for theme-specific showcases */
   themeId?: string;
-
-  /** Whether this episode belongs to the legacy migration catalog */
-  isLegacy?: boolean;
 
   /** UI/runtime visibility hint */
   visibility?: EpisodeVisibility;
@@ -174,12 +171,10 @@ export const EpisodeMetaSchema = z.object({
       "system_showcase",
       "story",
       "test",
-      "legacy",
     ])
     .optional(),
   appId: z.string().optional(),
   themeId: z.string().optional(),
-  isLegacy: z.boolean().optional(),
   visibility: z.enum(["public", "internal"]).optional(),
   sortOrder: z.number().int().optional(),
   tags: z.array(z.string()).optional(),
@@ -233,21 +228,15 @@ export const EpisodeDefinitionSchema = z.object({
   build: z.function(),
 });
 
-export function isShowcaseCatalogType(
-  catalogType: EpisodeCatalogType,
-): boolean {
+export function isShowcaseCatalogType(catalogType: EpisodeCatalogType): boolean {
   return (SHOWCASE_CATALOG_TYPES as readonly string[]).includes(catalogType);
 }
 
 export function resolveEpisodeCatalogType(
-  meta: Pick<EpisodeMeta, "category" | "catalogType" | "appId" | "isLegacy">,
+  meta: Pick<EpisodeMeta, "category" | "catalogType" | "appId">,
 ): EpisodeCatalogType {
   if (meta.catalogType) {
     return meta.catalogType;
-  }
-
-  if (meta.isLegacy) {
-    return "legacy";
   }
 
   if (meta.category === "test") {
@@ -262,7 +251,7 @@ export function resolveEpisodeCatalogType(
 }
 
 export function resolveEpisodeCategory(
-  meta: Pick<EpisodeMeta, "category" | "catalogType" | "appId" | "isLegacy">,
+  meta: Pick<EpisodeMeta, "category" | "catalogType" | "appId">,
 ): EpisodeCategory {
   const catalogType = resolveEpisodeCatalogType(meta);
   if (catalogType === "story") {
@@ -308,10 +297,11 @@ export function defineEpisode(
   // Validate at define-time
   const result = EpisodeDefinitionSchema.safeParse(definition);
   if (!result.success) {
-    console.error(
-      `[defineEpisode] Validation failed for "${definition.meta?.id}":`,
-      result.error.issues,
-    );
+    log.error(`Episode definition validation failed for "${definition.meta?.id}"`, undefined, {
+      event: "episode.definition.invalid",
+      episodeId: definition.meta?.id,
+      issues: result.error.issues,
+    });
     throw new Error(`Invalid episode definition: ${result.error.message}`);
   }
 

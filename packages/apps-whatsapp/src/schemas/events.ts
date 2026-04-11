@@ -6,7 +6,10 @@
  * TypeScript types are DERIVED from these schemas.
  * Validation happens at the reducer entry point.
  */
+import { createScopedLogger } from "@tokovo/core";
 import { z } from "zod";
+
+const log = createScopedLogger("schema");
 
 // =============================================================================
 // BASE SCHEMAS
@@ -586,7 +589,7 @@ export const CustomEventSchema = z.object({
   deviceId: z.string().optional(),
   appId: z.string().optional(),
   eventType: z.string(),
-  payload: z.record(z.unknown()).optional(),
+  payload: z.record(z.string(), z.unknown()).optional(),
 });
 
 // =============================================================================
@@ -639,10 +642,7 @@ export const WhatsAppEventSchema = z.discriminatedUnion("kind", [
 ]);
 
 // Custom events are handled separately (they have kind: "Custom", not in discriminated union)
-export const AnyWhatsAppEventSchema = z.union([
-  WhatsAppEventSchema,
-  CustomEventSchema,
-]);
+export const AnyWhatsAppEventSchema = z.union([WhatsAppEventSchema, CustomEventSchema]);
 
 // =============================================================================
 // DERIVED TYPES - TypeScript types from Zod schemas
@@ -682,33 +682,19 @@ export type MessageEditedEvent = z.infer<typeof MessageEditedEventSchema>;
 export type MessageForwardedEvent = z.infer<typeof MessageForwardedEventSchema>;
 export type VoicePlayEvent = z.infer<typeof VoicePlayEventSchema>;
 export type VoicePauseEvent = z.infer<typeof VoicePauseEventSchema>;
-export type VoiceMessageReceivedEvent = z.infer<
-  typeof VoiceMessageReceivedEventSchema
->;
+export type VoiceMessageReceivedEvent = z.infer<typeof VoiceMessageReceivedEventSchema>;
 export type NavigateScreenEvent = z.infer<typeof NavigateScreenEventSchema>;
-export type ConversationOpenedEvent = z.infer<
-  typeof ConversationOpenedEventSchema
->;
+export type ConversationOpenedEvent = z.infer<typeof ConversationOpenedEventSchema>;
 export type ReadMessagesEvent = z.infer<typeof ReadMessagesEventSchema>;
 export type GroupMemberAddedEvent = z.infer<typeof GroupMemberAddedEventSchema>;
-export type GroupMemberRemovedEvent = z.infer<
-  typeof GroupMemberRemovedEventSchema
->;
+export type GroupMemberRemovedEvent = z.infer<typeof GroupMemberRemovedEventSchema>;
 export type DateSeparatorEvent = z.infer<typeof DateSeparatorEventSchema>;
 export type PinConversationEvent = z.infer<typeof PinConversationEventSchema>;
-export type UnpinConversationEvent = z.infer<
-  typeof UnpinConversationEventSchema
->;
+export type UnpinConversationEvent = z.infer<typeof UnpinConversationEventSchema>;
 export type MuteConversationEvent = z.infer<typeof MuteConversationEventSchema>;
-export type UnmuteConversationEvent = z.infer<
-  typeof UnmuteConversationEventSchema
->;
-export type ArchiveConversationEvent = z.infer<
-  typeof ArchiveConversationEventSchema
->;
-export type UnarchiveConversationEvent = z.infer<
-  typeof UnarchiveConversationEventSchema
->;
+export type UnmuteConversationEvent = z.infer<typeof UnmuteConversationEventSchema>;
+export type ArchiveConversationEvent = z.infer<typeof ArchiveConversationEventSchema>;
+export type UnarchiveConversationEvent = z.infer<typeof UnarchiveConversationEventSchema>;
 export type SetDraftEvent = z.infer<typeof SetDraftEventSchema>;
 
 // =============================================================================
@@ -726,7 +712,10 @@ export function parseWhatsAppEvent(event: unknown): AnyWhatsAppEvent | null {
   }
   // In development, log validation errors
   if (process.env.NODE_ENV === "development") {
-    console.warn("[WhatsApp] Invalid event:", result.error.issues);
+    log.warn("WhatsApp reducer received invalid event", {
+      event: "whatsapp.schema.invalid_event",
+      issues: result.error.issues,
+    });
   }
   return null;
 }

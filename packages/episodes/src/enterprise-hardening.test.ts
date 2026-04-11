@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { prepareTrackEpisode } from "@tokovo/compiler";
-import { WhatsAppPlugin } from "@tokovo/apps-whatsapp";
-import { TypewriterPlugin } from "@tokovo/apps-typewriter";
-import flirtyWhatsappRomance from "./legacy/production/flirty-whatsapp-romance.episode.js";
-import typewriterLetter from "./legacy/production/typewriter-letter.episode.js";
+import { WhatsAppPlugin } from "@tokovo/apps-whatsapp/plugin";
+import { TypewriterPlugin } from "@tokovo/apps-typewriter/plugin";
+import whatsappStoryV2 from "./stories/whatsapp-story-v2.episode.js";
+import typewriterFlagshipV2 from "./showcases/apps/typewriter-flagship-v2.episode.js";
 import type { EpisodeDefinition } from "./types/episode-definition.js";
 import {
   EpisodeRegistry,
@@ -35,8 +35,8 @@ function normalizeEventsForDeterminism(events: unknown[]): unknown[] {
 describe("episodes integration and registry guarantees", () => {
   it("rejects duplicate episode ids", () => {
     const registry = new EpisodeRegistry();
-    registry.register(flirtyWhatsappRomance);
-    expect(() => registry.register(flirtyWhatsappRomance)).toThrow(
+    registry.register(whatsappStoryV2);
+    expect(() => registry.register(whatsappStoryV2)).toThrow(
       EpisodeRegistryDuplicateError,
     );
   });
@@ -55,7 +55,7 @@ describe("episodes integration and registry guarantees", () => {
         durationInFrames: 120,
         apps: ["app_whatsapp"],
       },
-      build: () => flirtyWhatsappRomance.build(),
+      build: () => whatsappStoryV2.build(),
     };
 
     expect(() => registry.register(invalid as EpisodeDefinition)).toThrow(
@@ -69,22 +69,22 @@ describe("episodes integration and registry guarantees", () => {
       TypewriterPlugin,
     ] as Parameters<typeof prepareTrackEpisode>[1];
 
-    const smallA = prepareTrackEpisode(flirtyWhatsappRomance.build(), plugins, {
+    const smallA = prepareTrackEpisode(whatsappStoryV2.build(), plugins, {
       log: false,
       validate: true,
     });
-    const smallB = prepareTrackEpisode(flirtyWhatsappRomance.build(), plugins, {
+    const smallB = prepareTrackEpisode(whatsappStoryV2.build(), plugins, {
       log: false,
       validate: true,
     });
     expect(smallA.eventSignature).toBe(smallB.eventSignature);
     expect(smallA.events).toEqual(smallB.events);
 
-    const complexA = prepareTrackEpisode(typewriterLetter.build(), plugins, {
+    const complexA = prepareTrackEpisode(typewriterFlagshipV2.build(), plugins, {
       log: false,
       validate: true,
     });
-    const complexB = prepareTrackEpisode(typewriterLetter.build(), plugins, {
+    const complexB = prepareTrackEpisode(typewriterFlagshipV2.build(), plugins, {
       log: false,
       validate: true,
     });

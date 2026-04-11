@@ -1,6 +1,5 @@
-export { TypewriterPlugin, registerTypewriterPlugin } from "./plugin.js";
+export * from "./contract/index.js";
 export { TypewriterTrackBuilder } from "./dsl/index.js";
-export type { TypewriterState } from "./runtime/state.js";
 export {
   TYPEWRITER_THEME_PRESETS,
   resolveTypewriterTheme,

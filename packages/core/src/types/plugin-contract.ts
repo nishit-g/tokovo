@@ -6,7 +6,7 @@
  * Tier C (Authoring): + DSL helpers
  * Tier D (Compiler): + compile validators
  *
- * @see docs/FUCKING_MESS.md Section 6
+ * @see docs/architecture/core-runtime.md
  */
 
 import { RuntimeEvent } from "./runtime-event.js";

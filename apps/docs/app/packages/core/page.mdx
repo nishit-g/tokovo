@@ -17,7 +17,8 @@ The deterministic runtime layer.
 
 ## Key Exports
 
-- replay and preparation: `replayIncremental`, `prepareEpisode`, `runEpisode`
+- replay and runtime state: `replayIncremental`, `createEventIndex`, `createKeyframedEventIndex`, `createStateCache`
+- track preparation: `prepareTrackEpisode` from `@tokovo/compiler`
 - engine helpers: `createEventIndex`, `createKeyframedEventIndex`, `createStateCache`
 - registries: `createEngine`, `createEngineRegistries`, `createReducerRegistry`
 - anchors: `AnchorRegistryClass`, `createAnchorRegistry`

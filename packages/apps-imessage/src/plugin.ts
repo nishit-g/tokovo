@@ -125,5 +125,13 @@ export function registerIMessagePlugin(pluginManager: PluginManagerClass): void 
   pluginManager.register(IMessagePlugin);
 }
 
+export const iMessageRuntimeEntry = {
+  id: "@tokovo/apps-imessage",
+  scope: "app" as const,
+  register({ pluginManager }: { pluginManager: PluginManagerClass }): void {
+    registerIMessagePlugin(pluginManager);
+  },
+};
+
 export default IMessagePlugin;
 export type { IMessageDslApi };

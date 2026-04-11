@@ -1,53 +1,57 @@
-import fs from 'node:fs/promises'
-import path from 'node:path'
-
-export type RenderLogLevel = 'info' | 'warn' | 'error'
-
-export type RenderLogEntry = {
-  at: string
-  level: RenderLogLevel
-  event: string
-  message: string
-  data?: Record<string, unknown>
-}
+import {
+  configureLoggerFromEnv,
+  createLogger,
+  createScopedLogger,
+  type TokovoLogger,
+} from "@tokovo/core";
+import { createNdjsonFileSink } from "@tokovo/core/logger/node";
 
 export class RenderLogger {
-  #filePath: string
+  #logger: TokovoLogger;
+  #log: ReturnType<typeof createScopedLogger>;
 
-  constructor(filePath: string) {
-    this.#filePath = filePath
+  constructor(filePath: string, baseData: Record<string, unknown> = {}) {
+    const sinkPath = process.env.TOKOVO_LOG_PATH ?? filePath;
+    this.#logger = createLogger(configureLoggerFromEnv(process.env));
+    this.#logger.addSink(createNdjsonFileSink(sinkPath));
+    this.#log = createScopedLogger("render-service", this.#logger).withContext(baseData);
   }
 
-  async init(): Promise<void> {
-    await fs.mkdir(path.dirname(this.#filePath), { recursive: true })
-    await fs.writeFile(this.#filePath, '', 'utf8')
-  }
+  async init(): Promise<void> {}
 
   async log(
-    level: RenderLogLevel,
+    level: "info" | "warn" | "error",
     event: string,
     message: string,
     data?: Record<string, unknown>,
   ): Promise<void> {
-    const entry: RenderLogEntry = {
-      at: new Date().toISOString(),
-      level,
+    const payload = {
       event,
-      message,
-      ...(data ? { data } : {}),
+      ...(data ?? {}),
+    };
+
+    if (level === "info") {
+      this.#log.info(message, payload);
+      return;
     }
-    await fs.appendFile(this.#filePath, `${JSON.stringify(entry)}\n`, 'utf8')
+
+    if (level === "warn") {
+      this.#log.warn(message, payload);
+      return;
+    }
+
+    this.#log.error(message, undefined, payload);
   }
 
   async info(event: string, message: string, data?: Record<string, unknown>): Promise<void> {
-    await this.log('info', event, message, data)
+    await this.log("info", event, message, data);
   }
 
   async warn(event: string, message: string, data?: Record<string, unknown>): Promise<void> {
-    await this.log('warn', event, message, data)
+    await this.log("warn", event, message, data);
   }
 
   async error(event: string, message: string, data?: Record<string, unknown>): Promise<void> {
-    await this.log('error', event, message, data)
+    await this.log("error", event, message, data);
   }
 }

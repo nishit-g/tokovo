@@ -1,0 +1,24 @@
+{
+  "extends": ["//"],
+  "tasks": {
+    "build": {
+      "inputs": [
+        "package.json",
+        "tsconfig.json",
+        ".env.example",
+        "src/**"
+      ]
+    },
+    "typecheck": {
+      "inputs": [
+        "package.json",
+        "tsconfig.json",
+        ".env.example",
+        "src/**"
+      ]
+    },
+    "dev": {
+      "with": ["@tokovo/core#dev"]
+    }
+  }
+}

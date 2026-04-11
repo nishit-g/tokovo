@@ -4,7 +4,7 @@
  * @description Transforms v2 track-based events to runtime event format.
  * APP events are delegated to plugins - compiler is app-agnostic.
  *
- * @see docs-v2/DSL_REVAMP.md#compilation
+ * @see docs/architecture/dsl-v2.md
  */
 
 import type {

@@ -3,7 +3,7 @@
  *
  * This is what ep.build() returns.
  * It contains devices, tracks, markers, and director config.
- * prepareEpisode() transforms this into CompiledEpisode.
+ * prepareTrackEpisode() transforms this into a prepared runtime episode.
  */
 
 import type { TrackEvent } from "./track-event.js";
@@ -167,7 +167,7 @@ export type BackgroundConfigIR =
  * TrackEpisodeIR - The output of ep.build()
  *
  * This is the intermediate representation that the DSL produces.
- * It gets passed to prepareEpisode() along with plugins to create CompiledEpisode.
+ * It gets passed to prepareTrackEpisode() along with plugins to create runtime output.
  */
 export interface TrackEpisodeIR {
   /** Episode ID */

@@ -13,7 +13,10 @@ Snapchat plugin package for Tokovo.
 
 ## Key Exports
 
-- plugin registration: `registerSnapchatPlugin`
-- runtime state and selectors
-- bootstrap types
-- Snapchat track builder and UI exports
+- root package for authoring DSL and public Snapchat types
+- `@tokovo/apps-snapchat/plugin` for runtime registration
+- `@tokovo/apps-snapchat/contract` for bootstrap and event contracts
+- `@tokovo/apps-snapchat/runtime` for reducer state and selectors
+- `@tokovo/apps-snapchat/dsl` for track builders and authoring helpers
+- `@tokovo/apps-snapchat/lowering` for event lowering
+- `@tokovo/apps-snapchat/ui` for React surfaces

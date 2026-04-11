@@ -1,0 +1,48 @@
+{
+  "extends": ["//"],
+  "tasks": {
+    "build": {
+      "inputs": [
+        "package.json",
+        "tsconfig.json",
+        "remotion.config.ts",
+        "src/**"
+      ]
+    },
+    "typecheck": {
+      "inputs": [
+        "package.json",
+        "tsconfig.json",
+        "remotion.config.ts",
+        "src/**"
+      ]
+    },
+    "dev": {
+      "with": [
+        "@tokovo/apps-imessage#dev",
+        "@tokovo/apps-instagram#dev",
+        "@tokovo/apps-linkedin#dev",
+        "@tokovo/apps-snapchat#dev",
+        "@tokovo/apps-teams#dev",
+        "@tokovo/apps-typewriter#dev",
+        "@tokovo/apps-whatsapp#dev",
+        "@tokovo/apps-x#dev",
+        "@tokovo/background#dev",
+        "@tokovo/compiler#dev",
+        "@tokovo/core#dev",
+        "@tokovo/device-camera#dev",
+        "@tokovo/device-keyboard#dev",
+        "@tokovo/device-notifications#dev",
+        "@tokovo/devices#dev",
+        "@tokovo/dsl#dev",
+        "@tokovo/episodes#dev",
+        "@tokovo/ir#dev",
+        "@tokovo/overlay#dev",
+        "@tokovo/publishing#dev",
+        "@tokovo/react#dev",
+        "@tokovo/renderer#dev",
+        "@tokovo/voice#dev"
+      ]
+    }
+  }
+}

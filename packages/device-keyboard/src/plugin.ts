@@ -1,8 +1,12 @@
 import { keyboardReducer } from "./runtime/reducer.js";
-import type { KeyboardState } from "@tokovo/core";
-import type { EngineRegistries } from "@tokovo/core";
+import {
+  createScopedLogger,
+  type KeyboardState,
+  type EngineRegistries,
+} from "@tokovo/core";
 
 const DEBUG = process.env.NODE_ENV === "development";
+const log = createScopedLogger("keyboard");
 
 const registeredEngines = new WeakSet<EngineRegistries>();
 
@@ -38,6 +42,16 @@ export function registerKeyboardPlugin(registries: EngineRegistries): void {
   );
 
   if (DEBUG) {
-    console.warn("[KeyboardPlugin] Registered");
+    log.debug("Registered keyboard plugin", {
+      event: "keyboard.plugin_registered",
+    });
   }
 }
+
+export const keyboardRuntimeEntry = {
+  id: "@tokovo/device-keyboard",
+  scope: "engine" as const,
+  register(input: { tokovoRegistries: { engine: EngineRegistries } }): void {
+    registerKeyboardPlugin(input.tokovoRegistries.engine);
+  },
+};

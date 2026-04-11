@@ -39,7 +39,6 @@ export type {
   ComponentType,
 } from "./plugins/types.js";
 
-export { LoggingPlugin } from "./plugins/logging.plugin.js";
 export { CameraDirectorPlugin } from "./plugins/camera-director.plugin.js";
 export type { CameraDirectorPluginOptions } from "./plugins/camera-director.plugin.js";
 export { AudioDirectorPlugin } from "./plugins/audio-director.plugin.js";

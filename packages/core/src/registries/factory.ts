@@ -16,11 +16,14 @@
  * AppRegistry.register("whatsapp", config);
  * const app = AppRegistry.get("whatsapp");
  */
+import { createScopedLogger } from "../logger/index.js";
+
 export interface RegistryOptions {
   strict?: boolean;
 }
 
 let globalStrictMode = false;
+const log = createScopedLogger("plugin");
 
 export function setRegistryStrictMode(strict: boolean): void {
   globalStrictMode = strict;
@@ -49,7 +52,11 @@ export function createRegistry<K extends string | symbol, V>(
             `[${name}Registry] Duplicate key: ${String(key)}. Use unregister first or disable strict mode.`,
           );
         }
-        console.warn(`[${name}Registry] Overwriting ${String(key)}`);
+        log.warn(`Overwriting ${name} registry key ${String(key)}`, {
+          event: "registry.overwrite",
+          registry: name,
+          key: String(key),
+        });
       }
       items.set(key, value);
     },
@@ -109,6 +116,4 @@ export function createRegistry<K extends string | symbol, V>(
 /**
  * Type helper for registry return type
  */
-export type Registry<K extends string | symbol, V> = ReturnType<
-  typeof createRegistry<K, V>
->;
+export type Registry<K extends string | symbol, V> = ReturnType<typeof createRegistry<K, V>>;

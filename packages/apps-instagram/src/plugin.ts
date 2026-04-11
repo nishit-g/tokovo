@@ -70,5 +70,13 @@ export function registerInstagramPlugin(pluginManager: PluginManagerClass): void
   pluginManager.register(InstagramPlugin);
 }
 
+export const instagramRuntimeEntry = {
+  id: "@tokovo/apps-instagram",
+  scope: "app" as const,
+  register({ pluginManager }: { pluginManager: PluginManagerClass }): void {
+    registerInstagramPlugin(pluginManager);
+  },
+};
+
 export default InstagramPlugin;
 export type { InstagramDslApi };

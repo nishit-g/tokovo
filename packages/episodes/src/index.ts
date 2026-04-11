@@ -18,7 +18,7 @@
  * const registry = createEpisodeRegistry();
  * registry.register(myEpisode);
  *
- * @see docs-v2/EPISODE-ARCH.md
+ * @see docs/architecture/episodes.md
  */
 
 // =============================================================================
@@ -57,10 +57,24 @@ export {
   resolveEpisodeCategory,
 } from "./types/index.js";
 export {
-  markLegacyEpisode,
-  promoteEpisode,
   withEpisodeMeta,
 } from "./catalog/index.js";
+export {
+  createEpisodeRegistryForProfile,
+  createEpisodeRegistryForProfiles,
+  createTokovoRuntime,
+  createTokovoRuntime as createReleaseRuntime,
+  getEpisodeCatalog,
+  getEpisodeCatalogForProfiles,
+  getSharedTokovoRuntime,
+  registerTokovoPlugins,
+  resolveCatalogProfile,
+} from "./runtime-bootstrap.js";
+export type { TokovoCatalogProfile, TokovoRuntime } from "./runtime-bootstrap.js";
+export {
+  releaseEpisodes,
+  studioEpisodes,
+} from "./runtime/catalogs/index.js";
 
 // =============================================================================
 // FORMAT TEMPLATES

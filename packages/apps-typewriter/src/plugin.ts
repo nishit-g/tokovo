@@ -62,4 +62,12 @@ export function registerTypewriterPlugin(pluginManager: PluginManagerClass): voi
   pluginManager.register(TypewriterPlugin);
 }
 
+export const typewriterRuntimeEntry = {
+  id: "@tokovo/apps-typewriter",
+  scope: "app" as const,
+  register({ pluginManager }: { pluginManager: PluginManagerClass }): void {
+    registerTypewriterPlugin(pluginManager);
+  },
+};
+
 export default TypewriterPlugin;

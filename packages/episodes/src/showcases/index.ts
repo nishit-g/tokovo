@@ -5,7 +5,7 @@ import systemShowcaseEpisodes from "./system/index.js";
 /**
  * Enterprise showcase catalog.
  *
- * Legacy showcase episodes were moved to `src/legacy/showcases`.
+ * Curated showcase catalogs for the active product surface.
  */
 export const showcaseEpisodes: EpisodeDefinition[] = [
   ...appShowcaseEpisodes,

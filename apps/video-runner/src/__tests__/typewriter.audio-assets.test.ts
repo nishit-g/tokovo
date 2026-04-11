@@ -14,41 +14,15 @@ import {
 import type { RuntimeEvent } from "@tokovo/core";
 
 import {
-  createTokovoRegistries,
-  PluginManagerClass,
-  type TokovoRegistries,
-} from "@tokovo/react";
-
-import {
-  createDeviceRegistries,
-  registerDevicesPlugin,
-  type DeviceRegistries,
   ensureCanvasProfile,
   resolveCanvasProfileId,
 } from "@tokovo/devices";
-
-import { registerCameraPlugin } from "@tokovo/device-camera";
-import { registerTypewriterPlugin } from "@tokovo/apps-typewriter";
-import { createVideoRunnerEpisodeRegistry } from "../episode-registry";
-import { getFormat, type FormatId } from "@tokovo/episodes";
-
-function createRuntime(): {
-  tokovoRegistries: TokovoRegistries;
-  deviceRegistries: DeviceRegistries;
-  pluginManager: PluginManagerClass;
-  config: ReturnType<typeof createConfig>;
-} {
-  const config = createConfig();
-  const tokovoRegistries = createTokovoRegistries();
-  const deviceRegistries = createDeviceRegistries();
-  const pluginManager = new PluginManagerClass(tokovoRegistries.plugins);
-
-  registerDevicesPlugin(tokovoRegistries, deviceRegistries);
-  registerCameraPlugin(pluginManager, tokovoRegistries.engine);
-  registerTypewriterPlugin(pluginManager);
-
-  return { tokovoRegistries, deviceRegistries, pluginManager, config };
-}
+import {
+  createEpisodeRegistryForProfiles,
+  createTokovoRuntime,
+  getFormat,
+  type FormatId,
+} from "@tokovo/episodes";
 
 function publicSoundPath(relFromSoundsFolder: string): string {
   // `getSoundPath()` returns something like `sounds/plugins/typewriter/key.wav`.
@@ -60,12 +34,13 @@ function publicSoundPath(relFromSoundsFolder: string): string {
 }
 
 describe("typewriter audio", () => {
-  it("typewriter-letter: never falls back for _soft sounds and always has finite durations", () => {
-    const registry = createVideoRunnerEpisodeRegistry();
-    const runtime = createRuntime();
+  it("typewriter-flagship-v2: never falls back for _soft sounds and always has finite durations", () => {
+    const registry = createEpisodeRegistryForProfiles(["studio"]);
+    const runtime = createTokovoRuntime("studio");
+    const config = createConfig();
 
-    const ep = registry.get("typewriter-letter");
-    expect(ep, "episode not found: typewriter-letter").toBeTruthy();
+    const ep = registry.get("typewriter-flagship-v2");
+    expect(ep, "episode not found: typewriter-flagship-v2").toBeTruthy();
     if (!ep) return;
 
     const ir = ep.build();
@@ -97,7 +72,7 @@ describe("typewriter audio", () => {
     });
 
     const prepared = prepareTrackEpisode(ir, plugins, {
-      config: runtime.config,
+      config,
       validate: true,
       log: false,
     });
@@ -124,7 +99,7 @@ describe("typewriter audio", () => {
           mode: "preview",
           fps: prepared.fps,
           registries: runtime.tokovoRegistries.engine,
-          config: runtime.config,
+          config,
           errors,
         },
         keyframed,

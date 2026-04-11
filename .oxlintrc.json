@@ -1,0 +1,55 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": [
+    "typescript",
+    "unicorn",
+    "oxc",
+    "import",
+    "react",
+    "vitest",
+    "node",
+    "nextjs"
+  ],
+  "categories": {
+    "correctness": "off",
+    "suspicious": "off",
+    "pedantic": "off",
+    "perf": "off",
+    "style": "off",
+    "restriction": "off",
+    "nursery": "off"
+  },
+  "env": {
+    "builtin": true
+  },
+  "ignorePatterns": [
+    "**/node_modules/**",
+    "**/dist/**",
+    "**/.turbo/**",
+    "**/.next/**",
+    "**/coverage/**",
+    "**/out/**",
+    "**/docs/**"
+  ],
+  "rules": {
+    "no-console": "error"
+  },
+  "overrides": [
+    {
+      "files": [
+        "**/*.test.ts",
+        "**/*.spec.ts",
+        "**/scripts/**",
+        "**/bin/**",
+        "**/src/cli.ts",
+        "**/src/cli.js",
+        "**/src/**/*.cli.ts",
+        "**/src/**/*.cli.js",
+        "apps/render-service/src/**/*.js"
+      ],
+      "rules": {
+        "no-console": "off"
+      }
+    }
+  ]
+}

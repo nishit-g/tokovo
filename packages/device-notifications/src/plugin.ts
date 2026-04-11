@@ -1,7 +1,8 @@
-import type { EngineRegistries } from "@tokovo/core";
+import { createScopedLogger, type EngineRegistries } from "@tokovo/core";
 import { applyNotificationEvent } from "./runtime/reducer.js";
 
 const DEBUG = process.env.NODE_ENV === "development";
+const log = createScopedLogger("notification");
 const registeredEngines = new WeakSet<EngineRegistries>();
 
 export function registerNotificationPlugin(
@@ -18,6 +19,16 @@ export function registerNotificationPlugin(
   );
 
   if (DEBUG) {
-    console.warn("[NotificationPlugin] Registered");
+    log.debug("Registered notification plugin", {
+      event: "notification.plugin_registered",
+    });
   }
 }
+
+export const notificationRuntimeEntry = {
+  id: "@tokovo/device-notifications",
+  scope: "engine" as const,
+  register(input: { tokovoRegistries: { engine: EngineRegistries } }): void {
+    registerNotificationPlugin(input.tokovoRegistries.engine);
+  },
+};

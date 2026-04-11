@@ -1,4 +1,4 @@
-import { getEpisodeRenderData } from '../../video-runner/src/render-data.ts'
+import { getEpisodeRenderData } from '../../video-runner/src/render-data'
 
 async function main(): Promise<void> {
   const episodeId = process.argv[2] ?? process.env.EPISODE_ID ?? 'mega-x'

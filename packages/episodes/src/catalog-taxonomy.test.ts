@@ -10,10 +10,6 @@ import {
 import appShowcaseEpisodes from "./showcases/apps/index.js";
 import systemShowcaseEpisodes from "./showcases/system/index.js";
 import storyEpisodes from "./stories/index.js";
-import {
-  legacyProductionEpisodes,
-  legacyShowcaseEpisodes,
-} from "./legacy/index.js";
 
 const srcDir = fileURLToPath(new URL(".", import.meta.url));
 const curatedDirs = [
@@ -36,7 +32,7 @@ function listTypeScriptFiles(dir: string): string[] {
 }
 
 describe("enterprise episode taxonomy", () => {
-  it("resolves explicit and legacy catalog types correctly", () => {
+  it("resolves explicit curated catalog types correctly", () => {
     expect(resolveEpisodeCatalogType(appShowcaseEpisodes[0].meta)).toBe(
       "app_showcase_flagship",
     );
@@ -44,23 +40,18 @@ describe("enterprise episode taxonomy", () => {
       "system_showcase",
     );
     expect(resolveEpisodeCatalogType(storyEpisodes[0].meta)).toBe("story");
-    expect(resolveEpisodeCatalogType(legacyProductionEpisodes[0].meta)).toBe(
-      "legacy",
-    );
     expect(resolveEpisodeCategory(storyEpisodes[0].meta)).toBe("production");
     expect(resolveEpisodeCategory(appShowcaseEpisodes[0].meta)).toBe(
       "showcase",
     );
   });
 
-  it("filters registry entries by catalog type, app, and legacy state", () => {
+  it("filters registry entries by catalog type and app", () => {
     const registry = new EpisodeRegistry();
     for (const episode of [
       ...appShowcaseEpisodes,
       ...systemShowcaseEpisodes,
       ...storyEpisodes,
-      ...legacyProductionEpisodes,
-      ...legacyShowcaseEpisodes,
     ]) {
       registry.register(episode);
     }
@@ -75,7 +66,6 @@ describe("enterprise episode taxonomy", () => {
           "app_showcase_exhaustive",
           "app_showcase_theme",
         ],
-        legacy: false,
       }).length,
     ).toBe(appShowcaseEpisodes.length);
     expect(registry.filter({ catalogType: "system_showcase" }).length).toBe(
@@ -83,9 +73,6 @@ describe("enterprise episode taxonomy", () => {
     );
     expect(registry.filter({ catalogType: "story" }).length).toBe(
       storyEpisodes.length,
-    );
-    expect(registry.filter({ legacy: true }).length).toBe(
-      legacyProductionEpisodes.length + legacyShowcaseEpisodes.length,
     );
   });
 
@@ -95,29 +82,14 @@ describe("enterprise episode taxonomy", () => {
     expect(storyEpisodes).toHaveLength(8);
   });
 
-  it("keeps curated catalogs free of legacy wrappers and imports", () => {
+  it("keeps curated catalogs free of obsolete wrappers and imports", () => {
     const curatedFiles = curatedDirs.flatMap(listTypeScriptFiles);
     expect(curatedFiles.length).toBeGreaterThan(0);
 
     for (const filePath of curatedFiles) {
       const contents = fs.readFileSync(filePath, "utf8");
-      expect(contents).not.toMatch(/promoteEpisode\s*\(/);
-      expect(contents).not.toMatch(/markLegacyEpisode\s*\(/);
       expect(contents).not.toMatch(/from\s+["'][^"']*legacy\//);
       expect(contents).not.toMatch(/from\s+["'][.]{1,2}\/legacy\//);
-    }
-  });
-
-  it("uses curated episode ids that do not collide with legacy ids", () => {
-    const legacyIds = new Set(
-      [...legacyProductionEpisodes, ...legacyShowcaseEpisodes].map((episode) => episode.meta.id),
-    );
-    const curatedIds = [...appShowcaseEpisodes, ...systemShowcaseEpisodes, ...storyEpisodes].map(
-      (episode) => episode.meta.id,
-    );
-
-    for (const id of curatedIds) {
-      expect(legacyIds.has(id)).toBe(false);
     }
   });
 });

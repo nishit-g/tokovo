@@ -1,6 +1,6 @@
 import { PublishingCard, PublishingShell } from '@/components/publishing/PublishingShell'
 import { SyncChannelsButton } from '@/components/publishing/SyncChannelsButton'
-import { listChannels } from '@/lib/publishing/service'
+import { listChannels } from '@tokovo/publishing/server'
 
 export default function PublishingChannelsPage() {
   const channels = listChannels()

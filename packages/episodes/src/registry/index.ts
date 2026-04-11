@@ -1,6 +1,6 @@
 /**
  * Episode Registry Module
- * @see docs-v2/EPISODE-ARCH.md
+ * @see docs/architecture/episodes.md
  */
 export {
   EpisodeRegistry,

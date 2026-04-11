@@ -7,7 +7,7 @@
  * - typing() - Typing indicator
  * - react() - Emoji reaction
  *
- * @see docs-v2/DSL_REVAMP.md#app-track-plugin-system
+ * @see docs/architecture/dsl-v2.md
  */
 
 import type { TrackMessageRef } from "@tokovo/ir";

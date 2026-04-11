@@ -9,7 +9,6 @@ const publicRoot = path.join(repoRoot, "apps", "video-runner", "public");
 const episodeSourceRoots = [
   path.join(episodesRoot, "showcases"),
   path.join(episodesRoot, "stories"),
-  path.join(episodesRoot, "legacy"),
   path.join(episodesRoot, "tests"),
   path.join(episodesRoot, "v2"),
 ];

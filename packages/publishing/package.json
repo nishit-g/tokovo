@@ -1,13 +1,25 @@
 {
   "name": "@tokovo/publishing",
   "version": "0.0.0",
+  "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./server": {
+      "types": "./dist/server/index.d.ts",
+      "default": "./dist/server/index.js"
+    }
+  },
   "files": [
     "dist"
   ],
   "scripts": {
     "build": "tsc",
+    "dev": "tsc --watch",
     "typecheck": "tsc --noEmit",
     "lint": "eslint . --ext .ts",
     "test": "vitest run --passWithNoTests"

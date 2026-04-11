@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { listArtifacts, syncArtifactManifestsFromDisk } from '@/lib/publishing/service'
+import { listArtifacts, syncArtifactManifestsFromDisk } from '@tokovo/publishing/server'
 
 export async function GET() {
   const synced = syncArtifactManifestsFromDisk()

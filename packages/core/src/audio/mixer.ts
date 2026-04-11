@@ -9,6 +9,9 @@
  */
 
 import { SoundCue, AudioBus, AudioState } from "../types.js";
+import { createScopedLogger } from "../logger/index.js";
+
+const log = createScopedLogger("audio");
 
 // =============================================================================
 // VALIDATION HELPERS
@@ -16,23 +19,24 @@ import { SoundCue, AudioBus, AudioState } from "../types.js";
 
 function validateVolume(volume: number, context: string): number {
   if (typeof volume !== "number" || isNaN(volume) || volume < 0 || volume > 1) {
-    console.warn(
-      `[Audio] Invalid volume (${volume}) in ${context}, clamping to [0,1]`,
-    );
+    log.warn(`Invalid audio volume ${volume} in ${context}; clamping to [0,1]`, {
+      event: "audio.validation.volume",
+      value: volume,
+      context,
+    });
     return Math.max(0, Math.min(1, volume || 0));
   }
   return volume;
 }
 
-function validateDuration(
-  duration: number | undefined,
-  context: string,
-): number | undefined {
+function validateDuration(duration: number | undefined, context: string): number | undefined {
   if (duration === undefined) return undefined;
   if (typeof duration !== "number" || isNaN(duration) || duration < 0) {
-    console.warn(
-      `[Audio] Invalid duration (${duration}) in ${context}, using undefined`,
-    );
+    log.warn(`Invalid audio duration ${duration} in ${context}; using undefined`, {
+      event: "audio.validation.duration",
+      value: duration,
+      context,
+    });
     return undefined;
   }
   return duration;
@@ -90,10 +94,7 @@ export function applyEnvelope(cue: SoundCue, frame: number): number {
 /**
  * Apply easing curve to a 0-1 progress value
  */
-function applyCurve(
-  progress: number,
-  curve: "linear" | "easeOut" | "easeIn",
-): number {
+function applyCurve(progress: number, curve: "linear" | "easeOut" | "easeIn"): number {
   switch (curve) {
     case "easeOut":
       return 1 - Math.pow(1 - progress, 2);
@@ -114,10 +115,7 @@ interface ActiveDucker {
   duckAmount: number;
 }
 
-function extractActiveDuckers(
-  frame: number,
-  allCues: SoundCue[],
-): ActiveDucker[] {
+function extractActiveDuckers(frame: number, allCues: SoundCue[]): ActiveDucker[] {
   const duckers: ActiveDucker[] = [];
 
   for (const cue of allCues) {
@@ -139,9 +137,7 @@ function extractActiveDuckers(
 
     if (frame > cueEnd && cue.duck.release > 0) {
       const releaseProgress = (frame - cueEnd) / cue.duck.release;
-      duckAmount =
-        cue.duck.amount +
-        (1.0 - cue.duck.amount) * Math.min(1, releaseProgress);
+      duckAmount = cue.duck.amount + (1.0 - cue.duck.amount) * Math.min(1, releaseProgress);
     }
 
     duckers.push({ targetBus: cue.duck.targetBus, duckAmount });
@@ -150,10 +146,7 @@ function extractActiveDuckers(
   return duckers;
 }
 
-function computeDuckMultiplierFromDuckers(
-  targetBus: AudioBus,
-  duckers: ActiveDucker[],
-): number {
+function computeDuckMultiplierFromDuckers(targetBus: AudioBus, duckers: ActiveDucker[]): number {
   let minMultiplier = 1.0;
   for (const d of duckers) {
     if (d.targetBus === targetBus) {
@@ -194,9 +187,7 @@ export function computeBusDuckMultiplier(
     // Release: ramp back up after cue ends
     if (frame > cueEnd && cue.duck.release > 0) {
       const releaseProgress = (frame - cueEnd) / cue.duck.release;
-      duckAmount =
-        cue.duck.amount +
-        (1.0 - cue.duck.amount) * Math.min(1, releaseProgress);
+      duckAmount = cue.duck.amount + (1.0 - cue.duck.amount) * Math.min(1, releaseProgress);
     }
 
     minMultiplier = Math.min(minMultiplier, duckAmount);
@@ -260,20 +251,12 @@ export function computeSoundVolume(
   const envelopeMult = applyEnvelope(sound, frame);
 
   let baseVolume = cueVolume;
-  if (
-    sound.fadeTarget !== undefined &&
-    sound.fadeStartFrame !== undefined &&
-    sound.fadeDuration
-  ) {
-    const fadeProgress = Math.min(
-      1,
-      (frame - sound.fadeStartFrame) / sound.fadeDuration,
-    );
+  if (sound.fadeTarget !== undefined && sound.fadeStartFrame !== undefined && sound.fadeDuration) {
+    const fadeProgress = Math.min(1, (frame - sound.fadeStartFrame) / sound.fadeDuration);
     baseVolume = cueVolume + (sound.fadeTarget - cueVolume) * fadeProgress;
   }
 
-  const finalVolume =
-    baseVolume * busState.baseGain * busState.duckMultiplier * envelopeMult;
+  const finalVolume = baseVolume * busState.baseGain * busState.duckMultiplier * envelopeMult;
 
   return clamp01(finalVolume);
 }
@@ -324,10 +307,7 @@ export function createUISoundCue(
     ...options,
     bus: "ui",
     priority: 30,
-    volume: validateVolume(
-      options.volume ?? 1.0,
-      `createUISoundCue(${soundId})`,
-    ),
+    volume: validateVolume(options.volume ?? 1.0, `createUISoundCue(${soundId})`),
     duck: options.duck ?? {
       targetBus: "music",
       amount: 0.25,
@@ -349,10 +329,7 @@ export function createVoiceSoundCue(
     ...options,
     bus: "voice",
     priority: 100,
-    volume: validateVolume(
-      options.volume ?? 1.0,
-      `createVoiceSoundCue(${soundId})`,
-    ),
+    volume: validateVolume(options.volume ?? 1.0, `createVoiceSoundCue(${soundId})`),
     duck: options.duck ?? {
       targetBus: "music",
       amount: 0.15,

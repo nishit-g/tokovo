@@ -1,6 +1,7 @@
 {
   "name": "@tokovo/dsl",
   "version": "0.0.1",
+  "type": "module",
   "description": "Tokovo Author DSL - fluent API for writing cinematic chat stories",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

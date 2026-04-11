@@ -1,6 +1,7 @@
 {
   "name": "@tokovo/compiler",
   "version": "0.0.1",
+  "type": "module",
   "description": "Tokovo Compiler - Scene IR to Timeline IR transformation",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

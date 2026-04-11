@@ -1,46 +1,72 @@
 {
-    "$schema": "https://turbo.build/schema.json",
-    "ui": "stream",
-    "tasks": {
-        "build": {
-            "dependsOn": [
-                "^build"
-            ],
-            "outputs": [
-                ".next/**",
-                "!.next/cache/**",
-                "dist/**"
-            ]
-        },
-        "lint": {},
-        "camera:lint": {
-            "dependsOn": [
-                "^build"
-            ]
-        },
-        "bench": {
-            "dependsOn": [
-                "^build"
-            ]
-        },
-        "typecheck": {
-            "dependsOn": [
-                "^build"
-            ]
-        },
-        "dev": {
-            "cache": false,
-            "persistent": true,
-            "dependsOn": [
-                "^build"
-            ]
-        },
-        "dev:video": {
-            "cache": false,
-            "persistent": true,
-            "dependsOn": [
-                "^build"
-            ]
-        }
+  "$schema": "https://turborepo.com/schema.json",
+  "ui": "stream",
+  "globalDependencies": [
+    "package.json",
+    "pnpm-lock.yaml",
+    "tsconfig.base.json",
+    "eslint.config.mjs",
+    ".oxlintrc.json",
+    ".oxfmtrc.json",
+    ".env*",
+    "apps/*/.env*",
+    "packages/*/.env*"
+  ],
+  "tasks": {
+    "build": {
+      "dependsOn": ["^build"],
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "!**/*.md",
+        "!**/*.mdx",
+        "!**/__tests__/**",
+        "!**/*.test.*",
+        "!**/*.spec.*",
+        "!**/*.stories.*",
+        "!**/coverage/**",
+        "!coverage/**",
+        "!tmp/**",
+        "!out/**",
+        "!**/vitest.config.*"
+      ],
+      "outputs": [".next/**", "!.next/cache/**", "dist/**", "build/**"]
+    },
+    "@tokovo/render-service#build": {
+      "dependsOn": ["^build"],
+      "outputs": []
+    },
+    "lint": {
+      "outputs": []
+    },
+    "camera:lint": {
+      "dependsOn": ["^build"],
+      "outputs": []
+    },
+    "bench": {
+      "dependsOn": ["^build"],
+      "outputs": []
+    },
+    "typecheck": {
+      "dependsOn": ["^build"],
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "!**/*.md",
+        "!**/*.mdx",
+        "!**/coverage/**",
+        "!coverage/**",
+        "!tmp/**",
+        "!out/**"
+      ],
+      "outputs": []
+    },
+    "validate": {
+      "dependsOn": ["^build"],
+      "outputs": []
+    },
+    "dev": {
+      "cache": false,
+      "persistent": true,
+      "interruptible": true
     }
+  }
 }

@@ -1,10 +1,19 @@
 {
-    "extends": "../../tsconfig.base.json",
+    "extends": "../../tsconfig.lib.json",
     "compilerOptions": {
         "outDir": "dist",
         "rootDir": "src",
         "jsx": "react-jsx"
     },
+    "references": [
+        { "path": "../core" },
+        { "path": "../compiler" },
+        { "path": "../device-camera" },
+        { "path": "../device-keyboard" },
+        { "path": "../devices" },
+        { "path": "../device-notifications" },
+        { "path": "../react" }
+    ],
     "include": [
         "src/**/*"
     ],

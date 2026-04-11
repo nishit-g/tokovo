@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { PublishingShell, PublishingCard } from '@/components/publishing/PublishingShell'
 import { SyncChannelsButton } from '@/components/publishing/SyncChannelsButton'
-import { listArtifacts, listChannels, listScheduledPosts } from '@/lib/publishing/service'
+import { listArtifacts, listChannels, listScheduledPosts } from '@tokovo/publishing/server'
 
 export default function PublishingOverviewPage() {
   const artifacts = listArtifacts()

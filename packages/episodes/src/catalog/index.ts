@@ -34,26 +34,3 @@ export function withEpisodeMeta(
     meta: mergedMeta,
   };
 }
-
-export function promoteEpisode(
-  definition: EpisodeDefinition,
-  patch: EpisodeMetaPatch,
-): EpisodeDefinition {
-  return withEpisodeMeta(definition, {
-    ...patch,
-    isLegacy: false,
-    visibility: patch.visibility ?? definition.meta.visibility ?? "public",
-  });
-}
-
-export function markLegacyEpisode(
-  definition: EpisodeDefinition,
-  patch: EpisodeMetaPatch = {},
-): EpisodeDefinition {
-  return withEpisodeMeta(definition, {
-    ...patch,
-    catalogType: "legacy",
-    isLegacy: true,
-    visibility: patch.visibility ?? definition.meta.visibility ?? "public",
-  });
-}

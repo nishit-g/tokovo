@@ -1,11 +1,16 @@
 {
-    "extends": "../../tsconfig.base.json",
+    "extends": "../../tsconfig.lib.json",
     "compilerOptions": {
         "outDir": "./dist",
         "rootDir": "./src",
         "declaration": true,
         "declarationMap": true
     },
+    "references": [
+        { "path": "../core" },
+        { "path": "../ir" },
+        { "path": "../device-camera" }
+    ],
     "include": [
         "src/**/*"
     ],

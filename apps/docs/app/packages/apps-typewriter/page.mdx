@@ -11,7 +11,11 @@ Typewriter simulation plugin for Tokovo.
 
 ## Key Exports
 
-- plugin registration: `registerTypewriterPlugin`
-- runtime state and DSL exports
-- theme presets and theme helpers
-- UI and anchor exports
+- root package for authoring DSL and public theme helpers
+- `@tokovo/apps-typewriter/plugin` for runtime registration
+- `@tokovo/apps-typewriter/contract` for app identity and public track-event types
+- `@tokovo/apps-typewriter/runtime` for reducer state
+- `@tokovo/apps-typewriter/dsl` for track builders and authoring helpers
+- `@tokovo/apps-typewriter/lowering` for event lowering
+- `@tokovo/apps-typewriter/theme` for theme presets and theme helpers
+- `@tokovo/apps-typewriter/ui` for React surfaces

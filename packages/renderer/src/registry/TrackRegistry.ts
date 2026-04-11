@@ -1,3 +1,5 @@
+import { createScopedLogger } from "@tokovo/core";
+
 export interface RenderTrackDefinition {
   name: string;
   zIndex: number;
@@ -6,12 +8,17 @@ export interface RenderTrackDefinition {
   filterEvents: (events: unknown[]) => unknown[];
 }
 
+const log = createScopedLogger("renderer");
+
 class TrackRegistryClass {
   private tracks = new Map<string, RenderTrackDefinition>();
 
   register(track: RenderTrackDefinition): void {
     if (this.tracks.has(track.name)) {
-      console.warn(`Track "${track.name}" is already registered. Overwriting.`);
+      log.warn(`Overwriting render track ${track.name}`, {
+        event: "renderer.track.overwrite",
+        trackName: track.name,
+      });
     }
     this.tracks.set(track.name, track);
   }

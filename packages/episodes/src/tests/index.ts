@@ -14,7 +14,7 @@ import type { EpisodeDefinition } from "../types/episode-definition.js";
 import testEpisode from "./test.episode.js";
 import keyboardPluginDemo from "./keyboard-plugin-demo.episode.js";
 import typingPluginDemo from "./typing-plugin-demo.episode.js";
-import payloadFirstSmoke from "./payload-first-smoke.episode.js";
+import renderServiceSmoke from "./render-service-smoke.episode.js";
 import newDxTest from "../test/new-dx-test.episode.js";
 // plop:episode-import
 
@@ -23,10 +23,10 @@ export const testEpisodes: EpisodeDefinition[] = [
   keyboardPluginDemo,
   typingPluginDemo,
   newDxTest,
-  payloadFirstSmoke,
+  renderServiceSmoke,
   // plop:episode-entry
 ];
 
 export default testEpisodes;
 
-export { testEpisode, keyboardPluginDemo, typingPluginDemo, newDxTest, payloadFirstSmoke };
+export { testEpisode, keyboardPluginDemo, typingPluginDemo, newDxTest, renderServiceSmoke };

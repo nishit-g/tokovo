@@ -1,0 +1,30 @@
+{
+  "files": [],
+  "references": [
+    { "path": "./packages/ir" },
+    { "path": "./packages/core" },
+    { "path": "./packages/react" },
+    { "path": "./packages/devices" },
+    { "path": "./packages/device-keyboard" },
+    { "path": "./packages/device-notifications" },
+    { "path": "./packages/device-camera" },
+    { "path": "./packages/overlay" },
+    { "path": "./packages/background" },
+    { "path": "./packages/compiler" },
+    { "path": "./packages/dsl" },
+    { "path": "./packages/voice" },
+    { "path": "./packages/apps-imessage" },
+    { "path": "./packages/apps-instagram" },
+    { "path": "./packages/apps-linkedin" },
+    { "path": "./packages/apps-snapchat" },
+    { "path": "./packages/apps-teams" },
+    { "path": "./packages/apps-typewriter" },
+    { "path": "./packages/apps-whatsapp" },
+    { "path": "./packages/apps-x" },
+    { "path": "./packages/renderer" },
+    { "path": "./packages/publishing" },
+    { "path": "./packages/episodes" },
+    { "path": "./apps/video-runner" },
+    { "path": "./apps/render-service" }
+  ]
+}

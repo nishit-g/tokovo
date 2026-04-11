@@ -1,55 +1,35 @@
 import { prepareTrackEpisode } from '@tokovo/compiler'
-import { WhatsAppPlugin } from '@tokovo/apps-whatsapp'
-import { XPlugin } from '@tokovo/apps-x'
-import { LinkedInPlugin } from '@tokovo/apps-linkedin'
-import { InstagramPlugin } from '@tokovo/apps-instagram'
-import { SnapchatPlugin } from '@tokovo/apps-snapchat'
-import { TeamsPlugin } from '@tokovo/apps-teams'
-import { TypewriterPlugin } from '@tokovo/apps-typewriter'
-import { IMessagePlugin } from '@tokovo/apps-imessage'
-import storyEpisodes from './stories/index.js'
-import appShowcaseEpisodes from './showcases/apps/index.js'
-import systemShowcaseEpisodes from './showcases/system/index.js'
 import {
-  legacyProductionEpisodes,
-  legacyShowcaseEpisodes,
-} from './legacy/index.js'
-import testEpisodes from './tests/index.js'
-import { createEpisodeRegistry } from './registry/index.js'
-import { validateEpisodeForRegistry } from './registry/episode-registry.js'
-import v2Episodes from './v2/index.js'
+  createEpisodeRegistryForProfiles,
+  createTokovoRuntime,
+  resolveCatalogProfile,
+  type TokovoCatalogProfile,
+} from './runtime-bootstrap.js'
 
-const plugins = [
-  WhatsAppPlugin,
-  XPlugin,
-  LinkedInPlugin,
-  InstagramPlugin,
-  SnapchatPlugin,
-  TeamsPlugin,
-  TypewriterPlugin,
-  IMessagePlugin,
-] as Parameters<typeof prepareTrackEpisode>[1]
+function resolveValidationProfiles(): TokovoCatalogProfile[] {
+  return [
+    resolveCatalogProfile(
+    process.env.TOKOVO_EPISODE_CATALOG_PROFILE,
+    'studio',
+  ),
+  ]
+}
 
 function main(): void {
-  const includeLegacy = process.env.TOKOVO_VALIDATE_INCLUDE_LEGACY === '1'
-  const registry = createEpisodeRegistry()
-  const catalogs = [
-    ...storyEpisodes,
-    ...appShowcaseEpisodes,
-    ...systemShowcaseEpisodes,
-    ...testEpisodes,
-    ...v2Episodes,
-    ...(includeLegacy
-      ? [...legacyProductionEpisodes, ...legacyShowcaseEpisodes]
-      : []),
-  ]
-
-  for (const episode of catalogs) {
-    registry.register(validateEpisodeForRegistry(episode))
-  }
+  const profiles = resolveValidationProfiles()
+  const runtime = createTokovoRuntime('studio')
+  const registry = createEpisodeRegistryForProfiles(profiles)
 
   for (const episode of registry.all()) {
     const ir = episode.build()
+    const plugins = episode.config.apps.map((appId) => {
+      const plugin = runtime.pluginManager.get(appId)
+      if (!plugin) {
+        throw new Error(`Missing plugin for appId "${appId}"`)
+      }
+      return plugin
+    })
+
     prepareTrackEpisode(ir, plugins, {
       log: false,
       validate: true,
@@ -57,7 +37,7 @@ function main(): void {
   }
 
   process.stdout.write(
-    `Validated ${registry.count()} episode definitions across stories, app showcases, system showcases, tests, v2${includeLegacy ? ', and legacy' : ''} catalogs.\n`,
+    `Validated ${registry.count()} episode definitions across ${profiles.join(', ')} catalog profiles.\n`,
   )
 }
 

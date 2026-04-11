@@ -1,0 +1,25 @@
+{
+  "extends": ["//"],
+  "tasks": {
+    "build": {
+      "inputs": [
+        "package.json",
+        "tsconfig.json",
+        "next.config.mjs",
+        "mdx-components.jsx",
+        "app/**",
+        "components/**"
+      ]
+    },
+    "typecheck": {
+      "inputs": [
+        "package.json",
+        "tsconfig.json",
+        "next.config.mjs",
+        "mdx-components.jsx",
+        "app/**",
+        "components/**"
+      ]
+    }
+  }
+}
