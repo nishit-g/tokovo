@@ -5,8 +5,11 @@ Tokovo uses Postiz as the publishing control plane. Social credentials and OAuth
 ## Files
 
 - `deploy/postiz/docker-compose.yml`
+- `deploy/postiz/docker-compose.coolify.yml`
 - `deploy/postiz/postiz.env.example`
+- `deploy/postiz/postiz.coolify.env.example`
 - `deploy/postiz/dynamicconfig/development-sql.yaml`
+- `docs/operations/postiz-coolify.md`
 
 ## Local startup
 
@@ -50,6 +53,14 @@ PUBLISHING_ARTIFACT_SCAN_ROOT=/absolute/path/to/tokovo/out
 ```
 
 The Postiz API key is created inside Postiz after first login. Do not commit it.
+
+## Production path
+
+For the current production migration path on the shared AWS/Coolify VM, use:
+
+- `docs/operations/postiz-coolify.md`
+
+The local compose file remains useful for development, but production should follow the Coolify-specific contract and env template.
 
 ## Persistence and resets
 
