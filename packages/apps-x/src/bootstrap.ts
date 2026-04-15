@@ -109,7 +109,7 @@ function validateXSnapshot(
   const tweetIds = new Set<string>();
   const threadIds = new Set<string>();
 
-  const users = snapshot.users == null
+  const users = snapshot.users === null || snapshot.users === undefined
     ? undefined
     : expectArray(snapshot.users, "snapshot.users", errors);
   users?.forEach((value, index) => {
@@ -125,7 +125,7 @@ function validateXSnapshot(
   });
 
   const validateTweetCollection = (key: "tweets" | "replies" | "quotes"): void => {
-    const entries = snapshot[key] == null
+    const entries = snapshot[key] === null || snapshot[key] === undefined
       ? undefined
       : expectArray(snapshot[key], `snapshot.${key}`, errors);
     entries?.forEach((value, index) => {
@@ -157,7 +157,8 @@ function validateXSnapshot(
   validateTweetCollection("replies");
   validateTweetCollection("quotes");
 
-  const notifications = snapshot.notifications == null
+  const notifications =
+    snapshot.notifications === null || snapshot.notifications === undefined
     ? undefined
     : expectArray(snapshot.notifications, "snapshot.notifications", errors);
   notifications?.forEach((value, index) => {
@@ -188,7 +189,7 @@ function validateXSnapshot(
     expectOptionalBoolean(notification.read, `snapshot.notifications[${index}].read`, errors);
   });
 
-  const threads = snapshot.threads == null
+  const threads = snapshot.threads === null || snapshot.threads === undefined
     ? undefined
     : expectArray(snapshot.threads, "snapshot.threads", errors);
   threads?.forEach((value, index) => {
@@ -216,7 +217,7 @@ function validateXSnapshot(
     }
   });
 
-  const messages = snapshot.messages == null
+  const messages = snapshot.messages === null || snapshot.messages === undefined
     ? undefined
     : expectArray(snapshot.messages, "snapshot.messages", errors);
   messages?.forEach((value, index) => {
@@ -253,13 +254,13 @@ function validateXInitialView(
   expectOptionalString(view.activeUserId, "initialView.activeUserId", errors);
   expectOptionalString(view.activeThreadId, "initialView.activeThreadId", errors);
   expectOptionalString(view.composeDraft, "initialView.composeDraft", errors);
-  if (view.timelineTab != null) {
+  if (view.timelineTab !== null && view.timelineTab !== undefined) {
     expectOneOf(view.timelineTab, X_TIMELINE_TABS, "initialView.timelineTab", errors);
   }
-  if (view.profileTab != null) {
+  if (view.profileTab !== null && view.profileTab !== undefined) {
     expectOneOf(view.profileTab, X_PROFILE_TABS, "initialView.profileTab", errors);
   }
-  if (view.notificationsTab != null) {
+  if (view.notificationsTab !== null && view.notificationsTab !== undefined) {
     expectOneOf(
       view.notificationsTab,
       X_NOTIFICATION_TABS,
@@ -267,7 +268,7 @@ function validateXInitialView(
       errors,
     );
   }
-  if (view.themeMode != null) {
+  if (view.themeMode !== null && view.themeMode !== undefined) {
     expectOneOf(view.themeMode, X_THEME_MODES, "initialView.themeMode", errors);
   }
 
@@ -433,7 +434,7 @@ export const xBootstrap: PluginBootstrapContract<"app_x"> = {
       thread?.messageIds.push(message.id);
       if (thread) {
         thread.lastMessageAt =
-          thread.lastMessageAt == null
+          thread.lastMessageAt === null || thread.lastMessageAt === undefined
             ? normalized.createdAt
             : Math.max(thread.lastMessageAt, normalized.createdAt);
       }

@@ -55,3 +55,5 @@ export const keyboardRuntimeEntry = {
     registerKeyboardPlugin(input.tokovoRegistries.engine);
   },
 };
+
+export const tokovoRuntimeManifest = [keyboardRuntimeEntry] as const;

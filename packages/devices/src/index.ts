@@ -127,6 +127,7 @@ export {
   DevicesPlugin,
   registerDevicesPlugin,
   devicesRuntimeEntry,
+  tokovoRuntimeManifest,
   type DevicesPluginContract,
 } from "./plugin.js";
 

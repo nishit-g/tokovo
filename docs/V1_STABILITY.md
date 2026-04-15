@@ -4,6 +4,10 @@ This checklist defines the current minimum bar for calling Tokovo v1-ready.
 
 ## Release Gates
 
+Canonical command:
+
+- `pnpm verify:release`
+
 1. Relevant package builds pass.
 2. Relevant package tests pass.
 3. `@tokovo/episodes` validates the workspace.

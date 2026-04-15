@@ -93,9 +93,7 @@ export const MediaCard: React.FC<{
   const theme = useXTheme();
   const height = aspectToHeight(media.aspect, variant);
   const firstUrl = resolveAssetUrl(media.urls?.[0]);
-  const canRenderAsset = Boolean(firstUrl);
-
-  if (media.type === "image" && canRenderAsset) {
+  if (media.type === "image" && firstUrl) {
     return (
       <div
         style={{
@@ -109,7 +107,7 @@ export const MediaCard: React.FC<{
         }}
       >
         <Img
-          src={firstUrl!}
+          src={firstUrl}
           alt=""
           pauseWhenLoading
           style={{
@@ -124,7 +122,7 @@ export const MediaCard: React.FC<{
     );
   }
 
-  if (media.type === "video" && canRenderAsset) {
+  if (media.type === "video" && firstUrl) {
     return (
       <div
         style={{
@@ -138,7 +136,7 @@ export const MediaCard: React.FC<{
         }}
       >
         <OffthreadVideo
-          src={firstUrl!}
+          src={firstUrl}
           muted
           pauseWhenBuffering
           style={{ width: "100%", height: "100%", objectFit: "cover" }}

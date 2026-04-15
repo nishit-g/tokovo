@@ -4,6 +4,7 @@ import { spawnSync } from 'node:child_process'
 
 import { ensureBrowser } from '@remotion/renderer'
 
+import { createRenderServiceError } from './errors'
 import { outputRoot } from './constants'
 import { getBrowserExecutable, getR2Config, getR2ConfigValidationError } from './env'
 
@@ -115,10 +116,21 @@ export async function runRenderDoctor(): Promise<RenderDoctorResult> {
 export async function assertRenderPreflight(): Promise<void> {
   const result = await runRenderDoctor()
   if (!result.ok) {
+    const failedChecks = result.checks.filter((check) => !check.ok)
     const message = result.checks
       .filter((check) => !check.ok)
       .map((check) => `${check.id}: ${check.message}`)
       .join('\n')
-    throw new Error(`Render preflight failed\n${message}`)
+    throw createRenderServiceError({
+      code: 'RENDER_PREFLIGHT_FAILED',
+      stage: 'preflight',
+      message: `Render preflight failed\n${message}`,
+      details: {
+        failedChecks: failedChecks.map((check) => ({
+          id: check.id,
+          message: check.message,
+        })),
+      },
+    })
   }
 }

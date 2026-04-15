@@ -32,3 +32,5 @@ export const notificationRuntimeEntry = {
     registerNotificationPlugin(input.tokovoRegistries.engine);
   },
 };
+
+export const tokovoRuntimeManifest = [notificationRuntimeEntry] as const;

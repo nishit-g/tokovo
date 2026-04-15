@@ -70,4 +70,6 @@ export const typewriterRuntimeEntry = {
   },
 };
 
+export const tokovoRuntimeManifest = [typewriterRuntimeEntry] as const;
+
 export default TypewriterPlugin;

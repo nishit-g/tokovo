@@ -14,7 +14,7 @@ import type { Platform } from "../tokens.js";
 import type { AnchorFraming } from "./anchor.js";
 import type { LayoutContext, LayoutState, ViewKind } from "./layout.js";
 import type { AnchorProvider } from "./anchor.js";
-import type { EpisodeAssetRef, PluginAssetCollector } from "./asset-ref.js";
+import type { PluginAssetCollector } from "./asset-ref.js";
 
 export interface PluginBootstrapValidationResult {
   errors?: string[];

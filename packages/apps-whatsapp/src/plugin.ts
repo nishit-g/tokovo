@@ -197,6 +197,8 @@ export const whatsappRuntimeEntry = {
   },
 };
 
+export const tokovoRuntimeManifest = [whatsappRuntimeEntry] as const;
+
 export default WhatsAppPluginV2;
 
 export type { WhatsAppDslApi };

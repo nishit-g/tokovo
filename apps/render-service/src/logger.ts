@@ -9,15 +9,22 @@ import { createNdjsonFileSink } from "@tokovo/core/logger/node";
 export class RenderLogger {
   #logger: TokovoLogger;
   #log: ReturnType<typeof createScopedLogger>;
+  #sinkPath: string;
 
   constructor(filePath: string, baseData: Record<string, unknown> = {}) {
     const sinkPath = process.env.TOKOVO_LOG_PATH ?? filePath;
+    this.#sinkPath = sinkPath;
     this.#logger = createLogger(configureLoggerFromEnv(process.env));
     this.#logger.addSink(createNdjsonFileSink(sinkPath));
     this.#log = createScopedLogger("render-service", this.#logger).withContext(baseData);
   }
 
-  async init(): Promise<void> {}
+  async init(): Promise<void> {
+    this.#log.debug("Initialized render logger", {
+      event: "render.logger.init",
+      logPath: this.#sinkPath,
+    });
+  }
 
   async log(
     level: "info" | "warn" | "error",

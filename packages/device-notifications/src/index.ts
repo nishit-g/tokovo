@@ -69,4 +69,8 @@ export * from "./strategies/index.js";
 
 export { useNotificationAnimation } from "./hooks/useNotificationAnimation.js";
 
-export { registerNotificationPlugin, notificationRuntimeEntry } from "./plugin.js";
+export {
+  registerNotificationPlugin,
+  notificationRuntimeEntry,
+  tokovoRuntimeManifest,
+} from "./plugin.js";

@@ -21,6 +21,7 @@ export {
   DeviceCameraPlugin,
   registerCameraPlugin,
   cameraRuntimeEntry,
+  tokovoRuntimeManifest,
 } from "./plugin.js";
 
 export { CameraDirector } from "./director/director.js";

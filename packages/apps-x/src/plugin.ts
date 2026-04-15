@@ -110,4 +110,6 @@ export const xRuntimeEntry = {
   },
 };
 
+export const tokovoRuntimeManifest = [xRuntimeEntry] as const;
+
 export type { XDslApi };

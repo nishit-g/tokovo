@@ -2,6 +2,22 @@ import eslint from "@eslint/js";
 import nextPlugin from "@next/eslint-plugin-next";
 import tseslint from "typescript-eslint";
 
+const sharedGlobals = {
+  AbortController: "readonly",
+  Blob: "readonly",
+  Buffer: "readonly",
+  URL: "readonly",
+  console: "readonly",
+  fetch: "readonly",
+  globalThis: "readonly",
+  performance: "readonly",
+  process: "readonly",
+  setInterval: "readonly",
+  setTimeout: "readonly",
+  structuredClone: "readonly",
+  window: "readonly",
+};
+
 export default tseslint.config(
   eslint.configs.recommended,
   ...tseslint.configs.strict,
@@ -14,7 +30,15 @@ export default tseslint.config(
       "**/out/**",
       "**/coverage/**",
       "**/docs/**",
+      "**/src/**/*.js",
+      "**/src/**/*.jsx",
     ],
+  },
+  {
+    files: ["**/*.{js,mjs,cjs,ts,tsx}"],
+    languageOptions: {
+      globals: sharedGlobals,
+    },
   },
   {
     files: ["**/*.ts", "**/*.tsx"],
@@ -100,6 +124,17 @@ export default tseslint.config(
           ],
         },
       ],
+    },
+  },
+  {
+    files: [
+      "packages/core/src/logger/index.ts",
+      "apps/render-service/src/cli.ts",
+      "apps/video-runner/scripts/**/*.{ts,tsx,js,mjs,cjs}",
+      "apps/video-runner/src/**/*.cli.ts",
+    ],
+    rules: {
+      "no-console": "off",
     },
   },
   {

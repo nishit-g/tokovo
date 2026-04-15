@@ -1,6 +1,7 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { closeBrowser } from "./remotion";
+import { createRenderServiceError, formatRenderServiceError, getRenderServiceErrorData, toRenderServiceError, } from "./errors";
 import { runRenderDoctor } from "./preflight";
 import { findLatestRenderArtifact, renderEpisodeArtifact } from "./render";
 import { createPresignedArtifactUrls } from "./storage";
@@ -62,11 +63,26 @@ async function runArtifactUrls() {
     const expiresInRaw = argValue("--expires-in") ?? process.env.EXPIRES_IN ?? "3600";
     const expiresInSeconds = Number(expiresInRaw);
     if (!Number.isFinite(expiresInSeconds) || expiresInSeconds < 1) {
-        throw new Error(`Invalid expires-in value "${expiresInRaw}"`);
+        throw createRenderServiceError({
+            code: "CLI_INVALID_ARGUMENT",
+            stage: "cli",
+            message: `Invalid expires-in value "${expiresInRaw}"`,
+            details: {
+                flag: "--expires-in",
+                value: expiresInRaw,
+            },
+        });
     }
     const artifact = await findLatestRenderArtifact(episodeId);
     if (!artifact) {
-        throw new Error(`No render artifact found for episode "${episodeId}"`);
+        throw createRenderServiceError({
+            code: "ARTIFACT_NOT_FOUND",
+            stage: "artifacts",
+            message: `No render artifact found for episode "${episodeId}"`,
+            details: {
+                episodeId,
+            },
+        });
     }
     const presignedUrls = artifact.artifact.storageProvider === "r2"
         ? await createPresignedArtifactUrls(artifact.artifact, Math.floor(expiresInSeconds))
@@ -117,13 +133,28 @@ async function main() {
             await runArtifactUrls();
             return;
         }
-        throw new Error(`Unknown render-service command "${command}"`);
+        throw createRenderServiceError({
+            code: "CLI_UNKNOWN_COMMAND",
+            stage: "cli",
+            message: `Unknown render-service command "${command}"`,
+            details: {
+                command,
+            },
+        });
     }
     finally {
         await closeBrowser();
     }
 }
 main().catch((error) => {
-    console.error("[render-service]", error);
+    const renderError = toRenderServiceError(error, {
+        code: "RENDER_JOB_FAILED",
+        stage: "cli",
+        message: "Render-service command failed",
+    });
+    console.error("[render-service]", formatRenderServiceError(renderError), {
+        ...getRenderServiceErrorData(renderError),
+        cause: renderError.cause?.message,
+    });
     process.exit(1);
 });

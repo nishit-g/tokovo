@@ -1,5 +1,4 @@
 import fs from "node:fs/promises";
-import path from "node:path";
 
 import {
   createRenderArtifactPaths,
@@ -12,6 +11,11 @@ import {
   uploadRenderArtifactsToR2,
 } from "./storage";
 import { releaseCompositionId } from "./constants";
+import {
+  createRenderServiceError,
+  getRenderServiceErrorData,
+  toRenderServiceError,
+} from "./errors";
 import { RenderLogger } from "./logger";
 import { assertRenderPreflight } from "./preflight";
 import { getRenderProfile, type RenderProfileId } from "./profiles";
@@ -90,106 +94,138 @@ export async function renderEpisodeArtifact(
     profile: profile.id,
   });
 
-  const preflightStart = Date.now();
-  await assertRenderPreflight();
-  const preflightMs = Date.now() - preflightStart;
-  await logger.info("preflight.ok", "Render preflight passed", {
-    durationMs: preflightMs,
-  });
-
-  const renderOutput = await renderEpisodeMedia({
-    episodeId: options.episodeId,
-    profile,
-    outputLocation: paths.videoPath,
-    posterLocation: paths.posterPath,
-    logger,
-  });
-
-  const sizeBytes = await statSize(paths.videoPath);
-  const uploadTargets = createR2ArtifactUploadTargets(paths.storagePrefix);
-  const artifactRecord = createArtifactRecord({
-    paths,
-    sizeBytes,
-    uploadTargets,
-  });
-
-  const metadata: RenderArtifactMetadata = {
-    episodeId: options.episodeId,
-    jobId: options.jobId,
-    profile: profile.id,
-    compositionId: releaseCompositionId,
-    fps: renderOutput.composition.fps,
-    width: renderOutput.composition.width,
-    height: renderOutput.composition.height,
-    durationInFrames: renderOutput.composition.durationInFrames,
-    sourceSignature: renderOutput.sourceSignature,
-    artifact: artifactRecord,
-    timingMs: {
-      preflight: preflightMs,
-      bundle: renderOutput.timingMs.bundle,
-      selectComposition: renderOutput.timingMs.selectComposition,
-      renderMedia: renderOutput.timingMs.renderMedia,
-      renderStill: renderOutput.timingMs.renderStill,
-      total: Date.now() - startedAt,
-    },
-    machine: {
-      node: process.versions.node,
-      platform: process.platform,
-      arch: process.arch,
-    },
-    createdAt: new Date().toISOString(),
-  };
-
-  await writeRenderMetadata(paths.metadataPath, metadata);
-
-  if (uploadTargets) {
-    await logger.info(
-      "storage.upload.start",
-      "Uploading render artifacts to R2",
-      {
-        bucket: uploadTargets.bucket,
-        keyPrefix: uploadTargets.keyPrefix,
-      },
-    );
-    await uploadRenderArtifactsToR2({
-      videoFilePath: paths.videoPath,
-      posterFilePath: paths.posterPath,
-      metadataFilePath: paths.metadataPath,
-      logsFilePath: paths.logsPath,
-      targets: uploadTargets,
+  try {
+    const preflightStart = Date.now();
+    await assertRenderPreflight();
+    const preflightMs = Date.now() - preflightStart;
+    await logger.info("preflight.ok", "Render preflight passed", {
+      durationMs: preflightMs,
     });
-    await logger.info(
-      "storage.upload.done",
-      "Uploaded render artifacts to R2",
-      {
-        bucket: uploadTargets.bucket,
-        keyPrefix: uploadTargets.keyPrefix,
-        videoUrl: uploadTargets.video.publicUrl,
-        posterUrl: uploadTargets.poster.publicUrl,
-        metadataUrl: uploadTargets.metadata.publicUrl,
+
+    const renderOutput = await renderEpisodeMedia({
+      episodeId: options.episodeId,
+      profile,
+      outputLocation: paths.videoPath,
+      posterLocation: paths.posterPath,
+      logger,
+    });
+
+    const sizeBytes = await statSize(paths.videoPath);
+    const uploadTargets = createR2ArtifactUploadTargets(paths.storagePrefix);
+    const artifactRecord = createArtifactRecord({
+      paths,
+      sizeBytes,
+      uploadTargets,
+    });
+
+    const metadata: RenderArtifactMetadata = {
+      episodeId: options.episodeId,
+      jobId: options.jobId,
+      profile: profile.id,
+      compositionId: releaseCompositionId,
+      fps: renderOutput.composition.fps,
+      width: renderOutput.composition.width,
+      height: renderOutput.composition.height,
+      durationInFrames: renderOutput.composition.durationInFrames,
+      sourceSignature: renderOutput.sourceSignature,
+      artifact: artifactRecord,
+      timingMs: {
+        preflight: preflightMs,
+        bundle: renderOutput.timingMs.bundle,
+        selectComposition: renderOutput.timingMs.selectComposition,
+        renderMedia: renderOutput.timingMs.renderMedia,
+        renderStill: renderOutput.timingMs.renderStill,
+        total: Date.now() - startedAt,
       },
-    );
+      machine: {
+        node: process.versions.node,
+        platform: process.platform,
+        arch: process.arch,
+      },
+      createdAt: new Date().toISOString(),
+    };
+
+    await writeRenderMetadata(paths.metadataPath, metadata).catch((error) => {
+      throw createRenderServiceError({
+        code: "ARTIFACT_WRITE_FAILED",
+        stage: "artifacts",
+        message: "Writing render metadata failed",
+        details: {
+          metadataPath: paths.metadataPath,
+        },
+        cause: error instanceof Error ? error : undefined,
+      });
+    });
+
+    if (uploadTargets) {
+      await logger.info(
+        "storage.upload.start",
+        "Uploading render artifacts to R2",
+        {
+          bucket: uploadTargets.bucket,
+          keyPrefix: uploadTargets.keyPrefix,
+        },
+      );
+      await uploadRenderArtifactsToR2({
+        videoFilePath: paths.videoPath,
+        posterFilePath: paths.posterPath,
+        metadataFilePath: paths.metadataPath,
+        logsFilePath: paths.logsPath,
+        targets: uploadTargets,
+      });
+      await logger.info(
+        "storage.upload.done",
+        "Uploaded render artifacts to R2",
+        {
+          bucket: uploadTargets.bucket,
+          keyPrefix: uploadTargets.keyPrefix,
+          videoUrl: uploadTargets.video.publicUrl,
+          posterUrl: uploadTargets.poster.publicUrl,
+          metadataUrl: uploadTargets.metadata.publicUrl,
+        },
+      );
+    }
+
+    await logger.info("render.done", "Render completed", {
+      videoPath: paths.videoPath,
+      posterPath: paths.posterPath,
+      metadataPath: paths.metadataPath,
+      artifactStorageProvider: metadata.artifact.storageProvider,
+      artifactVideoPath: metadata.artifact.videoPath,
+      artifactPosterPath: metadata.artifact.posterPath,
+      artifactMetadataPath: metadata.artifact.metadataPath,
+      sizeBytes: metadata.artifact.sizeBytes,
+      totalMs: metadata.timingMs.total,
+    });
+
+    return {
+      videoPath: paths.videoPath,
+      posterPath: paths.posterPath,
+      metadataPath: paths.metadataPath,
+      logsPath: paths.logsPath,
+      metadata,
+    };
+  } catch (error) {
+    const renderError = toRenderServiceError(error, {
+      code: "RENDER_JOB_FAILED",
+      stage: "render",
+      message: `Render job "${options.jobId}" failed`,
+      details: {
+        episodeId: options.episodeId,
+        jobId: options.jobId,
+        profile: profile.id,
+      },
+    });
+
+    await logger.error("render.failed", renderError.message, {
+      ...getRenderServiceErrorData(renderError),
+      episodeId: options.episodeId,
+      jobId: options.jobId,
+      profile: profile.id,
+    });
+
+    throw renderError;
   }
-
-  await logger.info("render.done", "Render completed", {
-    videoPath: paths.videoPath,
-    posterPath: paths.posterPath,
-    metadataPath: paths.metadataPath,
-    artifactStorageProvider: metadata.artifact.storageProvider,
-    artifactVideoPath: metadata.artifact.videoPath,
-    artifactPosterPath: metadata.artifact.posterPath,
-    artifactMetadataPath: metadata.artifact.metadataPath,
-    sizeBytes: metadata.artifact.sizeBytes,
-    totalMs: metadata.timingMs.total,
-  });
-
-  return {
-    videoPath: paths.videoPath,
-    posterPath: paths.posterPath,
-    metadataPath: paths.metadataPath,
-    logsPath: paths.logsPath,
-    metadata,
-  };
 }
 
 export { findLatestRenderArtifact };

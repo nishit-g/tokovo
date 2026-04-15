@@ -81,7 +81,7 @@ const RemotionRootInner: React.FC = () => {
           height={1920}
           defaultProps={{ episodeId: fallbackEpisodeId }}
           calculateMetadata={calculateEpisodeMetadata}
-          schema={episodeRendererSchema as any}
+          schema={episodeRendererSchema}
         />
       </Folder>
       {INCLUDE_EPISODE_CATALOG && appShowcases.length > 0 && (
@@ -169,7 +169,7 @@ function renderEpisode(ep: EpisodeDefinition) {
       height={format.height}
       defaultProps={{ episodeId: ep.meta.id }}
       calculateMetadata={calculateEpisodeMetadata}
-      schema={episodeRendererSchema as any}
+      schema={episodeRendererSchema}
     />
   );
 }

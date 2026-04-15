@@ -4,6 +4,7 @@ import path from 'node:path'
 import { GetObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3'
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
 
+import { createRenderServiceError } from './errors'
 import { getR2Config, type R2Config } from './env'
 
 export type R2ArtifactTarget = {
@@ -209,27 +210,45 @@ export async function uploadRenderArtifactsToR2(input: {
 }): Promise<void> {
   const config = getR2Config()
   if (!config) {
-    throw new Error('R2 upload requested without a valid R2 configuration')
+    throw createRenderServiceError({
+      code: 'STORAGE_CONFIG_INVALID',
+      stage: 'storage',
+      message: 'R2 upload requested without a valid R2 configuration',
+    })
   }
 
-  await uploadFile(config, {
-    filePath: input.videoFilePath,
-    objectKey: input.targets.video.objectKey,
-    contentType: 'video/mp4',
-  })
-  await uploadFile(config, {
-    filePath: input.posterFilePath,
-    objectKey: input.targets.poster.objectKey,
-    contentType: 'image/png',
-  })
-  await uploadFile(config, {
-    filePath: input.logsFilePath,
-    objectKey: input.targets.logs.objectKey,
-    contentType: 'application/x-ndjson',
-  })
-  await uploadFile(config, {
-    filePath: input.metadataFilePath,
-    objectKey: input.targets.metadata.objectKey,
-    contentType: 'application/json',
-  })
+  try {
+    await uploadFile(config, {
+      filePath: input.videoFilePath,
+      objectKey: input.targets.video.objectKey,
+      contentType: 'video/mp4',
+    })
+    await uploadFile(config, {
+      filePath: input.posterFilePath,
+      objectKey: input.targets.poster.objectKey,
+      contentType: 'image/png',
+    })
+    await uploadFile(config, {
+      filePath: input.logsFilePath,
+      objectKey: input.targets.logs.objectKey,
+      contentType: 'application/x-ndjson',
+    })
+    await uploadFile(config, {
+      filePath: input.metadataFilePath,
+      objectKey: input.targets.metadata.objectKey,
+      contentType: 'application/json',
+    })
+  } catch (error) {
+    throw createRenderServiceError({
+      code: 'STORAGE_UPLOAD_FAILED',
+      stage: 'storage',
+      message: 'Failed to upload render artifacts to R2',
+      retryable: true,
+      details: {
+        bucket: input.targets.bucket,
+        keyPrefix: input.targets.keyPrefix,
+      },
+      cause: error instanceof Error ? error : undefined,
+    })
+  }
 }

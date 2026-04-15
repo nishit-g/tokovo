@@ -190,4 +190,6 @@ export const devicesRuntimeEntry = {
     },
 };
 
+export const tokovoRuntimeManifest = [devicesRuntimeEntry] as const;
+
 export default DevicesPlugin;

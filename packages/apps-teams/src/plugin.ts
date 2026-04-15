@@ -87,5 +87,7 @@ export const teamsRuntimeEntry = {
   },
 };
 
+export const tokovoRuntimeManifest = [teamsRuntimeEntry] as const;
+
 export default TeamsPluginV2;
 export type { TeamsDslApi };

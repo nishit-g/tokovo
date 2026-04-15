@@ -2,6 +2,11 @@
 
 Tokovo has one supported runtime bootstrap flow.
 
+Reference ADRs:
+
+- `docs/adr/0001-runtime-contract.md`
+- `docs/adr/0002-app-package-boundaries.md`
+
 ## Canonical Path
 
 1. Resolve the catalog profile: `release` or `studio`

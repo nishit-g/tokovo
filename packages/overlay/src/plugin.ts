@@ -23,3 +23,5 @@ export const overlayRuntimeEntry = {
     registerOverlayPlugin(input.tokovoRegistries.engine);
   },
 };
+
+export const tokovoRuntimeManifest = [overlayRuntimeEntry] as const;

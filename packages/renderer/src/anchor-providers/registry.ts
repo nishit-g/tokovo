@@ -34,6 +34,8 @@ export const rendererOsAnchorsRuntimeEntry = {
     },
 };
 
+export const tokovoRuntimeManifest = [rendererOsAnchorsRuntimeEntry] as const;
+
 // =============================================================================
 // ANCHOR EXTRACTION
 // =============================================================================

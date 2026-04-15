@@ -77,5 +77,7 @@ export const linkedInRuntimeEntry = {
   },
 };
 
+export const tokovoRuntimeManifest = [linkedInRuntimeEntry] as const;
+
 export default LinkedInPlugin;
 export type { LinkedInDslApi };

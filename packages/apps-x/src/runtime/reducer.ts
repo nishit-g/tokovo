@@ -451,7 +451,7 @@ export const xReducer: PluginReducer<"app_x"> = (
           thread.messageIds.push(payload.id);
         }
         thread.lastMessageAt =
-          thread.lastMessageAt == null
+          thread.lastMessageAt === null || thread.lastMessageAt === undefined
             ? payload.createdAt
             : Math.max(thread.lastMessageAt, payload.createdAt);
         if (thread.typingUserId === payload.senderId) {

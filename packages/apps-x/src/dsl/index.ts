@@ -67,14 +67,6 @@ type ThreadInput = {
   pinned?: boolean;
 };
 
-type MessageInput = {
-  id?: string;
-  threadId: string;
-  senderId: string;
-  text: string;
-  createdAt?: number;
-};
-
 class XPointBuilder {
   constructor(
     private _frame: number,

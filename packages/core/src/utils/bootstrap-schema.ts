@@ -46,7 +46,7 @@ export function expectOptionalString(
   path: string,
   errors: string[],
 ): string | undefined {
-  if (value == null) {
+  if (value === null || value === undefined) {
     return undefined;
   }
 
@@ -63,7 +63,7 @@ export function expectOptionalNumber(
   path: string,
   errors: string[],
 ): number | undefined {
-  if (value == null) {
+  if (value === null || value === undefined) {
     return undefined;
   }
 
@@ -80,7 +80,7 @@ export function expectOptionalBoolean(
   path: string,
   errors: string[],
 ): boolean | undefined {
-  if (value == null) {
+  if (value === null || value === undefined) {
     return undefined;
   }
 

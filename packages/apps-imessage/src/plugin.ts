@@ -133,5 +133,7 @@ export const iMessageRuntimeEntry = {
   },
 };
 
+export const tokovoRuntimeManifest = [iMessageRuntimeEntry] as const;
+
 export default IMessagePlugin;
 export type { IMessageDslApi };

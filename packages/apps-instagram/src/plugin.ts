@@ -78,5 +78,7 @@ export const instagramRuntimeEntry = {
   },
 };
 
+export const tokovoRuntimeManifest = [instagramRuntimeEntry] as const;
+
 export default InstagramPlugin;
 export type { InstagramDslApi };

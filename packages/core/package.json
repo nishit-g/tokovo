@@ -23,7 +23,7 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
-    "lint": "eslint . --ext .ts,.tsx"
+    "lint": "eslint src --ext .ts,.tsx"
   },
   "dependencies": {
     "@tokovo/ir": "workspace:*",

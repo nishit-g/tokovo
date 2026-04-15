@@ -1,4 +1,8 @@
-export { registerOverlayPlugin, overlayRuntimeEntry } from "./plugin.js";
+export {
+  registerOverlayPlugin,
+  overlayRuntimeEntry,
+  tokovoRuntimeManifest,
+} from "./plugin.js";
 export {
   OVERLAY_STATE_KEY,
   createInitialOverlayState,

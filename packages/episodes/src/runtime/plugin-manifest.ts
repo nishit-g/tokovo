@@ -2,20 +2,20 @@ import type { ScopedLogger } from "@tokovo/core";
 import type { PluginManagerClass, TokovoRegistries } from "@tokovo/react";
 import type { DeviceRegistries } from "@tokovo/devices";
 
-import { rendererOsAnchorsRuntimeEntry } from "@tokovo/renderer";
-import { whatsappRuntimeEntry } from "@tokovo/apps-whatsapp/plugin";
-import { xRuntimeEntry } from "@tokovo/apps-x/plugin";
-import { iMessageRuntimeEntry } from "@tokovo/apps-imessage/plugin";
-import { linkedInRuntimeEntry } from "@tokovo/apps-linkedin/plugin";
-import { instagramRuntimeEntry } from "@tokovo/apps-instagram/plugin";
-import { typewriterRuntimeEntry } from "@tokovo/apps-typewriter/plugin";
-import { snapchatRuntimeEntry } from "@tokovo/apps-snapchat/plugin";
-import { teamsRuntimeEntry } from "@tokovo/apps-teams/plugin";
-import { devicesRuntimeEntry } from "@tokovo/devices";
-import { notificationRuntimeEntry } from "@tokovo/device-notifications";
-import { cameraRuntimeEntry } from "@tokovo/device-camera";
-import { keyboardRuntimeEntry } from "@tokovo/device-keyboard";
-import { overlayRuntimeEntry } from "@tokovo/overlay";
+import { tokovoRuntimeManifest as rendererRuntimeManifest } from "@tokovo/renderer";
+import { tokovoRuntimeManifest as whatsappRuntimeManifest } from "@tokovo/apps-whatsapp/plugin";
+import { tokovoRuntimeManifest as xRuntimeManifest } from "@tokovo/apps-x/plugin";
+import { tokovoRuntimeManifest as iMessageRuntimeManifest } from "@tokovo/apps-imessage/plugin";
+import { tokovoRuntimeManifest as linkedInRuntimeManifest } from "@tokovo/apps-linkedin/plugin";
+import { tokovoRuntimeManifest as instagramRuntimeManifest } from "@tokovo/apps-instagram/plugin";
+import { tokovoRuntimeManifest as typewriterRuntimeManifest } from "@tokovo/apps-typewriter/plugin";
+import { tokovoRuntimeManifest as snapchatRuntimeManifest } from "@tokovo/apps-snapchat/plugin";
+import { tokovoRuntimeManifest as teamsRuntimeManifest } from "@tokovo/apps-teams/plugin";
+import { tokovoRuntimeManifest as devicesRuntimeManifest } from "@tokovo/devices";
+import { tokovoRuntimeManifest as notificationRuntimeManifest } from "@tokovo/device-notifications";
+import { tokovoRuntimeManifest as cameraRuntimeManifest } from "@tokovo/device-camera";
+import { tokovoRuntimeManifest as keyboardRuntimeManifest } from "@tokovo/device-keyboard";
+import { tokovoRuntimeManifest as overlayRuntimeManifest } from "@tokovo/overlay";
 
 export type TokovoRuntimeRegistrationInput = {
   tokovoRegistries: TokovoRegistries;
@@ -47,20 +47,20 @@ function withLoggedRegistration(
 }
 
 export const TOKOVO_RUNTIME_PLUGIN_MANIFEST: readonly TokovoRuntimePluginDescriptor[] = [
-  withLoggedRegistration(devicesRuntimeEntry),
-  withLoggedRegistration(whatsappRuntimeEntry),
-  withLoggedRegistration(xRuntimeEntry),
-  withLoggedRegistration(iMessageRuntimeEntry),
-  withLoggedRegistration(linkedInRuntimeEntry),
-  withLoggedRegistration(instagramRuntimeEntry),
-  withLoggedRegistration(typewriterRuntimeEntry),
-  withLoggedRegistration(snapchatRuntimeEntry),
-  withLoggedRegistration(teamsRuntimeEntry),
-  withLoggedRegistration(notificationRuntimeEntry),
-  withLoggedRegistration(cameraRuntimeEntry),
-  withLoggedRegistration(keyboardRuntimeEntry),
-  withLoggedRegistration(overlayRuntimeEntry),
-  withLoggedRegistration(rendererOsAnchorsRuntimeEntry),
+  ...devicesRuntimeManifest.map(withLoggedRegistration),
+  ...whatsappRuntimeManifest.map(withLoggedRegistration),
+  ...xRuntimeManifest.map(withLoggedRegistration),
+  ...iMessageRuntimeManifest.map(withLoggedRegistration),
+  ...linkedInRuntimeManifest.map(withLoggedRegistration),
+  ...instagramRuntimeManifest.map(withLoggedRegistration),
+  ...typewriterRuntimeManifest.map(withLoggedRegistration),
+  ...snapchatRuntimeManifest.map(withLoggedRegistration),
+  ...teamsRuntimeManifest.map(withLoggedRegistration),
+  ...notificationRuntimeManifest.map(withLoggedRegistration),
+  ...cameraRuntimeManifest.map(withLoggedRegistration),
+  ...keyboardRuntimeManifest.map(withLoggedRegistration),
+  ...overlayRuntimeManifest.map(withLoggedRegistration),
+  ...rendererRuntimeManifest.map(withLoggedRegistration),
 ];
 
 export function registerTokovoRuntimeManifest(

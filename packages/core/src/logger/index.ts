@@ -1,4 +1,5 @@
 export type LogLevel = "debug" | "info" | "warn" | "error";
+export type LogProfile = "quiet" | "operator" | "full";
 
 export type LogComponent =
   | "engine"
@@ -128,6 +129,7 @@ const hasNodeConsoleColors =
   process.env?.CI !== "true";
 
 type LoggerGlobals = {
+  __TOKOVO_LOG_PROFILE?: LogProfile;
   __TOKOVO_LOG_LEVEL?: LogLevel;
   __TOKOVO_LOG_COMPONENTS?: string | string[];
   __TOKOVO_LOG_CONSOLE?: boolean;
@@ -146,6 +148,30 @@ const DEFAULT_CONFIG: LoggerConfig = {
   useColors: hasNodeConsoleColors,
   includeTimestamps: true,
   clock: () => Date.now(),
+};
+
+const LOG_PROFILE_DEFAULTS: Record<LogProfile, Partial<LoggerConfig>> = {
+  quiet: {
+    minLevel: isProduction ? "warn" : "info",
+    consoleOutput: !isProduction,
+    includeStackTraces: false,
+    useColors: hasNodeConsoleColors,
+    includeTimestamps: true,
+  },
+  operator: {
+    minLevel: "info",
+    consoleOutput: true,
+    includeStackTraces: false,
+    useColors: hasNodeConsoleColors,
+    includeTimestamps: true,
+  },
+  full: {
+    minLevel: "debug",
+    consoleOutput: true,
+    includeStackTraces: true,
+    useColors: hasNodeConsoleColors,
+    includeTimestamps: true,
+  },
 };
 
 function parseBoolean(value: string | undefined, fallback: boolean): boolean {
@@ -175,6 +201,19 @@ function parseLevel(value: string | undefined, fallback: LogLevel): LogLevel {
     return normalized;
   }
   return fallback;
+}
+
+export function resolveLogProfile(value: string | undefined): LogProfile | undefined {
+  const normalized = value?.toLowerCase();
+  if (normalized === "quiet" || normalized === "operator" || normalized === "full") {
+    return normalized;
+  }
+
+  return undefined;
+}
+
+export function getLogProfileDefaults(profile: LogProfile): Partial<LoggerConfig> {
+  return LOG_PROFILE_DEFAULTS[profile];
 }
 
 function parseStringArray(value: string | string[] | undefined): string[] | undefined {
@@ -388,28 +427,38 @@ export function createConsoleLogSink(
 export function configureLoggerFromEnv(
   env: Record<string, string | undefined> = typeof process !== "undefined" ? process.env : {},
 ): Partial<LoggerConfig> {
+  const profile = resolveLogProfile(env.TOKOVO_LOG_PROFILE ?? loggerGlobals.__TOKOVO_LOG_PROFILE);
+  const profileDefaults = profile ? getLogProfileDefaults(profile) : {};
+
   return {
     minLevel: parseLevel(
       env.TOKOVO_LOG_LEVEL,
-      loggerGlobals.__TOKOVO_LOG_LEVEL ?? DEFAULT_CONFIG.minLevel,
+      loggerGlobals.__TOKOVO_LOG_LEVEL ?? profileDefaults.minLevel ?? DEFAULT_CONFIG.minLevel,
     ),
     components: resolveComponents(env.TOKOVO_LOG_COMPONENTS, loggerGlobals.__TOKOVO_LOG_COMPONENTS),
     consoleOutput: parseBoolean(
       env.TOKOVO_LOG_CONSOLE,
-      parseGlobalBoolean(loggerGlobals.__TOKOVO_LOG_CONSOLE) ?? DEFAULT_CONFIG.consoleOutput,
+      parseGlobalBoolean(loggerGlobals.__TOKOVO_LOG_CONSOLE) ??
+        profileDefaults.consoleOutput ??
+        DEFAULT_CONFIG.consoleOutput,
     ),
     includeStackTraces: parseBoolean(
       env.TOKOVO_LOG_INCLUDE_STACKS,
       parseGlobalBoolean(loggerGlobals.__TOKOVO_LOG_INCLUDE_STACKS) ??
+        profileDefaults.includeStackTraces ??
         DEFAULT_CONFIG.includeStackTraces,
     ),
     useColors: parseBoolean(
       env.TOKOVO_LOG_COLORS,
-      parseGlobalBoolean(loggerGlobals.__TOKOVO_LOG_COLORS) ?? DEFAULT_CONFIG.useColors,
+      parseGlobalBoolean(loggerGlobals.__TOKOVO_LOG_COLORS) ??
+        profileDefaults.useColors ??
+        DEFAULT_CONFIG.useColors,
     ),
     includeTimestamps: parseBoolean(
       env.TOKOVO_LOG_TIMESTAMPS,
-      parseGlobalBoolean(loggerGlobals.__TOKOVO_LOG_TIMESTAMPS) ?? DEFAULT_CONFIG.includeTimestamps,
+      parseGlobalBoolean(loggerGlobals.__TOKOVO_LOG_TIMESTAMPS) ??
+        profileDefaults.includeTimestamps ??
+        DEFAULT_CONFIG.includeTimestamps,
     ),
   };
 }

@@ -134,7 +134,7 @@ function validateWhatsAppSnapshot(
       errors,
     );
 
-    if (conversation.messages != null) {
+    if (conversation.messages !== null && conversation.messages !== undefined) {
       const messages = expectArray(
         conversation.messages,
         `snapshot.conversations[${index}].messages`,

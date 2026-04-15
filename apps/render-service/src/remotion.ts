@@ -22,6 +22,7 @@ import {
 } from "./constants";
 import { createBundleSourceSignature } from "./bundle-manifest";
 import { getBrowserExecutable, getPublicAssetBaseUrl } from "./env";
+import { createRenderServiceError } from "./errors";
 import { type RenderLogger } from "./logger";
 import { type RenderProfile } from "./profiles";
 import { createPresignedAssetUrlMap } from "./storage";
@@ -30,10 +31,6 @@ let serveUrlPromise: Promise<string> | null = null;
 let serveUrlSignature = "";
 let browserPromise: Promise<Awaited<ReturnType<typeof openBrowser>>> | null =
   null;
-
-function resolveRenderCatalogProfile(): string {
-  return process.env.TOKOVO_EPISODE_CATALOG_PROFILE ?? "release";
-}
 
 function getEpisodeAssetSources(episodeId: string): string[] {
   return getEpisodeAssetRefs(episodeId).map(
@@ -45,10 +42,22 @@ async function getPreparedRenderData(input: {
   episodeId: string;
   assetUrlMap: Record<string, string>;
 }): Promise<Record<string, unknown>> {
-  return (await getEpisodeRenderData(
-    input.episodeId,
-    input.assetUrlMap,
-  )) as unknown as Record<string, unknown>;
+  try {
+    return (await getEpisodeRenderData(
+      input.episodeId,
+      input.assetUrlMap,
+    )) as unknown as Record<string, unknown>;
+  } catch (error) {
+    throw createRenderServiceError({
+      code: "RENDER_DATA_FAILED",
+      stage: "bootstrap",
+      message: `Failed to prepare render data for episode "${input.episodeId}"`,
+      details: {
+        episodeId: input.episodeId,
+      },
+      cause: error instanceof Error ? error : undefined,
+    });
+  }
 }
 
 export async function getServeUrl(
@@ -87,6 +96,20 @@ export async function getServeUrl(
     outDir: bundleDir,
     rootDir: videoRunnerRoot,
     enableCaching: true,
+  }).catch((error) => {
+    serveUrlPromise = null;
+    serveUrlSignature = "";
+    throw createRenderServiceError({
+      code: "BUNDLE_FAILED",
+      stage: "bundle",
+      message: "Bundling the Remotion entrypoint failed",
+      retryable: true,
+      details: {
+        bundleDir,
+        sourceSignature,
+      },
+      cause: error instanceof Error ? error : undefined,
+    });
   });
   const serveUrl = await serveUrlPromise;
   await logger?.info("bundle.done", "Bundled Remotion entrypoint", {
@@ -109,6 +132,18 @@ export async function getBrowser(logger?: RenderLogger) {
         enableMultiProcessOnLinux: false,
       },
       logLevel: "error",
+    }).catch((error) => {
+      browserPromise = null;
+      throw createRenderServiceError({
+        code: "BROWSER_LAUNCH_FAILED",
+        stage: "browser",
+        message: "Launching the render browser failed",
+        retryable: true,
+        details: {
+          browserExecutable: getBrowserExecutable() ?? "auto",
+        },
+        cause: error instanceof Error ? error : undefined,
+      });
     });
   }
 
@@ -182,6 +217,19 @@ export async function renderEpisodeMedia(input: {
     timeoutInMilliseconds: input.profile.timeoutInMilliseconds,
     envVariables: renderEnvVariables,
     logLevel: "error",
+  }).catch((error) => {
+    throw createRenderServiceError({
+      code: "COMPOSITION_SELECT_FAILED",
+      stage: "composition",
+      message: `Selecting composition "${releaseCompositionId}" failed`,
+      retryable: true,
+      details: {
+        episodeId: input.episodeId,
+        compositionId: releaseCompositionId,
+        sourceSignature,
+      },
+      cause: error instanceof Error ? error : undefined,
+    });
   });
   const selectCompositionMs = Date.now() - selectStartedAt;
   await input.logger.info("composition.select.done", "Selected composition", {
@@ -225,6 +273,19 @@ export async function renderEpisodeMedia(input: {
     envVariables: renderEnvVariables,
     overwrite: true,
     logLevel: "error",
+  }).catch((error) => {
+    throw createRenderServiceError({
+      code: "MEDIA_RENDER_FAILED",
+      stage: "render-media",
+      message: "Rendering the video artifact failed",
+      retryable: true,
+      details: {
+        episodeId: input.episodeId,
+        outputLocation: input.outputLocation,
+        sourceSignature,
+      },
+      cause: error instanceof Error ? error : undefined,
+    });
   });
   const renderMediaMs = Date.now() - renderStartedAt;
   await input.logger.info("render.media.done", "Rendered video artifact", {
@@ -252,6 +313,19 @@ export async function renderEpisodeMedia(input: {
     envVariables: renderEnvVariables,
     overwrite: true,
     logLevel: "error",
+  }).catch((error) => {
+    throw createRenderServiceError({
+      code: "POSTER_RENDER_FAILED",
+      stage: "render-poster",
+      message: "Rendering the poster frame failed",
+      retryable: true,
+      details: {
+        episodeId: input.episodeId,
+        outputLocation: input.posterLocation,
+        sourceSignature,
+      },
+      cause: error instanceof Error ? error : undefined,
+    });
   });
   const renderStillMs = Date.now() - stillStartedAt;
   await input.logger.info("render.poster.done", "Rendered poster frame", {

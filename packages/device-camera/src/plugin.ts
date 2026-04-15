@@ -58,3 +58,5 @@ export const cameraRuntimeEntry = {
     registerCameraPlugin(input.pluginManager, input.tokovoRegistries.engine);
   },
 };
+
+export const tokovoRuntimeManifest = [cameraRuntimeEntry] as const;

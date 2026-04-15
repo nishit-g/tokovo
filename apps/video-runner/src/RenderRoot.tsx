@@ -26,7 +26,7 @@ export const RenderRemotionRoot: React.FC = () => {
           height={1920}
           defaultProps={{ episodeId: "mega-x" }}
           calculateMetadata={calculateEpisodeMetadata}
-          schema={episodeRendererSchema as any}
+          schema={episodeRendererSchema}
         />
       </Folder>
     </RenderRuntimeProvider>

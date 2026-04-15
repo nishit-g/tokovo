@@ -112,8 +112,8 @@ export function getThreadMessages(world: WorldState, threadId: string | null): X
   const byId = new Map((state.dmMessages ?? []).map((m) => [m.id, m]));
   return thread.messageIds
     .map((id) => byId.get(id))
-    .filter(Boolean)
-    .sort((a, b) => a!.createdAt - b!.createdAt) as XDMMessage[];
+    .filter((message): message is XDMMessage => Boolean(message))
+    .sort((left, right) => left.createdAt - right.createdAt);
 }
 
 export function getThreadDraft(world: WorldState, threadId: string | null): string {

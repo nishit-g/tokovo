@@ -126,5 +126,7 @@ export const snapchatRuntimeEntry = {
     },
 };
 
+export const tokovoRuntimeManifest = [snapchatRuntimeEntry] as const;
+
 export default SnapchatPlugin;
 export type { SnapchatDslApi };

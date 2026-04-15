@@ -80,5 +80,6 @@ export {
   registerBuiltInAnchorProviders,
   registerOSAnchorProviders,
   rendererOsAnchorsRuntimeEntry,
+  tokovoRuntimeManifest,
   getAllAnchors,
 } from "./anchor-providers/index.js";

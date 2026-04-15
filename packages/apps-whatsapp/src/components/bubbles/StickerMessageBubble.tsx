@@ -22,10 +22,6 @@ export const StickerMessageBubble = memo(function StickerMessageBubble({
   isMe,
   timestamp = "10:42",
   read = false,
-  messageAt,
-  deliveredAt,
-  readAt,
-  status,
   deliveryStage,
 }: StickerMessageBubbleProps) {
   const theme = useTheme();

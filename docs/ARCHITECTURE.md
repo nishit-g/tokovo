@@ -4,6 +4,12 @@ Tokovo is a deterministic, code-first system for rendering scripted device exper
 The architecture is intentionally split so authoring, compilation, runtime replay, app plugins,
 device chrome, and rendering each have a narrow job.
 
+Frozen architectural decisions live in:
+
+- `docs/adr/0001-runtime-contract.md`
+- `docs/adr/0002-app-package-boundaries.md`
+- `docs/adr/0003-logging-and-operations.md`
+
 ## Stack Overview
 
 ```text
@@ -176,6 +182,14 @@ The repo-level solution build is `tsconfig.solution.json`, and the canonical gra
 - `pnpm typecheck:solution`
 
 That means Turbo is no longer the only place that knows the dependency graph. TypeScript itself now has an explicit solution build.
+
+## Release Gate
+
+Tokovo now has one canonical release command:
+
+- `pnpm verify:release`
+
+For the exact gate composition, see `docs/operations/release.md`.
 
 ## Device Realism Layer
 

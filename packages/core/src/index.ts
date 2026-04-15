@@ -137,6 +137,7 @@ export {
 } from "./logger/index.js";
 export type {
   LogLevel,
+  LogProfile,
   LogComponent,
   LogEntry,
   LogSink,
