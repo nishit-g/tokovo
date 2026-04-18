@@ -14,6 +14,7 @@
     "dev:web": "turbo run dev --filter=web",
     "dev:video": "turbo run dev --filter=video-runner",
     "dev:docs": "turbo run dev --filter=docs",
+    "dev:lab": "pnpm --filter live2d-lab dev",
     "dev:render": "turbo run dev --filter=@tokovo/render-service",
     "dev:render:trace": "TOKOVO_LOG_PROFILE=full TOKOVO_LOG_EVENTS=true TOKOVO_LOG_PERF=true TOKOVO_LOG_AUDIO=true turbo run dev --filter=@tokovo/render-service",
     "render:doctor": "pnpm --filter @tokovo/render-service run doctor",

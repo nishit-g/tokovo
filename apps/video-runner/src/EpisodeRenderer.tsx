@@ -40,6 +40,7 @@ import {
   RendererRegistryProvider,
   type CameraDebugFrame,
 } from "@tokovo/renderer";
+import { ReactorsLayer } from "@tokovo/reactors";
 import {
   SimpleVoiceLayer,
   VoiceLayer,
@@ -57,6 +58,10 @@ import {
 } from "./render-data";
 import { computeVoiceDuckMultiplierAtFrame } from "./voice-ducking";
 import { useEpisodeAssetPrefetch } from "./asset-prefetch";
+import {
+  assertReactionPlanReadyForRender,
+  getReactionPlanGovernanceStatus,
+} from "./reaction-governance";
 
 const CAMERA_DEBUG_ENABLED = process.env.TOKOVO_CAMERA_DEBUG === "1";
 const MAX_DEBUG_TRACE_FRAMES = 5000;
@@ -117,6 +122,10 @@ const EpisodeRendererInner: React.FC<EpisodeRendererProps> = ({
   const [showCameraPanel, setShowCameraPanel] = useState(cameraDebugEnabled);
   const [showAllAnchors, setShowAllAnchors] = useState(false);
   const [debugActionMessage, setDebugActionMessage] = useState<string>("");
+  const [showReactorChrome, setShowReactorChrome] = useState(true);
+  const [showReactorCaptions, setShowReactorCaptions] = useState(true);
+  const [showReactorTimeline, setShowReactorTimeline] = useState(true);
+  const [showLive2DPreviewRuntime, setShowLive2DPreviewRuntime] = useState(true);
   const traceRef = useRef<CameraTraceStore>(new Map());
   const [traceVersion, setTraceVersion] = useState(0);
 
@@ -198,6 +207,21 @@ const EpisodeRendererInner: React.FC<EpisodeRendererProps> = ({
     disabled: env.isRendering || !renderData,
   });
 
+  useEffect(() => {
+    if (!env.isRendering || !renderData?.reactionPlan) {
+      return;
+    }
+
+    try {
+      assertReactionPlanReadyForRender(renderData.reactionPlan);
+    } catch (error) {
+      const nextError =
+        error instanceof Error ? error : new Error(String(error));
+      setRenderDataError(nextError);
+      cancelRender(nextError);
+    }
+  }, [cancelRender, env.isRendering, renderData]);
+
   const handleCameraDebugFrame = useCallback((entry: CameraDebugFrame) => {
     setCameraDebugFrame(entry);
     const trace = traceRef.current;
@@ -218,6 +242,9 @@ const EpisodeRendererInner: React.FC<EpisodeRendererProps> = ({
   }, [traceVersion]);
 
   const timelineDurationInFrames = renderData?.durationInFrames ?? 1;
+  const reactionGovernance = renderData?.reactionPlan
+    ? getReactionPlanGovernanceStatus(renderData.reactionPlan)
+    : null;
 
   const exportTraceJson = useCallback(() => {
     if (!cameraDebugFrame) return;
@@ -484,6 +511,22 @@ const EpisodeRendererInner: React.FC<EpisodeRendererProps> = ({
             />
           </div>
         )}
+        {renderData.reactionPlan && (
+          <ReactorsLayer
+            reactionPlan={renderData.reactionPlan}
+            frame={frame}
+            durationInFrames={timelineDurationInFrames}
+            width={fmt.width}
+            height={fmt.height}
+            config={{
+              showChrome: showReactorChrome,
+              showCaptions: showReactorCaptions,
+              showDebugTimeline: !env.isRendering && showReactorTimeline,
+              enableLive2DPreviewRuntime:
+                !env.isRendering && showLive2DPreviewRuntime,
+            }}
+          />
+        )}
         <StoryOverlay
           world={world}
           t={frame}
@@ -638,6 +681,58 @@ const EpisodeRendererInner: React.FC<EpisodeRendererProps> = ({
           )}
         </>
       )}
+      {!env.isRendering && renderData.reactionPlan && (
+        <div style={reactorPreviewPanelStyle}>
+          <div style={reactorPreviewTitleStyle}>Reactors Preview</div>
+          <div style={reactorPreviewButtonRowStyle}>
+            <button
+              onClick={() => setShowReactorChrome((value) => !value)}
+              style={reactorPreviewButtonStyle}
+            >
+              Chrome: {showReactorChrome ? "on" : "off"}
+            </button>
+            <button
+              onClick={() => setShowReactorCaptions((value) => !value)}
+              style={reactorPreviewButtonStyle}
+            >
+              Captions: {showReactorCaptions ? "on" : "off"}
+            </button>
+            <button
+              onClick={() => setShowReactorTimeline((value) => !value)}
+              style={reactorPreviewButtonStyle}
+            >
+              Timeline: {showReactorTimeline ? "on" : "off"}
+            </button>
+            <button
+              onClick={() => setShowLive2DPreviewRuntime((value) => !value)}
+              style={reactorPreviewButtonStyle}
+            >
+              Live2D: {showLive2DPreviewRuntime ? "runtime" : "fallback"}
+            </button>
+          </div>
+          <div>segments: {renderData.reactionPlan.segments.length}</div>
+          <div>cast: {renderData.reactionPlan.cast.length}</div>
+          <div>reviewState: {reactionGovernance?.reviewState}</div>
+          <div>renderReady: {reactionGovernance?.canRender ? "yes" : "no"}</div>
+          <div>
+            activeSegment:{" "}
+            {renderData.reactionPlan.segments.find(
+              (segment) => frame >= segment.startFrame && frame < segment.endFrame,
+            )?.id ?? "-"}
+          </div>
+          <div>musicDuck: {musicDuckMultiplier.toFixed(2)}</div>
+          {renderData.reactionPlan.cast
+            .filter((member) => member.visualProfile.avatar?.kind === "live2d")
+            .map((member) => (
+              <div key={member.id}>
+                live2d[{member.id}]:{" "}
+                {member.visualProfile.avatar?.kind === "live2d"
+                  ? member.visualProfile.avatar.modelJsonSrc
+                  : "-"}
+              </div>
+            ))}
+        </div>
+      )}
     </AbsoluteFill>
   );
 };
@@ -758,6 +853,47 @@ const cameraTimelineWrapStyle: React.CSSProperties = {
 const cameraTimelineHeaderStyle: React.CSSProperties = {
   color: "#fff",
   marginBottom: 4,
+};
+
+const reactorPreviewPanelStyle: React.CSSProperties = {
+  position: "absolute",
+  top: 12,
+  right: 12,
+  zIndex: 11000,
+  border: "1px solid rgba(255,255,255,0.16)",
+  background: "rgba(0,0,0,0.78)",
+  color: "#e2e8f0",
+  borderRadius: 10,
+  padding: 12,
+  minWidth: 240,
+  fontFamily: "SF Mono, Menlo, Monaco, monospace",
+  fontSize: 12,
+  lineHeight: 1.45,
+  pointerEvents: "auto",
+};
+
+const reactorPreviewTitleStyle: React.CSSProperties = {
+  color: "#fff",
+  fontWeight: 700,
+  marginBottom: 8,
+};
+
+const reactorPreviewButtonRowStyle: React.CSSProperties = {
+  display: "flex",
+  gap: 6,
+  flexWrap: "wrap",
+  marginBottom: 8,
+};
+
+const reactorPreviewButtonStyle: React.CSSProperties = {
+  border: "1px solid rgba(255,255,255,0.18)",
+  background: "rgba(15,23,42,0.9)",
+  color: "#fff",
+  borderRadius: 6,
+  padding: "4px 8px",
+  fontFamily: "SF Mono, Menlo, Monaco, monospace",
+  fontSize: 11,
+  cursor: "pointer",
 };
 
 const cameraTimelineStyle: React.CSSProperties = {

@@ -1,0 +1,42 @@
+{
+  "name": "@tokovo/reactors",
+  "version": "0.0.0",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "typecheck": "tsc --noEmit",
+    "test": "pnpm exec vitest run"
+  },
+  "dependencies": {
+    "@pixi/core": "^6.5.10",
+    "@pixi/display": "^6.5.10",
+    "@pixi/loaders": "^6.5.10",
+    "@pixi/math": "^6.5.10",
+    "@pixi/sprite": "^6.5.10",
+    "@pixi/utils": "^6.5.10",
+    "@tokovo/reactions": "workspace:*",
+    "pixi-live2d-display": "^0.4.0",
+    "pixi.js": "^6.5.10",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "remotion": "4.0.409"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/react": "18.3.1",
+    "@types/react-dom": "18.3.1",
+    "typescript": "^5.0.0",
+    "vitest": "^1.0.0"
+  },
+  "peerDependencies": {
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "remotion": "4.0.409"
+  }
+}

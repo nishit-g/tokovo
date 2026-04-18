@@ -12,6 +12,7 @@
         { "path": "../compiler" },
         { "path": "../voice" },
         { "path": "../react" },
+        { "path": "../reactions" },
         { "path": "../renderer" },
         { "path": "../devices" },
         { "path": "../overlay" },

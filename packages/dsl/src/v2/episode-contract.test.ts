@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { normalizeTrackEpisodeIR } from "@tokovo/ir";
+import { createReactionPlan } from "@tokovo/reactions";
 import { episode } from "./episode.js";
 
 function buildDeterministicDslEpisode() {
@@ -18,6 +19,27 @@ function buildDeterministicDslEpisode() {
 }
 
 describe("DSL contract + determinism", () => {
+  it("supports a first-class reactor plan integration point", () => {
+    const reactionPlan = createReactionPlan({
+      id: "reactor-contract",
+      sourceRef: {
+        kind: "tokovo_episode",
+        episodeId: "dsl-contract",
+      },
+      cast: [],
+      segments: [],
+      version: "1",
+    });
+
+    const ir = episode("dsl-reactors", { fps: 30, duration: "5s" })
+      .device("phone", "iphone16", { app: "app_whatsapp" })
+      .reactors(reactionPlan)
+      .build();
+
+    expect(ir.reactionPlan?.id).toBe("reactor-contract");
+    expect(ir.reactionPlan?.formatPreset).toBe("stream-chaos-vertical");
+  });
+
   it("maps builder calls to expected IR shape", () => {
     const ir = buildDeterministicDslEpisode();
     expect(ir.id).toBe("dsl-contract");

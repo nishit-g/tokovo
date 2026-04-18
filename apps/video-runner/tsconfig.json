@@ -29,6 +29,8 @@
         { "path": "../../packages/ir" },
         { "path": "../../packages/publishing" },
         { "path": "../../packages/react" },
+        { "path": "../../packages/reactions" },
+        { "path": "../../packages/reactors" },
         { "path": "../../packages/renderer" },
         { "path": "../../packages/voice" }
     ],

@@ -37,6 +37,7 @@ import {
   VoiceScheduleItem,
   BackgroundConfigIR,
 } from "@tokovo/ir";
+import type { ReactionPlan } from "@tokovo/reactions";
 import type { CompilerContext, CompilerPlugin } from "@tokovo/compiler";
 import { parseTimeToFrames } from "./utils/time.js";
 import { CameraTrackBuilder } from "./camera-track.js";
@@ -160,6 +161,7 @@ export class EpisodeBuilder {
     }
     | undefined;
   private _background?: BackgroundConfigIR;
+  private _reactionPlan?: ReactionPlan;
 
   constructor(id: string, config: TrackEpisodeConfig) {
     this._id = id;
@@ -262,6 +264,14 @@ export class EpisodeBuilder {
    */
   background(config: BackgroundConfigIR): this {
     this._background = config;
+    return this;
+  }
+
+  /**
+   * Attach a deterministic reaction plan that renders around the main scene.
+   */
+  reactors(plan: ReactionPlan): this {
+    this._reactionPlan = plan;
     return this;
   }
 
@@ -454,6 +464,7 @@ export class EpisodeBuilder {
       sections: this._sections,
       director: this._director,
       background: this._background,
+      reactionPlan: this._reactionPlan,
       voice: this._voiceConfig
         ? {
           manifestPath: this._voiceConfig.script.manifestPath,

@@ -1,0 +1,12 @@
+{
+  "version": 3,
+  "name": "kairo-preview",
+  "runtime": "preview-only",
+  "description": "Preview-safe Live2D stub used by Tokovo reactor demos.",
+  "motions": {
+    "Idle": ["Idle_01"],
+    "Listen": ["Listen_LeanIn"],
+    "Talk": ["Talk_Excited"]
+  },
+  "expressions": ["Shock", "Blank"]
+}

@@ -1,0 +1,11 @@
+{
+  "audioPath": "generated/reactor-voice-cache/ccb163d2918bb733__demo-pro__demo-pro-v1__hero-pro/audio.wav",
+  "manifestPath": "generated/reactor-voice-cache/ccb163d2918bb733__demo-pro__demo-pro-v1__hero-pro/manifest.json",
+  "cacheKey": "ccb163d2918bb733__demo-pro__demo-pro-v1__hero-pro",
+  "provider": "demo-pro",
+  "model": "demo-pro-v1",
+  "voiceId": "hero-pro",
+  "contentHash": "ccb163d2918bb733",
+  "usedFallback": true,
+  "alignmentCoverage": "character"
+}

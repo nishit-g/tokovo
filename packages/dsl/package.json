@@ -18,6 +18,7 @@
   "dependencies": {
     "@tokovo/core": "workspace:*",
     "@tokovo/ir": "workspace:*",
+    "@tokovo/reactions": "workspace:*",
     "@tokovo/compiler": "workspace:*",
     "source-map-support": "^0.5.21"
   },

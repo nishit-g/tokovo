@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { ReactionPlanSchema } from "@tokovo/reactions";
 
 export const OSConfigSchema = z.object({
   time: z.union([z.date(), z.number()]).optional(),
@@ -100,6 +101,7 @@ export const TrackEpisodeIRSchema = z.object({
   sections: z.array(SectionSchema),
   director: DirectorStyleSchema.optional(),
   voice: VoiceConfigSchema.optional(),
+  reactionPlan: ReactionPlanSchema.optional(),
 });
 
 export type ValidatedTrackEpisodeIR = z.infer<typeof TrackEpisodeIRSchema>;

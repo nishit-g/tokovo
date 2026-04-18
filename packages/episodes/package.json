@@ -61,6 +61,7 @@
     "@tokovo/compiler": "workspace:*",
     "@tokovo/voice": "workspace:*",
     "@tokovo/react": "workspace:*",
+    "@tokovo/reactions": "workspace:*",
     "@tokovo/renderer": "workspace:*",
     "@tokovo/devices": "workspace:*",
     "@tokovo/overlay": "workspace:*",

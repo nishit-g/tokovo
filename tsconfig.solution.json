@@ -12,6 +12,8 @@
     { "path": "./packages/background" },
     { "path": "./packages/compiler" },
     { "path": "./packages/dsl" },
+    { "path": "./packages/reactions" },
+    { "path": "./packages/reactors" },
     { "path": "./packages/voice" },
     { "path": "./packages/apps-imessage" },
     { "path": "./packages/apps-instagram" },

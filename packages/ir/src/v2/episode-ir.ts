@@ -7,6 +7,7 @@
  */
 
 import type { TrackEvent } from "./track-event.js";
+import type { ReactionPlan } from "@tokovo/reactions";
 
 // =============================================================================
 // DEVICE + APP BOOTSTRAP CONFIG
@@ -214,6 +215,9 @@ export interface TrackEpisodeIR {
 
   /** Background configuration for the video canvas */
   background?: BackgroundConfigIR;
+
+  /** Deterministic reaction layout rendered around the main Tokovo scene */
+  reactionPlan?: ReactionPlan;
 }
 
 // =============================================================================

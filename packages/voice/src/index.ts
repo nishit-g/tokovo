@@ -1,6 +1,7 @@
 export * from "./types/index.js";
 export * from "./dsl/index.js";
 export * from "./render/index.js";
+export * from "./providers/index.js";
 export {
   drama_example,
   drama_example_segments,

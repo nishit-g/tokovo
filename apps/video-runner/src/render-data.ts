@@ -16,6 +16,9 @@ import {
   type FormatId,
 } from "@tokovo/episodes";
 import type { PluginManagerClass } from "@tokovo/react";
+import {
+  type ReactionPlan,
+} from "@tokovo/reactions";
 import type { VoiceManifest } from "@tokovo/voice";
 import { getSharedVideoRunnerRuntime } from "./runtime";
 
@@ -45,6 +48,7 @@ export type EpisodeRenderData = {
   backgroundConfig: BackgroundConfigIR | null;
   voiceConfig: VoiceConfig | null;
   voiceManifest: VoiceManifest | null;
+  reactionPlan: ReactionPlan | null;
 };
 
 type AssetUrlMap = Record<string, string>;
@@ -163,6 +167,7 @@ function resolvePlugins(
 
 function serializePreparedEpisode(
   prepared: PreparedTrackEpisode,
+  reactionAssetRefs: EpisodeAssetRef[] = [],
 ): SerializablePreparedEpisode {
   return {
     id: prepared.id,
@@ -172,9 +177,133 @@ function serializePreparedEpisode(
     keyframeInterval: prepared.keyframeInterval,
     eventSignature: prepared.eventSignature,
     initialWorld: prepared.initialWorld,
-    assetRefs: prepared.assetRefs,
+    assetRefs: [...prepared.assetRefs, ...reactionAssetRefs],
     metadata: prepared.metadata,
   };
+}
+
+function getReactionPlanAssetRefs(
+  plan: ReactionPlan | null | undefined,
+): EpisodeAssetRef[] {
+  if (!plan) {
+    return [];
+  }
+
+  const createReactionAssetRef = (
+    memberId: string,
+    src: string,
+    path: string,
+    kind: EpisodeAssetRef["kind"] = "image",
+  ): EpisodeAssetRef => ({
+    id: `reaction_avatar_${memberId}_${path.split(".").at(-1) ?? "asset"}`,
+    src,
+    kind,
+    owner: "system",
+    usage: "avatar",
+    fromFrame: 0,
+    strategy: "lookahead",
+    priority: 60,
+    source: "ir",
+    path,
+  });
+
+  return plan.cast.flatMap((member) => {
+    const avatar = member.visualProfile.avatar;
+
+    if (avatar?.kind === "image") {
+      return [
+        createReactionAssetRef(
+          member.id,
+          avatar.imageSrc,
+          `reactionPlan.cast.${member.id}.visualProfile.avatar.imageSrc`,
+        ),
+      ];
+    }
+
+    if (avatar?.kind === "pngtuber") {
+      return [
+        ...Object.entries(avatar.frames).flatMap(([frameKey, src]) =>
+          src
+            ? [
+                createReactionAssetRef(
+                  member.id,
+                  src,
+                  `reactionPlan.cast.${member.id}.visualProfile.avatar.frames.${frameKey}`,
+                ),
+              ]
+            : [],
+        ),
+        ...(avatar.videoSrc
+          ? [
+              createReactionAssetRef(
+                member.id,
+                avatar.videoSrc,
+                `reactionPlan.cast.${member.id}.visualProfile.avatar.videoSrc`,
+                "video",
+              ),
+            ]
+          : []),
+        ...(avatar.mouthTrackSrc
+          ? [
+              createReactionAssetRef(
+                member.id,
+                avatar.mouthTrackSrc,
+                `reactionPlan.cast.${member.id}.visualProfile.avatar.mouthTrackSrc`,
+                "json",
+              ),
+            ]
+          : []),
+        ...Object.entries(avatar.mouthSprites ?? {}).flatMap(([shapeKey, src]) =>
+          src
+            ? [
+                createReactionAssetRef(
+                  member.id,
+                  src,
+                  `reactionPlan.cast.${member.id}.visualProfile.avatar.mouthSprites.${shapeKey}`,
+                ),
+              ]
+            : [],
+        ),
+      ];
+    }
+
+    if (avatar?.kind === "live2d") {
+      return [
+        createReactionAssetRef(
+          member.id,
+          avatar.coreScriptSrc,
+          `reactionPlan.cast.${member.id}.visualProfile.avatar.coreScriptSrc`,
+          "unknown",
+        ),
+        createReactionAssetRef(
+          member.id,
+          avatar.modelJsonSrc,
+          `reactionPlan.cast.${member.id}.visualProfile.avatar.modelJsonSrc`,
+          "json",
+        ),
+        ...(avatar.previewPosterSrc
+          ? [
+              createReactionAssetRef(
+                member.id,
+                avatar.previewPosterSrc,
+                `reactionPlan.cast.${member.id}.visualProfile.avatar.previewPosterSrc`,
+              ),
+            ]
+          : []),
+      ];
+    }
+
+    const legacySrc = member.visualProfile.avatarImageSrc;
+    return legacySrc
+      ? [
+          createReactionAssetRef(
+            member.id,
+            legacySrc,
+            `reactionPlan.cast.${member.id}.visualProfile.avatarImageSrc`,
+          ),
+        ]
+      : [];
+  });
 }
 
 function buildEmbeddedVoiceManifest(
@@ -275,6 +404,8 @@ async function prepareEpisodeRenderData(
 ): Promise<EpisodeRenderData> {
   const prepared = preparePreparedEpisode(source);
   const voiceConfig = source.ir.voice ?? null;
+  const reactionPlan = source.ir.reactionPlan ?? null;
+  const reactionAssetRefs = getReactionPlanAssetRefs(reactionPlan);
   const voiceManifest = await loadVoiceManifest(
     source.episodeId,
     source.ir.voice,
@@ -287,10 +418,11 @@ async function prepareEpisodeRenderData(
     sourceSignature: source.sourceSignature,
     durationInFrames: prepared.durationInFrames,
     format: source.format,
-    prepared: serializePreparedEpisode(prepared),
+    prepared: serializePreparedEpisode(prepared, reactionAssetRefs),
     backgroundConfig: source.ir.background ?? null,
     voiceConfig,
     voiceManifest,
+    reactionPlan,
   };
 
   return assetUrlMap

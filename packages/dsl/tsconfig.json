@@ -9,6 +9,7 @@
     "references": [
         { "path": "../core" },
         { "path": "../ir" },
+        { "path": "../reactions" },
         { "path": "../compiler" }
     ],
     "include": [

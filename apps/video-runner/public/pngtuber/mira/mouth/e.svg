@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 120">
+  <defs>
+    <linearGradient id="lipE" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#ffe6ee"/>
+      <stop offset="100%" stop-color="#fb7185"/>
+    </linearGradient>
+  </defs>
+  <path d="M46 60c0-14 34-30 74-30s74 16 74 30c0 28-24 42-74 42S46 88 46 60Z" fill="#180b18"/>
+  <path d="M46 60c0-14 34-30 74-30s74 16 74 30" fill="none" stroke="url(#lipE)" stroke-width="16" stroke-linecap="round"/>
+  <rect x="80" y="66" width="80" height="18" rx="9" fill="#ffd4e2"/>
+</svg>

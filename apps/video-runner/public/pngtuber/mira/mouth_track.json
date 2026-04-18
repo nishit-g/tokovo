@@ -1,0 +1,26 @@
+{
+  "version": 1,
+  "durationFrames": 120,
+  "cues": [
+    { "startFrame": 0, "endFrame": 6, "shape": "closed" },
+    { "startFrame": 6, "endFrame": 12, "shape": "half" },
+    { "startFrame": 12, "endFrame": 18, "shape": "open" },
+    { "startFrame": 18, "endFrame": 24, "shape": "half" },
+    { "startFrame": 24, "endFrame": 30, "shape": "closed" },
+    { "startFrame": 30, "endFrame": 36, "shape": "e" },
+    { "startFrame": 36, "endFrame": 42, "shape": "open" },
+    { "startFrame": 42, "endFrame": 48, "shape": "u" },
+    { "startFrame": 48, "endFrame": 54, "shape": "half" },
+    { "startFrame": 54, "endFrame": 60, "shape": "closed" },
+    { "startFrame": 60, "endFrame": 66, "shape": "open" },
+    { "startFrame": 66, "endFrame": 72, "shape": "half" },
+    { "startFrame": 72, "endFrame": 78, "shape": "closed" },
+    { "startFrame": 78, "endFrame": 84, "shape": "u" },
+    { "startFrame": 84, "endFrame": 90, "shape": "open" },
+    { "startFrame": 90, "endFrame": 96, "shape": "half" },
+    { "startFrame": 96, "endFrame": 102, "shape": "closed" },
+    { "startFrame": 102, "endFrame": 108, "shape": "e" },
+    { "startFrame": 108, "endFrame": 114, "shape": "open" },
+    { "startFrame": 114, "endFrame": 120, "shape": "closed" }
+  ]
+}

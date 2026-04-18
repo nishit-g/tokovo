@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "durationFrames": 144,
+  "cues": [
+    { "startFrame": 0, "endFrame": 12, "shape": "closed" },
+    { "startFrame": 12, "endFrame": 28, "shape": "half" },
+    { "startFrame": 28, "endFrame": 48, "shape": "open" },
+    { "startFrame": 48, "endFrame": 60, "shape": "half" },
+    { "startFrame": 60, "endFrame": 74, "shape": "u" },
+    { "startFrame": 74, "endFrame": 90, "shape": "open" },
+    { "startFrame": 90, "endFrame": 104, "shape": "e" },
+    { "startFrame": 104, "endFrame": 120, "shape": "half" },
+    { "startFrame": 120, "endFrame": 144, "shape": "closed" }
+  ]
+}

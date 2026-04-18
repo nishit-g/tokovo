@@ -55,6 +55,8 @@
     "@tokovo/ir": "workspace:*",
     "@tokovo/publishing": "workspace:*",
     "@tokovo/react": "workspace:*",
+    "@tokovo/reactions": "workspace:*",
+    "@tokovo/reactors": "workspace:*",
     "@tokovo/renderer": "workspace:*",
     "@tokovo/voice": "workspace:*",
     "react": "18.3.1",

@@ -5,6 +5,7 @@ import type {
   TrackEpisodeIR,
   VoiceConfig,
 } from "./episode-ir.js";
+import type { ReactionPlan } from "@tokovo/reactions";
 import type { TrackEvent } from "./track-event.js";
 
 export interface CanonicalTrackEpisodeFixtureOptions {
@@ -16,6 +17,7 @@ export interface CanonicalTrackEpisodeFixtureOptions {
   initialViews?: AppInitialViewEntry[];
   events?: TrackEvent[];
   voice?: VoiceConfig;
+  reactionPlan?: ReactionPlan;
 }
 
 export function createCanonicalDeviceConfig(overrides: Partial<DeviceConfig> = {}): DeviceConfig {
@@ -60,5 +62,6 @@ export function createCanonicalTrackEpisodeIR(
     markers: [],
     sections: [],
     voice: overrides.voice,
+    reactionPlan: overrides.reactionPlan,
   };
 }

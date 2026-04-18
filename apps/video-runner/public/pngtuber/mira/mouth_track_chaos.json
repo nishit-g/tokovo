@@ -1,0 +1,30 @@
+{
+  "version": 1,
+  "durationFrames": 96,
+  "cues": [
+    { "startFrame": 0, "endFrame": 4, "shape": "open" },
+    { "startFrame": 4, "endFrame": 8, "shape": "half" },
+    { "startFrame": 8, "endFrame": 12, "shape": "open" },
+    { "startFrame": 12, "endFrame": 16, "shape": "u" },
+    { "startFrame": 16, "endFrame": 20, "shape": "open" },
+    { "startFrame": 20, "endFrame": 24, "shape": "half" },
+    { "startFrame": 24, "endFrame": 28, "shape": "closed" },
+    { "startFrame": 28, "endFrame": 32, "shape": "open" },
+    { "startFrame": 32, "endFrame": 36, "shape": "e" },
+    { "startFrame": 36, "endFrame": 40, "shape": "open" },
+    { "startFrame": 40, "endFrame": 44, "shape": "half" },
+    { "startFrame": 44, "endFrame": 48, "shape": "open" },
+    { "startFrame": 48, "endFrame": 52, "shape": "u" },
+    { "startFrame": 52, "endFrame": 56, "shape": "open" },
+    { "startFrame": 56, "endFrame": 60, "shape": "closed" },
+    { "startFrame": 60, "endFrame": 64, "shape": "open" },
+    { "startFrame": 64, "endFrame": 68, "shape": "half" },
+    { "startFrame": 68, "endFrame": 72, "shape": "open" },
+    { "startFrame": 72, "endFrame": 76, "shape": "e" },
+    { "startFrame": 76, "endFrame": 80, "shape": "open" },
+    { "startFrame": 80, "endFrame": 84, "shape": "half" },
+    { "startFrame": 84, "endFrame": 88, "shape": "open" },
+    { "startFrame": 88, "endFrame": 92, "shape": "u" },
+    { "startFrame": 92, "endFrame": 96, "shape": "closed" }
+  ]
+}
