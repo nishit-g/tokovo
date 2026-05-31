@@ -1,0 +1,46 @@
+# Tokovo
+
+> AI-native studio for multi-device shows that happen inside phones.
+
+Tokovo is a deterministic TypeScript monorepo for authoring, previewing, and rendering phone-native episodes. It gives AI agents and creators a structured production stage with one or many simulated devices, app worlds, OS surfaces, camera direction, sound, voice, backgrounds, overlays, and vertical MP4 rendering.
+
+## Links
+
+- Website: https://www.tokovo.io
+- Repository: https://github.com/nishit-g/tokovo
+- README: https://github.com/nishit-g/tokovo#readme
+- License: https://github.com/nishit-g/tokovo/blob/master/LICENSE
+- Contributing: https://github.com/nishit-g/tokovo/blob/master/CONTRIBUTING.md
+- Security: https://github.com/nishit-g/tokovo/blob/master/SECURITY.md
+
+## Core Documentation
+
+- Architecture: https://github.com/nishit-g/tokovo/blob/master/docs/ARCHITECTURE.md
+- V1 stability bar: https://github.com/nishit-g/tokovo/blob/master/docs/V1_STABILITY.md
+- Camera reference: https://github.com/nishit-g/tokovo/blob/master/docs/CAMERA_V1_REFERENCE.md
+- Public release checklist: https://github.com/nishit-g/tokovo/blob/master/docs/operations/public-release.md
+- Release operations: https://github.com/nishit-g/tokovo/blob/master/docs/operations/release.md
+- Asset licenses: https://github.com/nishit-g/tokovo/blob/master/ASSET_LICENSES.md
+
+## Important Source Areas
+
+- `packages/episodes`: canonical episode definitions, curated catalogs, validation, runtime plugin manifest.
+- `packages/dsl`: fluent builders for devices, app tracks, camera, audio, overlays, and device tracks.
+- `packages/compiler`: lowering, preparation, compiler plugins, audio/camera directors.
+- `packages/core`: deterministic runtime, world state, event replay, registries, logging contracts.
+- `packages/renderer`: React render surface and camera-aware layout.
+- `packages/apps-*`: app simulators for WhatsApp, iMessage, Instagram, X, LinkedIn, Snapchat, Teams, and Typewriter.
+- `packages/device-*` and `packages/devices`: device profiles, OS chrome, camera, keyboard, notifications.
+- `apps/video-runner`: Remotion preview and MP4 render surface.
+- `apps/render-service`: render-service CLI and orchestration primitives.
+- `apps/docs`: public docs site.
+- `apps/web`: marketing site.
+
+## Agent Notes
+
+- Canonical agent instructions live in `AGENTS.md`.
+- Claude-specific entrypoint lives in `CLAUDE.md`.
+- Reusable repo skill lives in `.skills/tokovo-authoring/SKILL.md`.
+- Use Node.js 20 or newer and pnpm 10.28.2.
+- The canonical release gate is `pnpm verify:release`.
+- Generated renders and local outputs should not be committed unless they are intentional docs showcase assets.

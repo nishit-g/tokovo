@@ -173,6 +173,7 @@ pnpm --filter docs build
 ## Documentation
 
 - `apps/docs/app/page.mdx` is the documentation home.
+- `llms.txt`, `AGENTS.md`, `CLAUDE.md`, and `.skills/tokovo-authoring/SKILL.md` provide LLM and coding-agent context.
 - `apps/docs/app/showcase/page.mdx` lists the current v1 showcase surface.
 - `apps/docs/app/getting-started/quickstart/page.mdx` is the fastest render path.
 - `apps/docs/app/getting-started/first-episode/page.mdx` explains the authoring shape.
