@@ -45,7 +45,17 @@ export const linkedInAnchors: PluginAnchorRegistry = {
       paddingPx: 16,
       targetFill: 0.86,
     },
+    message_list: {
+      anchorPoint: { x: 0.5, y: 0.52 },
+      paddingPx: 16,
+      targetFill: 0.86,
+    },
     li_dm_thread: {
+      anchorPoint: { x: 0.5, y: 0.56 },
+      paddingPx: 16,
+      targetFill: 0.86,
+    },
+    message_thread: {
       anchorPoint: { x: 0.5, y: 0.56 },
       paddingPx: 16,
       targetFill: 0.86,
@@ -72,4 +82,3 @@ export const linkedInAnchors: PluginAnchorRegistry = {
     },
   },
 };
-

@@ -91,6 +91,8 @@ export const TeamsAnchorProvider: AnchorProvider = {
     teams_notification: { anchorPoint: { x: 0.5, y: 0.5 }, paddingPx: 18, targetFill: 0.72 },
     teams_call_surface: { anchorPoint: { x: 0.5, y: 0.5 }, paddingPx: 28, targetFill: 0.84 },
     teams_call_controls: { anchorPoint: { x: 0.5, y: 0.5 }, paddingPx: 20, targetFill: 0.72 },
+    message_list: { anchorPoint: { x: 0.54, y: 0.56 }, paddingPx: 22, targetFill: 0.84 },
+    message_thread: { anchorPoint: { x: 0.52, y: 0.56 }, paddingPx: 24, targetFill: 0.84 },
     lastMessage: { anchorPoint: { x: 0.58, y: 0.58 }, paddingPx: 20, targetFill: 0.86 },
     lastThreadCard: { anchorPoint: { x: 0.5, y: 0.5 }, paddingPx: 20, targetFill: 0.82 },
   },
@@ -112,6 +114,9 @@ export const TeamsAnchorProvider: AnchorProvider = {
     aliasAnchor(anchors, "header", "teams_header");
     aliasAnchor(anchors, "content", "teams_content");
     aliasAnchor(anchors, "content", "teams_message_list");
+    aliasAnchor(anchors, "message_list", "teams_message_list");
+    aliasAnchor(anchors, "message_thread", "teams_thread");
+    aliasAnchor(anchors, "message_thread", "teams_message_list");
     aliasAnchor(anchors, "inputArea", "teams_composer");
     aliasAnchor(anchors, "typingIndicator", "teams_typing_indicator");
 
@@ -136,6 +141,10 @@ export const TeamsAnchorProvider: AnchorProvider = {
     };
     anchors.teams_call_surface ??= { x: 0, y: 0, width, height };
     anchors.teams_call_controls ??= { x: 20, y: height - 104, width: width - 40, height: 72 };
+
+    aliasAnchor(anchors, "message_list", "teams_message_list");
+    aliasAnchor(anchors, "message_thread", "teams_thread");
+    aliasAnchor(anchors, "message_thread", "teams_message_list");
 
     addLastMessageAnchor(anchors, world);
 

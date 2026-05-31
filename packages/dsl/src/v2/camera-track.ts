@@ -499,20 +499,20 @@ export class CameraSpanBuilder {
         );
     }
 
-    trackCinematic(anchorId: string, options: Omit<CameraTrackOptions, "preset"> = {}): void {
-        this.track(anchorId, { ...options, preset: "cinematic" });
+    trackCinematic(target: CameraTarget, options: Omit<CameraTrackOptions, "preset"> = {}): void {
+        this.track(target, { ...options, preset: "cinematic" });
     }
 
-    trackDrama(anchorId: string, options: Omit<CameraTrackOptions, "preset"> = {}): void {
-        this.track(anchorId, { ...options, preset: "drama" });
+    trackDrama(target: CameraTarget, options: Omit<CameraTrackOptions, "preset"> = {}): void {
+        this.track(target, { ...options, preset: "drama" });
     }
 
-    trackFastBeat(anchorId: string, options: Omit<CameraTrackOptions, "preset"> = {}): void {
-        this.track(anchorId, { ...options, preset: "fast-beat" });
+    trackFastBeat(target: CameraTarget, options: Omit<CameraTrackOptions, "preset"> = {}): void {
+        this.track(target, { ...options, preset: "fast-beat" });
     }
 
-    trackCalm(anchorId: string, options: Omit<CameraTrackOptions, "preset"> = {}): void {
-        this.track(anchorId, { ...options, preset: "calm" });
+    trackCalm(target: CameraTarget, options: Omit<CameraTrackOptions, "preset"> = {}): void {
+        this.track(target, { ...options, preset: "calm" });
     }
 }
 

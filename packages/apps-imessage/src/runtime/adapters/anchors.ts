@@ -20,6 +20,21 @@ export const IMessageAnchors: PluginAnchorRegistry = {
       paddingPx: 16,
       targetFill: 0.88,
     },
+    message_list: {
+      anchorPoint: { x: 0.5, y: 0.5 },
+      paddingPx: 16,
+      targetFill: 0.86,
+    },
+    message_thread: {
+      anchorPoint: { x: 0.5, y: 0.55 },
+      paddingPx: 16,
+      targetFill: 0.88,
+    },
+    lastMessage: {
+      anchorPoint: { x: 0.5, y: 0.6 },
+      paddingPx: 16,
+      targetFill: 0.74,
+    },
     imessage_composer: {
       anchorPoint: { x: 0.5, y: 0.9 },
       paddingPx: 10,

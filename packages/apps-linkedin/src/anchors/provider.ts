@@ -49,6 +49,16 @@ function addSemanticAnchors(
   }
 }
 
+function aliasAnchor(
+  anchors: Record<string, LayoutRect>,
+  alias: string,
+  source: string,
+): void {
+  if (!anchors[alias] && anchors[source]) {
+    anchors[alias] = anchors[source];
+  }
+}
+
 export const LinkedInAnchorProvider: AnchorProvider = {
   appId: APP_ID,
   framing: linkedInAnchors.framing ?? {},
@@ -99,7 +109,13 @@ export const LinkedInAnchorProvider: AnchorProvider = {
       }
     }
 
+    aliasAnchor(anchors, "header", "li_header");
+    aliasAnchor(anchors, "message_list", "li_messages_list");
+    aliasAnchor(anchors, "message_thread", "li_dm_thread");
+    aliasAnchor(anchors, "content", "li_dm_thread");
+    aliasAnchor(anchors, "content", "li_messages_list");
+    aliasAnchor(anchors, "inputArea", "li_dm_composer");
+
     return { anchors, deviceId, appId: APP_ID };
   },
 };
-

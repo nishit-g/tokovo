@@ -114,6 +114,9 @@ export const IMessageAnchorProvider: AnchorProvider = {
     aliasAnchor(anchors, "header", "imessage_chat_header");
     aliasAnchor(anchors, "content", "imessage_list");
     aliasAnchor(anchors, "content", "imessage_thread");
+    aliasAnchor(anchors, "message_list", "imessage_list");
+    aliasAnchor(anchors, "message_thread", "imessage_thread");
+    aliasAnchor(anchors, "lastMessage", "imessage_last_message");
     aliasAnchor(anchors, "inputArea", "imessage_composer");
     aliasAnchor(anchors, "inputArea", "imessage_input");
 

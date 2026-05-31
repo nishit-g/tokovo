@@ -91,8 +91,14 @@ export default defineEpisode({
       })
       .camera((cam) => {
         cam.at("0s").focus("device", { scale: 0.94, duration: "0.35s" });
-        cam.span("2.0s", "8.0s").trackCinematic("lastMessage", { deviceId: "phone_left", scale: 1.06, smoothing: 0.16 } as any);
-        cam.span("3.0s", "9.0s").trackCinematic("tweet_card", { deviceId: "phone_right", scale: 1.06, smoothing: 0.16 } as any);
+        cam.span("2.0s", "8.0s").trackCinematic(
+          { deviceId: "phone_left", anchorId: "lastMessage" },
+          { scale: 1.06, smoothing: 0.16 },
+        );
+        cam.span("3.0s", "9.0s").trackCinematic(
+          { deviceId: "phone_right", anchorId: "tweet_card" },
+          { scale: 1.06, smoothing: 0.16 },
+        );
         cam.at("10.0s").focus("notification_banner", { scale: 1.08, duration: "0.3s" });
       })
       .build(),

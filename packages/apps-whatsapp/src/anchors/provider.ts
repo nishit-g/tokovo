@@ -83,6 +83,37 @@ function addContentAnchor(
   };
 }
 
+function aliasAnchor(
+  anchors: Record<string, LayoutRect>,
+  alias: string,
+  source: string,
+): void {
+  if (!anchors[alias] && anchors[source]) {
+    anchors[alias] = anchors[source];
+  }
+}
+
+function addChatThreadAnchor(
+  anchors: Record<string, LayoutRect>,
+  layout: LayoutState | null | undefined,
+  viewport: { width: number; height: number },
+): void {
+  if (!layout || typeof layout !== "object") return;
+  if ((layout as LayoutState).kind !== "CHAT") return;
+
+  const header = anchors.header;
+  const input = anchors.input_area ?? anchors.inputArea;
+  const top = header ? header.y + header.height : viewport.height * 0.11;
+  const bottom = input ? input.y : viewport.height * 0.86;
+
+  anchors.chat_thread ??= {
+    x: 0,
+    y: top,
+    width: viewport.width,
+    height: Math.max(0, bottom - top),
+  };
+}
+
 export const WhatsAppAnchorProvider: AnchorProvider = {
   appId: APP_ID,
   framing: WhatsAppAnchors.framing ?? {},
@@ -114,6 +145,8 @@ export const WhatsAppAnchorProvider: AnchorProvider = {
     if (anchors.typing_indicator && !anchors.typingIndicator) {
       anchors.typingIndicator = anchors.typing_indicator;
     }
+
+    addChatThreadAnchor(anchors, layout as LayoutState, viewport);
 
     // Map message groups to message-N anchors and lastMessage.
     const messageIds = semantic?.groups?.message ?? [];
@@ -150,6 +183,10 @@ export const WhatsAppAnchorProvider: AnchorProvider = {
     }
 
     addContentAnchor(anchors, layout as LayoutState);
+    aliasAnchor(anchors, "message_thread", "chat_thread");
+    aliasAnchor(anchors, "thread_card", "chat_thread");
+    aliasAnchor(anchors, "message_list", "chat_list");
+    aliasAnchor(anchors, "content", "chat_thread");
 
     return {
       anchors,
