@@ -23,3 +23,4 @@ That command runs:
 - Render-service smoke is part of the release gate because Tokovo is not “healthy” unless a real render path passes.
 - Docs verification stays inside the release command so architecture and package docs cannot drift silently.
 - If `pnpm verify:release` fails inside render-service, use `docs/operations/render-service-failures.md`.
+- Before a public release, complete `docs/operations/public-release.md`.

@@ -1,0 +1,42 @@
+name: Feature request
+description: Propose a focused Tokovo improvement.
+title: "[Feature]: "
+labels:
+  - enhancement
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What workflow, authoring need, rendering issue, or maintainer task should improve?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposal
+      description: What should Tokovo do?
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Authoring DSL
+        - Compiler
+        - Runtime
+        - Renderer
+        - Device or OS shell
+        - App plugin
+        - Episodes
+        - Render service
+        - Docs
+        - Maintenance
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives
+      description: Other designs or workarounds considered.

@@ -40,6 +40,7 @@ yarn-error.log*
 pnpm-debug.log*
 package-lock.json
 *.tsbuildinfo
+__pycache__/
 
 # OS
 .DS_Store
@@ -54,3 +55,6 @@ Thumbs.db
 # OpenClaw agent files (machine-specific, not source code)
 memory/
 .tokovo/publishing/
+
+# Local agent/tooling state
+.superpowers/
