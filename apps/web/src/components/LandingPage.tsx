@@ -1,6 +1,6 @@
 "use client";
 
-import { BookOpen, Code2, Film, GitBranch, Play, Terminal } from "lucide-react";
+import { BookOpen, Camera, Code2, Film, GitBranch, Play, Smartphone, Volume2 } from "lucide-react";
 import Link from "next/link";
 
 const steps = [
@@ -11,10 +11,10 @@ const steps = [
     body: "Start with a premise, characters, tone, platform, duration, and story arc. AI can draft the phone-native scene instead of a blank timeline.",
   },
   {
-    icon: Terminal,
+    icon: Camera,
     label: "Direct",
-    title: "Control the phone world",
-    body: "Choose chats, feeds, DMs, notifications, calls, captions, camera moves, and pacing. The phone becomes the stage.",
+    title: "Control the whole stage",
+    body: "Choose devices, chats, feeds, DMs, notifications, captions, camera moves, sound, voice, backgrounds, and pacing.",
   },
   {
     icon: Film,
@@ -26,15 +26,34 @@ const steps = [
 
 const stats = [
   ["AI", "native studio"],
-  ["9:16", "episodes"],
-  ["No AE", "timeline work"],
-  ["Git", "repeatable"],
+  ["Many", "devices"],
+  ["Camera", "directed"],
+  ["Sound", "handled"],
 ];
 
 const capabilities = [
-  "AI can generate scripts, branches, captions, translations, and variants",
-  "Simulated phone OS surfaces cover chats, feeds, DMs, notifications, calls, keyboard, and lockscreen",
+  "AI can generate scripts, branches, captions, translations, and variants on top of a controlled phone-native stage",
+  "Simulated phone OS surfaces cover one or many devices, chats, feeds, DMs, notifications, calls, keyboard, and lockscreen",
+  "Camera, sound, voice, backgrounds, overlays, and render output are declared in code instead of fixed by hand later",
   "Deterministic rendering keeps every episode editable, reviewable, and repeatable",
+];
+
+const stageLayers = [
+  {
+    icon: Smartphone,
+    label: "Multi-device",
+    body: "Stage parallel phones, split pacing, app switches, OS chrome, and screen recordings.",
+  },
+  {
+    icon: Camera,
+    label: "Camera",
+    body: "Focus semantic anchors, track live UI motion, cut between app surfaces, and direct reveals.",
+  },
+  {
+    icon: Volume2,
+    label: "Sound",
+    body: "Use audio tracks, procedural sound effects, background music, and generated voice layers.",
+  },
 ];
 
 export function LandingPage() {
@@ -79,7 +98,7 @@ export function LandingPage() {
             <div className="inline-flex items-center gap-2 border border-copper/40 bg-copper/10 px-3 py-1.5">
               <span className="h-1.5 w-1.5 bg-copper-light" />
               <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-copper-light">
-                AI-native phone show studio
+                AI-native multi-device phone show studio
               </span>
             </div>
 
@@ -88,8 +107,9 @@ export function LandingPage() {
             </h1>
 
             <p className="mt-6 max-w-[21.5rem] font-mono text-sm leading-7 text-cream/62 sm:max-w-[34rem]">
-              Generate chat dramas, social-feed stories, and phone-screen episodes. Direct the app
-              world, preview the cut, and render vertical video without After Effects.
+              Generate chat dramas, social-feed stories, and phone-screen episodes. Tokovo handles
+              the app worlds, multiple devices, camera, sound, voice, and vertical render so the
+              show can move from prompt to finished cut without After Effects.
             </p>
 
             <div className="mt-8 grid gap-3 sm:flex sm:flex-wrap">
@@ -147,6 +167,7 @@ export function LandingPage() {
             </p>
             <div className="flex flex-wrap gap-x-8 gap-y-3 font-mono text-sm text-ink/70">
               <span>AI creators</span>
+              <span>Multi-device stories</span>
               <span>Chat dramas</span>
               <span>Short-form series</span>
               <span>Phone-screen episodes</span>
@@ -163,7 +184,7 @@ export function LandingPage() {
                 Workflow
               </span>
               <h2 className="mt-5 max-w-xl font-serif text-4xl leading-none text-cream sm:text-5xl lg:text-6xl">
-                From prompt to phone-native episode.
+                From prompt to directed phone-native episode.
               </h2>
             </div>
             <div className="grid gap-4 md:grid-cols-3">
@@ -191,27 +212,54 @@ export function LandingPage() {
                 <GitBranch className="h-4 w-4 shrink-0 text-copper-light" aria-hidden="true" />
               </div>
               <pre className="overflow-x-auto p-5 font-mono text-xs leading-7 text-cream/72 sm:p-7">
-                <code>{`show("cold-open", {
-  format: "shorts",
-  premise: "a private group chat spills into a public X thread",
-  tone: "fast, messy, funny",
-  duration: "45s"
-})
-  .generateScript({ characters: ["Rhea", "Omar", "Mina"] })
-  .stage("iphone16", ["WhatsApp", "X", "iMessage"])
-  .direct((scene) => {
-    scene.focus("notification_banner")
-    scene.track("keyboard")
-    scene.cutTo("tweet_thread")
+                <code>{`episode("cold-open", { fps: 30, duration: "45s" })
+  .device("creator_phone", "iphone16", {
+    app: "app_whatsapp",
+    screenRecording: true
   })
-  .render({ platform: "reels" })`}</code>
+  .device("audience_phone", "iphone16", {
+    app: "app_x",
+    screenRecording: true
+  })
+  .camera((cam) => {
+    cam.at("0s").layout({
+      mode: "SPLIT_VERTICAL",
+      primaryDeviceId: "creator_phone",
+      secondaryDeviceId: "audience_phone"
+    })
+    cam.span("3s", "12s").trackCinematic({
+      deviceId: "creator_phone",
+      anchorId: "lastMessage"
+    })
+  })
+  .audio((audio) => {
+    audio.span("0s", "45s").bgm("/music/cinematic-ambient.mp3", {
+      volume: 0.22,
+      fadeIn: "2s",
+      fadeOut: "3s"
+    })
+  })
+  .build()`}</code>
               </pre>
             </div>
 
-            <div className="border border-cream/10 p-6">
+            <div className="border-l border-cream/10 pl-6">
               <span className="font-mono text-xs uppercase tracking-[0.16em] text-copper-light">
-                Production stage
+                Whole stage
               </span>
+              <div className="mt-6 grid gap-3">
+                {stageLayers.map((item) => (
+                  <article key={item.label} className="border-t border-cream/10 pt-4">
+                    <div className="flex items-center gap-3">
+                      <item.icon className="h-4 w-4 text-copper-light" aria-hidden="true" />
+                      <h3 className="font-mono text-xs uppercase tracking-[0.14em] text-cream/75">
+                        {item.label}
+                      </h3>
+                    </div>
+                    <p className="mt-3 font-mono text-xs leading-6 text-cream/52">{item.body}</p>
+                  </article>
+                ))}
+              </div>
               <ul className="mt-6 space-y-5">
                 {capabilities.map((item) => (
                   <li key={item} className="flex gap-4 border-t border-cream/10 pt-5">
@@ -238,8 +286,8 @@ export function LandingPage() {
           <div className="self-end">
             <p className="max-w-2xl font-mono text-sm leading-7 text-ink/60">
               Tokovo is public, MIT licensed, and built around structured episode definitions. Run
-              the showcase locally, inspect the app simulators, then wire AI generation on top of
-              the phone-native production engine.
+              the showcase locally, inspect the app simulators, camera, audio, and device systems,
+              then wire AI generation on top of the phone-native production engine.
             </p>
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
               <a
@@ -253,7 +301,7 @@ export function LandingPage() {
                 href="https://github.com/nishit-g/tokovo#first-10-minutes"
                 className="inline-flex h-12 items-center justify-center gap-2 border border-ink/20 px-5 font-mono text-xs uppercase tracking-[0.14em] text-ink transition-colors hover:border-copper hover:text-copper"
               >
-                <Terminal className="h-4 w-4" aria-hidden="true" />
+                <BookOpen className="h-4 w-4" aria-hidden="true" />
                 First 10 minutes
               </a>
             </div>

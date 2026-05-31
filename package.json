@@ -2,7 +2,7 @@
   "name": "tokovo-monorepo",
   "version": "0.0.0",
   "private": true,
-  "description": "AI-native studio for shows that happen inside phones.",
+  "description": "AI-native studio for multi-device shows that happen inside phones.",
   "license": "MIT",
   "homepage": "https://github.com/nishit-g/tokovo#readme",
   "repository": {

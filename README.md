@@ -4,9 +4,9 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-black.svg)](LICENSE)
 [![pnpm](https://img.shields.io/badge/pnpm-10.28.2-F69220.svg)](package.json)
 
-Tokovo is an AI-native studio for shows that happen inside phones.
+Tokovo is an AI-native studio for multi-device shows that happen inside phones.
 
-Create cinematic chat dramas, social-feed stories, screen-recorded episodes, and short-form series without rebuilding phone screens in After Effects. Tokovo gives AI and creators a production environment with simulated mobile OS surfaces, app worlds, camera direction, audio, and deterministic rendering.
+Create cinematic chat dramas, social-feed stories, screen-recorded episodes, and short-form series without rebuilding phone screens in After Effects. Tokovo gives AI and creators a full phone-native production stage: one or many simulated devices, app worlds, OS surfaces, camera direction, sound, voice, backgrounds, overlays, and deterministic rendering.
 
 ![Tokovo phone-native show preview](apps/docs/public/showcase/launch-poster.png)
 
@@ -17,8 +17,8 @@ Create cinematic chat dramas, social-feed stories, screen-recorded episodes, and
 Tokovo turns a phone-native story into a repeatable production pipeline:
 
 1. Generate or write a script, characters, tone, and episode arc.
-2. Place the action inside simulated apps: chats, feeds, DMs, notifications, calls, lockscreens, and screen recordings.
-3. Direct pacing, camera moves, captions, keyboard input, audio, and cliffhangers.
+2. Place the action inside one or many simulated devices: chats, feeds, DMs, notifications, calls, lockscreens, and screen recordings.
+3. Direct pacing, camera moves, captions, keyboard input, sound, voice, and cliffhangers.
 4. Preview the episode in browser.
 5. Render a vertical MP4 for Shorts, Reels, TikTok, and serialized story formats.
 
@@ -31,7 +31,8 @@ Phone-native stories are already a format. People watch drama, comedy, product n
 AI can now generate scripts, branches, edits, translations, captions, and variations. Tokovo gives that AI a controlled studio instead of a blank video canvas:
 
 - generate one episode concept and render many platform-ready cuts
-- direct the phone OS, app state, camera, sound, and timing as structured data
+- stage one phone, split-screen phones, or multi-device narrative beats in the same episode
+- direct the phone OS, app state, camera, sound, voice, and timing as structured data
 - keep every story beat and render artifact reviewable
 - ship repeatable series instead of one-off timeline projects
 - avoid manual After Effects work for phone-screen stories
@@ -40,14 +41,14 @@ AI can now generate scripts, branches, edits, translations, captions, and variat
 
 Tokovo's v1 target surface covers:
 
-| Surface            | Package                                                             | What it covers                                                          |
-| ------------------ | ------------------------------------------------------------------- | ----------------------------------------------------------------------- |
-| Device and OS      | `@tokovo/devices`, `@tokovo/device-*`                               | iPhone-style frames, status UI, keyboard, notifications, camera anchors |
-| Messaging          | `@tokovo/apps-whatsapp`, `@tokovo/apps-imessage`                    | chats, group threads, typing, read states, media-style cards            |
-| Social apps        | `@tokovo/apps-instagram`, `@tokovo/apps-x`, `@tokovo/apps-snapchat` | feeds, stories, profiles, DMs, notifications                            |
-| Work apps          | `@tokovo/apps-linkedin`, `@tokovo/apps-teams`                       | message threads, channels, profiles, activity surfaces                  |
-| Storytelling tools | `@tokovo/overlay`, `@tokovo/background`, `@tokovo/voice`            | captions, backgrounds, music/audio cues, voice tracks                   |
-| Rendering          | `video-runner`, `@tokovo/render-service`                            | local preview, MP4 export, render-service primitives                    |
+| Surface            | Package                                                             | What it covers                                                                               |
+| ------------------ | ------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| Device and OS      | `@tokovo/devices`, `@tokovo/device-*`                               | iPhone-style frames, multi-device scenes, status UI, keyboard, notifications, camera anchors |
+| Messaging          | `@tokovo/apps-whatsapp`, `@tokovo/apps-imessage`                    | chats, group threads, typing, read states, media-style cards                                 |
+| Social apps        | `@tokovo/apps-instagram`, `@tokovo/apps-x`, `@tokovo/apps-snapchat` | feeds, stories, profiles, DMs, notifications                                                 |
+| Work apps          | `@tokovo/apps-linkedin`, `@tokovo/apps-teams`                       | message threads, channels, profiles, activity surfaces                                       |
+| Storytelling tools | `@tokovo/overlay`, `@tokovo/background`, `@tokovo/voice`            | captions, backgrounds, procedural sound, music/audio cues, voice tracks                      |
+| Rendering          | `video-runner`, `@tokovo/render-service`                            | local preview, MP4 export, render-service primitives                                         |
 
 ## Render The Showcase
 
@@ -114,6 +115,7 @@ These are good first renders when checking the v1 target surface:
 | Episode ID                    | Shows                                                                      |
 | ----------------------------- | -------------------------------------------------------------------------- |
 | `v2-creator-series-showcase`  | lockscreen, notifications, app switching, typed keyboard, camera direction |
+| `multi-device-exhaustive`     | parallel phones, split pacing, screen recording, cross-app continuity      |
 | `whatsapp-flagship-v2`        | chat list, group thread, updates, calls, typed replies                     |
 | `instagram-flagship-v2`       | story, DM, profile, creator-facing pacing                                  |
 | `x-flagship-v2`               | timeline, post detail, replies, notifications                              |
@@ -193,7 +195,9 @@ The public v1 bar is intentionally strict:
 
 - app simulators must own their reducers, views, anchors, and DSL helpers
 - episodes must validate before they are rendered
+- multi-device episodes should author device focus intentionally
 - camera targets should resolve to semantic anchors instead of fallback boxes
+- audio cues, generated sounds, voice tracks, and backgrounds should be declared as episode data
 - docs assets must be intentional, licensed, and listed in `ASSET_LICENSES.md`
 - generated renders stay out of git unless they are part of the docs showcase
 

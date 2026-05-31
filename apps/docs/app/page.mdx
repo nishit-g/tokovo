@@ -1,8 +1,8 @@
 # Tokovo Documentation
 
-Tokovo is an AI-native studio for shows that happen inside phones.
+Tokovo is an AI-native studio for multi-device shows that happen inside phones.
 
-It gives AI agents and creators a deterministic production environment for chat dramas, social-feed stories, screen-recorded episodes, and short-form series. Instead of rebuilding phone screens in After Effects, Tokovo simulates mobile OS surfaces, app worlds, camera direction, audio, and render artifacts from structured episode definitions.
+It gives AI agents and creators a deterministic production environment for chat dramas, social-feed stories, screen-recorded episodes, and short-form series. Instead of rebuilding phone screens in After Effects, Tokovo simulates one or many devices, mobile OS surfaces, app worlds, camera direction, sound, voice, backgrounds, and render artifacts from structured episode definitions.
 
 <video
   controls
@@ -30,8 +30,10 @@ It gives AI agents and creators a deterministic production environment for chat 
 
 ## Core Ideas
 
-- Episodes are structured scenes: timing, app seed data, camera, audio, and render settings live in `packages/episodes`.
+- Episodes are structured scenes: timing, app seed data, camera, audio, device layout, and render settings live in `packages/episodes`.
 - AI can generate scripts, variants, translations, and pacing; Tokovo provides the controlled phone-native stage those generations render into.
+- Phone-native production is not limited to one screen: episodes can stage multiple devices and intentionally direct focus across them.
+- Camera, sound, voice, backgrounds, overlays, notifications, and keyboard input are first-class systems, not post-production patches.
 - The runtime is deterministic: the same episode and frame should resolve the same state.
 - App packages are plugins: each simulator owns its reducer, views, anchors, layouts, and DSL helpers.
 - `video-runner` is the local Remotion surface for preview and MP4 export.
@@ -39,7 +41,7 @@ It gives AI agents and creators a deterministic production environment for chat 
 
 ## Current V1 Surface
 
-Tokovo includes app simulators for WhatsApp, iMessage, Instagram, X, LinkedIn, Snapchat, Teams, and Typewriter. It also includes device-owned systems for camera direction, keyboard input, notifications, overlays, backgrounds, audio, and voice tracks.
+Tokovo includes app simulators for WhatsApp, iMessage, Instagram, X, LinkedIn, Snapchat, Teams, and Typewriter. It also includes device-owned systems for multi-device staging, camera direction, keyboard input, notifications, overlays, backgrounds, audio, procedural sound effects, and voice tracks.
 
 ## Release Confidence
 

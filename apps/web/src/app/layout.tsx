@@ -11,9 +11,9 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Tokovo — Make shows that happen inside phones",
+  title: "Tokovo — Multi-device shows inside phones",
   description:
-    "An AI-native studio for chat dramas, social-feed stories, phone-screen episodes, and vertical shows.",
+    "An AI-native studio for multi-device phone shows with simulated apps, camera direction, sound, voice, and vertical rendering.",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
