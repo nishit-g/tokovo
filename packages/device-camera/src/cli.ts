@@ -36,8 +36,12 @@ const VALID_ANCHORS = new Set([
   "typingIndicator",
   "typing_indicator",
   "lastMessage",
+  "keyboard",
+  "notification_banner",
   "message_list",
   "message_thread",
+  "chat_header",
+  "chat_list",
   "chat_thread",
   "thread_card",
   "headsUpNotification",
@@ -45,15 +49,36 @@ const VALID_ANCHORS = new Set([
   "device_keyboard",
   "device_notifications",
   "nav_bar",
+  "feed",
+  "feed_post",
+  "comment_block",
+  "composer",
   "timeline_header",
+  "timeline",
   "timeline_feed",
   "tweet_card",
   "metrics_row",
+  "notification_card",
+  "notification_row",
   "reply_composer",
   "compose_fab",
+  "post_card",
+  "post_detail",
   "profile_header",
+  "profile_grid",
   "notifications_list",
   "dm_thread",
+  "status_row",
+  "calls_list",
+  "story_viewer",
+  "snap_card",
+  "snap_view",
+  "thread_view",
+  "call_surface",
+  "paper",
+  "typewriter",
+  "cursor",
+  "signature",
   "imessage_list_header",
   "imessage_list",
   "imessage_thread",
@@ -96,7 +121,8 @@ function parseAtToFrames(raw: string): number | null {
 function lintFile(file: string, source: string): Finding[] {
   const findings: Finding[] = [];
 
-  const lagRegex = /cam\.span\([^)]*\)\.track(?:Cinematic|Drama|FastBeat|Calm)?\([^)]*\{[^}]*\blag\s*:/gs;
+  const lagRegex =
+    /cam\.span\([^)]*\)\.track(?:Cinematic|Drama|FastBeat|Calm)?\([^)]*\{[^}]*\blag\s*:/gs;
   if (lagRegex.test(source)) {
     findings.push({
       file,
@@ -130,8 +156,7 @@ function lintFile(file: string, source: string): Finding[] {
         file,
         rule: "camera/unknown-anchor",
         message: `Anchor "${anchor}" is not in the V1 provider-backed anchor set.`,
-        suggestion:
-          "Use a known anchor from WhatsApp/X/iMessage/notification providers.",
+        suggestion: "Use a known anchor from WhatsApp/X/iMessage/notification providers.",
       });
     }
   }
@@ -146,8 +171,7 @@ function lintFile(file: string, source: string): Finding[] {
     findings.push({
       file,
       rule: "camera/reset-scene-boundary-only",
-      message:
-        "Too many reset calls detected; V1 expects reset only at explicit scene boundaries.",
+      message: "Too many reset calls detected; V1 expects reset only at explicit scene boundaries.",
       suggestion: "Use long `track()` spans and sparse interrupt `focus()` calls.",
     });
   }
@@ -158,8 +182,7 @@ function lintFile(file: string, source: string): Finding[] {
         file,
         rule: "camera/no-reset-pingpong",
         message: "Reset ping-pong detected within 1.5 seconds.",
-        suggestion:
-          "Replace frequent reset/focus loops with continuous track-first choreography.",
+        suggestion: "Replace frequent reset/focus loops with continuous track-first choreography.",
         frameHint: `${resetFrames[i - 1]} -> ${resetFrames[i]}`,
       });
     }
@@ -169,9 +192,7 @@ function lintFile(file: string, source: string): Finding[] {
 }
 
 async function runLint(scanRoot: string): Promise<LintResult> {
-  const files = (await walk(scanRoot)).filter((f) =>
-    f.endsWith(".episode.ts"),
-  );
+  const files = (await walk(scanRoot)).filter((f) => f.endsWith(".episode.ts"));
   const findings: Finding[] = [];
   for (const file of files) {
     const source = await fs.readFile(file, "utf8");
@@ -210,9 +231,7 @@ async function runDoctor(cameraSrcRoot: string): Promise<void> {
 
   process.stdout.write("tokovo-camera doctor\n");
   process.stdout.write(`- camera source files: ${files.length}\n`);
-  process.stdout.write(
-    `- anti-coupling: ${couplingViolations.length === 0 ? "PASS" : "FAIL"}\n`,
-  );
+  process.stdout.write(`- anti-coupling: ${couplingViolations.length === 0 ? "PASS" : "FAIL"}\n`);
   if (couplingViolations.length > 0) {
     for (const violation of couplingViolations) {
       process.stdout.write(`  - ${violation.file}\n`);
@@ -224,9 +243,7 @@ async function runDoctor(cameraSrcRoot: string): Promise<void> {
 
 async function runPreview(file: string): Promise<void> {
   const source = await fs.readFile(file, "utf8");
-  const focusCalls = Array.from(
-    source.matchAll(/cam\.at\(([^)]+)\)\.focus\(\s*["']([^"']+)["']/g),
-  );
+  const focusCalls = Array.from(source.matchAll(/cam\.at\(([^)]+)\)\.focus\(\s*["']([^"']+)["']/g));
   const trackCalls = Array.from(
     source.matchAll(
       /cam\.span\(([^,]+),([^)]+)\)\.(track(?:Cinematic|Drama|FastBeat|Calm)?)\(\s*["']([^"']+)["']/g,
@@ -260,9 +277,7 @@ function migrateSourceToV1(source: string): string {
 }
 
 async function runMigrate(scanRoot: string): Promise<void> {
-  const files = (await walk(scanRoot)).filter((f) =>
-    f.endsWith(".episode.ts"),
-  );
+  const files = (await walk(scanRoot)).filter((f) => f.endsWith(".episode.ts"));
   let changed = 0;
   for (const file of files) {
     const source = await fs.readFile(file, "utf8");
@@ -272,9 +287,7 @@ async function runMigrate(scanRoot: string): Promise<void> {
       changed += 1;
     }
   }
-  process.stdout.write(
-    `tokovo-camera migrate-v1: updated ${changed}/${files.length} files\n`,
-  );
+  process.stdout.write(`tokovo-camera migrate-v1: updated ${changed}/${files.length} files\n`);
 }
 
 async function main(): Promise<void> {
@@ -299,10 +312,7 @@ async function main(): Promise<void> {
   if (command === "preview") {
     const file = argPath
       ? path.resolve(process.cwd(), argPath)
-      : path.resolve(
-          repoRoot,
-          "packages/episodes/src/production/whatsapp-to-x.episode.ts",
-        );
+      : path.resolve(repoRoot, "packages/episodes/src/production/whatsapp-to-x.episode.ts");
     await runPreview(file);
     return;
   }
@@ -313,9 +323,7 @@ async function main(): Promise<void> {
     return;
   }
 
-  process.stderr.write(
-    "Usage: tokovo-camera <lint|doctor|preview|migrate-v1> [path-or-file]\n",
-  );
+  process.stderr.write("Usage: tokovo-camera <lint|doctor|preview|migrate-v1> [path-or-file]\n");
   process.exit(1);
 }
 

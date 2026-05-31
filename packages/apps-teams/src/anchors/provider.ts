@@ -46,11 +46,7 @@ function viewport(
   return { width: 430, height: 932, safeTop: 0, safeBottom: 0 };
 }
 
-function aliasAnchor(
-  anchors: Record<string, LayoutRect>,
-  alias: string,
-  source: string,
-): void {
+function aliasAnchor(anchors: Record<string, LayoutRect>, alias: string, source: string): void {
   if (!anchors[alias] && anchors[source]) {
     anchors[alias] = anchors[source];
   }
@@ -91,6 +87,9 @@ export const TeamsAnchorProvider: AnchorProvider = {
     teams_notification: { anchorPoint: { x: 0.5, y: 0.5 }, paddingPx: 18, targetFill: 0.72 },
     teams_call_surface: { anchorPoint: { x: 0.5, y: 0.5 }, paddingPx: 28, targetFill: 0.84 },
     teams_call_controls: { anchorPoint: { x: 0.5, y: 0.5 }, paddingPx: 20, targetFill: 0.72 },
+    chat_list: { anchorPoint: { x: 0.5, y: 0.46 }, paddingPx: 26, targetFill: 0.84 },
+    thread_view: { anchorPoint: { x: 0.52, y: 0.56 }, paddingPx: 24, targetFill: 0.84 },
+    call_surface: { anchorPoint: { x: 0.5, y: 0.5 }, paddingPx: 28, targetFill: 0.84 },
     message_list: { anchorPoint: { x: 0.54, y: 0.56 }, paddingPx: 22, targetFill: 0.84 },
     message_thread: { anchorPoint: { x: 0.52, y: 0.56 }, paddingPx: 24, targetFill: 0.84 },
     lastMessage: { anchorPoint: { x: 0.58, y: 0.58 }, paddingPx: 20, targetFill: 0.86 },
@@ -112,6 +111,10 @@ export const TeamsAnchorProvider: AnchorProvider = {
 
     // Semantic aliases for generic camera scripts.
     aliasAnchor(anchors, "header", "teams_header");
+    aliasAnchor(anchors, "chat_list", "teams_content");
+    aliasAnchor(anchors, "thread_view", "teams_thread");
+    aliasAnchor(anchors, "thread_view", "teams_message_list");
+    aliasAnchor(anchors, "call_surface", "teams_call_surface");
     aliasAnchor(anchors, "content", "teams_content");
     aliasAnchor(anchors, "content", "teams_message_list");
     aliasAnchor(anchors, "message_list", "teams_message_list");
@@ -142,6 +145,10 @@ export const TeamsAnchorProvider: AnchorProvider = {
     anchors.teams_call_surface ??= { x: 0, y: 0, width, height };
     anchors.teams_call_controls ??= { x: 20, y: height - 104, width: width - 40, height: 72 };
 
+    aliasAnchor(anchors, "chat_list", "teams_content");
+    aliasAnchor(anchors, "thread_view", "teams_thread");
+    aliasAnchor(anchors, "thread_view", "teams_message_list");
+    aliasAnchor(anchors, "call_surface", "teams_call_surface");
     aliasAnchor(anchors, "message_list", "teams_message_list");
     aliasAnchor(anchors, "message_thread", "teams_thread");
     aliasAnchor(anchors, "message_thread", "teams_message_list");

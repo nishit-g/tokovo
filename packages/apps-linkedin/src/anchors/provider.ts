@@ -49,11 +49,7 @@ function addSemanticAnchors(
   }
 }
 
-function aliasAnchor(
-  anchors: Record<string, LayoutRect>,
-  alias: string,
-  source: string,
-): void {
+function aliasAnchor(anchors: Record<string, LayoutRect>, alias: string, source: string): void {
   if (!anchors[alias] && anchors[source]) {
     anchors[alias] = anchors[source];
   }
@@ -90,7 +86,12 @@ export const LinkedInAnchorProvider: AnchorProvider = {
         anchors.li_dm_thread ??= { x: 0, y: height * 0.14, width, height: height * 0.72 };
         anchors.li_dm_composer ??= { x: 0, y: height * 0.86, width, height: height * 0.14 };
       } else if (screen === "compose") {
-        anchors.li_compose_sheet ??= { x: width * 0.04, y: height * 0.16, width: width * 0.92, height: height * 0.74 };
+        anchors.li_compose_sheet ??= {
+          x: width * 0.04,
+          y: height * 0.16,
+          width: width * 0.92,
+          height: height * 0.74,
+        };
       } else if (screen === "notifications") {
         anchors.li_notifications_list ??= { x: 0, y: height * 0.14, width, height: height * 0.76 };
       } else if (screen === "messages") {
@@ -103,13 +104,37 @@ export const LinkedInAnchorProvider: AnchorProvider = {
         anchors.li_comment_composer ??= { x: 0, y: height * 0.82, width, height: height * 0.08 };
       } else {
         anchors.li_feed ??= { x: 0, y: height * 0.14, width, height: height * 0.76 };
-        anchors.li_post_card ??= { x: width * 0.04, y: height * 0.2, width: width * 0.92, height: height * 0.35 };
-        anchors.li_reaction_row ??= { x: width * 0.04, y: height * 0.52, width: width * 0.92, height: height * 0.07 };
-        anchors.li_compose_fab ??= { x: width * 0.74, y: height * 0.79, width: width * 0.2, height: height * 0.14 };
+        anchors.li_post_card ??= {
+          x: width * 0.04,
+          y: height * 0.2,
+          width: width * 0.92,
+          height: height * 0.35,
+        };
+        anchors.li_reaction_row ??= {
+          x: width * 0.04,
+          y: height * 0.52,
+          width: width * 0.92,
+          height: height * 0.07,
+        };
+        anchors.li_compose_fab ??= {
+          x: width * 0.74,
+          y: height * 0.79,
+          width: width * 0.2,
+          height: height * 0.14,
+        };
       }
     }
 
     aliasAnchor(anchors, "header", "li_header");
+    aliasAnchor(anchors, "feed", "li_feed");
+    aliasAnchor(anchors, "post_card", "li_post_focus");
+    aliasAnchor(anchors, "post_card", "li_post_card");
+    aliasAnchor(anchors, "post_detail", "li_post_detail");
+    aliasAnchor(anchors, "notification_row", "li_notifications_focus_row");
+    aliasAnchor(anchors, "notification_row", "li_notifications_list");
+    aliasAnchor(anchors, "composer", "li_compose_sheet");
+    aliasAnchor(anchors, "composer", "li_comment_composer");
+    aliasAnchor(anchors, "composer", "li_feed_composer");
     aliasAnchor(anchors, "message_list", "li_messages_list");
     aliasAnchor(anchors, "message_thread", "li_dm_thread");
     aliasAnchor(anchors, "content", "li_dm_thread");

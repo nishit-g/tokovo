@@ -87,6 +87,21 @@ export const WhatsAppAnchors: PluginAnchorRegistry = {
       paddingPx: 10,
       targetFill: 0.9,
     },
+    chat_header: {
+      anchorPoint: { x: 0.5, y: 0.15 },
+      paddingPx: 10,
+      targetFill: 0.9,
+    },
+    status_row: {
+      anchorPoint: { x: 0.5, y: 0.32 },
+      paddingPx: 14,
+      targetFill: 0.8,
+    },
+    calls_list: {
+      anchorPoint: { x: 0.5, y: 0.5 },
+      paddingPx: 14,
+      targetFill: 0.9,
+    },
     updates_header: {
       anchorPoint: { x: 0.5, y: 0.15 },
       paddingPx: 10,

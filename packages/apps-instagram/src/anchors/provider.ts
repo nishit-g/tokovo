@@ -29,6 +29,12 @@ function getViewport(
   return { width: 430, height: 932 };
 }
 
+function aliasAnchor(anchors: Record<string, LayoutRect>, alias: string, source: string): void {
+  if (!anchors[alias] && anchors[source]) {
+    anchors[alias] = anchors[source];
+  }
+}
+
 function addFallbackAnchors(
   anchors: Record<string, LayoutRect>,
   screen: NonNullable<Partial<InstagramState>["currentScreen"]>,
@@ -42,22 +48,53 @@ function addFallbackAnchors(
     anchors.feed_list ??= { x: 0, y: height * 0.21, width, height: height * 0.71 };
     anchors.feed_post_0 ??= { x: 0, y: height * 0.24, width, height: height * 0.5 };
     anchors.feed_post_0_media ??= { x: 0, y: height * 0.3, width, height: height * 0.36 };
+    anchors.comment_block ??= {
+      x: width * 0.04,
+      y: height * 0.62,
+      width: width * 0.92,
+      height: height * 0.12,
+    };
   } else if (screen === "story") {
     anchors.story_viewer ??= { x: 0, y: 0, width, height };
     anchors.story_progress ??= { x: 16, y: 14, width: width - 32, height: 8 };
     anchors.story_reply_bar ??= { x: 16, y: height - 78, width: width - 32, height: 44 };
   } else if (screen === "notifications") {
     anchors.notifications_list ??= { x: 0, y: height * 0.1, width, height: height * 0.82 };
-    anchors.notifications_row_0 ??= { x: width * 0.04, y: height * 0.14, width: width * 0.92, height: height * 0.08 };
+    anchors.notifications_row_0 ??= {
+      x: width * 0.04,
+      y: height * 0.14,
+      width: width * 0.92,
+      height: height * 0.08,
+    };
   } else if (screen === "inbox") {
     anchors.inbox_list ??= { x: 0, y: height * 0.17, width, height: height * 0.75 };
-    anchors.dm_row_0 ??= { x: width * 0.04, y: height * 0.22, width: width * 0.92, height: height * 0.08 };
+    anchors.dm_row_0 ??= {
+      x: width * 0.04,
+      y: height * 0.22,
+      width: width * 0.92,
+      height: height * 0.08,
+    };
   } else if (screen === "thread") {
     anchors.thread_header ??= { x: 0, y: 0, width, height: height * 0.1 };
     anchors.dm_thread ??= { x: 0, y: height * 0.1, width, height: height * 0.72 };
-    anchors.dm_message_latest ??= { x: width * 0.08, y: height * 0.7, width: width * 0.84, height: height * 0.08 };
-    anchors.reply_input ??= { x: width * 0.04, y: height * 0.86, width: width * 0.7, height: height * 0.05 };
-    anchors.reply_send_button ??= { x: width * 0.78, y: height * 0.86, width: width * 0.14, height: height * 0.05 };
+    anchors.dm_message_latest ??= {
+      x: width * 0.08,
+      y: height * 0.7,
+      width: width * 0.84,
+      height: height * 0.08,
+    };
+    anchors.reply_input ??= {
+      x: width * 0.04,
+      y: height * 0.86,
+      width: width * 0.7,
+      height: height * 0.05,
+    };
+    anchors.reply_send_button ??= {
+      x: width * 0.78,
+      y: height * 0.86,
+      width: width * 0.14,
+      height: height * 0.05,
+    };
   } else if (screen === "profile") {
     anchors.profile_header ??= { x: 0, y: 0, width, height: height * 0.34 };
     anchors.profile_grid ??= { x: 0, y: height * 0.38, width, height: height * 0.54 };
@@ -65,7 +102,12 @@ function addFallbackAnchors(
   } else if (screen === "composer") {
     anchors.composer_surface ??= { x: 0, y: 0, width, height };
     anchors.composer_media ??= { x: 16, y: height * 0.12, width: width - 32, height: width - 32 };
-    anchors.composer_caption_input ??= { x: 16, y: height * 0.78, width: width - 32, height: height * 0.1 };
+    anchors.composer_caption_input ??= {
+      x: 16,
+      y: height * 0.78,
+      width: width - 32,
+      height: height * 0.1,
+    };
   }
 }
 
@@ -91,6 +133,12 @@ export const InstagramAnchorProvider: AnchorProvider = {
       }
     }
     addFallbackAnchors(anchors, screen, width, height);
+    aliasAnchor(anchors, "feed", "feed_list");
+    aliasAnchor(anchors, "feed_post", "feed_post_focus");
+    aliasAnchor(anchors, "feed_post", "feed_post_0");
+    aliasAnchor(anchors, "comment_block", "feed_post_focus_comments");
+    aliasAnchor(anchors, "notification_row", "notifications_row_0");
+    aliasAnchor(anchors, "composer", "composer_surface");
     return {
       anchors,
       deviceId,

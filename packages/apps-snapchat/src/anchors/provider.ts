@@ -59,17 +59,16 @@ function addSemanticAnchors(
   }
 }
 
-function aliasAnchor(
-  anchors: Record<string, LayoutRect>,
-  alias: string,
-  source: string,
-): void {
+function aliasAnchor(anchors: Record<string, LayoutRect>, alias: string, source: string): void {
   if (!anchors[alias] && anchors[source]) {
     anchors[alias] = anchors[source];
   }
 }
 
-function addLastMessageAnchor(anchors: Record<string, LayoutRect>, state: Partial<SnapchatState>): void {
+function addLastMessageAnchor(
+  anchors: Record<string, LayoutRect>,
+  state: Partial<SnapchatState>,
+): void {
   const activeConversation = state.activeConversationId
     ? state.conversations?.[state.activeConversationId]
     : undefined;
@@ -97,6 +96,10 @@ export const SnapchatAnchorProvider: AnchorProvider = {
     snapchat_composer: { anchorPoint: { x: 0.5, y: 0.5 }, paddingPx: 18, targetFill: 0.8 },
     snapchat_snap_viewer: { anchorPoint: { x: 0.5, y: 0.5 }, paddingPx: 12, targetFill: 0.94 },
     snapchat_last_message: { anchorPoint: { x: 0.58, y: 0.58 }, paddingPx: 18, targetFill: 0.9 },
+    chat_list: { anchorPoint: { x: 0.5, y: 0.42 }, paddingPx: 22, targetFill: 0.86 },
+    message_thread: { anchorPoint: { x: 0.52, y: 0.56 }, paddingPx: 20, targetFill: 0.86 },
+    snap_card: { anchorPoint: { x: 0.5, y: 0.5 }, paddingPx: 18, targetFill: 0.88 },
+    snap_view: { anchorPoint: { x: 0.5, y: 0.5 }, paddingPx: 12, targetFill: 0.94 },
     lastMessage: { anchorPoint: { x: 0.58, y: 0.58 }, paddingPx: 18, targetFill: 0.9 },
   },
 
@@ -178,6 +181,10 @@ export const SnapchatAnchorProvider: AnchorProvider = {
 
     // Semantic aliases for cross-app camera scripts.
     aliasAnchor(anchors, "header", "snapchat_header");
+    aliasAnchor(anchors, "chat_list", "snapchat_chat_list");
+    aliasAnchor(anchors, "message_thread", "snapchat_thread");
+    aliasAnchor(anchors, "snap_card", "snapchat_chat_row_0");
+    aliasAnchor(anchors, "snap_view", "snapchat_snap_viewer");
     aliasAnchor(anchors, "content", "snapchat_chat_list");
     aliasAnchor(anchors, "content", "snapchat_thread");
     aliasAnchor(anchors, "inputArea", "snapchat_composer");

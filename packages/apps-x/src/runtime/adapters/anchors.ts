@@ -20,6 +20,11 @@ export const xAnchors: PluginAnchorRegistry = {
       paddingPx: 16,
       targetFill: 0.82,
     },
+    timeline: {
+      anchorPoint: { x: 0.5, y: 0.45 },
+      paddingPx: 16,
+      targetFill: 0.82,
+    },
     tweet_card: {
       anchorPoint: { x: 0.5, y: 0.4 },
       paddingPx: 14,
@@ -60,6 +65,11 @@ export const xAnchors: PluginAnchorRegistry = {
       paddingPx: 10,
       targetFill: 0.7,
     },
+    composer: {
+      anchorPoint: { x: 0.5, y: 0.78 },
+      paddingPx: 10,
+      targetFill: 0.7,
+    },
     compose_fab: {
       anchorPoint: { x: 0.82, y: 0.86 },
       paddingPx: 8,
@@ -91,6 +101,11 @@ export const xAnchors: PluginAnchorRegistry = {
       targetFill: 0.82,
     },
     notifications_row_0: {
+      anchorPoint: { x: 0.5, y: 0.24 },
+      paddingPx: 10,
+      targetFill: 0.75,
+    },
+    notification_card: {
       anchorPoint: { x: 0.5, y: 0.24 },
       paddingPx: 10,
       targetFill: 0.75,

@@ -15,10 +15,25 @@ export const linkedInAnchors: PluginAnchorRegistry = {
       paddingPx: 16,
       targetFill: 0.82,
     },
+    feed: {
+      anchorPoint: { x: 0.5, y: 0.48 },
+      paddingPx: 16,
+      targetFill: 0.82,
+    },
     li_post_card: {
       anchorPoint: { x: 0.5, y: 0.44 },
       paddingPx: 14,
       targetFill: 0.82,
+    },
+    post_card: {
+      anchorPoint: { x: 0.5, y: 0.44 },
+      paddingPx: 14,
+      targetFill: 0.82,
+    },
+    post_detail: {
+      anchorPoint: { x: 0.5, y: 0.48 },
+      paddingPx: 16,
+      targetFill: 0.86,
     },
     li_reaction_row: {
       anchorPoint: { x: 0.5, y: 0.64 },
@@ -39,6 +54,11 @@ export const linkedInAnchors: PluginAnchorRegistry = {
       anchorPoint: { x: 0.5, y: 0.5 },
       paddingPx: 16,
       targetFill: 0.84,
+    },
+    notification_row: {
+      anchorPoint: { x: 0.5, y: 0.24 },
+      paddingPx: 10,
+      targetFill: 0.76,
     },
     li_messages_list: {
       anchorPoint: { x: 0.5, y: 0.52 },
@@ -66,6 +86,11 @@ export const linkedInAnchors: PluginAnchorRegistry = {
       targetFill: 0.7,
     },
     li_compose_sheet: {
+      anchorPoint: { x: 0.5, y: 0.55 },
+      paddingPx: 16,
+      targetFill: 0.9,
+    },
+    composer: {
       anchorPoint: { x: 0.5, y: 0.55 },
       paddingPx: 16,
       targetFill: 0.9,

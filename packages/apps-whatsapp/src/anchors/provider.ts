@@ -41,9 +41,7 @@ function getViewportDimensions(
   return { width: 430, height: 932 };
 }
 
-function extractSemantic(
-  layout: LayoutState | null | undefined,
-): SemanticLayoutState | null {
+function extractSemantic(layout: LayoutState | null | undefined): SemanticLayoutState | null {
   if (!layout || typeof layout !== "object") return null;
   return (layout as LayoutState).semantic ?? null;
 }
@@ -83,11 +81,7 @@ function addContentAnchor(
   };
 }
 
-function aliasAnchor(
-  anchors: Record<string, LayoutRect>,
-  alias: string,
-  source: string,
-): void {
+function aliasAnchor(anchors: Record<string, LayoutRect>, alias: string, source: string): void {
   if (!anchors[alias] && anchors[source]) {
     anchors[alias] = anchors[source];
   }
@@ -157,35 +151,31 @@ export const WhatsAppAnchorProvider: AnchorProvider = {
       }
     });
     const lastMessageId = messageIds[messageIds.length - 1];
-    const lastMessageRect = lastMessageId
-      ? semantic?.regions?.[lastMessageId]?.rect
-      : undefined;
+    const lastMessageRect = lastMessageId ? semantic?.regions?.[lastMessageId]?.rect : undefined;
     if (lastMessageRect) {
       anchors.lastMessage = lastMessageRect;
     }
 
     const mediaIds = semantic?.groups?.media ?? [];
     const lastMediaId = mediaIds[mediaIds.length - 1];
-    const lastMediaRect = lastMediaId
-      ? semantic?.regions?.[lastMediaId]?.rect
-      : undefined;
+    const lastMediaRect = lastMediaId ? semantic?.regions?.[lastMediaId]?.rect : undefined;
     if (lastMediaRect) {
       anchors.lastMedia = lastMediaRect;
     }
 
     const replyIds = semantic?.groups?.reply ?? [];
     const lastReplyId = replyIds[replyIds.length - 1];
-    const lastReplyRect = lastReplyId
-      ? semantic?.regions?.[lastReplyId]?.rect
-      : undefined;
+    const lastReplyRect = lastReplyId ? semantic?.regions?.[lastReplyId]?.rect : undefined;
     if (lastReplyRect) {
       anchors.lastReply = lastReplyRect;
     }
 
     addContentAnchor(anchors, layout as LayoutState);
+    aliasAnchor(anchors, "chat_header", "header");
     aliasAnchor(anchors, "message_thread", "chat_thread");
     aliasAnchor(anchors, "thread_card", "chat_thread");
     aliasAnchor(anchors, "message_list", "chat_list");
+    aliasAnchor(anchors, "status_row", "updates_status_strip");
     aliasAnchor(anchors, "content", "chat_thread");
 
     return {
