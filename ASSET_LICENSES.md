@@ -11,13 +11,15 @@ This file tracks bundled assets that ship with the repository.
 ## Demo Video
 
 - Location: `apps/docs/public/showcase/launch-clip.mp4`
-- Source: copied from `apps/video-runner/public/media/launch-clip.mp4`
+- Source: clipped from the rendered `v2-creator-series-showcase` Remotion output
+- Render command: `EPISODE_ID=v2-creator-series-showcase OUT_FILE=out/public-release/v2-creator-series-showcase-full.mp4 CONCURRENCY=4 pnpm --filter video-runner render:fast`
+- Clip command: `ffmpeg -ss 27.5 -i apps/video-runner/out/public-release/v2-creator-series-showcase-full.mp4 -t 7 ... apps/docs/public/showcase/launch-clip.mp4`
 - Purpose: documentation showcase preview
 
 ## Demo Poster
 
 - Location: `apps/docs/public/showcase/launch-poster.png`
-- Source: generated from `apps/docs/public/showcase/launch-clip.mp4` with `ffmpeg`
+- Source: generated from the rendered `v2-creator-series-showcase` Remotion output with `ffmpeg`
 - Purpose: README and documentation preview image
 
 ## App and Story Media

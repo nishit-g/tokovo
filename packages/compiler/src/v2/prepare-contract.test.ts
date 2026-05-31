@@ -57,9 +57,9 @@ describe("compiler pipeline guarantees", () => {
       _declarationOrder: 0,
     } as TrackEvent;
 
-    expect(() =>
-      lowerTrackEvent(appEvent, { fps: 30, pluginLowerers: new Map() }),
-    ).toThrow(/No plugin lowerer registered for appId: app_missing/);
+    expect(() => lowerTrackEvent(appEvent, { fps: 30, pluginLowerers: new Map() })).toThrow(
+      /No plugin lowerer registered for appId: app_missing/,
+    );
   });
 
   it("prepareTrackEpisode signature and keyframe index are deterministic", () => {
@@ -87,9 +87,7 @@ describe("compiler pipeline guarantees", () => {
     const preparedB = prepareTrackEpisode(ir, [], { log: false, validate: true });
 
     expect(preparedA.eventSignature).toBe(preparedB.eventSignature);
-    expect(preparedA.keyframedEventIndex?.frames).toEqual(
-      preparedB.keyframedEventIndex?.frames,
-    );
+    expect(preparedA.keyframedEventIndex?.frames).toEqual(preparedB.keyframedEventIndex?.frames);
     expect(preparedA.events).toEqual(preparedB.events);
   });
 
@@ -184,6 +182,138 @@ describe("compiler pipeline guarantees", () => {
     expect(app.currentScreen).toBe("chat");
     expect(app.conversationId).toBe("dm_alex");
     expect(typeof app.conversations).toBe("object");
+  });
+
+  it("hydrates snapshot-backed apps before they become foreground", () => {
+    const createPlugin = (id: string) =>
+      ({
+        id,
+        version: "1.0.0",
+        displayName: id,
+        reducer: (state: unknown) => state,
+        views: { AppRoot: () => null },
+        createInitialState: () => ({
+          currentScreen: "timeline",
+          viewMode: "FEED",
+        }),
+        bootstrap: {
+          snapshot: {
+            currentVersion: 1,
+            validate: () => ({ errors: [] }),
+          },
+          view: {
+            currentVersion: 1,
+            validate: () => ({ errors: [] }),
+          },
+          hydrate: ({ baseState, initialView }: any) => ({
+            ...baseState,
+            currentScreen: initialView?.view?.screen ?? baseState.currentScreen,
+            viewMode: "FEED",
+          }),
+        },
+      }) as unknown as TokovoPlugin;
+
+    const ir = createCanonicalTrackEpisodeIR({
+      devices: [
+        {
+          id: "phone",
+          profile: "iphone16",
+          app: "app_whatsapp",
+        },
+      ],
+      appSnapshots: [
+        {
+          appId: "app_x",
+          deviceId: "phone",
+          snapshotVersion: 1,
+          snapshot: {},
+        },
+      ],
+      initialViews: [
+        {
+          appId: "app_x",
+          deviceId: "phone",
+          viewVersion: 1,
+          view: {
+            screen: "timeline",
+          },
+        },
+      ],
+      events: [
+        {
+          at: 30,
+          deviceId: "phone",
+          kind: "DEVICE",
+          type: "OPEN_APP",
+          payload: { appId: "app_x" },
+          _declarationOrder: 0,
+        },
+      ],
+    });
+
+    const prepared = prepareTrackEpisode(
+      ir,
+      [createPlugin("app_whatsapp"), createPlugin("app_x")],
+      {
+        log: false,
+        validate: true,
+      },
+    );
+
+    expect(prepared.initialWorld.appState.app_x).toMatchObject({
+      currentScreen: "timeline",
+      viewMode: "FEED",
+    });
+  });
+
+  it("hydrates installed apps before they become foreground", () => {
+    const createPlugin = (id: string, currentScreen: string) =>
+      ({
+        id,
+        version: "1.0.0",
+        displayName: id,
+        reducer: (state: unknown) => state,
+        views: { AppRoot: () => null },
+        createInitialState: () => ({
+          currentScreen,
+          viewMode: "FEED",
+        }),
+      }) as unknown as TokovoPlugin;
+
+    const ir = createCanonicalTrackEpisodeIR({
+      devices: [
+        {
+          id: "phone",
+          profile: "iphone16",
+          app: "app_whatsapp",
+          installedApps: ["app_whatsapp", "app_imessage"],
+        },
+      ],
+      events: [
+        {
+          at: 30,
+          deviceId: "phone",
+          kind: "DEVICE",
+          type: "OPEN_APP",
+          payload: { appId: "app_imessage" },
+          _declarationOrder: 0,
+        },
+      ],
+    });
+
+    const prepared = prepareTrackEpisode(
+      ir,
+      [createPlugin("app_whatsapp", "chats"), createPlugin("app_imessage", "list")],
+      {
+        log: false,
+        validate: true,
+      },
+    );
+
+    expect(prepared.initialWorld.appState.app_imessage).toMatchObject({
+      currentScreen: "list",
+      viewMode: "FEED",
+    });
   });
 
   it("migrates versioned snapshots before hydrate", () => {

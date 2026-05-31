@@ -18,11 +18,7 @@ import type {
   TokovoConfigType,
   AutoSoundRule,
 } from "@tokovo/core";
-import {
-  DEFAULT_CAMERA_STATE,
-  DEFAULT_AUDIO_STATE,
-  createScopedLogger,
-} from "@tokovo/core";
+import { DEFAULT_CAMERA_STATE, DEFAULT_AUDIO_STATE, createScopedLogger } from "@tokovo/core";
 import {
   compareEvents,
   createEventIndex,
@@ -32,10 +28,7 @@ import {
 } from "@tokovo/core";
 import { lowerEpisode } from "./lowering.js";
 import { validateV1RuntimeEpisode } from "./validation.js";
-import {
-  CompilerSchemaValidationError,
-  RuntimeValidationError,
-} from "./errors.js";
+import { CompilerSchemaValidationError, RuntimeValidationError } from "./errors.js";
 import { collectEpisodeAssetRefs } from "./asset-refs.js";
 
 const log = createScopedLogger("compiler");
@@ -184,10 +177,7 @@ export function prepareTrackEpisode(
     durationInFrames: ir.durationInFrames,
     events: sortedEvents,
     eventIndex: createEventIndex(sortedEvents),
-    keyframedEventIndex: createKeyframedEventIndex(
-      sortedEvents,
-      keyframeInterval,
-    ),
+    keyframedEventIndex: createKeyframedEventIndex(sortedEvents, keyframeInterval),
     keyframeInterval,
     eventSignature,
     initialWorld,
@@ -209,8 +199,7 @@ function buildInitialWorld(ir: TrackEpisodeIR, plugins: TokovoPlugin[]): WorldSt
   for (const device of ir.devices) {
     const platform = device.profile.includes("pixel") ? "android" : "ios";
     const installedApps = device.installedApps ?? [];
-    const hasHomeScreen =
-      Boolean(device.homeScreen) || installedApps.length > 0;
+    const hasHomeScreen = Boolean(device.homeScreen) || installedApps.length > 0;
 
     devices[device.id] = {
       id: device.id,
@@ -263,9 +252,7 @@ function buildInitialWorld(ir: TrackEpisodeIR, plugins: TokovoPlugin[]): WorldSt
   };
   const audio = { ...DEFAULT_AUDIO_STATE };
 
-  const pluginsById = new Map<string, TokovoPlugin>(
-    plugins.map((p) => [p.id, p]),
-  );
+  const pluginsById = new Map<string, TokovoPlugin>(plugins.map((p) => [p.id, p]));
 
   const appState: Record<string, unknown> = {};
   const snapshotEntries = new Map<string, import("@tokovo/ir").AppSnapshotEntry>();
@@ -279,89 +266,128 @@ function buildInitialWorld(ir: TrackEpisodeIR, plugins: TokovoPlugin[]): WorldSt
     initialViewEntries.set(`${entry.appId}:${entry.deviceId}`, entry);
   }
 
+  const devicesById = new Map(ir.devices.map((device) => [device.id, device]));
+  const bootstrapTargets = new Map<
+    string,
+    {
+      appId: string;
+      device: (typeof ir.devices)[number];
+    }
+  >();
+
   for (const device of ir.devices) {
     if (device.app) {
-      const appId = device.app;
-      const plugin = pluginsById.get(appId);
-      const bootstrapKey = `${appId}:${device.id}`;
-      const snapshot = snapshotEntries.get(bootstrapKey);
-      const initialView = initialViewEntries.get(bootstrapKey);
-      const baseState = (() => {
-        try {
-          const created = plugin?.createInitialState?.();
-          if (created && typeof created === "object") return { ...(created as Record<string, unknown>) };
-        } catch (e) {
-          log.warn(`createInitialState failed for ${appId}`, {
-            event: "compiler.create_initial_state_failed",
-            appId,
-            error: e instanceof Error
+      bootstrapTargets.set(`${device.app}:${device.id}`, {
+        appId: device.app,
+        device,
+      });
+    }
+
+    for (const appId of device.installedApps ?? []) {
+      if (!pluginsById.has(appId)) {
+        continue;
+      }
+
+      bootstrapTargets.set(`${appId}:${device.id}`, {
+        appId,
+        device,
+      });
+    }
+  }
+
+  for (const entry of [...ir.appSnapshots, ...ir.initialViews]) {
+    const device = devicesById.get(entry.deviceId);
+    if (!device) {
+      continue;
+    }
+    bootstrapTargets.set(`${entry.appId}:${entry.deviceId}`, {
+      appId: entry.appId,
+      device,
+    });
+  }
+
+  for (const { appId, device } of bootstrapTargets.values()) {
+    const plugin = pluginsById.get(appId);
+    const bootstrapKey = `${appId}:${device.id}`;
+    const snapshot = snapshotEntries.get(bootstrapKey);
+    const initialView = initialViewEntries.get(bootstrapKey);
+    const baseState = (() => {
+      try {
+        const created = plugin?.createInitialState?.();
+        if (created && typeof created === "object")
+          return { ...(created as Record<string, unknown>) };
+      } catch (e) {
+        log.warn(`createInitialState failed for ${appId}`, {
+          event: "compiler.create_initial_state_failed",
+          appId,
+          error:
+            e instanceof Error
               ? { name: e.name, message: e.message, stack: e.stack }
               : { name: "UnknownError", message: String(e) },
-          });
-        }
-        return {};
-      })();
-      const bootstrapContext = {
+        });
+      }
+      return {};
+    })();
+    const bootstrapContext = {
+      appId,
+      deviceId: device.id,
+      device,
+      ir,
+      baseState,
+      snapshot: resolveBootstrapSnapshotEntry({
         appId,
         deviceId: device.id,
-        device,
-        ir,
-        baseState,
-        snapshot: resolveBootstrapSnapshotEntry({
+        entry: snapshot,
+        plugin,
+        baseContext: {
           appId,
           deviceId: device.id,
-          entry: snapshot,
-          plugin,
-          baseContext: {
-            appId,
-            deviceId: device.id,
-            device,
-            ir,
-            baseState,
-            snapshot,
-            initialView,
-          },
-        }),
-        initialView: resolveBootstrapViewEntry({
+          device,
+          ir,
+          baseState,
+          snapshot,
+          initialView,
+        },
+      }),
+      initialView: resolveBootstrapViewEntry({
+        appId,
+        deviceId: device.id,
+        entry: initialView,
+        plugin,
+        baseContext: {
           appId,
           deviceId: device.id,
-          entry: initialView,
-          plugin,
-          baseContext: {
-            appId,
-            deviceId: device.id,
-            device,
-            ir,
-            baseState,
-            snapshot,
-            initialView,
-          },
-        }),
-      };
+          device,
+          ir,
+          baseState,
+          snapshot,
+          initialView,
+        },
+      }),
+    };
 
-      const validation = plugin?.bootstrap?.validate?.(bootstrapContext);
-      if (validation?.errors && validation.errors.length > 0) {
-        throw new RuntimeValidationError(
-          `[prepareTrackEpisode] bootstrap validation failed for ${appId} on ${device.id}\n${validation.errors.map((error: string) => `- ${error}`).join("\n")}`,
-        );
-      }
-
-      if (validation?.warnings && validation.warnings.length > 0) {
-        for (const warning of validation.warnings) {
-          log.warn(`${appId} bootstrap warning`, {
-            event: "compiler.bootstrap_warning",
-            appId,
-            warning,
-          });
-        }
-      }
-
-      const hydrated = plugin?.bootstrap?.hydrate
-        ? plugin.bootstrap.hydrate(bootstrapContext)
-        : baseState;
-
-      appState[appId] = hydrated as Record<string, unknown>;
+    const validation = plugin?.bootstrap?.validate?.(bootstrapContext);
+    if (validation?.errors && validation.errors.length > 0) {
+      throw new RuntimeValidationError(
+        `[prepareTrackEpisode] bootstrap validation failed for ${appId} on ${device.id}\n${validation.errors.map((error: string) => `- ${error}`).join("\n")}`,
+      );
     }
+
+    if (validation?.warnings && validation.warnings.length > 0) {
+      for (const warning of validation.warnings) {
+        log.warn(`${appId} bootstrap warning`, {
+          event: "compiler.bootstrap_warning",
+          appId,
+          warning,
+        });
+      }
+    }
+
+    const hydrated = plugin?.bootstrap?.hydrate
+      ? plugin.bootstrap.hydrate(bootstrapContext)
+      : baseState;
+
+    appState[appId] = hydrated as Record<string, unknown>;
   }
 
   const worldState: WorldState = {
@@ -536,7 +562,12 @@ function resolveVersionedBootstrapValue(input: {
 
 const DEFAULT_DEVICE_SFX_RULES: AutoSoundRule[] = [
   { match: { kind: "DEVICE", type: "LOCK" }, action: "PLAY_ONE_SHOT", sound: "lock", bus: "sfx" },
-  { match: { kind: "DEVICE", type: "UNLOCK" }, action: "PLAY_ONE_SHOT", sound: "unlock", bus: "sfx" },
+  {
+    match: { kind: "DEVICE", type: "UNLOCK" },
+    action: "PLAY_ONE_SHOT",
+    sound: "unlock",
+    bus: "sfx",
+  },
   { match: { kind: "DEVICE", type: "OPEN_APP" }, action: "PLAY_ONE_SHOT", sound: "tap", bus: "ui" },
   { match: { kind: "DEVICE", type: "GO_HOME" }, action: "PLAY_ONE_SHOT", sound: "tap", bus: "ui" },
 ];

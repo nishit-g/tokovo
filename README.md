@@ -4,9 +4,9 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-black.svg)](LICENSE)
 [![pnpm](https://img.shields.io/badge/pnpm-10.28.2-F69220.svg)](package.json)
 
-Tokovo is a programmable phone-simulation engine for creators making shorts, reels, episodes, and series where the phone UI carries the story.
+Tokovo is a programmable phone-simulation engine for creators making shorts, reels, TikToks, episodes, and series where the phone UI carries the story.
 
-Write the episode as TypeScript. Tokovo turns it into deterministic phone-native video: device frames, app state, messages, feeds, notifications, calls, keyboard input, camera movement, audio, and render artifacts all come from checked-in code.
+Write the story as TypeScript. Tokovo turns it into deterministic portrait video with device frames, app state, messages, feeds, notifications, calls, keyboard input, camera movement, audio, and render artifacts generated from checked-in code.
 
 ![Tokovo phone simulation preview](apps/docs/public/showcase/launch-poster.png)
 
@@ -14,23 +14,23 @@ Write the episode as TypeScript. Tokovo turns it into deterministic phone-native
 
 ## What Tokovo Does
 
-Tokovo gives you a code-first production loop for phone-native stories:
+Tokovo gives creators and production teams a code-first workflow for phone-native stories:
 
 1. Script an episode in TypeScript.
 2. Seed realistic app and OS state.
 3. Direct the camera with semantic UI anchors.
-4. Preview in Remotion Studio.
+4. Preview the result in Remotion Studio.
 5. Render portrait MP4s for Shorts, Reels, TikTok, and episodic story formats.
 
 Every message, feed item, notification, device frame, camera move, audio cue, and asset reference stays reviewable in git.
 
 ## Why It Exists
 
-Phone stories are a repeatable format, but most teams still build them by hand in timeline editors. Tokovo makes that format programmable:
+Phone stories are a repeatable format, but most teams still rebuild chats, feeds, notifications, and edits by hand in timeline editors. Tokovo makes that format programmable:
 
 - create one episode template and render many variants
 - keep story timing, app state, camera, and assets in version control
-- preview with Remotion and ship portrait video for social and series formats
+- preview with Remotion and ship portrait video for social and episodic formats
 - validate episodes before render so the same frame produces the same output every time
 
 ## What You Can Build
@@ -46,15 +46,17 @@ Tokovo's v1 target surface covers:
 | Storytelling tools | `@tokovo/overlay`, `@tokovo/background`, `@tokovo/voice`            | captions, backgrounds, music/audio cues, voice tracks                   |
 | Rendering          | `video-runner`, `@tokovo/render-service`                            | local Remotion preview, MP4 export, render-service primitives           |
 
-## See It Running
+## Render The Showcase
 
-Start with the long-form creator showcase:
+Start with the creator-series showcase:
 
 ```bash
 EPISODE_ID=v2-creator-series-showcase pnpm --filter video-runner render:fast
 ```
 
-Then try app-specific episodes:
+The render writes an MP4 and manifest under `apps/video-runner/out/`.
+
+Then try app-specific showcases:
 
 ```bash
 EPISODE_ID=whatsapp-flagship-v2 pnpm --filter video-runner render:fast
@@ -62,8 +64,6 @@ EPISODE_ID=instagram-flagship-v2 pnpm --filter video-runner render:fast
 EPISODE_ID=x-flagship-v2 pnpm --filter video-runner render:fast
 EPISODE_ID=typewriter-flagship-v2 pnpm --filter video-runner render:fast
 ```
-
-Each render writes an MP4 and manifest under `out/`.
 
 ## First 10 Minutes
 
@@ -79,7 +79,7 @@ For interactive preview:
 pnpm --filter video-runner dev
 ```
 
-## Quick Start
+## Local Development
 
 Requirements:
 

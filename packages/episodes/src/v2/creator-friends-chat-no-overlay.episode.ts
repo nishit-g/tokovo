@@ -8,17 +8,7 @@ export default defineEpisode({
     description:
       "Hinglish friends vibe. WhatsApp group chat + X banter thread + auto keyboard typing + device banner. No overlays.",
     category: "showcase",
-    tags: [
-      "v2",
-      "hinglish",
-      "chat",
-      "whatsapp",
-      "x",
-      "no-overlay",
-      "bgm",
-      "keyboard",
-      "camera",
-    ],
+    tags: ["v2", "hinglish", "chat", "whatsapp", "x", "no-overlay", "bgm", "keyboard", "camera"],
   },
   config: {
     format: "1080x1920",
@@ -93,8 +83,8 @@ export default defineEpisode({
       .snapshot("app_whatsapp", "phone", {
         conversations: [
           {
-            id: "grp_backchod",
-            name: "Backchod Boys (Verified)",
+            id: "grp_creator_room",
+            name: "Creator Room (Verified)",
             avatar: "/avatars/avatar-group.png",
             unreadCount: 37,
             type: "group",
@@ -124,7 +114,7 @@ export default defineEpisode({
           id: "x_banter",
           appId: "app_x",
           title: "X",
-          body: "Bro you got cooked. Thread is trending 😭",
+          body: "Bro your reply is trending 😭",
           mode: "headsup",
           priority: "high",
         });
@@ -141,38 +131,20 @@ export default defineEpisode({
       // ============================================
       // WHATSAPP (group chat)
       // ============================================
-      .whatsapp("phone", "grp_backchod", (wa) => {
-        wa.switchTo("grp_backchod", "0s");
+      .whatsapp("phone", "grp_creator_room", (wa) => {
+        wa.switchTo("grp_creator_room", "0s");
 
-        wa.at("1.0s").receive(
-          "Aman",
-          "Bhai tu aaj bhi late? Calendar se beef hai kya?",
-        );
-        wa.at("2.2s").receive(
-          "Riya",
-          "He thinks being late is a personality trait 😭",
-        );
-        wa.at("3.4s").receive(
-          "Sahil",
-          "Sirji entry slow-mo me karenge, time pe nahi.",
-        );
+        wa.at("1.0s").receive("Aman", "Bhai tu aaj bhi late? Calendar se beef hai kya?");
+        wa.at("2.2s").receive("Riya", "He thinks being late is a personality trait 😭");
+        wa.at("3.4s").receive("Sahil", "Sirji entry slow-mo me karenge, time pe nahi.");
 
-        wa.at("4.8s").send(
-          "Arre chill. Main late nahi, main 'dramatic timing' pe aata hoon.",
-          {
-            typed: true,
-            charDelay: 2,
-          },
-        );
+        wa.at("4.8s").send("Arre chill. Main late nahi, main 'dramatic timing' pe aata hoon.", {
+          typed: true,
+          charDelay: 2,
+        });
 
-        wa.at("7.2s").receive(
-          "Vivek",
-          "Dramatic timing? X pe tu already viral ho gaya bro 💀",
-        );
-        wa.at("8.2s").receive(
-          "Aman",
-          "Open X. Apni beizzati ka HD version dekh.",
-        );
+        wa.at("7.2s").receive("Vivek", "Dramatic timing? X pe tu already viral ho gaya bro 💀");
+        wa.at("8.2s").receive("Aman", "Open X. The replay is already everywhere.");
       })
 
       // ============================================
@@ -199,15 +171,9 @@ export default defineEpisode({
       // ============================================
       // WHATSAPP (back to group)
       // ============================================
-      .whatsapp("phone", "grp_backchod", (wa) => {
-        wa.at("23.4s").receive(
-          "Riya",
-          "Bro you replied?? Ab toh aur milega 😭",
-        );
-        wa.at("24.8s").receive(
-          "Aman",
-          "Delete kya karega, screenshot already save.",
-        );
+      .whatsapp("phone", "grp_creator_room", (wa) => {
+        wa.at("23.4s").receive("Riya", "Bro you replied?? Ab toh aur milega 😭");
+        wa.at("24.8s").receive("Aman", "Delete kya karega, screenshot already save.");
         wa.at("26.2s").receive("Sahil", "Next episode: apology tour on reels.");
 
         wa.at("28.2s").send("Ok last line. Main offline ja raha. Bye.", {
@@ -223,26 +189,16 @@ export default defineEpisode({
       // ============================================
       .camera((cam) => {
         cam.at("0s").focus("device", { scale: 1.02, duration: "0.35s" });
-        cam
-          .span("1.0s", "6.4s")
-          .trackCinematic("lastMessage", { scale: 1.12, smoothing: 0.2 });
+        cam.span("1.0s", "6.4s").trackCinematic("lastMessage", { scale: 1.12, smoothing: 0.2 });
 
-        cam
-          .at("6.65s")
-          .focus("notification_banner", { scale: 1.18, duration: "0.45s" });
+        cam.at("6.65s").focus("notification_banner", { scale: 1.18, duration: "0.45s" });
         cam.at("7.8s").focus("lastMessage", { scale: 1.12, duration: "0.35s" });
 
         cam.at("9.45s").focus("tweet_card", { scale: 1.1, duration: "0.45s" });
-        cam
-          .span("12.6s", "16.4s")
-          .trackCinematic("keyboard", { scale: 1.12, smoothing: 0.16 });
+        cam.span("12.6s", "16.4s").trackCinematic("keyboard", { scale: 1.12, smoothing: 0.16 });
 
-        cam
-          .at("23.0s")
-          .focus("lastMessage", { scale: 1.12, duration: "0.35s" });
-        cam
-          .span("28.0s", "29.4s")
-          .trackCinematic("keyboard", { scale: 1.12, smoothing: 0.16 });
+        cam.at("23.0s").focus("lastMessage", { scale: 1.12, duration: "0.35s" });
+        cam.span("28.0s", "29.4s").trackCinematic("keyboard", { scale: 1.12, smoothing: 0.16 });
       })
 
       .build(),
