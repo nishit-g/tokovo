@@ -15,6 +15,7 @@ Canonical command:
 5. At least one real render path is verified through `video-runner` or `@tokovo/render-service`.
 6. Static episode asset references are validated.
 7. Docs reflect the current bootstrap model, catalog taxonomy, and plugin boundaries.
+8. Public release docs, templates, license, and security reporting paths are in place.
 
 ## Product-Quality Gates
 

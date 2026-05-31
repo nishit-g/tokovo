@@ -2,6 +2,16 @@
   "name": "tokovo-monorepo",
   "version": "0.0.0",
   "private": true,
+  "description": "Programmable phone-simulation engine for cinematic storytelling.",
+  "license": "MIT",
+  "homepage": "https://github.com/nishit-g/tokovo#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nishit-g/tokovo.git"
+  },
+  "bugs": {
+    "url": "https://github.com/nishit-g/tokovo/issues"
+  },
   "type": "module",
   "scripts": {
     "build": "turbo run build --filter=!docs",
