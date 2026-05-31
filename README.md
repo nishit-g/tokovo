@@ -1,6 +1,8 @@
 # Tokovo
 
-Tokovo is a programmable phone-simulation engine for cinematic storytelling. It turns authored episodes into high-fidelity phone UI videos with React and Remotion.
+Tokovo is a programmable phone-simulation experience for creators making shorts, reels, episodes, and series where the phone UI is part of the story.
+
+It turns authored scenes into high-fidelity phone videos with React and Remotion, so creators can script messages, feeds, notifications, calls, camera moves, audio, and app state as repeatable cinematic timelines.
 
 ## Status
 
@@ -14,10 +16,11 @@ The project is not yet committed to broad API stability outside the v1 surfaces 
 
 ## What Tokovo Is For
 
-Tokovo is built for code-authored videos where the phone UI is part of the story:
+Tokovo is built for phone-native storytelling formats:
 
 - deterministic phone and OS simulation
 - app plugins for messaging, social, feed, and workspace surfaces
+- episode and series authoring through checked-in scene code
 - camera-aware cinematic framing
 - Remotion-based preview and rendering
 - checked-in episodes that can be validated, tested, and rendered repeatably
