@@ -63,9 +63,9 @@ describe("teams theme", () => {
   });
 
   it("resolves theme variants without losing platform defaults", () => {
-    const theme = getTheme("ios", false, "ghibli");
+    const theme = getTheme("ios", false, "storybook");
 
-    expect(theme.id).toBe("teams-ghibli");
+    expect(theme.id).toBe("teams-storybook");
     expect(theme.platform).toBe("ios");
     expect(theme.color.brand).not.toBe(TEAMS_THEME_PRESETS.light.color.brand);
     expect(theme.typography.fontFamily).toContain("Aptos");

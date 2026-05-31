@@ -3,7 +3,7 @@ import appShowcaseEpisodes from "./apps/index.js";
 import systemShowcaseEpisodes from "./system/index.js";
 
 /**
- * Enterprise showcase catalog.
+ * Production showcase catalog.
  *
  * Curated showcase catalogs for the active product surface.
  */

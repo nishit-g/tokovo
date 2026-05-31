@@ -34,7 +34,7 @@ describe("participant normalization", () => {
     const conversation: WhatsAppConversation = {
       id: "grp",
       type: "group",
-      name: "Hostel bakchodi",
+      name: "Hostel chat",
       members: [
         { id: "alice", name: "Alice" },
         { id: "bob", name: "Bob" },

@@ -4,7 +4,7 @@ import fixedSystemShowcaseEpisodes from "./fixed.js";
 /**
  * System showcases.
  *
- * Curated system showcase catalog for the enterprise storybook.
+ * Curated system showcase catalog for the studio showcase.
  */
 export const systemShowcaseEpisodes: EpisodeDefinition[] = [
   ...fixedSystemShowcaseEpisodes,

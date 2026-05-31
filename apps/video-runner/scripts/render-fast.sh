@@ -4,7 +4,7 @@ set -eu
 REPO_ROOT=$(cd "$(dirname "$0")/../../.." && pwd)
 APP_ROOT="$REPO_ROOT/apps/video-runner"
 
-EPISODE_ID_VALUE="${EPISODE_ID:-v2-enterprise-long-showcase}"
+EPISODE_ID_VALUE="${EPISODE_ID:-v2-creator-series-showcase}"
 OUT_DIR_VALUE="${OUT_DIR:-$REPO_ROOT/out}"
 OUT_FILE_VALUE="${OUT_FILE:-$OUT_DIR_VALUE/$EPISODE_ID_VALUE.mp4}"
 

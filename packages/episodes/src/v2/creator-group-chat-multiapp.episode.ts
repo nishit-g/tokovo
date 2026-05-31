@@ -3,12 +3,12 @@ import { episode } from "../code-first-episode.js";
 
 export default defineEpisode({
   meta: {
-    id: "v2-kannada-bakchodi-multiapp",
-    title: "V2 Kannada Bakchodi: WhatsApp → X → iMessage (Multi-App)",
+    id: "v2-creator-group-chat-multiapp",
+    title: "V2 Kannada Chat: WhatsApp → X → iMessage (Multi-App)",
     description:
-      "Mysuru-style Kannada trolling across apps: group chat court room, heads-up banner bait, X roast thread, and an iMessage 'Amma' reality check. Includes overlays + BGM.",
+      "Mysuru-style Kannada trolling across apps: group chat court room, heads-up banner bait, X banter thread, and an iMessage 'Amma' reality check. Includes overlays + BGM.",
     category: "showcase",
-    tags: ["v2", "kannada", "bakchodi", "whatsapp", "x", "imessage", "overlay", "bgm"],
+    tags: ["v2", "kannada", "chat", "whatsapp", "x", "imessage", "overlay", "bgm"],
   },
   config: {
     format: "1080x1920",
@@ -16,7 +16,7 @@ export default defineEpisode({
     apps: ["app_whatsapp", "app_x", "app_imessage"],
   },
   build: () =>
-    episode("v2-kannada-bakchodi-multiapp", { fps: 30, duration: "50s" })
+    episode("v2-creator-group-chat-multiapp", { fps: 30, duration: "50s" })
       .device("phone", "iphone16", {
         app: "app_whatsapp",
         installedApps: ["app_whatsapp", "app_x", "app_imessage"],
@@ -65,7 +65,7 @@ export default defineEpisode({
       .snapshot("app_whatsapp", "phone", {
         conversations: [
           {
-            id: "grp_bakchodi",
+            id: "grp_chat",
             name: "Mysuru Majaa Mandali",
             avatar: "/avatars/avatar-group.png",
             unreadCount: 21,
@@ -98,7 +98,7 @@ export default defineEpisode({
           preset: "topLeft",
           durationFrames: 180,
         });
-        ov.at("28.0s").caption("X roast thread start. Seat belt sakkat tight.", {
+        ov.at("28.0s").caption("X banter thread start. Seat belt sakkat tight.", {
           durationFrames: 150,
         });
         ov.at("44.0s").cliffhanger("ಅಮ್ಮ message ಬಂದಿದ್ರೆ… straight game over, maga.", {
@@ -144,10 +144,10 @@ export default defineEpisode({
       })
 
       // ============================================
-      // WHATSAPP (group chat bakchodi)
+      // WHATSAPP (group chat chat)
       // ============================================
-      .whatsapp("phone", "grp_bakchodi", (wa) => {
-        wa.switchTo("grp_bakchodi", "0s");
+      .whatsapp("phone", "grp_chat", (wa) => {
+        wa.switchTo("grp_chat", "0s");
 
         wa.at("1.2s").receive("ಗುರು", "Ayyo maga… ನಿನ್ನ story ನೋಡಿದೆ. 😭");
         wa.at("2.2s").receive("ಅಪ್ಪು", "Caption full Mysuru silk board traffic da 😂");
@@ -163,17 +163,17 @@ export default defineEpisode({
         });
 
         wa.at("10.8s").receive("ಅಪ್ಪು", "Narrative build ಅಂತೆ… ninna excuse factory open 24/7 🏭");
-        wa.at("12.6s").receive("ಗುರು", "X open ಮಾಡು. Roast thread already sakkat hot.");
+        wa.at("12.6s").receive("ಗುರು", "X open ಮಾಡು. Banter thread already sakkat hot.");
       })
 
       // ============================================
-      // X (roast thread)
+      // X (banter thread)
       // ============================================
       .x("phone", (x) => {
         x.at("16.4s").navigate("tweet", { tweetId: "tw_op" });
         x.at("18.0s").viewTweet("tw_op");
 
-        // Compose a quote roast (typed)
+        // Compose a quote banter (typed)
         x.at("22.0s").navigate("compose");
         x.at("26.0s").postTweet({
           authorId: "u_me",

@@ -467,7 +467,7 @@ export const xReducer: PluginReducer<"app_x"> = (
       break;
     }
     case "SET_THEME_MODE": {
-      const payload = event.payload as { mode: "dark" | "light" | "ghibli" };
+      const payload = event.payload as { mode: "dark" | "light" | "storybook" };
       appState.themeMode = payload.mode;
       break;
     }

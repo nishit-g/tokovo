@@ -1,5 +1,5 @@
 /**
- * Audio Handler - Enterprise-grade audio event processing
+ * Audio Handler - Production-grade audio event processing
  *
  * Handles:
  * - PLAY/PLAY_SOUND: Start playing sounds (routes music to musicBed)

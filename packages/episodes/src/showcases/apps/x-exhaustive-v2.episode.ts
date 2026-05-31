@@ -115,7 +115,7 @@ export default defineEpisode({
           id: "msg_x_back_v2_2",
           threadId: "dm_x_backchannel_v2",
           senderId: "u_hottake",
-          text: "Respect. Most people only arrive after the roast trendline is obvious.",
+          text: "Respect. Most people only arrive after the banter trendline is obvious.",
           createdAt: baseTs + 38000,
         });
         x.at("24.0s").navigate("profile", { userId: "u_me" });

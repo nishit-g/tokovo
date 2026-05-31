@@ -4,17 +4,17 @@ import { episode } from "../../code-first-episode.js";
 
 export default defineEpisode({
   meta: {
-    id: "whatsapp-theme-ghibli-v2",
-    title: "WhatsApp Theme Ghibli V2",
+    id: "whatsapp-theme-storybook-v2",
+    title: "WhatsApp Theme Storybook V2",
     description:
-      "New WhatsApp Ghibli theme showcase proving the token system on chats, updates, and a softer late-night pacing.",
+      "New WhatsApp Storybook theme showcase proving the token system on chats, updates, and a softer late-night pacing.",
     category: "showcase",
     catalogType: "app_showcase_theme",
     appId: "app_whatsapp",
-    themeId: "whatsapp-ghibli",
+    themeId: "whatsapp-storybook",
     visibility: "public",
     sortOrder: 120,
-    tags: ["whatsapp", "theme", "ghibli", "soft", "chat"],
+    tags: ["whatsapp", "theme", "storybook", "soft", "chat"],
   },
   config: {
     format: "1080x1920",
@@ -22,21 +22,21 @@ export default defineEpisode({
     apps: ["app_whatsapp"],
   },
   build: () =>
-    episode("whatsapp-theme-ghibli-v2", {
+    episode("whatsapp-theme-storybook-v2", {
       fps: 30,
       duration: "30s",
-      title: "WhatsApp Theme Ghibli V2",
+      title: "WhatsApp Theme Storybook V2",
     })
       .device("phone", "iphone16", {
         app: "app_whatsapp",
-        theme: "whatsapp-ghibli",
+        theme: "whatsapp-storybook",
         os: {
           time: new Date("2026-04-10T22:12:00"),
           battery: 68,
           network: "4G",
         },
       })
-      .background({ type: "image", src: "/backgrounds/ghibli-forest.png" })
+      .background({ type: "image", src: "/backgrounds/storybook-forest.png" })
       .snapshot("app_whatsapp", "phone", {
         conversations: [
           { id: "dm_elm_v2", name: "Elm", avatar: "/avatars/avatar-zoe.jpg", hasStatus: true, unreadCount: 1 },

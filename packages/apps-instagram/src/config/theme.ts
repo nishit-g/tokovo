@@ -21,7 +21,7 @@ export interface InstagramThemeColors {
 }
 
 export interface InstagramTheme {
-  mode: "light" | "dark" | "ghibli";
+  mode: "light" | "dark" | "storybook";
   colors: InstagramThemeColors;
   typography: typeof instagramTypography;
   spacing: typeof instagramSpacing;
@@ -53,8 +53,8 @@ export const INSTAGRAM_DARK_THEME: InstagramTheme = {
   spacing: instagramSpacing,
 };
 
-export const INSTAGRAM_GHIBLI_THEME: InstagramTheme = {
-  mode: "ghibli",
+export const INSTAGRAM_STORYBOOK_THEME: InstagramTheme = {
+  mode: "storybook",
   colors: {
     ...instagramColors,
     background: "#F9F3E7",
@@ -79,12 +79,12 @@ export const INSTAGRAM_GHIBLI_THEME: InstagramTheme = {
   spacing: instagramSpacing,
 };
 
-export function getInstagramTheme(mode: "light" | "dark" | "ghibli" = "light"): InstagramTheme {
+export function getInstagramTheme(mode: "light" | "dark" | "storybook" = "light"): InstagramTheme {
   switch (mode) {
     case "dark":
       return INSTAGRAM_DARK_THEME;
-    case "ghibli":
-      return INSTAGRAM_GHIBLI_THEME;
+    case "storybook":
+      return INSTAGRAM_STORYBOOK_THEME;
     default:
       return INSTAGRAM_LIGHT_THEME;
   }

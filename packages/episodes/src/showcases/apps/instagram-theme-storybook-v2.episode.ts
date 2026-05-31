@@ -4,17 +4,17 @@ import { episode } from "@tokovo/dsl";
 
 export default defineEpisode({
   meta: {
-    id: "instagram-theme-ghibli-v2",
-    title: "Instagram Theme Ghibli V2",
+    id: "instagram-theme-storybook-v2",
+    title: "Instagram Theme Storybook V2",
     description:
-      "A new Ghibli Instagram showcase proving the theme system across stories, DMs, profile, and warm creator framing.",
+      "A new Storybook Instagram showcase proving the theme system across stories, DMs, profile, and warm creator framing.",
     category: "showcase",
     catalogType: "app_showcase_theme",
     appId: "app_instagram",
-    themeId: "ghibli",
+    themeId: "storybook",
     visibility: "public",
     sortOrder: 420,
-    tags: ["instagram", "theme", "ghibli", "stories", "profile"],
+    tags: ["instagram", "theme", "storybook", "stories", "profile"],
   },
   config: {
     format: "1080x1920",
@@ -24,10 +24,10 @@ export default defineEpisode({
   build: () => {
     const baseTs = new Date("2026-04-10T17:00:00").getTime();
 
-    return episode("instagram-theme-ghibli-v2", {
+    return episode("instagram-theme-storybook-v2", {
       fps: 30,
       duration: "29s",
-      title: "Instagram Theme Ghibli V2",
+      title: "Instagram Theme Storybook V2",
     })
       .device("phone", "iphone16", {
         app: "app_instagram",
@@ -37,7 +37,7 @@ export default defineEpisode({
           network: "5G",
         },
       })
-      .background({ type: "image", src: "/backgrounds/ghibli-forest.png" })
+      .background({ type: "image", src: "/backgrounds/storybook-forest.png" })
       .snapshot("app_instagram", "phone", {
         currentUserId: "ig_mira",
         users: [
@@ -45,22 +45,22 @@ export default defineEpisode({
           { id: "ig_elm", username: "elm.storyboard", displayName: "Elm Storyboard", avatarUrl: "/avatars/avatar-priya.jpg", followers: 12600, following: 274 },
         ],
         posts: [
-          { id: "ig_ghibli_1", authorId: "ig_mira", imageUrl: "/placeholders/media.svg", caption: "Golden-hour notes from the hill sequence.", createdAt: baseTs - 90000, likeCount: 4320, commentCount: 122, aspect: "portrait" },
+          { id: "ig_storybook_1", authorId: "ig_mira", imageUrl: "/placeholders/media.svg", caption: "Golden-hour notes from the hill sequence.", createdAt: baseTs - 90000, likeCount: 4320, commentCount: 122, aspect: "portrait" },
         ],
         storySets: [
-          { id: "ig_ghibli_storyset", userId: "ig_mira", items: [{ id: "ig_ghibli_story_1", authorId: "ig_mira", mediaUrl: "/placeholders/media.svg", createdAt: baseTs - 50000 }, { id: "ig_ghibli_story_2", authorId: "ig_mira", mediaUrl: "/placeholders/media.svg", createdAt: baseTs - 46000 }] },
+          { id: "ig_storybook_storyset", userId: "ig_mira", items: [{ id: "ig_storybook_story_1", authorId: "ig_mira", mediaUrl: "/placeholders/media.svg", createdAt: baseTs - 50000 }, { id: "ig_storybook_story_2", authorId: "ig_mira", mediaUrl: "/placeholders/media.svg", createdAt: baseTs - 46000 }] },
         ],
-        threads: [{ id: "ig_ghibli_thread", participantIds: ["ig_mira", "ig_elm"], title: "Elm Storyboard", unreadCount: 1 }],
-        messages: [{ id: "ig_ghibli_msg_1", threadId: "ig_ghibli_thread", senderId: "ig_elm", text: "The second story frame finally feels like wind, not blur.", createdAt: baseTs - 12000 }],
+        threads: [{ id: "ig_storybook_thread", participantIds: ["ig_mira", "ig_elm"], title: "Elm Storyboard", unreadCount: 1 }],
+        messages: [{ id: "ig_storybook_msg_1", threadId: "ig_storybook_thread", senderId: "ig_elm", text: "The second story frame finally feels like wind, not blur.", createdAt: baseTs - 12000 }],
       })
       .track("app_instagram", (getOrder) => createInstagramTrackBuilder(30, "phone", getOrder), (ig) => {
-        ig.at("0.6s").setThemeMode("ghibli");
-        ig.at("1.6s").openStory("ig_ghibli_storyset", "ig_ghibli_story_1");
-        ig.at("3.4s").advanceStory("ig_ghibli_storyset");
-        ig.at("5.0s").navigate("thread", { threadId: "ig_ghibli_thread" });
+        ig.at("0.6s").setThemeMode("storybook");
+        ig.at("1.6s").openStory("ig_storybook_storyset", "ig_storybook_story_1");
+        ig.at("3.4s").advanceStory("ig_storybook_storyset");
+        ig.at("5.0s").navigate("thread", { threadId: "ig_storybook_thread" });
         ig.at("6.2s").addDMMessage({
-          id: "ig_ghibli_msg_2",
-          threadId: "ig_ghibli_thread",
+          id: "ig_storybook_msg_2",
+          threadId: "ig_storybook_thread",
           senderId: "ig_mira",
           text: "Good. Then we keep the sky soft and stop touching the grade.",
           createdAt: baseTs + 8000,

@@ -81,7 +81,7 @@ export interface EpisodeMeta {
    */
   category: EpisodeCategory;
 
-  /** Canonical enterprise catalog type */
+  /** Canonical release catalog type */
   catalogType?: EpisodeCatalogType;
 
   /** Primary app surfaced by the episode, when applicable */
@@ -305,7 +305,7 @@ export function defineEpisode(
     throw new Error(`Invalid episode definition: ${result.error.message}`);
   }
 
-  // Enterprise rule: definitions are pure by default.
+  // Release rule: definitions are pure by default.
   // Registration must be explicit via `options.registry` (e.g., app/runtime boot).
   if (options?.registry) {
     options.registry.register(definition);

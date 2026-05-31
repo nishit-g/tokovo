@@ -17,7 +17,7 @@ export const LinkedInAppShell: React.FC<{ children: React.ReactNode }> = ({ chil
         width: "100%",
         height: "100%",
         background:
-          theme.mode === "ghibli"
+          theme.mode === "storybook"
             ? "linear-gradient(180deg, #F6E8D7 0%, #F2E3CE 52%, #FFF8EE 100%)"
             : `linear-gradient(180deg, ${theme.colors.background} 0%, ${theme.colors.background} 72%, ${theme.colors.surface} 100%)`,
         color: theme.colors.textPrimary,

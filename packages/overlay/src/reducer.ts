@@ -46,7 +46,7 @@ function upsertShow(state: OverlayState, e: OverlayEvent): void {
     typeof p.durationFrames === "number" ? p.durationFrames : getDefaultDurationFrames(variant);
   const endFrame = duration > 0 ? e.at + duration : undefined;
 
-  // Replacement policy: one active item per lane (enterprise: deterministic, no accidental stacking).
+  // Replacement policy: one active item per lane (production: deterministic, no accidental stacking).
   state.items = state.items.filter((it) => it.lane !== lane);
 
   state.items.push({

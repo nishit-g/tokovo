@@ -1,5 +1,5 @@
 /**
- * Devices Plugin - Enterprise Contract
+ * Devices Plugin - Production Contract
  * 
  * Self-contained plugin for device profiles, frames, and OS features.
  * 

@@ -64,7 +64,7 @@ const LINKEDIN_SCREENS = [
   "thread",
 ] as const;
 
-const LINKEDIN_THEME_MODES: readonly LIThemeMode[] = ["light", "dark", "ghibli"];
+const LINKEDIN_THEME_MODES: readonly LIThemeMode[] = ["light", "dark", "storybook"];
 
 function validateLinkedInSnapshot(
   input: PluginBootstrapSchemaContext<"app_linkedin">,

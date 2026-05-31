@@ -122,7 +122,7 @@ const INSTAGRAM_PROFILE_TABS: readonly InstagramProfileTab[] = ["posts", "tagged
 const INSTAGRAM_THEME_MODES: readonly InstagramThemeMode[] = [
   "light",
   "dark",
-  "ghibli",
+  "storybook",
 ];
 const INSTAGRAM_POST_ASPECTS = ["square", "portrait", "landscape"] as const;
 const INSTAGRAM_NOTIFICATION_TYPES = [

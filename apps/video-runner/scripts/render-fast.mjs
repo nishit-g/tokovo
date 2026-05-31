@@ -11,7 +11,7 @@ import { renderMedia, selectComposition } from "@remotion/renderer";
  * Fast local renderer wrapper.
  *
  * Usage:
- *   EPISODE_ID=v2-enterprise-long-showcase pnpm --filter video-runner render:fast
+ *   EPISODE_ID=v2-creator-series-showcase pnpm --filter video-runner render:fast
  *
  * Notes:
  * - This reuses a cached bundle keyed by the video-runner dependency graph.
@@ -32,7 +32,7 @@ const rootConfigFiles = [
   "tsconfig.json",
 ];
 
-const episodeId = process.env.EPISODE_ID ?? "v2-enterprise-long-showcase";
+const episodeId = process.env.EPISODE_ID ?? "v2-creator-series-showcase";
 const outDir = process.env.OUT_DIR ?? path.join(repoRoot, "out");
 const outFile = process.env.OUT_FILE ?? path.join(outDir, `${episodeId}.mp4`);
 

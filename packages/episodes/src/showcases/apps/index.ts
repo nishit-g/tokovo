@@ -11,7 +11,7 @@ import xShowcaseEpisodes from "./x.js";
 /**
  * App package showcases.
  *
- * Curated app showcase catalog for the enterprise storybook.
+ * Curated app showcase catalog for the studio showcase.
  */
 export const appShowcaseEpisodes: EpisodeDefinition[] = [
   ...whatsappShowcaseEpisodes,

@@ -1,5 +1,5 @@
 /**
- * WhatsApp Plugin - Enterprise Contract
+ * WhatsApp Plugin - Production Contract
  *
  * Self-contained plugin with all tiers:
  * - Tier A: id, version, displayName, reducer, views

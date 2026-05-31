@@ -108,7 +108,7 @@ export const Profile: React.FC<ProfileProps> = ({ world }) => {
               style={{
                 height: theme.spacing.bannerHeight,
                 background:
-                  theme.mode === "ghibli"
+                  theme.mode === "storybook"
                     ? "linear-gradient(135deg, #8fb6a0 0%, #d9c4a3 100%)"
                     : "linear-gradient(135deg, #1d9bf0 0%, #0f1419 100%)",
               }}

@@ -3,15 +3,15 @@ import { episode } from "../code-first-episode.js";
 
 export default defineEpisode({
   meta: {
-    id: "v2-hinglish-friends-bakchodi-no-overlay",
-    title: "V2 Hinglish Friends Bakchodi (No Overlay): WhatsApp → X → WhatsApp",
+    id: "v2-creator-friends-chat-no-overlay",
+    title: "V2 Hinglish Friends Chat (No Overlay): WhatsApp → X → WhatsApp",
     description:
-      "Hinglish friends vibe. WhatsApp group bakchodi + X roast thread + auto keyboard typing + device banner. No overlays.",
+      "Hinglish friends vibe. WhatsApp group chat + X banter thread + auto keyboard typing + device banner. No overlays.",
     category: "showcase",
     tags: [
       "v2",
       "hinglish",
-      "bakchodi",
+      "chat",
       "whatsapp",
       "x",
       "no-overlay",
@@ -26,7 +26,7 @@ export default defineEpisode({
     apps: ["app_whatsapp", "app_x"],
   },
   build: () =>
-    episode("v2-hinglish-friends-bakchodi-no-overlay", {
+    episode("v2-creator-friends-chat-no-overlay", {
       fps: 30,
       duration: "40s",
     })
@@ -121,7 +121,7 @@ export default defineEpisode({
       .deviceTrack("phone", (d) => {
         // Heads-up X banner while still in WhatsApp
         d.at("6.6s").notificationShow({
-          id: "x_roast",
+          id: "x_banter",
           appId: "app_x",
           title: "X",
           body: "Bro you got cooked. Thread is trending 😭",
@@ -139,7 +139,7 @@ export default defineEpisode({
       })
 
       // ============================================
-      // WHATSAPP (group bakchodi)
+      // WHATSAPP (group chat)
       // ============================================
       .whatsapp("phone", "grp_backchod", (wa) => {
         wa.switchTo("grp_backchod", "0s");
@@ -176,7 +176,7 @@ export default defineEpisode({
       })
 
       // ============================================
-      // X (roast thread)
+      // X (banter thread)
       // ============================================
       .x("phone", (x) => {
         x.at("9.4s").navigate("tweet", { tweetId: "tw_op" });

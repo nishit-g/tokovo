@@ -52,7 +52,7 @@ import { OverlayTrackBuilder } from "./overlay-track.js";
 export interface DeviceOptions {
   app: string;
   os?: OSConfig;
-  /** UI theme/strategy to use (e.g., "whatsapp-ghibli") */
+  /** UI theme/strategy to use (e.g., "whatsapp-storybook") */
   theme?: string;
   /** Start locked at frame 0 */
   locked?: boolean;

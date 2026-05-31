@@ -106,7 +106,7 @@ export function LandingPage() {
               className={`mt-6 max-w-md font-mono text-sm leading-relaxed text-stone transition-all duration-700 ${mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}
               style={{ transitionDelay: "700ms" }}
             >
-              The programmatic video engine for studios and enterprises. Define phones, apps, and
+              The programmatic video engine for studios and creators. Define phones, apps, and
               conversations in TypeScript. Render thousands of cinematic videos — without After
               Effects.
             </p>
@@ -207,7 +207,7 @@ export function LandingPage() {
                 "Marketing Teams",
                 "Agencies",
                 "Indie Creators",
-                "Enterprise",
+                "Teams",
               ].map((name) => (
                 <span key={name} className="shrink-0 font-mono text-sm text-ink/30">
                   {name}
@@ -530,7 +530,7 @@ export function LandingPage() {
           </h2>
 
           <p className="mx-auto mt-6 max-w-lg font-mono text-sm text-stone leading-relaxed">
-            We're onboarding select studios and content teams to the private beta. Request access
+            We're onboarding select studios and content teams to the public beta. Start building
             and we'll be in touch within 48 hours.
           </p>
 
@@ -555,7 +555,7 @@ export function LandingPage() {
                   type="submit"
                   className="bg-cream px-8 py-4 font-mono text-xs uppercase tracking-widest text-ink transition-colors hover:bg-copper hover:text-cream"
                 >
-                  Request Access
+                  Start Building
                 </button>
               </form>
             ) : (
@@ -574,7 +574,7 @@ export function LandingPage() {
 
           {/* Trust signals */}
           <p className="mt-12 font-mono text-[10px] uppercase tracking-widest text-stone/50">
-            No credit card required • Cancel anytime • Enterprise plans available
+            No credit card required • Cancel anytime • Team plans available
           </p>
         </div>
       </section>

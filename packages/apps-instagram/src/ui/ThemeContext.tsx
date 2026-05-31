@@ -5,7 +5,7 @@ import { getInstagramTheme } from "../config/theme.js";
 const InstagramThemeContext = React.createContext<InstagramTheme>(getInstagramTheme("light"));
 
 export const InstagramThemeProvider: React.FC<{
-  mode?: "light" | "dark" | "ghibli";
+  mode?: "light" | "dark" | "storybook";
   children: React.ReactNode;
 }> = ({ mode = "light", children }) => {
   const theme = React.useMemo(() => getInstagramTheme(mode), [mode]);

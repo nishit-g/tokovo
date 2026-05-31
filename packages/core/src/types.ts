@@ -173,7 +173,7 @@ export type {
 /**
  * TimelineEvent is now an alias for RuntimeEvent.
  *
- * This completes the enterprise type unification:
+ * This completes the production type unification:
  * - All events use { at, kind, type, payload } shape
  * - All app-specific data goes in `payload` field
  * - No more "from/text location mismatch" bugs

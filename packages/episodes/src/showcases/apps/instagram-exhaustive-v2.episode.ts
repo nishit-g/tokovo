@@ -71,7 +71,7 @@ export default defineEpisode({
         ig.at("9.2s").advanceStory("ig_ex_storyset_1");
         ig.at("10.4s").navigate("inbox");
         ig.at("11.6s").navigate("thread", { threadId: "ig_ex_thread_1" });
-        ig.at("12.6s").addDMMessage({ id: "ig_ex_msg_2", threadId: "ig_ex_thread_1", senderId: "ig_arya", text: "Fine. Roast me in DMs instead of under the post.", createdAt: baseTs + 22000, typed: true, charDelay: 2 });
+        ig.at("12.6s").addDMMessage({ id: "ig_ex_msg_2", threadId: "ig_ex_thread_1", senderId: "ig_arya", text: "Fine. Banter me in DMs instead of under the post.", createdAt: baseTs + 22000, typed: true, charDelay: 2 });
         ig.at("15.8s").navigate("notifications");
         ig.at("16.2s").notify({ id: "ig_ex_nt_1", type: "comment", actorId: "ig_sam", postId: "ig_ex_2", title: "Sam Frames", body: "This caption sounds like the edit itself wrote it.", createdAt: baseTs + 26000 });
         ig.at("18.8s").navigate("profile", { profileId: "ig_arya" });

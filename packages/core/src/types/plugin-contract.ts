@@ -1,5 +1,5 @@
 /**
- * TokovoPlugin Contract - Enterprise Plugin Interface
+ * TokovoPlugin Contract - Production Plugin Interface
  *
  * Tier A (Runtime): reducer + views + assets
  * Tier B (Lowering): + lowering handlers

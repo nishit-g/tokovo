@@ -47,7 +47,7 @@ export const ComposerScreen: React.FC<{
             overflow: "hidden",
             background: theme.colors.backgroundAlt,
             boxShadow:
-              theme.mode === "ghibli"
+              theme.mode === "storybook"
                 ? "0 18px 42px rgba(114,154,115,0.18)"
                 : "0 18px 42px rgba(17,17,17,0.08)",
           }}

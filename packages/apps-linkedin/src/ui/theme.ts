@@ -11,7 +11,7 @@ import {
 // =============================================================================
 // TYPES
 // =============================================================================
-export type LIThemeMode = "light" | "dark" | "ghibli";
+export type LIThemeMode = "light" | "dark" | "storybook";
 
 // Use a general color interface so both light and dark colors are assignable
 export interface LIColors {
@@ -86,8 +86,8 @@ export const LI_DARK: LITheme = {
   animation: liAnimation,
 };
 
-export const LI_GHIBLI: LITheme = {
-  mode: "ghibli",
+export const LI_STORYBOOK: LITheme = {
+  mode: "storybook",
   colors: {
     ...liColorsLight,
     background: "#F5EBDD",
@@ -130,8 +130,8 @@ export function getLITheme(mode: LIThemeMode = "light"): LITheme {
   switch (mode) {
     case "dark":
       return LI_DARK;
-    case "ghibli":
-      return LI_GHIBLI;
+    case "storybook":
+      return LI_STORYBOOK;
     default:
       return LI_LIGHT;
   }

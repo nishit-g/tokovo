@@ -118,7 +118,7 @@ export interface XRoute {
   threadId?: string;
 }
 
-export type XThemeMode = "dark" | "light" | "ghibli";
+export type XThemeMode = "dark" | "light" | "storybook";
 
 export interface XState {
   /** Required by the Tokovo LayoutEngine. */

@@ -1,5 +1,5 @@
 /**
- * Enterprise Camera Director - Core Type Definitions
+ * Production Camera Director - Core Type Definitions
  *
  * Event-driven camera system for world simulation.
  * Supports auto-choreography, custom behaviors, and manual overrides.

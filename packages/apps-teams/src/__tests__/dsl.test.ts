@@ -29,7 +29,7 @@ describe("teams dsl v2", () => {
     });
   });
 
-  it("supports enterprise thread flows", () => {
+  it("supports production thread flows", () => {
     let order = 0;
     const builder = new TeamsTrackBuilderV2(30, "phone", () => ++order);
 

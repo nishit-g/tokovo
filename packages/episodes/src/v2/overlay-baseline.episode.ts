@@ -8,7 +8,7 @@ export default defineEpisode({
     description:
       "Creator baseline for hook/caption/receipt overlays that render above devices and stay deterministic.",
     category: "showcase",
-    tags: ["v2", "overlay", "hook", "caption", "receipt", "roast"],
+    tags: ["v2", "overlay", "hook", "caption", "receipt", "banter"],
   },
   config: {
     format: "1080x1920",
@@ -39,7 +39,7 @@ export default defineEpisode({
         ov.at("0.0s").hook("He posted the screenshot.", { durationFrames: 120, intensity: 0.9 });
         ov.at("3.8s").caption("Watch the group chat turn into a courtroom.", { durationFrames: 150 });
         ov.at("8.6s").receipt("Exhibit A: 'I never lie, I remix the truth.'", { preset: "topLeft", durationFrames: 180 });
-        ov.at("16.2s").caption("This is where it gets personal.", { durationFrames: 120 });
+        ov.at("16.2s").caption("This is where the details land.", { durationFrames: 120 });
         ov.at("22.8s").cliffhanger("Wait for the last message.", { durationFrames: 180, intensity: 1.0 });
       })
       .whatsapp("phone", "grp_receipts", (wa) => {

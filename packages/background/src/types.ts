@@ -1,7 +1,7 @@
 /**
  * Background Layer Types
  * 
- * Enterprise-grade type definitions for background rendering system.
+ * Production-grade type definitions for background rendering system.
  */
 
 // =============================================================================

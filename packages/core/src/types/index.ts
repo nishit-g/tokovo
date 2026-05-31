@@ -1,5 +1,5 @@
 /**
- * Types Index - Enterprise Types
+ * Types Index - Production Types
  * 
  * @description Central export for all core types.
  * Domain-organized type files for maintainability.

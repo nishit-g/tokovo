@@ -1,7 +1,7 @@
 /**
  * @tokovo/background
  * 
- * Enterprise-grade background layer system for Tokovo video rendering.
+ * Production-grade background layer system for Tokovo video rendering.
  * 
  * @example
  * // Using preset

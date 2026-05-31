@@ -3,12 +3,12 @@ import { episode } from "../code-first-episode.js";
 
 export default defineEpisode({
   meta: {
-    id: "v2-mysuru-friends-bakchodi-no-overlay",
-    title: "V2 Mysuru Friends Bakchodi (No Overlay): WhatsApp → X → WhatsApp",
+    id: "v2-local-friends-chat-no-overlay",
+    title: "V2 Mysuru Friends Chat (No Overlay): WhatsApp → X → WhatsApp",
     description:
       "Friends tone, proper Mysuru-style trolling across WhatsApp and X. No overlays. Uses device banner + auto keyboard typing + BGM.",
     category: "showcase",
-    tags: ["v2", "kannada", "bakchodi", "whatsapp", "x", "no-overlay", "bgm", "keyboard", "camera"],
+    tags: ["v2", "kannada", "chat", "whatsapp", "x", "no-overlay", "bgm", "keyboard", "camera"],
   },
   config: {
     format: "1080x1920",
@@ -16,7 +16,7 @@ export default defineEpisode({
     apps: ["app_whatsapp", "app_x"],
   },
   build: () =>
-    episode("v2-mysuru-friends-bakchodi-no-overlay", { fps: 30, duration: "44s" })
+    episode("v2-local-friends-chat-no-overlay", { fps: 30, duration: "44s" })
       .device("phone", "iphone16", {
         app: "app_whatsapp",
         installedApps: ["app_whatsapp", "app_x"],
@@ -86,7 +86,7 @@ export default defineEpisode({
           id: "x_tag",
           appId: "app_x",
           title: "X",
-          body: "Ninna roast thread live. Bandu nodu maga.",
+          body: "Ninna banter thread live. Bandu nodu maga.",
           mode: "headsup",
           priority: "high",
         });
@@ -116,21 +116,21 @@ export default defineEpisode({
         });
 
         wa.at("8.3s").receive("ಜೋಶಿ", "Vibe create? Ninna vibe-ige police complaint ide 😂");
-        wa.at("9.3s").receive("ಗುರು", "X open maadu. Roast thread already hot hot.");
+        wa.at("9.3s").receive("ಗುರು", "X open maadu. Banter thread already hot hot.");
       })
 
       // ============================================
-      // X (roast thread)
+      // X (banter thread)
       // ============================================
       .x("phone", (x) => {
         x.at("10.4s").navigate("tweet", { tweetId: "tw_op" });
         x.at("11.6s").viewTweet("tw_op");
 
-        // Quote roast (typed) with auto keyboard
+        // Quote banter (typed) with auto keyboard
         x.at("14.2s").navigate("compose");
         x.at("18.0s").postTweet({
           authorId: "u_me",
-          text: "Mysuru boys: roast maadi. But swalpa water + bisi dose ge bandre settle 🤝",
+          text: "Mysuru boys: banter maadi. But swalpa water + bisi dose ge bandre settle 🤝",
           typed: true,
           charDelay: 2,
           viewCount: 1200,

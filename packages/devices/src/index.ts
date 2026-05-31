@@ -1,7 +1,7 @@
 /**
  * @tokovo/devices
  *
- * Enterprise device profiles and OS features for Tokovo.
+ * Production device profiles and OS features for Tokovo.
  *
  * @example
  * ```typescript

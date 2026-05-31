@@ -201,7 +201,7 @@ class LIPointBuilder {
     }));
   }
 
-  setThemeMode(mode: "light" | "dark" | "ghibli"): void {
+  setThemeMode(mode: "light" | "dark" | "storybook"): void {
     this._push("SET_THEME_MODE", { mode });
   }
 }

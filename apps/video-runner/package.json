@@ -21,7 +21,7 @@
     "start": "npx remotion studio",
     "dev": "npx remotion studio",
     "dev:catalog": "TOKOVO_EPISODE_CATALOG_PROFILE=studio npx remotion studio",
-    "benchmark": "npx remotion benchmark src/index.ts episode-render --props='{\"episodeId\":\"v2-enterprise-long-showcase\"}'",
+    "benchmark": "npx remotion benchmark src/index.ts episode-render --props='{\"episodeId\":\"v2-creator-series-showcase\"}'",
     "render:fast": "sh scripts/render-fast.sh",
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",

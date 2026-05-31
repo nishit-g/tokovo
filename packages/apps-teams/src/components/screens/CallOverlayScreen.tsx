@@ -25,7 +25,7 @@ export const CallOverlayScreen: React.FC<{ state: TeamsState }> = ({ state }) =>
   return (
     <div style={callSurfaceStyle}>
       <div style={callHeroStyle}>
-        <div style={titleStyle}>{call?.title ?? "Enterprise call"}</div>
+        <div style={titleStyle}>{call?.title ?? "Team call"}</div>
         <div style={{ ...subtitleStyle, color: "rgba(255,255,255,0.78)", marginTop: 4 }}>
           {call?.status ?? "connecting"} • {participants.length} participants
         </div>

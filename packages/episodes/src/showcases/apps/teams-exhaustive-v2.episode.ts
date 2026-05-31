@@ -37,7 +37,7 @@ export default defineEpisode({
       })
       .snapshot("app_teams", "phone", {
         users: [
-          { id: "u_me", displayName: "Nishit", role: "Incident commander" },
+          { id: "u_me", displayName: "Ari", role: "Incident commander" },
           { id: "u_ops", displayName: "Priya", role: "Launch ops" },
           { id: "u_sre", displayName: "Arjun", role: "SRE" },
           { id: "u_legal", displayName: "Neha", role: "Legal" },
@@ -108,7 +108,7 @@ export default defineEpisode({
         teams.at("19.0s").receiveMessage({
           target: threadTarget("launch-v2", "th_customer_v2"),
           senderId: "u_sales",
-          text: "Three affected accounts, all enterprise annual plans.",
+          text: "Three affected accounts, all team annual plans.",
         });
         teams.at("20.8s").sendMessage({
           target: threadTarget("launch-v2", "th_customer_v2"),

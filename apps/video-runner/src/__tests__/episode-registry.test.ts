@@ -8,7 +8,7 @@ import appShowcaseEpisodes from "@tokovo/episodes/showcases/apps";
 import systemShowcaseEpisodes from "@tokovo/episodes/showcases/system";
 import storyEpisodes from "@tokovo/episodes/stories";
 
-describe("video-runner enterprise episode registry", () => {
+describe("video-runner release episode registry", () => {
   it("loads the curated studio registry only", () => {
     const registry = createEpisodeRegistryForProfile("studio");
     const episodes = registry.all();

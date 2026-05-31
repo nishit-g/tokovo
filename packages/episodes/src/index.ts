@@ -1,7 +1,7 @@
 /**
  * @tokovo/episodes
  *
- * Enterprise episode management with explicit registration.
+ * Production episode management with explicit registration.
  *
  * @example
  * // Create episodes using defineEpisode (pure definition)

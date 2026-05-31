@@ -1,5 +1,5 @@
 /**
- * RuntimeEvent - The Enterprise-Grade Event System
+ * RuntimeEvent - The Production-Grade Event System
  *
  * ALL plugin-specific data goes in the `payload` field.
  * This prevents the "from/text location mismatch" bugs forever.
@@ -12,7 +12,7 @@
 // =============================================================================
 
 /**
- * All supported event kinds in the enterprise system.
+ * All supported event kinds in the production system.
  * App-specific kinds are registered dynamically via PluginContract.eventKinds
  */
 export type RuntimeEventKind =

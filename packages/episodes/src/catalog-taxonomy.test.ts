@@ -31,7 +31,7 @@ function listTypeScriptFiles(dir: string): string[] {
   });
 }
 
-describe("enterprise episode taxonomy", () => {
+describe("release episode taxonomy", () => {
   it("resolves explicit curated catalog types correctly", () => {
     expect(resolveEpisodeCatalogType(appShowcaseEpisodes[0].meta)).toBe(
       "app_showcase_flagship",
@@ -78,7 +78,7 @@ describe("enterprise episode taxonomy", () => {
 
   it("ships the full new-only curated wave", () => {
     expect(appShowcaseEpisodes).toHaveLength(21);
-    expect(systemShowcaseEpisodes).toHaveLength(7);
+    expect(systemShowcaseEpisodes).toHaveLength(8);
     expect(storyEpisodes).toHaveLength(8);
   });
 

@@ -9,7 +9,7 @@ export type InstagramScreen =
   | "profile"
   | "composer";
 
-export type InstagramThemeMode = "light" | "dark" | "ghibli";
+export type InstagramThemeMode = "light" | "dark" | "storybook";
 export type InstagramProfileTab = "posts" | "tagged";
 export type InstagramNotificationType =
   | "like"

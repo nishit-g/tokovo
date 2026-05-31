@@ -179,7 +179,7 @@ export function isInstagramTrackEvent(event: TrackEvent): event is InstagramTrac
     case "SET_PROFILE_TAB":
       return isRecord(payload) && ["posts", "tagged"].includes(String(payload.tab));
     case "SET_THEME_MODE":
-      return isRecord(payload) && ["light", "dark", "ghibli"].includes(String(payload.mode));
+      return isRecord(payload) && ["light", "dark", "storybook"].includes(String(payload.mode));
     default:
       return false;
   }

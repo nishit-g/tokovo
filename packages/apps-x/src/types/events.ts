@@ -64,7 +64,7 @@ export type XScreen =
 export type NotificationsTab = "all" | "mentions";
 export type TimelineTab = "forYou" | "following";
 export type ProfileTab = "posts" | "replies" | "media" | "likes";
-export type XThemeMode = "dark" | "light" | "ghibli";
+export type XThemeMode = "dark" | "light" | "storybook";
 
 export type MediaType = "image" | "video" | "link" | "poll";
 

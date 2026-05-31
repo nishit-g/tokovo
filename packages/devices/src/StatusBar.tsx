@@ -6,10 +6,10 @@
  * @example
  * ```typescript
  * // Register custom strategy
- * registries.statusBars.register("ghibli", GhibliStatusBarStrategy);
+ * registries.statusBars.register("storybook", StorybookStatusBarStrategy);
  * 
  * // Use it
- * <StatusBar variant="ghibli" os={device.os} />
+ * <StatusBar variant="storybook" os={device.os} />
  * ```
  */
 
@@ -47,7 +47,7 @@ interface StatusBarProps {
  * 
  * Supports custom themes via registration:
  * ```typescript
- * registries.statusBars.register("ghibli", GhibliStatusBarStrategy);
+ * registries.statusBars.register("storybook", StorybookStatusBarStrategy);
  * ```
  */
 export const StatusBar: React.FC<StatusBarProps> = ({

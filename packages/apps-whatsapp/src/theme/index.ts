@@ -1,5 +1,5 @@
 export type Platform = "ios" | "android";
-export type WhatsAppThemeId = "whatsapp-ghibli" | "whatsapp-cyberpunk";
+export type WhatsAppThemeId = "whatsapp-storybook" | "whatsapp-cyberpunk";
 
 export interface WhatsAppColorPalette {
   sentBubble: string;
@@ -314,7 +314,7 @@ export const androidDarkTheme: WhatsAppTheme = {
   },
 };
 
-const GHIBLI_OVERRIDES: Partial<WhatsAppTheme> = {
+const STORYBOOK_OVERRIDES: Partial<WhatsAppTheme> = {
   colors: {
     sentBubble: "#CFE6D7",
     receivedBubble: "#FFFDF7",
@@ -413,8 +413,8 @@ function mergeTheme(base: WhatsAppTheme, overrides: Partial<WhatsAppTheme>) {
 function normalizeThemeId(themeId?: string): WhatsAppThemeId | null {
   if (!themeId) return null;
   const normalized = themeId.toLowerCase();
-  if (normalized === "whatsapp-ghibli" || normalized === "ghibli") {
-    return "whatsapp-ghibli";
+  if (normalized === "whatsapp-storybook" || normalized === "storybook") {
+    return "whatsapp-storybook";
   }
   if (normalized === "whatsapp-cyberpunk" || normalized === "cyberpunk") {
     return "whatsapp-cyberpunk";
@@ -437,8 +437,8 @@ export function getTheme(
         : androidTheme;
 
   const normalizedTheme = normalizeThemeId(themeId);
-  if (normalizedTheme === "whatsapp-ghibli") {
-    return mergeTheme(base, GHIBLI_OVERRIDES);
+  if (normalizedTheme === "whatsapp-storybook") {
+    return mergeTheme(base, STORYBOOK_OVERRIDES);
   }
   if (normalizedTheme === "whatsapp-cyberpunk") {
     return mergeTheme(base, CYBERPUNK_OVERRIDES);

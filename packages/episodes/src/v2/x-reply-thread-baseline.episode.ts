@@ -3,12 +3,12 @@ import { episode } from "../code-first-episode.js";
 
 export default defineEpisode({
   meta: {
-    id: "v2-x-roast-thread-baseline",
-    title: "V2 Baseline: X Roast Thread",
+    id: "v2-x-reply-thread-baseline",
+    title: "V2 Baseline: X Banter Thread",
     description:
-      "Baseline episode for post → replies → quote roast pacing. Uses typed compose, deterministic camera focus, and a clean narrative beat structure without extra boilerplate.",
+      "Baseline episode for post → replies → quote banter pacing. Uses typed compose, deterministic camera focus, and a clean narrative beat structure without extra boilerplate.",
     category: "showcase",
-    tags: ["v2", "x", "roast", "thread", "compose", "keyboard", "camera"],
+    tags: ["v2", "x", "banter", "thread", "compose", "keyboard", "camera"],
   },
   config: {
     format: "1080x1920",
@@ -16,7 +16,7 @@ export default defineEpisode({
     apps: ["app_x"],
   },
   build: () =>
-    episode("v2-x-roast-thread-baseline", { fps: 30, duration: "35s" })
+    episode("v2-x-reply-thread-baseline", { fps: 30, duration: "35s" })
       .device("phone", "iphone16", {
         app: "app_x",
         installedApps: ["app_x"],
@@ -66,7 +66,7 @@ export default defineEpisode({
       .x("phone", (x) => {
         x.at("4.0s").navigate("tweet", { tweetId: "tw_op" });
 
-        // Creator enters compose and types a quote roast. (typed → keyboard events + draft sync)
+        // Creator enters compose and types a quote banter. (typed → keyboard events + draft sync)
         x.at("10.0s").navigate("compose");
         x.at("14.0s").postTweet({
           authorId: "u_me",

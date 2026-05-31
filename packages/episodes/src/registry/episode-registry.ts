@@ -52,7 +52,7 @@ export function validateEpisodeForRegistry(definition: EpisodeDefinition): Episo
 }
 
 /**
- * Enterprise Episode Registry
+ * Production Episode Registry
  *
  * Manages all registered episodes with filtering capabilities.
  */

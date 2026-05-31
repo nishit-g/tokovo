@@ -5,17 +5,17 @@ import { episode } from "../../code-first-episode.js";
 
 export default defineEpisode({
   meta: {
-    id: "teams-theme-ghibli-v2",
-    title: "Teams Theme Ghibli V2",
+    id: "teams-theme-storybook-v2",
+    title: "Teams Theme Storybook V2",
     description:
-      "A new Ghibli-toned Teams showcase proving theme, channels, threads, and DMs without losing enterprise structure.",
+      "A new Storybook-toned Teams showcase proving theme, channels, threads, and DMs without losing team structure.",
     category: "showcase",
     catalogType: "app_showcase_theme",
     appId: "app_teams",
-    themeId: "teams-ghibli",
+    themeId: "teams-storybook",
     visibility: "public",
     sortOrder: 520,
-    tags: ["teams", "theme", "ghibli", "channels", "threads"],
+    tags: ["teams", "theme", "storybook", "channels", "threads"],
   },
   config: {
     format: "1080x1920",
@@ -23,14 +23,14 @@ export default defineEpisode({
     apps: ["app_teams"],
   },
   build: () =>
-    episode("teams-theme-ghibli-v2", {
+    episode("teams-theme-storybook-v2", {
       fps: 30,
       duration: "40s",
-      title: "Teams Theme Ghibli V2",
+      title: "Teams Theme Storybook V2",
     })
       .device("phone", "iphone16", {
         app: "app_teams",
-        theme: "teams-ghibli",
+        theme: "teams-storybook",
         os: {
           time: new Date("2026-04-10T23:10:00"),
           battery: 64,

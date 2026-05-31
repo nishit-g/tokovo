@@ -2,7 +2,7 @@ import { defineEpisode } from "../types/episode-definition.js";
 import { episode } from "../code-first-episode.js";
 
 /**
- * Long-form v2 showcase that exercises the "enterprise v1" surface in one place:
+ * Long-form v2 showcase that exercises the "creator v1" surface in one place:
  * - lockscreen bait + unlock
  * - screen recording indicator (Dynamic Island)
  * - heads-up notification banner (device-owned anchor)
@@ -14,8 +14,8 @@ import { episode } from "../code-first-episode.js";
  */
 export default defineEpisode({
   meta: {
-    id: "v2-enterprise-long-showcase",
-    title: "V2 Long: Device + Keyboard + Camera + Cross-App Roast (Baseline)",
+    id: "v2-creator-series-showcase",
+    title: "V2 Long: Device + Keyboard + Camera + Cross-App Banter (Baseline)",
     description:
       "One long canonical episode that showcases lockscreen -> unlock, recording indicator, heads-up notification banner, app switching, typed keyboard, and camera directing across WhatsApp, X, and iMessage.",
     category: "showcase",
@@ -39,7 +39,7 @@ export default defineEpisode({
     apps: ["app_whatsapp", "app_x", "app_imessage"],
   },
   build: () =>
-    episode("v2-enterprise-long-showcase", { fps: 30, duration: "90s" })
+    episode("v2-creator-series-showcase", { fps: 30, duration: "90s" })
       .device("phone", "iphone16", {
         app: "app_whatsapp",
         locked: true,
@@ -147,7 +147,7 @@ export default defineEpisode({
         ov.at("14.0s").caption("The banner hits while you're mid-chat.", {
           durationFrames: 120,
         });
-        ov.at("29.8s").caption("Now watch the roast thread.", {
+        ov.at("29.8s").caption("Now watch the banter thread.", {
           durationFrames: 120,
         });
         ov.at("58.0s").receipt("DM: Mina (do not panic)", {
@@ -218,7 +218,7 @@ export default defineEpisode({
       })
 
       // ---------------------------------------------------------------------
-      // WHATSAPP: group roast pacing + typed send (auto keyboard)
+      // WHATSAPP: group banter pacing + typed send (auto keyboard)
       // ---------------------------------------------------------------------
       .whatsapp("phone", "wa_grp", (wa) => {
         wa.switchTo("wa_grp", "0s");
@@ -254,7 +254,7 @@ export default defineEpisode({
       })
 
       // ---------------------------------------------------------------------
-      // X: post -> replies -> compose -> quote roast (typed)
+      // X: post -> replies -> compose -> quote banter (typed)
       // ---------------------------------------------------------------------
       .x("phone", (x) => {
         x.at("30.0s").navigate("timeline");

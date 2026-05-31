@@ -1,5 +1,5 @@
 /**
- * @tokovo/renderer - Enterprise Renderer Package
+ * @tokovo/renderer - Production Renderer Package
  *
  * @description Main exports for the Tokovo rendering system.
  * Organized into domain-specific subdirectories.

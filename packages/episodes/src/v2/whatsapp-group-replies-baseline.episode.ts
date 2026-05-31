@@ -3,12 +3,12 @@ import { episode } from "../code-first-episode.js";
 
 export default defineEpisode({
   meta: {
-    id: "v2-whatsapp-group-roast-baseline",
-    title: "V2 Baseline: WhatsApp Group Roast",
+    id: "v2-whatsapp-group-replies-baseline",
+    title: "V2 Baseline: WhatsApp Group Banter",
     description:
-      "Baseline episode for roast pacing in a group chat: fast arrivals, typing tension, reaction beats, and camera that follows the current punchline.",
+      "Baseline episode for banter pacing in a group chat: fast arrivals, typing tension, reaction beats, and camera that follows the current punchline.",
     category: "showcase",
-    tags: ["v2", "whatsapp", "group", "roast", "camera", "keyboard"],
+    tags: ["v2", "whatsapp", "group", "banter", "camera", "keyboard"],
   },
   config: {
     format: "1080x1920",
@@ -16,7 +16,7 @@ export default defineEpisode({
     apps: ["app_whatsapp"],
   },
   build: () =>
-    episode("v2-whatsapp-group-roast-baseline", { fps: 30, duration: "30s" })
+    episode("v2-whatsapp-group-replies-baseline", { fps: 30, duration: "30s" })
       .device("phone", "iphone16", {
         app: "app_whatsapp",
         installedApps: ["app_whatsapp"],
@@ -43,7 +43,7 @@ export default defineEpisode({
         wa.at("2.2s").receive("Omar", "NO WAY 💀");
         wa.at("3.0s").receive("Tina", "Drop link.");
 
-        // Roast volley: quick hits, minimal downtime
+        // Banter volley: quick hits, minimal downtime
         wa.span("3.8s", "4.6s").typing("Jay");
         wa.at("4.7s").receive("Jay", "He really thought he ate with that caption.");
 

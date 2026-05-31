@@ -35,12 +35,12 @@ export default defineEpisode({
         users: [
           { id: "u_me", name: "Me", handle: "nadiaops", followers: 18200, following: 520, verified: "blue" },
           { id: "u_founder_story", name: "Founder", handle: "earnestfounder", followers: 84000, following: 122, verified: "gold" },
-          { id: "u_roast_story", name: "Roast Thread", handle: "roastthread", followers: 47000, following: 310, verified: null },
+          { id: "u_banter_story", name: "Banter Thread", handle: "banterthread", followers: 47000, following: 310, verified: null },
         ],
         tweets: [
           { id: "tw_story_hook_v2", authorId: "u_founder_story", text: "If your team has work-life balance at launch, you probably do not want it badly enough.", createdAt: baseTs - 80000, viewCount: 121000, shareCount: 2600, bookmarkCount: 5100 },
         ],
-        threads: [{ id: "dm_story_x_v2", participantIds: ["u_me", "u_founder_story", "u_roast_story"] }],
+        threads: [{ id: "dm_story_x_v2", participantIds: ["u_me", "u_founder_story", "u_banter_story"] }],
         messages: [{ id: "msg_story_x_1", threadId: "dm_story_x_v2", senderId: "u_founder_story", text: "Tell me honestly if this lands wrong.", createdAt: baseTs - 12000 }],
       })
       .view("app_x", "phone", { screen: "timeline" })
@@ -55,14 +55,14 @@ export default defineEpisode({
           typed: true,
           charDelay: 2,
         });
-        x.at("5.6s").addNotification({ id: "nt_story_x_1", type: "repost", actorId: "u_roast_story", tweetId: "tw_story_reply_v2" });
+        x.at("5.6s").addNotification({ id: "nt_story_x_1", type: "repost", actorId: "u_banter_story", tweetId: "tw_story_reply_v2" });
         x.at("6.6s").navigate("notifications");
         x.at("8.4s").navigate("messages");
         x.at("9.6s").navigate("thread", { threadId: "dm_story_x_v2" });
         x.at("10.8s").sendMessage({
           id: "msg_story_x_2",
           threadId: "dm_story_x_v2",
-          senderId: "u_roast_story",
+          senderId: "u_banter_story",
           text: "Too late. The quote posts are now unionizing.",
           createdAt: baseTs + 20000,
         });

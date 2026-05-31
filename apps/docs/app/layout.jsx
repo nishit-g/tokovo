@@ -6,7 +6,7 @@ import "nextra-theme-docs/style.css";
 export const metadata = {
   title: "Tokovo Documentation",
   description:
-    "Enterprise-grade documentation for the Tokovo phone simulation engine",
+    "Production-grade documentation for the Tokovo phone simulation engine",
 };
 
 export default async function RootLayout({ children }) {

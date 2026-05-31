@@ -73,7 +73,7 @@ export default defineEpisode({
         wa.openChatList("43.0s");
         wa.switchTo("dm_family_v2", "44.4s");
         wa.at("45.2s").receive("Mom", "Bas kaam hi karta rehna.");
-        wa.at("46.8s").send("Work is temporary. Family roast is eternal.", {
+        wa.at("46.8s").send("Work is temporary. Family banter is eternal.", {
           typed: true,
           charDelay: 2,
         });

@@ -37,7 +37,7 @@ export default defineEpisode({
       })
       .snapshot("app_teams", "phone", {
         users: [
-          { id: "u_me", displayName: "Nishit", role: "Incident lead" },
+          { id: "u_me", displayName: "Ari", role: "Incident lead" },
           { id: "u_ops", displayName: "Priya", role: "Launch ops" },
           { id: "u_sre", displayName: "Arjun", role: "SRE" },
           { id: "u_exec", displayName: "Rohan", role: "Chief of staff" },

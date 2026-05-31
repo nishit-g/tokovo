@@ -2,7 +2,7 @@ export type TeamsThemeMode = "light" | "dark";
 export type TeamsPlatform = "ios" | "android";
 export type TeamsThemeId =
   | "teams-default"
-  | "teams-ghibli"
+  | "teams-storybook"
   | "teams-summit";
 
 export interface TeamsDesignTokens {
@@ -333,7 +333,7 @@ export const TEAMS_THEME_PRESETS: Record<TeamsThemeMode, TeamsDesignTokens> = {
   dark: teamsIosDarkTheme,
 };
 
-const GHIBLI_OVERRIDES: ThemeOverride = {
+const STORYBOOK_OVERRIDES: ThemeOverride = {
   color: {
     bg: "#f3ede0",
     shellStart: "#f7f1e7",
@@ -445,8 +445,8 @@ function normalizeThemeId(themeId?: string): TeamsThemeId | null {
   if (normalized === "teams-default" || normalized === "default") {
     return "teams-default";
   }
-  if (normalized === "teams-ghibli" || normalized === "ghibli") {
-    return "teams-ghibli";
+  if (normalized === "teams-storybook" || normalized === "storybook") {
+    return "teams-storybook";
   }
   if (normalized === "teams-summit" || normalized === "summit") {
     return "teams-summit";
@@ -469,8 +469,8 @@ export function getTheme(
         : teamsIosLightTheme;
 
   const normalized = normalizeThemeId(themeId);
-  if (normalized === "teams-ghibli") {
-    return mergeTheme(base, normalized, GHIBLI_OVERRIDES);
+  if (normalized === "teams-storybook") {
+    return mergeTheme(base, normalized, STORYBOOK_OVERRIDES);
   }
   if (normalized === "teams-summit") {
     return mergeTheme(base, normalized, SUMMIT_OVERRIDES);

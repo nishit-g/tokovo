@@ -48,7 +48,7 @@ export type LIScreen =
   | "messages"
   | "thread";
 
-export type LIThemeMode = "light" | "dark" | "ghibli";
+export type LIThemeMode = "light" | "dark" | "storybook";
 
 export type LIPostVisibility = "public" | "connections";
 

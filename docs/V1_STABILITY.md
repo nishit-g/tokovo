@@ -21,7 +21,7 @@ Canonical command:
 
 ### Episode Catalog
 
-- curated catalogs contain only new enterprise episodes
+- curated catalogs contain only public-ready creator episodes
 - each visible episode has one clear job
 - flagship, exhaustive, system, and story catalogs all render
 

@@ -2,7 +2,7 @@
  * Frame Registry
  *
  * Registry for device frame components.
- * Allows custom device frames (Ghibli, Pixel, etc.) to be registered.
+ * Allows custom device frames (Storybook, Pixel, etc.) to be registered.
  *
  * @example
  * ```typescript

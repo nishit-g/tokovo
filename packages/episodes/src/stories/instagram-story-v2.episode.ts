@@ -7,12 +7,12 @@ export default defineEpisode({
     id: "instagram-story-v2",
     title: "Instagram Story V2",
     description:
-      "A new Instagram story where a creator tries to sound casual and accidentally writes the most roastable caption on the app.",
+      "A new Instagram story where a creator tries to sound casual and accidentally writes the most comment-worthy caption on the app.",
     category: "production",
     catalogType: "story",
     visibility: "public",
     sortOrder: 130,
-    tags: ["story", "instagram", "creator", "comments", "roast"],
+    tags: ["story", "instagram", "creator", "comments", "banter"],
   },
   config: {
     format: "1080x1920",

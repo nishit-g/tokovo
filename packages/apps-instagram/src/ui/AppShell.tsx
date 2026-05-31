@@ -28,7 +28,7 @@ export const AppShell: React.FC<{
         width: "100%",
         height: "100%",
         background: immersive
-          ? theme.mode === "ghibli"
+          ? theme.mode === "storybook"
             ? "linear-gradient(180deg, #324236 0%, #20231f 100%)"
             : "#050505"
           : theme.colors.background,
@@ -47,7 +47,7 @@ export const AppShell: React.FC<{
             position: "absolute",
             inset: 0,
             background:
-              theme.mode === "ghibli"
+              theme.mode === "storybook"
                 ? "radial-gradient(circle at top, rgba(255,255,255,0.14), transparent 28%)"
                 : "linear-gradient(180deg, rgba(0,0,0,0.015), transparent 14%)",
             pointerEvents: "none",

@@ -57,7 +57,7 @@ export default defineEpisode({
           title: "Instagram",
           body: "39 new comments on How reels are actually made.",
           priority: "high",
-          threadKey: "ig_post_roast",
+          threadKey: "ig_post_banter",
         });
         d.at("3.2s").notificationShow({
           id: "nc_teams_1",

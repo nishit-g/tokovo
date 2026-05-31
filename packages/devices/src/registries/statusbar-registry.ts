@@ -1,13 +1,13 @@
 /**
  * StatusBar Strategy Registry
  *
- * Registry for StatusBar visual strategies (iOS, Android, Ghibli, etc.)
+ * Registry for StatusBar visual strategies (iOS, Android, Storybook, etc.)
  *
  * @example
  * ```typescript
  * const registry = createStatusBarStrategyRegistry();
- * registry.register("ghibli", GhibliStatusBarStrategy);
- * const Strategy = registry.get("ghibli");
+ * registry.register("storybook", StorybookStatusBarStrategy);
+ * const Strategy = registry.get("storybook");
  * ```
  */
 
@@ -66,7 +66,7 @@ export class StatusBarStrategyRegistryClass {
 
   /**
    * Register a status bar strategy
-   * @param variant The variant ID (e.g., "ios", "android", "ghibli")
+   * @param variant The variant ID (e.g., "ios", "android", "storybook")
    * @param component The strategy React component
    */
   register(variant: string, component: StatusBarStrategyComponent): void {

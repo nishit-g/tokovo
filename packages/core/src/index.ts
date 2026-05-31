@@ -1,5 +1,5 @@
 /**
- * @tokovo/core - Enterprise Core Package
+ * @tokovo/core - Production Core Package
  *
  * @description Central exports for the Tokovo engine runtime.
  * Domain-organized modules with clean barrel exports.
@@ -147,7 +147,7 @@ export type {
 } from "./logger/index.js";
 
 // =============================================================================
-// VALIDATION - Enterprise validation utilities for AI input
+// VALIDATION - Production validation utilities for AI input
 // =============================================================================
 export {
   validate,

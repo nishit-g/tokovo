@@ -26,7 +26,7 @@ export interface DeviceConfig {
   profile: string;
   app: string;
   os?: OSConfig;
-  /** UI theme/strategy to use (e.g., "whatsapp-ghibli") */
+  /** UI theme/strategy to use (e.g., "whatsapp-storybook") */
   theme?: string;
   /** Start the device locked at frame 0 */
   locked?: boolean;

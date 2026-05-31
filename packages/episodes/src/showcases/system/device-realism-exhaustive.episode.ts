@@ -8,7 +8,7 @@ export default defineEpisode({
     id: "device-realism-exhaustive",
     title: "Device Realism Exhaustive",
     description:
-      "Enterprise device pass covering lockscreen bait, unlock, app transitions, keyboard lift, and cross-app continuity.",
+      "Production device pass covering lockscreen bait, unlock, app transitions, keyboard lift, and cross-app continuity.",
     category: "showcase",
     catalogType: "system_showcase",
     visibility: "public",

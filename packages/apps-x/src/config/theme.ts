@@ -26,7 +26,7 @@ export interface XThemeColors {
   pill: string;
 }
 
-export type XThemeMode = "dark" | "light" | "ghibli";
+export type XThemeMode = "dark" | "light" | "storybook";
 
 export interface XTheme {
   mode: XThemeMode;
@@ -93,9 +93,9 @@ export const X_LIGHT: XTheme = {
   spacing: xSpacing,
 };
 
-// Studio Ghibli inspired theme - soft, warm, handcrafted feel
-export const X_GHIBLI: XTheme = {
-  mode: "ghibli",
+// Studio Storybook inspired theme - soft, warm, handcrafted feel
+export const X_STORYBOOK: XTheme = {
+  mode: "storybook",
   colors: {
     background: "#F7F2E8",
     surface: "#FFF9F0",
@@ -127,8 +127,8 @@ export function getXTheme(mode: XThemeMode = "dark"): XTheme {
   switch (mode) {
     case "light":
       return X_LIGHT;
-    case "ghibli":
-      return X_GHIBLI;
+    case "storybook":
+      return X_STORYBOOK;
     default:
       return X_DARK;
   }

@@ -1,7 +1,7 @@
 /**
  * Status Bar Theme Types
  * 
- * Enterprise-grade theming for device status bar.
+ * Production-grade theming for device status bar.
  * Supports presets ("light", "dark") or full customization.
  * 
  * @example

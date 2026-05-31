@@ -1,4 +1,5 @@
 import deviceRealismExhaustive from "./device-realism-exhaustive.episode.js";
+import notificationCenterExhaustive from "./notification-center-exhaustive.episode.js";
 import notificationSystemExhaustive from "./notification-system-exhaustive.episode.js";
 import cameraAnchorExhaustive from "./camera-anchor-exhaustive.episode.js";
 import keyboardInputExhaustive from "./keyboard-input-exhaustive.episode.js";
@@ -10,6 +11,7 @@ export const fixedSystemShowcaseEpisodes = [
   deviceRealismExhaustive,
   screenRecordingExhaustive,
   callScreenExhaustive,
+  notificationCenterExhaustive,
   notificationSystemExhaustive,
   cameraAnchorExhaustive,
   keyboardInputExhaustive,
