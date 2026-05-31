@@ -35,7 +35,6 @@ const WORKSPACE_INPUT_DIRS = [
   "packages/episodes/src",
   "packages/ir/src",
   "packages/overlay/src",
-  "packages/publishing/src",
   "packages/react/src",
   "packages/renderer/src",
   "packages/voice/src",

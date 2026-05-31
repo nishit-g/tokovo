@@ -1,59 +1,69 @@
-import fs from 'node:fs'
-import path from 'node:path'
-import { createHash } from 'node:crypto'
-import { getFormat, type EpisodeDefinition, type FormatId } from '@tokovo/episodes'
-import { createVideoRunnerEpisodeRegistry } from '../src/episode-registry'
-import { renderArtifactManifestSchema } from '../../../packages/publishing/src/index'
+import fs from "node:fs";
+import path from "node:path";
+import { createHash } from "node:crypto";
+import { getFormat, type EpisodeDefinition, type FormatId } from "@tokovo/episodes";
+import { z } from "zod";
+import { createVideoRunnerEpisodeRegistry } from "../src/episode-registry";
+
+const renderArtifactManifestSchema = z.object({
+  id: z.string(),
+  episodeId: z.string(),
+  sourceHash: z.string(),
+  videoPath: z.string(),
+  thumbnailPath: z.string().optional(),
+  durationMs: z.number().int().nonnegative(),
+  createdAt: z.string(),
+});
 
 interface CliArgs {
-  episodeId: string
-  outFile: string
+  episodeId: string;
+  outFile: string;
 }
 
 function parseArgs(): CliArgs {
-  const [, , episodeId, outFile] = process.argv
+  const [, , episodeId, outFile] = process.argv;
   if (!episodeId || !outFile) {
-    throw new Error('Usage: write-artifact-manifest.ts <episodeId> <outFile>')
+    throw new Error("Usage: write-artifact-manifest.ts <episodeId> <outFile>");
   }
-  return { episodeId, outFile: path.resolve(outFile) }
+  return { episodeId, outFile: path.resolve(outFile) };
 }
 
 function getDurationMs(episode: EpisodeDefinition): number {
   const format =
-    typeof episode.config.format === 'string'
+    typeof episode.config.format === "string"
       ? getFormat(episode.config.format as FormatId)
-      : episode.config.format
+      : episode.config.format;
 
-  return Math.round((episode.config.durationInFrames / format.fps) * 1000)
+  return Math.round((episode.config.durationInFrames / format.fps) * 1000);
 }
 
 function computeSourceHash(episode: EpisodeDefinition): string {
-  const ir = episode.build()
-  return createHash('sha256')
+  const ir = episode.build();
+  return createHash("sha256")
     .update(JSON.stringify({ meta: episode.meta, config: episode.config, ir }))
-    .digest('hex')
+    .digest("hex");
 }
 
 function deriveArtifactId(episode: EpisodeDefinition, outFile: string, sourceHash: string): string {
-  return `artifact_${createHash('sha256')
+  return `artifact_${createHash("sha256")
     .update(`${episode.meta.id}:${outFile}:${sourceHash}`)
-    .digest('hex')
-    .slice(0, 16)}`
+    .digest("hex")
+    .slice(0, 16)}`;
 }
 
 async function main() {
-  const { episodeId, outFile } = parseArgs()
+  const { episodeId, outFile } = parseArgs();
   if (!fs.existsSync(outFile)) {
-    throw new Error(`Rendered file does not exist: ${outFile}`)
+    throw new Error(`Rendered file does not exist: ${outFile}`);
   }
 
-  const registry = createVideoRunnerEpisodeRegistry()
-  const episode = registry.get(episodeId)
+  const registry = createVideoRunnerEpisodeRegistry();
+  const episode = registry.get(episodeId);
   if (!episode) {
-    throw new Error(`Unknown episode: ${episodeId}`)
+    throw new Error(`Unknown episode: ${episodeId}`);
   }
 
-  const sourceHash = computeSourceHash(episode)
+  const sourceHash = computeSourceHash(episode);
   const manifest = renderArtifactManifestSchema.parse({
     id: deriveArtifactId(episode, outFile, sourceHash),
     episodeId: episode.meta.id,
@@ -61,15 +71,15 @@ async function main() {
     videoPath: outFile,
     durationMs: getDurationMs(episode),
     createdAt: new Date().toISOString(),
-  })
+  });
 
-  const manifestPath = `${outFile}.artifact.json`
-  await fs.promises.mkdir(path.dirname(manifestPath), { recursive: true })
-  await fs.promises.writeFile(manifestPath, JSON.stringify(manifest, null, 2))
-  console.log(`[artifact] manifest=${manifestPath}`)
+  const manifestPath = `${outFile}.artifact.json`;
+  await fs.promises.mkdir(path.dirname(manifestPath), { recursive: true });
+  await fs.promises.writeFile(manifestPath, JSON.stringify(manifest, null, 2));
+  console.log(`[artifact] manifest=${manifestPath}`);
 }
 
 main().catch((error) => {
-  console.error(error)
-  process.exit(1)
-})
+  console.error(error);
+  process.exit(1);
+});

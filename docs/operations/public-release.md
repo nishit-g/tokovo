@@ -37,7 +37,7 @@ pnpm install --frozen-lockfile
 pnpm verify:release
 ```
 
-If package publishing is part of v1.0.0, also check:
+If npm registry release is part of v1.0.0, also check:
 
 ```bash
 pnpm -r publish --dry-run

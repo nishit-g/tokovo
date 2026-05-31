@@ -27,7 +27,6 @@
         { "path": "../../packages/overlay" },
         { "path": "../../packages/episodes" },
         { "path": "../../packages/ir" },
-        { "path": "../../packages/publishing" },
         { "path": "../../packages/react" },
         { "path": "../../packages/renderer" },
         { "path": "../../packages/voice" }

@@ -138,23 +138,6 @@ export default tseslint.config(
     },
   },
   {
-    files: ["apps/web/src/**/*.{ts,tsx}"],
-    rules: {
-      "no-restricted-imports": [
-        "error",
-        {
-          patterns: [
-            {
-              group: ["@/lib/publishing/*", "./lib/publishing/*", "../lib/publishing/*"],
-              message:
-                "Publishing server logic lives in @tokovo/publishing/server. Do not reintroduce web-local publishing services.",
-            },
-          ],
-        },
-      ],
-    },
-  },
-  {
     files: ["packages/episodes/src/runtime/**/*.ts"],
     ignores: ["packages/episodes/src/runtime/catalogs/studio.ts"],
     rules: {

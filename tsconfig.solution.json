@@ -22,7 +22,6 @@
     { "path": "./packages/apps-whatsapp" },
     { "path": "./packages/apps-x" },
     { "path": "./packages/renderer" },
-    { "path": "./packages/publishing" },
     { "path": "./packages/episodes" },
     { "path": "./apps/video-runner" },
     { "path": "./apps/render-service" }

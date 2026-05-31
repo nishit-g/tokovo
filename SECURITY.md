@@ -26,7 +26,7 @@ Security-sensitive areas include:
 
 - render-service input validation and artifact access
 - private asset handling
-- publishing integrations and provider credentials
+- voice provider credentials
 - episode and plugin execution boundaries
 - generated media paths and local file handling
 - dependency supply chain updates

@@ -1,9 +1,9 @@
-import type { Metadata } from 'next'
+import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: 'Tokovo Privacy Policy',
-  description: 'Privacy policy for Tokovo and Tokovo publishing integrations.',
-}
+  title: "Tokovo Privacy Policy",
+  description: "Privacy policy for Tokovo phone-simulation creation workflows.",
+};
 
 export default function PrivacyPolicyPage() {
   return (
@@ -17,41 +17,33 @@ export default function PrivacyPolicyPage() {
           <section className="space-y-3">
             <h2 className="font-serif text-2xl text-white">Overview</h2>
             <p>
-              Tokovo provides software for creating, rendering, and managing social video content.
-              This policy explains what information we collect, how we use it, and the choices
-              available to users and customers.
+              Tokovo provides software for creating and rendering phone-simulation videos. This
+              policy explains what information we collect, how we use it, and the choices available
+              to users and customers.
             </p>
           </section>
 
           <section className="space-y-3">
             <h2 className="font-serif text-2xl text-white">Information We Collect</h2>
             <p>
-              We may collect account information, contact details, uploaded media, publishing
-              metadata, analytics, and technical logs required to operate Tokovo and connected
-              integrations.
-            </p>
-            <p>
-              When you connect third-party platforms such as TikTok, YouTube, Instagram, or
-              Facebook, Tokovo and connected publishing infrastructure may process tokens, channel
-              identifiers, post metadata, and media needed to complete publishing actions.
+              We may collect account information, contact details, authored scene data, uploaded
+              media, render metadata, analytics, and technical logs required to operate Tokovo.
             </p>
           </section>
 
           <section className="space-y-3">
             <h2 className="font-serif text-2xl text-white">How We Use Information</h2>
             <p>
-              We use data to provide the product, authenticate users, render content, schedule and
-              publish posts, provide support, improve reliability, prevent abuse, and comply with
-              legal obligations.
+              We use data to provide the product, authenticate users, render content, provide
+              support, improve reliability, prevent abuse, and comply with legal obligations.
             </p>
           </section>
 
           <section className="space-y-3">
             <h2 className="font-serif text-2xl text-white">Sharing</h2>
             <p>
-              We may share information with infrastructure providers, hosting providers, analytics
-              providers, and social platform APIs strictly as needed to operate Tokovo and complete
-              requested publishing workflows.
+              We may share information with infrastructure providers, hosting providers, and
+              analytics providers strictly as needed to operate Tokovo.
             </p>
           </section>
 
@@ -75,7 +67,7 @@ export default function PrivacyPolicyPage() {
           <section className="space-y-3">
             <h2 className="font-serif text-2xl text-white">Contact</h2>
             <p>
-              For privacy questions or requests, contact{' '}
+              For privacy questions or requests, contact{" "}
               <a className="text-[#d08b5b] hover:underline" href="mailto:hello@tokovo.io">
                 hello@tokovo.io
               </a>
@@ -85,5 +77,5 @@ export default function PrivacyPolicyPage() {
         </div>
       </div>
     </main>
-  )
+  );
 }

@@ -38,7 +38,6 @@
         "@tokovo/episodes#dev",
         "@tokovo/ir#dev",
         "@tokovo/overlay#dev",
-        "@tokovo/publishing#dev",
         "@tokovo/react#dev",
         "@tokovo/renderer#dev",
         "@tokovo/voice#dev"

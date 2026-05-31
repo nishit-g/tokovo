@@ -9,7 +9,6 @@
         "next-env.d.ts",
         "next.config.ts",
         "postcss.config.js",
-        ".env.example",
         "src/**"
       ]
     },
@@ -20,12 +19,11 @@
         "tsconfig.typecheck.json",
         "next-env.d.ts",
         "next.config.ts",
-        ".env.example",
         "src/**"
       ]
     },
     "dev": {
-      "with": ["@tokovo/episodes#dev", "@tokovo/publishing#dev"]
+      "with": ["@tokovo/episodes#dev"]
     }
   }
 }

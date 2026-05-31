@@ -25,8 +25,7 @@
         { "path": "../apps-typewriter" },
         { "path": "../device-camera" },
         { "path": "../device-keyboard" },
-        { "path": "../device-notifications" },
-        { "path": "../publishing" }
+        { "path": "../device-notifications" }
     ],
     "include": [
         "src/**/*"
