@@ -28,6 +28,9 @@ importers:
       eslint:
         specifier: ^9.0.0
         version: 9.39.2(jiti@2.6.1)
+      next:
+        specifier: 15.4.11
+        version: 15.4.11(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(sass@1.77.4)
       oxfmt:
         specifier: ^0.44.0
         version: 0.44.0
