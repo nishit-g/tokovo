@@ -4,8 +4,8 @@ Get the Tokovo monorepo running locally.
 
 ## Prerequisites
 
-- Node.js 18+
-- `pnpm`
+- Node.js 20+
+- pnpm 10.28.2
 - Git
 
 ## Clone
@@ -37,8 +37,9 @@ pnpm install
 ## Useful Commands
 
 ```bash
-pnpm build
-pnpm test
+pnpm -s typecheck:solution
+pnpm validate
+pnpm --filter @tokovo/episodes test
 pnpm build:video
 pnpm --filter docs build
 ```

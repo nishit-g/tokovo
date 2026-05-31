@@ -1,0 +1,81 @@
+# Showcase
+
+The showcase catalog is the fastest way to understand Tokovo's v1 phone-simulation surface. It contains full app demos, system realism tests, theme passes, and creator-story baselines that can be previewed or rendered locally.
+
+<video
+  controls
+  muted
+  loop
+  playsInline
+  src="/showcase/launch-clip.mp4"
+  style={{ width: "100%", maxWidth: 420, borderRadius: 12, border: "1px solid rgba(125,125,125,0.25)" }}
+/>
+
+## Render One
+
+```bash
+EPISODE_ID=v2-creator-series-showcase pnpm --filter video-runner render:fast
+```
+
+Outputs:
+
+```text
+out/v2-creator-series-showcase.mp4
+out/v2-creator-series-showcase.manifest.json
+```
+
+## Recommended First Renders
+
+| Episode ID | Catalog | What to inspect |
+| --- | --- | --- |
+| `v2-creator-series-showcase` | release | multi-app story pacing, lockscreen, notifications, keyboard, camera direction |
+| `whatsapp-flagship-v2` | studio | WhatsApp chat list, group thread, updates, calls, typed replies |
+| `instagram-flagship-v2` | studio | stories, DMs, profile navigation, creator content pacing |
+| `x-flagship-v2` | studio | timeline, post detail, replies, notifications |
+| `typewriter-flagship-v2` | studio | text timing, typewriter UI, procedural sound effects |
+| `screen-recording-exhaustive` | studio | screen recording chrome, phone OS realism |
+| `notification-center-exhaustive` | studio | notification stack, mixed app alerts, lockscreen behavior |
+
+## App Showcase Matrix
+
+| App package | Flagship | Exhaustive | Theme |
+| --- | --- | --- | --- |
+| WhatsApp | `whatsapp-flagship-v2` | `whatsapp-exhaustive-v2` | `whatsapp-theme-storybook-v2` |
+| iMessage | `imessage-flagship-v2` | `imessage-exhaustive-v2` | - |
+| Instagram | `instagram-flagship-v2` | `instagram-exhaustive-v2` | `instagram-theme-storybook-v2` |
+| X | `x-flagship-v2` | `x-exhaustive-v2` | `x-theme-storybook-v2` |
+| LinkedIn | `linkedin-flagship-v2` | `linkedin-exhaustive-v2` | `linkedin-theme-storybook-v2` |
+| Snapchat | `snapchat-flagship-v2` | `snapchat-exhaustive-v2` | - |
+| Teams | `teams-flagship-v2` | `teams-exhaustive-v2` | `teams-theme-storybook-v2` |
+| Typewriter | `typewriter-flagship-v2` | `typewriter-exhaustive-v2` | - |
+
+## System Showcase Matrix
+
+| Episode ID | Focus |
+| --- | --- |
+| `device-realism-exhaustive` | lockscreen, unlock, app transitions, keyboard lift |
+| `camera-anchor-exhaustive` | semantic camera targets and fallback detection |
+| `keyboard-input-exhaustive` | keyboard reveal, text entry, suggestions, cleanup |
+| `multi-device-exhaustive` | split-device pacing and cross-app continuity |
+| `notification-center-exhaustive` | notification center and mixed-app alert stack |
+| `notification-system-exhaustive` | heads-up, lockscreen, dismiss, tap flows |
+| `screen-recording-exhaustive` | recording indicator and OS chrome |
+| `call-screen-exhaustive` | incoming, outgoing, and active call states |
+
+## Catalog Profiles
+
+Use `release` for creator-facing episodes and `studio` for the full app/system showcase surface.
+
+```bash
+TOKOVO_EPISODE_CATALOG_PROFILE=studio pnpm --filter video-runner dev
+```
+
+## Quality Checklist
+
+Before calling a showcase v1-ready:
+
+- `pnpm validate` passes.
+- The episode renders through `render:fast`.
+- All referenced assets exist under `apps/video-runner/public`.
+- Camera targets resolve to semantic anchors instead of app fallback boxes.
+- The final MP4 and manifest are kept out of git unless they are intentional docs assets.

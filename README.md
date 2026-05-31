@@ -1,31 +1,61 @@
 # Tokovo
 
-Tokovo is a programmable phone-simulation experience for creators making shorts, reels, episodes, and series where the phone UI is part of the story.
+Tokovo is a programmable phone-simulation engine for creators making shorts, reels, episodes, and series where the phone UI carries the story.
 
-It turns authored scenes into high-fidelity phone videos with React and Remotion, so creators can script messages, feeds, notifications, calls, camera moves, audio, and app state as repeatable cinematic timelines.
+Write the episode as TypeScript. Tokovo turns it into deterministic phone-native video: device frames, app state, messages, feeds, notifications, calls, keyboard input, camera movement, audio, and render artifacts all come from checked-in code.
 
-## Status
+![Tokovo phone simulation preview](apps/docs/public/showcase/launch-poster.png)
 
-Tokovo is preparing for its v1 public release. The current release contract is documented in [`docs/V1_STABILITY.md`](docs/V1_STABILITY.md), and the canonical release gate is:
+[Watch the demo clip](apps/docs/public/showcase/launch-clip.mp4)
+
+## The Short Version
+
+- Author cinematic phone stories in TypeScript.
+- Preview in Remotion Studio.
+- Render portrait MP4s for Shorts, Reels, TikTok, and episodic story formats.
+- Keep every app state, camera move, message, notification, and asset reference reviewable in git.
+- Validate episodes before render so the same frame resolves the same UI every time.
+
+## Why It Exists
+
+Phone stories are a repeatable format, but most teams still build them by hand in timeline editors. Tokovo makes that format programmable:
+
+- create one episode template and render many variants
+- keep story timing, app state, camera, and assets in version control
+- preview with Remotion and ship portrait video for social and series formats
+- validate episodes before render so the same frame produces the same output every time
+
+## What You Can Build
+
+Tokovo's v1 target surface covers:
+
+| Surface | Package | What it covers |
+| --- | --- | --- |
+| Device and OS | `@tokovo/devices`, `@tokovo/device-*` | iPhone-style frames, status UI, keyboard, notifications, camera anchors |
+| Messaging | `@tokovo/apps-whatsapp`, `@tokovo/apps-imessage` | chats, group threads, typing, read states, media-style cards |
+| Social apps | `@tokovo/apps-instagram`, `@tokovo/apps-x`, `@tokovo/apps-snapchat` | feeds, stories, profiles, DMs, notifications |
+| Work apps | `@tokovo/apps-linkedin`, `@tokovo/apps-teams` | message threads, channels, profiles, activity surfaces |
+| Storytelling tools | `@tokovo/overlay`, `@tokovo/background`, `@tokovo/voice` | captions, backgrounds, music/audio cues, voice tracks |
+| Rendering | `video-runner`, `@tokovo/render-service` | local Remotion preview, MP4 export, render-service primitives |
+
+## See It Running
+
+Start with the long-form creator showcase:
 
 ```bash
-pnpm verify:release
+EPISODE_ID=v2-creator-series-showcase pnpm --filter video-runner render:fast
 ```
 
-The project is not yet committed to broad API stability outside the v1 surfaces documented in the repo. Expect active iteration while the authoring DSL, plugin contracts, and rendering workflows settle.
+Then try app-specific episodes:
 
-## What Tokovo Is For
+```bash
+EPISODE_ID=whatsapp-flagship-v2 pnpm --filter video-runner render:fast
+EPISODE_ID=instagram-flagship-v2 pnpm --filter video-runner render:fast
+EPISODE_ID=x-flagship-v2 pnpm --filter video-runner render:fast
+EPISODE_ID=typewriter-flagship-v2 pnpm --filter video-runner render:fast
+```
 
-Tokovo is built for phone-native storytelling formats:
-
-- deterministic phone and OS simulation
-- app plugins for messaging, social, feed, and workspace surfaces
-- episode and series authoring through checked-in scene code
-- camera-aware cinematic framing
-- Remotion-based preview and rendering
-- checked-in episodes that can be validated, tested, and rendered repeatably
-
-The key invariant is that the same episode code and same frame should always produce the same render output.
+Each render writes an MP4 and manifest under `out/`.
 
 ## Quick Start
 
@@ -40,109 +70,103 @@ Install dependencies:
 pnpm install
 ```
 
-Run the main development surfaces:
+Open the main development surfaces:
 
 ```bash
 pnpm dev
 ```
 
-Run the release gate:
+Preview only the renderer:
 
 ```bash
-pnpm verify:release
+pnpm --filter video-runner dev
 ```
 
-Render a fast local episode preview:
+## Showcase Episodes
 
-```bash
-EPISODE_ID=entity-command-center pnpm --filter video-runner render:fast
-```
+These are good first renders when checking the v1 target surface:
 
-## Architecture
+| Episode ID | Shows |
+| --- | --- |
+| `v2-creator-series-showcase` | lockscreen, notifications, app switching, typed keyboard, camera direction |
+| `whatsapp-flagship-v2` | chat list, group thread, updates, calls, typed replies |
+| `instagram-flagship-v2` | story, DM, profile, creator-facing pacing |
+| `x-flagship-v2` | timeline, post detail, replies, notifications |
+| `typewriter-flagship-v2` | typewriter app, procedural sound effects, text timing |
+| `screen-recording-exhaustive` | OS chrome and screen-recording realism |
 
-Tokovo is code-first and deterministic at render time.
-
-Episode code in `packages/episodes` owns timing, pacing, camera, audio, app seed data, and final scene construction.
-
-`apps/video-runner` and `@tokovo/render-service` render directly from the checked-in episode registry. `apps/web` is a plain marketing shell.
+The full showcase matrix is documented in `apps/docs/app/showcase/page.mdx`.
 
 ## Repo Map
 
-### Compiler and authoring
-
-- `@tokovo/ir`
-- `@tokovo/core`
-- `@tokovo/dsl`
-- `@tokovo/compiler`
-- `@tokovo/episodes`
-
-### Device and OS
-
-- `@tokovo/devices`
-- `@tokovo/device-camera`
-- `@tokovo/device-keyboard`
-- `@tokovo/device-notifications`
-- `@tokovo/overlay`
-
-### App plugins
-
-- `@tokovo/apps-whatsapp`
-- `@tokovo/apps-imessage`
-- `@tokovo/apps-x`
-- `@tokovo/apps-linkedin`
-- `@tokovo/apps-snapchat`
-- `@tokovo/apps-teams`
-- `@tokovo/apps-typewriter`
-
-### Rendering and media
-
-- `@tokovo/react`
-- `@tokovo/renderer`
-- `@tokovo/background`
-- `@tokovo/voice`
-
-### Apps
-
-- `apps/video-runner`
-- `apps/web`
-- `apps/docs`
+| Path | Purpose |
+| --- | --- |
+| `packages/episodes` | canonical episode definitions, release/studio catalogs, validation |
+| `packages/dsl` | timeline builder primitives for devices, camera, OS, audio, overlays |
+| `packages/compiler` | lowers episode definitions into renderable IR |
+| `packages/core` | deterministic runtime, registries, logging, validation |
+| `packages/renderer` | React render surface and camera-aware layout |
+| `packages/apps-*` | app simulators for phone-native stories |
+| `packages/device-*` | OS-owned interactions: camera, keyboard, notifications |
+| `apps/video-runner` | Remotion preview/render app |
+| `apps/docs` | public documentation site |
+| `apps/web` | marketing shell |
+| `apps/render-service` | render-service CLI and render orchestration primitives |
 
 ## Authoring Flow
 
-1. write the cinematic `*.episode.ts` in `packages/episodes`
-2. register it in an episode catalog
-3. preview through `video-runner`
-4. render through `video-runner` or `@tokovo/render-service`
+1. Create a `*.episode.ts` file in `packages/episodes/src`.
+2. Define metadata with `defineEpisode`.
+3. Build the timeline with the code-first episode builder.
+4. Register the episode in the release or studio catalog.
+5. Validate with `pnpm validate`.
+6. Preview in `video-runner`.
+7. Render with `pnpm --filter video-runner render:fast`.
+
+## Release Gate
+
+The canonical release gate is:
+
+```bash
+pnpm verify:release
+```
+
+For focused local work, these are the checks most contributors will use:
+
+```bash
+pnpm lint:ox
+pnpm lint:release
+pnpm -s typecheck:solution
+pnpm validate
+pnpm --filter @tokovo/episodes test
+pnpm --filter video-runner typecheck
+pnpm --filter docs build
+```
 
 ## Documentation
 
-- [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) describes the main runtime boundaries.
-- [`docs/V1_STABILITY.md`](docs/V1_STABILITY.md) defines the v1 readiness bar.
-- [`docs/operations/release.md`](docs/operations/release.md) documents the release gate.
-- [`docs/operations/public-release.md`](docs/operations/public-release.md) tracks public-release readiness.
-- [`ASSET_LICENSES.md`](ASSET_LICENSES.md) records bundled asset provenance.
+- `apps/docs/app/page.mdx` is the documentation home.
+- `apps/docs/app/showcase/page.mdx` lists the current v1 showcase surface.
+- `apps/docs/app/getting-started/quickstart/page.mdx` is the fastest render path.
+- `apps/docs/app/getting-started/first-episode/page.mdx` explains the authoring shape.
+- `docs/ARCHITECTURE.md` describes runtime boundaries.
+- `docs/V1_STABILITY.md` defines the v1 readiness bar.
+- `docs/operations/release.md` documents the release gate.
+- `docs/operations/public-release.md` tracks public-release readiness.
+- `ASSET_LICENSES.md` records bundled asset provenance.
 
-## Useful Commands
+Run the docs site locally:
 
 ```bash
-pnpm install
-pnpm build
-pnpm test
-pnpm lint
-pnpm typecheck
-pnpm validate
-pnpm verify:release
-pnpm build:video
-pnpm --filter docs build
-EPISODE_ID=entity-command-center pnpm --filter video-runner render:fast
+pnpm --filter docs dev
 ```
 
 ## Contributing
 
-Contributions are welcome once the repository is public. Start with [`CONTRIBUTING.md`](CONTRIBUTING.md), keep changes scoped, and run the relevant checks before opening a pull request.
+Start with `CONTRIBUTING.md`, keep changes scoped, and run the relevant checks before opening a pull request.
 
-For security issues, follow [`SECURITY.md`](SECURITY.md) instead of opening a public issue.
+For security issues, follow `SECURITY.md` instead of opening a public issue.
 
 ## License
 
-Tokovo is released under the MIT License. See [`LICENSE`](LICENSE).
+Tokovo is released under the MIT License. See `LICENSE`.

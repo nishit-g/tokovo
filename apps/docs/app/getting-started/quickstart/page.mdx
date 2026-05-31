@@ -1,10 +1,66 @@
 # Quickstart
 
-1. Create or edit an episode in `packages/episodes/src`.
-2. Register it in the appropriate catalog.
-3. Preview it with `video-runner`.
-4. Render it locally.
+This path verifies the repo, previews the renderer, and exports one current v1 showcase episode.
 
-Reference examples:
+## 1. Install
 
-- `packages/episodes/src/production/entity-command-center.episode.ts`
+```bash
+pnpm install
+```
+
+## 2. Validate the Episode Catalog
+
+```bash
+pnpm validate
+pnpm --filter @tokovo/episodes test
+```
+
+`pnpm validate` boots the studio runtime and validates every registered episode definition.
+
+## 3. Open the Renderer
+
+```bash
+pnpm --filter video-runner dev
+```
+
+Use the Remotion Studio UI to select an episode composition and scrub the timeline.
+
+## 4. Render a Local MP4
+
+```bash
+EPISODE_ID=v2-creator-series-showcase pnpm --filter video-runner render:fast
+```
+
+The fast renderer writes:
+
+```text
+out/v2-creator-series-showcase.mp4
+out/v2-creator-series-showcase.manifest.json
+```
+
+Try a shorter app-specific showcase:
+
+```bash
+EPISODE_ID=whatsapp-flagship-v2 pnpm --filter video-runner render:fast
+EPISODE_ID=x-flagship-v2 pnpm --filter video-runner render:fast
+EPISODE_ID=typewriter-flagship-v2 pnpm --filter video-runner render:fast
+```
+
+## 5. Know the Main Catalogs
+
+| Catalog | Includes |
+| --- | --- |
+| `release` | public story and v2 creator episodes |
+| `studio` | release catalog plus app, system, and test showcases |
+
+Set the catalog profile when needed:
+
+```bash
+TOKOVO_EPISODE_CATALOG_PROFILE=studio pnpm --filter video-runner dev
+```
+
+## Next
+
+- [First Episode](/getting-started/first-episode)
+- [Showcase](/showcase)
+- [Rendering at Scale](/guides/rendering-at-scale)

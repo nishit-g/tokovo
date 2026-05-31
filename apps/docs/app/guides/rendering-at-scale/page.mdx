@@ -1,12 +1,36 @@
 # Rendering at Scale
 
-Tokovo scales best when the control plane and render plane stay separated.
+Tokovo scales best when the authoring surface and render plane stay separated.
 
 ## Recommended Approach
 
-- keep creator setup in Payload
-- export manifests into the repo
-- build and render from committed artifacts
+- keep episode definitions in the repo
+- keep source assets under `apps/video-runner/public` or a private object store
+- build and render from committed episode code
+- write a render manifest next to every output
 - verify a real episode render path regularly
 
-This avoids drift between admin state and render state.
+This avoids drift between editing tools and render state.
+
+## Local Batch Pattern
+
+```bash
+for episode in \
+  v2-creator-series-showcase \
+  whatsapp-flagship-v2 \
+  instagram-flagship-v2 \
+  x-flagship-v2
+do
+  EPISODE_ID="$episode" pnpm --filter video-runner render:fast
+done
+```
+
+## Output Contract
+
+Each render should produce:
+
+- an MP4 or image sequence
+- a manifest with episode ID, format, duration, git SHA, and output path
+- logs that identify the render profile and bundle signature
+
+`apps/video-runner/scripts/write-artifact-manifest.ts` owns the local manifest shape.

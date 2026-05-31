@@ -3,6 +3,7 @@ const meta = {
     title: "Home",
     type: "page",
   },
+  showcase: "Showcase",
   "getting-started": "Getting Started",
   architecture: "Architecture",
   concepts: "Concepts",

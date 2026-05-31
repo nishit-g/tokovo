@@ -1,21 +1,81 @@
 # First Episode
 
-The first Tokovo episode should be authored directly in code.
+A Tokovo episode is a pure definition plus a code-first timeline builder. Keep all frame-0 app state in `snapshot()` and `view()`, then use app track builders for timed story beats.
+
+Create a file like `packages/episodes/src/stories/my-first-story.episode.ts`:
 
 ```ts
-import { episode } from "@tokovo/dsl";
+import { defineEpisode } from "@tokovo/episodes";
+import { episode } from "@tokovo/episodes/code-first-episode";
 
-const ep = episode("my-episode", { fps: 30, duration: "8s", title: "My Episode" })
-  .device("phone", "iphone16", { app: "app_whatsapp" })
-  .snapshot("app_whatsapp", "phone", {
-    conversations: [{ id: "dm_alex", name: "Alex", messages: [] }],
-  })
-  .view("app_whatsapp", "phone", {
-    screen: "chat",
-    conversationId: "dm_alex",
-  });
+export default defineEpisode({
+  meta: {
+    id: "my-first-story",
+    title: "My First Story",
+    description: "A short WhatsApp scene with typed replies and camera movement.",
+    category: "production",
+    catalogType: "story",
+    visibility: "public",
+    tags: ["whatsapp", "story"],
+  },
+  config: {
+    format: "1080x1920",
+    durationInFrames: 300,
+    apps: ["app_whatsapp"],
+  },
+  build: () =>
+    episode("my-first-story", { fps: 30, duration: "10s", title: "My First Story" })
+      .device("phone", "iphone16", {
+        app: "app_whatsapp",
+        os: { time: new Date("2026-04-10T20:15:00"), battery: 82, network: "5G" },
+      })
+      .background({ type: "image", src: "/backgrounds/soft-gradient.png" })
+      .snapshot("app_whatsapp", "phone", {
+        conversations: [
+          {
+            id: "dm_alex",
+            name: "Alex",
+            unreadCount: 1,
+            messages: [
+              {
+                id: "seed_1",
+                from: "Alex",
+                text: "Can you make the intro feel like a real phone recording?",
+                at: new Date("2026-04-10T20:14:00").getTime(),
+              },
+            ],
+          },
+        ],
+      })
+      .view("app_whatsapp", "phone", {
+        screen: "chat",
+        conversationId: "dm_alex",
+      })
+      .whatsapp("phone", "dm_alex", (wa) => {
+        wa.at("1.4s").send("Yes. Typing, camera, and phone chrome are all scripted.", {
+          typed: true,
+          charDelay: 2,
+        });
+        wa.at("5.2s").receive("Alex", "Perfect. Render it.");
+      })
+      .camera((cam) => {
+        cam.at("0s").focus("chat_thread", { scale: 1.04, duration: "0.35s" });
+        cam.at("5.2s").focus("last_message", { scale: 1.08, duration: "0.4s" });
+      }),
+});
 ```
 
-After that, keep timing, camera, and scene sequencing in code.
+Register it in the relevant catalog, then run:
 
-Use `snapshot()` and `view()` for all frame-0 app bootstrap. Old device-owned history patterns are not supported.
+```bash
+pnpm validate
+EPISODE_ID=my-first-story pnpm --filter video-runner render:fast
+```
+
+## Authoring Rules
+
+- Use `snapshot()` and `view()` for initial state.
+- Use app track builders for timed interactions.
+- Keep assets under `apps/video-runner/public`.
+- Prefer stable semantic anchors such as `chat_thread`, `last_message`, `tweet_card`, or app-specific anchors.
+- Run `pnpm validate` after registering an episode.
