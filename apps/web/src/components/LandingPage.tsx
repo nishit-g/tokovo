@@ -4,8 +4,6 @@ import Link from "next/link";
 import { useState, useEffect } from "react";
 
 export function LandingPage() {
-  const [email, setEmail] = useState("");
-  const [submitted, setSubmitted] = useState(false);
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -39,7 +37,7 @@ export function LandingPage() {
               href="#access"
               className="font-mono text-xs uppercase tracking-[0.2em] text-white hover:opacity-60 transition-opacity"
             >
-              Get Access
+              Start
             </a>
           </nav>
         </div>
@@ -68,7 +66,7 @@ export function LandingPage() {
               <div className="inline-flex items-center gap-2 border border-stone/30 px-3 py-1.5">
                 <span className="h-1.5 w-1.5 rounded-full bg-copper animate-pulse" />
                 <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-stone">
-                  Now accepting beta users
+                  Public v1 release
                 </span>
               </div>
             </div>
@@ -106,9 +104,9 @@ export function LandingPage() {
               className={`mt-6 max-w-md font-mono text-sm leading-relaxed text-stone transition-all duration-700 ${mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}
               style={{ transitionDelay: "700ms" }}
             >
-              The programmatic video engine for studios and creators. Define phones, apps, and
-              conversations in TypeScript. Render thousands of cinematic videos — without After
-              Effects.
+              The programmatic phone-simulation engine for studios and creators. Define phones,
+              apps, conversations, camera movement, and audio in TypeScript. Render cinematic
+              vertical video without rebuilding every shot by hand.
             </p>
 
             {/* Quick stats */}
@@ -204,10 +202,10 @@ export function LandingPage() {
             <div className="flex gap-16 overflow-hidden">
               {[
                 "Content Studios",
-                "Marketing Teams",
+                "Creator Teams",
                 "Agencies",
                 "Indie Creators",
-                "Teams",
+                "Series Writers",
               ].map((name) => (
                 <span key={name} className="shrink-0 font-mono text-sm text-ink/30">
                   {name}
@@ -230,12 +228,12 @@ export function LandingPage() {
                 The Problem
               </span>
               <h2 className="mt-6 font-serif text-3xl text-ink lg:text-4xl">
-                Creating social video content doesn't scale.
+                Phone stories should not be rebuilt by hand.
               </h2>
               <p className="mt-6 font-mono text-sm leading-relaxed text-stone">
-                Every viral format — fake texts, DM screenshots, app recordings — requires manual
-                work in After Effects or CapCut. One video takes hours. Variations take days.
-                Localization? Forget it.
+                Text conversations, DM arcs, app recordings, and phone-first episodes usually live
+                in timeline editors. One change means nudging layers, rerecording screens, and
+                checking every frame again.
               </p>
             </div>
 
@@ -245,12 +243,12 @@ export function LandingPage() {
                 The Solution
               </span>
               <h2 className="mt-6 font-serif text-3xl text-ink lg:text-4xl">
-                Define once. Render infinitely.
+                Script once. Render every cut.
               </h2>
               <p className="mt-6 font-mono text-sm leading-relaxed text-stone">
-                Tokovo lets you define video content as code. Write TypeScript. Get pixel-perfect
-                phone videos with authentic app simulations. Change the text, render a new video.
-                Change the language, render for every market.
+                Tokovo turns TypeScript episodes into deterministic phone-native video. Change the
+                script, app state, camera path, or language, then render a fresh cut from the same
+                source of truth.
               </p>
             </div>
           </div>
@@ -271,8 +269,8 @@ export function LandingPage() {
             </div>
             <div className="lg:col-span-8">
               <h2 className="font-serif text-headline text-ink">
-                Everything you need to <em className="text-copper">ship video</em> at production
-                scale.
+                Everything you need to <em className="text-copper">ship phone stories</em> at
+                production scale.
               </h2>
             </div>
           </div>
@@ -302,7 +300,7 @@ export function LandingPage() {
               },
               {
                 title: "Scale infinitely",
-                desc: "One template, unlimited videos. Swap text, images, timing. Generate personalized videos at scale. Perfect for UGC campaigns, localization, and A/B testing.",
+                desc: "One episode template, many cuts. Swap text, images, timing, actors, and language for UGC campaigns, localization, serialized formats, and A/B testing.",
               },
             ].map((feature, i) => (
               <div
@@ -393,7 +391,7 @@ export function LandingPage() {
                   <span className="text-cream/40">=</span>
                   <span className="text-copper"> defineEpisode</span>
                   <span className="text-cream/40">(</span>
-                  <span className="text-cream/70">"cheating-exposed"</span>
+                  <span className="text-cream/70">"episode-one-cold-open"</span>
                   <span className="text-cream/40">)</span>
                   {"\n"}
                   <span className="text-cream/40"> .</span>
@@ -493,7 +491,7 @@ export function LandingPage() {
             {[
               {
                 title: "Drama & Story Content",
-                desc: "Create viral text conversations, fake DM screenshots, and dramatic reveals. Perfect for TikTok storytime content.",
+                desc: "Create text conversations, DM arcs, cliffhangers, and dramatic reveals for TikTok, Reels, Shorts, and serialized story formats.",
               },
               {
                 title: "Product Demos",
@@ -501,7 +499,7 @@ export function LandingPage() {
               },
               {
                 title: "UGC Campaigns",
-                desc: "Generate hundreds of video variations for paid social. Personalize by name, location, or message.",
+                desc: "Generate many video variations for paid social. Personalize by name, location, language, or story branch.",
               },
             ].map((useCase) => (
               <div
@@ -522,7 +520,7 @@ export function LandingPage() {
       <section id="access" className="bg-ink py-32 lg:py-40">
         <div className="mx-auto max-w-3xl px-6 text-center lg:px-12">
           <span className="font-mono text-xs uppercase tracking-[0.2em] text-stone">
-            04 — Early Access
+            04 — Public V1
           </span>
 
           <h2 className="mt-8 font-serif text-headline text-cream">
@@ -530,51 +528,28 @@ export function LandingPage() {
           </h2>
 
           <p className="mx-auto mt-6 max-w-lg font-mono text-sm text-stone leading-relaxed">
-            We're onboarding select studios and content teams to the public beta. Start building
-            and we'll be in touch within 48 hours.
+            Start from the public repository, run a showcase episode, and adapt the scripts for
+            shorts, reels, episodes, and creator-led series.
           </p>
 
-          <div className="mt-12">
-            {!submitted ? (
-              <form
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  setSubmitted(true);
-                }}
-                className="flex flex-col gap-4 sm:flex-row sm:justify-center"
-              >
-                <input
-                  type="email"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="your@email.com"
-                  className="border-b-2 border-cream/20 bg-transparent px-0 py-4 font-mono text-cream placeholder:text-stone focus:border-copper focus:outline-none sm:w-72"
-                />
-                <button
-                  type="submit"
-                  className="bg-cream px-8 py-4 font-mono text-xs uppercase tracking-widest text-ink transition-colors hover:bg-copper hover:text-cream"
-                >
-                  Start Building
-                </button>
-              </form>
-            ) : (
-              <div className="flex items-center justify-center gap-3 text-copper-light">
-                <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
-                  <path
-                    fillRule="evenodd"
-                    d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-                <span className="font-mono text-sm">You're in. Check your inbox soon.</span>
-              </div>
-            )}
+          <div className="mt-12 flex flex-col gap-4 sm:flex-row sm:justify-center">
+            <a
+              href="https://github.com/nishit-g/tokovo"
+              className="bg-cream px-8 py-4 font-mono text-xs uppercase tracking-widest text-ink transition-colors hover:bg-copper hover:text-cream"
+            >
+              Open Repository
+            </a>
+            <a
+              href="https://github.com/nishit-g/tokovo/tree/master/apps/docs/app"
+              className="border border-cream/20 px-8 py-4 font-mono text-xs uppercase tracking-widest text-cream transition-colors hover:border-copper hover:text-copper-light"
+            >
+              Read Docs
+            </a>
           </div>
 
           {/* Trust signals */}
           <p className="mt-12 font-mono text-[10px] uppercase tracking-widest text-stone/50">
-            No credit card required • Cancel anytime • Team plans available
+            MIT licensed • TypeScript episodes • Remotion rendering
           </p>
         </div>
       </section>

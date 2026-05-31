@@ -1,5 +1,9 @@
 # Tokovo
 
+[![Release Gate](https://github.com/nishit-g/tokovo/actions/workflows/release-gate.yml/badge.svg)](https://github.com/nishit-g/tokovo/actions/workflows/release-gate.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-black.svg)](LICENSE)
+[![pnpm](https://img.shields.io/badge/pnpm-10.28.2-F69220.svg)](package.json)
+
 Tokovo is a programmable phone-simulation engine for creators making shorts, reels, episodes, and series where the phone UI carries the story.
 
 Write the episode as TypeScript. Tokovo turns it into deterministic phone-native video: device frames, app state, messages, feeds, notifications, calls, keyboard input, camera movement, audio, and render artifacts all come from checked-in code.
@@ -8,13 +12,17 @@ Write the episode as TypeScript. Tokovo turns it into deterministic phone-native
 
 [Watch the demo clip](apps/docs/public/showcase/launch-clip.mp4)
 
-## The Short Version
+## What Tokovo Does
 
-- Author cinematic phone stories in TypeScript.
-- Preview in Remotion Studio.
-- Render portrait MP4s for Shorts, Reels, TikTok, and episodic story formats.
-- Keep every app state, camera move, message, notification, and asset reference reviewable in git.
-- Validate episodes before render so the same frame resolves the same UI every time.
+Tokovo gives you a code-first production loop for phone-native stories:
+
+1. Script an episode in TypeScript.
+2. Seed realistic app and OS state.
+3. Direct the camera with semantic UI anchors.
+4. Preview in Remotion Studio.
+5. Render portrait MP4s for Shorts, Reels, TikTok, and episodic story formats.
+
+Every message, feed item, notification, device frame, camera move, audio cue, and asset reference stays reviewable in git.
 
 ## Why It Exists
 
@@ -29,14 +37,14 @@ Phone stories are a repeatable format, but most teams still build them by hand i
 
 Tokovo's v1 target surface covers:
 
-| Surface | Package | What it covers |
-| --- | --- | --- |
-| Device and OS | `@tokovo/devices`, `@tokovo/device-*` | iPhone-style frames, status UI, keyboard, notifications, camera anchors |
-| Messaging | `@tokovo/apps-whatsapp`, `@tokovo/apps-imessage` | chats, group threads, typing, read states, media-style cards |
-| Social apps | `@tokovo/apps-instagram`, `@tokovo/apps-x`, `@tokovo/apps-snapchat` | feeds, stories, profiles, DMs, notifications |
-| Work apps | `@tokovo/apps-linkedin`, `@tokovo/apps-teams` | message threads, channels, profiles, activity surfaces |
-| Storytelling tools | `@tokovo/overlay`, `@tokovo/background`, `@tokovo/voice` | captions, backgrounds, music/audio cues, voice tracks |
-| Rendering | `video-runner`, `@tokovo/render-service` | local Remotion preview, MP4 export, render-service primitives |
+| Surface            | Package                                                             | What it covers                                                          |
+| ------------------ | ------------------------------------------------------------------- | ----------------------------------------------------------------------- |
+| Device and OS      | `@tokovo/devices`, `@tokovo/device-*`                               | iPhone-style frames, status UI, keyboard, notifications, camera anchors |
+| Messaging          | `@tokovo/apps-whatsapp`, `@tokovo/apps-imessage`                    | chats, group threads, typing, read states, media-style cards            |
+| Social apps        | `@tokovo/apps-instagram`, `@tokovo/apps-x`, `@tokovo/apps-snapchat` | feeds, stories, profiles, DMs, notifications                            |
+| Work apps          | `@tokovo/apps-linkedin`, `@tokovo/apps-teams`                       | message threads, channels, profiles, activity surfaces                  |
+| Storytelling tools | `@tokovo/overlay`, `@tokovo/background`, `@tokovo/voice`            | captions, backgrounds, music/audio cues, voice tracks                   |
+| Rendering          | `video-runner`, `@tokovo/render-service`                            | local Remotion preview, MP4 export, render-service primitives           |
 
 ## See It Running
 
@@ -56,6 +64,20 @@ EPISODE_ID=typewriter-flagship-v2 pnpm --filter video-runner render:fast
 ```
 
 Each render writes an MP4 and manifest under `out/`.
+
+## First 10 Minutes
+
+```bash
+pnpm install
+pnpm validate
+EPISODE_ID=v2-creator-series-showcase pnpm --filter video-runner render:fast
+```
+
+For interactive preview:
+
+```bash
+pnpm --filter video-runner dev
+```
 
 ## Quick Start
 
@@ -86,32 +108,32 @@ pnpm --filter video-runner dev
 
 These are good first renders when checking the v1 target surface:
 
-| Episode ID | Shows |
-| --- | --- |
-| `v2-creator-series-showcase` | lockscreen, notifications, app switching, typed keyboard, camera direction |
-| `whatsapp-flagship-v2` | chat list, group thread, updates, calls, typed replies |
-| `instagram-flagship-v2` | story, DM, profile, creator-facing pacing |
-| `x-flagship-v2` | timeline, post detail, replies, notifications |
-| `typewriter-flagship-v2` | typewriter app, procedural sound effects, text timing |
-| `screen-recording-exhaustive` | OS chrome and screen-recording realism |
+| Episode ID                    | Shows                                                                      |
+| ----------------------------- | -------------------------------------------------------------------------- |
+| `v2-creator-series-showcase`  | lockscreen, notifications, app switching, typed keyboard, camera direction |
+| `whatsapp-flagship-v2`        | chat list, group thread, updates, calls, typed replies                     |
+| `instagram-flagship-v2`       | story, DM, profile, creator-facing pacing                                  |
+| `x-flagship-v2`               | timeline, post detail, replies, notifications                              |
+| `typewriter-flagship-v2`      | typewriter app, procedural sound effects, text timing                      |
+| `screen-recording-exhaustive` | OS chrome and screen-recording realism                                     |
 
 The full showcase matrix is documented in `apps/docs/app/showcase/page.mdx`.
 
 ## Repo Map
 
-| Path | Purpose |
-| --- | --- |
-| `packages/episodes` | canonical episode definitions, release/studio catalogs, validation |
-| `packages/dsl` | timeline builder primitives for devices, camera, OS, audio, overlays |
-| `packages/compiler` | lowers episode definitions into renderable IR |
-| `packages/core` | deterministic runtime, registries, logging, validation |
-| `packages/renderer` | React render surface and camera-aware layout |
-| `packages/apps-*` | app simulators for phone-native stories |
-| `packages/device-*` | OS-owned interactions: camera, keyboard, notifications |
-| `apps/video-runner` | Remotion preview/render app |
-| `apps/docs` | public documentation site |
-| `apps/web` | marketing shell |
-| `apps/render-service` | render-service CLI and render orchestration primitives |
+| Path                  | Purpose                                                              |
+| --------------------- | -------------------------------------------------------------------- |
+| `packages/episodes`   | canonical episode definitions, release/studio catalogs, validation   |
+| `packages/dsl`        | timeline builder primitives for devices, camera, OS, audio, overlays |
+| `packages/compiler`   | lowers episode definitions into renderable IR                        |
+| `packages/core`       | deterministic runtime, registries, logging, validation               |
+| `packages/renderer`   | React render surface and camera-aware layout                         |
+| `packages/apps-*`     | app simulators for phone-native stories                              |
+| `packages/device-*`   | OS-owned interactions: camera, keyboard, notifications               |
+| `apps/video-runner`   | Remotion preview/render app                                          |
+| `apps/docs`           | public documentation site                                            |
+| `apps/web`            | marketing shell                                                      |
+| `apps/render-service` | render-service CLI and render orchestration primitives               |
 
 ## Authoring Flow
 
@@ -149,6 +171,7 @@ pnpm --filter docs build
 - `apps/docs/app/showcase/page.mdx` lists the current v1 showcase surface.
 - `apps/docs/app/getting-started/quickstart/page.mdx` is the fastest render path.
 - `apps/docs/app/getting-started/first-episode/page.mdx` explains the authoring shape.
+- `apps/docs/app/guides/object-storage-assets/page.mdx` explains local and object-storage assets.
 - `docs/ARCHITECTURE.md` describes runtime boundaries.
 - `docs/V1_STABILITY.md` defines the v1 readiness bar.
 - `docs/operations/release.md` documents the release gate.
@@ -160,6 +183,16 @@ Run the docs site locally:
 ```bash
 pnpm --filter docs dev
 ```
+
+## V1 Readiness
+
+The public v1 bar is intentionally strict:
+
+- app simulators must own their reducers, views, anchors, and DSL helpers
+- episodes must validate before they are rendered
+- camera targets should resolve to semantic anchors instead of fallback boxes
+- docs assets must be intentional, licensed, and listed in `ASSET_LICENSES.md`
+- generated renders stay out of git unless they are part of the docs showcase
 
 ## Contributing
 

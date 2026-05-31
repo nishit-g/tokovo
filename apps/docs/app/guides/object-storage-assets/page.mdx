@@ -1,10 +1,10 @@
-# Private R2 Assets
+# Object Storage Assets
 
-Tokovo supports three storage modes now:
+Tokovo supports three asset and artifact storage modes:
 
 - local `public/` assets for fast authoring and studio work
-- private R2 source assets for render-service jobs
-- private R2 render artifacts with presigned download URLs
+- object-storage source assets for render-service jobs
+- object-storage render artifacts with presigned download URLs
 
 ## Source Asset Modes
 
@@ -20,9 +20,9 @@ Examples:
 
 This is still the default authoring path and it works in Studio and in render-service renders.
 
-### Private R2 source assets
+### Object-storage source assets
 
-If an asset path starts with `r2://`, Tokovo treats it as a private object store locator.
+If an asset path starts with `r2://`, Tokovo treats it as an object-store locator. The current implementation uses Cloudflare R2-compatible configuration.
 
 Example:
 
@@ -35,11 +35,11 @@ At render time, `@tokovo/render-service`:
 3. builds render data with those signed URLs already resolved
 4. passes the final render payload into Remotion
 
-This keeps the bucket private and avoids pushing signing logic into the Remotion bundle.
+This keeps buckets non-public and avoids pushing signing logic into the Remotion bundle.
 
 ## Render Artifact Storage
 
-Rendered outputs are written locally first, then uploaded to R2 if R2 is configured.
+Rendered outputs are written locally first, then uploaded to object storage when it is configured.
 
 Uploaded files:
 
@@ -63,7 +63,7 @@ Tokovo does not require public read access for artifacts.
 
 ## Presigned URLs
 
-To fetch the latest render outputs from a private bucket, mint short-lived URLs on demand:
+To fetch the latest render outputs from a non-public bucket, mint short-lived URLs on demand:
 
 ```bash
 pnpm --filter @tokovo/render-service run artifact-urls -- --episode render-service-smoke --expires-in 600
@@ -76,13 +76,13 @@ This returns temporary URLs for:
 - metadata
 - logs
 
-Use this for internal dashboards, review tools, or one-off downloads.
+Use this for review tools, dashboards, or one-off downloads.
 
 ## Local Configuration
 
 The render-service reads `apps/render-service/.env.local`.
 
-Minimum private R2 config:
+Minimum R2-compatible config:
 
 ```bash
 R2_BUCKET=tokovo
@@ -129,17 +129,17 @@ pnpm --filter @tokovo/render-service run artifact-urls -- --episode my-episode -
 The current asset strategy follows Remotion's loading model instead of fighting it.
 
 - `prefetch()` is kept preview-only. Remotion documents it as mainly useful for `<Player />`, and it becomes a no-op in rendering environments.
-- source assets are resolved before render starts when they are private `r2://...` objects, so the render browser is not repeatedly signing URLs
+- source assets are resolved before render starts when they are `r2://...` objects, so the render browser is not repeatedly signing URLs
 - render-service passes prepared render data into Remotion, which removes duplicate preparation work from the critical path
 - render artifacts are uploaded after the local render finishes, because Remotion still renders to a local output path first
 
 ## Current Boundary
 
-Private `r2://...` source assets are supported for render-service jobs.
+`r2://...` source assets are supported for render-service jobs.
 
 Studio/browser preview still expects either:
 
 - local `public/` assets
 - already-public asset URLs
 
-If private R2 preview is needed later, add a dedicated signing endpoint for Studio instead of making the bucket public.
+If object-storage preview is needed later, add a dedicated signing endpoint for Studio instead of making the bucket public.
