@@ -1,4 +1,0 @@
-interface:
-  display_name: "Tokovo Plugin Generator"
-  short_description: "Scaffold Tokovo plugins: app plugins + feature plugins (camera/overlay)"
-  default_prompt: "Use -plugin-generator to scaffold a new Tokovo app plugin."

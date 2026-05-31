@@ -1,4 +1,0 @@
-interface:
-  display_name: "Tokovo Camera Direction"
-  short_description: "Camera DSL, anchors, framing, and movement recipes"
-  default_prompt: "Use -camera-direction to plan camera moves and anchors for an episode."

@@ -1,3 +1,0 @@
-:80 {
-	reverse_proxy postiz-app.railway.internal:5000
-}

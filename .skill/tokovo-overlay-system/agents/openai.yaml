@@ -1,5 +1,0 @@
-interface:
-  display_name: "Tokovo Overlay System"
-  short_description: "Overlay DSL + OVERLAY event kind + reducer/state + renderer"
-  default_prompt: "Use -overlay-system to add or debug Tokovo story overlays (hook/captions/receipts)."
-

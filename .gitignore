@@ -17,7 +17,7 @@ tmp/frames-polished
 
 # Remotion
 .remotion
-render
+/render
 
 # Turbo
 .turbo
