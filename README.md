@@ -4,34 +4,37 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-black.svg)](LICENSE)
 [![pnpm](https://img.shields.io/badge/pnpm-10.28.2-F69220.svg)](package.json)
 
-Tokovo is a programmable phone-simulation engine for creators making shorts, reels, TikToks, episodes, and series where the phone UI carries the story.
+Tokovo is an AI-native studio for shows that happen inside phones.
 
-Write the story as TypeScript. Tokovo turns it into deterministic portrait video with device frames, app state, messages, feeds, notifications, calls, keyboard input, camera movement, audio, and render artifacts generated from checked-in code.
+Create cinematic chat dramas, social-feed stories, screen-recorded episodes, and short-form series without rebuilding phone screens in After Effects. Tokovo gives AI and creators a production environment with simulated mobile OS surfaces, app worlds, camera direction, audio, and deterministic rendering.
 
-![Tokovo phone simulation preview](apps/docs/public/showcase/launch-poster.png)
+![Tokovo phone-native show preview](apps/docs/public/showcase/launch-poster.png)
 
 [Watch the demo clip](apps/docs/public/showcase/launch-clip.mp4)
 
 ## What Tokovo Does
 
-Tokovo gives creators and production teams a code-first workflow for phone-native stories:
+Tokovo turns a phone-native story into a repeatable production pipeline:
 
-1. Script an episode in TypeScript.
-2. Seed realistic app and OS state.
-3. Direct the camera with semantic UI anchors.
-4. Preview the result in Remotion Studio.
-5. Render portrait MP4s for Shorts, Reels, TikTok, and episodic story formats.
+1. Generate or write a script, characters, tone, and episode arc.
+2. Place the action inside simulated apps: chats, feeds, DMs, notifications, calls, lockscreens, and screen recordings.
+3. Direct pacing, camera moves, captions, keyboard input, audio, and cliffhangers.
+4. Preview the episode in browser.
+5. Render a vertical MP4 for Shorts, Reels, TikTok, and serialized story formats.
 
-Every message, feed item, notification, device frame, camera move, audio cue, and asset reference stays reviewable in git.
+The public repo exposes the engine behind that studio: TypeScript episode definitions, app simulators, device systems, render orchestration, validation, and showcase assets.
 
 ## Why It Exists
 
-Phone stories are a repeatable format, but most teams still rebuild chats, feeds, notifications, and edits by hand in timeline editors. Tokovo makes that format programmable:
+Phone-native stories are already a format. People watch drama, comedy, product narratives, and social arcs through chats, feeds, DMs, screenshots, and recordings. Production is still too manual: screen recording, editing layers, recreating messages, nudging timelines, and fixing every variant by hand.
 
-- create one episode template and render many variants
-- keep story timing, app state, camera, and assets in version control
-- preview with Remotion and ship portrait video for social and episodic formats
-- validate episodes before render so the same frame produces the same output every time
+AI can now generate scripts, branches, edits, translations, captions, and variations. Tokovo gives that AI a controlled studio instead of a blank video canvas:
+
+- generate one episode concept and render many platform-ready cuts
+- direct the phone OS, app state, camera, sound, and timing as structured data
+- keep every story beat and render artifact reviewable
+- ship repeatable series instead of one-off timeline projects
+- avoid manual After Effects work for phone-screen stories
 
 ## What You Can Build
 
@@ -44,7 +47,7 @@ Tokovo's v1 target surface covers:
 | Social apps        | `@tokovo/apps-instagram`, `@tokovo/apps-x`, `@tokovo/apps-snapchat` | feeds, stories, profiles, DMs, notifications                            |
 | Work apps          | `@tokovo/apps-linkedin`, `@tokovo/apps-teams`                       | message threads, channels, profiles, activity surfaces                  |
 | Storytelling tools | `@tokovo/overlay`, `@tokovo/background`, `@tokovo/voice`            | captions, backgrounds, music/audio cues, voice tracks                   |
-| Rendering          | `video-runner`, `@tokovo/render-service`                            | local Remotion preview, MP4 export, render-service primitives           |
+| Rendering          | `video-runner`, `@tokovo/render-service`                            | local preview, MP4 export, render-service primitives                    |
 
 ## Render The Showcase
 
@@ -130,9 +133,9 @@ The full showcase matrix is documented in `apps/docs/app/showcase/page.mdx`.
 | `packages/renderer`   | React render surface and camera-aware layout                         |
 | `packages/apps-*`     | app simulators for phone-native stories                              |
 | `packages/device-*`   | OS-owned interactions: camera, keyboard, notifications               |
-| `apps/video-runner`   | Remotion preview/render app                                          |
+| `apps/video-runner`   | preview/render app                                                   |
 | `apps/docs`           | public documentation site                                            |
-| `apps/web`            | marketing shell                                                      |
+| `apps/web`            | marketing site                                                       |
 | `apps/render-service` | render-service CLI and render orchestration primitives               |
 
 ## Authoring Flow

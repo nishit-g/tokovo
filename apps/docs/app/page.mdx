@@ -1,8 +1,8 @@
 # Tokovo Documentation
 
-Tokovo is a programmable phone-simulation engine for creators making shorts, reels, episodes, and series where the phone UI is part of the story.
+Tokovo is an AI-native studio for shows that happen inside phones.
 
-It combines deterministic app state, device simulation, cinematic camera direction, audio, and Remotion rendering so a scripted scene can become a repeatable portrait video.
+It gives AI agents and creators a deterministic production environment for chat dramas, social-feed stories, screen-recorded episodes, and short-form series. Instead of rebuilding phone screens in After Effects, Tokovo simulates mobile OS surfaces, app worlds, camera direction, audio, and render artifacts from structured episode definitions.
 
 <video
   controls
@@ -11,21 +11,27 @@ It combines deterministic app state, device simulation, cinematic camera directi
   playsInline
   poster="/showcase/launch-poster.png"
   src="/showcase/launch-clip.mp4"
-  style={{ width: "100%", maxWidth: 420, borderRadius: 12, border: "1px solid rgba(125,125,125,0.25)" }}
+  style={{
+    width: "100%",
+    maxWidth: 420,
+    borderRadius: 12,
+    border: "1px solid rgba(125,125,125,0.25)",
+  }}
 />
 
 ## Start Here
 
-| Path | Use it for |
-| --- | --- |
-| [Installation](/getting-started/installation) | install dependencies and understand the apps in the repo |
-| [Quickstart](/getting-started/quickstart) | run validation, preview, and render a current episode |
-| [First Episode](/getting-started/first-episode) | author a new phone-story episode in code |
-| [Showcase](/showcase) | browse the v1 showcase episodes and render commands |
+| Path                                            | Use it for                                               |
+| ----------------------------------------------- | -------------------------------------------------------- |
+| [Installation](/getting-started/installation)   | install dependencies and understand the apps in the repo |
+| [Quickstart](/getting-started/quickstart)       | run validation, preview, and render a current episode    |
+| [First Episode](/getting-started/first-episode) | author a new phone-story episode in code                 |
+| [Showcase](/showcase)                           | browse the v1 showcase episodes and render commands      |
 
 ## Core Ideas
 
-- Episodes are code: timing, app seed data, camera, audio, and render settings live in `packages/episodes`.
+- Episodes are structured scenes: timing, app seed data, camera, audio, and render settings live in `packages/episodes`.
+- AI can generate scripts, variants, translations, and pacing; Tokovo provides the controlled phone-native stage those generations render into.
 - The runtime is deterministic: the same episode and frame should resolve the same state.
 - App packages are plugins: each simulator owns its reducer, views, anchors, layouts, and DSL helpers.
 - `video-runner` is the local Remotion surface for preview and MP4 export.

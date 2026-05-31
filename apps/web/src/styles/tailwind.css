@@ -11,18 +11,19 @@
   --font-mono: 'Space Mono', monospace;
   --font-sans: 'Space Mono', monospace;
 
-  /* Distinctive color palette - warm cream + ink black + copper accent */
+  /* Editorial launch palette: ink, soft paper, copper, and muted signal green */
   --color-cream: #f5f0e8;
   --color-ink: #0f0f0f;
   --color-copper: #b87333;
   --color-copper-light: #d4956a;
+  --color-signal: #9bcfba;
   --color-stone: #8a8578;
   --color-charcoal: #1a1a1a;
 
   /* Typography scale */
   --text-display: clamp(4rem, 12vw, 10rem);
   --text-display--line-height: 0.9;
-  --text-display--letter-spacing: -0.03em;
+  --text-display--letter-spacing: 0;
 
   --text-headline: clamp(2rem, 5vw, 4rem);
   --text-headline--line-height: 1.1;
