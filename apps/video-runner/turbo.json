@@ -6,7 +6,9 @@
         "package.json",
         "tsconfig.json",
         "remotion.config.ts",
-        "src/**"
+        "src/**",
+        "!src/**/*.js",
+        "!src/**/*.js.map"
       ]
     },
     "typecheck": {
@@ -14,7 +16,9 @@
         "package.json",
         "tsconfig.json",
         "remotion.config.ts",
-        "src/**"
+        "src/**",
+        "!src/**/*.js",
+        "!src/**/*.js.map"
       ]
     },
     "dev": {

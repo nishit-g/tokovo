@@ -13,7 +13,6 @@ const ROOT_INPUT_FILES = [
 ];
 
 const WORKSPACE_INPUT_DIRS = [
-  "apps/render-service/src",
   "apps/video-runner/src",
   "apps/video-runner/public",
   "packages/apps-imessage/src",
@@ -48,10 +47,25 @@ const IGNORED_SEGMENTS = new Set([
   "coverage",
   "tmp",
   "out",
+  "__tests__",
 ]);
+
+let cachedStatFingerprint = "";
+let cachedSourceSignature = "";
 
 function toPosixPath(filePath: string): string {
   return filePath.split(path.sep).join("/");
+}
+
+function shouldIgnoreFile(fileName: string): boolean {
+  return (
+    fileName.endsWith(".test.ts") ||
+    fileName.endsWith(".test.tsx") ||
+    fileName.endsWith(".spec.ts") ||
+    fileName.endsWith(".spec.tsx") ||
+    fileName.endsWith(".js.map") ||
+    fileName.endsWith(".d.ts.map")
+  );
 }
 
 function walkFiles(rootDir: string, files: string[]): void {
@@ -74,6 +88,10 @@ function walkFiles(rootDir: string, files: string[]): void {
       continue;
     }
 
+    if (shouldIgnoreFile(entry.name)) {
+      continue;
+    }
+
     files.push(entryPath);
   }
 }
@@ -83,6 +101,12 @@ function buildFileSignature(filePath: string): string {
   const relativePath = toPosixPath(path.relative(repoRoot, filePath));
   const contentHash = createHash("sha256").update(fs.readFileSync(filePath)).digest("hex");
   return `${relativePath}:${stat.size}:${contentHash}`;
+}
+
+function buildFileStatFingerprint(filePath: string): string {
+  const stat = fs.statSync(filePath);
+  const relativePath = toPosixPath(path.relative(repoRoot, filePath));
+  return `${relativePath}:${stat.size}:${stat.mtimeMs}`;
 }
 
 export function getBundleInputManifest(): {
@@ -108,9 +132,15 @@ export function createBundleSourceSignature(): string {
   }
 
   inputFiles.sort();
+  const statFingerprint = inputFiles.map(buildFileStatFingerprint).join("\n");
+  if (cachedSourceSignature && cachedStatFingerprint === statFingerprint) {
+    return cachedSourceSignature;
+  }
 
-  return createHash("sha256")
+  cachedStatFingerprint = statFingerprint;
+  cachedSourceSignature = createHash("sha256")
     .update(inputFiles.map(buildFileSignature).join("\n"))
     .digest("hex")
     .slice(0, 32);
+  return cachedSourceSignature;
 }

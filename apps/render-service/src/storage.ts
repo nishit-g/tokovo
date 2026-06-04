@@ -171,11 +171,18 @@ export async function createPresignedArtifactUrls(
   },
   expiresInSeconds = 3600,
 ): Promise<PresignedArtifactUrls> {
+  const [videoUrl, posterUrl, metadataUrl, logsUrl] = await Promise.all([
+    presignGetObject(artifact.videoPath, expiresInSeconds),
+    presignGetObject(artifact.posterPath, expiresInSeconds),
+    presignGetObject(artifact.metadataPath, expiresInSeconds),
+    presignGetObject(artifact.logsPath, expiresInSeconds),
+  ]);
+
   return {
-    videoUrl: await presignGetObject(artifact.videoPath, expiresInSeconds),
-    posterUrl: await presignGetObject(artifact.posterPath, expiresInSeconds),
-    metadataUrl: await presignGetObject(artifact.metadataPath, expiresInSeconds),
-    logsUrl: await presignGetObject(artifact.logsPath, expiresInSeconds),
+    videoUrl,
+    posterUrl,
+    metadataUrl,
+    logsUrl,
     expiresInSeconds,
   };
 }
@@ -233,26 +240,28 @@ export async function uploadRenderArtifactsToR2(input: {
   }
 
   try {
-    await uploadFile(config, {
-      filePath: input.videoFilePath,
-      objectKey: input.targets.video.objectKey,
-      contentType: "video/mp4",
-    });
-    await uploadFile(config, {
-      filePath: input.posterFilePath,
-      objectKey: input.targets.poster.objectKey,
-      contentType: "image/png",
-    });
-    await uploadFile(config, {
-      filePath: input.logsFilePath,
-      objectKey: input.targets.logs.objectKey,
-      contentType: "application/x-ndjson",
-    });
-    await uploadFile(config, {
-      filePath: input.metadataFilePath,
-      objectKey: input.targets.metadata.objectKey,
-      contentType: "application/json",
-    });
+    await Promise.all([
+      uploadFile(config, {
+        filePath: input.videoFilePath,
+        objectKey: input.targets.video.objectKey,
+        contentType: "video/mp4",
+      }),
+      uploadFile(config, {
+        filePath: input.posterFilePath,
+        objectKey: input.targets.poster.objectKey,
+        contentType: "image/png",
+      }),
+      uploadFile(config, {
+        filePath: input.logsFilePath,
+        objectKey: input.targets.logs.objectKey,
+        contentType: "application/x-ndjson",
+      }),
+      uploadFile(config, {
+        filePath: input.metadataFilePath,
+        objectKey: input.targets.metadata.objectKey,
+        contentType: "application/json",
+      }),
+    ]);
   } catch (error) {
     throw createRenderServiceError({
       code: "STORAGE_UPLOAD_FAILED",

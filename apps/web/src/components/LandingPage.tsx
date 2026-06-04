@@ -1,5 +1,3 @@
-"use client";
-
 import { BookOpen, Camera, Code2, Film, GitBranch, Play, Smartphone, Volume2 } from "lucide-react";
 import Link from "next/link";
 

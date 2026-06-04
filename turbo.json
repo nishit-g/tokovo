@@ -29,11 +29,18 @@
         "!out/**",
         "!**/vitest.config.*"
       ],
-      "outputs": [".next/**", "!.next/cache/**", "dist/**", "build/**"]
+      "outputs": [
+        ".next/**",
+        "!.next/cache/**",
+        "dist/**",
+        "build/**",
+        "tsconfig.tsbuildinfo",
+        "tsconfig.*.tsbuildinfo"
+      ]
     },
     "@tokovo/render-service#build": {
       "dependsOn": ["^build"],
-      "outputs": []
+      "outputs": ["tsconfig.tsbuildinfo"]
     },
     "lint": {
       "outputs": []
@@ -57,7 +64,7 @@
         "!tmp/**",
         "!out/**"
       ],
-      "outputs": []
+      "outputs": ["tsconfig.tsbuildinfo", "tsconfig.*.tsbuildinfo"]
     },
     "validate": {
       "dependsOn": ["^build"],
