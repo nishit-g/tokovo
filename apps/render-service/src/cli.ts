@@ -13,6 +13,8 @@ import { findLatestRenderArtifact, renderEpisodeArtifact } from "./render";
 import { createPresignedArtifactUrls } from "./storage";
 import { repoRoot } from "./constants";
 
+const DEFAULT_EPISODE_ID = "v2-creator-series-showcase";
+
 function argValue(flag: string): string | undefined {
   const index = process.argv.indexOf(flag);
   if (index === -1) return undefined;
@@ -34,24 +36,12 @@ async function runDoctor(): Promise<void> {
 
 async function runRender(): Promise<void> {
   const episodeId =
-    argValue("--episode") ??
-    positional(1) ??
-    process.env.EPISODE_ID ??
-    "mega-x";
+    argValue("--episode") ?? positional(1) ?? process.env.EPISODE_ID ?? DEFAULT_EPISODE_ID;
   const profile =
-    (argValue("--profile") as
-      | "fast-preview"
-      | "review"
-      | "release"
-      | undefined) ??
-    (process.env.PROFILE as
-      | "fast-preview"
-      | "review"
-      | "release"
-      | undefined) ??
+    (argValue("--profile") as "fast-preview" | "review" | "release" | undefined) ??
+    (process.env.PROFILE as "fast-preview" | "review" | "release" | undefined) ??
     "review";
-  const jobId =
-    argValue("--job") ?? process.env.JOB_ID ?? `manual-${Date.now()}`;
+  const jobId = argValue("--job") ?? process.env.JOB_ID ?? `manual-${Date.now()}`;
 
   const result = await renderEpisodeArtifact({
     episodeId,
@@ -85,12 +75,8 @@ async function runRender(): Promise<void> {
 
 async function runArtifactUrls(): Promise<void> {
   const episodeId =
-    argValue("--episode") ??
-    positional(1) ??
-    process.env.EPISODE_ID ??
-    "mega-x";
-  const expiresInRaw =
-    argValue("--expires-in") ?? process.env.EXPIRES_IN ?? "3600";
+    argValue("--episode") ?? positional(1) ?? process.env.EPISODE_ID ?? DEFAULT_EPISODE_ID;
+  const expiresInRaw = argValue("--expires-in") ?? process.env.EXPIRES_IN ?? "3600";
   const expiresInSeconds = Number(expiresInRaw);
   if (!Number.isFinite(expiresInSeconds) || expiresInSeconds < 1) {
     throw createRenderServiceError({
@@ -118,10 +104,7 @@ async function runArtifactUrls(): Promise<void> {
 
   const presignedUrls =
     artifact.artifact.storageProvider === "r2"
-      ? await createPresignedArtifactUrls(
-          artifact.artifact,
-          Math.floor(expiresInSeconds),
-        )
+      ? await createPresignedArtifactUrls(artifact.artifact, Math.floor(expiresInSeconds))
       : {
           videoUrl: null,
           posterUrl: null,

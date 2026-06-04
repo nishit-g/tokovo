@@ -4,11 +4,11 @@ import { episode } from "../code-first-episode.js";
 export default defineEpisode({
   meta: {
     id: "v2-local-friends-chat-no-overlay",
-    title: "V2 Mysuru Friends Chat (No Overlay): WhatsApp → X → WhatsApp",
+    title: "V2 Local Creator Chat (No Overlay): WhatsApp → X → WhatsApp",
     description:
-      "Friends tone, proper Mysuru-style trolling across WhatsApp and X. No overlays. Uses device banner + auto keyboard typing + BGM.",
+      "Local creator group chat across WhatsApp and X. No overlays. Uses device banner, auto keyboard typing, BGM, and camera direction.",
     category: "showcase",
-    tags: ["v2", "kannada", "chat", "whatsapp", "x", "no-overlay", "bgm", "keyboard", "camera"],
+    tags: ["v2", "creator", "chat", "whatsapp", "x", "no-overlay", "bgm", "keyboard", "camera"],
   },
   config: {
     format: "1080x1920",
@@ -24,15 +24,36 @@ export default defineEpisode({
       })
       .snapshot("app_x", "phone", {
         users: [
-          { id: "u_me", name: "Me", handle: "naanu", followers: 3800, following: 280, verified: null },
-          { id: "u_op", name: "OP", handle: "mysuru_guru", followers: 42000, following: 800, verified: "blue" },
-          { id: "u_r1", name: "ಅಪ್ಪು", handle: "appu", followers: 11000, following: 900, verified: null },
+          {
+            id: "u_me",
+            name: "Me",
+            handle: "localstudio",
+            followers: 3800,
+            following: 280,
+            verified: null,
+          },
+          {
+            id: "u_op",
+            name: "Creator Desk",
+            handle: "creatordesk",
+            followers: 42000,
+            following: 800,
+            verified: "blue",
+          },
+          {
+            id: "u_r1",
+            name: "Mina",
+            handle: "mina",
+            followers: 11000,
+            following: 900,
+            verified: null,
+          },
         ],
         tweets: [
           {
             id: "tw_op",
             authorId: "u_op",
-            text: "Bro said ‘vibe create’ and posted… THAT. Mysuru boys assemble 😂",
+            text: "The teaser tried to look casual, but the whole timeline noticed the edit.",
             viewCount: 220000,
             shareCount: 5200,
             bookmarkCount: 16000,
@@ -42,7 +63,7 @@ export default defineEpisode({
           {
             id: "tw_r1",
             authorId: "u_r1",
-            text: "Vibe create anthe… ninna vibe = power cut + mosquito sound 😂",
+            text: "When a casual post has three camera moves, it is not casual anymore.",
             replyToId: "tw_op",
             viewCount: 98000,
             shareCount: 1500,
@@ -55,12 +76,12 @@ export default defineEpisode({
       .snapshot("app_whatsapp", "phone", {
         conversations: [
           {
-            id: "grp_mysuru",
-            name: "Mysuru Boys (No Filter)",
+            id: "grp_local",
+            name: "Local Creator Room",
             avatar: "/avatars/avatar-group.png",
             unreadCount: 99,
             type: "group",
-            participants: ["ನಾನು", "ಗುರು", "ಅಪ್ಪು", "ಶಶಿ", "ಜೋಶಿ"],
+            participants: ["Me", "Mina", "Omar", "Tess", "Jay"],
           },
         ],
       })
@@ -86,7 +107,7 @@ export default defineEpisode({
           id: "x_tag",
           appId: "app_x",
           title: "X",
-          body: "Ninna banter thread live. Bandu nodu maga.",
+          body: "Your teaser thread is live.",
           mode: "headsup",
           priority: "high",
         });
@@ -101,22 +122,25 @@ export default defineEpisode({
       })
 
       // ============================================
-      // WHATSAPP (friends trolling)
+      // WHATSAPP (creator group)
       // ============================================
-      .whatsapp("phone", "grp_mysuru", (wa) => {
-        wa.switchTo("grp_mysuru", "0s");
+      .whatsapp("phone", "grp_local", (wa) => {
+        wa.switchTo("grp_local", "0s");
 
-        wa.at("1.0s").receive("ಗುರು", "Maga… ninna story nodde. Cringe champion da 😭");
-        wa.at("2.2s").receive("ಅಪ್ಪು", "‘Cinematic build’ anthe… guru, this fellow director aa? 😂");
-        wa.at("3.4s").receive("ಶಶಿ", "Yen guru… background music on madi damage control madta idya?");
+        wa.at("1.0s").receive("Mina", "The teaser landed. People noticed the camera move.");
+        wa.at("2.2s").receive(
+          "Omar",
+          "Someone clipped the transition and called it over-produced.",
+        );
+        wa.at("3.4s").receive("Tess", "Own it. Make the reply feel like part of the plan.");
 
-        wa.at("5.0s").send("Ayyo bejar beda re. Swalpa vibe create madtiddini ashte.", {
+        wa.at("5.0s").send("It was a mood pass. The next clip will make it make sense.", {
           typed: true,
           charDelay: 2,
         });
 
-        wa.at("8.3s").receive("ಜೋಶಿ", "Vibe create? Ninna vibe-ige police complaint ide 😂");
-        wa.at("9.3s").receive("ಗುರು", "X open maadu. Banter thread already hot hot.");
+        wa.at("8.3s").receive("Jay", "The thread is already running with it.");
+        wa.at("9.3s").receive("Mina", "Open X. Reply before the clip gets away from us.");
       })
 
       // ============================================
@@ -126,11 +150,11 @@ export default defineEpisode({
         x.at("10.4s").navigate("tweet", { tweetId: "tw_op" });
         x.at("11.6s").viewTweet("tw_op");
 
-        // Quote banter (typed) with auto keyboard
+        // Quote reply (typed) with auto keyboard.
         x.at("14.2s").navigate("compose");
         x.at("18.0s").postTweet({
           authorId: "u_me",
-          text: "Mysuru boys: banter maadi. But swalpa water + bisi dose ge bandre settle 🤝",
+          text: "The teaser was a setup. Watch the next cut before judging the first frame.",
           typed: true,
           charDelay: 2,
           viewCount: 1200,
@@ -144,17 +168,17 @@ export default defineEpisode({
       // ============================================
       // WHATSAPP (backfire punchline)
       // ============================================
-      .whatsapp("phone", "grp_mysuru", (wa) => {
-        wa.at("27.4s").receive("ಗುರು", "Ayyo… ni tweet maadi ‘dose’ mention madidya? 😭");
-        wa.at("29.0s").receive("ಅಪ್ಪು", "Now everyone will come for dose. You created ‘vibe’ business bro 😂");
-        wa.at("31.2s").receive("ಶಶಿ", "Next episode: Mysuru dosa sponsor deal 😂😂");
+      .whatsapp("phone", "grp_local", (wa) => {
+        wa.at("27.4s").receive("Mina", "You replied. The second clip better be ready.");
+        wa.at("29.0s").receive("Omar", "Comments are asking for the full sequence now.");
+        wa.at("31.2s").receive("Tess", "Next episode: prove the setup was intentional.");
 
-        wa.at("34.0s").send("Ok ok. Next time no story. Only results. Promise.", {
+        wa.at("34.0s").send("Next cut goes up clean. No loose setup.", {
           typed: true,
           charDelay: 2,
         });
 
-        wa.at("38.6s").receive("ಜೋಶಿ", "Promise? Screenshot li safe madkondvi. Bye.");
+        wa.at("38.6s").receive("Jay", "Good. Screenshots are forever.");
       })
 
       // ============================================

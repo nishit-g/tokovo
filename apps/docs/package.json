@@ -6,6 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "typecheck": "tsc --noEmit",
+    "lint": "eslint . --max-warnings 0",
     "test": "pnpm exec vitest run --passWithNoTests",
     "postbuild": "pagefind --site out --output-path out/_pagefind",
     "start": "next start"

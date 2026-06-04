@@ -3,16 +3,8 @@ import os from "node:os";
 import path from "node:path";
 
 import { bundle } from "@remotion/bundler";
-import {
-  openBrowser,
-  renderMedia,
-  renderStill,
-  selectComposition,
-} from "@remotion/renderer";
-import {
-  getEpisodeAssetRefs,
-  getEpisodeRenderData,
-} from "video-runner/render-data";
+import { openBrowser, renderMedia, renderStill, selectComposition } from "@remotion/renderer";
+import { getEpisodeAssetRefs, getEpisodeRenderData } from "video-runner/render-data";
 
 import {
   releaseCompositionId,
@@ -29,13 +21,10 @@ import { createPresignedAssetUrlMap } from "./storage";
 
 let serveUrlPromise: Promise<string> | null = null;
 let serveUrlSignature = "";
-let browserPromise: Promise<Awaited<ReturnType<typeof openBrowser>>> | null =
-  null;
+let browserPromise: Promise<Awaited<ReturnType<typeof openBrowser>>> | null = null;
 
 function getEpisodeAssetSources(episodeId: string): string[] {
-  return getEpisodeAssetRefs(episodeId).map(
-    (ref: { src: string }) => ref.src,
-  );
+  return getEpisodeAssetRefs(episodeId).map((ref: { src: string }) => ref.src);
 }
 
 async function getPreparedRenderData(input: {
@@ -43,10 +32,10 @@ async function getPreparedRenderData(input: {
   assetUrlMap: Record<string, string>;
 }): Promise<Record<string, unknown>> {
   try {
-    return (await getEpisodeRenderData(
-      input.episodeId,
-      input.assetUrlMap,
-    )) as unknown as Record<string, unknown>;
+    return (await getEpisodeRenderData(input.episodeId, input.assetUrlMap)) as unknown as Record<
+      string,
+      unknown
+    >;
   } catch (error) {
     throw createRenderServiceError({
       code: "RENDER_DATA_FAILED",
@@ -68,12 +57,7 @@ export async function getServeUrl(
     return { serveUrl: await serveUrlPromise, sourceSignature };
   }
 
-  const bundleDir = path.join(
-    repoRoot,
-    ".remotion",
-    "bundles",
-    sourceSignature,
-  );
+  const bundleDir = path.join(repoRoot, ".remotion", "bundles", sourceSignature);
   const indexPath = path.join(bundleDir, "index.html");
   if (fs.existsSync(indexPath)) {
     await logger?.info("bundle.reuse", "Reusing cached Remotion bundle", {
@@ -173,10 +157,7 @@ export async function renderEpisodeMedia(input: {
   const assetSources = getEpisodeAssetSources(input.episodeId);
   const presignedAssetUrlMap = await createPresignedAssetUrlMap(
     assetSources,
-    Math.max(
-      3600,
-      Math.floor(input.profile.timeoutInMilliseconds / 1000) + 300,
-    ),
+    Math.max(3600, Math.floor(input.profile.timeoutInMilliseconds / 1000) + 300),
   );
   const renderData = await getPreparedRenderData({
     episodeId: input.episodeId,
@@ -189,12 +170,7 @@ export async function renderEpisodeMedia(input: {
   const renderEnvVariables = {
     TOKOVO_RENDER_PROFILE: input.profile.id,
     TOKOVO_RENDER_EXECUTOR: "render-service",
-    ...(publicAssetBaseUrl
-      ? { TOKOVO_PUBLIC_ASSET_BASE_URL: publicAssetBaseUrl }
-      : {}),
-    ...(Object.keys(presignedAssetUrlMap).length > 0
-      ? { TOKOVO_ASSET_URL_MAP: JSON.stringify(presignedAssetUrlMap) }
-      : {}),
+    ...(publicAssetBaseUrl ? { TOKOVO_PUBLIC_ASSET_BASE_URL: publicAssetBaseUrl } : {}),
   };
   const bundleStartedAt = Date.now();
   const { serveUrl, sourceSignature } = await getServeUrl(input.logger);
@@ -244,10 +220,7 @@ export async function renderEpisodeMedia(input: {
   const renderStartedAt = Date.now();
   await input.logger.info("render.media.start", "Rendering video artifact", {
     outputLocation: input.outputLocation,
-    concurrency: Math.max(
-      1,
-      Math.min(input.profile.concurrency, os.cpus().length),
-    ),
+    concurrency: Math.max(1, Math.min(input.profile.concurrency, os.cpus().length)),
   });
   await renderMedia({
     composition,
@@ -256,10 +229,7 @@ export async function renderEpisodeMedia(input: {
     outputLocation: input.outputLocation,
     codec: input.profile.codec,
     audioCodec: input.profile.audioCodec,
-    concurrency: Math.max(
-      1,
-      Math.min(input.profile.concurrency, os.cpus().length),
-    ),
+    concurrency: Math.max(1, Math.min(input.profile.concurrency, os.cpus().length)),
     videoBitrate: input.profile.videoBitrate,
     x264Preset: input.profile.x264Preset,
     hardwareAcceleration: input.profile.hardwareAcceleration,

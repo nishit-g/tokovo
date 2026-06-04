@@ -29,9 +29,7 @@ describe("video-runner release episode registry", () => {
       ),
     ).toBe(true);
 
-    expect(
-      episodes.some((episode) => episode.meta.id === "flirty-whatsapp-romance"),
-    ).toBe(false);
+    expect(episodes.some((episode) => episode.meta.id === "legacy-private-sample")).toBe(false);
   });
 
   it("loads the full curated studio wave", () => {
@@ -42,11 +40,7 @@ describe("video-runner release episode registry", () => {
     expect(systemShowcaseEpisodes).toHaveLength(7);
     expect(storyEpisodes).toHaveLength(8);
 
-    for (const episode of [
-      ...appShowcaseEpisodes,
-      ...systemShowcaseEpisodes,
-      ...storyEpisodes,
-    ]) {
+    for (const episode of [...appShowcaseEpisodes, ...systemShowcaseEpisodes, ...storyEpisodes]) {
       expect(ids.has(episode.meta.id)).toBe(true);
     }
 

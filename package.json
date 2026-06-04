@@ -61,7 +61,7 @@
     "ci:phase1": "pnpm lint:unsafe:phase1 && pnpm test:phase1 && pnpm test:determinism:phase1 && pnpm build:phase1",
     "verify": "pnpm lint && pnpm typecheck && pnpm validate && pnpm test && pnpm build",
     "verify:release": "pnpm lint:ox && pnpm lint:release && pnpm -s typecheck:solution && pnpm validate && pnpm --filter @tokovo/episodes run test -- --runInBand && pnpm build && pnpm render:smoke && pnpm verify:docs",
-    "verify:docs": "pnpm typecheck:docs && pnpm test:docs && pnpm build:docs",
+    "verify:docs": "pnpm typecheck:docs && pnpm --filter docs lint && pnpm test:docs && pnpm build:docs",
     "ci:repo": "pnpm verify:release",
     "validate": "pnpm --filter @tokovo/episodes validate:workspace"
   },
@@ -81,7 +81,7 @@
   },
   "packageManager": "pnpm@10.28.2",
   "engines": {
-    "node": ">=20"
+    "node": ">=20 <26"
   },
   "pnpm": {
     "overrides": {

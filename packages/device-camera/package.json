@@ -6,7 +6,7 @@
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "bin": {
-    "tokovo-camera": "./dist/cli.js"
+    "tokovo-camera": "./bin/tokovo-camera.mjs"
   },
   "scripts": {
     "build": "tsc",
@@ -34,7 +34,8 @@
     "react-dom": "18.3.1"
   },
   "files": [
-    "dist"
+    "dist",
+    "bin"
   ],
   "keywords": [
     "tokovo",

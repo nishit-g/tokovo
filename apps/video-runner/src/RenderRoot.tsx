@@ -7,6 +7,8 @@ import { calculateEpisodeMetadata } from "./episode-metadata";
 import { RenderRuntimeProvider } from "./RenderRuntimeContext";
 import { RELEASE_COMPOSITION_ID } from "./Root";
 
+const DEFAULT_RELEASE_EPISODE_ID = "v2-creator-series-showcase";
+
 const episodeRendererSchema = z.object({
   episodeId: z.string(),
   renderDataKey: z.string().optional(),
@@ -24,7 +26,7 @@ export const RenderRemotionRoot: React.FC = () => {
           fps={30}
           width={1080}
           height={1920}
-          defaultProps={{ episodeId: "mega-x" }}
+          defaultProps={{ episodeId: DEFAULT_RELEASE_EPISODE_ID }}
           calculateMetadata={calculateEpisodeMetadata}
           schema={episodeRendererSchema}
         />

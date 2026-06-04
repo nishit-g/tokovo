@@ -312,7 +312,7 @@ async function main(): Promise<void> {
   if (command === "preview") {
     const file = argPath
       ? path.resolve(process.cwd(), argPath)
-      : path.resolve(repoRoot, "packages/episodes/src/production/whatsapp-to-x.episode.ts");
+      : path.resolve(repoRoot, "packages/episodes/src/v2/creator-series-showcase.episode.ts");
     await runPreview(file);
     return;
   }

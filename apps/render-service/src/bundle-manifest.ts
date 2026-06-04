@@ -81,7 +81,8 @@ function walkFiles(rootDir: string, files: string[]): void {
 function buildFileSignature(filePath: string): string {
   const stat = fs.statSync(filePath);
   const relativePath = toPosixPath(path.relative(repoRoot, filePath));
-  return `${relativePath}:${stat.size}:${Math.trunc(stat.mtimeMs)}`;
+  const contentHash = createHash("sha256").update(fs.readFileSync(filePath)).digest("hex");
+  return `${relativePath}:${stat.size}:${contentHash}`;
 }
 
 export function getBundleInputManifest(): {

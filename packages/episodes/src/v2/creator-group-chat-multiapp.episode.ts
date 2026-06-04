@@ -4,11 +4,11 @@ import { episode } from "../code-first-episode.js";
 export default defineEpisode({
   meta: {
     id: "v2-creator-group-chat-multiapp",
-    title: "V2 Kannada Chat: WhatsApp → X → iMessage (Multi-App)",
+    title: "V2 Creator Ops Chat: WhatsApp → X → iMessage (Multi-App)",
     description:
-      "Mysuru-style Kannada trolling across apps: group chat court room, heads-up banner bait, X banter thread, and an iMessage 'Amma' reality check. Includes overlays + BGM.",
+      "Multi-app creator operations episode with group chat pressure, heads-up banner bait, X thread escalation, iMessage follow-up, overlays, BGM, keyboard, and camera direction.",
     category: "showcase",
-    tags: ["v2", "kannada", "chat", "whatsapp", "x", "imessage", "overlay", "bgm"],
+    tags: ["v2", "creator", "chat", "whatsapp", "x", "imessage", "overlay", "bgm"],
   },
   config: {
     format: "1080x1920",
@@ -24,16 +24,44 @@ export default defineEpisode({
       })
       .snapshot("app_x", "phone", {
         users: [
-          { id: "u_me", name: "Me", handle: "naanu", followers: 4200, following: 300, verified: null },
-          { id: "u_op", name: "OP", handle: "guru_gossip", followers: 54000, following: 900, verified: "blue" },
-          { id: "u_1", name: "ಅಪ್ಪು", handle: "appu", followers: 12000, following: 980, verified: null },
-          { id: "u_2", name: "ಸೂಪರ್‌ಸೀನ್", handle: "superscene", followers: 8800, following: 420, verified: null },
+          {
+            id: "u_me",
+            name: "Me",
+            handle: "studiolead",
+            followers: 4200,
+            following: 300,
+            verified: null,
+          },
+          {
+            id: "u_op",
+            name: "Edit Desk",
+            handle: "editdesk",
+            followers: 54000,
+            following: 900,
+            verified: "blue",
+          },
+          {
+            id: "u_1",
+            name: "Mina",
+            handle: "mina",
+            followers: 12000,
+            following: 980,
+            verified: null,
+          },
+          {
+            id: "u_2",
+            name: "Omar",
+            handle: "omar",
+            followers: 8800,
+            following: 420,
+            verified: null,
+          },
         ],
         tweets: [
           {
             id: "tw_op",
             authorId: "u_op",
-            text: "‘Timing strategic’ ಅಂತೆ. Mysuru style: late with full confidence 😂",
+            text: "The studio called it 'strategic timing' and now the audience is editing the recap for them.",
             viewCount: 180000,
             shareCount: 3100,
             bookmarkCount: 12000,
@@ -43,7 +71,7 @@ export default defineEpisode({
           {
             id: "tw_r1",
             authorId: "u_1",
-            text: "Late ಅಲ್ಲ ಅಂತೆ… clock-ne resign ಕೊಡಬೇಕು 😂",
+            text: "If the audience can quote the delay, it is already part of the episode.",
             replyToId: "tw_op",
             viewCount: 92000,
             shareCount: 1100,
@@ -52,7 +80,7 @@ export default defineEpisode({
           {
             id: "tw_r2",
             authorId: "u_2",
-            text: "Confidence 100. Logic 0. Mysuru filter on 😂",
+            text: "The second act wrote itself. Now the team has to land the response.",
             replyToId: "tw_op",
             viewCount: 76000,
             shareCount: 900,
@@ -66,15 +94,15 @@ export default defineEpisode({
         conversations: [
           {
             id: "grp_chat",
-            name: "Mysuru Majaa Mandali",
+            name: "Launch War Room",
             avatar: "/avatars/avatar-group.png",
             unreadCount: 21,
             type: "group",
-            participants: ["ನಾನು", "ಗುರು", "ಅಪ್ಪು", "ಮೈಸೂರು-ಮೆಹು", "ಸೂಪರ್‌ಸೀನ್"],
+            participants: ["Me", "Mina", "Omar", "Tess", "Jay"],
           },
           {
-            id: "im_amma",
-            name: "ಅಮ್ಮ",
+            id: "im_producer",
+            name: "Producer",
             avatar: "/avatars/avatar-maya.jpg",
             unreadCount: 1,
             type: "dm",
@@ -87,21 +115,21 @@ export default defineEpisode({
       // OVERLAY (Hook + captions + receipts)
       // ============================================
       .overlay((ov) => {
-        ov.at("0.0s").hook("ಇವತ್ತು Mysuru chat full court, guru.", {
+        ov.at("0.0s").hook("The launch chat becomes the episode.", {
           durationFrames: 110,
           intensity: 0.95,
         });
-        ov.at("5.8s").caption("Swalpa wait… heads-up banner barutte.", {
+        ov.at("5.8s").caption("Heads-up banner pulls the story sideways.", {
           durationFrames: 120,
         });
-        ov.at("14.4s").receipt("Exhibit A: 'Late ಅಲ್ಲ… timing strategic.'", {
+        ov.at("14.4s").receipt("Exhibit A: 'Strategic timing.'", {
           preset: "topLeft",
           durationFrames: 180,
         });
-        ov.at("28.0s").caption("X banter thread start. Seat belt sakkat tight.", {
+        ov.at("28.0s").caption("The X thread turns into the second act.", {
           durationFrames: 150,
         });
-        ov.at("44.0s").cliffhanger("ಅಮ್ಮ message ಬಂದಿದ್ರೆ… straight game over, maga.", {
+        ov.at("44.0s").cliffhanger("Producer message. The room goes quiet.", {
           durationFrames: 180,
           intensity: 1.0,
         });
@@ -137,33 +165,36 @@ export default defineEpisode({
           transition: { durationFrames: 18, style: "iosZoom" },
         });
 
-        // Switch to iMessage for the 'Amma' punch
+        // Switch to iMessage for the producer follow-up.
         d.at("34.5s").openApp("app_imessage", {
           transition: { durationFrames: 18, style: "iosZoom" },
         });
       })
 
       // ============================================
-      // WHATSAPP (group chat chat)
+      // WHATSAPP (group chat)
       // ============================================
       .whatsapp("phone", "grp_chat", (wa) => {
         wa.switchTo("grp_chat", "0s");
 
-        wa.at("1.2s").receive("ಗುರು", "Ayyo maga… ನಿನ್ನ story ನೋಡಿದೆ. 😭");
-        wa.at("2.2s").receive("ಅಪ್ಪು", "Caption full Mysuru silk board traffic da 😂");
-        wa.at("3.1s").receive("ಮೈಸೂರು-ಮೆಹು", "ನೀನು late ಅಲ್ಲ re… ನೀನು 'swalpa adjust' specialist 😭");
+        wa.at("1.2s").receive("Mina", "The teaser is out and the timing comment is everywhere.");
+        wa.at("2.2s").receive("Omar", "Caption team says the audience made their own hook.");
+        wa.at("3.1s").receive(
+          "Tess",
+          "We need one controlled reply before this becomes the whole launch.",
+        );
 
-        wa.span("3.9s", "4.6s").typing("ಸೂಪರ್‌ಸೀನ್");
-        wa.at("4.7s").receive("ಸೂಪರ್‌ಸೀನ್", "ಇವನು 'timing strategic' ಅಂತೆ… guru, comedy piece.");
+        wa.span("3.9s", "4.6s").typing("Jay");
+        wa.at("4.7s").receive("Jay", "The thread is calling it strategic timing. Lean into it.");
 
         // Typed reply (auto keyboard) for realism
-        wa.at("7.8s").send("Late ಅಲ್ಲ guru. Swalpa… narrative build ಮಾಡ್ತಿದ್ದೆ.", {
+        wa.at("7.8s").send("It was pacing. We held the reveal for the second beat.", {
           typed: true,
           charDelay: 2,
         });
 
-        wa.at("10.8s").receive("ಅಪ್ಪು", "Narrative build ಅಂತೆ… ninna excuse factory open 24/7 🏭");
-        wa.at("12.6s").receive("ಗುರು", "X open ಮಾಡು. Banter thread already sakkat hot.");
+        wa.at("10.8s").receive("Omar", "That line is either brilliant or a screenshot forever.");
+        wa.at("12.6s").receive("Mina", "Open X. The thread is moving faster than the edit.");
       })
 
       // ============================================
@@ -173,11 +204,11 @@ export default defineEpisode({
         x.at("16.4s").navigate("tweet", { tweetId: "tw_op" });
         x.at("18.0s").viewTweet("tw_op");
 
-        // Compose a quote banter (typed)
+        // Compose a quote response (typed).
         x.at("22.0s").navigate("compose");
         x.at("26.0s").postTweet({
           authorId: "u_me",
-          text: "Strategic timing ಅಂದ್ರೆ meeting invite accept ಮಾಡದೆ ghost ಆಗೋದು ಅಲ್ಲ guru 😭",
+          text: "Strategic timing means the reveal lands when the audience is already watching.",
           typed: true,
           charDelay: 2,
           viewCount: 1900,
@@ -188,17 +219,17 @@ export default defineEpisode({
       })
 
       // ============================================
-      // iMessage (Amma reality check)
+      // iMessage (producer reality check)
       // ============================================
-      .imessage("phone", "im_amma", (im) => {
-        im.at("35.4s").openConversation("im_amma");
-        im.at("37.0s").receive("ಅಮ್ಮ", "ಎಲ್ಲಿ ಇದ್ದೀಯ? ಯಾಕೆ phone always silent?");
-        im.at("39.0s").receive("ಅಮ್ಮ", "ನೀನು ‘strategic’ ಅಂತೆ… ಮನೆಗೆ ಬಾ ಮೊದಲು.");
-        im.at("42.0s").send("ಅಮ್ಮ, 5 minutes… ನಾನು famous ಆಗ್ತಿದ್ದೀನಿ 😭", {
+      .imessage("phone", "im_producer", (im) => {
+        im.at("35.4s").openConversation("im_producer");
+        im.at("37.0s").receive("Producer", "I saw the reply. Is this planned?");
+        im.at("39.0s").receive("Producer", "If it is planned, send the next beat now.");
+        im.at("42.0s").send("Give me five minutes. Turning the thread into act two.", {
           typed: true,
           charDelay: 2,
         });
-        im.at("46.0s").receive("ಅಮ್ಮ", "Famous ಅಲ್ಲ. Foolish. Now come.");
+        im.at("46.0s").receive("Producer", "Good. Make it look intentional.");
       })
 
       // ============================================

@@ -40,9 +40,33 @@ export default defineEpisode({
       .snapshot("app_x", "phone", {
         currentUserId: "u_me",
         users: [
-          { id: "u_me", name: "Nadia", handle: "nadiaops", bio: "Shipping, receipts, and stubborn timelines.", followers: 18200, following: 520, verified: "blue" },
-          { id: "u_founder_v2", name: "Founder", handle: "nightfounder", bio: "Every launch is a plot twist.", followers: 92400, following: 144, verified: "gold" },
-          { id: "u_meme_v2", name: "Meme Patrol", handle: "memepatrol", bio: "We archive bad takes for public good.", followers: 60800, following: 404, verified: null },
+          {
+            id: "u_me",
+            name: "Nadia",
+            handle: "nadiaops",
+            bio: "Shipping, receipts, and stubborn timelines.",
+            followers: 18200,
+            following: 520,
+            verified: "blue",
+          },
+          {
+            id: "u_founder_v2",
+            name: "Founder",
+            handle: "nightfounder",
+            bio: "Every launch is a plot twist.",
+            followers: 92400,
+            following: 144,
+            verified: "gold",
+          },
+          {
+            id: "u_meme_v2",
+            name: "Meme Patrol",
+            handle: "memepatrol",
+            bio: "We archive bad takes for public good.",
+            followers: 60800,
+            following: 404,
+            verified: null,
+          },
         ],
         follows: [
           { followerId: "u_me", followingId: "u_founder_v2" },
@@ -52,7 +76,7 @@ export default defineEpisode({
           {
             id: "tw_flagship_hook_v2",
             authorId: "u_founder_v2",
-            text: "Launching a product at midnight is just romance with operational consequences.",
+            text: "Launching a product at midnight is just drama with operational consequences.",
             createdAt: baseTs - 120000,
             viewCount: 88200,
             shareCount: 1800,
@@ -61,14 +85,25 @@ export default defineEpisode({
             media: { type: "image", aspect: "wide", urls: ["/placeholders/media.svg"] },
           },
         ],
-        threads: [
-          { id: "dm_founder_v2", participantIds: ["u_me", "u_founder_v2", "u_meme_v2"] },
-        ],
+        threads: [{ id: "dm_founder_v2", participantIds: ["u_me", "u_founder_v2", "u_meme_v2"] }],
         messages: [
-          { id: "msg_seed_founder_v2", threadId: "dm_founder_v2", senderId: "u_founder_v2", text: "If this tweet backfires, we were joking.", createdAt: baseTs - 45000 },
+          {
+            id: "msg_seed_founder_v2",
+            threadId: "dm_founder_v2",
+            senderId: "u_founder_v2",
+            text: "If this tweet backfires, we were joking.",
+            createdAt: baseTs - 45000,
+          },
         ],
         notifications: [
-          { id: "nt_seed_x_v2", type: "mention", actorId: "u_meme_v2", tweetId: "tw_flagship_hook_v2", isMention: true, createdAt: baseTs - 32000 },
+          {
+            id: "nt_seed_x_v2",
+            type: "mention",
+            actorId: "u_meme_v2",
+            tweetId: "tw_flagship_hook_v2",
+            isMention: true,
+            createdAt: baseTs - 32000,
+          },
         ],
       })
       .view("app_x", "phone", { screen: "timeline" })

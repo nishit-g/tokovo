@@ -8,6 +8,7 @@
     "skipLibCheck": true,
     "resolveJsonModule": true,
     "allowSyntheticDefaultImports": true,
+    "noEmit": true,
     "baseUrl": ".",
     "paths": {
       "video-runner/render-data": ["../video-runner/src/render-data.ts"]

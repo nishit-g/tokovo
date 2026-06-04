@@ -10,6 +10,8 @@ const sharedGlobals = {
   console: "readonly",
   fetch: "readonly",
   globalThis: "readonly",
+  module: "readonly",
+  navigator: "readonly",
   performance: "readonly",
   process: "readonly",
   setInterval: "readonly",
@@ -29,13 +31,13 @@ export default tseslint.config(
       "**/.next/**",
       "**/out/**",
       "**/coverage/**",
-      "**/docs/**",
+      "docs/**",
       "**/src/**/*.js",
       "**/src/**/*.jsx",
     ],
   },
   {
-    files: ["**/*.{js,mjs,cjs,ts,tsx}"],
+    files: ["**/*.{js,jsx,mjs,cjs,ts,tsx}"],
     languageOptions: {
       globals: sharedGlobals,
     },
@@ -100,7 +102,13 @@ export default tseslint.config(
               message: "Core cannot import React directly. UI components belong in @tokovo/react.",
             },
             {
-              group: ["./prepare.js", "./prepare/*", "../prepare/*", "@tokovo/core/prepare", "@tokovo/core/prepare/*"],
+              group: [
+                "./prepare.js",
+                "./prepare/*",
+                "../prepare/*",
+                "@tokovo/core/prepare",
+                "@tokovo/core/prepare/*",
+              ],
               message:
                 "Legacy prepareEpisode APIs were removed. Use prepareTrackEpisode from @tokovo/compiler.",
             },
@@ -210,7 +218,14 @@ export default tseslint.config(
                 "Root app-package barrels are authoring surfaces. Import runtime registration from the explicit /plugin entrypoint.",
             },
             {
-              group: ["./runtime/*", "./ui/*", "./lowering/*", "./layout/*", "./camera/*", "./assets/*"],
+              group: [
+                "./runtime/*",
+                "./ui/*",
+                "./lowering/*",
+                "./layout/*",
+                "./camera/*",
+                "./assets/*",
+              ],
               message:
                 "Root app-package barrels must not re-export runtime, UI, lowering, layout, camera, or asset internals. Use explicit subpath entrypoints instead.",
             },
@@ -227,7 +242,17 @@ export default tseslint.config(
         {
           patterns: [
             {
-              group: ["../runtime/*", "../ui/*", "../plugin", "../plugin.js", "../plugin/*", "../layout/*", "../camera/*", "../assets/*", "../components/*"],
+              group: [
+                "../runtime/*",
+                "../ui/*",
+                "../plugin",
+                "../plugin.js",
+                "../plugin/*",
+                "../layout/*",
+                "../camera/*",
+                "../assets/*",
+                "../components/*",
+              ],
               message:
                 "Contract modules must stay headless. They cannot depend on runtime, UI, plugin assembly, layouts, camera behavior, or asset internals.",
             },
@@ -262,8 +287,7 @@ export default tseslint.config(
           patterns: [
             {
               group: ["../ui/*", "../plugin", "../plugin.js", "../plugin/*", "../components/*"],
-              message:
-                "DSL and lowering modules must not depend on UI or plugin assembly.",
+              message: "DSL and lowering modules must not depend on UI or plugin assembly.",
             },
           ],
         },

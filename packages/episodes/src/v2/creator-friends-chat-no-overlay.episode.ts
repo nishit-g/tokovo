@@ -4,11 +4,11 @@ import { episode } from "../code-first-episode.js";
 export default defineEpisode({
   meta: {
     id: "v2-creator-friends-chat-no-overlay",
-    title: "V2 Hinglish Friends Chat (No Overlay): WhatsApp → X → WhatsApp",
+    title: "V2 Creator Group Chat (No Overlay): WhatsApp → X → WhatsApp",
     description:
-      "Hinglish friends vibe. WhatsApp group chat + X banter thread + auto keyboard typing + device banner. No overlays.",
+      "Creator room episode with WhatsApp group chat, X thread escalation, auto keyboard typing, notification banner, camera direction, and no overlays.",
     category: "showcase",
-    tags: ["v2", "hinglish", "chat", "whatsapp", "x", "no-overlay", "bgm", "keyboard", "camera"],
+    tags: ["v2", "creator", "chat", "whatsapp", "x", "no-overlay", "bgm", "keyboard", "camera"],
   },
   config: {
     format: "1080x1920",
@@ -41,16 +41,16 @@ export default defineEpisode({
           },
           {
             id: "u_op",
-            name: "OP",
-            handle: "pun_ka_papa",
+            name: "Studio Watch",
+            handle: "studiowatch",
             followers: 78000,
             following: 900,
             verified: "blue",
           },
           {
             id: "u_r1",
-            name: "Riya",
-            handle: "riya",
+            name: "Launch Desk",
+            handle: "launchdesk",
             followers: 12400,
             following: 780,
             verified: null,
@@ -60,7 +60,7 @@ export default defineEpisode({
           {
             id: "tw_op",
             authorId: "u_op",
-            text: "‘Dramatic timing’ bolke meeting me 45 min late aaya. Main character syndrome is real 😭",
+            text: "The studio said 'minor timing adjustment' and somehow turned it into a whole launch-day cliffhanger.",
             viewCount: 310000,
             shareCount: 6200,
             bookmarkCount: 21000,
@@ -70,7 +70,7 @@ export default defineEpisode({
           {
             id: "tw_r1",
             authorId: "u_r1",
-            text: "Bhai ka dramatic timing = traffic + delusion 🫡",
+            text: "Every delay becomes episode structure when the receipts are already public.",
             replyToId: "tw_op",
             viewCount: 132000,
             shareCount: 2100,
@@ -88,7 +88,7 @@ export default defineEpisode({
             avatar: "/avatars/avatar-group.png",
             unreadCount: 37,
             type: "group",
-            participants: ["main", "Aman", "Riya", "Sahil", "Vivek"],
+            participants: ["Me", "Mina", "Omar", "Tess", "Jay"],
           },
         ],
       })
@@ -114,7 +114,7 @@ export default defineEpisode({
           id: "x_banter",
           appId: "app_x",
           title: "X",
-          body: "Bro your reply is trending 😭",
+          body: "Your launch reply is moving fast.",
           mode: "headsup",
           priority: "high",
         });
@@ -134,17 +134,17 @@ export default defineEpisode({
       .whatsapp("phone", "grp_creator_room", (wa) => {
         wa.switchTo("grp_creator_room", "0s");
 
-        wa.at("1.0s").receive("Aman", "Bhai tu aaj bhi late? Calendar se beef hai kya?");
-        wa.at("2.2s").receive("Riya", "He thinks being late is a personality trait 😭");
-        wa.at("3.4s").receive("Sahil", "Sirji entry slow-mo me karenge, time pe nahi.");
+        wa.at("1.0s").receive("Mina", "The schedule slipped again. Who is answering the thread?");
+        wa.at("2.2s").receive("Omar", "Someone already clipped the delay into a launch-day meme.");
+        wa.at("3.4s").receive("Tess", "If we reply, it has to sound intentional.");
 
-        wa.at("4.8s").send("Arre chill. Main late nahi, main 'dramatic timing' pe aata hoon.", {
+        wa.at("4.8s").send("Call it pacing. The reveal needed tension.", {
           typed: true,
           charDelay: 2,
         });
 
-        wa.at("7.2s").receive("Vivek", "Dramatic timing? X pe tu already viral ho gaya bro 💀");
-        wa.at("8.2s").receive("Aman", "Open X. The replay is already everywhere.");
+        wa.at("7.2s").receive("Jay", "Pacing? The quote post is already the headline.");
+        wa.at("8.2s").receive("Mina", "Open X. The reply window is still open.");
       })
 
       // ============================================
@@ -157,7 +157,7 @@ export default defineEpisode({
         x.at("12.4s").navigate("compose");
         x.at("16.2s").postTweet({
           authorId: "u_me",
-          text: "Ok ok. Next time time pe aa jaunga. Ab thread delete kar do yaar 😭🙏",
+          text: "Launch-day timing was deliberate. The episode needed a second act.",
           typed: true,
           charDelay: 2,
           viewCount: 2400,
@@ -172,16 +172,16 @@ export default defineEpisode({
       // WHATSAPP (back to group)
       // ============================================
       .whatsapp("phone", "grp_creator_room", (wa) => {
-        wa.at("23.4s").receive("Riya", "Bro you replied?? Ab toh aur milega 😭");
-        wa.at("24.8s").receive("Aman", "Delete kya karega, screenshot already save.");
-        wa.at("26.2s").receive("Sahil", "Next episode: apology tour on reels.");
+        wa.at("23.4s").receive("Omar", "You replied. The quote graph just jumped again.");
+        wa.at("24.8s").receive("Mina", "Screenshots are already in the group chat.");
+        wa.at("26.2s").receive("Tess", "Next beat: controlled follow-up, not damage control.");
 
-        wa.at("28.2s").send("Ok last line. Main offline ja raha. Bye.", {
+        wa.at("28.2s").send("One last line, then we let the clip breathe.", {
           typed: true,
           charDelay: 2,
         });
 
-        wa.at("32.8s").receive("Vivek", "Bye? Tu toh ab content machine hai.");
+        wa.at("32.8s").receive("Jay", "Too late. This is already the next episode.");
       })
 
       // ============================================

@@ -1,8 +1,10 @@
-import { getEpisodeRenderData } from '../../video-runner/src/render-data'
+import { getEpisodeRenderData } from "video-runner/render-data";
+
+const DEFAULT_EPISODE_ID = "v2-creator-series-showcase";
 
 async function main(): Promise<void> {
-  const episodeId = process.argv[2] ?? process.env.EPISODE_ID ?? 'mega-x'
-  const renderData = await getEpisodeRenderData(episodeId)
+  const episodeId = process.argv[2] ?? process.env.EPISODE_ID ?? DEFAULT_EPISODE_ID;
+  const renderData = await getEpisodeRenderData(episodeId);
   process.stdout.write(
     `${JSON.stringify(
       {
@@ -22,7 +24,7 @@ async function main(): Promise<void> {
       null,
       2,
     )}\n`,
-  )
+  );
 }
 
 main().catch((error) => {
@@ -30,11 +32,11 @@ main().catch((error) => {
     `${JSON.stringify(
       {
         ok: false,
-        error: error instanceof Error ? error.message : 'Unknown preview-data error',
+        error: error instanceof Error ? error.message : "Unknown preview-data error",
       },
       null,
       2,
     )}\n`,
-  )
-  process.exit(1)
-})
+  );
+  process.exit(1);
+});
