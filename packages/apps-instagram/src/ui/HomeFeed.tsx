@@ -70,7 +70,7 @@ export const HomeFeed: React.FC<{ world: WorldState }> = ({ world }) => {
                 <StoryChip
                   key={set.id}
                   user={user}
-                  active={set.lastViewedStoryId == null}
+                  active={set.lastViewedStoryId === null || set.lastViewedStoryId === undefined}
                 />
               ) : null;
             })}

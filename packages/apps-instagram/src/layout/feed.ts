@@ -135,7 +135,7 @@ export function computeInstagramFeedLayout(ctx: LayoutContext): FeedLayoutState 
       kind: "FEED",
       scrollY,
       contentHeight: Math.max(h, storyH + posts.reduce((sum, post) => sum + estimateInstagramPostHeight(post, commentCounts.get(post.id) ?? 0, w), 0)),
-      isAtBottom: activePostId != null && posts[posts.length - 1]?.id === activePostId,
+      isAtBottom: activePostId !== null && activePostId !== undefined && posts[posts.length - 1]?.id === activePostId,
       itemLayouts: {},
       meta: {},
       semantic: buildSemantic(regions),

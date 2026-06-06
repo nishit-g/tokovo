@@ -79,7 +79,7 @@ function validateLinkedInSnapshot(
   const postIds = new Set<string>();
   const threadIds = new Set<string>();
 
-  const users = snapshot.users == null
+  const users = snapshot.users === null || snapshot.users === undefined
     ? undefined
     : expectArray(snapshot.users, "snapshot.users", errors);
   users?.forEach((value, index) => {
@@ -94,7 +94,7 @@ function validateLinkedInSnapshot(
     }
   });
 
-  const posts = snapshot.posts == null
+  const posts = snapshot.posts === null || snapshot.posts === undefined
     ? undefined
     : expectArray(snapshot.posts, "snapshot.posts", errors);
   posts?.forEach((value, index) => {
@@ -112,7 +112,7 @@ function validateLinkedInSnapshot(
     }
   });
 
-  const comments = snapshot.comments == null
+  const comments = snapshot.comments === null || snapshot.comments === undefined
     ? undefined
     : expectArray(snapshot.comments, "snapshot.comments", errors);
   comments?.forEach((value, index) => {
@@ -130,7 +130,7 @@ function validateLinkedInSnapshot(
     }
   });
 
-  const threads = snapshot.threads == null
+  const threads = snapshot.threads === null || snapshot.threads === undefined
     ? undefined
     : expectArray(snapshot.threads, "snapshot.threads", errors);
   threads?.forEach((value, index) => {
@@ -158,7 +158,7 @@ function validateLinkedInSnapshot(
     }
   });
 
-  const messages = snapshot.messages == null
+  const messages = snapshot.messages === null || snapshot.messages === undefined
     ? undefined
     : expectArray(snapshot.messages, "snapshot.messages", errors);
   messages?.forEach((value, index) => {
@@ -195,7 +195,7 @@ function validateLinkedInInitialView(
   expectOptionalString(view.activeUserId, "initialView.activeUserId", errors);
   expectOptionalString(view.activeThreadId, "initialView.activeThreadId", errors);
   expectOptionalString(view.composeDraft, "initialView.composeDraft", errors);
-  if (view.themeMode != null) {
+  if (view.themeMode !== null && view.themeMode !== undefined) {
     expectOneOf(view.themeMode, LINKEDIN_THEME_MODES, "initialView.themeMode", errors);
   }
 

@@ -337,12 +337,10 @@ const BottomNavBar: React.FC<{ activeTab?: string }> = ({ activeTab = "chat" }) 
 // =============================================================================
 
 const ChatListScreen: React.FC<{
-    state: SnapchatState;
     safeTop: number;
     safeBottom: number;
     world: PluginViewProps["world"];
 }> = ({
-    state,
     safeTop,
     safeBottom,
     world,
@@ -874,7 +872,6 @@ export const SnapchatView: React.FC<PluginViewProps> = (props) => {
         default:
             return (
                 <ChatListScreen
-                    state={state}
                     safeTop={safeArea.top}
                     safeBottom={safeArea.bottom}
                     world={props.world}

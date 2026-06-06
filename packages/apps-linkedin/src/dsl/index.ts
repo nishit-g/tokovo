@@ -42,7 +42,6 @@ type UserInput = Omit<LIEventPayloadMap["USER_CREATE"], "id"> & { id?: string };
 type PostInput = Omit<LIEventPayloadMap["POST_CREATE"], "id"> & { id?: string };
 type CommentInput = Omit<LIEventPayloadMap["POST_COMMENT"], "id"> & { id?: string };
 type NotificationInput = Omit<LIEventPayloadMap["NOTIFICATION_ADD"], "id"> & { id?: string };
-type MessageInput = Omit<LIEventPayloadMap["DM_SEND"], "id"> & { id?: string };
 
 class LIPointBuilder {
   constructor(

@@ -199,7 +199,6 @@ export const CallOverlay: React.FC<CallOverlayProps> = ({
       ? 0.92 + 0.08 * (0.5 + 0.5 * Math.sin(currentTime * 0.12))
       : 1;
   const isIncoming = call.status === "incoming" || call.status === "ringing";
-  const isActive = call.status === "active" || call.status === "connecting";
   const callerMetadata = call.callerMetadata;
   const posterBackground = call.callerAvatar
     ? [

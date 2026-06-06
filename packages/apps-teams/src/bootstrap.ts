@@ -94,7 +94,7 @@ function validateTeamsSnapshot(
   const channelIds = new Set<string>();
   const threadIds = new Set<string>();
 
-  const users = snapshot.users == null
+  const users = snapshot.users === null || snapshot.users === undefined
     ? undefined
     : expectArray(snapshot.users, "snapshot.users", errors);
   users?.forEach((value, index) => {
@@ -108,7 +108,7 @@ function validateTeamsSnapshot(
     }
   });
 
-  const dms = snapshot.dms == null
+  const dms = snapshot.dms === null || snapshot.dms === undefined
     ? undefined
     : expectArray(snapshot.dms, "snapshot.dms", errors);
   dms?.forEach((value, index) => {
@@ -136,7 +136,7 @@ function validateTeamsSnapshot(
     }
   });
 
-  const channels = snapshot.channels == null
+  const channels = snapshot.channels === null || snapshot.channels === undefined
     ? undefined
     : expectArray(snapshot.channels, "snapshot.channels", errors);
   channels?.forEach((value, index) => {
@@ -150,7 +150,7 @@ function validateTeamsSnapshot(
     }
   });
 
-  const threads = snapshot.threads == null
+  const threads = snapshot.threads === null || snapshot.threads === undefined
     ? undefined
     : expectArray(snapshot.threads, "snapshot.threads", errors);
   threads?.forEach((value, index) => {
@@ -169,7 +169,7 @@ function validateTeamsSnapshot(
     }
   });
 
-  const messages = snapshot.messages == null
+  const messages = snapshot.messages === null || snapshot.messages === undefined
     ? undefined
     : expectArray(snapshot.messages, "snapshot.messages", errors);
   messages?.forEach((value, index) => {
@@ -247,7 +247,7 @@ function validateTeamsInitialView(
     "initialView.screen",
     errors,
   );
-  if (view.activeListFilter != null) {
+  if (view.activeListFilter !== null && view.activeListFilter !== undefined) {
     expectOneOf(
       view.activeListFilter,
       Object.values(TEAMS_LIST_FILTERS),
@@ -255,7 +255,7 @@ function validateTeamsInitialView(
       errors,
     );
   }
-  if (view.activeTab != null) {
+  if (view.activeTab !== null && view.activeTab !== undefined) {
     expectOneOf(
       view.activeTab,
       Object.values(TEAMS_TABS),
@@ -527,7 +527,7 @@ export const teamsBootstrap: PluginBootstrapContract<"app_teams"> = {
       }),
     );
     state.ui.notificationIds = Object.values(state.notifications)
-      .filter((notification) => notification.dismissedAtFrame == null)
+      .filter((notification) => notification.dismissedAtFrame === null || notification.dismissedAtFrame === undefined)
       .sort((left, right) => left.createdAtFrame - right.createdAtFrame)
       .map((notification) => notification.id);
 

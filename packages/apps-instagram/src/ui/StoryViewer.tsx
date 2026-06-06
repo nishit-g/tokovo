@@ -2,11 +2,9 @@ import React from "react";
 import type { WorldState } from "@tokovo/core";
 import { AppShell } from "./AppShell.js";
 import { Avatar, Icon, ProgressBars } from "./components.js";
-import { useInstagramTheme } from "./ThemeContext.js";
 import { getActiveStory, getActiveStorySet, getStoriesForSet, getThreadDraft, getUserById } from "../runtime/selectors.js";
 
 export const StoryViewer: React.FC<{ world: WorldState }> = ({ world }) => {
-  const theme = useInstagramTheme();
   const storySet = getActiveStorySet(world);
   const story = getActiveStory(world);
   const author = getUserById(world, story?.authorId ?? null);

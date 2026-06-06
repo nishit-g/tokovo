@@ -38,7 +38,7 @@ export interface TeamsMessageSendPayload {
   charDelay?: number;
 }
 
-export interface TeamsMessageReceivePayload extends TeamsMessageSendPayload {}
+export type TeamsMessageReceivePayload = TeamsMessageSendPayload;
 
 export interface TeamsTypingStartPayload {
   target: TeamsMessageTarget;

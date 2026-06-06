@@ -65,7 +65,7 @@ function createBootstrapContext(
 
 describe("teams layout semantic anchors", () => {
   it("emits semantic feed anchors for chat list", () => {
-    let world = createWorld();
+    const world = createWorld();
     world.appState.app_teams = teamsBootstrap.hydrate(
       createBootstrapContext(createTeamsInitialState(), {
         dms: [{ id: "dm_exec", participantIds: ["u_me", "u_exec"], messageIds: [], unreadCount: 0, mentionCount: 0 }],

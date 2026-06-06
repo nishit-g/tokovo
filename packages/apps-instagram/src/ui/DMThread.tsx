@@ -4,7 +4,7 @@ import { getTypedTextProgress } from "@tokovo/device-keyboard";
 import { AppShell } from "./AppShell.js";
 import { Avatar, Icon, formatRelativeTime } from "./components.js";
 import { useInstagramTheme } from "./ThemeContext.js";
-import { getActiveThread, getCurrentUser, getInstagramState, getThreadDraft, getUserById, getVisibleDMMessages } from "../runtime/selectors.js";
+import { getActiveThread, getCurrentUser, getThreadDraft, getUserById, getVisibleDMMessages } from "../runtime/selectors.js";
 
 export const DMThread: React.FC<{
   world: WorldState;
@@ -12,7 +12,6 @@ export const DMThread: React.FC<{
   t?: number;
 }> = ({ world, deviceId, t }) => {
   const theme = useInstagramTheme();
-  const state = getInstagramState(world);
   const currentUser = getCurrentUser(world);
   const thread = getActiveThread(world);
   const messages = getVisibleDMMessages(world, thread?.id ?? null);

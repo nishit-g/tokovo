@@ -148,7 +148,7 @@ function validateInstagramSnapshotValue(value: unknown): ValidationResult {
   const messageIds = new Set<string>();
   const notificationIds = new Set<string>();
 
-  const users = snapshot.users == null
+  const users = snapshot.users === null || snapshot.users === undefined
     ? undefined
     : expectArray(snapshot.users, "snapshot.users", errors);
   users?.forEach((value, index) => {
@@ -168,7 +168,7 @@ function validateInstagramSnapshotValue(value: unknown): ValidationResult {
     }
   });
 
-  const follows = snapshot.follows == null
+  const follows = snapshot.follows === null || snapshot.follows === undefined
     ? undefined
     : expectArray(snapshot.follows, "snapshot.follows", errors);
   follows?.forEach((value, index) => {
@@ -192,7 +192,7 @@ function validateInstagramSnapshotValue(value: unknown): ValidationResult {
     }
   });
 
-  const posts = snapshot.posts == null
+  const posts = snapshot.posts === null || snapshot.posts === undefined
     ? undefined
     : expectArray(snapshot.posts, "snapshot.posts", errors);
   posts?.forEach((value, index) => {
@@ -212,7 +212,7 @@ function validateInstagramSnapshotValue(value: unknown): ValidationResult {
     expectOptionalNumber(post.createdAt, `snapshot.posts[${index}].createdAt`, errors);
     expectOptionalNumber(post.likeCount, `snapshot.posts[${index}].likeCount`, errors);
     expectOptionalNumber(post.commentCount, `snapshot.posts[${index}].commentCount`, errors);
-    if (post.aspect != null) {
+    if (post.aspect !== null && post.aspect !== undefined) {
       expectOneOf(
         post.aspect,
         INSTAGRAM_POST_ASPECTS,
@@ -229,7 +229,7 @@ function validateInstagramSnapshotValue(value: unknown): ValidationResult {
     }
   });
 
-  const comments = snapshot.comments == null
+  const comments = snapshot.comments === null || snapshot.comments === undefined
     ? undefined
     : expectArray(snapshot.comments, "snapshot.comments", errors);
   comments?.forEach((value, index) => {
@@ -254,7 +254,7 @@ function validateInstagramSnapshotValue(value: unknown): ValidationResult {
     }
   });
 
-  const storySets = snapshot.storySets == null
+  const storySets = snapshot.storySets === null || snapshot.storySets === undefined
     ? undefined
     : expectArray(snapshot.storySets, "snapshot.storySets", errors);
   storySets?.forEach((value, index) => {
@@ -326,7 +326,7 @@ function validateInstagramSnapshotValue(value: unknown): ValidationResult {
     });
   });
 
-  const threads = snapshot.threads == null
+  const threads = snapshot.threads === null || snapshot.threads === undefined
     ? undefined
     : expectArray(snapshot.threads, "snapshot.threads", errors);
   threads?.forEach((value, index) => {
@@ -359,7 +359,7 @@ function validateInstagramSnapshotValue(value: unknown): ValidationResult {
     }
   });
 
-  const messages = snapshot.messages == null
+  const messages = snapshot.messages === null || snapshot.messages === undefined
     ? undefined
     : expectArray(snapshot.messages, "snapshot.messages", errors);
   messages?.forEach((value, index) => {
@@ -388,7 +388,7 @@ function validateInstagramSnapshotValue(value: unknown): ValidationResult {
     }
   });
 
-  const notifications = snapshot.notifications == null
+  const notifications = snapshot.notifications === null || snapshot.notifications === undefined
     ? undefined
     : expectArray(snapshot.notifications, "snapshot.notifications", errors);
   notifications?.forEach((value, index) => {
@@ -465,13 +465,13 @@ function validateInstagramInitialViewValue(value: unknown): ValidationResult {
   expectOptionalString(view.storySetId, "initialView.storySetId", errors);
   expectOptionalString(view.storyId, "initialView.storyId", errors);
 
-  if (view.profileTab != null) {
+  if (view.profileTab !== null && view.profileTab !== undefined) {
     expectOneOf(view.profileTab, INSTAGRAM_PROFILE_TABS, "initialView.profileTab", errors);
   }
-  if (view.themeMode != null) {
+  if (view.themeMode !== null && view.themeMode !== undefined) {
     expectOneOf(view.themeMode, INSTAGRAM_THEME_MODES, "initialView.themeMode", errors);
   }
-  if (view.composerDraft != null) {
+  if (view.composerDraft !== null && view.composerDraft !== undefined) {
     const draft = expectObjectRecord(view.composerDraft, "initialView.composerDraft", errors);
     if (draft) {
       if (typeof draft.caption !== "string") {
@@ -575,7 +575,7 @@ function applyInitialView(state: InstagramState, initialView?: InstagramInitialV
   state.activeThreadId = initialView.threadId ?? null;
   state.activeStorySetId = initialView.storySetId ?? null;
 
-  const activeStorySet = initialView.storySetId == null
+  const activeStorySet = initialView.storySetId === null || initialView.storySetId === undefined
     ? undefined
     : state.storySets.find((item) => item.id === initialView.storySetId);
   const resolvedStoryId =

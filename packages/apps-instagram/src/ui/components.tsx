@@ -409,7 +409,6 @@ export const ProgressBars: React.FC<{
   items: InstagramStory[];
   activeStoryId: string | null;
 }> = ({ items, activeStoryId }) => {
-  const theme = useInstagramTheme();
   return (
     <div style={{ display: "flex", gap: 4 }}>
       {items.map((item) => (

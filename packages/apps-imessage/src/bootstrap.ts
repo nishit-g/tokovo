@@ -76,7 +76,7 @@ function validateIMessageSnapshot(
       conversationIds.add(id);
     }
 
-    if (conversation.messages != null) {
+    if (conversation.messages !== null && conversation.messages !== undefined) {
       const messages = expectArray(
         conversation.messages,
         `snapshot.conversations[${index}].messages`,
@@ -117,7 +117,7 @@ function validateIMessageInitialView(
 
   expectOneOf(view.screen, IMESSAGE_SCREENS, "initialView.screen", errors);
   expectOptionalString(view.conversationId, "initialView.conversationId", errors);
-  if (view.themeMode != null) {
+  if (view.themeMode !== null && view.themeMode !== undefined) {
     expectOneOf(view.themeMode, IMESSAGE_THEME_MODES, "initialView.themeMode", errors);
   }
 

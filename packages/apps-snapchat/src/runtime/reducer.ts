@@ -260,7 +260,7 @@ export const snapchatReducer: PluginReducer<typeof SNAPCHAT_APP_ID> = (
           status: "sent",
         }),
       );
-      state.drafts![conversationId] = "";
+      (state.drafts ??= {})[conversationId] = "";
       break;
     }
     case "SNAPCHAT_MESSAGE_RECEIVE": {
@@ -388,7 +388,7 @@ export const snapchatReducer: PluginReducer<typeof SNAPCHAT_APP_ID> = (
       break;
     }
     case "SNAPCHAT_SET_DRAFT": {
-      state.drafts![event.payload.conversationId] = event.payload.text;
+      (state.drafts ??= {})[event.payload.conversationId] = event.payload.text;
       break;
     }
     case "SNAPCHAT_MESSAGE_STATUS_SET": {

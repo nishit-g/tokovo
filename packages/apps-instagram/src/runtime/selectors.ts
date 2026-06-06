@@ -102,8 +102,8 @@ export function getVisibleDMMessages(
   const byId = new Map(state.dmMessages.map((message) => [message.id, message]));
   return thread.messageIds
     .map((id) => byId.get(id))
-    .filter(Boolean)
-    .sort((a, b) => a!.createdAt - b!.createdAt) as InstagramDMMessage[];
+    .filter((message): message is InstagramDMMessage => Boolean(message))
+    .sort((a, b) => a.createdAt - b.createdAt);
 }
 
 export function getThreadDraft(world: WorldState, threadId: string | null): string {
