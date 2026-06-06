@@ -37,7 +37,7 @@ describe("video-runner release episode registry", () => {
     const ids = new Set(registry.all().map((episode) => episode.meta.id));
 
     expect(appShowcaseEpisodes).toHaveLength(21);
-    expect(systemShowcaseEpisodes).toHaveLength(7);
+    expect(systemShowcaseEpisodes).toHaveLength(8);
     expect(storyEpisodes).toHaveLength(8);
 
     for (const episode of [...appShowcaseEpisodes, ...systemShowcaseEpisodes, ...storyEpisodes]) {

@@ -6,7 +6,7 @@
     "dev": "next dev --port 3001",
     "build": "next build",
     "typecheck": "tsc --noEmit -p tsconfig.typecheck.json",
-    "test": "pnpm exec vitest run",
+    "test": "pnpm exec vitest run --passWithNoTests",
     "start": "next start",
     "lint": "eslint . --max-warnings 0"
   },

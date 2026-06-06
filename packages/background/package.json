@@ -14,7 +14,7 @@
         }
     },
     "scripts": {
-        "build": "pnpm run clean && tsup src/index.ts --format cjs,esm && tsc -p tsconfig.json --emitDeclarationOnly",
+        "build": "rm -rf dist && tsup src/index.ts --format cjs,esm && tsc -b tsconfig.json --emitDeclarationOnly --force",
         "dev": "tsup src/index.ts --format cjs,esm --watch",
         "typecheck": "tsc --noEmit",
         "test": "pnpm exec vitest run --passWithNoTests",
