@@ -6,6 +6,14 @@ import {
 } from "@tokovo/core";
 import { createNdjsonFileSink } from "@tokovo/core/logger/node";
 
+function shouldUseConsoleFromEnv(): boolean {
+  return (
+    process.env.TOKOVO_LOG_CONSOLE !== undefined ||
+    process.env.TOKOVO_LOG_PROFILE === "operator" ||
+    process.env.TOKOVO_LOG_PROFILE === "full"
+  );
+}
+
 export class RenderLogger {
   #logger: TokovoLogger;
   #log: ReturnType<typeof createScopedLogger>;
@@ -14,7 +22,11 @@ export class RenderLogger {
   constructor(filePath: string, baseData: Record<string, unknown> = {}) {
     const sinkPath = process.env.TOKOVO_LOG_PATH ?? filePath;
     this.#sinkPath = sinkPath;
-    this.#logger = createLogger(configureLoggerFromEnv(process.env));
+    const loggerConfig = configureLoggerFromEnv(process.env);
+    this.#logger = createLogger({
+      ...loggerConfig,
+      consoleOutput: shouldUseConsoleFromEnv() ? loggerConfig.consoleOutput : false,
+    });
     this.#logger.addSink(createNdjsonFileSink(sinkPath));
     this.#log = createScopedLogger("render-service", this.#logger).withContext(baseData);
   }

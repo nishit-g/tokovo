@@ -16,9 +16,7 @@ describe("logger (node)", () => {
     });
     logger.clearSubscribers();
 
-    const infoSpy = vi
-      .spyOn(console, "info")
-      .mockImplementation(() => undefined);
+    const infoSpy = vi.spyOn(console, "info").mockImplementation(() => undefined);
 
     const collector = new LogCollector();
     logger.addSubscriber(collector);
@@ -37,5 +35,17 @@ describe("logger (node)", () => {
     infoSpy.mockRestore();
 
     expect((globalThis as any).__TOKOVO_LOGGER).toBeUndefined();
+  });
+
+  it("maps the quiet profile to warning-only file-safe logging", async () => {
+    vi.resetModules();
+    const mod = await import("../logger");
+    const { configureLoggerFromEnv } = mod;
+
+    expect(configureLoggerFromEnv({ TOKOVO_LOG_PROFILE: "quiet" })).toMatchObject({
+      minLevel: "warn",
+      consoleOutput: false,
+      includeStackTraces: false,
+    });
   });
 });

@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import type { TimelineEvent, WorldState } from "../types.js";
 import { createReducerRegistry } from "../engine/registry.js";
-import { createLogger, LogCollector, setLogger } from "../logger/index.js";
+import { getLogger, LogCollector } from "../logger/index.js";
 
 describe("ReducerRegistry", () => {
   it("registers and retrieves device reducer", () => {
@@ -15,9 +15,10 @@ describe("ReducerRegistry", () => {
 
   it("registers app reducer and warns on overwrite", () => {
     const collector = new LogCollector();
-    const logger = createLogger({ consoleOutput: false });
+    const logger = getLogger();
+    logger.configure({ consoleOutput: false, minLevel: "debug", components: [] });
+    logger.clearSinks();
     logger.addSink(collector);
-    setLogger(logger);
     const registry = createReducerRegistry();
 
     const reducer = vi.fn();
@@ -26,9 +27,7 @@ describe("ReducerRegistry", () => {
     registry.registerAppReducer("app", reducer2);
 
     expect(registry.getAppReducer("app")).toBe(reducer2);
-    expect(
-      collector.peek().some((entry) => entry.event === "engine.warn"),
-    ).toBe(true);
+    expect(collector.peek().some((entry) => entry.event === "engine.warn")).toBe(true);
     registry.reset();
   });
 
@@ -48,9 +47,7 @@ describe("ReducerRegistry", () => {
     const draft = {} as WorldState;
     reducer?.(draft, { kind: "APP" } as TimelineEvent);
 
-    expect((draft.appState as { scoped: { count: number } }).scoped.count).toBe(
-      1,
-    );
+    expect((draft.appState as { scoped: { count: number } }).scoped.count).toBe(1);
 
     registry.reset();
   });

@@ -296,7 +296,7 @@ export class PluginManagerClass {
 
       this.cleanupFunctions.set(plugin.id, cleanups);
 
-      log.info(`Registered plugin: ${plugin.displayName} (${plugin.id})`, {
+      log.debug(`Registered plugin: ${plugin.displayName} (${plugin.id})`, {
         hasReducer: !!plugin.reducer,
         hasViews: !!plugin.views?.AppRoot,
         hasLayouts: !!(plugin.layouts && plugin.layouts.length > 0),

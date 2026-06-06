@@ -1,8 +1,5 @@
 import { createTokovoRegistries, PluginManagerClass, type TokovoRegistries } from "@tokovo/react";
-import {
-  createDeviceRegistries,
-  type DeviceRegistries,
-} from "@tokovo/devices";
+import { createDeviceRegistries, type DeviceRegistries } from "@tokovo/devices";
 import { createScopedLogger, registerRuntimeObservability } from "@tokovo/core";
 
 import { createEpisodeRegistry, type EpisodeRegistry } from "./registry/index.js";
@@ -96,7 +93,7 @@ export function registerTokovoPlugins(input: {
     ...input,
     logger: runtimeLog,
   });
-  runtimeLog.info("Shared Tokovo plugins registered", {
+  runtimeLog.debug("Shared Tokovo plugins registered", {
     pluginCount: input.pluginManager.getAppIds().length,
     manifestEntryCount: getRuntimeManifestEntryIds().length,
   });
@@ -107,7 +104,7 @@ export function createTokovoRuntime(profile: TokovoCatalogProfile = "release"): 
     event: "runtime.bootstrap",
     catalogProfile: profile,
   });
-  runtimeLog.info("Creating Tokovo runtime");
+  runtimeLog.debug("Creating Tokovo runtime");
 
   const tokovoRegistries = createTokovoRegistries();
   const deviceRegistries = createDeviceRegistries();
@@ -126,7 +123,7 @@ export function createTokovoRuntime(profile: TokovoCatalogProfile = "release"): 
 
   const episodeRegistry = createEpisodeRegistryForProfile(profile);
 
-  runtimeLog.info("Tokovo runtime ready", {
+  runtimeLog.debug("Tokovo runtime ready", {
     pluginCount: pluginManager.getAppIds().length,
     episodeCount: episodeRegistry.count(),
     catalogProfile: profile,

@@ -1,12 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { EngineConfig } from "../engine/config.js";
-import {
-  SnapshotCache,
-  runWithSnapshot,
-} from "../engine/snapshot-cache.js";
+import { SnapshotCache, runWithSnapshot } from "../engine/snapshot-cache.js";
 import type { WorldState } from "../types.js";
 import {
-  createLogger,
+  getLogger,
   LogCollector,
   logAudioCrossfade,
   logAudioDucking,
@@ -18,14 +15,18 @@ import {
   logEngineEvent,
   logEnginePerf,
   logEngineWarn,
-  setLogger,
 } from "../logger/index.js";
 
 const baseWorld = {
   devices: {},
   appState: {},
   camera: { baseView: "APP_VIEW" },
-  audio: { activeSounds: {}, buses: {}, policyState: { recentSounds: {}, nextId: 0 }, autoSoundRules: [] },
+  audio: {
+    activeSounds: {},
+    buses: {},
+    policyState: { recentSounds: {}, nextId: 0 },
+    autoSoundRules: [],
+  },
 } as WorldState;
 
 describe("engine runtime utilities", () => {
@@ -45,9 +46,10 @@ describe("engine runtime utilities", () => {
 
   it("logs via the core runtime logger helpers without throwing", () => {
     const collector = new LogCollector();
-    const logger = createLogger({ consoleOutput: false });
+    const logger = getLogger();
+    logger.configure({ consoleOutput: false, minLevel: "debug", components: [] });
+    logger.clearSinks();
     logger.addSink(collector);
-    setLogger(logger);
 
     logEngineEvent("APP", "TEST", 1);
     logEnginePerf("step", 2);
@@ -110,7 +112,7 @@ describe("engine runtime utilities", () => {
     const result = runWithSnapshot(
       1,
       baseWorld,
-      (_start, state) => ({ ...state, appState: { ran: true } } as WorldState),
+      (_start, state) => ({ ...state, appState: { ran: true } }) as WorldState,
       cache,
     );
 
@@ -122,7 +124,7 @@ describe("engine runtime utilities", () => {
     const result = runWithSnapshot(
       1,
       baseWorld,
-      (_start, state) => ({ ...state, appState: { empty: true } } as WorldState),
+      (_start, state) => ({ ...state, appState: { empty: true } }) as WorldState,
       cache,
     );
     expect((result.appState as any).empty).toBe(true);

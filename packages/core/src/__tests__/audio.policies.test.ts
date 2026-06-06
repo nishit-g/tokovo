@@ -12,7 +12,7 @@ import {
   checkAllPoliciesPure,
   checkAllPolicies,
 } from "../audio/policies.js";
-import { createLogger, LogCollector, setLogger } from "../logger/index.js";
+import { getLogger, LogCollector } from "../logger/index.js";
 
 describe("audio policies", () => {
   it("checks spam with pure function", () => {
@@ -47,7 +47,11 @@ describe("audio policies", () => {
   });
 
   it("uses default soft variant when configured", () => {
-    const gate = new SpamGate({ ...DEFAULT_POLICY_CONFIG, spamGateFrames: 5, softVariant: undefined });
+    const gate = new SpamGate({
+      ...DEFAULT_POLICY_CONFIG,
+      spamGateFrames: 5,
+      softVariant: undefined,
+    });
     gate.checkSpam("ding", 0);
     const result = gate.checkSpam("ding", 2);
     expect(result.alternateSound).toBe("ding_soft");
@@ -62,20 +66,14 @@ describe("audio policies", () => {
 
   it("enforces concurrency limits", () => {
     const cue = { soundId: "a", bus: "sfx", priority: 5 } as SoundCue;
-    const active = [
-      { soundId: "b", bus: "sfx", priority: 1 } as SoundCue,
-    ];
+    const active = [{ soundId: "b", bus: "sfx", priority: 1 } as SoundCue];
 
     expect(enforceBusConcurrency(cue, [], 2).shouldAdd).toBe(true);
     const result = enforceBusConcurrency(cue, active, 1);
     expect(result.shouldAdd).toBe(true);
     expect(result.toRemove).toEqual(["b"]);
 
-    const lower = enforceBusConcurrency(
-      { ...cue, priority: 0 },
-      active,
-      1,
-    );
+    const lower = enforceBusConcurrency({ ...cue, priority: 0 }, active, 1);
     expect(lower.shouldAdd).toBe(false);
   });
 
@@ -112,13 +110,7 @@ describe("audio policies", () => {
   it("runs combined policies (pure)", () => {
     const cue = { soundId: "ding", bus: "ui", priority: 1 } as SoundCue;
 
-    const softened = checkAllPoliciesPure(
-      cue,
-      1,
-      [],
-      { ding: 0 },
-      DEFAULT_POLICY_CONFIG,
-    );
+    const softened = checkAllPoliciesPure(cue, 1, [], { ding: 0 }, DEFAULT_POLICY_CONFIG);
     expect(softened.shouldPlay).toBe(true);
     expect(softened.soundId).toBe("ding_soft");
 
@@ -138,7 +130,10 @@ describe("audio policies", () => {
       100,
       [{ ...cue, priority: 2 } as SoundCue],
       {},
-      { ...DEFAULT_POLICY_CONFIG, maxConcurrentPerBus: { ui: 1, sfx: 1, music: 1, voice: 1, master: 1 } },
+      {
+        ...DEFAULT_POLICY_CONFIG,
+        maxConcurrentPerBus: { ui: 1, sfx: 1, music: 1, voice: 1, master: 1 },
+      },
     );
     expect(limited.shouldPlay).toBe(false);
     expect(limited.reason).toBe("concurrency_limit");
@@ -168,9 +163,10 @@ describe("audio policies", () => {
 
   it("runs combined policies (mutable) and logs drops", () => {
     const collector = new LogCollector();
-    const logger = createLogger({ consoleOutput: false });
+    const logger = getLogger();
+    logger.configure({ consoleOutput: false, minLevel: "debug", components: [] });
+    logger.clearSinks();
     logger.addSink(collector);
-    setLogger(logger);
     const gate = new SpamGate({ ...DEFAULT_POLICY_CONFIG, spamGateFrames: 5 });
     const cue = { soundId: "ding", bus: "ui", priority: 1 } as SoundCue;
 
@@ -178,13 +174,10 @@ describe("audio policies", () => {
     const spam = checkAllPolicies(cue, 1, [], gate, DEFAULT_POLICY_CONFIG);
     expect(spam.shouldPlay).toBe(true);
 
-    const limit = checkAllPolicies(
-      cue,
-      20,
-      [{ ...cue, priority: 2 } as SoundCue],
-      gate,
-      { ...DEFAULT_POLICY_CONFIG, maxConcurrentPerBus: { ui: 1, sfx: 1, music: 1, voice: 1, master: 1 } },
-    );
+    const limit = checkAllPolicies(cue, 20, [{ ...cue, priority: 2 } as SoundCue], gate, {
+      ...DEFAULT_POLICY_CONFIG,
+      maxConcurrentPerBus: { ui: 1, sfx: 1, music: 1, voice: 1, master: 1 },
+    });
     expect(limit.shouldPlay).toBe(false);
 
     const replace = checkAllPolicies(
@@ -192,7 +185,10 @@ describe("audio policies", () => {
       25,
       [{ ...cue, soundId: "low", priority: 1 } as SoundCue],
       gate,
-      { ...DEFAULT_POLICY_CONFIG, maxConcurrentPerBus: { ui: 1, sfx: 1, music: 1, voice: 1, master: 1 } },
+      {
+        ...DEFAULT_POLICY_CONFIG,
+        maxConcurrentPerBus: { ui: 1, sfx: 1, music: 1, voice: 1, master: 1 },
+      },
     );
     expect(replace.shouldPlay).toBe(true);
     expect(replace.toRemove).toEqual(["low"]);
@@ -215,8 +211,6 @@ describe("audio policies", () => {
       DEFAULT_POLICY_CONFIG,
     );
     expect(defaultMax.shouldPlay).toBe(true);
-    expect(
-      collector.peek().some((entry) => entry.event === "audio.policy_drop"),
-    ).toBe(true);
+    expect(collector.peek().some((entry) => entry.event === "audio.policy_drop")).toBe(true);
   });
 });

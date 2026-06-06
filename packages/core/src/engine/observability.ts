@@ -20,7 +20,7 @@ function getEventType(event: Record<string, unknown>): string | undefined {
 }
 
 export function registerRuntimeObservability(registries: EngineRegistries): void {
-  log.info("Registering runtime observability hooks", {
+  log.debug("Registering runtime observability hooks", {
     logEvents: EngineConfig.logEvents,
     logPerformance: EngineConfig.logPerformance,
     logAudio: EngineConfig.logAudio,

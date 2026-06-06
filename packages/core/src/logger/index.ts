@@ -141,7 +141,7 @@ type LoggerGlobals = {
 const loggerGlobals = globalThis as typeof globalThis & LoggerGlobals;
 
 const DEFAULT_CONFIG: LoggerConfig = {
-  minLevel: isProduction ? "warn" : "debug",
+  minLevel: isProduction ? "warn" : "info",
   components: [],
   consoleOutput: !isProduction,
   includeStackTraces: !isProduction,
@@ -152,8 +152,8 @@ const DEFAULT_CONFIG: LoggerConfig = {
 
 const LOG_PROFILE_DEFAULTS: Record<LogProfile, Partial<LoggerConfig>> = {
   quiet: {
-    minLevel: isProduction ? "warn" : "info",
-    consoleOutput: !isProduction,
+    minLevel: "warn",
+    consoleOutput: false,
     includeStackTraces: false,
     useColors: hasNodeConsoleColors,
     includeTimestamps: true,

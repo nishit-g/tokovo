@@ -53,10 +53,7 @@ export interface NotificationAdapter {
   ): TimelineEvent[];
 
   /** Measure height for deterministic layout */
-  measureHeight?(
-    notification: Notification,
-    viewport: { width: number; height: number },
-  ): number;
+  measureHeight?(notification: Notification, viewport: { width: number; height: number }): number;
 }
 
 // =============================================================================
@@ -68,7 +65,7 @@ export class NotificationAdapterRegistryClass {
 
   register(adapter: NotificationAdapter): void {
     this.adapters.set(adapter.appId, adapter);
-    log.info(`Registered notification adapter: ${adapter.appId}`);
+    log.debug(`Registered notification adapter: ${adapter.appId}`);
   }
 
   unregister(appId: string): void {
@@ -125,10 +122,7 @@ export function createNotificationAdapterRegistry(): NotificationAdapterRegistry
 // =============================================================================
 
 export interface NotificationMeasurable {
-  measureHeight(
-    notification: Notification,
-    viewport: { width: number; height: number },
-  ): number;
+  measureHeight(notification: Notification, viewport: { width: number; height: number }): number;
 }
 
 /** Default height if adapter doesn't provide measurement */
