@@ -20,6 +20,7 @@ export class OverlayPointBuilder {
     private _frame: number,
     private _events: TrackEvent[],
     private _getOrder: GetDeclarationOrder,
+    private _defaultDurationFrames?: number,
   ) {}
 
   private show(
@@ -32,7 +33,12 @@ export class OverlayPointBuilder {
       at: this._frame,
       kind: "OVERLAY",
       type: "SHOW",
-      payload: { ...payload, id, variant },
+      payload: {
+        ...payload,
+        id,
+        variant,
+        durationFrames: payload.durationFrames ?? this._defaultDurationFrames,
+      },
       _declarationOrder: this._getOrder(),
     };
     this._events.push(event);
@@ -127,7 +133,11 @@ export class OverlayTrackBuilder {
     const durationFrames = Math.max(0, endFrame - startFrame);
 
     this._currentFrame = startFrame;
-    // Span convenience: SHOW calls can pass durationFrames explicitly.
-    return new OverlayPointBuilder(startFrame, this._events, this._getOrder);
+    return new OverlayPointBuilder(
+      startFrame,
+      this._events,
+      this._getOrder,
+      durationFrames,
+    );
   }
 }

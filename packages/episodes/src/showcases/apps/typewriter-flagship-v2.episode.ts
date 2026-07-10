@@ -1,9 +1,6 @@
 import { defineEpisode } from "../../types/episode-definition.js";
 import { episode } from "../../code-first-episode.js";
-import { TypewriterTrackBuilder, type TypewriterThemeConfig } from "@tokovo/apps-typewriter";
-
-let flagshipOrder = 0;
-const nextFlagshipOrder = () => flagshipOrder++;
+import type { TypewriterThemeConfig } from "@tokovo/apps-typewriter";
 
 const TYPEWRITER_FLAGSHIP_THEME = {
   preset: "classic",
@@ -40,9 +37,8 @@ export default defineEpisode({
         installedApps: ["app_typewriter"],
         os: { time: new Date("2026-04-10T23:50:00Z"), battery: 91, network: "wifi" },
       })
-      .track(
-        "app_typewriter",
-        () => new TypewriterTrackBuilder(30, "desk", nextFlagshipOrder, { theme: TYPEWRITER_FLAGSHIP_THEME }),
+      .typewriter(
+        "desk",
         (tw) => {
           tw.at("0s").initLetter({
             to: "To the team",
@@ -72,6 +68,7 @@ export default defineEpisode({
           tw.at("23.2s").backspace();
           tw.at("23.4s").key(".");
         },
+        { theme: TYPEWRITER_FLAGSHIP_THEME },
       )
       .camera((cam) => {
         cam.at("0s").focus("paper", { scale: 1.03, duration: "0.4s" });

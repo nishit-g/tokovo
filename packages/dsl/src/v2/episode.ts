@@ -319,10 +319,9 @@ export class EpisodeBuilder {
    * Used for plugin tracks (e.g., "app_whatsapp").
    *
    * @param trackId - Track identifier (e.g., "app_whatsapp")
-   * @param factory - Factory function that creates the track builder.
-   *                  Can be either:
-   *                  - `() => T` (legacy, uses external order counter)
-   *                  - `(getOrder: () => number) => T` (recommended, uses central counter)
+   * @param factory - Factory function that creates the track builder. The episode's
+   *                  declaration-order allocator is always supplied; legacy zero-argument
+   *                  factories safely ignore it.
    * @param fn - Function that configures the track
    */
   track<T extends TrackBuilder>(
@@ -331,11 +330,10 @@ export class EpisodeBuilder {
     fn: TrackFn<T>,
   ): this {
     const getOrder = () => this._declarationOrder++;
-    // Check if factory expects a getOrder parameter
-    const builder =
-      factory.length === 1
-        ? (factory as (getOrder: () => number) => T)(getOrder)
-        : (factory as () => T)();
+    // Do not inspect Function.length here: default/rest parameters and transformed
+    // functions make runtime arity unreliable. Extra arguments are safe for legacy
+    // JavaScript factories and keep every modern app track on the central counter.
+    const builder = (factory as (getOrder: () => number) => T)(getOrder);
     fn(builder);
     this._events.push(...(builder._events as TrackEvent[]));
     return this;

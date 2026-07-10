@@ -1,6 +1,5 @@
 import { defineEpisode } from "../../types/episode-definition.js";
-import { episode } from "@tokovo/dsl";
-import { LinkedInTrackBuilder } from "@tokovo/apps-linkedin";
+import { episode } from "../../code-first-episode.js";
 
 export default defineEpisode({
   meta: {
@@ -53,7 +52,7 @@ export default defineEpisode({
         threads: [{ id: "li_storybook_dm_1", participantIds: ["me", "u1"], title: "Riku Sato", unreadCount: 1 }],
         messages: [{ id: "li_storybook_msg_1", threadId: "li_storybook_dm_1", senderId: "u1", text: "The new theme makes the feed feel gentler without losing density.", createdAt: baseTs - 12000 }],
       })
-      .track("app_linkedin", (getOrder) => new LinkedInTrackBuilder(30, "phone", getOrder), (li) => {
+      .linkedin("phone", (li) => {
         li.at("0.5s").setThemeMode("storybook");
         li.at("1.6s").navigate("feed", { postId: "li_storybook_1" });
         li.at("4.0s").navigate("profile", { userId: "me" });

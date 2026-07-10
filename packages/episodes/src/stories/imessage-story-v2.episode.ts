@@ -1,6 +1,5 @@
 import { defineEpisode } from "../types/episode-definition.js";
-import { episode } from "@tokovo/dsl";
-import { IMessageTrackBuilder } from "@tokovo/apps-imessage";
+import { episode } from "../code-first-episode.js";
 
 export default defineEpisode({
   meta: {
@@ -29,9 +28,9 @@ export default defineEpisode({
           network: "wifi",
         },
       })
-      .track(
-        "app_imessage",
-        (getOrder) => new IMessageTrackBuilder(30, "phone", "family_story_v2", getOrder),
+      .imessage(
+        "phone",
+        "family_story_v2",
         (im) => {
           im.at("0s").createConversation({
             id: "family_story_v2",

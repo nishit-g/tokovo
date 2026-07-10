@@ -1,6 +1,5 @@
 import { defineEpisode } from "../types/episode-definition.js";
-import { episode } from "@tokovo/dsl";
-import { LinkedInTrackBuilder } from "@tokovo/apps-linkedin";
+import { episode } from "../code-first-episode.js";
 
 export default defineEpisode({
   meta: {
@@ -40,7 +39,7 @@ export default defineEpisode({
         threads: [{ id: "li_story_dm_v2", participantIds: ["me", "u_rec"], title: "Noor Ahmed", unreadCount: 1 }],
         messages: [{ id: "li_story_seed_1", threadId: "li_story_dm_v2", senderId: "u_rec", text: "Loved your work. Could I steal 20 minutes this week?", createdAt: baseTs - 10000 }],
       })
-      .track("app_linkedin", (getOrder) => new LinkedInTrackBuilder(30, "phone", getOrder), (li) => {
+      .linkedin("phone", (li) => {
         li.at("1.0s").navigate("messages");
         li.at("2.2s").navigate("thread", { threadId: "li_story_dm_v2" });
         li.at("3.4s").sendDM({

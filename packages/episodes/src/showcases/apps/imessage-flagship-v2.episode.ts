@@ -1,6 +1,5 @@
 import { defineEpisode } from "../../types/episode-definition.js";
-import { episode } from "@tokovo/dsl";
-import { IMessageTrackBuilder } from "@tokovo/apps-imessage";
+import { episode } from "../../code-first-episode.js";
 
 export default defineEpisode({
   meta: {
@@ -35,9 +34,9 @@ export default defineEpisode({
         },
       })
       .background({ type: "image", src: "/backgrounds/cozy-bedroom.png" })
-      .track(
-        "app_imessage",
-        (getOrder) => new IMessageTrackBuilder(30, "phone", "group_plan_v2", getOrder),
+      .imessage(
+        "phone",
+        "group_plan_v2",
         (im) => {
           im.at("0s").createConversation({
             id: "group_plan_v2",

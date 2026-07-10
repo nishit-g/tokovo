@@ -11,6 +11,12 @@ Use the DSL for:
 - audio
 - per-app sequencing
 
+For checked-in episodes, import the canonical builder:
+
+```ts
+import { episode } from "@tokovo/episodes/code-first-episode";
+```
+
 Typical shape:
 
 ```ts
@@ -22,7 +28,31 @@ const ep = episode("demo", { fps: 30, duration: "10s", title: "Demo" })
   .view("app_whatsapp", "phone", {
     screen: "chat",
     conversationId: "dm_alex",
+  })
+  .whatsapp("phone", "dm_alex", (whatsapp) => {
+    whatsapp.at("1s").receive("Alex", "Ready when you are.");
   });
 ```
 
 `snapshot()` and `view()` are the only supported frame-0 app bootstrap APIs. Do not put app history into `device()` and do not rely on compiler-owned defaults.
+
+## Built-in app tracks
+
+The creator API exposes one named method per built-in app:
+
+```ts
+episode("multi-app", { fps: 30, duration: "12s" })
+  .instagram("phone", (instagram) => {
+    instagram.at("1s").navigate("home");
+  })
+  .linkedin("phone", (linkedin) => {
+    linkedin.at("4s").navigate("messages");
+  })
+  .typewriter("desk", (typewriter) => {
+    typewriter.span("6s", "10s").typeText("The ending writes itself.");
+  });
+```
+
+The complete set is `whatsapp`, `imessage`, `instagram`, `x`, `linkedin`,
+`snapchat`, `teams`, and `typewriter`. Use generic `track()` only while developing an
+external app plugin; it is not the normal story-authoring surface.

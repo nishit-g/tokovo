@@ -1,7 +1,6 @@
 import { defineEpisode } from "../../types/episode-definition.js";
 import { episode } from "../../code-first-episode.js";
 import { KeyboardPlugin } from "@tokovo/compiler";
-import { createInstagramTrackBuilder } from "@tokovo/apps-instagram";
 
 export default defineEpisode({
   meta: {
@@ -97,7 +96,7 @@ export default defineEpisode({
         wa.at("6.4s").send("Patch is already exporting.", { typed: true, charDelay: 2 });
         wa.at("8.2s").receive("Ops Lead", "Good. Move the team back into launch thread.");
       })
-      .track("app_instagram", (getOrder) => createInstagramTrackBuilder(30, "phone", getOrder), (ig: any) => {
+      .instagram("phone", (ig) => {
         ig.at("16.8s").navigate("home");
         ig.at("18.0s").commentOnPost({ postId: "ig_seed_1", authorId: "ig_noa", text: "Comments are moving faster than the edit.", createdAt: new Date("2026-04-10T08:47:00Z").getTime() });
         ig.at("19.2s").notify({ type: "comment", actorId: "ig_noa", postId: "ig_seed_1", title: "Noa Frames", body: "Comments are moving faster than the edit." });

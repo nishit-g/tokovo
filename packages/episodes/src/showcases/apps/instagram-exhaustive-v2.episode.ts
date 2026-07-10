@@ -1,6 +1,5 @@
-import { createInstagramTrackBuilder } from "@tokovo/apps-instagram";
 import { defineEpisode } from "../../types/episode-definition.js";
-import { episode } from "@tokovo/dsl";
+import { episode } from "../../code-first-episode.js";
 
 export default defineEpisode({
   meta: {
@@ -61,7 +60,7 @@ export default defineEpisode({
           { id: "ig_ex_msg_1", threadId: "ig_ex_thread_1", senderId: "ig_sam", text: "Your comment section is now doing free script coverage.", createdAt: baseTs - 18000 },
         ],
       })
-      .track("app_instagram", (getOrder) => createInstagramTrackBuilder(30, "phone", getOrder), (ig) => {
+      .instagram("phone", (ig) => {
         ig.at("1.0s").navigate("home", { postId: "ig_ex_1" });
         ig.at("2.4s").navigate("home", { postId: "ig_ex_2" });
         ig.at("3.2s").commentOnPost({ id: "ig_ex_comment_1", postId: "ig_ex_2", authorId: "ig_sam", text: "This caption sounds like the edit itself wrote it.", createdAt: baseTs + 8000 });

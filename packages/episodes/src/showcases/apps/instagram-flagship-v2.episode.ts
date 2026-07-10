@@ -1,6 +1,5 @@
-import { createInstagramTrackBuilder } from "@tokovo/apps-instagram";
 import { defineEpisode } from "../../types/episode-definition.js";
-import { episode } from "@tokovo/dsl";
+import { episode } from "../../code-first-episode.js";
 
 export default defineEpisode({
   meta: {
@@ -65,7 +64,7 @@ export default defineEpisode({
           { id: "ig_dm_seed_1", threadId: "ig_dm_flag_1", senderId: "ig_noa", text: "Comments are forming factions already.", createdAt: baseTs - 20000 },
         ],
       })
-      .track("app_instagram", (getOrder) => createInstagramTrackBuilder(30, "phone", getOrder), (ig) => {
+      .instagram("phone", (ig) => {
         ig.at("1.4s").navigate("home", { postId: "ig_flag_1" });
         ig.at("3.0s").openStory("ig_storyset_flag", "ig_story_flag_1");
         ig.at("4.8s").advanceStory("ig_storyset_flag");

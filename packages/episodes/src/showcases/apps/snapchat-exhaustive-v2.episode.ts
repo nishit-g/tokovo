@@ -1,6 +1,5 @@
 import { defineEpisode } from "../../types/episode-definition.js";
-import { episode } from "@tokovo/dsl";
-import { SnapchatTrackBuilder } from "@tokovo/apps-snapchat";
+import { episode } from "../../code-first-episode.js";
 
 export default defineEpisode({
   meta: {
@@ -35,9 +34,9 @@ export default defineEpisode({
         },
       })
       .background({ type: "image", src: "/backgrounds/dark-studio.png" })
-      .track(
-        "app_snapchat",
-        (getOrder) => new SnapchatTrackBuilder(30, "phone", "conv_bestie_v2", getOrder),
+      .snapchat(
+        "phone",
+        "conv_bestie_v2",
         (sc) => {
           sc.at("0s").createConversation({ id: "conv_bestie_v2", title: "Bestie", participants: [{ id: "bestie", name: "Bestie" }], streak: 512 });
           sc.at("0.2s").createConversation({ id: "conv_room_v2", title: "afterparty", participants: [{ id: "bestie", name: "Bestie" }, { id: "jay", name: "Jay" }, { id: "tara", name: "Tara" }], isGroup: true, streak: 93 });

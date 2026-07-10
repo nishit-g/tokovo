@@ -1,9 +1,5 @@
 import { defineEpisode } from "../types/episode-definition.js";
 import { episode } from "../code-first-episode.js";
-import { TypewriterTrackBuilder } from "@tokovo/apps-typewriter";
-
-let storyOrder = 0;
-const nextStoryOrder = () => storyOrder++;
 
 export default defineEpisode({
   meta: {
@@ -30,9 +26,8 @@ export default defineEpisode({
         installedApps: ["app_typewriter"],
         os: { time: new Date("2026-04-11T00:22:00Z"), battery: 85, network: "wifi" },
       })
-      .track(
-        "app_typewriter",
-        () => new TypewriterTrackBuilder(30, "desk", nextStoryOrder),
+      .typewriter(
+        "desk",
         (tw) => {
           tw.at("0s").initLetter({
             to: "Dear team",

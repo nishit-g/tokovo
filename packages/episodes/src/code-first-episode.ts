@@ -3,6 +3,11 @@ import {
   type IMessageTrackBuilder,
 } from "@tokovo/apps-imessage";
 import {
+  createInstagramTrackBuilder,
+  type InstagramTrackBuilder,
+} from "@tokovo/apps-instagram";
+import { LinkedInTrackBuilder } from "@tokovo/apps-linkedin";
+import {
   createSnapchatTrackBuilder,
   type SnapchatTrackBuilder,
 } from "@tokovo/apps-snapchat";
@@ -15,10 +20,14 @@ import {
   type WhatsAppTrackBuilder,
 } from "@tokovo/apps-whatsapp";
 import { XTrackBuilder } from "@tokovo/apps-x";
+import { TypewriterTrackBuilder } from "@tokovo/apps-typewriter";
 import { episode as baseEpisode, type EpisodeBuilder, type TrackFn } from "@tokovo/dsl";
 import type { TrackEpisodeConfig } from "@tokovo/ir";
 
 type TeamsTrackBuilderInstance = InstanceType<typeof TeamsTrackBuilder>;
+type TypewriterTrackOptions = NonNullable<
+  ConstructorParameters<typeof TypewriterTrackBuilder>[3]
+>;
 
 export type CodeFirstEpisodeBuilder = EpisodeBuilder & {
   whatsapp: (
@@ -36,6 +45,14 @@ export type CodeFirstEpisodeBuilder = EpisodeBuilder & {
     conversationId: string,
     fn: TrackFn<SnapchatTrackBuilder>,
   ) => CodeFirstEpisodeBuilder;
+  instagram: (
+    deviceId: string,
+    fn: TrackFn<InstagramTrackBuilder>,
+  ) => CodeFirstEpisodeBuilder;
+  linkedin: (
+    deviceId: string,
+    fn: TrackFn<LinkedInTrackBuilder>,
+  ) => CodeFirstEpisodeBuilder;
   teams: (
     deviceId: string,
     fn: TrackFn<TeamsTrackBuilderInstance>,
@@ -43,6 +60,11 @@ export type CodeFirstEpisodeBuilder = EpisodeBuilder & {
   x: (
     deviceId: string,
     fn: TrackFn<XTrackBuilder>,
+  ) => CodeFirstEpisodeBuilder;
+  typewriter: (
+    deviceId: string,
+    fn: TrackFn<TypewriterTrackBuilder>,
+    options?: TypewriterTrackOptions,
   ) => CodeFirstEpisodeBuilder;
 };
 
@@ -76,6 +98,20 @@ export function episode(
       fn,
     ) as CodeFirstEpisodeBuilder;
 
+  ep.instagram = (deviceId, fn) =>
+    ep.track(
+      "app_instagram",
+      (getOrder) => createInstagramTrackBuilder(config.fps, deviceId, getOrder),
+      fn,
+    ) as CodeFirstEpisodeBuilder;
+
+  ep.linkedin = (deviceId, fn) =>
+    ep.track(
+      "app_linkedin",
+      (getOrder) => new LinkedInTrackBuilder(config.fps, deviceId, getOrder),
+      fn,
+    ) as CodeFirstEpisodeBuilder;
+
   ep.teams = (deviceId, fn) =>
     ep.track(
       "app_teams",
@@ -87,6 +123,13 @@ export function episode(
     ep.track(
       "app_x",
       (getOrder) => new XTrackBuilder(config.fps, deviceId, getOrder),
+      fn,
+    ) as CodeFirstEpisodeBuilder;
+
+  ep.typewriter = (deviceId, fn, options) =>
+    ep.track(
+      "app_typewriter",
+      (getOrder) => new TypewriterTrackBuilder(config.fps, deviceId, getOrder, options),
       fn,
     ) as CodeFirstEpisodeBuilder;
 

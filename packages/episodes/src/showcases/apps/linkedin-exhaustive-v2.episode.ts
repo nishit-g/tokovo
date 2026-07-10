@@ -1,6 +1,5 @@
 import { defineEpisode } from "../../types/episode-definition.js";
-import { episode } from "@tokovo/dsl";
-import { LinkedInTrackBuilder } from "@tokovo/apps-linkedin";
+import { episode } from "../../code-first-episode.js";
 
 export default defineEpisode({
   meta: {
@@ -62,7 +61,7 @@ export default defineEpisode({
           { id: "li_ex_msg_1", threadId: "li_ex_dm_1", senderId: "u2", text: "Can you sanity check my hiring brief before I embarrass myself publicly?", createdAt: baseTs - 10000 },
         ],
       })
-      .track("app_linkedin", (getOrder) => new LinkedInTrackBuilder(30, "phone", getOrder), (li) => {
+      .linkedin("phone", (li) => {
         li.at("1.4s").navigate("feed", { postId: "li_ex_1" });
         li.at("3.0s").navigate("feed", { postId: "li_ex_2" });
         li.at("4.8s").navigate("feed", { postId: "li_ex_3" });

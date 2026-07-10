@@ -1,6 +1,5 @@
-import { createInstagramTrackBuilder } from "@tokovo/apps-instagram";
 import { defineEpisode } from "../types/episode-definition.js";
-import { episode } from "@tokovo/dsl";
+import { episode } from "../code-first-episode.js";
 
 export default defineEpisode({
   meta: {
@@ -42,7 +41,7 @@ export default defineEpisode({
           { id: "ig_story_post_v2", authorId: "ig_story_me", imageUrl: "/placeholders/media.svg", caption: "How reels are made when your taste is expensive but your process is chaotic.", createdAt: baseTs - 60000, likeCount: 21200, commentCount: 420, aspect: "portrait" },
         ],
       })
-      .track("app_instagram", (getOrder) => createInstagramTrackBuilder(30, "phone", getOrder), (ig) => {
+      .instagram("phone", (ig) => {
         ig.at("1.0s").navigate("home", { postId: "ig_story_post_v2" });
         ig.at("2.6s").commentOnPost({ id: "ig_story_comment_1", postId: "ig_story_post_v2", authorId: "ig_story_sam", text: "This reads like you lost a fight with a moodboard.", createdAt: baseTs + 6000 });
         ig.at("3.8s").commentOnPost({ id: "ig_story_comment_2", postId: "ig_story_post_v2", authorId: "ig_story_me", text: "Correct. The moodboard won.", createdAt: baseTs + 9000 });

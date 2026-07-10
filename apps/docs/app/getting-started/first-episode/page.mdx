@@ -2,6 +2,10 @@
 
 A Tokovo episode is a pure definition plus a code-first timeline builder. Keep all frame-0 app state in `snapshot()` and `view()`, then use app track builders for timed story beats.
 
+Import `episode` from `@tokovo/episodes/code-first-episode`. This is the canonical
+creator surface: built-in apps are available as named methods and automatically inherit
+the episode FPS and deterministic declaration order.
+
 Create a file like `packages/episodes/src/stories/my-first-story.episode.ts`:
 
 ```ts
@@ -88,6 +92,9 @@ EPISODE_ID=my-first-story pnpm --filter video-runner render:fast
 
 - Use `snapshot()` and `view()` for initial state.
 - Use app track builders for timed interactions.
+- Use `.whatsapp()`, `.imessage()`, `.instagram()`, `.x()`, `.linkedin()`,
+  `.snapchat()`, `.teams()`, or `.typewriter()` for built-in apps. Do not construct
+  their track builders manually.
 - Keep assets under `apps/video-runner/public`.
 - Prefer stable semantic anchors such as `chat_thread`, `last_message`, `tweet_card`, or app-specific anchors.
 - Run `pnpm validate` after registering an episode.

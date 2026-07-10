@@ -1,7 +1,6 @@
 import { defineEpisode } from "../../types/episode-definition.js";
 import { episode } from "../../code-first-episode.js";
 import { KeyboardPlugin } from "@tokovo/compiler";
-import { LinkedInTrackBuilder } from "@tokovo/apps-linkedin";
 
 export default defineEpisode({
   meta: {
@@ -62,7 +61,7 @@ export default defineEpisode({
         d.at("18.5s").keyboardType("Hiring for taste is harder than hiring for output.", { speed: "natural" });
         d.at("22.0s").keyboardHide();
       })
-      .track("app_linkedin", (getOrder) => new LinkedInTrackBuilder(30, "phone", getOrder), (li: any) => {
+      .linkedin("phone", (li) => {
         li.at("15.2s").navigate("compose");
         li.at("16.2s").setComposeDraft("Hiring for taste is harder than hiring for output.");
         li.at("22.6s").post({

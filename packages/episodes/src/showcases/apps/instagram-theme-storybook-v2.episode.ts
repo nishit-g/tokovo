@@ -1,6 +1,5 @@
-import { createInstagramTrackBuilder } from "@tokovo/apps-instagram";
 import { defineEpisode } from "../../types/episode-definition.js";
-import { episode } from "@tokovo/dsl";
+import { episode } from "../../code-first-episode.js";
 
 export default defineEpisode({
   meta: {
@@ -53,7 +52,7 @@ export default defineEpisode({
         threads: [{ id: "ig_storybook_thread", participantIds: ["ig_mira", "ig_elm"], title: "Elm Storyboard", unreadCount: 1 }],
         messages: [{ id: "ig_storybook_msg_1", threadId: "ig_storybook_thread", senderId: "ig_elm", text: "The second story frame finally feels like wind, not blur.", createdAt: baseTs - 12000 }],
       })
-      .track("app_instagram", (getOrder) => createInstagramTrackBuilder(30, "phone", getOrder), (ig) => {
+      .instagram("phone", (ig) => {
         ig.at("0.6s").setThemeMode("storybook");
         ig.at("1.6s").openStory("ig_storybook_storyset", "ig_storybook_story_1");
         ig.at("3.4s").advanceStory("ig_storybook_storyset");

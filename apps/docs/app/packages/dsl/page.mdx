@@ -24,7 +24,8 @@ Tokovo v1 does not use beat-based authoring. The authoring model is:
 - `device()` for device and OS state
 - `snapshot()` for plugin-owned pre-seeded app data
 - `view()` for explicit frame-0 app routing
-- `track()` for app and system mutations after frame 0
+- named built-in app methods for app mutations after frame 0
+- `track()` as the low-level extension point for external app plugins
 - `camera()`, `audio()`, `overlay()`, and `deviceTrack()` for supporting direction
 - `.use(...)` for compiler plugins such as keyboard helpers
 
@@ -35,3 +36,7 @@ Tokovo v1 does not use beat-based authoring. The authoring model is:
 - `view()` is only for explicit frame-0 app routing
 
 The DSL should not synthesize conversations, feeds, or threads through device state.
+
+Checked-in episodes use the product-level builder from
+`@tokovo/episodes/code-first-episode`. Its named app methods own FPS and declaration-order
+plumbing so episode authors never instantiate app track builders directly.

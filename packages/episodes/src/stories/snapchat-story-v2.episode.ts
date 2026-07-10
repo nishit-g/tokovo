@@ -1,6 +1,5 @@
 import { defineEpisode } from "../types/episode-definition.js";
-import { episode } from "@tokovo/dsl";
-import { SnapchatTrackBuilder } from "@tokovo/apps-snapchat";
+import { episode } from "../code-first-episode.js";
 
 export default defineEpisode({
   meta: {
@@ -29,9 +28,9 @@ export default defineEpisode({
           network: "5G",
         },
       })
-      .track(
-        "app_snapchat",
-        (getOrder) => new SnapchatTrackBuilder(30, "phone", "conv_bestie_story_v2", getOrder),
+      .snapchat(
+        "phone",
+        "conv_bestie_story_v2",
         (sc) => {
           sc.at("0s").createConversation({ id: "conv_bestie_story_v2", title: "Bestie", participants: [{ id: "bestie", name: "Bestie" }], streak: 311 });
           sc.at("1.0s").openConversation("conv_bestie_story_v2");
