@@ -18,6 +18,7 @@
 import type { WorldState } from "../../types.js";
 import type { DeviceRuntimeEvent, AppRuntimeEvent } from "../../types/runtime-event.js";
 import { createScopedLogger } from "../../logger/index.js";
+import { ensureAppStateForDevice } from "../../utils/app-state.js";
 
 const log = createScopedLogger("engine");
 
@@ -79,13 +80,8 @@ export function navigationReducer(draft: WorldState, event: unknown): void {
         device.foregroundAppId = appId ?? undefined;
         device.isLocked = false;
 
-        if (appId && draft.appState) {
-          const appState = draft.appState as Record<string, { currentScreen?: string }>;
-          if (!appState[appId]) {
-            appState[appId] = {
-              currentScreen: "main",
-            };
-          }
+        if (appId) {
+          ensureAppStateForDevice(draft, appId, deviceId, () => ({ currentScreen: "main" }));
         }
         break;
       }
@@ -113,21 +109,10 @@ export function navigationReducer(draft: WorldState, event: unknown): void {
 
     if (!appId) return;
 
-    if (!draft.appState) {
-      draft.appState = {};
-    }
-    const appStateMap = draft.appState as Record<
-      string,
-      {
-        currentScreen?: string;
-        currentConversationId?: string;
-      }
-    >;
-    if (!appStateMap[appId]) {
-      appStateMap[appId] = { currentScreen: "main" };
-    }
-
-    const appState = appStateMap[appId];
+    const appState = ensureAppStateForDevice(draft, appId, e.deviceId, () => ({
+      currentScreen: "main" as string | undefined,
+      currentConversationId: undefined as string | undefined,
+    }));
 
     switch (type) {
       case "NAVIGATE_SCREEN": {

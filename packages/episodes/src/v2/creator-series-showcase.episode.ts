@@ -46,7 +46,7 @@ export default defineEpisode({
         screenRecording: true,
         installedApps: ["app_whatsapp", "app_x", "app_imessage", "app_camera"],
         os: {
-          time: new Date("2025-06-26T21:08:00"),
+          time: new Date("2025-06-26T21:08:00Z"),
           battery: 62,
           network: "5G",
         },

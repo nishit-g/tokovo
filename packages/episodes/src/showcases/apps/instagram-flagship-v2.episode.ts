@@ -21,7 +21,7 @@ export default defineEpisode({
     apps: ["app_instagram"],
   },
   build: () => {
-    const baseTs = new Date("2026-04-10T18:30:00").getTime();
+    const baseTs = new Date("2026-04-10T18:30:00Z").getTime();
 
     return episode("instagram-flagship-v2", {
       fps: 30,
@@ -32,7 +32,7 @@ export default defineEpisode({
         app: "app_instagram",
         installedApps: ["app_instagram"],
         os: {
-          time: new Date("2026-04-10T18:32:00"),
+          time: new Date("2026-04-10T18:32:00Z"),
           battery: 61,
           network: "5G",
         },

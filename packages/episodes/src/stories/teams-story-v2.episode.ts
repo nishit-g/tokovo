@@ -25,7 +25,7 @@ export default defineEpisode({
       .device("phone", "iphone16", {
         app: "app_teams",
         os: {
-          time: new Date("2026-04-10T11:50:00"),
+          time: new Date("2026-04-10T11:50:00Z"),
           battery: 76,
           network: "5G",
         },

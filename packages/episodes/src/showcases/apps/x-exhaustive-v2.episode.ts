@@ -20,7 +20,7 @@ export default defineEpisode({
     apps: ["app_x"],
   },
   build: () => {
-    const baseTs = new Date("2026-04-10T23:00:00").getTime();
+    const baseTs = new Date("2026-04-10T23:00:00Z").getTime();
 
     return episode("x-exhaustive-v2", {
       fps: 30,
@@ -30,7 +30,7 @@ export default defineEpisode({
       .device("phone", "iphone16", {
         app: "app_x",
         os: {
-          time: new Date("2026-04-10T23:02:00"),
+          time: new Date("2026-04-10T23:02:00Z"),
           battery: 66,
           network: "5G",
         },

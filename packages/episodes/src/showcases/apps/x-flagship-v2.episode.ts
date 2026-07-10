@@ -20,7 +20,7 @@ export default defineEpisode({
     apps: ["app_x"],
   },
   build: () => {
-    const baseTs = new Date("2026-04-10T22:20:00").getTime();
+    const baseTs = new Date("2026-04-10T22:20:00Z").getTime();
 
     return episode("x-flagship-v2", {
       fps: 30,
@@ -31,7 +31,7 @@ export default defineEpisode({
         app: "app_x",
         installedApps: ["app_x"],
         os: {
-          time: new Date("2026-04-10T22:22:00"),
+          time: new Date("2026-04-10T22:22:00Z"),
           battery: 74,
           network: "5G",
         },

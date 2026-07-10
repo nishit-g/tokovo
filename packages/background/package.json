@@ -1,39 +1,40 @@
 {
-    "name": "@tokovo/background",
-    "version": "0.1.0",
-    "type": "module",
-    "description": "Background layer system for Tokovo video rendering",
-    "main": "./dist/index.js",
-    "module": "./dist/index.js",
-    "types": "./dist/index.d.ts",
-    "exports": {
-        ".": {
-            "types": "./dist/index.d.ts",
-            "import": "./dist/index.js",
-            "require": "./dist/index.cjs"
-        }
-    },
-    "scripts": {
-        "build": "rm -rf dist && tsup src/index.ts --format cjs,esm && tsc -b tsconfig.json --emitDeclarationOnly --force",
-        "dev": "tsup src/index.ts --format cjs,esm --watch",
-        "typecheck": "tsc --noEmit",
-        "test": "pnpm exec vitest run --passWithNoTests",
-        "clean": "rm -rf dist tsconfig.tsbuildinfo"
-    },
-    "dependencies": {
-        "@remotion/media": "4.0.409",
-        "@tokovo/core": "workspace:*"
-    },
-    "peerDependencies": {
-        "react": "18.3.1",
-        "remotion": "^4.0.0"
-    },
-    "devDependencies": {
-        "@types/react": "18.3.1",
-        "react": "18.3.1",
-        "react-dom": "18.3.1",
-        "remotion": "^4.0.0",
-        "tsup": "^8.0.0",
-        "typescript": "^5.0.0"
+  "name": "@tokovo/background",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Background layer system for Tokovo video rendering",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
     }
+  },
+  "scripts": {
+    "build": "rm -rf dist && tsup src/index.ts --format cjs,esm && tsc -b tsconfig.json --emitDeclarationOnly --force",
+    "dev": "tsup src/index.ts --format cjs,esm --watch",
+    "typecheck": "tsc --noEmit",
+    "test": "pnpm exec vitest run --passWithNoTests",
+    "clean": "rm -rf dist tsconfig.tsbuildinfo"
+  },
+  "dependencies": {
+    "@remotion/media": "4.0.409",
+    "@tokovo/core": "workspace:*"
+  },
+  "peerDependencies": {
+    "react": "18.3.1",
+    "remotion": "^4.0.0"
+  },
+  "devDependencies": {
+    "@types/react": "18.3.1",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "remotion": "^4.0.0",
+    "tsup": "^8.0.0",
+    "typescript": "^5.0.0"
+  }
 }

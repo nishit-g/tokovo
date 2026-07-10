@@ -45,6 +45,10 @@
     "lint": {
       "outputs": []
     },
+    "test": {
+      "dependsOn": ["build"],
+      "outputs": []
+    },
     "camera:lint": {
       "dependsOn": ["^build"],
       "outputs": []

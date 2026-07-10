@@ -26,7 +26,7 @@ export default defineEpisode({
         app: "app_whatsapp",
         installedApps: ["app_whatsapp", "app_linkedin"],
         os: {
-          time: new Date("2026-04-10T19:05:00"),
+          time: new Date("2026-04-10T19:05:00Z"),
           battery: 63,
           network: "wifi",
         },
@@ -69,7 +69,7 @@ export default defineEpisode({
           id: "li_keyboard_post",
           authorId: "me",
           text: "Hiring for taste is harder than hiring for output.",
-          createdAt: new Date("2026-04-10T19:06:00").getTime(),
+          createdAt: new Date("2026-04-10T19:06:00Z").getTime(),
           typed: true,
           charDelay: 2,
         });

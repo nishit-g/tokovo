@@ -29,7 +29,7 @@ export default defineEpisode({
       .device("phone", "iphone16", {
         app: "app_snapchat",
         os: {
-          time: new Date("2026-04-10T23:18:00"),
+          time: new Date("2026-04-10T23:18:00Z"),
           battery: 52,
           network: "5G",
         },

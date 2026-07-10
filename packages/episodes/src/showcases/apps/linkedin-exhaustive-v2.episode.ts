@@ -21,7 +21,7 @@ export default defineEpisode({
     apps: ["app_linkedin"],
   },
   build: () => {
-    const baseTs = new Date("2026-04-10T10:40:00").getTime();
+    const baseTs = new Date("2026-04-10T10:40:00Z").getTime();
 
     return episode("linkedin-exhaustive-v2", {
       fps: 30,
@@ -31,7 +31,7 @@ export default defineEpisode({
       .device("phone", "iphone16", {
         app: "app_linkedin",
         os: {
-          time: new Date("2026-04-10T10:42:00"),
+          time: new Date("2026-04-10T10:42:00Z"),
           battery: 82,
           network: "5G",
         },

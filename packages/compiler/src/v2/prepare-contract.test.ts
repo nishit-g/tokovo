@@ -184,6 +184,76 @@ describe("compiler pipeline guarantees", () => {
     expect(typeof app.conversations).toBe("object");
   });
 
+  it("keeps same-app bootstrap state independent across devices", () => {
+    const collectedLabels: string[] = [];
+    const plugin = {
+      id: "app_same",
+      version: "1.0.0",
+      displayName: "Same App",
+      createInitialState: () => ({}),
+      bootstrap: {
+        snapshot: {
+          currentVersion: 1,
+          validate: () => ({ errors: [] }),
+        },
+        hydrate: ({ deviceId, snapshot }: any) => ({
+          deviceId,
+          label: snapshot?.snapshot?.label,
+          avatarUrl: `/avatars/${String(snapshot?.snapshot?.label).toLowerCase()}.png`,
+        }),
+      },
+      collectAssetRefs: ({ initialWorld }: any) => {
+        collectedLabels.push(initialWorld.appState.app_same?.label);
+        return [];
+      },
+    } as unknown as TokovoPlugin;
+
+    const ir = createCanonicalTrackEpisodeIR({
+      devices: [
+        { id: "left", profile: "iphone16", app: "app_same" },
+        { id: "right", profile: "iphone16", app: "app_same" },
+      ],
+      appSnapshots: [
+        {
+          appId: "app_same",
+          deviceId: "left",
+          snapshotVersion: 1,
+          snapshot: { label: "LEFT" },
+        },
+        {
+          appId: "app_same",
+          deviceId: "right",
+          snapshotVersion: 1,
+          snapshot: { label: "RIGHT" },
+        },
+      ],
+    });
+
+    const prepared = prepareTrackEpisode(ir, [plugin], {
+      log: false,
+      validate: true,
+    });
+
+    expect(prepared.initialWorld.appState.app_same).toBeUndefined();
+    expect(prepared.initialWorld.appStateByDevice?.left?.app_same).toEqual({
+      deviceId: "left",
+      label: "LEFT",
+      avatarUrl: "/avatars/left.png",
+    });
+    expect(prepared.initialWorld.appStateByDevice?.right?.app_same).toEqual({
+      deviceId: "right",
+      label: "RIGHT",
+      avatarUrl: "/avatars/right.png",
+    });
+    expect(collectedLabels).toEqual(["LEFT", "RIGHT"]);
+    expect(prepared.assetRefs).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ src: "/avatars/left.png", appId: "app_same" }),
+        expect.objectContaining({ src: "/avatars/right.png", appId: "app_same" }),
+      ]),
+    );
+  });
+
   it("hydrates snapshot-backed apps before they become foreground", () => {
     const createPlugin = (id: string) =>
       ({

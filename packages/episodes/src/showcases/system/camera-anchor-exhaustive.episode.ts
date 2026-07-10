@@ -24,7 +24,7 @@ export default defineEpisode({
       .device("phone", "iphone16", {
         app: "app_whatsapp",
         os: {
-          time: new Date("2026-04-10T18:20:00"),
+          time: new Date("2026-04-10T18:20:00Z"),
           battery: 69,
           network: "5G",
         },
@@ -43,7 +43,7 @@ export default defineEpisode({
           { id: "u_cam", name: "Cam Nerd", handle: "camnerd", followers: 34400, following: 512, verified: null },
         ],
         tweets: [
-          { id: "tw_anchor_1", authorId: "u_cam", text: "If your app has no anchors your camera is just guessing.", createdAt: new Date("2026-04-10T18:10:00").getTime(), viewCount: 14200, shareCount: 220, bookmarkCount: 1100 },
+          { id: "tw_anchor_1", authorId: "u_cam", text: "If your app has no anchors your camera is just guessing.", createdAt: new Date("2026-04-10T18:10:00Z").getTime(), viewCount: 14200, shareCount: 220, bookmarkCount: 1100 },
         ],
       })
       .deviceTrack("phone", (d) => {
@@ -76,7 +76,7 @@ export default defineEpisode({
           authorId: "u_me",
           replyToId: "tw_anchor_1",
           text: "Good anchors make cameras feel intentional instead of frantic.",
-          createdAt: new Date("2026-04-10T18:23:00").getTime(),
+          createdAt: new Date("2026-04-10T18:23:00Z").getTime(),
           typed: true,
           charDelay: 2,
         });

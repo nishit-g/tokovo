@@ -25,7 +25,7 @@ interface TweetDetailProps {
 function formatCount(n: number): string {
   if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
   if (n >= 1_000) return `${Math.round(n / 1_000)}K`;
-  return n.toLocaleString();
+  return n.toLocaleString("en-US");
 }
 
 export const TweetDetail: React.FC<TweetDetailProps> = ({ world, deviceId, t }) => {
@@ -35,22 +35,17 @@ export const TweetDetail: React.FC<TweetDetailProps> = ({ world, deviceId, t }) 
   const users = state?.users ?? [];
   const currentUser = users.find((user) => user.id === state?.currentUserId);
   const author = users.find((user) => user.id === tweet?.authorId);
-  const replies = tweet?.replyIds
-    .map((id) => state?.tweets.find((item) => item.id === id))
-    .filter(Boolean) ?? [];
+  const replies =
+    tweet?.replyIds.map((id) => state?.tweets.find((item) => item.id === id)).filter(Boolean) ?? [];
   const focusedDevice =
-    (deviceId && world.devices?.[deviceId]) ||
-    world.devices?.[Object.keys(world.devices ?? {})[0]];
+    (deviceId && world.devices?.[deviceId]) || world.devices?.[Object.keys(world.devices ?? {})[0]];
   const keyboard = focusedDevice?.keyboard;
   const typedReply =
     keyboard?.visible && keyboard.typingAnimation
       ? getTypedTextProgress(keyboard, t ?? 0)
-      : state?.composeDraft ?? "";
+      : (state?.composeDraft ?? "");
   const canReply = typedReply.length > 0 && typedReply.length <= 280;
-  const nowMs = Math.max(
-    tweet?.createdAt ?? 0,
-    ...replies.map((reply) => reply?.createdAt ?? 0),
-  );
+  const nowMs = Math.max(tweet?.createdAt ?? 0, ...replies.map((reply) => reply?.createdAt ?? 0));
 
   if (!tweet) {
     return (
@@ -204,7 +199,12 @@ export const TweetDetail: React.FC<TweetDetailProps> = ({ world, deviceId, t }) 
             >
               <ActionButton icon="reply" />
               <ActionButton icon="repost" />
-              <ActionButton icon="like" active={Boolean(state?.currentUserId && tweet.likedBy.includes(state.currentUserId))} />
+              <ActionButton
+                icon="like"
+                active={Boolean(
+                  state?.currentUserId && tweet.likedBy.includes(state.currentUserId),
+                )}
+              />
               <ActionButton icon="bookmark" />
               <ActionButton icon="share" />
             </div>

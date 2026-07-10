@@ -46,6 +46,15 @@ export interface WorldState {
    */
   appState: ResolvedAppState;
 
+  /**
+   * Device-scoped app instances for apps mounted on more than one device.
+   *
+   * Single-instance apps remain in `appState` for backward compatibility.
+   * Consumers should resolve state through `getAppStateForDevice()` so the
+   * same app can be rendered independently on multiple devices.
+   */
+  appStateByDevice?: Record<DeviceId, Record<string, unknown>>;
+
   // Engine primitives
   camera: BaseCameraState;
   audio: AudioState;

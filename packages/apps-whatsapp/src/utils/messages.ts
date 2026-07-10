@@ -8,13 +8,13 @@ type NormalizeOptions = {
 };
 
 function formatTime(date: Date): string {
-  const hours = date.getHours().toString().padStart(2, "0");
-  const minutes = date.getMinutes().toString().padStart(2, "0");
+  const hours = date.getUTCHours().toString().padStart(2, "0");
+  const minutes = date.getUTCMinutes().toString().padStart(2, "0");
   return `${hours}:${minutes}`;
 }
 
 function startOfDay(date: Date): Date {
-  return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
 }
 
 function formatDateLabel(date: Date, baseTime: Date): string {
@@ -40,18 +40,15 @@ function formatDateLabel(date: Date, baseTime: Date): string {
     "December",
   ];
 
-  const day = date.getDate();
-  const month = months[date.getMonth()];
-  if (date.getFullYear() === baseTime.getFullYear()) {
+  const day = date.getUTCDate();
+  const month = months[date.getUTCMonth()];
+  if (date.getUTCFullYear() === baseTime.getUTCFullYear()) {
     return `${day} ${month}`;
   }
-  return `${day} ${month} ${date.getFullYear()}`;
+  return `${day} ${month} ${date.getUTCFullYear()}`;
 }
 
-function resolveRelativeDate(
-  value: unknown,
-  baseTime: Date | undefined,
-): Date | undefined {
+function resolveRelativeDate(value: unknown, baseTime: Date | undefined): Date | undefined {
   if (!(baseTime instanceof Date) || Number.isNaN(baseTime.getTime())) {
     return undefined;
   }
@@ -69,19 +66,14 @@ function resolveRelativeDate(
 
 function resolveBaseTime(world: WorldState, deviceId?: string): Date {
   const resolvedDeviceId = deviceId ?? Object.keys(world.devices || {})[0];
-  const clock = resolvedDeviceId
-    ? world.devices?.[resolvedDeviceId]?.os?.clock
-    : undefined;
+  const clock = resolvedDeviceId ? world.devices?.[resolvedDeviceId]?.os?.clock : undefined;
   if (typeof clock === "number") {
     return new Date(clock);
   }
   return new Date(0);
 }
 
-function formatTimestamp(
-  value: unknown,
-  baseTime: Date | undefined,
-): string | undefined {
+function formatTimestamp(value: unknown, baseTime: Date | undefined): string | undefined {
   if (typeof value === "string") return value;
   if (typeof value !== "number") return undefined;
 
@@ -118,7 +110,7 @@ function resolveMessageDate(
   const at = raw.at;
   if (typeof at === "number") {
     const date = new Date(baseTime);
-    date.setMinutes(date.getMinutes() + Math.floor(at / fps));
+    date.setUTCMinutes(date.getUTCMinutes() + Math.floor(at / fps));
     return date;
   }
 
@@ -130,14 +122,8 @@ export function normalizeMessage(
   { conversationId, index, baseTime }: NormalizeOptions,
 ): WhatsAppMessage {
   const rawFrom =
-    (raw.from as string) ??
-    (raw.sender as string) ??
-    (raw.actor as string) ??
-    "unknown";
-  const from =
-    rawFrom === "Me" || rawFrom === "You"
-      ? "me"
-      : rawFrom;
+    (raw.from as string) ?? (raw.sender as string) ?? (raw.actor as string) ?? "unknown";
+  const from = rawFrom === "Me" || rawFrom === "You" ? "me" : rawFrom;
 
   const type =
     (raw.type as string) ??
@@ -154,10 +140,7 @@ export function normalizeMessage(
     (raw.callType || raw.callDuration || raw.call ? "call" : undefined) ??
     "text";
 
-  const id =
-    (raw.id as string) ??
-    (raw.messageId as string) ??
-    `${conversationId}_seed_${index}`;
+  const id = (raw.id as string) ?? (raw.messageId as string) ?? `${conversationId}_seed_${index}`;
 
   const resolvedDate = resolveRelativeDate(raw.timestamp, baseTime);
   const timestamp = formatTimestamp(raw.timestamp, baseTime);
@@ -197,29 +180,21 @@ export function normalizeMessage(
       base.gifUrl = (raw.gifUrl as string) ?? (raw.gif as string) ?? "";
       break;
     case "sticker":
-      base.stickerUrl =
-        (raw.stickerUrl as string) ?? (raw.sticker as string) ?? "";
+      base.stickerUrl = (raw.stickerUrl as string) ?? (raw.sticker as string) ?? "";
       break;
     case "voice":
-      base.duration =
-        (raw.duration as number) ??
-        (raw.voiceDuration as number) ??
-        5;
+      base.duration = (raw.duration as number) ?? (raw.voiceDuration as number) ?? 5;
       base.isPlaying = raw.isPlaying as boolean | undefined;
       base.playProgress = raw.playProgress as number | undefined;
       break;
     case "poll":
-      base.pollQuestion =
-        (raw.pollQuestion as string) ??
-        (raw.question as string) ??
-        "";
-      base.options =
-        ((raw.options as Array<{ text: string; votes?: number }>) ?? []).map(
-          (option) => ({
-            text: option.text,
-            votes: option.votes,
-          }),
-        );
+      base.pollQuestion = (raw.pollQuestion as string) ?? (raw.question as string) ?? "";
+      base.options = ((raw.options as Array<{ text: string; votes?: number }>) ?? []).map(
+        (option) => ({
+          text: option.text,
+          votes: option.votes,
+        }),
+      );
       base.totalVotes = raw.totalVotes as number | undefined;
       base.pollStatus = raw.pollStatus as string | undefined;
       break;
@@ -255,10 +230,7 @@ export function normalizeMessage(
         (raw.callType as WhatsAppMessage["callType"]) ??
         (raw.isVideo ? "video" : raw.isVoice ? "voice" : undefined);
       base.callType = callType;
-      base.duration =
-        (raw.callDuration as number) ??
-        (raw.duration as number) ??
-        undefined;
+      base.duration = (raw.callDuration as number) ?? (raw.duration as number) ?? undefined;
       base.text = raw.text as string | undefined;
       break;
     }
@@ -323,9 +295,7 @@ export function normalizeMessagesForChat(
   let unreadDividerIndex = -1;
 
   if (unreadDividerMessageId) {
-    unreadDividerIndex = normalized.findIndex(
-      (message) => message.id === unreadDividerMessageId,
-    );
+    unreadDividerIndex = normalized.findIndex((message) => message.id === unreadDividerMessageId);
   }
 
   if (unreadDividerIndex === -1 && unreadCount > 0) {
@@ -377,11 +347,7 @@ export function normalizeMessagesForChat(
 
   if (
     conversation?.disappearingMessagesLabel &&
-    !timeline.some(
-      (msg) =>
-        msg.type === "system" &&
-        msg.systemType === "disappearing_messages",
-    )
+    !timeline.some((msg) => msg.type === "system" && msg.systemType === "disappearing_messages")
   ) {
     timeline.splice(0, 0, {
       id: `${conversationId}_auto_disappearing`,
@@ -418,17 +384,22 @@ export function formatConversationListTimestamp(
     return "Yesterday";
   }
   if (diffDays > 1 && diffDays < 7) {
-    return date.toLocaleDateString("en-US", { weekday: "short" });
+    return date.toLocaleDateString("en-US", {
+      weekday: "short",
+      timeZone: "UTC",
+    });
   }
-  if (date.getFullYear() === baseTime.getFullYear()) {
+  if (date.getUTCFullYear() === baseTime.getUTCFullYear()) {
     return date.toLocaleDateString("en-GB", {
       day: "2-digit",
       month: "2-digit",
+      timeZone: "UTC",
     });
   }
   return date.toLocaleDateString("en-GB", {
     day: "2-digit",
     month: "2-digit",
     year: "2-digit",
+    timeZone: "UTC",
   });
 }

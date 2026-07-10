@@ -1,6 +1,7 @@
 {
   "name": "@tokovo/voice",
   "version": "0.0.1",
+  "private": true,
   "type": "module",
   "description": "AI voice generation and rendering for Tokovo video production",
   "main": "./dist/index.js",

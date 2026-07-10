@@ -25,6 +25,7 @@ import {
   LayoutContext,
   getKeyboardConfig,
   TokovoConfig,
+  getAppStateForDevice,
   type TokovoConfigType,
   type LayoutCacheStore,
   createScopedLogger,
@@ -165,7 +166,7 @@ function computeWorldSignature(
 ): string {
   // Fast path: compute a lightweight signature from state that affects layout
   const device = world.devices[deviceId];
-  const appState = appId ? world.appState?.[appId] : undefined;
+  const appState = appId ? getAppStateForDevice(world, appId, deviceId) : undefined;
 
   // Hash key components that affect layout
   const parts = [
@@ -259,7 +260,11 @@ export function useLayoutEngine(input: LayoutEngineInput): LayoutEngineOutput {
       viewKind = "LOCKSCREEN";
     } else if (appId) {
       const meta = registries.plugins.metadata.get(appId);
-      const appState = world.appState?.[appId] as import("@tokovo/core").BaseAppState | undefined;
+      const appState = getAppStateForDevice<import("@tokovo/core").BaseAppState>(
+        world,
+        appId,
+        deviceId,
+      );
 
       if (!appState?.viewMode) {
         if (!loggedMissingViewMode.current.has(appId)) {

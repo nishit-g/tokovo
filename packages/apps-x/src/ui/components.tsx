@@ -145,8 +145,7 @@ export const MediaCard: React.FC<{
           style={{
             position: "absolute",
             inset: 0,
-            background:
-              "linear-gradient(to top, rgba(0,0,0,0.45) 0%, rgba(0,0,0,0.05) 60%)",
+            background: "linear-gradient(to top, rgba(0,0,0,0.45) 0%, rgba(0,0,0,0.05) 60%)",
             pointerEvents: "none",
           }}
         />
@@ -180,13 +179,15 @@ export const LinkPreviewCard: React.FC<{
 }> = ({ preview }) => {
   const theme = useXTheme();
   const previewImageUrl = resolveAssetUrl(preview.imageUrl);
-  const domain = preview.domain || (() => {
-    try {
-      return new URL(preview.url).hostname;
-    } catch {
-      return preview.url;
-    }
-  })();
+  const domain =
+    preview.domain ||
+    (() => {
+      try {
+        return new URL(preview.url).hostname;
+      } catch {
+        return preview.url;
+      }
+    })();
 
   return (
     <div
@@ -267,12 +268,7 @@ export const VerifiedBadge: React.FC<{
   variant?: "blue" | "gold" | "grey" | null;
   size?: number;
 }> = ({ variant = "blue", size = 18 }) => {
-  const fill =
-    variant === "gold"
-      ? "#D4AF37"
-      : variant === "grey"
-        ? "#829AAB"
-        : "#1D9BF0";
+  const fill = variant === "gold" ? "#D4AF37" : variant === "grey" ? "#829AAB" : "#1D9BF0";
 
   return (
     <svg width={size} height={size} viewBox="0 0 22 22" fill="none">
@@ -492,9 +488,8 @@ export const ActionButton: React.FC<{
   };
 
   const color = active ? activeColors[icon] : theme.colors.textSecondary;
-  const iconName = active && (icon === "like" || icon === "bookmark")
-    ? `${icon}Filled` as const
-    : icon;
+  const iconName =
+    active && (icon === "like" || icon === "bookmark") ? (`${icon}Filled` as const) : icon;
 
   const formatCount = (n: number) => {
     if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
@@ -524,13 +519,13 @@ export const ActionButton: React.FC<{
 // FORMATTED TIMESTAMP
 // =============================================================================
 
-export const formatTimestamp = (
-  value: number | Date,
-  opts?: { nowMs?: number },
-): string => {
-  const date = typeof value === "number"
-    ? (value > 1_000_000_000_000 ? new Date(value) : new Date(value * 1000))
-    : value;
+export const formatTimestamp = (value: number | Date, opts?: { nowMs?: number }): string => {
+  const date =
+    typeof value === "number"
+      ? value > 1_000_000_000_000
+        ? new Date(value)
+        : new Date(value * 1000)
+      : value;
 
   const fallbackNowMs =
     typeof value === "number"
@@ -548,9 +543,10 @@ export const formatTimestamp = (
   if (minutes < 60) return `${minutes}m`;
   if (hours < 24) return `${hours}h`;
 
-  return new Intl.DateTimeFormat(undefined, {
+  return new Intl.DateTimeFormat("en-US", {
     month: "short",
     day: "numeric",
+    timeZone: "UTC",
   }).format(date);
 };
 

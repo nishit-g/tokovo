@@ -27,11 +27,7 @@ import {
   getEventsUpToKeyframed,
   getEventsInRange,
 } from "./utils/event-utils.js";
-import {
-  StateCache,
-  getCachedStateForFrame,
-  cacheStateAtKeyframe,
-} from "./utils/state-cache.js";
+import { StateCache, getCachedStateForFrame, cacheStateAtKeyframe } from "./utils/state-cache.js";
 
 import { createScopedLogger } from "./logger/index.js";
 import {
@@ -43,20 +39,14 @@ import {
 import type { EventHandlerContext } from "./engine/event-handlers.js";
 import type { MiddlewareContext } from "./engine/middleware.js";
 import type { LifecycleContext } from "./engine/lifecycle.js";
-import {
-  hasBuiltInHandler,
-  getBuiltInHandler,
-} from "./engine/built-in-handlers.js";
+import { hasBuiltInHandler, getBuiltInHandler } from "./engine/built-in-handlers.js";
 import type { EngineRegistries } from "./engine/registries.js";
+import { getDeviceIdsForAppState, hasDeviceScopedAppState } from "./utils/app-state.js";
 
 const log = createScopedLogger("engine");
 const sortedEventCache = new WeakMap<TimelineEvent[], TimelineEvent[]>();
 
-export type {
-  DeviceReducer,
-  AppReducer,
-  FeatureReducer,
-} from "./engine/registry.js";
+export type { DeviceReducer, AppReducer, FeatureReducer } from "./engine/registry.js";
 export { createReducerRegistry } from "./engine/registry.js";
 export { EngineConfig } from "./engine/config.js";
 export {
@@ -108,9 +98,7 @@ export class PluginError extends Error {
     public event: TimelineEvent,
     public cause: Error,
   ) {
-    super(
-      `[${pluginId}] Reducer failed at frame ${event.at}: ${cause.message}`,
-    );
+    super(`[${pluginId}] Reducer failed at frame ${event.at}: ${cause.message}`);
     this.name = "PluginError";
   }
 }
@@ -274,15 +262,13 @@ export function replay(
     for (const deviceId in draft.devices) {
       if (Object.hasOwn(draft.devices, deviceId)) {
         if (!firstDeviceId) firstDeviceId = deviceId;
-        draft.camera.deviceTransforms[deviceId] =
-          DEFAULT_CAMERA_TRANSFORM as CameraTransform;
+        draft.camera.deviceTransforms[deviceId] = DEFAULT_CAMERA_TRANSFORM as CameraTransform;
       }
     }
 
     const activeDeviceId = draft.camera.activeDeviceId || firstDeviceId;
     draft.camera.transform = activeDeviceId
-      ? draft.camera.deviceTransforms[activeDeviceId] ||
-        DEFAULT_CAMERA_TRANSFORM
+      ? draft.camera.deviceTransforms[activeDeviceId] || DEFAULT_CAMERA_TRANSFORM
       : DEFAULT_CAMERA_TRANSFORM;
   });
 
@@ -297,9 +283,7 @@ export function replay(
 /**
  * Create default initial world state
  */
-export function createInitialWorld(
-  partial: Partial<WorldState> = {},
-): WorldState {
+export function createInitialWorld(partial: Partial<WorldState> = {}): WorldState {
   return {
     devices: {},
     appState: {},
@@ -448,9 +432,7 @@ function getSortedEvents(events: TimelineEvent[]): TimelineEvent[] {
   }
 
   const withIndex = events.map((event, index) => ({ event, index }));
-  withIndex.sort((a, b) =>
-    compareEvents(a.event, b.event, a.index, b.index),
-  );
+  withIndex.sort((a, b) => compareEvents(a.event, b.event, a.index, b.index));
 
   const sorted = withIndex.map((entry) => entry.event);
   sortedEventCache.set(events, sorted);
@@ -474,15 +456,10 @@ function isSortedByFrame(events: TimelineEvent[]): boolean {
   return true;
 }
 
-function handleEventError(
-  error: unknown,
-  event: TimelineEvent,
-  ctx: ReplayContext,
-): void {
+function handleEventError(error: unknown, event: TimelineEvent, ctx: ReplayContext): void {
   const eventWithAppId = event as TimelineEvent & { appId?: string };
   const pluginId = eventWithAppId.appId || event.kind;
-  const wrappedError =
-    error instanceof Error ? error : new Error(String(error));
+  const wrappedError = error instanceof Error ? error : new Error(String(error));
 
   if (ctx.mode === "render" && !ctx.gracefulDegradation) {
     throw new PluginError(pluginId, event, wrappedError);
@@ -525,11 +502,16 @@ function processEventCore(
   }
 
   if (event.kind === "APP") {
-    const eventWithAppId = event as TimelineEvent & { appId?: string };
+    const eventWithAppId = event as TimelineEvent & {
+      appId?: string;
+      deviceId?: string;
+    };
     const appId = eventWithAppId.appId;
     if (appId) {
       const reducer = registries.reducers.getAppReducer(appId);
-      reducer?.(draft, event);
+      if (reducer) {
+        runAppReducerForDevice(draft, event, appId, eventWithAppId.deviceId, reducer);
+      }
     } else {
       log.warn("APP event missing appId", { event, frame: t, eventIndex: index });
     }
@@ -537,12 +519,18 @@ function processEventCore(
     return;
   }
 
-  const appIdForKind = registries.reducers.getAppIdForEventKind(
-    event.kind as string,
-  );
+  const appIdForKind = registries.reducers.getAppIdForEventKind(event.kind as string);
   if (appIdForKind) {
     const reducer = registries.reducers.getAppReducer(appIdForKind);
-    reducer?.(draft, event);
+    if (reducer) {
+      runAppReducerForDevice(
+        draft,
+        event,
+        appIdForKind,
+        (event as TimelineEvent & { deviceId?: string }).deviceId,
+        reducer,
+      );
+    }
     handleAutoSounds(draft, event, handlerCtx);
     return;
   }
@@ -553,11 +541,7 @@ function processEventCore(
   ) {
     const type = event.kind.replace("Camera", "").toUpperCase();
     const normalizedType =
-      type === "ANCHORFOCUS"
-        ? "ANCHOR_FOCUS"
-        : type === "ANCHORTRACK"
-          ? "ANCHOR_TRACK"
-          : type;
+      type === "ANCHORFOCUS" ? "ANCHOR_FOCUS" : type === "ANCHORTRACK" ? "ANCHOR_TRACK" : type;
 
     const cameraEvent = {
       ...event,
@@ -592,6 +576,45 @@ function processEventCore(
   handleAutoSounds(draft, event, handlerCtx);
 }
 
+function runAppReducerForDevice(
+  draft: WorldState,
+  event: TimelineEvent,
+  appId: string,
+  deviceId: string | undefined,
+  reducer: import("./engine/registry.js").AppReducer,
+): void {
+  const scopedDeviceIds = getDeviceIdsForAppState(draft, appId);
+  if (scopedDeviceIds.length > 0 && (!deviceId || !scopedDeviceIds.includes(deviceId))) {
+    throw new Error(
+      `APP event for multi-device app "${appId}" must target one of: ${scopedDeviceIds.join(", ")}`,
+    );
+  }
+
+  if (!hasDeviceScopedAppState(draft, appId, deviceId) || !deviceId) {
+    reducer(draft, event);
+    return;
+  }
+
+  const scoped = draft.appStateByDevice?.[deviceId];
+  if (!scoped) {
+    reducer(draft, event);
+    return;
+  }
+
+  const previousLegacyState = draft.appState[appId];
+  draft.appState[appId] = scoped[appId];
+  try {
+    reducer(draft, event);
+    scoped[appId] = draft.appState[appId];
+  } finally {
+    if (previousLegacyState === undefined) {
+      draft.appState[appId] = undefined;
+    } else {
+      draft.appState[appId] = previousLegacyState;
+    }
+  }
+}
+
 function processEventWithMiddleware(
   draft: WorldState,
   event: TimelineEvent,
@@ -616,21 +639,13 @@ function processEventWithMiddleware(
   });
 }
 
-function finalizeState(
-  state: WorldState,
-  t: number,
-  config: TokovoConfigType,
-): WorldState {
+function finalizeState(state: WorldState, t: number, config: TokovoConfigType): WorldState {
   return produce(state, (draft) => {
     finalizeDraftState(draft, t, config);
   });
 }
 
-function finalizeDraftState(
-  draft: WorldState,
-  t: number,
-  config: TokovoConfigType,
-): void {
+function finalizeDraftState(draft: WorldState, t: number, config: TokovoConfigType): void {
   // Only filter activeEffects if it exists (extended CameraState from device-camera)
   const cameraWithEffects = draft.camera as {
     activeEffects?: Array<{ endFrame: number }>;
@@ -642,11 +657,7 @@ function finalizeDraftState(
   }
 
   cleanupExpiredSounds(draft, t);
-  cleanupExpiredNotifications(
-    draft,
-    t,
-    config.notifications.cleanupDelayFrames,
-  );
+  cleanupExpiredNotifications(draft, t, config.notifications.cleanupDelayFrames);
 
   if (!draft.camera.deviceTransforms) {
     draft.camera.deviceTransforms = {};
@@ -669,8 +680,7 @@ function finalizeDraftState(
           device.keyboard.typingAnimation = undefined;
         }
       }
-      draft.camera.deviceTransforms[deviceId] =
-        DEFAULT_CAMERA_TRANSFORM as CameraTransform;
+      draft.camera.deviceTransforms[deviceId] = DEFAULT_CAMERA_TRANSFORM as CameraTransform;
     }
   }
 
@@ -697,17 +707,13 @@ function cleanupExpiredNotifications(
     device.notifications = device.notifications.filter((notification) => {
       const dismissed = notification.state === "dismissed";
       const expired =
-        notification.expiresAtFrame !== undefined &&
-        frame > notification.expiresAtFrame;
+        notification.expiresAtFrame !== undefined && frame > notification.expiresAtFrame;
 
       if (!dismissed && !expired) {
         return true;
       }
 
-      const effectiveEndFrame =
-        notification.dismissedAtFrame ??
-        notification.expiresAtFrame ??
-        0;
+      const effectiveEndFrame = notification.dismissedAtFrame ?? notification.expiresAtFrame ?? 0;
       return effectiveEndFrame > frame - cleanupDelayFrames;
     });
   }

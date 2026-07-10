@@ -25,7 +25,7 @@ export default defineEpisode({
         app: "app_whatsapp",
         installedApps: ["app_whatsapp"],
         os: {
-          time: new Date("2026-04-10T19:20:00"),
+          time: new Date("2026-04-10T19:20:00Z"),
           battery: 62,
           network: "5G",
         },

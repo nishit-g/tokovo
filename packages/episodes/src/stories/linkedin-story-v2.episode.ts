@@ -20,13 +20,13 @@ export default defineEpisode({
     apps: ["app_linkedin"],
   },
   build: () => {
-    const baseTs = new Date("2026-04-10T08:40:00").getTime();
+    const baseTs = new Date("2026-04-10T08:40:00Z").getTime();
 
     return episode("linkedin-story-v2", { fps: 30, duration: "36s", title: "LinkedIn Story V2" })
       .device("phone", "iphone16", {
         app: "app_linkedin",
         os: {
-          time: new Date("2026-04-10T08:42:00"),
+          time: new Date("2026-04-10T08:42:00Z"),
           battery: 88,
           network: "wifi",
         },

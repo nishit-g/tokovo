@@ -29,7 +29,7 @@ export default defineEpisode({
       .device("phone", "iphone16", {
         app: "app_imessage",
         os: {
-          time: new Date("2026-04-10T20:12:00"),
+          time: new Date("2026-04-10T20:12:00Z"),
           battery: 86,
           network: "5G",
         },

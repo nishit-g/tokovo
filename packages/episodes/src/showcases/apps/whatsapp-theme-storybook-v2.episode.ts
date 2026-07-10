@@ -31,7 +31,7 @@ export default defineEpisode({
         app: "app_whatsapp",
         theme: "whatsapp-storybook",
         os: {
-          time: new Date("2026-04-10T22:12:00"),
+          time: new Date("2026-04-10T22:12:00Z"),
           battery: 68,
           network: "4G",
         },

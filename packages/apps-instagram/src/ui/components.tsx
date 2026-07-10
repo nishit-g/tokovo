@@ -52,11 +52,7 @@ export const Avatar: React.FC<{
         }}
       >
         {src ? (
-          <img
-            src={src}
-            alt=""
-            style={{ width: "100%", height: "100%", objectFit: "cover" }}
-          />
+          <img src={src} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
         ) : (
           "•"
         )}
@@ -109,56 +105,157 @@ export const Icon: React.FC<{
     switch (name) {
       case "home":
         return filled ? (
-          <path d="M6 10.5 12 5l6 5.5V18a1 1 0 0 1-1 1h-3.7v-4.7h-2.6V19H7a1 1 0 0 1-1-1z" fill={resolved} />
+          <path
+            d="M6 10.5 12 5l6 5.5V18a1 1 0 0 1-1 1h-3.7v-4.7h-2.6V19H7a1 1 0 0 1-1-1z"
+            fill={resolved}
+          />
         ) : (
           <>
-            <path d="M3.8 10.7 12 4l8.2 6.7" fill="none" stroke={resolved} strokeLinecap="round" strokeLinejoin="round" strokeWidth={strokeWidth} />
-            <path d="M6.5 9.8V19h11V9.8" fill="none" stroke={resolved} strokeLinecap="round" strokeLinejoin="round" strokeWidth={strokeWidth} />
+            <path
+              d="M3.8 10.7 12 4l8.2 6.7"
+              fill="none"
+              stroke={resolved}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={strokeWidth}
+            />
+            <path
+              d="M6.5 9.8V19h11V9.8"
+              fill="none"
+              stroke={resolved}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={strokeWidth}
+            />
           </>
         );
       case "search":
         return (
           <>
-            <circle cx="11" cy="11" r="5.5" fill="none" stroke={resolved} strokeWidth={strokeWidth} />
-            <path d="M15.3 15.3 19 19" fill="none" stroke={resolved} strokeLinecap="round" strokeWidth={strokeWidth} />
+            <circle
+              cx="11"
+              cy="11"
+              r="5.5"
+              fill="none"
+              stroke={resolved}
+              strokeWidth={strokeWidth}
+            />
+            <path
+              d="M15.3 15.3 19 19"
+              fill="none"
+              stroke={resolved}
+              strokeLinecap="round"
+              strokeWidth={strokeWidth}
+            />
           </>
         );
       case "reels":
         return (
           <>
-            <rect x="5" y="4.5" width="14" height="15" rx="4.2" fill="none" stroke={resolved} strokeWidth={strokeWidth} />
+            <rect
+              x="5"
+              y="4.5"
+              width="14"
+              height="15"
+              rx="4.2"
+              fill="none"
+              stroke={resolved}
+              strokeWidth={strokeWidth}
+            />
             <path d="M5.5 9h13" fill="none" stroke={resolved} strokeWidth={strokeWidth} />
-            <path d="m8 4.8 3 4.1M13 4.8l3 4.1" fill="none" stroke={resolved} strokeLinecap="round" strokeWidth={strokeWidth} />
-            <path d="m10.4 11.7 4.8 2.8-4.8 2.8z" fill={filled ? resolved : "none"} stroke={resolved} strokeLinejoin="round" strokeWidth={filled ? 0 : 1.6} />
+            <path
+              d="m8 4.8 3 4.1M13 4.8l3 4.1"
+              fill="none"
+              stroke={resolved}
+              strokeLinecap="round"
+              strokeWidth={strokeWidth}
+            />
+            <path
+              d="m10.4 11.7 4.8 2.8-4.8 2.8z"
+              fill={filled ? resolved : "none"}
+              stroke={resolved}
+              strokeLinejoin="round"
+              strokeWidth={filled ? 0 : 1.6}
+            />
           </>
         );
       case "heart":
         return filled ? (
-          <path d="M12 19s-6.8-4.5-8.7-8C1.8 8.1 3 5 6.1 5c1.9 0 3 1 3.9 2.2C10.9 6 12 5 13.9 5 17 5 18.2 8.1 20.7 11 18.8 14.5 12 19 12 19Z" fill={resolved} />
+          <path
+            d="M12 19s-6.8-4.5-8.7-8C1.8 8.1 3 5 6.1 5c1.9 0 3 1 3.9 2.2C10.9 6 12 5 13.9 5 17 5 18.2 8.1 20.7 11 18.8 14.5 12 19 12 19Z"
+            fill={resolved}
+          />
         ) : (
-          <path d="M12 19s-6.8-4.5-8.7-8C1.8 8.1 3 5 6.1 5c1.9 0 3 1 3.9 2.2C10.9 6 12 5 13.9 5 17 5 18.2 8.1 20.7 11 18.8 14.5 12 19 12 19Z" fill="none" stroke={resolved} strokeLinecap="round" strokeLinejoin="round" strokeWidth={strokeWidth} />
+          <path
+            d="M12 19s-6.8-4.5-8.7-8C1.8 8.1 3 5 6.1 5c1.9 0 3 1 3.9 2.2C10.9 6 12 5 13.9 5 17 5 18.2 8.1 20.7 11 18.8 14.5 12 19 12 19Z"
+            fill="none"
+            stroke={resolved}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={strokeWidth}
+          />
         );
       case "profile":
         return (
           <>
-            <circle cx="12" cy="8.5" r="3.4" fill="none" stroke={resolved} strokeWidth={strokeWidth} />
-            <path d="M5.6 18.6c1.6-3 4-4.3 6.4-4.3s4.8 1.3 6.4 4.3" fill="none" stroke={resolved} strokeLinecap="round" strokeWidth={strokeWidth} />
-            <circle cx="12" cy="12" r="8.5" fill="none" stroke={resolved} strokeWidth={strokeWidth} />
+            <circle
+              cx="12"
+              cy="8.5"
+              r="3.4"
+              fill="none"
+              stroke={resolved}
+              strokeWidth={strokeWidth}
+            />
+            <path
+              d="M5.6 18.6c1.6-3 4-4.3 6.4-4.3s4.8 1.3 6.4 4.3"
+              fill="none"
+              stroke={resolved}
+              strokeLinecap="round"
+              strokeWidth={strokeWidth}
+            />
+            <circle
+              cx="12"
+              cy="12"
+              r="8.5"
+              fill="none"
+              stroke={resolved}
+              strokeWidth={strokeWidth}
+            />
           </>
         );
       case "send":
         return (
-          <path d="M20 4 9.5 14.4M20 4l-5.3 16-5.2-5.6L4 9.1 20 4Z" fill="none" stroke={resolved} strokeLinecap="round" strokeLinejoin="round" strokeWidth={strokeWidth} />
+          <path
+            d="M20 4 9.5 14.4M20 4l-5.3 16-5.2-5.6L4 9.1 20 4Z"
+            fill="none"
+            stroke={resolved}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={strokeWidth}
+          />
         );
       case "comment":
         return (
-          <path d="M6.6 17.6 5.5 20l3.6-1.8a8.5 8.5 0 1 0-2.5-.6Z" fill="none" stroke={resolved} strokeLinecap="round" strokeLinejoin="round" strokeWidth={strokeWidth} />
+          <path
+            d="M6.6 17.6 5.5 20l3.6-1.8a8.5 8.5 0 1 0-2.5-.6Z"
+            fill="none"
+            stroke={resolved}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={strokeWidth}
+          />
         );
       case "bookmark":
         return filled ? (
           <path d="M7 4.8h10v14.5L12 16l-5 3.3z" fill={resolved} />
         ) : (
-          <path d="M7 4.8h10v14.5L12 16l-5 3.3z" fill="none" stroke={resolved} strokeLinejoin="round" strokeWidth={strokeWidth} />
+          <path
+            d="M7 4.8h10v14.5L12 16l-5 3.3z"
+            fill="none"
+            stroke={resolved}
+            strokeLinejoin="round"
+            strokeWidth={strokeWidth}
+          />
         );
       case "more":
         return (
@@ -171,23 +268,76 @@ export const Icon: React.FC<{
       case "camera":
         return (
           <>
-            <rect x="4.5" y="7.2" width="15" height="11" rx="3" fill="none" stroke={resolved} strokeWidth={strokeWidth} />
-            <circle cx="12" cy="12.7" r="3.2" fill="none" stroke={resolved} strokeWidth={strokeWidth} />
-            <path d="M8 7.2 9.4 5.5h5.2L16 7.2" fill="none" stroke={resolved} strokeLinecap="round" strokeLinejoin="round" strokeWidth={strokeWidth} />
+            <rect
+              x="4.5"
+              y="7.2"
+              width="15"
+              height="11"
+              rx="3"
+              fill="none"
+              stroke={resolved}
+              strokeWidth={strokeWidth}
+            />
+            <circle
+              cx="12"
+              cy="12.7"
+              r="3.2"
+              fill="none"
+              stroke={resolved}
+              strokeWidth={strokeWidth}
+            />
+            <path
+              d="M8 7.2 9.4 5.5h5.2L16 7.2"
+              fill="none"
+              stroke={resolved}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={strokeWidth}
+            />
           </>
         );
       case "back":
-        return <path d="M14.8 5 8.2 12l6.6 7" fill="none" stroke={resolved} strokeLinecap="round" strokeLinejoin="round" strokeWidth={strokeWidth} />;
+        return (
+          <path
+            d="M14.8 5 8.2 12l6.6 7"
+            fill="none"
+            stroke={resolved}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={strokeWidth}
+          />
+        );
       case "plus":
         return (
           <>
-            <rect x="5" y="5" width="14" height="14" rx="4" fill="none" stroke={resolved} strokeWidth={strokeWidth} />
-            <path d="M12 8v8M8 12h8" fill="none" stroke={resolved} strokeLinecap="round" strokeWidth={strokeWidth} />
+            <rect
+              x="5"
+              y="5"
+              width="14"
+              height="14"
+              rx="4"
+              fill="none"
+              stroke={resolved}
+              strokeWidth={strokeWidth}
+            />
+            <path
+              d="M12 8v8M8 12h8"
+              fill="none"
+              stroke={resolved}
+              strokeLinecap="round"
+              strokeWidth={strokeWidth}
+            />
           </>
         );
       case "spark":
         return (
-          <path d="m12 4 1.8 5.2L19 11l-5.2 1.8L12 18l-1.8-5.2L5 11l5.2-1.8z" fill={filled ? resolved : "none"} stroke={resolved} strokeLinejoin="round" strokeWidth={filled ? 0 : strokeWidth} />
+          <path
+            d="m12 4 1.8 5.2L19 11l-5.2 1.8L12 18l-1.8-5.2L5 11l5.2-1.8z"
+            fill={filled ? resolved : "none"}
+            stroke={resolved}
+            strokeLinejoin="round"
+            strokeWidth={filled ? 0 : strokeWidth}
+          />
         );
       default:
         return null;
@@ -212,7 +362,10 @@ export const BottomNav: React.FC<{
   active: "home" | "search" | "reels" | "heart" | "profile";
 }> = ({ active }) => {
   const theme = useInstagramTheme();
-  const items: Array<{ id: "home" | "search" | "reels" | "heart" | "profile"; icon: "home" | "search" | "reels" | "heart" | "profile" }> = [
+  const items: Array<{
+    id: "home" | "search" | "reels" | "heart" | "profile";
+    icon: "home" | "search" | "reels" | "heart" | "profile";
+  }> = [
     { id: "home", icon: "home" },
     { id: "search", icon: "search" },
     { id: "reels", icon: "reels" },
@@ -262,7 +415,9 @@ export const StoryChip: React.FC<{
 }> = ({ user, active = true }) => {
   const theme = useInstagramTheme();
   return (
-    <div style={{ width: 78, display: "flex", flexDirection: "column", alignItems: "center", gap: 7 }}>
+    <div
+      style={{ width: 78, display: "flex", flexDirection: "column", alignItems: "center", gap: 7 }}
+    >
       <Avatar size={68} src={user.avatarUrl} ring ringMuted={!active} />
       <div
         style={{
@@ -291,9 +446,10 @@ export const PostCard: React.FC<{
   totalCommentCount?: number;
 }> = ({ post, author, liked, commentPreview, nowMs, isFocused = false, totalCommentCount = 0 }) => {
   const theme = useInstagramTheme();
-  const likeLine = post.likeCount > 0
-    ? `${post.likeCount.toLocaleString()} likes`
-    : "Be the first to like this";
+  const likeLine =
+    post.likeCount > 0
+      ? `${post.likeCount.toLocaleString("en-US")} likes`
+      : "Be the first to like this";
   return (
     <div
       style={{
@@ -343,11 +499,7 @@ export const PostCard: React.FC<{
         style={{
           width: "100%",
           aspectRatio:
-            post.aspect === "square"
-              ? "1 / 1"
-              : post.aspect === "landscape"
-                ? "4 / 3"
-                : "4 / 5",
+            post.aspect === "square" ? "1 / 1" : post.aspect === "landscape" ? "4 / 3" : "4 / 5",
           background: theme.colors.backgroundAlt,
           overflow: "hidden",
         }}
@@ -362,23 +514,25 @@ export const PostCard: React.FC<{
       <div style={{ padding: "10px 12px 14px" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <div style={{ display: "flex", gap: 16 }}>
-            <Icon name="heart" size={25} filled={liked} color={liked ? theme.colors.accent : theme.colors.textPrimary} />
+            <Icon
+              name="heart"
+              size={25}
+              filled={liked}
+              color={liked ? theme.colors.accent : theme.colors.textPrimary}
+            />
             <Icon name="comment" size={24} />
             <Icon name="send" size={23} />
           </div>
           <Icon name="bookmark" size={21} color={theme.colors.textPrimary} />
         </div>
 
-        <div style={{ marginTop: 10, fontSize: 13.5, fontWeight: 700 }}>
-          {likeLine}
-        </div>
+        <div style={{ marginTop: 10, fontSize: 13.5, fontWeight: 700 }}>{likeLine}</div>
         <div style={{ marginTop: 6, fontSize: 14, lineHeight: 1.42 }}>
-          <span style={{ fontWeight: 700 }}>{author?.username ?? "unknown"}</span>{" "}
-          {post.caption}
+          <span style={{ fontWeight: 700 }}>{author?.username ?? "unknown"}</span> {post.caption}
         </div>
         {totalCommentCount > 0 ? (
           <div style={{ marginTop: 6, fontSize: 13, color: theme.colors.textSecondary }}>
-            View all {totalCommentCount.toLocaleString()} comments
+            View all {totalCommentCount.toLocaleString("en-US")} comments
           </div>
         ) : null}
         {commentPreview.map((text, index) => (
@@ -397,7 +551,15 @@ export const PostCard: React.FC<{
         <div style={{ marginTop: 7, fontSize: 13, color: theme.colors.textSecondary }}>
           Add a comment...
         </div>
-        <div style={{ marginTop: 8, fontSize: 11, letterSpacing: 0.3, color: theme.colors.textMuted, textTransform: "uppercase" }}>
+        <div
+          style={{
+            marginTop: 8,
+            fontSize: 11,
+            letterSpacing: 0.3,
+            color: theme.colors.textMuted,
+            textTransform: "uppercase",
+          }}
+        >
           {formatRelativeTime(post.createdAt, nowMs)}
         </div>
       </div>
@@ -424,7 +586,13 @@ export const ProgressBars: React.FC<{
         >
           <div
             style={{
-              width: item.id === activeStoryId ? "68%" : item.createdAt < (items.find((story) => story.id === activeStoryId)?.createdAt ?? 0) ? "100%" : "0%",
+              width:
+                item.id === activeStoryId
+                  ? "68%"
+                  : item.createdAt <
+                      (items.find((story) => story.id === activeStoryId)?.createdAt ?? 0)
+                    ? "100%"
+                    : "0%",
               height: "100%",
               background: "#FFFFFF",
             }}

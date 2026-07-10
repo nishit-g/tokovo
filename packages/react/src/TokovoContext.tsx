@@ -1,10 +1,10 @@
-import React, {
-  createContext,
-  useContext,
-  useMemo,
-  type ReactNode,
-} from "react";
-import type { WorldState, DeviceState, LayoutState } from "@tokovo/core";
+import React, { createContext, useContext, useMemo, type ReactNode } from "react";
+import {
+  getAppStateForDevice,
+  type WorldState,
+  type DeviceState,
+  type LayoutState,
+} from "@tokovo/core";
 
 interface TokovoContextValue {
   world: WorldState;
@@ -63,21 +63,10 @@ export function TokovoProvider({
       safeAreaInsets,
       keyboardHeight,
     }),
-    [
-      world,
-      deviceId,
-      appId,
-      t,
-      layout,
-      platform,
-      safeAreaInsets,
-      keyboardHeight,
-    ],
+    [world, deviceId, appId, t, layout, platform, safeAreaInsets, keyboardHeight],
   );
 
-  return (
-    <TokovoContext.Provider value={value}>{children}</TokovoContext.Provider>
-  );
+  return <TokovoContext.Provider value={value}>{children}</TokovoContext.Provider>;
 }
 
 function useTokovoContext(): TokovoContextValue {
@@ -102,8 +91,8 @@ export function useDevice(): DeviceState {
 }
 
 export function useAppState<T = unknown>(): T {
-  const { world, appId } = useTokovoContext();
-  return world.appState?.[appId] as T;
+  const { world, appId, deviceId } = useTokovoContext();
+  return getAppStateForDevice<T>(world, appId, deviceId) as T;
 }
 
 export function useLayout<T = unknown>(): T | undefined {
@@ -146,9 +135,7 @@ export function useConversation<T extends { id: string } = { id: string }>(
   return (conversations as Record<string, T>)[conversationId];
 }
 
-export function useActiveConversation<
-  T extends { id: string } = { id: string },
->(): T | undefined {
+export function useActiveConversation<T extends { id: string } = { id: string }>(): T | undefined {
   const appState = useAppState<{
     activeConversationId?: string;
     conversationId?: string;
@@ -156,9 +143,7 @@ export function useActiveConversation<
     conversations?: T[] | Record<string, T>;
   }>();
   const activeId =
-    appState?.activeConversationId ||
-    appState?.conversationId ||
-    appState?.currentConversationId;
+    appState?.activeConversationId || appState?.conversationId || appState?.currentConversationId;
   if (!activeId) return undefined;
 
   const conversations = appState.conversations;

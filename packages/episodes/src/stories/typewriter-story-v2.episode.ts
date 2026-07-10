@@ -28,7 +28,7 @@ export default defineEpisode({
       .device("desk", "canvas", {
         app: "app_typewriter",
         installedApps: ["app_typewriter"],
-        os: { time: new Date("2026-04-11T00:22:00"), battery: 85, network: "wifi" },
+        os: { time: new Date("2026-04-11T00:22:00Z"), battery: 85, network: "wifi" },
       })
       .track(
         "app_typewriter",

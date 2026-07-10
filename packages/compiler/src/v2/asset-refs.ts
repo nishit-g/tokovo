@@ -1,4 +1,5 @@
 import type { TrackEpisodeIR } from "@tokovo/ir";
+import { projectWorldForDevice } from "@tokovo/core";
 import type {
   EpisodeAssetPrefetchStrategy,
   EpisodeAssetRef,
@@ -7,10 +8,7 @@ import type {
   WorldState,
 } from "@tokovo/core";
 
-type AssetSource = Extract<
-  EpisodeAssetRef["source"],
-  "ir" | "initial-world" | "runtime-event"
->;
+type AssetSource = Extract<EpisodeAssetRef["source"], "ir" | "initial-world" | "runtime-event">;
 
 type WalkContext = {
   owner: EpisodeAssetRef["owner"];
@@ -22,10 +20,7 @@ type WalkContext = {
   containerType?: string;
 };
 
-type AssetDescriptor = Pick<
-  EpisodeAssetRef,
-  "kind" | "usage" | "priority" | "strategy"
->;
+type AssetDescriptor = Pick<EpisodeAssetRef, "kind" | "usage" | "priority" | "strategy">;
 
 const URL_PROTOCOL_PATTERN = /^(https?:\/\/|r2:\/\/|\/)/i;
 const FILE_EXTENSION_PATTERN =
@@ -80,6 +75,22 @@ export function collectEpisodeAssetRefs(input: {
     );
   }
 
+  for (const [deviceId, appStates] of Object.entries(input.initialWorld.appStateByDevice ?? {})) {
+    for (const [appId, appState] of Object.entries(appStates)) {
+      walkAssetValue(
+        appState,
+        {
+          owner: "app",
+          source: "initial-world",
+          appId,
+          fromFrame: 0,
+          path: ["appStateByDevice", deviceId, appId],
+        },
+        refs,
+      );
+    }
+  }
+
   for (const event of input.events) {
     if (event.kind !== "APP" || !("appId" in event) || !event.appId) {
       continue;
@@ -99,26 +110,36 @@ export function collectEpisodeAssetRefs(input: {
   }
 
   for (const plugin of input.plugins) {
-    const pluginRefs = plugin.collectAssetRefs?.({
-      appId: plugin.id,
-      ir: input.ir,
-      initialWorld: input.initialWorld,
-      events: input.events,
-    });
+    const scopedDeviceIds = Object.entries(input.initialWorld.appStateByDevice ?? {})
+      .filter(([, appStates]) => Object.hasOwn(appStates, plugin.id))
+      .map(([deviceId]) => deviceId);
+    const worlds =
+      scopedDeviceIds.length > 0
+        ? scopedDeviceIds.map((deviceId) => projectWorldForDevice(input.initialWorld, deviceId))
+        : [input.initialWorld];
 
-    if (!pluginRefs) {
-      continue;
-    }
+    for (const initialWorld of worlds) {
+      const pluginRefs = plugin.collectAssetRefs?.({
+        appId: plugin.id,
+        ir: input.ir,
+        initialWorld,
+        events: input.events,
+      });
 
-    for (const ref of pluginRefs) {
-      if (!isUsableAssetSource(ref.src)) {
+      if (!pluginRefs) {
         continue;
       }
 
-      refs.push({
-        ...ref,
-        appId: ref.appId ?? plugin.id,
-      });
+      for (const ref of pluginRefs) {
+        if (!isUsableAssetSource(ref.src)) {
+          continue;
+        }
+
+        refs.push({
+          ...ref,
+          appId: ref.appId ?? plugin.id,
+        });
+      }
     }
   }
 
@@ -240,10 +261,7 @@ function walkAssetValue(
   }
 }
 
-function inferAssetRef(
-  src: string,
-  context: WalkContext,
-): EpisodeAssetRef | null {
+function inferAssetRef(src: string, context: WalkContext): EpisodeAssetRef | null {
   const descriptor = inferDescriptor(context);
   if (!descriptor || !isUsableAssetSource(src)) {
     return null;
@@ -281,11 +299,7 @@ function inferDescriptor(context: WalkContext): AssetDescriptor | null {
     case "imageurl":
     case "thumbnail":
     case "thumbnailurl":
-      return describeAsset(
-        "image",
-        insideLinkPreview ? "link-preview" : "message-media",
-        context,
-      );
+      return describeAsset("image", insideLinkPreview ? "link-preview" : "message-media", context);
     case "mapthumbnailurl":
       return describeAsset("image", "map", context);
     case "favicon":
@@ -329,11 +343,7 @@ function describeContainerAsset(
 ): AssetDescriptor | null {
   switch (containerType) {
     case "image":
-      return describeAsset(
-        "image",
-        insideLinkPreview ? "link-preview" : "message-media",
-        context,
-      );
+      return describeAsset("image", insideLinkPreview ? "link-preview" : "message-media", context);
     case "video":
       return describeAsset("video", "message-media", context);
     case "gif":
@@ -396,10 +406,7 @@ function chooseStrategy(input: {
   return "lookahead";
 }
 
-function getUsagePriority(
-  usage: EpisodeAssetRef["usage"],
-  kind: EpisodeAssetRef["kind"],
-): number {
+function getUsagePriority(usage: EpisodeAssetRef["usage"], kind: EpisodeAssetRef["kind"]): number {
   switch (usage) {
     case "background":
       return 100;
@@ -458,10 +465,7 @@ function dedupeEpisodeAssetRefs(refs: EpisodeAssetRef[]): EpisodeAssetRef[] {
     }));
 }
 
-function mergeAssetRefs(
-  current: EpisodeAssetRef,
-  incoming: EpisodeAssetRef,
-): EpisodeAssetRef {
+function mergeAssetRefs(current: EpisodeAssetRef, incoming: EpisodeAssetRef): EpisodeAssetRef {
   const currentRank = getStrategyRank(current.strategy);
   const incomingRank = getStrategyRank(incoming.strategy);
   const preferIncoming =
@@ -503,8 +507,7 @@ function compareAssetRefs(a: EpisodeAssetRef, b: EpisodeAssetRef): number {
   }
 
   if (a.fromFrame !== b.fromFrame) {
-    return (a.fromFrame ?? Number.MAX_SAFE_INTEGER) -
-      (b.fromFrame ?? Number.MAX_SAFE_INTEGER);
+    return (a.fromFrame ?? Number.MAX_SAFE_INTEGER) - (b.fromFrame ?? Number.MAX_SAFE_INTEGER);
   }
 
   if (a.strategy !== b.strategy) {
@@ -527,14 +530,7 @@ function getStrategyRank(strategy: EpisodeAssetPrefetchStrategy): number {
 
 function buildAssetId(ref: EpisodeAssetRef): string {
   return `asset-${hashString(
-    [
-      ref.src,
-      ref.owner,
-      ref.appId ?? "system",
-      ref.usage,
-      ref.kind,
-      ref.fromFrame ?? -1,
-    ].join("|"),
+    [ref.src, ref.owner, ref.appId ?? "system", ref.usage, ref.kind, ref.fromFrame ?? -1].join("|"),
   )}`;
 }
 

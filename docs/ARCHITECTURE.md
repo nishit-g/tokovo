@@ -65,6 +65,8 @@ This means:
 - app history is not authored through device state
 - the compiler does not synthesize conversations, feeds, threads, or notifications
 - plugins validate and hydrate their own snapshots and views
+- apps mounted on multiple devices keep independent runtime state per device
+- render-time dates use explicit UTC/locale formatting rather than host defaults
 
 ## Package Responsibilities
 

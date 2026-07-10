@@ -22,7 +22,7 @@ export default defineEpisode({
     apps: ["app_instagram"],
   },
   build: () => {
-    const baseTs = new Date("2026-04-10T17:00:00").getTime();
+    const baseTs = new Date("2026-04-10T17:00:00Z").getTime();
 
     return episode("instagram-theme-storybook-v2", {
       fps: 30,
@@ -32,7 +32,7 @@ export default defineEpisode({
       .device("phone", "iphone16", {
         app: "app_instagram",
         os: {
-          time: new Date("2026-04-10T17:02:00"),
+          time: new Date("2026-04-10T17:02:00Z"),
           battery: 73,
           network: "5G",
         },

@@ -19,13 +19,13 @@ export default defineEpisode({
     apps: ["app_x"],
   },
   build: () => {
-    const baseTs = new Date("2026-04-10T23:30:00").getTime();
+    const baseTs = new Date("2026-04-10T23:30:00Z").getTime();
 
     return episode("x-story-v2", { fps: 30, duration: "32s", title: "X Story V2" })
       .device("phone", "iphone16", {
         app: "app_x",
         os: {
-          time: new Date("2026-04-10T23:32:00"),
+          time: new Date("2026-04-10T23:32:00Z"),
           battery: 59,
           network: "5G",
         },

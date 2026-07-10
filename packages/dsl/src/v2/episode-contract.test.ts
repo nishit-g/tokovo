@@ -52,4 +52,14 @@ describe("DSL contract + determinism", () => {
     const b = buildDeterministicDslEpisode();
     expect(normalizeTrackEpisodeIR(a)).toEqual(normalizeTrackEpisodeIR(b));
   });
+
+  it("preserves the episode seed in the built IR", () => {
+    const ir = episode("seeded", {
+      fps: 30,
+      duration: "1s",
+      seed: "episode-seed",
+    }).build();
+
+    expect(ir.seed).toBe("episode-seed");
+  });
 });

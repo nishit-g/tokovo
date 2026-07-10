@@ -255,6 +255,10 @@ function buildInitialWorld(ir: TrackEpisodeIR, plugins: TokovoPlugin[]): WorldSt
   const pluginsById = new Map<string, TokovoPlugin>(plugins.map((p) => [p.id, p]));
 
   const appState: Record<string, unknown> = {};
+  const hydratedAppInstances = new Map<
+    string,
+    Array<{ deviceId: string; state: Record<string, unknown> }>
+  >();
   const snapshotEntries = new Map<string, import("@tokovo/ir").AppSnapshotEntry>();
   const initialViewEntries = new Map<string, import("@tokovo/ir").AppInitialViewEntry>();
 
@@ -387,12 +391,31 @@ function buildInitialWorld(ir: TrackEpisodeIR, plugins: TokovoPlugin[]): WorldSt
       ? plugin.bootstrap.hydrate(bootstrapContext)
       : baseState;
 
-    appState[appId] = hydrated as Record<string, unknown>;
+    const instances = hydratedAppInstances.get(appId) ?? [];
+    instances.push({
+      deviceId: device.id,
+      state: hydrated as Record<string, unknown>,
+    });
+    hydratedAppInstances.set(appId, instances);
+  }
+
+  const appStateByDevice: Record<string, Record<string, unknown>> = {};
+  for (const [appId, instances] of hydratedAppInstances) {
+    if (instances.length === 1) {
+      appState[appId] = instances[0].state;
+      continue;
+    }
+
+    for (const instance of instances) {
+      appStateByDevice[instance.deviceId] ??= {};
+      appStateByDevice[instance.deviceId][appId] = instance.state;
+    }
   }
 
   const worldState: WorldState = {
     devices,
     appState,
+    ...(Object.keys(appStateByDevice).length > 0 ? { appStateByDevice } : {}),
     camera,
     audio,
   };

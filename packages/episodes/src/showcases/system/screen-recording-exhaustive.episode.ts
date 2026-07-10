@@ -29,7 +29,7 @@ export default defineEpisode({
         screenRecording: true,
         installedApps: ["app_whatsapp", "app_x"],
         os: {
-          time: new Date("2026-04-10T21:10:00"),
+          time: new Date("2026-04-10T21:10:00Z"),
           battery: 71,
           network: "5G",
         },
@@ -47,7 +47,7 @@ export default defineEpisode({
           { id: "u_cam", name: "Cam Review", handle: "camreview", followers: 40200, following: 280, verified: null },
         ],
         tweets: [
-          { id: "tw_rec_1", authorId: "u_cam", text: "If your recording chrome looks fake, the whole video looks fake.", createdAt: new Date("2026-04-10T21:05:00").getTime(), viewCount: 21100, shareCount: 380, bookmarkCount: 1200 },
+          { id: "tw_rec_1", authorId: "u_cam", text: "If your recording chrome looks fake, the whole video looks fake.", createdAt: new Date("2026-04-10T21:05:00Z").getTime(), viewCount: 21100, shareCount: 380, bookmarkCount: 1200 },
         ],
       })
       .whatsapp("phone", "dm_record_v2", (wa) => {
@@ -63,7 +63,7 @@ export default defineEpisode({
           authorId: "u_me",
           replyToId: "tw_rec_1",
           text: "The tiniest OS details are the whole trick.",
-          createdAt: new Date("2026-04-10T21:12:00").getTime(),
+          createdAt: new Date("2026-04-10T21:12:00Z").getTime(),
           typed: true,
           charDelay: 2,
         });

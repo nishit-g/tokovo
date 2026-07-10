@@ -23,7 +23,7 @@ export default defineEpisode({
       .device("phone", "iphone16", {
         app: "app_whatsapp",
         os: {
-          time: new Date("2026-04-10T12:14:00"),
+          time: new Date("2026-04-10T12:14:00Z"),
           battery: 88,
           network: "5G",
         },

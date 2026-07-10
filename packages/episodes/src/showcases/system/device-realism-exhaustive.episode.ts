@@ -28,7 +28,7 @@ export default defineEpisode({
         screenRecording: true,
         installedApps: ["app_whatsapp", "app_instagram", "app_x", "app_camera"],
         os: {
-          time: new Date("2026-04-10T08:46:00"),
+          time: new Date("2026-04-10T08:46:00Z"),
           battery: 77,
           network: "5G",
         },
@@ -47,7 +47,7 @@ export default defineEpisode({
           { id: "ig_noa", username: "noa.frames", displayName: "Noa Frames", avatarUrl: "/avatars/avatar-priya.jpg", followers: 18220, following: 211 },
         ],
         posts: [
-          { id: "ig_seed_1", authorId: "ig_me", imageUrl: "/placeholders/media.svg", caption: "Launch stills before sunrise.", createdAt: new Date("2026-04-10T08:15:00").getTime(), likeCount: 4211, commentCount: 186, aspect: "portrait" },
+          { id: "ig_seed_1", authorId: "ig_me", imageUrl: "/placeholders/media.svg", caption: "Launch stills before sunrise.", createdAt: new Date("2026-04-10T08:15:00Z").getTime(), likeCount: 4211, commentCount: 186, aspect: "portrait" },
         ],
       })
       .snapshot("app_x", "phone", {
@@ -57,7 +57,7 @@ export default defineEpisode({
           { id: "u_leak", name: "Leak Watch", handle: "leakwatch", followers: 84200, following: 180, verified: null },
         ],
         tweets: [
-          { id: "tw_seed_1", authorId: "u_leak", text: "Something launches in 30 minutes. You can feel the panic.", createdAt: new Date("2026-04-10T08:40:00").getTime(), viewCount: 50400, shareCount: 812, bookmarkCount: 2100 },
+          { id: "tw_seed_1", authorId: "u_leak", text: "Something launches in 30 minutes. You can feel the panic.", createdAt: new Date("2026-04-10T08:40:00Z").getTime(), viewCount: 50400, shareCount: 812, bookmarkCount: 2100 },
         ],
       })
       .deviceTrack("phone", (d) => {
@@ -99,7 +99,7 @@ export default defineEpisode({
       })
       .track("app_instagram", (getOrder) => createInstagramTrackBuilder(30, "phone", getOrder), (ig: any) => {
         ig.at("16.8s").navigate("home");
-        ig.at("18.0s").commentOnPost({ postId: "ig_seed_1", authorId: "ig_noa", text: "Comments are moving faster than the edit.", createdAt: new Date("2026-04-10T08:47:00").getTime() });
+        ig.at("18.0s").commentOnPost({ postId: "ig_seed_1", authorId: "ig_noa", text: "Comments are moving faster than the edit.", createdAt: new Date("2026-04-10T08:47:00Z").getTime() });
         ig.at("19.2s").notify({ type: "comment", actorId: "ig_noa", postId: "ig_seed_1", title: "Noa Frames", body: "Comments are moving faster than the edit." });
         ig.at("20.6s").navigate("notifications");
       })
@@ -111,7 +111,7 @@ export default defineEpisode({
           authorId: "u_me",
           replyToId: "tw_seed_1",
           text: "Panic is just pre-launch cardio.",
-          createdAt: new Date("2026-04-10T08:49:00").getTime(),
+          createdAt: new Date("2026-04-10T08:49:00Z").getTime(),
           typed: true,
           charDelay: 2,
         });

@@ -12,7 +12,8 @@ export default defineEpisode({
   meta: {
     id: "my-first-story",
     title: "My First Story",
-    description: "A short WhatsApp scene with typed replies and camera movement.",
+    description:
+      "A short WhatsApp scene with typed replies and camera movement.",
     category: "production",
     catalogType: "story",
     visibility: "public",
@@ -24,10 +25,18 @@ export default defineEpisode({
     apps: ["app_whatsapp"],
   },
   build: () =>
-    episode("my-first-story", { fps: 30, duration: "10s", title: "My First Story" })
+    episode("my-first-story", {
+      fps: 30,
+      duration: "10s",
+      title: "My First Story",
+    })
       .device("phone", "iphone16", {
         app: "app_whatsapp",
-        os: { time: new Date("2026-04-10T20:15:00"), battery: 82, network: "5G" },
+        os: {
+          time: new Date("2026-04-10T20:15:00Z"),
+          battery: 82,
+          network: "5G",
+        },
       })
       .background({ type: "image", src: "/backgrounds/soft-gradient.png" })
       .snapshot("app_whatsapp", "phone", {
@@ -41,7 +50,7 @@ export default defineEpisode({
                 id: "seed_1",
                 from: "Alex",
                 text: "Can you make the intro feel like a real phone recording?",
-                at: new Date("2026-04-10T20:14:00").getTime(),
+                at: new Date("2026-04-10T20:14:00Z").getTime(),
               },
             ],
           },
@@ -52,10 +61,13 @@ export default defineEpisode({
         conversationId: "dm_alex",
       })
       .whatsapp("phone", "dm_alex", (wa) => {
-        wa.at("1.4s").send("Yes. Typing, camera, and phone chrome are all scripted.", {
-          typed: true,
-          charDelay: 2,
-        });
+        wa.at("1.4s").send(
+          "Yes. Typing, camera, and phone chrome are all scripted.",
+          {
+            typed: true,
+            charDelay: 2,
+          },
+        );
         wa.at("5.2s").receive("Alex", "Perfect. Render it.");
       })
       .camera((cam) => {

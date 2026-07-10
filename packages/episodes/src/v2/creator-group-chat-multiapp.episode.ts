@@ -20,7 +20,7 @@ export default defineEpisode({
       .device("phone", "iphone16", {
         app: "app_whatsapp",
         installedApps: ["app_whatsapp", "app_x", "app_imessage"],
-        os: { time: new Date("2025-06-26T21:41:00"), battery: 48, network: "5G" },
+        os: { time: new Date("2025-06-26T21:41:00Z"), battery: 48, network: "5G" },
       })
       .snapshot("app_x", "phone", {
         users: [

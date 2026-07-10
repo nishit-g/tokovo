@@ -22,7 +22,7 @@ export default defineEpisode({
     apps: ["app_linkedin"],
   },
   build: () => {
-    const baseTs = new Date("2026-04-10T08:00:00").getTime();
+    const baseTs = new Date("2026-04-10T08:00:00Z").getTime();
 
     return episode("linkedin-theme-storybook-v2", {
       fps: 30,
@@ -32,7 +32,7 @@ export default defineEpisode({
       .device("phone", "iphone16", {
         app: "app_linkedin",
         os: {
-          time: new Date("2026-04-10T08:02:00"),
+          time: new Date("2026-04-10T08:02:00Z"),
           battery: 90,
           network: "wifi",
         },

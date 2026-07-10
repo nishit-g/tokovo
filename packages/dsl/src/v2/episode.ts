@@ -117,8 +117,7 @@ class VoiceTrackBuilderInternal<T extends string> {
   }
 
   at(time: string | number): VoicePointBuilder<T> {
-    const frame =
-      typeof time === "number" ? time : parseTimeToFrames(time, this._fps);
+    const frame = typeof time === "number" ? time : parseTimeToFrames(time, this._fps);
     return new VoicePointBuilder((item) => this._schedule.push(item), frame);
   }
 
@@ -144,6 +143,7 @@ export class EpisodeBuilder {
   private _durationInFrames: number;
   private _title?: string;
   private _description?: string;
+  private _seed?: number | string;
   private _devices: DeviceConfig[] = [];
   private _appSnapshots: AppSnapshotEntry[] = [];
   private _initialViews: AppInitialViewEntry[] = [];
@@ -155,9 +155,9 @@ export class EpisodeBuilder {
   private _plugins: CompilerPlugin[] = [];
   private _voiceConfig:
     | {
-      script: VoiceScriptDefinition<string>;
-      schedule: VoiceScheduleItem<string>[];
-    }
+        script: VoiceScriptDefinition<string>;
+        schedule: VoiceScheduleItem<string>[];
+      }
     | undefined;
   private _background?: BackgroundConfigIR;
 
@@ -167,6 +167,7 @@ export class EpisodeBuilder {
     this._durationInFrames = parseTimeToFrames(config.duration, config.fps);
     this._title = config.title;
     this._description = config.description;
+    this._seed = config.seed;
   }
 
   voice<T extends string>(
@@ -218,12 +219,7 @@ export class EpisodeBuilder {
     return this;
   }
 
-  view(
-    appId: string,
-    deviceId: string,
-    view: unknown,
-    options: ViewOptions = {},
-  ): this {
+  view(appId: string, deviceId: string, view: unknown, options: ViewOptions = {}): this {
     this._initialViews = this._initialViews.filter(
       (entry) => !(entry.appId === appId && entry.deviceId === deviceId),
     );
@@ -247,15 +243,15 @@ export class EpisodeBuilder {
   /**
    * Set the background for the video canvas.
    * Can be a preset ID ("ambient-night", "neon-city", etc.) or full config.
-   * 
+   *
    * @example
    * // Using preset
    * .background("ambient-night")
-   * 
+   *
    * @example
    * // Using image
    * .background({ type: "image", src: "/backgrounds/city.jpg", blur: 5 })
-   * 
+   *
    * @example
    * // Using video
    * .background({ type: "video", src: "/backgrounds/loop.mp4", opacity: 0.8 })
@@ -269,10 +265,7 @@ export class EpisodeBuilder {
    * Add a camera track.
    */
   camera(fn: TrackFn<CameraTrackBuilder>): this {
-    const builder = new CameraTrackBuilder(
-      this._fps,
-      () => this._declarationOrder++,
-    );
+    const builder = new CameraTrackBuilder(this._fps, () => this._declarationOrder++);
     fn(builder);
     this._events.push(...builder._events);
     return this;
@@ -282,10 +275,7 @@ export class EpisodeBuilder {
    * Add an audio track.
    */
   audio(fn: TrackFn<AudioTrackBuilder>): this {
-    const builder = new AudioTrackBuilder(
-      this._fps,
-      () => this._declarationOrder++,
-    );
+    const builder = new AudioTrackBuilder(this._fps, () => this._declarationOrder++);
     fn(builder);
     this._events.push(...builder._events);
     return this;
@@ -296,10 +286,7 @@ export class EpisodeBuilder {
    * Renders above devices and is unaffected by camera transforms.
    */
   overlay(fn: TrackFn<OverlayTrackBuilder>): this {
-    const builder = new OverlayTrackBuilder(
-      this._fps,
-      () => this._declarationOrder++,
-    );
+    const builder = new OverlayTrackBuilder(this._fps, () => this._declarationOrder++);
     fn(builder);
     this._events.push(...builder._events);
     return this;
@@ -309,10 +296,7 @@ export class EpisodeBuilder {
    * Add an OS track.
    */
   os(fn: TrackFn<OSTrackBuilder>): this {
-    const builder = new OSTrackBuilder(
-      this._fps,
-      () => this._declarationOrder++,
-    );
+    const builder = new OSTrackBuilder(this._fps, () => this._declarationOrder++);
     fn(builder);
     this._events.push(...builder._events);
     return this;
@@ -324,11 +308,7 @@ export class EpisodeBuilder {
    * notifications, keyboard, badges, screen recording, etc.
    */
   deviceTrack(deviceId: string, fn: TrackFn<DeviceTrackBuilderV2>): this {
-    const builder = new DeviceTrackBuilderV2(
-      this._fps,
-      deviceId,
-      () => this._declarationOrder++,
-    );
+    const builder = new DeviceTrackBuilderV2(this._fps, deviceId, () => this._declarationOrder++);
     fn(builder);
     this._events.push(...builder._events);
     return this;
@@ -337,7 +317,7 @@ export class EpisodeBuilder {
   /**
    * Add a generic track by ID.
    * Used for plugin tracks (e.g., "app_whatsapp").
-   * 
+   *
    * @param trackId - Track identifier (e.g., "app_whatsapp")
    * @param factory - Factory function that creates the track builder.
    *                  Can be either:
@@ -352,9 +332,10 @@ export class EpisodeBuilder {
   ): this {
     const getOrder = () => this._declarationOrder++;
     // Check if factory expects a getOrder parameter
-    const builder = factory.length === 1
-      ? (factory as (getOrder: () => number) => T)(getOrder)
-      : (factory as () => T)();
+    const builder =
+      factory.length === 1
+        ? (factory as (getOrder: () => number) => T)(getOrder)
+        : (factory as () => T)();
     fn(builder);
     this._events.push(...(builder._events as TrackEvent[]));
     return this;
@@ -425,7 +406,7 @@ export class EpisodeBuilder {
         const generatedEvents = plugin.process(allEvents, context);
 
         for (const event of generatedEvents) {
-          if (!event._declarationOrder) {
+          if (event._declarationOrder === undefined) {
             event._declarationOrder = this._declarationOrder++;
           }
         }
@@ -446,6 +427,7 @@ export class EpisodeBuilder {
       durationInFrames: this._durationInFrames,
       title: this._title,
       description: this._description,
+      seed: this._seed,
       devices: this._devices,
       appSnapshots: this._appSnapshots,
       initialViews: this._initialViews,
@@ -456,21 +438,19 @@ export class EpisodeBuilder {
       background: this._background,
       voice: this._voiceConfig
         ? {
-          manifestPath: this._voiceConfig.script.manifestPath,
-          audioPath: this._voiceConfig.script.audioPath,
-          usePerSegmentControl: true,
-          segmentSchedule: this._voiceConfig.schedule,
-          durationMs: this._voiceConfig.script.durationMs,
-          segments: Object.values(this._voiceConfig.script.segments).map(
-            (seg) => ({
+            manifestPath: this._voiceConfig.script.manifestPath,
+            audioPath: this._voiceConfig.script.audioPath,
+            usePerSegmentControl: true,
+            segmentSchedule: this._voiceConfig.schedule,
+            durationMs: this._voiceConfig.script.durationMs,
+            segments: Object.values(this._voiceConfig.script.segments).map((seg) => ({
               id: seg.id,
               startMs: seg.startMs,
               endMs: seg.endMs,
               durationMs: seg.endMs - seg.startMs,
               speaker: seg.speaker,
-            }),
-          ),
-        }
+            })),
+          }
         : undefined,
     };
   }
@@ -489,9 +469,7 @@ export class EpisodeBuilder {
     };
   }
 
-  private _orderPluginsByDependencies(
-    plugins: CompilerPlugin[],
-  ): CompilerPlugin[] {
+  private _orderPluginsByDependencies(plugins: CompilerPlugin[]): CompilerPlugin[] {
     const ordered: CompilerPlugin[] = [];
     const visited = new Set<string>();
     const visiting = new Set<string>();
@@ -548,9 +526,6 @@ export class EpisodeBuilder {
  *   .build();
  * ```
  */
-export function episode(
-  id: string,
-  config: TrackEpisodeConfig,
-): EpisodeBuilder {
+export function episode(id: string, config: TrackEpisodeConfig): EpisodeBuilder {
   return new EpisodeBuilder(id, config);
 }

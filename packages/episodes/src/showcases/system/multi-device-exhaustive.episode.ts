@@ -25,7 +25,7 @@ export default defineEpisode({
         screenRecording: true,
         installedApps: ["app_whatsapp"],
         os: {
-          time: new Date("2026-04-10T21:30:00"),
+          time: new Date("2026-04-10T21:30:00Z"),
           battery: 72,
           network: "5G",
         },
@@ -35,7 +35,7 @@ export default defineEpisode({
         screenRecording: true,
         installedApps: ["app_x"],
         os: {
-          time: new Date("2026-04-10T21:30:00"),
+          time: new Date("2026-04-10T21:30:00Z"),
           battery: 81,
           network: "5G",
         },
@@ -53,7 +53,7 @@ export default defineEpisode({
           { id: "u_news", name: "Newsroom", handle: "newsroom", followers: 110200, following: 91, verified: "gold" },
         ],
         tweets: [
-          { id: "tw_parallel", authorId: "u_news", text: "Tonight's leak is now a full public timeline event.", createdAt: new Date("2026-04-10T21:28:00").getTime(), viewCount: 210000, shareCount: 3200, bookmarkCount: 9200 },
+          { id: "tw_parallel", authorId: "u_news", text: "Tonight's leak is now a full public timeline event.", createdAt: new Date("2026-04-10T21:28:00Z").getTime(), viewCount: 210000, shareCount: 3200, bookmarkCount: 9200 },
         ],
       })
       .whatsapp("phone_left", "dm_left", (wa) => {
@@ -70,7 +70,7 @@ export default defineEpisode({
           authorId: "u_me",
           replyToId: "tw_parallel",
           text: "This is why founders should fear screenshots more than competitors.",
-          createdAt: new Date("2026-04-10T21:31:00").getTime(),
+          createdAt: new Date("2026-04-10T21:31:00Z").getTime(),
           typed: true,
           charDelay: 2,
         });

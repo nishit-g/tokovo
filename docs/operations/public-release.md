@@ -14,7 +14,7 @@ This checklist complements [`release.md`](release.md) and [`../V1_STABILITY.md`]
 - [ ] `ASSET_LICENSES.md` accounts for bundled media, generated sounds, icons, fonts, and sample assets.
 - [ ] `.env.example` files contain placeholders only.
 - [ ] No local `.env`, credential, render output, or generated cache files are tracked.
-- [ ] Package metadata reflects the intended public surface and private/internal packages are marked private.
+- [x] Workspace packages are explicitly private until a versioned npm publishing policy is introduced.
 - [ ] A v1.0.0 tag and release notes are drafted from `CHANGELOG.md`.
 
 ## OSS Maintainer Automation
@@ -37,7 +37,9 @@ pnpm install --frozen-lockfile
 pnpm verify:release
 ```
 
-If npm registry release is part of v1.0.0, also check:
+Npm registry publishing is currently out of scope because every workspace package is private. If a
+versioned publishing policy is introduced later, remove `private` only from the selected packages and
+then check:
 
 ```bash
 pnpm -r publish --dry-run

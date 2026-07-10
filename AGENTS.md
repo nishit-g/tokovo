@@ -24,7 +24,7 @@ This repository is a TypeScript monorepo for Tokovo, an AI-native studio for mul
 
 ## Commands
 
-Use `pnpm` with Node.js 20 or newer.
+Use `pnpm` with Node.js 22 or 24.
 
 ```bash
 pnpm install

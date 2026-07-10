@@ -20,7 +20,7 @@ export default defineEpisode({
       .device("phone", "iphone16", {
         app: "app_x",
         installedApps: ["app_x"],
-        os: { time: new Date("2025-06-26T12:04:00"), battery: 76, network: "5G" },
+        os: { time: new Date("2025-06-26T12:04:00Z"), battery: 76, network: "5G" },
       })
       .background({ type: "image", src: "/backgrounds/ambient-night.png" })
       .snapshot("app_x", "phone", {

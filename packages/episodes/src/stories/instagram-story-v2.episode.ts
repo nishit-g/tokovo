@@ -20,14 +20,14 @@ export default defineEpisode({
     apps: ["app_instagram"],
   },
   build: () => {
-    const baseTs = new Date("2026-04-10T20:00:00").getTime();
+    const baseTs = new Date("2026-04-10T20:00:00Z").getTime();
 
     return episode("instagram-story-v2", { fps: 30, duration: "34s", title: "Instagram Story V2" })
       .device("phone", "iphone16", {
         app: "app_instagram",
         installedApps: ["app_instagram"],
         os: {
-          time: new Date("2026-04-10T20:02:00"),
+          time: new Date("2026-04-10T20:02:00Z"),
           battery: 58,
           network: "5G",
         },

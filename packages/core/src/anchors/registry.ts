@@ -8,6 +8,7 @@ import type {
 } from "../types/anchor.js";
 import { DEFAULT_FRAMING, EMPTY_SNAPSHOT } from "../types/anchor.js";
 import type { WorldState } from "../types.js";
+import { projectWorldForDevice } from "../utils/app-state.js";
 
 export type {
   AnchorProvider,
@@ -61,8 +62,9 @@ export class AnchorRegistryClass {
     deviceId: string,
     context?: AnchorProviderContext,
   ): AnchorSnapshot {
+    const projectedWorld = projectWorldForDevice(world, deviceId);
     const provider = this.providerRegistry.get(appId);
-    const base = provider?.getAnchors(world, layout, deviceId, context) ?? EMPTY_SNAPSHOT;
+    const base = provider?.getAnchors(projectedWorld, layout, deviceId, context) ?? EMPTY_SNAPSHOT;
 
     // Merge device-owned anchors into *every* snapshot, so camera semantics are
     // consistent and not coupled to individual apps.
@@ -71,12 +73,7 @@ export class AnchorRegistryClass {
     if (appId !== "app_device") {
       const deviceProvider = this.providerRegistry.get("app_device");
       if (deviceProvider) {
-        const deviceSnapshot = deviceProvider.getAnchors(
-          world,
-          layout,
-          deviceId,
-          context,
-        );
+        const deviceSnapshot = deviceProvider.getAnchors(projectedWorld, layout, deviceId, context);
         return {
           ...base,
           anchors: {
@@ -100,9 +97,7 @@ export class AnchorRegistryClass {
       return DEFAULT_FRAMING;
     }
 
-    const anchorName = anchorId.includes(":")
-      ? anchorId.split(":").slice(1).join(":")
-      : anchorId;
+    const anchorName = anchorId.includes(":") ? anchorId.split(":").slice(1).join(":") : anchorId;
 
     return provider.framing[anchorName] || DEFAULT_FRAMING;
   }
@@ -111,11 +106,7 @@ export class AnchorRegistryClass {
     this.providerRegistry.clear();
   }
 
-  resolveAnchor(
-    anchorId: string,
-    world: WorldState,
-    deviceId: string,
-  ): Rect | null {
+  resolveAnchor(anchorId: string, world: WorldState, deviceId: string): Rect | null {
     const appId = extractAppIdFromAnchor(anchorId);
     if (!appId) return null;
 
@@ -125,7 +116,11 @@ export class AnchorRegistryClass {
     const device = world.devices[deviceId];
     if (!device) return null;
 
-    const snapshot = provider.getAnchors(world, undefined, deviceId);
+    const snapshot = provider.getAnchors(
+      projectWorldForDevice(world, deviceId),
+      undefined,
+      deviceId,
+    );
     return snapshot?.anchors?.[anchorId] || null;
   }
 

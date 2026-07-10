@@ -199,19 +199,10 @@ describe("WhatsApp Reducer (compat)", () => {
     expect(conv.unreadCount).toBe(0);
     expect(conv.unreadDividerMessageId).toBe(conv.messages[0].id);
 
-    const timeline = normalizeMessagesForChat(
-      opened,
-      "dm_test",
-      conv.messages,
-      undefined,
-      conv,
-    );
+    const timeline = normalizeMessagesForChat(opened, "dm_test", conv.messages, undefined, conv);
 
     expect(
-      timeline.some(
-        (msg) =>
-          msg.type === "system" && msg.systemType === "unread_divider",
-      ),
+      timeline.some((msg) => msg.type === "system" && msg.systemType === "unread_divider"),
     ).toBe(true);
   });
 
@@ -293,7 +284,7 @@ describe("WhatsApp Reducer (compat)", () => {
       phone: {
         id: "phone",
         os: {
-          clock: new Date("2025-02-02T18:45:00").getTime(),
+          clock: new Date("2025-02-02T18:45:00Z").getTime(),
         },
       },
     } as any;

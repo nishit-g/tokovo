@@ -21,7 +21,7 @@ export default defineEpisode({
     apps: ["app_x"],
   },
   build: () => {
-    const baseTs = new Date("2026-04-10T19:40:00").getTime();
+    const baseTs = new Date("2026-04-10T19:40:00Z").getTime();
 
     return episode("x-theme-storybook-v2", {
       fps: 30,
@@ -31,7 +31,7 @@ export default defineEpisode({
       .device("phone", "iphone16", {
         app: "app_x",
         os: {
-          time: new Date("2026-04-10T19:42:00"),
+          time: new Date("2026-04-10T19:42:00Z"),
           battery: 79,
           network: "wifi",
         },

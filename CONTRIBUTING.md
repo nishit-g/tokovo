@@ -6,7 +6,7 @@ Thanks for helping improve Tokovo. This repo is a TypeScript monorepo for determ
 
 Requirements:
 
-- Node.js 20 or newer
+- Node.js 22 or 24
 - pnpm 10.28.2
 
 Install dependencies:

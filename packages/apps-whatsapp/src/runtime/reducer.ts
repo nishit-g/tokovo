@@ -1,18 +1,8 @@
 import { WHATSAPP_APP_ID } from "../constants.js";
 import { TimelineEvent, WorldState } from "@tokovo/core";
-import {
-  WhatsAppMessage,
-  WhatsAppConversation,
-  WhatsAppState,
-} from "../types/index.js";
-import {
-  parseWhatsAppEvent,
-  type CustomEvent,
-} from "../schemas/index.js";
-import {
-  type HandlerContext,
-  createWhatsAppHandlers,
-} from "../handlers/index.js";
+import { WhatsAppMessage, WhatsAppConversation, WhatsAppState } from "../types/index.js";
+import { parseWhatsAppEvent, type CustomEvent } from "../schemas/index.js";
+import { type HandlerContext, createWhatsAppHandlers } from "../handlers/index.js";
 import {
   GROUP_EVENT_TYPES,
   isWhatsAppGroupEvent,
@@ -81,8 +71,7 @@ function syncViewMode(state: WhatsAppState): void {
   // - everything else => FEED
   if (state.currentScreen === "chat") {
     state.viewMode = "CHAT";
-    state.conversationId =
-      state.conversationId ?? state.currentConversationId ?? undefined;
+    state.conversationId = state.conversationId ?? state.currentConversationId ?? undefined;
     return;
   }
 
@@ -130,9 +119,7 @@ function getAppState(draft: WorldState): WhatsAppState {
   return state;
 }
 
-function getConversations(
-  draft: WorldState,
-): Record<string, WhatsAppConversation> {
+function getConversations(draft: WorldState): Record<string, WhatsAppConversation> {
   const appState = getAppState(draft);
   if (!appState.conversations) {
     appState.conversations = {};
@@ -140,10 +127,7 @@ function getConversations(
   return appState.conversations as Record<string, WhatsAppConversation>;
 }
 
-function addMessage(
-  conversation: WhatsAppConversation,
-  message: WhatsAppMessage,
-): void {
+function addMessage(conversation: WhatsAppConversation, message: WhatsAppMessage): void {
   conversation.messages.push(message);
   if (!conversation.messagesById) {
     conversation.messagesById = {};
@@ -164,11 +148,7 @@ function getMessageById(
   return conversation.messages.find((m) => m.id === messageId);
 }
 
-function generateTimestamp(
-  frame: number,
-  draft: WorldState,
-  deviceId?: string,
-): string {
+function generateTimestamp(frame: number, draft: WorldState, deviceId?: string): string {
   const fps = draft.config?.fps ?? 30;
 
   let baseHour = 10;
@@ -178,8 +158,8 @@ function generateTimestamp(
     const osState = draft.devices[deviceId].os;
     if (osState?.clock && typeof osState.clock === "number") {
       const clockDate = new Date(osState.clock);
-      baseHour = clockDate.getHours();
-      baseMinute = clockDate.getMinutes();
+      baseHour = clockDate.getUTCHours();
+      baseMinute = clockDate.getUTCMinutes();
     }
   }
 
@@ -241,18 +221,13 @@ function handleCustomOp(draft: WorldState, event: CustomEvent): void {
       if (!isGroupMemberRemovePayload(event.eventType, payload)) break;
 
       if (conversation.members) {
-        conversation.members = conversation.members.filter(
-          (m) => m.id !== payload.memberId,
-        );
+        conversation.members = conversation.members.filter((m) => m.id !== payload.memberId);
       }
 
       const wasMe = payload.memberId === "me";
-      const removedByName =
-        payload.removedBy === "me" ? "You" : payload.removedBy;
+      const removedByName = payload.removedBy === "me" ? "You" : payload.removedBy;
 
-      const text = wasMe
-        ? "You left the group"
-        : `${removedByName} removed ${payload.memberName}`;
+      const text = wasMe ? "You left the group" : `${removedByName} removed ${payload.memberName}`;
 
       const msg: WhatsAppMessage = {
         id: `sys_${event.at}_removed_${payload.memberId}`,
@@ -278,13 +253,10 @@ function handleCustomOp(draft: WorldState, event: CustomEvent): void {
           conversation.admins.push(payload.memberId);
         }
       } else {
-        conversation.admins = conversation.admins.filter(
-          (id) => id !== payload.memberId,
-        );
+        conversation.admins = conversation.admins.filter((id) => id !== payload.memberId);
       }
 
-      const changedByName =
-        payload.changedBy === "me" ? "You" : payload.changedBy;
+      const changedByName = payload.changedBy === "me" ? "You" : payload.changedBy;
       const memberName = payload.memberName || payload.memberId;
       const action = payload.action === "promote" ? "made" : "removed";
       const role = payload.action === "promote" ? "an admin" : "as admin";
@@ -307,9 +279,7 @@ function handleCustomOp(draft: WorldState, event: CustomEvent): void {
       const field = payload.field as string;
       const newValue = payload.newValue as string;
       const changedByName =
-        (payload.changedBy as string) === "me"
-          ? "You"
-          : (payload.changedBy as string);
+        (payload.changedBy as string) === "me" ? "You" : (payload.changedBy as string);
 
       if (field === "name") {
         conversation.name = newValue;

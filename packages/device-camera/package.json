@@ -1,6 +1,7 @@
 {
   "name": "@tokovo/device-camera",
   "version": "0.1.0",
+  "private": true,
   "description": "Production-grade cinematic camera system for Tokovo",
   "type": "module",
   "main": "./dist/index.js",

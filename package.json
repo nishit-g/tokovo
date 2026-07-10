@@ -52,7 +52,7 @@
     "typecheck:docs": "turbo run typecheck --filter=docs",
     "typecheck:solution": "tsc -b tsconfig.solution.json --pretty false",
     "clean:generated": "rm -rf packages/core/coverage tmp .remotion/bundles",
-    "test": "pnpm -r --filter '!docs' test",
+    "test": "turbo run test --filter=!docs",
     "test:docs": "pnpm --filter docs test",
     "test:phase1": "pnpm --filter @tokovo/ir test && pnpm --filter @tokovo/dsl test && pnpm --filter @tokovo/compiler test && pnpm --filter @tokovo/episodes test",
     "test:determinism:phase1": "pnpm --filter @tokovo/ir test && pnpm --filter @tokovo/ir test && pnpm --filter @tokovo/dsl test && pnpm --filter @tokovo/dsl test && pnpm --filter @tokovo/compiler test && pnpm --filter @tokovo/compiler test && pnpm --filter @tokovo/episodes test && pnpm --filter @tokovo/episodes test",
@@ -60,7 +60,7 @@
     "build:phase1": "pnpm --filter @tokovo/ir build && pnpm --filter @tokovo/dsl build && pnpm --filter @tokovo/compiler build && pnpm --filter @tokovo/episodes build",
     "ci:phase1": "pnpm lint:unsafe:phase1 && pnpm test:phase1 && pnpm test:determinism:phase1 && pnpm build:phase1",
     "verify": "pnpm lint && pnpm typecheck && pnpm validate && pnpm test && pnpm build",
-    "verify:release": "pnpm lint:ox && pnpm lint:release && pnpm -s typecheck:solution && pnpm validate && pnpm --filter @tokovo/episodes run test -- --runInBand && pnpm build && pnpm render:smoke && pnpm verify:docs",
+    "verify:release": "pnpm lint:packages && pnpm lint:ox && pnpm lint:release && pnpm -s typecheck:solution && pnpm validate && pnpm test && pnpm build && pnpm render:smoke && pnpm verify:docs",
     "verify:docs": "pnpm typecheck:docs && pnpm --filter docs lint && pnpm test:docs && pnpm build:docs",
     "ci:repo": "pnpm verify:release",
     "validate": "pnpm --filter @tokovo/episodes validate:workspace"
@@ -81,7 +81,7 @@
   },
   "packageManager": "pnpm@10.28.2",
   "engines": {
-    "node": ">=20 <26"
+    "node": ">=22 <25"
   },
   "pnpm": {
     "overrides": {

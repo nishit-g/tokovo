@@ -32,7 +32,7 @@ export default defineEpisode({
         app: "app_teams",
         theme: "teams-storybook",
         os: {
-          time: new Date("2026-04-10T23:10:00"),
+          time: new Date("2026-04-10T23:10:00Z"),
           battery: 64,
           network: "4G",
         },
