@@ -16,36 +16,98 @@ export interface CameraDirectorPluginOptions extends CameraDirectorOptions {
   style?: string;
 }
 
+const STYLE_BEHAVIORS: Record<string, BehaviorConfig> = {
+  ViralDramaV1: {
+    MESSAGE_RECEIVED: "fluid-tennis-dramatic",
+    MESSAGE_SENT: "fluid-tennis-energetic",
+    NOTIFICATION_SHOWN: "interrupt-focus",
+    TYPING_START: "drift-anticipation",
+  },
+  Cinematic: {
+    MESSAGE_RECEIVED: "fluid-tennis-energetic",
+    MESSAGE_SENT: "fluid-tennis-casual",
+    NOTIFICATION_SHOWN: "interrupt-focus",
+    TYPING_START: "drift-anticipation",
+  },
+  Documentary: {
+    MESSAGE_RECEIVED: "fluid-tennis-casual",
+    MESSAGE_SENT: "fluid-tennis-casual",
+    NOTIFICATION_SHOWN: "interrupt-focus",
+    TYPING_START: "static",
+  },
+};
+
+const RECEIVED_EVENT_TYPES = new Set([
+  "MESSAGE_RECEIVED",
+  "IMESSAGE_MESSAGE_RECEIVE",
+  "SNAPCHAT_MESSAGE_RECEIVE",
+  "TEAMS_MESSAGE_RECEIVE",
+  "POST_COMMENT",
+]);
+
+const SENT_EVENT_TYPES = new Set([
+  "MESSAGE_SENT",
+  "IMESSAGE_MESSAGE_SEND",
+  "SNAPCHAT_MESSAGE_SEND",
+  "TEAMS_MESSAGE_SEND",
+  "DM_SEND",
+  "DM_MESSAGE_ADD",
+  "TWEET_CREATE",
+  "TWEET_REPLY",
+  "POST_CREATE",
+  "POST_ADD",
+]);
+
+const TYPING_EVENT_TYPES = new Set([
+  "TYPING_START",
+  "IMESSAGE_TYPING_START",
+  "SNAPCHAT_TYPING_START",
+  "TEAMS_TYPING_START",
+]);
+
+const APP_NOTIFICATION_EVENT_TYPES = new Set([
+  "NOTIFICATION_ADD",
+  "TEAMS_NOTIFICATION_PUSH",
+]);
+
 export class CameraDirectorPlugin implements CompilerPlugin {
   name = "camera-director";
   version = "1.0.0";
   subscribesTo = ["*"];
   emits = [];
 
-  private readonly director: CameraDirector;
+  private readonly directorOptions: CameraDirectorOptions;
   private readonly behaviorConfig?: BehaviorConfig;
 
   constructor(styleOrOptions?: string | CameraDirectorPluginOptions) {
-    const options =
+    const style =
       typeof styleOrOptions === "string"
-        ? { behaviors: { MESSAGE_RECEIVED: styleOrOptions } }
-        : styleOrOptions || {};
+        ? styleOrOptions
+        : styleOrOptions?.style;
+    const options = typeof styleOrOptions === "object" ? styleOrOptions : {};
+    const styleBehaviors = style ? STYLE_BEHAVIORS[style] : undefined;
 
-    this.director = new CameraDirector(options);
-    this.behaviorConfig = options.behaviorConfig;
+    this.directorOptions = options;
+    this.behaviorConfig =
+      options.behaviorConfig ??
+      styleBehaviors ??
+      (typeof styleOrOptions === "string"
+        ? { MESSAGE_RECEIVED: styleOrOptions }
+        : undefined);
   }
 
   process(events: TrackEvent[], context: CompilerContext): TrackEvent[] {
+    const director = new CameraDirector({
+      ...this.directorOptions,
+      fps: context.fps,
+    });
     const cameraEvents = this.convertToCameraEvents(events, context.fps);
 
     if (cameraEvents.length === 0) {
       return [];
     }
 
-    const { effects } = this.director.choreograph(
-      cameraEvents,
-      this.behaviorConfig,
-    );
+    const { effects } = director.choreograph(cameraEvents, this.behaviorConfig);
 
     return this.convertEffectsToTrackEvents(effects, context.fps);
   }
@@ -61,7 +123,12 @@ export class CameraDirectorPlugin implements CompilerPlugin {
       const timestamp = event.at;
       const payload = event.payload as Record<string, unknown> | undefined;
 
-      if (event.kind === "APP" && event.type === "MESSAGE_RECEIVED") {
+      const anchor = this.anchorForEvent(
+        event.kind === "APP" ? event.appId : undefined,
+        event.type,
+      );
+
+      if (event.kind === "APP" && RECEIVED_EVENT_TYPES.has(event.type)) {
         cameraEvents.push({
           id: `plugin-${eventId++}`,
           type: "MESSAGE_RECEIVED",
@@ -71,10 +138,10 @@ export class CameraDirectorPlugin implements CompilerPlugin {
             from: typeof payload?.from === "string" ? payload.from : "them",
             text: typeof payload?.text === "string" ? payload.text : "",
             order: eventId - 1,
-            anchor: "lastMessage",
+            anchor,
           },
         });
-      } else if (event.kind === "APP" && event.type === "MESSAGE_SENT") {
+      } else if (event.kind === "APP" && SENT_EVENT_TYPES.has(event.type)) {
         cameraEvents.push({
           id: `plugin-${eventId++}`,
           type: "MESSAGE_SENT",
@@ -84,10 +151,13 @@ export class CameraDirectorPlugin implements CompilerPlugin {
             from: "me",
             text: typeof payload?.text === "string" ? payload.text : "",
             order: eventId - 1,
-            anchor: "lastMessage",
+            anchor,
           },
         });
-      } else if (event.kind === "DEVICE" && event.type === "NOTIFICATION_SHOW") {
+      } else if (
+        event.kind === "DEVICE" &&
+        event.type === "NOTIFICATION_SHOW"
+      ) {
         cameraEvents.push({
           id: `plugin-${eventId++}`,
           type: "NOTIFICATION_SHOWN",
@@ -101,7 +171,24 @@ export class CameraDirectorPlugin implements CompilerPlugin {
             duration: 1.5,
           },
         });
-      } else if (event.kind === "APP" && event.type === "TYPING_START") {
+      } else if (
+        event.kind === "APP" &&
+        APP_NOTIFICATION_EVENT_TYPES.has(event.type)
+      ) {
+        cameraEvents.push({
+          id: `plugin-${eventId++}`,
+          type: "NOTIFICATION_SHOWN",
+          timestamp,
+          priority: "high",
+          payload: {
+            app: event.appId,
+            title: typeof payload?.title === "string" ? payload.title : "",
+            body: typeof payload?.body === "string" ? payload.body : "",
+            anchor: "notification_row",
+            duration: 1.5,
+          },
+        });
+      } else if (event.kind === "APP" && TYPING_EVENT_TYPES.has(event.type)) {
         cameraEvents.push({
           id: `plugin-${eventId++}`,
           type: "TYPING_START",
@@ -116,6 +203,23 @@ export class CameraDirectorPlugin implements CompilerPlugin {
     }
 
     return cameraEvents;
+  }
+
+  private anchorForEvent(appId: string | undefined, eventType: string): string {
+    if (
+      eventType === "POST_ADD" ||
+      eventType === "POST_CREATE" ||
+      eventType === "POST_COMMENT"
+    ) {
+      return appId === "app_linkedin" ? "post_card" : "feed_post";
+    }
+    if (eventType === "TWEET_CREATE" || eventType === "TWEET_REPLY") {
+      return "tweet_card";
+    }
+    if (appId === "app_instagram") return "dm_message_latest";
+    if (appId === "app_linkedin") return "message_thread";
+    if (appId === "app_x") return "dm_thread";
+    return "lastMessage";
   }
 
   private convertEffectsToTrackEvents(

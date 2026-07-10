@@ -40,3 +40,8 @@ The DSL should not synthesize conversations, feeds, or threads through device st
 Checked-in episodes use the product-level builder from
 `@tokovo/episodes/code-first-episode`. Its named app methods own FPS and declaration-order
 plumbing so episode authors never instantiate app track builders directly.
+
+The product-level layer also owns narrative composition: actors with per-app identities,
+scene-local timing, consistent conversation/social verbs, typed story handles, and
+automatic camera direction. These APIs lower into the same event IR as explicit tracks;
+they do not introduce a second runtime or nondeterministic scheduling model.

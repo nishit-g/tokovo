@@ -56,3 +56,88 @@ episode("multi-app", { fps: 30, duration: "12s" })
 The complete set is `whatsapp`, `imessage`, `instagram`, `x`, `linkedin`,
 `snapchat`, `teams`, and `typewriter`. Use generic `track()` only while developing an
 external app plugin; it is not the normal story-authoring surface.
+
+## Story language
+
+Use scenes when the episode is a narrative rather than a systems showcase. Scene time is
+local, so inserting or moving a scene does not require retiming every action inside it.
+
+```ts
+import { actor, cast, episode } from "@tokovo/episodes/code-first-episode";
+
+const people = cast({
+  me: actor("me", {
+    name: "Me",
+    identities: { x: { id: "x_me", handle: "studiolead" } },
+  }),
+  riya: actor("riya", {
+    name: "Riya",
+    avatar: "/avatars/riya.jpg",
+    identities: {
+      whatsapp: { name: "Riya G." },
+      x: { id: "x_riya", handle: "riya" },
+    },
+  }),
+});
+
+episode("reveal", { fps: 30, duration: "20s" }).scene(
+  "private message",
+  { at: "4s", duration: "8s" },
+  (scene) => {
+    scene.conversation(
+      {
+        app: "whatsapp",
+        deviceId: "phone",
+        conversationId: "dm_riya",
+        currentActor: people.me,
+      },
+      (chat) => {
+        chat.open().wait("1s");
+        const reveal = chat.receive(people.riya, "That someone is for you.", {
+          hold: "2s",
+        });
+        chat.reply("Delete this from the universe.", reveal, {
+          typed: true,
+          charDelay: 2,
+        });
+        scene.focus(reveal, { scale: 1.1 });
+      },
+    );
+  },
+);
+```
+
+`scene.at()` and `scene.wait()` move a scene-local cursor. Raw app, camera, audio,
+overlay, and device tracks nested under a scene also interpret their `at()` and `span()`
+times relative to the scene start.
+
+### Consistent conversations
+
+`scene.conversation()` provides the same `open`, `send`, `receive`, `reply`, `at`, and
+`wait` verbs for WhatsApp, iMessage, Snapchat, Teams, Instagram DMs, LinkedIn messages,
+and X messages. Use the named raw app method when an app-specific action is needed.
+
+### Social posts and handles
+
+`scene.social()` provides `post`, `comment`, `open`, `at`, and `wait` across Instagram,
+LinkedIn, and X. `post`, `comment`, `send`, and `receive` return typed story handles.
+Handles carry the stable device and semantic anchor target, so camera code does not need
+to repeat app-specific anchor strings.
+
+```ts
+scene.social(
+  { app: "x", deviceId: "phone", currentActor: people.me },
+  (social) => {
+    const post = social.post("The reveal is live.");
+    social.wait("2s").comment(post, people.riya, "Finally.");
+    scene.follow(post, "3s", { scale: 1.1 });
+  },
+);
+```
+
+### Automatic direction
+
+`.director("ViralDramaV1")`, `.director("Cinematic")`, and
+`.director("Documentary")` now compile real camera choreography. The director recognizes
+message, DM, post, reply, typing, and notification events across built-in apps. Manual
+camera tracks remain available for hero shots and multi-device composition.

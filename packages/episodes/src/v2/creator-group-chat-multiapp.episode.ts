@@ -8,7 +8,16 @@ export default defineEpisode({
     description:
       "Multi-app creator operations episode with group chat pressure, heads-up banner bait, X thread escalation, iMessage follow-up, overlays, BGM, keyboard, and camera direction.",
     category: "showcase",
-    tags: ["v2", "creator", "chat", "whatsapp", "x", "imessage", "overlay", "bgm"],
+    tags: [
+      "v2",
+      "creator",
+      "chat",
+      "whatsapp",
+      "x",
+      "imessage",
+      "overlay",
+      "bgm",
+    ],
   },
   config: {
     format: "1080x1920",
@@ -20,7 +29,11 @@ export default defineEpisode({
       .device("phone", "iphone16", {
         app: "app_whatsapp",
         installedApps: ["app_whatsapp", "app_x", "app_imessage"],
-        os: { time: new Date("2025-06-26T21:41:00Z"), battery: 48, network: "5G" },
+        os: {
+          time: new Date("2025-06-26T21:41:00Z"),
+          battery: 48,
+          network: "5G",
+        },
       })
       .snapshot("app_x", "phone", {
         users: [
@@ -174,82 +187,132 @@ export default defineEpisode({
       // ============================================
       // WHATSAPP (group chat)
       // ============================================
-      .whatsapp("phone", "grp_chat", (wa) => {
-        wa.switchTo("grp_chat", "0s");
+      .scene("war room", { at: "0s", duration: "13s" }, (scene) => {
+        scene.whatsapp("phone", "grp_chat", (wa) => {
+          wa.switchTo("grp_chat", "0s");
 
-        wa.at("1.2s").receive("Mina", "The teaser is out and the timing comment is everywhere.");
-        wa.at("2.2s").receive("Omar", "Caption team says the audience made their own hook.");
-        wa.at("3.1s").receive(
-          "Tess",
-          "We need one controlled reply before this becomes the whole launch.",
-        );
+          wa.at("1.2s").receive(
+            "Mina",
+            "The teaser is out and the timing comment is everywhere.",
+          );
+          wa.at("2.2s").receive(
+            "Omar",
+            "Caption team says the audience made their own hook.",
+          );
+          wa.at("3.1s").receive(
+            "Tess",
+            "We need one controlled reply before this becomes the whole launch.",
+          );
 
-        wa.span("3.9s", "4.6s").typing("Jay");
-        wa.at("4.7s").receive("Jay", "The thread is calling it strategic timing. Lean into it.");
+          wa.span("3.9s", "4.6s").typing("Jay");
+          wa.at("4.7s").receive(
+            "Jay",
+            "The thread is calling it strategic timing. Lean into it.",
+          );
 
-        // Typed reply (auto keyboard) for realism
-        wa.at("7.8s").send("It was pacing. We held the reveal for the second beat.", {
-          typed: true,
-          charDelay: 2,
+          // Typed reply (auto keyboard) for realism
+          wa.at("7.8s").send(
+            "It was pacing. We held the reveal for the second beat.",
+            {
+              typed: true,
+              charDelay: 2,
+            },
+          );
+
+          wa.at("10.8s").receive(
+            "Omar",
+            "That line is either brilliant or a screenshot forever.",
+          );
+          wa.at("12.6s").receive(
+            "Mina",
+            "Open X. The thread is moving faster than the edit.",
+          );
         });
-
-        wa.at("10.8s").receive("Omar", "That line is either brilliant or a screenshot forever.");
-        wa.at("12.6s").receive("Mina", "Open X. The thread is moving faster than the edit.");
       })
 
       // ============================================
       // X (banter thread)
       // ============================================
-      .x("phone", (x) => {
-        x.at("16.4s").navigate("tweet", { tweetId: "tw_op" });
-        x.at("18.0s").viewTweet("tw_op");
+      .scene("public response", { at: "16s", duration: "11s" }, (scene) => {
+        scene.x("phone", (x) => {
+          x.at("0.4s").navigate("tweet", { tweetId: "tw_op" });
+          x.at("2s").viewTweet("tw_op");
 
-        // Compose a quote response (typed).
-        x.at("22.0s").navigate("compose");
-        x.at("26.0s").postTweet({
-          authorId: "u_me",
-          text: "Strategic timing means the reveal lands when the audience is already watching.",
-          typed: true,
-          charDelay: 2,
-          viewCount: 1900,
-          shareCount: 40,
-          bookmarkCount: 130,
+          // Compose a quote response (typed).
+          x.at("6s").navigate("compose");
+          x.at("10s").postTweet({
+            authorId: "u_me",
+            text: "Strategic timing means the reveal lands when the audience is already watching.",
+            typed: true,
+            charDelay: 2,
+            viewCount: 1900,
+            shareCount: 40,
+            bookmarkCount: 130,
+          });
+          x.at("10.2s").navigate("timeline");
         });
-        x.at("26.2s").navigate("timeline");
       })
 
       // ============================================
       // iMessage (producer reality check)
       // ============================================
-      .imessage("phone", "im_producer", (im) => {
-        im.at("35.4s").openConversation("im_producer");
-        im.at("37.0s").receive("Producer", "I saw the reply. Is this planned?");
-        im.at("39.0s").receive("Producer", "If it is planned, send the next beat now.");
-        im.at("42.0s").send("Give me five minutes. Turning the thread into act two.", {
-          typed: true,
-          charDelay: 2,
-        });
-        im.at("46.0s").receive("Producer", "Good. Make it look intentional.");
-      })
+      .scene(
+        "producer reality check",
+        { at: "34.5s", duration: "12.5s" },
+        (scene) => {
+          scene.imessage("phone", "im_producer", (im) => {
+            im.at("0.9s").openConversation("im_producer");
+            im.at("2.5s").receive(
+              "Producer",
+              "I saw the reply. Is this planned?",
+            );
+            im.at("4.5s").receive(
+              "Producer",
+              "If it is planned, send the next beat now.",
+            );
+            im.at("7.5s").send(
+              "Give me five minutes. Turning the thread into act two.",
+              {
+                typed: true,
+                charDelay: 2,
+              },
+            );
+            im.at("11.5s").receive(
+              "Producer",
+              "Good. Make it look intentional.",
+            );
+          });
+        },
+      )
 
       // ============================================
       // CAMERA (anchors: device/app/keyboard/notification_banner + app semantics)
       // ============================================
       .camera((cam) => {
         cam.at("0s").focus("device", { scale: 1.02, duration: "0.35s" });
-        cam.span("1.2s", "6.0s").trackCinematic("lastMessage", { scale: 1.12, smoothing: 0.2 });
+        cam
+          .span("1.2s", "6.0s")
+          .trackCinematic("lastMessage", { scale: 1.12, smoothing: 0.2 });
 
         // Heads-up banner focus (device-owned)
-        cam.at("6.25s").focus("notification_banner", { scale: 1.18, duration: "0.45s" });
+        cam
+          .at("6.25s")
+          .focus("notification_banner", { scale: 1.18, duration: "0.45s" });
         cam.at("7.2s").focus("lastMessage", { scale: 1.12, duration: "0.35s" });
 
         // X: tweet card + keyboard (device-owned) during compose
         cam.at("16.45s").focus("tweet_card", { scale: 1.1, duration: "0.45s" });
-        cam.span("22.2s", "26.2s").trackCinematic("keyboard", { scale: 1.12, smoothing: 0.16 });
+        cam
+          .span("22.2s", "26.2s")
+          .trackCinematic("keyboard", { scale: 1.12, smoothing: 0.16 });
 
         // iMessage thread + keyboard
-        cam.at("35.6s").focus("imessage_thread", { scale: 1.08, duration: "0.45s" });
-        cam.span("41.9s", "43.3s").trackCinematic("keyboard", { scale: 1.12, smoothing: 0.16 });
+        cam
+          .at("35.6s")
+          .focus("imessage_thread", { scale: 1.08, duration: "0.45s" });
+        cam
+          .span("41.9s", "43.3s")
+          .trackCinematic("keyboard", { scale: 1.12, smoothing: 0.16 });
       })
       .build(),
 });

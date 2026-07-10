@@ -97,4 +97,8 @@ EPISODE_ID=my-first-story pnpm --filter video-runner render:fast
   their track builders manually.
 - Keep assets under `apps/video-runner/public`.
 - Prefer stable semantic anchors such as `chat_thread`, `last_message`, `tweet_card`, or app-specific anchors.
+- For narrative episodes, group beats with `.scene()`, use `scene.wait()` for relative
+  pacing, and use returned message/post handles for camera targets.
+- Use `.director("Cinematic")` for a sensible automatic camera pass, then add manual
+  camera instructions only for important hero moments.
 - Run `pnpm validate` after registering an episode.

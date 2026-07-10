@@ -11,18 +11,49 @@ import {
   createSnapchatTrackBuilder,
   type SnapchatTrackBuilder,
 } from "@tokovo/apps-snapchat";
-import {
-  createTeamsTrackBuilder,
-  TeamsTrackBuilder,
-} from "@tokovo/apps-teams";
+import { createTeamsTrackBuilder, TeamsTrackBuilder } from "@tokovo/apps-teams";
 import {
   createWhatsAppTrackBuilder,
   type WhatsAppTrackBuilder,
 } from "@tokovo/apps-whatsapp";
 import { XTrackBuilder } from "@tokovo/apps-x";
 import { TypewriterTrackBuilder } from "@tokovo/apps-typewriter";
-import { episode as baseEpisode, type EpisodeBuilder, type TrackFn } from "@tokovo/dsl";
+import {
+  episode as baseEpisode,
+  type EpisodeBuilder,
+  type TrackFn,
+} from "@tokovo/dsl";
 import type { TrackEpisodeConfig } from "@tokovo/ir";
+import {
+  createScene,
+  type SceneBuilder,
+  type SceneOptions,
+} from "./creator-language.js";
+
+export {
+  actor,
+  cast,
+  SceneBuilder,
+  SceneConversation,
+  SceneSocial,
+} from "./creator-language.js";
+export type {
+  ActorIdentity,
+  ActorProfile,
+  ActorRef,
+  BuiltInApp,
+  CommentHandle,
+  ConversationMessageOptions,
+  ConversationOptions,
+  MessageHandle,
+  PostHandle,
+  SceneOptions,
+  SocialCommentOptions,
+  SocialOptions,
+  SocialPostOptions,
+  StoryHandle,
+  StoryHandleKind,
+} from "./creator-language.js";
 
 type TeamsTrackBuilderInstance = InstanceType<typeof TeamsTrackBuilder>;
 type TypewriterTrackOptions = NonNullable<
@@ -30,6 +61,11 @@ type TypewriterTrackOptions = NonNullable<
 >;
 
 export type CodeFirstEpisodeBuilder = EpisodeBuilder & {
+  scene: (
+    id: string,
+    options: SceneOptions,
+    fn: (scene: SceneBuilder) => void,
+  ) => CodeFirstEpisodeBuilder;
   whatsapp: (
     deviceId: string,
     conversationId: string,
@@ -57,10 +93,7 @@ export type CodeFirstEpisodeBuilder = EpisodeBuilder & {
     deviceId: string,
     fn: TrackFn<TeamsTrackBuilderInstance>,
   ) => CodeFirstEpisodeBuilder;
-  x: (
-    deviceId: string,
-    fn: TrackFn<XTrackBuilder>,
-  ) => CodeFirstEpisodeBuilder;
+  x: (deviceId: string, fn: TrackFn<XTrackBuilder>) => CodeFirstEpisodeBuilder;
   typewriter: (
     deviceId: string,
     fn: TrackFn<TypewriterTrackBuilder>,
@@ -73,12 +106,29 @@ export function episode(
   config: TrackEpisodeConfig,
 ): CodeFirstEpisodeBuilder {
   const ep = baseEpisode(id, config) as CodeFirstEpisodeBuilder;
+  const sceneIds = new Set<string>();
+
+  ep.scene = (sceneId, options, fn) => {
+    if (sceneIds.has(sceneId)) {
+      throw new Error(
+        `Scene id "${sceneId}" is already used in episode "${id}"`,
+      );
+    }
+    createScene(ep, sceneId, options, config.fps, fn);
+    sceneIds.add(sceneId);
+    return ep;
+  };
 
   ep.whatsapp = (deviceId, conversationId, fn) =>
     ep.track(
       "app_whatsapp",
       (getOrder) =>
-        createWhatsAppTrackBuilder(config.fps, deviceId, conversationId, getOrder),
+        createWhatsAppTrackBuilder(
+          config.fps,
+          deviceId,
+          conversationId,
+          getOrder,
+        ),
       fn,
     ) as CodeFirstEpisodeBuilder;
 
@@ -86,7 +136,12 @@ export function episode(
     ep.track(
       "app_imessage",
       (getOrder) =>
-        createIMessageTrackBuilder(config.fps, deviceId, conversationId, getOrder),
+        createIMessageTrackBuilder(
+          config.fps,
+          deviceId,
+          conversationId,
+          getOrder,
+        ),
       fn,
     ) as CodeFirstEpisodeBuilder;
 
@@ -94,7 +149,12 @@ export function episode(
     ep.track(
       "app_snapchat",
       (getOrder) =>
-        createSnapchatTrackBuilder(config.fps, deviceId, conversationId, getOrder),
+        createSnapchatTrackBuilder(
+          config.fps,
+          deviceId,
+          conversationId,
+          getOrder,
+        ),
       fn,
     ) as CodeFirstEpisodeBuilder;
 
@@ -129,7 +189,8 @@ export function episode(
   ep.typewriter = (deviceId, fn, options) =>
     ep.track(
       "app_typewriter",
-      (getOrder) => new TypewriterTrackBuilder(config.fps, deviceId, getOrder, options),
+      (getOrder) =>
+        new TypewriterTrackBuilder(config.fps, deviceId, getOrder, options),
       fn,
     ) as CodeFirstEpisodeBuilder;
 

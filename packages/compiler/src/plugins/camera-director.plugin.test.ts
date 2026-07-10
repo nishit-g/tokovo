@@ -5,7 +5,9 @@ import { CameraDirectorPlugin } from "./camera-director.plugin.js";
 describe("CameraDirectorPlugin", () => {
   it("converts animate camera effects into runtime camera events", () => {
     const plugin = new CameraDirectorPlugin();
-    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const warnSpy = vi
+      .spyOn(console, "warn")
+      .mockImplementation(() => undefined);
 
     const output = plugin.process(
       [
@@ -42,5 +44,41 @@ describe("CameraDirectorPlugin", () => {
     );
 
     warnSpy.mockRestore();
+  });
+
+  it("maps product director styles and built-in app message semantics", () => {
+    const plugin = new CameraDirectorPlugin("Documentary");
+    const output = plugin.process(
+      [
+        {
+          at: 24,
+          kind: "APP",
+          appId: "app_imessage",
+          type: "IMESSAGE_MESSAGE_RECEIVE",
+          payload: { from: "Riya", text: "hello" },
+        } as TrackEvent,
+        {
+          at: 48,
+          kind: "APP",
+          appId: "app_instagram",
+          type: "DM_MESSAGE_ADD",
+          payload: { senderId: "riya", text: "look" },
+        } as TrackEvent,
+      ],
+      { fps: 24 } as never,
+    );
+
+    expect(output).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          kind: "CAMERA",
+          payload: expect.objectContaining({ anchorId: "lastMessage" }),
+        }),
+        expect.objectContaining({
+          kind: "CAMERA",
+          payload: expect.objectContaining({ anchorId: "dm_message_latest" }),
+        }),
+      ]),
+    );
   });
 });

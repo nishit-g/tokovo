@@ -1,6 +1,17 @@
 import { KeyboardPlugin } from "@tokovo/compiler";
 import { defineEpisode } from "../types/episode-definition.js";
-import { episode } from "../code-first-episode.js";
+import { actor, cast, episode } from "../code-first-episode.js";
+
+const people = cast({
+  me: actor("me", { name: "Me" }),
+  mom: actor("mom", { name: "Mom", identities: { whatsapp: { name: "Mom" } } }),
+  dad: actor("dad", { name: "Dad", identities: { whatsapp: { name: "Dad" } } }),
+  riya: actor("riya", {
+    name: "Riya",
+    avatar: "/avatars/avatar-ava.jpg",
+    identities: { whatsapp: { name: "Riya" } },
+  }),
+});
 
 export default defineEpisode({
   meta: {
@@ -20,7 +31,11 @@ export default defineEpisode({
     apps: ["app_whatsapp"],
   },
   build: () =>
-    episode("whatsapp-story-v2", { fps: 30, duration: "41s", title: "WhatsApp Story V2" })
+    episode("whatsapp-story-v2", {
+      fps: 30,
+      duration: "41s",
+      title: "WhatsApp Story V2",
+    })
       .device("phone", "iphone16", {
         app: "app_whatsapp",
         installedApps: ["app_whatsapp"],
@@ -32,33 +47,114 @@ export default defineEpisode({
       })
       .snapshot("app_whatsapp", "phone", {
         conversations: [
-          { id: "dm_riya_story_v2", name: "Riya", avatar: "/avatars/avatar-ava.jpg", unreadCount: 1, isPinned: true },
-          { id: "group_family_story_v2", name: "Family Dinner", type: "group", unreadCount: 5, participants: ["me", "Mom", "Dad", "Riya"] },
+          {
+            id: "dm_riya_story_v2",
+            name: "Riya",
+            avatar: "/avatars/avatar-ava.jpg",
+            unreadCount: 1,
+            isPinned: true,
+          },
+          {
+            id: "group_family_story_v2",
+            name: "Family Dinner",
+            type: "group",
+            unreadCount: 5,
+            participants: ["me", "Mom", "Dad", "Riya"],
+          },
         ],
       })
-      .whatsapp("phone", "group_family_story_v2", (wa) => {
-        wa.switchTo("group_family_story_v2", "1.2s");
-        wa.at("2.2s").receive("Mom", "Everyone wear normal clothes. Your chachi is bringing someone.");
-        wa.at("4.0s").receive("Dad", "And nobody mention surprise cake yet.");
-        wa.at("6.0s").send("Why does this sound like a hostage exchange?", { typed: true, charDelay: 2 });
-        wa.openChatList("9.0s");
-        wa.switchTo("dm_riya_story_v2", "10.4s");
-        wa.at("11.2s").receive("Riya", "That 'someone' is for you, genius.");
-        wa.at("13.0s").send("Delete this message from the universe.", { typed: true, charDelay: 2 });
-        wa.at("15.4s").receive("Riya", "Too late. Mom asked me which shirt makes you look employable.");
-        wa.openChatList("19.2s");
-        wa.switchTo("group_family_story_v2", "20.4s");
-        wa.at("21.2s").receive("Mom", "Who sent cake emoji in the private chat by mistake?");
-        wa.at("23.0s").send("Not me. I am a man of silence and mystery.", { typed: true, charDelay: 2 });
-        wa.at("26.0s").receive("Riya", "You literally sent it to the group.");
+      .scene("family setup", { at: "0s", duration: "9s" }, (scene) => {
+        scene.conversation(
+          {
+            app: "whatsapp",
+            deviceId: "phone",
+            conversationId: "group_family_story_v2",
+            currentActor: people.me,
+          },
+          (chat) => {
+            chat.at("1.2s").open();
+            chat
+              .at("2.2s")
+              .receive(
+                people.mom,
+                "Everyone wear normal clothes. Your chachi is bringing someone.",
+              );
+            chat
+              .at("4s")
+              .receive(people.dad, "And nobody mention surprise cake yet.");
+            chat
+              .at("6s")
+              .send("Why does this sound like a hostage exchange?", {
+                typed: true,
+                charDelay: 2,
+              });
+          },
+        );
       })
-      .camera((cam) => {
-        cam.at("1.3s").focus("chat_header", { scale: 1.05, duration: "0.35s" });
-        cam.span("2.2s", "6.8s").trackCinematic("lastMessage", { scale: 1.12, smoothing: 0.18 });
-        cam.at("10.5s").focus("dm_thread", { scale: 1.08, duration: "0.35s" });
-        cam.span("11.2s", "16.2s").trackCinematic("lastMessage", { scale: 1.1, smoothing: 0.18 });
-        cam.at("20.5s").focus("chat_thread", { scale: 1.08, duration: "0.35s" });
+      .scene("private reveal", { at: "9s", duration: "10.2s" }, (scene) => {
+        scene.whatsapp("phone", "dm_riya_story_v2", (whatsapp) =>
+          whatsapp.openChatList("0s"),
+        );
+        scene.conversation(
+          {
+            app: "whatsapp",
+            deviceId: "phone",
+            conversationId: "dm_riya_story_v2",
+            currentActor: people.me,
+          },
+          (chat) => {
+            chat.at("1.4s").open();
+            const reveal = chat
+              .at("2.2s")
+              .receive(people.riya, "That 'someone' is for you, genius.");
+            chat
+              .at("4s")
+              .reply("Delete this message from the universe.", reveal, {
+                typed: true,
+                charDelay: 2,
+              });
+            chat
+              .at("6.4s")
+              .receive(
+                people.riya,
+                "Too late. Mom asked me which shirt makes you look employable.",
+              );
+            scene.focus(reveal, { scale: 1.1, duration: "0.35s" });
+          },
+        );
       })
+      .scene("group payoff", { at: "19.2s", duration: "7s" }, (scene) => {
+        scene.whatsapp("phone", "group_family_story_v2", (whatsapp) =>
+          whatsapp.openChatList("0s"),
+        );
+        scene.conversation(
+          {
+            app: "whatsapp",
+            deviceId: "phone",
+            conversationId: "group_family_story_v2",
+            currentActor: people.me,
+          },
+          (chat) => {
+            chat.at("1.2s").open();
+            chat
+              .at("2s")
+              .receive(
+                people.mom,
+                "Who sent cake emoji in the private chat by mistake?",
+              );
+            chat
+              .at("3.8s")
+              .send("Not me. I am a man of silence and mystery.", {
+                typed: true,
+                charDelay: 2,
+              });
+            chat
+              .at("6.8s")
+              .receive(people.riya, "You literally sent it to the group.");
+          },
+        );
+      })
+      .director("Cinematic")
       .use(new KeyboardPlugin())
       .build(),
 });
