@@ -72,6 +72,13 @@ export type {
   VoiceScriptDefinition,
   VoiceScheduleItem,
   BackgroundConfigIR,
+  HandTypingMode,
+  HandMotionPreset,
+  Handedness,
+  HandRigAssetsIR,
+  HandPerformanceStageIR,
+  HandPerformanceCueIR,
+  HandPerformanceIR,
 } from "./episode-ir.js";
 
 export {
@@ -80,6 +87,9 @@ export {
   TrackEventSchema,
   VoiceConfigSchema,
   VoiceSegmentScheduleSchema,
+  HandRigAssetsSchema,
+  HandPerformanceCueSchema,
+  HandPerformanceSchema,
   validateTrackEpisodeIR,
   safeValidateTrackEpisodeIR,
 } from "./schemas.js";

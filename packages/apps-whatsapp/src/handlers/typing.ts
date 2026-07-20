@@ -4,18 +4,14 @@ import type { TypingStartEvent, TypingEndEvent } from "../schemas/index.js";
 export function registerTypingHandlers(
   registry: MutableHandlerRegistry,
 ): void {
-  registry.registerHandler<TypingStartEvent>("TypingStarted", (ctx, e) => {
+  registry.registerHandler<TypingStartEvent>("TYPING_START", (ctx, e) => {
     if (!ctx.conversation.typing) ctx.conversation.typing = {};
-    const actor = e.payload?.actor ?? e.from;
-    if (actor) {
-      ctx.conversation.typing[actor] = true;
-    }
+    ctx.conversation.typing[e.payload.actor] = true;
   });
 
-  registry.registerHandler<TypingEndEvent>("TypingEnded", (ctx, e) => {
-    const actor = e.payload?.actor ?? e.from;
-    if (ctx.conversation.typing && actor) {
-      Reflect.deleteProperty(ctx.conversation.typing, actor);
+  registry.registerHandler<TypingEndEvent>("TYPING_END", (ctx, e) => {
+    if (ctx.conversation.typing) {
+      Reflect.deleteProperty(ctx.conversation.typing, e.payload.actor);
     }
   });
 }

@@ -6,6 +6,6 @@ describe("deterministic timestamp formatting", () => {
     const baseTime = new Date("2026-04-10T12:00:00Z");
     const timestamp = Date.parse("2026-04-10T00:30:00Z");
 
-    expect(formatConversationListTimestamp(timestamp, baseTime)).toBe("00:30");
+    expect(formatConversationListTimestamp(timestamp, baseTime, "en-US")).toBe("00:30");
   });
 });

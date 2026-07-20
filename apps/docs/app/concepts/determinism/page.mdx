@@ -16,5 +16,22 @@ Same authored input, same manifest artifacts, same runtime registrations, and sa
 - renders do not depend on live database reads
 - runtime plugin registration is explicit
 - manifest artifacts are committed into the repo
+- app motion is derived from the current frame and composition FPS
+- render-tree images use `DeterministicImage`, which waits for assets before capture
+- representative frames are rendered twice and compared pixel-for-pixel in the release gate
+
+## Enforcement
+
+```bash
+pnpm lint:render-determinism
+pnpm test:render-determinism
+```
+
+The static policy rejects CSS keyframes, browser-clock animation/transition properties, native
+`<img>` elements, and CSS asset URLs in production render sources. The pixel test renders
+representative frames for every flagship app twice and rejects any decoded RGBA channel change
+greater than one 8-bit level. That one-level tolerance accounts for Chromium raster rounding while
+still rejecting visible or timing-driven changes. A mismatch writes the two captures and a visual
+diff to `out/render-determinism/`.
 
 Without this property, reproducible rendering and trustworthy debugging break down.

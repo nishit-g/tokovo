@@ -1,0 +1,95 @@
+{
+  "version": 1,
+  "goldens": [
+    {
+      "episodeId": "whatsapp-interaction-matrix-v3",
+      "frame": 150,
+      "file": "whatsapp/interaction-matrix-frame-150.png",
+      "channelTolerance": 0
+    },
+    {
+      "episodeId": "whatsapp-interaction-matrix-v3",
+      "frame": 225,
+      "file": "whatsapp/interaction-matrix-frame-225.png",
+      "channelTolerance": 0
+    },
+    {
+      "episodeId": "whatsapp-interaction-matrix-v3",
+      "frame": 315,
+      "file": "whatsapp/interaction-matrix-frame-315.png",
+      "channelTolerance": 0
+    },
+    {
+      "episodeId": "whatsapp-interaction-matrix-v3",
+      "frame": 435,
+      "file": "whatsapp/interaction-matrix-frame-435.png",
+      "channelTolerance": 0
+    },
+    {
+      "episodeId": "whatsapp-interaction-matrix-v3",
+      "frame": 492,
+      "file": "whatsapp/interaction-matrix-frame-492.png",
+      "channelTolerance": 0
+    },
+    {
+      "episodeId": "whatsapp-interaction-matrix-v3",
+      "frame": 555,
+      "file": "whatsapp/interaction-matrix-frame-555.png",
+      "channelTolerance": 0
+    },
+    {
+      "episodeId": "whatsapp-interaction-matrix-v3",
+      "frame": 585,
+      "file": "whatsapp/interaction-matrix-frame-585.png",
+      "channelTolerance": 0
+    },
+    {
+      "episodeId": "whatsapp-interaction-matrix-v3",
+      "frame": 630,
+      "file": "whatsapp/interaction-matrix-frame-630.png",
+      "channelTolerance": 0
+    },
+    {
+      "episodeId": "whatsapp-interaction-matrix-v3",
+      "frame": 735,
+      "file": "whatsapp/interaction-matrix-frame-735.png",
+      "channelTolerance": 0
+    },
+    {
+      "episodeId": "whatsapp-interaction-matrix-v3",
+      "frame": 754,
+      "file": "whatsapp/interaction-matrix-frame-754.png",
+      "channelTolerance": 0
+    },
+    {
+      "episodeId": "whatsapp-interaction-matrix-v3",
+      "frame": 825,
+      "file": "whatsapp/interaction-matrix-frame-825.png",
+      "channelTolerance": 0
+    },
+    {
+      "episodeId": "whatsapp-interaction-matrix-v3",
+      "frame": 915,
+      "file": "whatsapp/interaction-matrix-frame-915.png",
+      "channelTolerance": 0
+    },
+    {
+      "episodeId": "whatsapp-interaction-matrix-v3",
+      "frame": 1005,
+      "file": "whatsapp/interaction-matrix-frame-1005.png",
+      "channelTolerance": 0
+    },
+    {
+      "episodeId": "whatsapp-interaction-matrix-v3",
+      "frame": 1095,
+      "file": "whatsapp/interaction-matrix-frame-1095.png",
+      "channelTolerance": 0
+    },
+    {
+      "episodeId": "whatsapp-interaction-matrix-v3",
+      "frame": 1185,
+      "file": "whatsapp/interaction-matrix-frame-1185.png",
+      "channelTolerance": 0
+    }
+  ]
+}

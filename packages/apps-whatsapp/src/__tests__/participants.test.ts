@@ -7,25 +7,25 @@ import {
 import type { WhatsAppConversation } from "../types/index.js";
 
 describe("participant normalization", () => {
-  it("maps dm aliases like 'them' to the conversation display name", () => {
+  it("uses stable dm participant IDs and filters the local actor", () => {
     const conversation: WhatsAppConversation = {
       id: "dm_kabir",
       type: "dm",
       name: "Kabir",
       members: [{ id: "kabir", name: "Kabir" }],
       messages: [],
-      typing: { them: true, me: true },
+      typing: { kabir: true, me: true },
     };
 
-    expect(resolveParticipantName(conversation, "them")).toBe("Kabir");
+    expect(resolveParticipantName(conversation, "kabir")).toBe("Kabir");
     expect(resolveTypingMembers(conversation)).toEqual([
-      { id: "them", name: "Kabir" },
+      { id: "kabir", name: "Kabir" },
     ]);
     expect(
       resolveReplyPreview(conversation, {
         messageId: "m1",
         text: "bhai uth",
-        from: "them",
+        from: "kabir",
       }),
     ).toMatchObject({ from: "Kabir" });
   });

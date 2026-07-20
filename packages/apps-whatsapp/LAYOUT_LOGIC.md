@@ -88,11 +88,11 @@ Visual Consistency is not accidental. It is enforced by this dependency chain:
 3.  **Layout Engine (`chat.ts`)** (The Calculator)
     *   Consumes Brain: Calculates `Y` positions.
 
-4.  **Theme Engine (`whatsapp-theme.ts`)** (The Paint)
-    *   Consumes Roots: Sets CSS `padding: 24px`.
+4.  **Resolved Experience (`experience/resolver.ts`)** (The Paint Contract)
+    *   Resolves platform, appearance, locale direction, tokens, and presentation policy from explicit input.
 
-5.  **UI Renderer (`ui.tsx`)** (The Canvas)
-    *   Consumes Theme: Renders `div` with `padding: 24px`.
+5.  **UI Renderer (`components/ChatMessageItem.tsx`)** (The Canvas)
+    *   Consumes the resolved experience and renders the canonical SVG-tailed message item.
 
 **Result:** The Calculator thinks the box is 150px high. The Canvas draws a box 150px high. **Perfect alignment.**
 
@@ -108,3 +108,15 @@ Visual Consistency is not accidental. It is enforced by this dependency chain:
 | **Adjust "Run Break" tightness** | Change `GAP_NORMAL` (affects runs) or `GAP_MINIMAL` (affects bursts). |
 
 Modify `src/config/layout-config.ts`. The rest of the system updates automatically.
+
+The renderer does not measure the live DOM, query elements, use wall-clock time, or
+guess pixel targets. The long-thread release test projects and lays out 10,000 messages
+within explicit cold/hot budgets, while repeated immutable inputs return cached objects.
+The complete projection remains available for replies and semantic targeting, but
+`thread/window.ts` caps the mounted React tree at 120 ordered messages. The window
+follows the latest message or a stable unread/message anchor and fails loudly if an
+explicit anchor is missing.
+
+Conversation state persists one canonical `messages` array. Lookup maps are derived
+inside immutable projection only; the reducer never stores a second mutable message
+collection that could diverge under Immer.

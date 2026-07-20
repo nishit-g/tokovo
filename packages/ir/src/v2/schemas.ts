@@ -15,6 +15,7 @@ export const DeviceConfigSchema = z.object({
   app: z.string(),
   os: OSConfigSchema.optional(),
   theme: z.string().optional(),
+  appearance: z.enum(["light", "dark"]).optional(),
   locked: z.boolean().optional(),
   installedApps: z.array(z.string()).optional(),
   homeScreen: z
@@ -73,6 +74,65 @@ export const VoiceConfigSchema = z.object({
   segmentSchedule: z.array(VoiceSegmentScheduleSchema).optional(),
 });
 
+export const HandRigAssetsSchema = z.object({
+  underlaySrc: z.string().min(1),
+  leftThumbSrc: z.string().min(1),
+  rightThumbSrc: z.string().min(1),
+});
+
+export const HandPerformanceCueSchema = z.discriminatedUnion("kind", [
+  z.object({
+    kind: z.literal("hold"),
+    startFrame: z.number().int().nonnegative(),
+    endFrame: z.number().int().positive(),
+    motion: z.enum(["steady", "walking", "nervous"]),
+    intensity: z.number().min(0).max(1).optional(),
+  }),
+  z.object({
+    kind: z.literal("type"),
+    startFrame: z.number().int().nonnegative(),
+    endFrame: z.number().int().positive(),
+    mode: z.enum(["oneThumb", "twoThumbs"]),
+    intensity: z.number().min(0).max(1).optional(),
+  }),
+  z.object({
+    kind: z.literal("tap"),
+    startFrame: z.number().int().nonnegative(),
+    endFrame: z.number().int().positive(),
+    target: z.string().min(1),
+    hand: z.enum(["left", "right"]).optional(),
+    intensity: z.number().min(0).max(1).optional(),
+  }),
+  z.object({
+    kind: z.literal("swipe"),
+    startFrame: z.number().int().nonnegative(),
+    endFrame: z.number().int().positive(),
+    direction: z.enum(["up", "down", "left", "right"]),
+    hand: z.enum(["left", "right"]).optional(),
+    intensity: z.number().min(0).max(1).optional(),
+  }),
+]);
+
+export const HandPerformanceSchema = z.object({
+  deviceId: z.string().min(1),
+  rigId: z.string().min(1),
+  assets: HandRigAssetsSchema,
+  defaultMotion: z.enum(["steady", "walking", "nervous"]).optional(),
+  defaultTypingMode: z.enum(["oneThumb", "twoThumbs"]).optional(),
+  motionIntensity: z.number().min(0).max(1).optional(),
+  stage: z
+    .object({
+      deviceScale: z.number().positive().optional(),
+      offsetX: z.number().optional(),
+      offsetY: z.number().optional(),
+      gripWidthRatio: z.number().positive().optional(),
+      gripTopRatio: z.number().optional(),
+      thumbWidthRatio: z.number().positive().optional(),
+    })
+    .optional(),
+  cues: z.array(HandPerformanceCueSchema),
+});
+
 export const TrackEventBaseSchema = z.object({
   at: z.number().int().nonnegative(),
   duration: z.number().int().nonnegative().optional(),
@@ -100,6 +160,7 @@ export const TrackEpisodeIRSchema = z.object({
   sections: z.array(SectionSchema),
   director: DirectorStyleSchema.optional(),
   voice: VoiceConfigSchema.optional(),
+  handPerformances: z.array(HandPerformanceSchema).optional(),
 });
 
 export type ValidatedTrackEpisodeIR = z.infer<typeof TrackEpisodeIRSchema>;

@@ -6,8 +6,13 @@ import {
   ChatsIcon,
   SettingsIcon,
 } from "./Icons.js";
-import { spacing, typography } from "./theme.js";
-import { useTheme } from "../theme/ThemeContext.js";
+import {
+  useTheme,
+  useWhatsAppLocale,
+  useWhatsAppPresentation,
+} from "../experience/ExperienceContext.js";
+import type { WhatsAppTabId } from "../presentation/strategy.js";
+import { formatWhatsAppNumber } from "../localization/index.js";
 
 export interface TabNavigationProps {
   activeTab?: "updates" | "calls" | "communities" | "chats" | "settings";
@@ -21,15 +26,19 @@ const TabBadge: React.FC<{ count: number; isMuted?: boolean }> = ({
   isMuted,
 }) => {
   const theme = useTheme();
+  const { uiSpacing: spacing, uiTypography: typography } = theme;
   if (count <= 0) return null;
 
   return (
     <div
+      aria-hidden="true"
       style={{
         position: "absolute",
         top: spacing.tabBadgeOffsetTop,
         right: spacing.tabBadgeOffsetRight,
-        backgroundColor: isMuted ? theme.colors.timestamp : theme.colors.unreadBadge,
+        backgroundColor: isMuted
+          ? theme.colors.timestamp
+          : theme.colors.unreadBadge,
         color: theme.colors.unreadBadgeText,
         borderRadius: spacing.badgeRadius,
         minWidth: spacing.badgeMinWidth,
@@ -54,21 +63,46 @@ export const TabNavigation: React.FC<TabNavigationProps> = ({
   missedCallsCount = 0,
 }) => {
   const theme = useTheme();
-  const activeColor = theme.colors.accent;
+  const { locale, t } = useWhatsAppLocale();
+  const presentation = useWhatsAppPresentation();
+  const { uiSpacing: spacing, uiTypography: typography } = theme;
+  const activeColor =
+    presentation.navigation.activeColor === "headerText"
+      ? theme.colors.headerText
+      : theme.colors.accent;
   const inactiveColor = theme.colors.timestamp;
 
-  const tabs = [
-    { id: "updates", label: "Updates", Icon: UpdatesIcon, badge: 0 },
-    { id: "calls", label: "Calls", Icon: CallsTabIcon, badge: missedCallsCount },
-    { id: "communities", label: "Communities", Icon: CommunitiesIcon, badge: 0 },
-    { id: "chats", label: "Chats", Icon: ChatsIcon, badge: unreadChatsCount },
-    { id: "settings", label: "Settings", Icon: SettingsIcon, badge: 0 },
-  ] as const;
+  const allTabs = [
+    { id: "updates", label: t("nav.updates"), Icon: UpdatesIcon, badge: 0 },
+    {
+      id: "calls",
+      label: t("nav.calls"),
+      Icon: CallsTabIcon,
+      badge: missedCallsCount,
+    },
+    {
+      id: "communities",
+      label: t("nav.communities"),
+      Icon: CommunitiesIcon,
+      badge: 0,
+    },
+    { id: "chats", label: t("nav.chats"), Icon: ChatsIcon, badge: unreadChatsCount },
+    { id: "settings", label: t("nav.settings"), Icon: SettingsIcon, badge: 0 },
+  ] as const satisfies ReadonlyArray<{
+    id: WhatsAppTabId;
+    label: string;
+    Icon: React.FC<{ color?: string; filled?: boolean }>;
+    badge: number;
+  }>;
+  const tabs = allTabs.filter((tab) =>
+    presentation.navigation.tabs.includes(tab.id),
+  );
 
   return (
-    <div
+    <nav
+      aria-label={t("app.name")}
       style={{
-        backgroundColor: `${theme.colors.headerBackground}F2`,
+        backgroundColor: theme.colors.background,
         backdropFilter: "blur(20px)",
         WebkitBackdropFilter: "blur(20px)",
         borderTop: `0.5px solid ${theme.colors.divider}`,
@@ -88,8 +122,21 @@ export const TabNavigation: React.FC<TabNavigationProps> = ({
         const color = isActive ? activeColor : inactiveColor;
 
         return (
-          <div
+          <button
             key={tab.id}
+            type="button"
+            aria-label={`${tab.label}${
+              tab.id === "chats" && tab.badge > 0
+                ? `, ${t("a11y.unreadMessages", {
+                    count: formatWhatsAppNumber(locale, tab.badge),
+                  })}`
+                : tab.id === "calls" && tab.badge > 0
+                  ? `, ${t("a11y.missedCalls", {
+                      count: formatWhatsAppNumber(locale, tab.badge),
+                    })}`
+                  : ""
+            }`}
+            aria-current={isActive ? "page" : undefined}
             style={{
               display: "flex",
               flexDirection: "column",
@@ -97,6 +144,11 @@ export const TabNavigation: React.FC<TabNavigationProps> = ({
               cursor: "pointer",
               flex: 1,
               position: "relative",
+              padding: 0,
+              border: 0,
+              color: "inherit",
+              background: "transparent",
+              font: "inherit",
             }}
           >
             <div style={{ position: "relative" }}>
@@ -113,10 +165,10 @@ export const TabNavigation: React.FC<TabNavigationProps> = ({
             >
               {tab.label}
             </div>
-          </div>
+          </button>
         );
       })}
-    </div>
+    </nav>
   );
 };
 

@@ -36,7 +36,7 @@ export default defineEpisode({
           network: "5G",
         },
       })
-      .background({ type: "image", src: "/backgrounds/storybook-forest.png" })
+      .background({ type: "image", src: "/backgrounds/storybook-forest.jpg" })
       .snapshot("app_instagram", "phone", {
         currentUserId: "ig_mira",
         users: [

@@ -1,9 +1,17 @@
 import React from "react";
-import { Img } from "remotion";
+import { DeterministicImage } from "@tokovo/react";
 import { ChevronLeftIcon, PhoneCallIcon, VideoCallIcon } from "./Icons.js";
-import { spacing, typography } from "./theme.js";
 import { resolveAvatarWithFallback } from "../utils/avatar.js";
-import { useTheme } from "../theme/ThemeContext.js";
+import {
+  useTheme,
+  useWhatsAppLocale,
+  useWhatsAppPresentation,
+} from "../experience/ExperienceContext.js";
+import { UI_CONSTANTS } from "../config/layout-config.js";
+import {
+  formatWhatsAppNumber,
+  type WhatsAppLocale,
+} from "../localization/index.js";
 
 export interface GroupMemberInfo {
   id: string;
@@ -19,9 +27,13 @@ export interface GroupHeaderProps {
   onBack?: () => void;
 }
 
-function getSubtitle(members: GroupMemberInfo[]): string {
+function getSubtitle(
+  members: GroupMemberInfo[],
+  t: ReturnType<typeof useWhatsAppLocale>["t"],
+  locale: WhatsAppLocale,
+): string {
   if (!members || members.length === 0) {
-    return "tap here for group info";
+    return t("chat.groupInfoHint");
   }
 
   const names: string[] = [];
@@ -32,18 +44,23 @@ function getSubtitle(members: GroupMemberInfo[]): string {
   }
 
   if (members.some((m) => m.id === "me")) {
-    names.push("You");
+    names.push(t("chat.you"));
   }
 
   const remaining = members.length - names.length;
   if (remaining > 0) {
-    return `${names.join(", ")} and ${remaining} others`;
+    return `${names.join(", ")} +${formatWhatsAppNumber(locale, remaining)} ${t(
+      remaining === 1 ? "chat.other" : "chat.others",
+    )}`;
   }
 
   return names.join(", ");
 }
 
-const slotColor = (index: number, theme: ReturnType<typeof useTheme>): string => {
+const slotColor = (
+  index: number,
+  theme: ReturnType<typeof useTheme>,
+): string => {
   const colors = [
     theme.colors.timestamp,
     theme.colors.divider,
@@ -60,7 +77,10 @@ const CompositeAvatar: React.FC<{ members: GroupMemberInfo[] }> = ({
   const displayMembers = members.slice(0, 4);
 
   while (displayMembers.length < 4) {
-    displayMembers.push({ id: `placeholder_${displayMembers.length}`, name: "" });
+    displayMembers.push({
+      id: `placeholder_${displayMembers.length}`,
+      name: "",
+    });
   }
 
   return (
@@ -81,10 +101,8 @@ const CompositeAvatar: React.FC<{ members: GroupMemberInfo[] }> = ({
         <div
           key={m.id}
           style={{
-            backgroundImage: m.avatar ? `url(${resolveAvatarWithFallback(m.avatar, m.name)})` : undefined,
             backgroundColor: m.avatar ? undefined : slotColor(i, theme),
-            backgroundSize: "cover",
-            backgroundPosition: "center",
+            overflow: "hidden",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
@@ -94,7 +112,17 @@ const CompositeAvatar: React.FC<{ members: GroupMemberInfo[] }> = ({
             fontFamily: theme.typography.fontFamily,
           }}
         >
-          {!m.avatar && m.name ? m.name.charAt(0).toUpperCase() : ""}
+          {m.avatar ? (
+            <DeterministicImage
+              src={resolveAvatarWithFallback(m.avatar, m.name)}
+              alt=""
+              style={{ width: "100%", height: "100%", objectFit: "cover" }}
+            />
+          ) : m.name ? (
+            m.name.charAt(0).toUpperCase()
+          ) : (
+            ""
+          )}
         </div>
       ))}
     </div>
@@ -109,23 +137,36 @@ export const GroupHeader: React.FC<GroupHeaderProps> = ({
   onBack,
 }) => {
   const theme = useTheme();
-  const subtitle = getSubtitle(members);
+  const { direction, locale, t } = useWhatsAppLocale();
+  const presentation = useWhatsAppPresentation();
+  const { uiSpacing: spacing, uiTypography: typography } = theme;
+  const subtitle = getSubtitle(members, t, locale);
+  const actionColor =
+    presentation.conversation.headerActionColor === "accent"
+      ? theme.colors.accent
+      : theme.colors.headerText;
 
   return (
     <div
+      data-anchor="header"
       style={{
         display: "flex",
         alignItems: "center",
         backgroundColor: `${theme.colors.headerBackground}F2`,
         paddingTop: safeAreaTop,
-        paddingBottom: 12,
-        paddingLeft: spacing.contentMarginLeft,
-        paddingRight: spacing.contentMarginRight,
+        paddingInlineStart: spacing.contentMarginLeft,
+        paddingInlineEnd: spacing.contentMarginRight,
+        height: safeAreaTop + UI_CONSTANTS.HEADER_CONTENT_HEIGHT,
+        boxSizing: "border-box",
         borderBottom: `0.5px solid ${theme.colors.divider}`,
         backdropFilter: "blur(20px)",
+        position: "relative",
+        zIndex: 100,
       }}
     >
-      <div
+      <button
+        type="button"
+        aria-label={t("action.back")}
         onClick={onBack}
         style={{
           width: 40,
@@ -134,13 +175,24 @@ export const GroupHeader: React.FC<GroupHeaderProps> = ({
           alignItems: "center",
           justifyContent: "center",
           cursor: onBack ? "pointer" : "default",
+          padding: 0,
+          border: 0,
+          color: "inherit",
+          background: "transparent",
+          font: "inherit",
         }}
       >
-        <ChevronLeftIcon color={theme.colors.accent} />
-      </div>
+        <span
+          aria-hidden="true"
+          style={{ display: "flex", transform: direction === "rtl" ? "scaleX(-1)" : undefined }}
+        >
+          <ChevronLeftIcon color={theme.colors.accent} />
+        </span>
+      </button>
 
       {groupAvatar ? (
-        <Img
+        <DeterministicImage
+          data-anchor="profile"
           src={resolveAvatarWithFallback(groupAvatar, groupName)}
           alt={groupName}
           style={{
@@ -151,13 +203,15 @@ export const GroupHeader: React.FC<GroupHeaderProps> = ({
           }}
         />
       ) : (
-        <CompositeAvatar members={members} />
+        <div data-anchor="profile">
+          <CompositeAvatar members={members} />
+        </div>
       )}
 
       <div
         style={{
           flex: 1,
-          marginLeft: 12,
+          marginInlineStart: 12,
           overflow: "hidden",
         }}
       >
@@ -190,13 +244,31 @@ export const GroupHeader: React.FC<GroupHeaderProps> = ({
       </div>
 
       <div
+        role="group"
+        aria-label={t("nav.calls")}
         style={{
           display: "flex",
           gap: 20,
         }}
       >
-        <VideoCallIcon color={theme.colors.accent} />
-        <PhoneCallIcon color={theme.colors.accent} />
+        <button
+          type="button"
+          aria-label={t("action.video")}
+          style={{ padding: 0, border: 0, color: "inherit", background: "transparent" }}
+        >
+          <span aria-hidden="true">
+            <VideoCallIcon color={actionColor} />
+          </span>
+        </button>
+        <button
+          type="button"
+          aria-label={t("message.voiceCall")}
+          style={{ padding: 0, border: 0, color: "inherit", background: "transparent" }}
+        >
+          <span aria-hidden="true">
+            <PhoneCallIcon color={actionColor} />
+          </span>
+        </button>
       </div>
     </div>
   );

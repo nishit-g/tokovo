@@ -20,6 +20,12 @@ echo "[render:fast] concurrency=$CONCURRENCY_VALUE"
 
 mkdir -p "$(dirname "$OUT_FILE_VALUE")"
 
+if [ "${TOKOVO_SKIP_WORKSPACE_BUILD:-0}" != "1" ]; then
+  echo "[render:fast] syncing workspace build output"
+  cd "$REPO_ROOT"
+  pnpm --filter 'video-runner^...' build
+fi
+
 cd "$APP_ROOT"
 
 TOKOVO_RENDER_PROFILE=fast \

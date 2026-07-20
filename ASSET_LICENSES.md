@@ -27,3 +27,11 @@ This file tracks bundled assets that ship with the repository.
 - Location: `apps/video-runner/public/{avatars,backgrounds,banners,link-preview,maps,media,placeholders,stickers,wallpapers}/**`
 - Purpose: local episode fixtures and visual placeholders for app simulation demos
 - Policy: keep only assets that are either referenced by registered episodes, used by docs, or intentionally kept as reusable fixtures for new examples. New third-party assets must include provenance and license notes in this file.
+
+## Deterministic UI Fonts
+
+- Packages: `@fontsource-variable/noto-sans@5.3.0` and `@fontsource-variable/noto-sans-arabic@5.3.0`
+- Loaded by: `apps/video-runner` for the `packages/apps-whatsapp` render surface
+- Source: Fontsource distributions of Noto Sans v42 and Noto Sans Arabic v33
+- License: SIL Open Font License 1.1 (`OFL-1.1`), included in each npm package
+- Purpose: pin Latin and Arabic glyph metrics so WhatsApp renders do not depend on host operating-system fonts

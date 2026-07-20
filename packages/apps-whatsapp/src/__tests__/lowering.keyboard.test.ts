@@ -2,6 +2,34 @@ import { describe, expect, it } from "vitest";
 import { whatsappV2Lowering } from "../lowering/v2/handler.js";
 
 describe("whatsappV2Lowering keyboard flow", () => {
+  it("fails loudly for misrouted and unknown events", () => {
+    expect(() =>
+      whatsappV2Lowering.lower(
+        {
+          at: 0,
+          kind: "APP",
+          appId: "app_other",
+          type: "MESSAGE_SENT",
+          deviceId: "phone",
+          payload: {},
+        } as never,
+      ),
+    ).toThrow('event for "app_other"');
+
+    expect(() =>
+      whatsappV2Lowering.lower(
+        {
+          at: 0,
+          kind: "APP",
+          appId: "app_whatsapp",
+          type: "LEGACY_EVENT",
+          deviceId: "phone",
+          payload: {},
+        } as never,
+      ),
+    ).toThrow('Unknown WhatsApp event type "LEGACY_EVENT"');
+  });
+
   it("still expands typed sends when a helper event exists on the same frame", () => {
     const ctx = { pluginLowerers: new Map(), fps: 30 };
     const received = {
@@ -10,7 +38,6 @@ describe("whatsappV2Lowering keyboard flow", () => {
       appId: "app_whatsapp",
       type: "MESSAGE_RECEIVED",
       deviceId: "phone",
-      conversationId: "dm_kabir",
       payload: {
         conversationId: "dm_kabir",
         from: "kabir",
@@ -24,7 +51,6 @@ describe("whatsappV2Lowering keyboard flow", () => {
       appId: "app_whatsapp",
       type: "TYPING_END",
       deviceId: "phone",
-      conversationId: "dm_kabir",
       payload: {
         conversationId: "dm_kabir",
         actor: "me",
@@ -37,7 +63,6 @@ describe("whatsappV2Lowering keyboard flow", () => {
       appId: "app_whatsapp",
       type: "MESSAGE_SENT",
       deviceId: "phone",
-      conversationId: "dm_kabir",
       payload: {
         conversationId: "dm_kabir",
         text: "bhai so ja",
@@ -60,6 +85,12 @@ describe("whatsappV2Lowering keyboard flow", () => {
     ]);
     expect(lowered[0]?.at).toBeLessThan(sent.at);
     expect(lowered[1]?.at).toBeLessThan(sent.at);
+    const messageEvent = lowered.find((event) => event.type === "MESSAGE_SENT");
+    expect(messageEvent).not.toHaveProperty("conversationId");
+    expect(messageEvent).not.toHaveProperty("text");
+    expect(messageEvent?.payload).toMatchObject({
+      text: "bhai so ja",
+    });
   });
 
   it("uses authored me-typing span as the keyboard window when present", () => {
@@ -70,7 +101,6 @@ describe("whatsappV2Lowering keyboard flow", () => {
       appId: "app_whatsapp",
       type: "TYPING_START",
       deviceId: "phone",
-      conversationId: "dm_kabir",
       payload: {
         conversationId: "dm_kabir",
         actor: "me",
@@ -82,7 +112,6 @@ describe("whatsappV2Lowering keyboard flow", () => {
       appId: "app_whatsapp",
       type: "TYPING_END",
       deviceId: "phone",
-      conversationId: "dm_kabir",
       payload: {
         conversationId: "dm_kabir",
         actor: "me",
@@ -94,7 +123,6 @@ describe("whatsappV2Lowering keyboard flow", () => {
       appId: "app_whatsapp",
       type: "MESSAGE_SENT",
       deviceId: "phone",
-      conversationId: "dm_kabir",
       payload: {
         conversationId: "dm_kabir",
         text: "bhai so ja",

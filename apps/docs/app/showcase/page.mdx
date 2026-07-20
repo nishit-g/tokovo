@@ -14,22 +14,24 @@ The showcase catalog is the fastest way to understand Tokovo's v1 phone-simulati
 ## Render One
 
 ```bash
-EPISODE_ID=v2-creator-series-showcase pnpm --filter video-runner render:fast
+EPISODE_ID=social-launch-multi-device pnpm --filter video-runner render:fast
 ```
 
 Outputs:
 
 ```text
-out/v2-creator-series-showcase.mp4
-out/v2-creator-series-showcase.manifest.json
+out/social-launch-multi-device.mp4
 ```
 
 ## Recommended First Renders
 
 | Episode ID | Catalog | What to inspect |
 | --- | --- | --- |
+| `social-launch-multi-device` | studio | iPhone + Android, WhatsApp + X + Instagram, split-screen, PIP, typed input, media, notifications |
 | `v2-creator-series-showcase` | release | multi-app story pacing, lockscreen, notifications, keyboard, camera direction |
 | `whatsapp-flagship-v2` | studio | WhatsApp chat list, group thread, updates, calls, typed replies |
+| `whatsapp-anchor-cinema-v1` | studio | semantic-anchor camera direction, two-device handoffs, PIP, RTL, gestures, live media |
+| `whatsapp-interaction-matrix-v3` | studio | iPhone + Pixel, English + Arabic RTL, media lifecycle, viewer, gestures, privacy, Updates, Calls, Communities, Settings, and profile surfaces |
 | `instagram-flagship-v2` | studio | stories, DMs, profile navigation, creator content pacing |
 | `x-flagship-v2` | studio | timeline, post detail, replies, notifications |
 | `typewriter-flagship-v2` | studio | text timing, typewriter UI, procedural sound effects |
@@ -40,7 +42,7 @@ out/v2-creator-series-showcase.manifest.json
 
 | App package | Flagship | Exhaustive | Theme |
 | --- | --- | --- | --- |
-| WhatsApp | `whatsapp-flagship-v2` | `whatsapp-exhaustive-v2` | `whatsapp-theme-storybook-v2` |
+| WhatsApp | `whatsapp-flagship-v2` | `whatsapp-interaction-matrix-v3` | `whatsapp-theme-storybook-v2` |
 | iMessage | `imessage-flagship-v2` | `imessage-exhaustive-v2` | - |
 | Instagram | `instagram-flagship-v2` | `instagram-exhaustive-v2` | `instagram-theme-storybook-v2` |
 | X | `x-flagship-v2` | `x-exhaustive-v2` | `x-theme-storybook-v2` |
@@ -53,6 +55,7 @@ out/v2-creator-series-showcase.manifest.json
 
 | Episode ID | Focus |
 | --- | --- |
+| `social-launch-multi-device` | flagship multi-device story across WhatsApp, X, and Instagram with split-screen and PIP |
 | `device-realism-exhaustive` | lockscreen, unlock, app transitions, keyboard lift |
 | `camera-anchor-exhaustive` | semantic camera targets and fallback detection |
 | `keyboard-input-exhaustive` | keyboard reveal, text entry, suggestions, cleanup |

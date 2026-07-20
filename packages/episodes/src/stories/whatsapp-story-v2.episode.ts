@@ -59,7 +59,12 @@ export default defineEpisode({
             name: "Family Dinner",
             type: "group",
             unreadCount: 5,
-            participants: ["me", "Mom", "Dad", "Riya"],
+            members: [
+              { id: "me", name: "You" },
+              { id: "mom", name: "Mom" },
+              { id: "dad", name: "Dad" },
+              { id: "riya", name: "Riya" },
+            ],
           },
         ],
       })

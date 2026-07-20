@@ -1,20 +1,28 @@
-import React, { useState } from "react";
+import React from "react";
 import { useCurrentFrame } from "remotion";
 import { WorldState } from "@tokovo/core";
 import { ArchiveIcon, ChevronRightIcon } from "../Icons.js";
 import { ChatListHeader } from "../ChatListHeader.js";
 import { TabNavigation } from "../TabNavigation.js";
 import { ChatListItem } from "../ChatListItem.js";
-import { spacing, typography } from "../theme.js";
-import { WhatsAppConversation, WhatsAppState } from "../../types/index.js";
+import type {
+  WhatsAppConversation,
+  WhatsAppState,
+  WhatsAppStatusUpdate,
+} from "../../types/index.js";
 import {
   formatConversationListTimestamp,
   getBaseTime,
-  normalizeMessages,
 } from "../../utils/messages.js";
 import { resolveTypingMembers } from "../../utils/participants.js";
 import { resolveDeliveryStage } from "../../utils/status.js";
-import { useTheme } from "../../theme/ThemeContext.js";
+import {
+  useTheme,
+  useWhatsAppLocale,
+} from "../../experience/ExperienceContext.js";
+import type { WhatsAppChatFilter } from "../../presentation/strategy.js";
+import type { StatusSegmentState } from "../StatusRing.js";
+import { formatWhatsAppNumber } from "../../localization/index.js";
 
 // =============================================================================
 // TYPES
@@ -32,7 +40,29 @@ export interface ChatListScreenProps {
   height: number;
 }
 
-type FilterType = "all" | "unread" | "favorites" | "groups";
+function normalizeIdentity(value: string | undefined): string {
+  return value?.trim().toLowerCase() ?? "";
+}
+
+function getConversationStatusSegments(
+  conversation: WhatsAppConversation,
+  statuses: readonly WhatsAppStatusUpdate[],
+): StatusSegmentState[] {
+  const identities = new Set([
+    normalizeIdentity(conversation.id),
+    normalizeIdentity(conversation.name),
+    ...(conversation.members ?? []).map((member) => normalizeIdentity(member.id)),
+  ]);
+
+  return statuses
+    .filter(
+      (status) =>
+        identities.has(normalizeIdentity(status.authorId)) ||
+        normalizeIdentity(status.authorName) === normalizeIdentity(conversation.name),
+    )
+    .sort((left, right) => left.postedAt - right.postedAt)
+    .map((status) => (status.viewed ? "viewed" : "unviewed"));
+}
 
 // =============================================================================
 // ARCHIVED ROW COMPONENT
@@ -40,65 +70,67 @@ type FilterType = "all" | "unread" | "favorites" | "groups";
 
 const ArchivedRow: React.FC<{ count: number }> = ({ count }) => {
   const theme = useTheme();
+  const { locale, t } = useWhatsAppLocale();
+  const { uiSpacing: spacing, uiTypography: typography } = theme;
   return (
     <div
       style={{
         display: "flex",
         height: spacing.chatListItemHeight,
         alignItems: "center",
-        paddingLeft: spacing.avatarMarginLeft,
-        paddingRight: spacing.contentMarginRight,
+        paddingInlineStart: spacing.avatarMarginLeft,
+        paddingInlineEnd: spacing.contentMarginRight,
         cursor: "pointer",
         backgroundColor: theme.colors.background,
         borderBottom: `0.5px solid ${theme.colors.divider}`,
       }}
     >
-    {/* Archive Icon */}
-    <div
-      style={{
-        width: spacing.avatarSize,
-        display: "flex",
-        justifyContent: "center",
-        marginRight: spacing.contentMarginLeft,
-      }}
-    >
-      <ArchiveIcon color={theme.colors.timestamp} size={20} />
-    </div>
-
-    {/* Content */}
-    <div
-      style={{
-        flex: 1,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "space-between",
-      }}
-    >
-      <span
+      {/* Archive Icon */}
+      <div
         style={{
-          ...typography.headline,
-          color: theme.colors.receivedBubbleText,
-          fontFamily: theme.typography.fontFamily,
+          width: spacing.avatarSize,
+          display: "flex",
+          justifyContent: "center",
+          marginInlineEnd: spacing.contentMarginLeft,
         }}
       >
-        Archived
-      </span>
-
-      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-        {count > 0 && (
-          <span
-            style={{
-              ...typography.body,
-              color: theme.colors.timestamp,
-              fontFamily: theme.typography.fontFamily,
-            }}
-          >
-            {count}
-          </span>
-        )}
-        <ChevronRightIcon color={theme.colors.timestamp} size={14} />
+        <ArchiveIcon color={theme.colors.timestamp} size={20} />
       </div>
-    </div>
+
+      {/* Content */}
+      <div
+        style={{
+          flex: 1,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+        }}
+      >
+        <span
+          style={{
+            ...typography.headline,
+            color: theme.colors.receivedBubbleText,
+            fontFamily: theme.typography.fontFamily,
+          }}
+        >
+          {t("chat.archived")}
+        </span>
+
+        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          {count > 0 && (
+            <span
+              style={{
+                ...typography.body,
+                color: theme.colors.timestamp,
+                fontFamily: theme.typography.fontFamily,
+              }}
+            >
+              {formatWhatsAppNumber(locale, count)}
+            </span>
+          )}
+          <ChevronRightIcon color={theme.colors.timestamp} size={14} />
+        </div>
+      </div>
     </div>
   );
 };
@@ -107,33 +139,41 @@ const ArchivedRow: React.FC<{ count: number }> = ({ count }) => {
 // EMPTY STATE COMPONENT
 // =============================================================================
 
-const EmptyState: React.FC<{ filter: FilterType }> = ({ filter }) => {
+const EmptyState: React.FC<{ filter: WhatsAppChatFilter }> = ({ filter }) => {
   const theme = useTheme();
+  const { t } = useWhatsAppLocale();
+  const { uiTypography: typography } = theme;
   const getMessage = () => {
     switch (filter) {
       case "unread":
         return {
           emoji: "✅",
-          title: "No unread chats",
-          subtitle: "You're all caught up!",
+          title: t("empty.noUnreadTitle"),
+          subtitle: t("empty.noUnreadBody"),
         };
       case "favorites":
         return {
           emoji: "⭐",
-          title: "No favorite chats",
-          subtitle: "Pin your important chats to see them here",
+          title: t("empty.noFavoritesTitle"),
+          subtitle: t("empty.noFavoritesBody"),
         };
       case "groups":
         return {
           emoji: "👥",
-          title: "No groups",
-          subtitle: "Create or join a group to get started",
+          title: t("empty.noGroupsTitle"),
+          subtitle: t("empty.noGroupsBody"),
+        };
+      case "drafts":
+        return {
+          emoji: "✍️",
+          title: t("empty.noDraftsTitle"),
+          subtitle: t("empty.noDraftsBody"),
         };
       default:
         return {
           emoji: "💬",
-          title: "No chats yet",
-          subtitle: "Start a conversation!",
+          title: t("empty.noChatsTitle"),
+          subtitle: t("empty.noChatsBody"),
         };
     }
   };
@@ -187,7 +227,8 @@ export const ChatListScreen: React.FC<ChatListScreenProps> = ({
   height: _height,
 }) => {
   const theme = useTheme();
-  const [activeFilter, setActiveFilter] = useState<FilterType>("all");
+  const { locale, t } = useWhatsAppLocale();
+  const { uiSpacing: spacing } = theme;
   const currentFrame = useCurrentFrame();
   const deviceId = Object.keys(world.devices || {})[0];
   const baseTime = getBaseTime(world, deviceId);
@@ -198,6 +239,8 @@ export const ChatListScreen: React.FC<ChatListScreenProps> = ({
 
   // Extract app state and conversations
   const appState = (world.appState?.["app_whatsapp"] || {}) as WhatsAppState;
+  const activeFilter = appState.chatFilter ?? "all";
+  const statuses = appState.statuses ?? [];
   const allConversations = (
     Object.values(appState.conversations || {}) as WhatsAppConversation[]
   ).sort((a, b) => {
@@ -213,7 +256,7 @@ export const ChatListScreen: React.FC<ChatListScreenProps> = ({
     if (aTime !== bTime) return bTime - aTime;
     const aName = a.name ?? "";
     const bName = b.name ?? "";
-    return aName.localeCompare(bName);
+    return aName < bName ? -1 : aName > bName ? 1 : 0;
   });
 
   // Apply filters
@@ -227,6 +270,8 @@ export const ChatListScreen: React.FC<ChatListScreenProps> = ({
         return conv.isPinned;
       case "groups":
         return conv.type === "group";
+      case "drafts":
+        return Boolean(conv.draftText?.trim());
       default:
         return true;
     }
@@ -248,7 +293,7 @@ export const ChatListScreen: React.FC<ChatListScreenProps> = ({
         flexDirection: "column",
         height: "100%",
         width: "100%",
-        backgroundColor: theme.colors.headerBackground,
+        backgroundColor: theme.colors.background,
         position: "relative",
         fontFamily: theme.typography.fontFamily,
         overflow: "hidden",
@@ -258,8 +303,10 @@ export const ChatListScreen: React.FC<ChatListScreenProps> = ({
       <ChatListHeader
         safeAreaTop={safeAreaTop}
         activeFilter={activeFilter}
-        onFilterChange={setActiveFilter}
         showEditButton={false}
+        showDraftsFilter={allConversations.some((conversation) =>
+          Boolean(conversation.draftText?.trim()),
+        )}
       />
 
       {/* Scrollable Content */}
@@ -268,7 +315,7 @@ export const ChatListScreen: React.FC<ChatListScreenProps> = ({
           flex: 1,
           overflow: "auto",
           overflowX: "hidden",
-          backgroundColor: theme.colors.headerBackground,
+          backgroundColor: theme.colors.background,
           paddingBottom: spacing.tabBarHeight + safeAreaBottom,
           WebkitOverflowScrolling: "touch",
         }}
@@ -280,21 +327,16 @@ export const ChatListScreen: React.FC<ChatListScreenProps> = ({
 
         {/* Conversations List */}
         {filteredConversations.length > 0 ? (
-          <div>
+          <div role="list" aria-label={t("nav.chats")}>
             {filteredConversations.map((conv, i) => {
-              const normalizedMessages = normalizeMessages(
-                world,
-                conv.id,
-                (conv.messages || []) as unknown[],
-                deviceId,
-              );
+              const messages = conv.messages ?? [];
 
               const lastMsg =
-                normalizedMessages.length > 0
-                  ? normalizedMessages[normalizedMessages.length - 1]
+                messages.length > 0
+                  ? messages[messages.length - 1]
                   : null;
               const lastRenderable =
-                [...normalizedMessages]
+                [...messages]
                   .reverse()
                   .find(
                     (msg) =>
@@ -312,15 +354,17 @@ export const ChatListScreen: React.FC<ChatListScreenProps> = ({
                 | null = null;
               if (lastRenderable?.type === "image" || lastRenderable?.imageUrl)
                 mediaType = "photo";
-              else if (lastRenderable?.type === "video" || lastRenderable?.videoUrl)
-                mediaType = "video";
               else if (
-                lastRenderable?.type === "voice" ||
-                lastRenderable?.voiceUrl ||
-                lastRenderable?.audioUrl
+                lastRenderable?.type === "video" ||
+                lastRenderable?.videoUrl
               )
+                mediaType = "video";
+              else if (lastRenderable?.type === "voice")
                 mediaType = "voice";
-              else if (lastRenderable?.type === "document" || lastRenderable?.documentUrl)
+              else if (
+                lastRenderable?.type === "document" ||
+                lastRenderable?.documentUrl
+              )
                 mediaType = "document";
               else if (lastRenderable?.type === "gif" || lastRenderable?.gifUrl)
                 mediaType = "gif";
@@ -334,7 +378,7 @@ export const ChatListScreen: React.FC<ChatListScreenProps> = ({
               let senderName: string | undefined;
               if (conv.type === "group" && lastRenderable) {
                 if (lastRenderable.from === "me") {
-                  senderName = "You";
+                  senderName = t("chat.you");
                 } else if (lastRenderable.senderName) {
                   senderName = lastRenderable.senderName;
                 } else if (lastRenderable.from) {
@@ -348,20 +392,14 @@ export const ChatListScreen: React.FC<ChatListScreenProps> = ({
                 senderName = undefined; // Don't show "You:" for DMs
               }
 
-              const groupSubtitle =
-                conv.type === "group"
-                  ? conv.description ||
-                    (conv.members && conv.members.length > 0
-                      ? `${conv.members
-                          .map((m) => m.name)
-                          .filter(Boolean)
-                          .slice(0, 3)
-                          .join(", ")}${conv.members.length > 3 ? "…" : ""}`
-                      : undefined)
-                  : undefined;
-
               // Determine read status
-              let status: "sent" | "delivered" | "read" | undefined;
+              let status:
+                | "sending"
+                | "sent"
+                | "delivered"
+                | "read"
+                | "failed"
+                | undefined;
               if (lastRenderable?.from === "me") {
                 status = resolveDeliveryStage(lastRenderable, currentFrame);
               }
@@ -371,47 +409,53 @@ export const ChatListScreen: React.FC<ChatListScreenProps> = ({
               const isTyping = typingMembers.length > 0;
               const typingText = (() => {
                 if (!isTyping) return undefined;
-                if (conv.type !== "group") return "typing…";
-                if (typingMembers.length === 1) return `${typingMembers[0].name} typing…`;
-                return `${typingMembers[0].name} +${typingMembers.length - 1} typing…`;
+                if (conv.type !== "group") return t("chat.typing");
+                if (typingMembers.length === 1)
+                  return t("chat.memberTyping", { name: typingMembers[0].name });
+                return t("chat.manyMembersTyping", {
+                  first: typingMembers[0].name,
+                  count: typingMembers.length - 1,
+                });
               })();
 
               const lastMessagePreview = (() => {
-                if (!lastRenderable) return "No messages yet";
+                if (!lastRenderable) return t("chat.noMessages");
                 if (lastRenderable.text) return lastRenderable.text;
                 switch (lastRenderable.type) {
                   case "contact":
-                    return "Contact card";
+                    return t("message.contact");
                   case "location":
-                    return "Location";
+                    return t("message.location");
                   case "system":
-                    return lastRenderable.text ?? "System update";
+                    return lastRenderable.text ?? t("message.systemUpdate");
                   case "call":
                     return lastRenderable.callType === "video"
-                      ? "Video call"
-                      : "Voice call";
+                      ? t("message.videoCall")
+                      : t("message.voiceCall");
                   case "call_missed":
                     return lastRenderable.callType === "video"
-                      ? "Missed video call"
-                      : "Missed voice call";
+                      ? t("message.missedVideoCall")
+                      : t("message.missedVoiceCall");
                   case "screenshot_alert":
-                    return "Screenshot alert";
+                    return t("message.screenshotAlert");
                   case "document":
                     return lastRenderable.fileName
-                      ? `Document • ${lastRenderable.fileName}`
-                      : "Document";
+                      ? t("message.documentNamed", {
+                          name: lastRenderable.fileName,
+                        })
+                      : t("message.document");
                   case "voice":
-                    return "Voice message";
+                    return t("message.voice");
                   case "gif":
-                    return "GIF";
+                    return t("message.gif");
                   case "sticker":
-                    return "Sticker";
+                    return t("message.sticker");
                   case "image":
-                    return "Photo";
+                    return t("message.photo");
                   case "video":
-                    return "Video";
+                    return t("message.video");
                   default:
-                    return "Media";
+                    return t("message.media");
                 }
               })();
 
@@ -419,7 +463,7 @@ export const ChatListScreen: React.FC<ChatListScreenProps> = ({
                 <ChatListItem
                   key={conv.id}
                   id={conv.id}
-                  name={conv.name || "Unknown"}
+                  name={conv.name || t("chat.unknown")}
                   avatarUrl={conv.avatar}
                   groupAvatars={
                     conv.type === "group"
@@ -433,6 +477,7 @@ export const ChatListScreen: React.FC<ChatListScreenProps> = ({
                     formatConversationListTimestamp(
                       lastRenderable?.timestampMs ?? lastMsg?.timestampMs,
                       baseTime,
+                      locale,
                     ) ||
                     lastRenderable?.timestamp ||
                     lastMsg?.timestamp ||
@@ -440,18 +485,16 @@ export const ChatListScreen: React.FC<ChatListScreenProps> = ({
                   }
                   unreadCount={conv.unreadCount || 0}
                   status={status}
-                  isGroup={conv.type === "group"}
                   isTyping={isTyping}
                   isLast={i === filteredConversations.length - 1}
                   isMuted={conv.isMuted}
                   isPinned={conv.isPinned}
-                  hasStatus={conv.hasStatus}
+                  statusSegments={getConversationStatusSegments(conv, statuses)}
                   mediaType={mediaType}
                   senderName={senderName}
-                  subtitle={groupSubtitle}
                   typingText={typingText}
-                  isLocked={conv.isLocked}
-                  isVerifiedBusiness={conv.isVerifiedBusiness}
+                  locked={conv.preferences?.chatLock}
+                  verifiedBusiness={conv.contact?.verifiedBusiness}
                 />
               );
             })}

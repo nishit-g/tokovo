@@ -6,6 +6,7 @@ export {
   useAppState,
   useLayout,
   useTime,
+  useFps,
   usePlatform,
   useDeviceId,
   useAppId,
@@ -14,6 +15,16 @@ export {
   useConversation,
   useActiveConversation,
 } from "./TokovoContext.js";
+
+export {
+  clamp01,
+  frameProgress,
+  easeOutCubic,
+  easeInOutSine,
+  loopProgress,
+  pulse,
+  triangleWave,
+} from "./motion.js";
 
 export {
   useKeyboardAwareContainer,
@@ -28,6 +39,9 @@ export type {
   KeyboardInputState,
   ScrollableContentProps,
 } from "./KeyboardAware.js";
+
+export { DeterministicImage } from "./DeterministicImage.js";
+export type { DeterministicImageProps } from "./DeterministicImage.js";
 
 export { AppSurface } from "./AppSurface.js";
 export type { AppSurfaceProps } from "./AppSurface.js";
@@ -58,10 +72,7 @@ export {
   createNotificationViewRegistry,
   NotificationViewRegistryClass,
 } from "./notifications/registry.js";
-export type {
-  NotificationViewProps,
-  NotificationViewComponent,
-} from "./notifications/registry.js";
+export type { NotificationViewProps, NotificationViewComponent } from "./notifications/registry.js";
 
 // =============================================================================
 // PLUGIN VALIDATION UTILS

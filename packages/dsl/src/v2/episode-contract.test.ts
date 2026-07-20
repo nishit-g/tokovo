@@ -63,6 +63,21 @@ describe("DSL contract + determinism", () => {
     expect(ir.seed).toBe("episode-seed");
   });
 
+  it("authors appearance independently from a theme variant", () => {
+    const ir = episode("appearance", { fps: 30, duration: "1s" })
+      .device("phone", "pixel", {
+        app: "app_whatsapp",
+        theme: "whatsapp-storybook",
+        appearance: "dark",
+      })
+      .build();
+
+    expect(ir.devices[0]).toMatchObject({
+      theme: "whatsapp-storybook",
+      appearance: "dark",
+    });
+  });
+
   it("uses an overlay span as the default visible duration", () => {
     const ir = episode("overlay-span", { fps: 30, duration: "3s" })
       .overlay((overlay) => {

@@ -1,22 +1,30 @@
 import React from "react";
+import { Pin } from "lucide-react";
 import { WorldState } from "@tokovo/core";
 import { KeyboardAwareView, useKeyboardState } from "@tokovo/react";
 import { Header as DefaultHeader } from "../Header.js";
+import { GroupHeader } from "../GroupHeader.js";
 import { MessageList } from "../MessageList.js";
 import { InputArea as DefaultInputArea } from "../InputArea.js";
-import { useTheme } from "../../theme/ThemeContext.js";
 import {
+  useTheme,
+  useWhatsAppLocale,
+} from "../../experience/ExperienceContext.js";
+import { formatWhatsAppNumber } from "../../localization/index.js";
+import type {
   WhatsAppState,
-  MessageData,
   WhatsAppConversation,
-  SystemMessage,
 } from "../../types/index.js";
-import { normalizeMessagesForChat } from "../../utils/messages.js";
 import {
-  resolveParticipantName,
-  resolveReplyPreview,
+  getBaseTime,
+} from "../../utils/messages.js";
+import {
   resolveTypingMembers,
 } from "../../utils/participants.js";
+import { projectWhatsAppThread } from "../../thread/projector.js";
+import { MessageActionMenu } from "../surfaces/MessageActionMenu.js";
+import { ReplyComposerBanner } from "../surfaces/ReplyComposerBanner.js";
+import { getChatChromeGeometry } from "../../config/layout-config.js";
 
 export interface ChatScreenProps {
   world: WorldState;
@@ -35,51 +43,31 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({
   world,
   deviceId,
   safeAreaInsets,
-  width: _width,
+  width,
   height: _height,
 }) => {
   const theme = useTheme();
-  const appState = (world.appState?.["app_whatsapp"] ||
-    world.appState?.["whatsapp"]) as WhatsAppState;
+  const { locale, t } = useWhatsAppLocale();
+  const appState = world.appState?.app_whatsapp as WhatsAppState | undefined;
+  if (!appState) {
+    throw new Error("WhatsApp chat screen requires app_whatsapp state");
+  }
   const conversations = (appState?.conversations ?? {}) as Record<
     string,
     WhatsAppConversation
   >;
-  const conversationIdFromMessages = (() => {
-    let bestId: string | undefined;
-    let bestAt = -Infinity;
-    for (const [id, conv] of Object.entries(conversations)) {
-      const messages = conv?.messages ?? [];
-      const last = messages[messages.length - 1];
-      if (!last) continue;
-      const at = typeof last.at === "number" ? last.at : -Infinity;
-      if (at > bestAt) {
-        bestAt = at;
-        bestId = id;
-      }
-    }
-    return bestId;
-  })();
+  const conversationId = appState.conversationId;
 
-  const conversationId =
-    appState?.currentConversationId ||
-    conversationIdFromMessages ||
-    appState?.conversationId ||
-    Object.keys(conversations)[0];
+  const conversation: WhatsAppConversation | undefined = conversationId
+    ? conversations[conversationId]
+    : undefined;
 
-  const conversation = conversations[conversationId] as
-    | WhatsAppConversation
-    | undefined;
+  if (!conversationId || !conversation) {
+    throw new Error("WhatsApp chat screen requires a valid conversationId");
+  }
 
-  const contactName = conversation?.name || "Unknown";
-  const rawMessages = conversation?.messages || [];
-  const normalizedMessages = normalizeMessagesForChat(
-    world,
-    conversationId || "unknown",
-    rawMessages as unknown[],
-    deviceId,
-    conversation,
-  );
+  const contactName = conversation.name || t("chat.unknown");
+  const messages = conversation.messages;
   const typingMembers = resolveTypingMembers(conversation);
 
   const memberNames = conversation?.members?.map((m) => m.name) ?? [];
@@ -88,156 +76,67 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({
   const status = (() => {
     if (typingMembers.length > 0) {
       if (conversation?.type !== "group") {
-        return "typing…";
+        return t("chat.typing");
       }
       const names = typingMembers.map((m) => m.name);
-      if (names.length === 1) return `${names[0]} typing…`;
-      if (names.length === 2) return `${names[0]} and ${names[1]} typing…`;
-      return `${names[0]} and ${names.length - 1} others typing…`;
+      if (names.length === 1) return t("chat.memberTyping", { name: names[0] });
+      if (names.length === 2) {
+        return t("chat.twoMembersTyping", {
+          first: names[0],
+          second: names[1],
+        });
+      }
+      return t("chat.manyMembersTyping", {
+        first: names[0],
+        count: formatWhatsAppNumber(locale, names.length - 1),
+      });
     }
     if (conversation?.type === "group") {
       if (conversation.description) return conversation.description;
-      if (memberCount > 0) return `${memberCount} members`;
+      if (memberCount > 0) {
+        return t("chat.members", {
+          count: formatWhatsAppNumber(locale, memberCount),
+        });
+      }
       if (memberNames.length > 0) return memberNames.slice(0, 3).join(", ");
-      return "Group chat";
+      return t("chat.group");
     }
-    return "online";
+    return (
+      conversation.contact?.lastSeenLabel ??
+      conversation.contact?.businessCategory ??
+      t("chat.contactInfo")
+    );
   })();
 
-  const messages = normalizedMessages.map((m): MessageData => {
-    const senderName =
-      conversation?.type === "group" && m.from !== "me"
-        ? resolveParticipantName(conversation, m.from) ??
-          m.senderName ??
-          m.from
-        : m.senderName;
-    const base = {
-      id: m.id,
-      from: m.from,
-      timestamp: m.timestamp,
-      timestampMs: m.timestampMs,
-      status: m.status,
-      at: m.at,
-      deliveredAt: m.deliveredAt,
-      readAt: m.readAt,
-      reactions: m.reactions,
-      replyTo: resolveReplyPreview(conversation, m.replyTo),
-      senderName,
-      starred: m.starred,
-    };
-
-    switch (m.type) {
-      case "image":
-        return {
-          ...base,
-          type: "image" as const,
-          imageUrl: m.imageUrl ?? "",
-          caption: m.caption,
-        };
-      case "video":
-        return {
-          ...base,
-          type: "video" as const,
-          videoUrl: m.videoUrl ?? "",
-          thumbnailUrl: m.thumbnailUrl,
-          duration: m.duration,
-          caption: m.caption,
-        };
-      case "voice":
-        return { ...base, type: "voice" as const, duration: m.duration || 0 };
-      case "poll":
-        return {
-          ...base,
-          type: "poll" as const,
-          pollQuestion: m.pollQuestion ?? "",
-          options: m.options ?? [],
-          totalVotes: m.totalVotes,
-          pollStatus: m.pollStatus,
-        };
-      case "gif":
-        return {
-          ...base,
-          type: "gif" as const,
-          gifUrl: m.gifUrl ?? "",
-        };
-      case "sticker":
-        return {
-          ...base,
-          type: "sticker" as const,
-          stickerUrl: m.stickerUrl ?? "",
-        };
-      case "document":
-        return {
-          ...base,
-          type: "document" as const,
-          fileName: m.fileName ?? "",
-          fileSize: m.fileSize ?? "",
-          fileType: m.fileType,
-          documentUrl: m.documentUrl ?? "",
-          pageCount: m.pageCount,
-        };
-      case "contact":
-        return {
-          ...base,
-          type: "contact" as const,
-          contactName: m.contactName ?? "",
-          contactPhone: m.contactPhone,
-          contactAvatarUrl: m.contactAvatarUrl,
-        };
-      case "location":
-        return {
-          ...base,
-          type: "location" as const,
-          latitude: m.latitude ?? 0,
-          longitude: m.longitude ?? 0,
-          locationName: m.locationName,
-          locationAddress: m.locationAddress,
-          mapThumbnailUrl: m.mapThumbnailUrl,
-        };
-      case "link":
-        return {
-          ...base,
-          type: "link" as const,
-          text: m.text ?? "",
-          linkPreview: m.linkPreview ?? { url: "", title: "" },
-        };
-      case "system":
-        return {
-          ...base,
-          type: "system" as const,
-          text: m.text ?? "",
-          systemType: m.systemType as SystemMessage["systemType"],
-        };
-      case "call":
-        return {
-          ...base,
-          type: "call" as const,
-          callType: m.callType as "voice" | "video" | undefined,
-          duration: m.duration,
-        };
-      case "call_missed":
-        return {
-          ...base,
-          type: "call_missed" as const,
-          callType: m.callType as "voice" | "video" | undefined,
-        };
-      case "screenshot_alert":
-        return {
-          ...base,
-          type: "screenshot_alert" as const,
-          text: m.text ?? "Screenshot taken",
-        };
-      case "text":
-      default:
-        return { ...base, type: "text" as const, text: m.text || "" };
-    }
+  const resolvedDeviceId = deviceId ?? Object.keys(world.devices ?? {})[0];
+  const ownerName = resolvedDeviceId
+    ? world.devices?.[resolvedDeviceId]?.ownerName
+    : undefined;
+  const thread = projectWhatsAppThread({
+    conversationId,
+    messages,
+    conversation,
+    ownerName: ownerName ?? "me",
+    baseTime: getBaseTime(world, deviceId),
+    fps: world.config?.fps ?? 30,
+    locale,
   });
+  const replyMessage = appState.replyComposer
+    ? thread.messagesById.get(appState.replyComposer.messageId)
+    : undefined;
+  if (appState.replyComposer && !replyMessage) {
+    throw new Error(
+      `WhatsApp reply composer references missing message "${appState.replyComposer.messageId}"`,
+    );
+  }
 
   // TokovoRenderer already provides safeAreaInsets in design coordinates.
   const safeAreaTop = safeAreaInsets?.top ?? 47;
   const safeAreaBottom = safeAreaInsets?.bottom ?? 34;
-  const bottomPadding =
-    theme.spacing.inputAreaHeight + safeAreaBottom + 12;
+  const bottomPadding = getChatChromeGeometry({
+    top: safeAreaTop,
+    bottom: safeAreaBottom,
+  }).messageBottomInset;
   const keyboardState = useKeyboardState();
   const composerText =
     keyboardState.isKeyboardVisible && keyboardState.inputText
@@ -246,27 +145,39 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({
 
   return (
     <KeyboardAwareView>
-      <DefaultHeader
-        contactName={contactName}
-        avatarUrl={conversation?.avatar}
-        status={status}
-        safeAreaTop={safeAreaTop}
-        isLocked={conversation?.isLocked}
-        businessLabel={conversation?.businessLabel}
-        isVerifiedBusiness={conversation?.isVerifiedBusiness}
-      />
+      {conversation?.type === "group" ? (
+        <GroupHeader
+          groupName={contactName}
+          members={conversation.members ?? []}
+          groupAvatar={conversation.avatar}
+          safeAreaTop={safeAreaTop}
+        />
+      ) : (
+        <DefaultHeader
+          contactName={contactName}
+          avatarUrl={conversation?.avatar}
+          status={status}
+          safeAreaTop={safeAreaTop}
+          locked={conversation.preferences?.chatLock}
+          contactLabel={conversation.contact?.businessCategory}
+          verifiedBusiness={conversation.contact?.verifiedBusiness}
+        />
+      )}
 
       {conversation?.pinnedMessage && (
         <div
           style={{
-            backgroundColor: "rgba(255,255,255,0.94)",
+            backgroundColor: theme.colors.headerBackground,
             borderBottom: `1px solid ${theme.colors.divider}`,
             padding: "8px 16px",
             display: "flex",
-            flexDirection: "column",
-            gap: 2,
+            alignItems: "center",
+            flexDirection: "row",
+            gap: 9,
           }}
         >
+          <Pin size={15} color={theme.colors.accent} style={{ flexShrink: 0 }} />
+          <div style={{ minWidth: 0 }}>
           <div
             style={{
               fontSize: 11,
@@ -275,7 +186,7 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({
               fontFamily: theme.typography.fontFamily,
             }}
           >
-            Pinned message
+            {t("chat.pinnedMessage")}
           </div>
           <div
             style={{
@@ -291,17 +202,31 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({
               ? `${conversation.pinnedMessage.from}: ${conversation.pinnedMessage.text}`
               : conversation.pinnedMessage.text}
           </div>
+          </div>
         </div>
       )}
 
       <MessageList
-        messages={messages}
-        ownerName={world.devices?.[deviceId || "main_phone"]?.ownerName || "me"}
+        thread={thread}
+        viewportWidth={width}
         isTyping={typingMembers.length > 0}
         typingMembers={typingMembers}
         isGroupChat={conversation?.type === "group"}
         bottomPadding={bottomPadding}
+      activeGesture={appState.activeGesture}
+      anchorMessageId={
+        appState.threadViewport?.conversationId === conversationId
+          ? appState.threadViewport.anchorMessageId
+          : undefined
+      }
       />
+
+      {appState.activeGesture?.gesture === "long_press" &&
+        appState.activeGesture.phase === "completed" && (
+          <MessageActionMenu messageId={appState.activeGesture.messageId} />
+        )}
+
+      {replyMessage && <ReplyComposerBanner message={replyMessage} />}
 
       <DefaultInputArea
         text={composerText}

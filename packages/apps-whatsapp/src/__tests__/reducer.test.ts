@@ -2,13 +2,39 @@ import { describe, it, expect } from "vitest";
 import { produce } from "immer";
 import type { WorldState, RuntimeEvent } from "@tokovo/core";
 import { DEFAULT_AUDIO_STATE, DEFAULT_BASE_CAMERA_STATE } from "@tokovo/core";
-import { whatsappReducer, createWhatsAppInitialState } from "../runtime/index.js";
-import { normalizeMessagesForChat } from "../utils/messages.js";
+import {
+  whatsappReducer,
+  createWhatsAppInitialState,
+} from "../runtime/index.js";
+import {
+  getBaseTime,
+} from "../utils/messages.js";
+import { projectWhatsAppThread } from "../thread/projector.js";
+import type { WhatsAppConversation, WhatsAppMessage } from "../types/index.js";
+
+function projectChat(
+  world: WorldState,
+  conversationId: string,
+  messages: WhatsAppMessage[],
+  deviceId?: string,
+  conversation?: WhatsAppConversation,
+) {
+  return projectWhatsAppThread({
+    conversationId,
+    messages,
+    conversation,
+    baseTime: getBaseTime(world, deviceId),
+    fps: world.config?.fps ?? 30,
+    locale: "en-US",
+  });
+}
 
 function createTestWorldState(): WorldState {
+  const appState = createWhatsAppInitialState();
+  appState.conversations.dm_test = { id: "dm_test", messages: [] };
   return {
     appState: {
-      app_whatsapp: createWhatsAppInitialState(),
+      app_whatsapp: appState,
     },
     devices: {},
     camera: DEFAULT_BASE_CAMERA_STATE,
@@ -22,8 +48,41 @@ function runReducer(state: WorldState, event: RuntimeEvent): WorldState {
   });
 }
 
-describe("WhatsApp Reducer (compat)", () => {
-  it("normalizes legacy contact payload fields", () => {
+describe("WhatsApp reducer", () => {
+  it("derives event timestamps from authored device time without accelerated drift", () => {
+    const state = createTestWorldState();
+    const clock = new Date("2026-04-10T20:15:00Z").getTime();
+    state.devices = {
+      phone: {
+        id: "phone",
+        os: { clock },
+      },
+    } as any;
+    state.config = { fps: 30 } as any;
+
+    const next = runReducer(state, {
+      at: 90,
+      kind: "APP",
+      appId: "app_whatsapp",
+      deviceId: "phone",
+      type: "MESSAGE_RECEIVED",
+      payload: {
+        conversationId: "dm_test",
+        from: "alex",
+        text: "Three seconds later",
+      },
+    });
+
+    const message = (next.appState as any).app_whatsapp.conversations.dm_test
+      .messages[0];
+    expect(message.timestamp).toBe("20:15");
+    expect(message.timestampMs).toBe(clock + 3_000);
+    expect(
+      (next.appState as any).app_whatsapp.conversations.dm_test.lastMessageAt,
+    ).toBe(clock + 3_000);
+  });
+
+  it("accepts the canonical contact payload", () => {
     const state = createTestWorldState();
     const next = runReducer(state, {
       at: 0,
@@ -31,13 +90,12 @@ describe("WhatsApp Reducer (compat)", () => {
       appId: "app_whatsapp",
       deviceId: "phone",
       type: "CONTACT_RECEIVED",
-      conversationId: "dm_test",
       payload: {
         conversationId: "dm_test",
         from: "alex",
-        name: "Sam Lee",
-        phone: "+1 555-0101",
-        avatar: "/avatars/sam.jpg",
+        contactName: "Sam Lee",
+        contactPhone: "+1 555-0101",
+        contactAvatarUrl: "/avatars/sam.jpg",
       },
     });
 
@@ -48,7 +106,7 @@ describe("WhatsApp Reducer (compat)", () => {
     expect(conv.messages[0].contactAvatarUrl).toBe("/avatars/sam.jpg");
   });
 
-  it("normalizes legacy location payload fields", () => {
+  it("accepts the canonical location payload", () => {
     const state = createTestWorldState();
     const next = runReducer(state, {
       at: 10,
@@ -56,14 +114,13 @@ describe("WhatsApp Reducer (compat)", () => {
       appId: "app_whatsapp",
       deviceId: "phone",
       type: "LOCATION_RECEIVED",
-      conversationId: "dm_test",
       payload: {
         conversationId: "dm_test",
         from: "alex",
-        lat: 37.7749,
-        lng: -122.4194,
-        name: "San Francisco",
-        address: "California, USA",
+        latitude: 37.7749,
+        longitude: -122.4194,
+        locationName: "San Francisco",
+        locationAddress: "California, USA",
       },
     });
 
@@ -83,7 +140,6 @@ describe("WhatsApp Reducer (compat)", () => {
       appId: "app_whatsapp",
       deviceId: "phone",
       type: "DOCUMENT_RECEIVED",
-      conversationId: "dm_test",
       payload: {
         conversationId: "dm_test",
         from: "alex",
@@ -108,7 +164,6 @@ describe("WhatsApp Reducer (compat)", () => {
       appId: "app_whatsapp",
       deviceId: "phone",
       type: "MESSAGE_RECEIVED",
-      conversationId: "dm_test",
       payload: {
         conversationId: "dm_test",
         from: "alex",
@@ -128,7 +183,6 @@ describe("WhatsApp Reducer (compat)", () => {
       appId: "app_whatsapp",
       deviceId: "phone",
       type: "MESSAGE_RECEIVED",
-      conversationId: "dm_test",
       payload: {
         conversationId: "dm_test",
         from: "alex",
@@ -142,7 +196,6 @@ describe("WhatsApp Reducer (compat)", () => {
       appId: "app_whatsapp",
       deviceId: "phone",
       type: "CONVERSATION_OPENED",
-      conversationId: "dm_test",
       payload: {
         conversationId: "dm_test",
       },
@@ -161,7 +214,6 @@ describe("WhatsApp Reducer (compat)", () => {
         appId: "app_whatsapp",
         deviceId: "phone",
         type: "MESSAGE_RECEIVED",
-        conversationId: "dm_test",
         payload: {
           conversationId: "dm_test",
           from: "alex",
@@ -174,7 +226,6 @@ describe("WhatsApp Reducer (compat)", () => {
         appId: "app_whatsapp",
         deviceId: "phone",
         type: "MESSAGE_RECEIVED",
-        conversationId: "dm_test",
         payload: {
           conversationId: "dm_test",
           from: "alex",
@@ -189,7 +240,6 @@ describe("WhatsApp Reducer (compat)", () => {
       appId: "app_whatsapp",
       deviceId: "phone",
       type: "CONVERSATION_OPENED",
-      conversationId: "dm_test",
       payload: {
         conversationId: "dm_test",
       },
@@ -199,10 +249,20 @@ describe("WhatsApp Reducer (compat)", () => {
     expect(conv.unreadCount).toBe(0);
     expect(conv.unreadDividerMessageId).toBe(conv.messages[0].id);
 
-    const timeline = normalizeMessagesForChat(opened, "dm_test", conv.messages, undefined, conv);
+    const thread = projectChat(
+      opened,
+      "dm_test",
+      conv.messages,
+      undefined,
+      conv,
+    );
 
     expect(
-      timeline.some((msg) => msg.type === "system" && msg.systemType === "unread_divider"),
+      thread.blocks.some(
+        (block) =>
+          block.kind === "system" &&
+          block.message.systemType === "unread_divider",
+      ),
     ).toBe(true);
   });
 
@@ -214,11 +274,11 @@ describe("WhatsApp Reducer (compat)", () => {
       appId: "app_whatsapp",
       deviceId: "phone",
       type: "MESSAGE_RECEIVED",
-      conversationId: "dm_test",
       payload: {
         conversationId: "dm_test",
         from: "alex",
         text: "Original message",
+        messageId: "original-message",
       },
     });
 
@@ -228,11 +288,10 @@ describe("WhatsApp Reducer (compat)", () => {
       appId: "app_whatsapp",
       deviceId: "phone",
       type: "MESSAGE_SENT",
-      conversationId: "dm_test",
       payload: {
         conversationId: "dm_test",
         text: "Reply message",
-        replyTo: { index: -1 },
+        replyTo: { messageId: "original-message" },
       },
     });
 
@@ -252,7 +311,6 @@ describe("WhatsApp Reducer (compat)", () => {
       appId: "app_whatsapp",
       deviceId: "phone",
       type: "MESSAGE_SENT",
-      conversationId: "dm_test",
       payload: {
         conversationId: "dm_test",
         text: "You there?",
@@ -265,7 +323,6 @@ describe("WhatsApp Reducer (compat)", () => {
       appId: "app_whatsapp",
       deviceId: "phone",
       type: "MESSAGE_RECEIVED",
-      conversationId: "dm_test",
       payload: {
         conversationId: "dm_test",
         from: "alex",
@@ -276,6 +333,119 @@ describe("WhatsApp Reducer (compat)", () => {
     const conv = (withReply.appState as any).app_whatsapp.conversations.dm_test;
     expect(conv.messages[0].status).toBe("read");
     expect(conv.messages[0].readAt).toBe(40);
+  });
+
+  it("models deterministic outgoing delivery failure and retry", () => {
+    const sent = runReducer(createTestWorldState(), {
+      at: 10,
+      kind: "APP",
+      appId: "app_whatsapp",
+      deviceId: "phone",
+      type: "MESSAGE_SENT",
+      payload: {
+        conversationId: "dm_test",
+        text: "Upload the final cut",
+        messageId: "retry-me",
+      },
+    });
+    const failed = runReducer(sent, {
+      at: 20,
+      kind: "APP",
+      appId: "app_whatsapp",
+      deviceId: "phone",
+      type: "MESSAGE_DELIVERY_FAILED",
+      payload: {
+        conversationId: "dm_test",
+        messageId: "retry-me",
+        failureReason: "offline",
+      },
+    });
+    const retrying = runReducer(failed, {
+      at: 30,
+      kind: "APP",
+      appId: "app_whatsapp",
+      deviceId: "phone",
+      type: "MESSAGE_RETRY_STARTED",
+      payload: { conversationId: "dm_test", messageId: "retry-me" },
+    });
+    const completed = runReducer(retrying, {
+      at: 40,
+      kind: "APP",
+      appId: "app_whatsapp",
+      deviceId: "phone",
+      type: "MESSAGE_RETRY_COMPLETED",
+      payload: { conversationId: "dm_test", messageId: "retry-me" },
+    });
+
+    const message = (completed.appState as any).app_whatsapp.conversations.dm_test
+      .messages[0];
+    expect(message).toMatchObject({
+      status: "sent",
+      retryCount: 1,
+      lastRetryAt: 30,
+      deliveredAt: 58,
+    });
+    expect(message.failureReason).toBeUndefined();
+  });
+
+  it("opens, advances, and closes authored status playback while marking views", () => {
+    const state = createTestWorldState();
+    const whatsapp = (state.appState as any).app_whatsapp;
+    whatsapp.statuses = [
+      {
+        id: "status-one",
+        authorId: "ava",
+        authorName: "Ava",
+        postedAt: 10,
+        media: { type: "text", text: "First" },
+      },
+      {
+        id: "status-two",
+        authorId: "ava",
+        authorName: "Ava",
+        postedAt: 20,
+        media: { type: "text", text: "Second" },
+      },
+    ];
+
+    const opened = runReducer(state, {
+      at: 30,
+      kind: "APP",
+      appId: "app_whatsapp",
+      deviceId: "phone",
+      type: "STATUS_VIEWER_OPENED",
+      payload: { statusId: "status-one" },
+    });
+    expect((opened.appState as any).app_whatsapp.statusViewer).toEqual({
+      statusId: "status-one",
+      authorId: "ava",
+      openedAt: 30,
+    });
+    expect((opened.appState as any).app_whatsapp.statuses[0].viewed).toBe(true);
+
+    const advanced = runReducer(opened, {
+      at: 60,
+      kind: "APP",
+      appId: "app_whatsapp",
+      deviceId: "phone",
+      type: "STATUS_VIEWER_ADVANCED",
+      payload: { direction: "next" },
+    });
+    expect((advanced.appState as any).app_whatsapp.statusViewer).toMatchObject({
+      statusId: "status-two",
+      openedAt: 60,
+    });
+    expect((advanced.appState as any).app_whatsapp.statuses[1].viewed).toBe(true);
+
+    const closed = runReducer(advanced, {
+      at: 90,
+      kind: "APP",
+      appId: "app_whatsapp",
+      deviceId: "phone",
+      type: "STATUS_VIEWER_CLOSED",
+      payload: {},
+    });
+    expect((closed.appState as any).app_whatsapp.statusViewer).toBeNull();
   });
 
   it("auto-inserts Today and Yesterday separators for chat timelines", () => {
@@ -290,20 +460,38 @@ describe("WhatsApp Reducer (compat)", () => {
     } as any;
     state.config = { fps: 30 } as any;
 
-    const timeline = normalizeMessagesForChat(
+    const thread = projectChat(
       state,
       "dm_test",
       [
-        { from: "alex", text: "Yesterday text", timestamp: -86400 },
-        { from: "alex", text: "Today text", timestamp: -3600 },
+        {
+          id: "yesterday",
+          from: "alex",
+          type: "text",
+          text: "Yesterday text",
+          timestampMs: new Date("2025-02-01T18:45:00Z").getTime(),
+        },
+        {
+          id: "today",
+          from: "alex",
+          type: "text",
+          text: "Today text",
+          timestampMs: new Date("2025-02-02T17:45:00Z").getTime(),
+        },
       ],
       "phone",
     );
 
     expect(
-      timeline
-        .filter((msg) => msg.type === "system" && msg.systemType === "date_change")
-        .map((msg) => msg.text),
+      thread.blocks
+        .filter(
+          (block) =>
+            block.kind === "system" &&
+            block.message.systemType === "date_change",
+        )
+        .map((block) =>
+          block.kind === "system" ? block.message.text : undefined,
+        ),
     ).toEqual(["Yesterday", "Today"]);
   });
 });

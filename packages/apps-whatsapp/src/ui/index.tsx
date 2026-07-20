@@ -1,16 +1,13 @@
-import React from "react";
-import { WorldState } from "@tokovo/core";
-import { injectWhatsAppStyles } from "../styles.js";
-import { WhatsAppThemeProvider } from "../theme/ThemeContext.js";
-
-// Screens
-import { ChatScreen } from "../components/screens/ChatScreen.js";
-import { ChatListScreen } from "../components/screens/ChatListScreen.js";
-import { UpdatesScreen } from "../components/screens/StatusScreen.js";
-import { CommunitiesScreen } from "../components/screens/CommunitiesScreen.js";
-import { CallsScreen } from "../components/screens/CallsScreen.js";
-import { ProfileScreen } from "../components/screens/ProfileScreen.js";
-import { SettingsScreen } from "../components/screens/SettingsScreen.js";
+import React, { useMemo } from "react";
+import { getAppStateForDevice, projectWorldForDevice, WorldState } from "@tokovo/core";
+import { WhatsAppExperienceProvider } from "../experience/ExperienceContext.js";
+import { resolveWhatsAppExperience } from "../experience/resolver.js";
+import type { WhatsAppAppearance } from "../experience/contract.js";
+import type { WhatsAppThemeId } from "../theme/index.js";
+import { renderWhatsAppScreen } from "../presentation/screen-strategy.js";
+import { MediaViewerOverlay } from "../components/surfaces/MediaViewerOverlay.js";
+import { StatusViewerOverlay } from "../components/surfaces/StatusViewerOverlay.js";
+import { getBaseTime } from "../utils/messages.js";
 
 import { WhatsAppState } from "../types/index.js";
 
@@ -19,6 +16,7 @@ export interface WhatsappChatViewProps {
   t?: number;
   deviceId?: string;
   platform?: "ios" | "android";
+  appearance?: WhatsAppAppearance;
   width?: number;
   height?: number;
   safeAreaInsets?: {
@@ -33,21 +31,45 @@ export const WhatsappChatView: React.FC<WhatsappChatViewProps> = ({
   world,
   t: _t,
   deviceId,
-  platform = "ios",
+  platform,
+  appearance,
   width,
   height,
   safeAreaInsets,
 }) => {
-  const resolvedDeviceId =
-    deviceId ?? Object.keys(world.devices || {})[0];
+  const resolvedDeviceId = deviceId ?? Object.keys(world.devices || {})[0];
   const appTheme =
     resolvedDeviceId && world.devices?.[resolvedDeviceId]?.appTheme
       ? world.devices[resolvedDeviceId]?.appTheme
       : undefined;
+  const resolvedAppearance =
+    appearance ??
+    (resolvedDeviceId ? world.devices?.[resolvedDeviceId]?.appAppearance : undefined) ??
+    "light";
+  const resolvedPlatform =
+    platform ??
+    (world.devices?.[resolvedDeviceId ?? ""]?.profileId?.toLowerCase().includes("pixel")
+      ? "android"
+      : "ios");
+  const appState = getAppStateForDevice<WhatsAppState>(world, "app_whatsapp", resolvedDeviceId);
+  const locale = appState?.locale ?? "en-US";
+  const experience = useMemo(
+    () =>
+      resolveWhatsAppExperience({
+        platform: resolvedPlatform,
+        appearance: resolvedAppearance,
+        themeId: appTheme as WhatsAppThemeId | undefined,
+        locale,
+      }),
+    [appTheme, locale, resolvedAppearance, resolvedPlatform],
+  );
 
   // 1. Resolve App State & Screen
-  const appState = world.appState?.["app_whatsapp"] as WhatsAppState;
   const currentScreen = appState?.currentScreen || "chats";
+  const renderWorld = useMemo(
+    () => projectWorldForDevice(world, resolvedDeviceId),
+    [world, resolvedDeviceId],
+  );
 
   // 2. Resolve Dimensions (Resolution Independence)
   // Receive logical dimensions from parent (TokovoRenderer's AppSurface)
@@ -55,100 +77,45 @@ export const WhatsappChatView: React.FC<WhatsappChatViewProps> = ({
   const activeWidth = width || 393;
   const activeHeight = height || 852;
 
-  // 3. Render Appropriate Screen
-  // Strategy Pattern for Screen Navigation
-  let activeScreenContent;
-
-  switch (currentScreen) {
-    case "main":
-    case "list":
-    case "chats":
-    case "chats-list":
-      activeScreenContent = (
-        <ChatListScreen
-          world={world}
-          width={activeWidth}
-          height={activeHeight}
-          safeAreaInsets={safeAreaInsets}
-        />
-      );
-      break;
-    case "updates":
-    case "status":
-      activeScreenContent = (
-        <UpdatesScreen
-          world={world}
-          width={activeWidth}
-          height={activeHeight}
-          safeAreaInsets={safeAreaInsets}
-        />
-      );
-      break;
-    case "communities":
-      activeScreenContent = (
-        <CommunitiesScreen
-          world={world}
-          width={activeWidth}
-          height={activeHeight}
-          safeAreaInsets={safeAreaInsets}
-        />
-      );
-      break;
-    case "calls":
-      activeScreenContent = (
-        <CallsScreen
-          world={world}
-          width={activeWidth}
-          height={activeHeight}
-          safeAreaInsets={safeAreaInsets}
-        />
-      );
-      break;
-    case "settings":
-      activeScreenContent = (
-        <SettingsScreen
-          world={world}
-          width={activeWidth}
-          height={activeHeight}
-          safeAreaInsets={safeAreaInsets}
-        />
-      );
-      break;
-    case "profile":
-      activeScreenContent = (
-        <ProfileScreen
-          world={world}
-          width={activeWidth}
-          height={activeHeight}
-          safeAreaInsets={safeAreaInsets}
-        />
-      );
-      break;
-    case "chat":
-    default:
-      activeScreenContent = (
-        <ChatScreen
-          world={world}
-          deviceId={resolvedDeviceId}
-          width={activeWidth}
-          height={activeHeight}
-          safeAreaInsets={safeAreaInsets}
-        />
-      );
-      break;
+  const activeScreenContent = renderWhatsAppScreen(currentScreen, {
+    world: renderWorld,
+    deviceId: resolvedDeviceId,
+    width: activeWidth,
+    height: activeHeight,
+    safeAreaInsets,
+  });
+  const viewer = appState?.mediaViewer;
+  const statusViewer = appState?.statusViewer;
+  const viewerConversation = viewer ? appState?.conversations?.[viewer.conversationId] : undefined;
+  const viewerMessage = viewer
+    ? viewerConversation?.messages.find((message) => message.id === viewer.messageId)
+    : undefined;
+  if (viewer && !viewerMessage) {
+    throw new Error(`WhatsApp media viewer references missing message "${viewer.messageId}"`);
   }
 
-  // 4. Return Content (Hoisted AppSurface handles scaling now)
-  React.useEffect(() => {
-    injectWhatsAppStyles();
-  }, []);
-
   return (
-    <WhatsAppThemeProvider platform={platform} themeId={appTheme}>
-      <div style={{ width: "100%", height: "100%" }}>
+    <WhatsAppExperienceProvider experience={experience}>
+      <div
+        role="application"
+        aria-label={experience.t("app.name")}
+        lang={experience.locale}
+        dir={experience.direction}
+        style={{ width: "100%", height: "100%" }}
+      >
         {activeScreenContent}
+        {viewerMessage && viewer && (
+          <MediaViewerOverlay message={viewerMessage} openedAt={viewer.openedAt} />
+        )}
+        {statusViewer && (
+          <StatusViewerOverlay
+            statuses={appState?.statuses ?? []}
+            viewer={statusViewer}
+            baseTime={getBaseTime(renderWorld, resolvedDeviceId)}
+          />
+        )}
       </div>
-    </WhatsAppThemeProvider>
+    </WhatsAppExperienceProvider>
   );
 };
 

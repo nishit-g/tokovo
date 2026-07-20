@@ -1,13 +1,29 @@
-import React from "react";
-import { WorldState } from "@tokovo/core";
-import { Img } from "remotion";
-import { spacing, typography } from "../theme.js";
-import { TabNavigation } from "../TabNavigation.js";
-import { PhoneCallIcon, VideoCallIcon } from "../Icons.js";
+import {
+  ArrowDownLeft,
+  ArrowUpRight,
+  Link,
+  Phone,
+  PhoneMissed,
+  Plus,
+  Video,
+} from "lucide-react";
+import type { WorldState } from "@tokovo/core";
+import { DeterministicImage } from "@tokovo/react";
+import {
+  useTheme,
+  useWhatsAppLocale,
+} from "../../experience/ExperienceContext.js";
+import type {
+  WhatsAppCallLogEntry,
+  WhatsAppState,
+} from "../../types/index.js";
+import {
+  formatConversationListTimestamp,
+  getBaseTime,
+} from "../../utils/messages.js";
 import { resolveAvatarWithFallback } from "../../utils/avatar.js";
-import { WhatsAppConversation, WhatsAppState } from "../../types/index.js";
-import { normalizeMessages } from "../../utils/messages.js";
-import { useTheme } from "../../theme/ThemeContext.js";
+import type { WhatsAppMessageKey } from "../../localization/index.js";
+import { AppScaffold, EmptyState, SectionHeader } from "../surfaces/index.js";
 
 export interface CallsScreenProps {
   world: WorldState;
@@ -21,287 +37,296 @@ export interface CallsScreenProps {
   height: number;
 }
 
-export const CallsScreen: React.FC<CallsScreenProps> = ({
-  world,
-  safeAreaInsets,
-  width: _width,
-}) => {
+type Translator = (
+  key: WhatsAppMessageKey,
+  parameters?: Record<string, string | number>,
+) => string;
+
+function formatCallDuration(
+  seconds: number | undefined,
+  t: Translator,
+): string | undefined {
+  if (!seconds || seconds <= 0) return undefined;
+  if (seconds < 60) return t("calls.durationSeconds", { count: seconds });
+  const minutes = Math.floor(seconds / 60);
+  const remainder = seconds % 60;
+  return remainder > 0
+    ? t("calls.durationMinutesSeconds", { minutes, seconds: remainder })
+    : t("calls.durationMinutes", { count: minutes });
+}
+
+function CallRow({
+  entry,
+  baseTime,
+}: {
+  entry: WhatsAppCallLogEntry;
+  baseTime: Date;
+}) {
   const theme = useTheme();
-  const safeAreaTop = safeAreaInsets?.top ?? 47;
-  const safeAreaBottom = safeAreaInsets?.bottom ?? 34;
-  const deviceId = Object.keys(world.devices || {})[0];
-
-  const appState = (world.appState?.["app_whatsapp"] || {}) as WhatsAppState;
-  const conversations = Object.values(
-    appState.conversations || {},
-  ) as WhatsAppConversation[];
-
-  const callEntries = conversations.map((conv) => {
-    const normalizedMessages = normalizeMessages(
-      world,
-      conv.id,
-      (conv.messages || []) as unknown[],
-      deviceId,
-    );
-    const lastMessage = normalizedMessages[normalizedMessages.length - 1];
-    const lastCall = [...normalizedMessages]
-      .reverse()
-      .find((msg) => msg.type === "call" || msg.type === "call_missed");
-    const isMissed =
-      lastCall?.type === "call_missed" ||
-      ((conv.unreadCount || 0) > 0 && lastMessage?.from !== "me");
-    const isVideo = lastCall?.callType === "video" || conv.type === "group";
-    const directionLabel =
-      lastCall?.type === "call_missed"
-        ? "Missed"
-        : lastCall?.from === "me"
-          ? "Outgoing"
-          : "Incoming";
-    return {
-      id: conv.id,
-      name: conv.name || "Unknown",
-      avatar: conv.avatar,
-      time: (lastCall ?? lastMessage)?.timestamp || "Today",
-      missed: isMissed,
-      video: isVideo,
-      direction: directionLabel,
-    };
-  });
-  const favoriteEntries = callEntries.filter((entry) => !entry.missed).slice(0, 3);
+  const { locale, t } = useWhatsAppLocale();
+  const { uiTypography: typography } = theme;
+  const DirectionIcon =
+    entry.direction === "missed"
+      ? PhoneMissed
+      : entry.direction === "outgoing"
+        ? ArrowUpRight
+        : ArrowDownLeft;
+  const modeLabel = t(entry.mode === "video" ? "calls.video" : "calls.voice");
+  const duration = formatCallDuration(entry.durationSeconds, t);
+  const meta = [
+    t(
+      entry.direction === "missed"
+        ? "calls.missed"
+        : entry.direction === "outgoing"
+          ? "calls.outgoing"
+          : "calls.incoming",
+      { mode: modeLabel },
+    ),
+    duration,
+    formatConversationListTimestamp(entry.startedAt, baseTime, locale),
+  ]
+    .filter(Boolean)
+    .join(" · ");
 
   return (
     <div
+      data-call-id={entry.id}
       style={{
-        width: "100%",
-        height: "100%",
-        backgroundColor: theme.colors.headerBackground,
+        minHeight: 70,
+        padding: "8px 16px",
         display: "flex",
-        flexDirection: "column",
-        fontFamily: theme.typography.fontFamily,
+        alignItems: "center",
+        gap: 11,
+        borderBottom: `0.5px solid ${theme.colors.divider}`,
       }}
     >
       <div
         style={{
-          paddingTop: safeAreaTop,
-          paddingLeft: spacing.pagePaddingWide,
-          paddingRight: spacing.pagePaddingX,
-          height: spacing.navBarHeight + safeAreaTop,
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          borderBottom: `0.5px solid ${theme.colors.divider}`,
-          backgroundColor: `${theme.colors.headerBackground}F2`,
-          backdropFilter: "blur(20px)",
+          width: 50,
+          height: 50,
+          overflow: "hidden",
+          borderRadius: 25,
+          flexShrink: 0,
+          backgroundColor: theme.colors.divider,
         }}
       >
+        <DeterministicImage
+          src={resolveAvatarWithFallback(entry.avatar, entry.name)}
+          alt={entry.name}
+          style={{ width: "100%", height: "100%", objectFit: "cover" }}
+        />
+      </div>
+      <div style={{ flex: 1, minWidth: 0 }}>
         <div
           style={{
-            ...typography.title,
-            color: theme.colors.receivedBubbleText,
+            ...typography.headline,
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            whiteSpace: "nowrap",
+            color:
+              entry.direction === "missed"
+                ? theme.colors.callCardMissed
+                : theme.colors.receivedBubbleText,
             fontFamily: theme.typography.fontFamily,
           }}
         >
-          Calls
+          {entry.name}
         </div>
-        <VideoCallIcon color={theme.colors.accent} />
-      </div>
-
-      <div
-        style={{
-          flex: 1,
-          overflow: "auto",
-          paddingBottom: spacing.tabBarHeight + safeAreaBottom,
-          backgroundColor: theme.colors.background,
-        }}
-      >
         <div
           style={{
-            margin: `${spacing.sectionGap}px ${spacing.pagePaddingX}px 10px`,
-            padding: 16,
-            borderRadius: 18,
-            backgroundColor: theme.colors.background,
-            border: `1px solid ${theme.colors.divider}`,
+            ...typography.caption,
+            marginTop: 3,
             display: "flex",
             alignItems: "center",
-            gap: spacing.contentMarginLeft,
-          }}
-        >
-          <div
-            style={{
-              width: 48,
-              height: 48,
-              borderRadius: 16,
-              backgroundColor: `${theme.colors.accent}16`,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              flexShrink: 0,
-            }}
-          >
-            <PhoneCallIcon color={theme.colors.accent} />
-          </div>
-          <div style={{ flex: 1 }}>
-            <div
-              style={{
-                ...typography.headline,
-                color: theme.colors.receivedBubbleText,
-                fontFamily: theme.typography.fontFamily,
-              }}
-            >
-              Create call link
-            </div>
-            <div
-              style={{
-                ...typography.body,
-                color: theme.colors.timestamp,
-                fontFamily: theme.typography.fontFamily,
-              }}
-            >
-              Share a link for your next WhatsApp call
-            </div>
-          </div>
-        </div>
-
-        {favoriteEntries.length > 0 ? (
-          <>
-            <div
-              style={{
-                padding: `0 ${spacing.pagePaddingX}px 8px`,
-                ...typography.caption,
-                color: theme.colors.timestamp,
-                fontFamily: theme.typography.fontFamily,
-                letterSpacing: 0.2,
-              }}
-            >
-              Favorites
-            </div>
-            <div
-              style={{
-                padding: `0 ${spacing.pagePaddingX}px ${spacing.sectionGap}px`,
-                display: "flex",
-                gap: 14,
-                overflowX: "auto",
-              }}
-            >
-              {favoriteEntries.map((entry) => (
-                <div
-                  key={`fav-${entry.id}`}
-                  style={{
-                    minWidth: 96,
-                    maxWidth: 96,
-                    display: "flex",
-                    flexDirection: "column",
-                    alignItems: "center",
-                    gap: 8,
-                  }}
-                >
-                  <div
-                    style={{
-                      width: 64,
-                      height: 64,
-                      borderRadius: "50%",
-                      overflow: "hidden",
-                      backgroundColor: `${theme.colors.divider}66`,
-                    }}
-                  >
-                    <Img
-                      src={resolveAvatarWithFallback(entry.avatar, entry.name)}
-                      alt={entry.name}
-                      style={{ width: "100%", height: "100%", objectFit: "cover" }}
-                    />
-                  </div>
-                  <div
-                    style={{
-                      ...typography.caption,
-                      color: theme.colors.receivedBubbleText,
-                      textAlign: "center",
-                      fontFamily: theme.typography.fontFamily,
-                      whiteSpace: "nowrap",
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
-                      width: "100%",
-                    }}
-                  >
-                    {entry.name}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </>
-        ) : null}
-
-        <div
-          style={{
-            padding: `0 ${spacing.pagePaddingX}px 8px`,
-            ...typography.caption,
+            gap: 4,
             color: theme.colors.timestamp,
             fontFamily: theme.typography.fontFamily,
-            letterSpacing: 0.2,
           }}
         >
-          Recent
+          <DirectionIcon size={13} />
+          <span>{meta}</span>
         </div>
-
-        {callEntries.map((entry) => (
-          <div
-            key={entry.id}
-            style={{
-              padding: `${spacing.sectionGap}px ${spacing.pagePaddingX}px`,
-              backgroundColor: theme.colors.background,
-              borderBottom: `0.5px solid ${theme.colors.divider}`,
-              display: "flex",
-              alignItems: "center",
-              gap: spacing.contentMarginLeft,
-            }}
-          >
-            <div
-              style={{
-                width: 52,
-                height: 52,
-                borderRadius: "50%",
-                overflow: "hidden",
-                backgroundColor: `${theme.colors.divider}66`,
-                flexShrink: 0,
-              }}
-            >
-              <Img
-                src={resolveAvatarWithFallback(entry.avatar, entry.name)}
-                alt={entry.name}
-                style={{ width: "100%", height: "100%", objectFit: "cover" }}
-              />
-            </div>
-
-            <div style={{ flex: 1 }}>
-              <div
-                style={{
-                  ...typography.headline,
-                  color: entry.missed
-                    ? "#FF3B30"
-                    : theme.colors.receivedBubbleText,
-                  fontFamily: theme.typography.fontFamily,
-                }}
-              >
-                {entry.name}
-              </div>
-              <div
-                style={{
-                  ...typography.body,
-                  color: theme.colors.timestamp,
-                  fontFamily: theme.typography.fontFamily,
-                }}
-              >
-                {(entry.missed ? "Missed" : entry.direction) ?? "Outgoing"} · {entry.time}
-              </div>
-            </div>
-
-            <div>{entry.video ? <VideoCallIcon color={theme.colors.accent} /> : <PhoneCallIcon color={theme.colors.accent} />}</div>
-          </div>
-        ))}
       </div>
-
-      <TabNavigation activeTab="calls" safeAreaBottom={safeAreaBottom} />
+      <div
+        style={{
+          width: 34,
+          height: 34,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          borderRadius: 17,
+          color: theme.colors.accent,
+          backgroundColor: `${theme.colors.accent}12`,
+        }}
+      >
+        {entry.mode === "video" ? <Video size={18} /> : <Phone size={18} />}
+      </div>
     </div>
   );
-};
+}
+
+export function CallsScreen({ world, safeAreaInsets }: CallsScreenProps) {
+  const theme = useTheme();
+  const { t } = useWhatsAppLocale();
+  const { uiTypography: typography } = theme;
+  const safeAreaTop = safeAreaInsets?.top ?? theme.safeArea.top;
+  const safeAreaBottom = safeAreaInsets?.bottom ?? theme.safeArea.bottom;
+  const state = (world.appState?.app_whatsapp ?? {}) as Partial<WhatsAppState>;
+  const deviceId = Object.keys(world.devices ?? {})[0];
+  const baseTime = getBaseTime(world, deviceId);
+  const callLog = [...(state.callLog ?? [])].sort(
+    (left, right) => right.startedAt - left.startedAt,
+  );
+  const favorites = [...new Map(
+    callLog
+      .filter((entry) => entry.direction !== "missed")
+      .map((entry) => [entry.name, entry] as const),
+  ).values()].slice(0, 3);
+  const missedCount = callLog.filter(
+    (entry) => entry.direction === "missed",
+  ).length;
+
+  return (
+    <AppScaffold
+      title={t("nav.calls")}
+      activeTab="calls"
+      safeAreaTop={safeAreaTop}
+      safeAreaBottom={safeAreaBottom}
+      missedCallsCount={missedCount}
+      actions={
+        <>
+          <Link size={19} />
+          <Plus size={20} />
+        </>
+      }
+    >
+      <div
+        style={{
+          margin: "14px 16px 8px",
+          padding: "10px 12px",
+          minHeight: 58,
+          display: "flex",
+          alignItems: "center",
+          gap: 11,
+          border: `1px solid ${theme.colors.divider}`,
+          borderRadius: 14,
+          backgroundColor: theme.colors.headerBackground,
+        }}
+      >
+        <div
+          style={{
+            width: 38,
+            height: 38,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            borderRadius: 12,
+            color: theme.colors.accent,
+            backgroundColor: `${theme.colors.accent}16`,
+          }}
+        >
+          <Link size={19} />
+        </div>
+        <div style={{ flex: 1 }}>
+          <div
+            style={{
+              ...typography.headline,
+              color: theme.colors.receivedBubbleText,
+              fontFamily: theme.typography.fontFamily,
+            }}
+          >
+            {t("calls.createLink")}
+          </div>
+          <div
+            style={{
+              ...typography.caption,
+              marginTop: 2,
+              color: theme.colors.timestamp,
+              fontFamily: theme.typography.fontFamily,
+            }}
+          >
+            {t("calls.createLinkBody")}
+          </div>
+        </div>
+      </div>
+
+      {favorites.length > 0 && (
+        <>
+          <SectionHeader title={t("calls.favorites")} action={t("action.edit")} />
+          <div
+            style={{
+              height: 88,
+              padding: "0 16px 8px",
+              display: "flex",
+              gap: 18,
+              overflow: "hidden",
+            }}
+          >
+            {favorites.map((entry) => (
+              <div
+                key={entry.name}
+                style={{
+                  width: 66,
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  gap: 5,
+                }}
+              >
+                <div
+                  style={{
+                    width: 56,
+                    height: 56,
+                    overflow: "hidden",
+                    borderRadius: 28,
+                    backgroundColor: theme.colors.divider,
+                  }}
+                >
+                  <DeterministicImage
+                    src={resolveAvatarWithFallback(entry.avatar, entry.name)}
+                    alt={entry.name}
+                    style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                  />
+                </div>
+                <span
+                  style={{
+                    ...typography.caption,
+                    width: 72,
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    whiteSpace: "nowrap",
+                    textAlign: "center",
+                    color: theme.colors.receivedBubbleText,
+                    fontFamily: theme.typography.fontFamily,
+                  }}
+                >
+                  {entry.name}
+                </span>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+
+      <SectionHeader
+        title={t("calls.recent")}
+        action={callLog.length ? t("action.edit") : undefined}
+      />
+      <div data-anchor="calls_list">
+        {callLog.length > 0 ? (
+          callLog.slice(0, 6).map((entry) => (
+            <CallRow key={entry.id} entry={entry} baseTime={baseTime} />
+          ))
+        ) : (
+          <EmptyState
+            icon={<Phone size={28} />}
+            title={t("calls.emptyTitle")}
+            body={t("calls.emptyBody")}
+          />
+        )}
+      </div>
+    </AppScaffold>
+  );
+}
 
 export default CallsScreen;

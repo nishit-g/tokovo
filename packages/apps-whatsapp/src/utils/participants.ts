@@ -4,8 +4,7 @@ import type {
   WhatsAppGroupMember,
 } from "../types/index.js";
 
-const LOCAL_ACTOR_IDS = new Set(["me", "you", "self"]);
-const REMOTE_ALIAS_IDS = new Set(["them", "other", "remote"]);
+const LOCAL_ACTOR_IDS = new Set(["me"]);
 
 function normalizeActorKey(value: string | undefined): string | undefined {
   return value?.trim().toLowerCase();
@@ -25,16 +24,6 @@ function findMemberByActor(
   });
 }
 
-function findRemoteMember(
-  conversation: WhatsAppConversation | undefined,
-): WhatsAppGroupMember | undefined {
-  return conversation?.members?.find((member) => {
-    const memberId = normalizeActorKey(member.id);
-    const memberName = normalizeActorKey(member.name);
-    return !LOCAL_ACTOR_IDS.has(memberId ?? "") && !LOCAL_ACTOR_IDS.has(memberName ?? "");
-  });
-}
-
 export function resolveParticipantName(
   conversation: WhatsAppConversation | undefined,
   actor: string | undefined,
@@ -49,18 +38,6 @@ export function resolveParticipantName(
   const member = findMemberByActor(conversation, actor);
   if (member?.name) {
     return member.name;
-  }
-
-  if (REMOTE_ALIAS_IDS.has(normalizedActor)) {
-    if (conversation?.type === "dm") {
-      return (
-        conversation.name ??
-        findRemoteMember(conversation)?.name ??
-        "Someone"
-      );
-    }
-
-    return findRemoteMember(conversation)?.name ?? "Someone";
   }
 
   if (conversation?.type === "dm") {

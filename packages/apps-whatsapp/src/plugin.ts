@@ -1,10 +1,10 @@
 /**
  * WhatsApp Plugin - Production Contract
  *
- * Self-contained plugin with all tiers:
+ * Self-contained plugin with runtime, lowering, layout, camera, and authoring
+ * contracts:
  * - Tier A: id, version, displayName, reducer, views
  * - Tier B: lowering handler, layouts
- * - Tier C: DSL extension (b.use() pattern)
  *
  * @see docs/ARCHITECTURE.md
  */
@@ -27,9 +27,6 @@ import { WhatsappChatView } from "./ui/index.js";
 // Lowering Layer (V2 is default)
 import { whatsappV2Lowering } from "./lowering/index.js";
 
-// DSL Layer
-import { whatsappDsl, type WhatsAppDslApi } from "./dsl/index.js";
-
 // Layout Layer
 import { computeChatLayout, computeFeedLayout } from "./layout/index.js";
 
@@ -41,6 +38,7 @@ import { WhatsAppBehavior } from "./camera/index.js";
 import { WhatsAppAnchorProvider } from "./anchors/provider.js";
 import { collectWhatsAppAssetRefs } from "./asset-refs.js";
 import { whatsappBootstrap } from "./bootstrap.js";
+import { whatsappNotificationAdapter } from "./notifications/adapter.js";
 
 // =============================================================================
 // PLUGIN VIEWS
@@ -64,12 +62,6 @@ const whatsappAssets = {
     "app_whatsapp.message_in": "plugins/whatsapp/received.wav",
     "app_whatsapp.message_out": "plugins/whatsapp/sent.wav",
     "app_whatsapp.typing_loop": "plugins/whatsapp/typing_loop.wav",
-    "app_whatsapp.call_ringtone": "plugins/whatsapp/call_ringtone.wav",
-    "app_whatsapp.call_outgoing": "plugins/whatsapp/call_outgoing.wav",
-    "app_whatsapp.call_end": "plugins/whatsapp/call_end.wav",
-    "app_whatsapp.ptt_start": "plugins/whatsapp/ptt_start.wav",
-    "app_whatsapp.ptt_send": "plugins/whatsapp/ptt_send.wav",
-    "app_whatsapp.ptt_cancel": "plugins/whatsapp/ptt_cancel.wav",
   },
   icons: {
     app_icon: "/icons/whatsapp.svg",
@@ -98,53 +90,73 @@ export const WhatsAppPluginV2: TokovoPluginContract<"app_whatsapp"> & {
 
   // === TIER A: Event Routing ===
   eventKinds: [
-    "MessageReceived",
-    "MessageSent",
-    "TypingStarted",
-    "TypingEnded",
-    "ImageReceived",
-    "ImageSent",
-    "VideoReceived",
-    "VideoSent",
-    "VoiceReceived",
-    "VoiceSent",
-    "VoicePlay",
-    "VoicePause",
-    "GifReceived",
-    "GifSent",
-    "StickerReceived",
-    "StickerSent",
-    "DocumentReceived",
-    "DocumentSent",
-    "ContactReceived",
-    "ContactSent",
-    "LocationReceived",
-    "LocationSent",
-    "React",
-    "ReactionAdded",
-    "ReadMessages",
-    "MessageRead",
-    "MessageDeleted",
-    "MessageEdited",
-    "MessageForwarded",
-    "DateSeparator",
-    "ConversationOpened",
-    "NavigateScreen",
-    "GroupMemberAdded",
-    "GroupMemberRemoved",
-    "PinConversation",
-    "UnpinConversation",
-    "MuteConversation",
-    "UnmuteConversation",
-    "ArchiveConversation",
-    "UnarchiveConversation",
-    "SetDraft",
-    "VoiceMessageReceived",
+    "MESSAGE_RECEIVED",
+    "MESSAGE_SENT",
+    "TYPING_START",
+    "TYPING_END",
+    "IMAGE_RECEIVED",
+    "IMAGE_SENT",
+    "VIDEO_RECEIVED",
+    "VIDEO_SENT",
+    "VOICE_RECEIVED",
+    "VOICE_SENT",
+    "MEDIA_DOWNLOAD_STARTED",
+    "MEDIA_DOWNLOAD_PROGRESS",
+    "MEDIA_DOWNLOAD_COMPLETED",
+    "MEDIA_DOWNLOAD_FAILED",
+    "MEDIA_PLAYBACK_STARTED",
+    "MEDIA_PLAYBACK_PROGRESS",
+    "MEDIA_PLAYBACK_PAUSED",
+    "MEDIA_PLAYBACK_COMPLETED",
+    "MEDIA_VIEWER_OPENED",
+    "MEDIA_VIEWER_CLOSED",
+    "STATUS_VIEWER_OPENED",
+    "STATUS_VIEWER_ADVANCED",
+    "STATUS_VIEWER_CLOSED",
+    "GESTURE_STARTED",
+    "GESTURE_UPDATED",
+    "GESTURE_COMPLETED",
+    "GESTURE_CANCELLED",
+    "REPLY_COMPOSER_DISMISSED",
+    "SET_LOCALE",
+    "GIF_RECEIVED",
+    "GIF_SENT",
+    "STICKER_RECEIVED",
+    "STICKER_SENT",
+    "DOCUMENT_RECEIVED",
+    "DOCUMENT_SENT",
+    "CONTACT_RECEIVED",
+    "CONTACT_SENT",
+    "LOCATION_RECEIVED",
+    "LOCATION_SENT",
+    "REACTION_ADDED",
+    "READ",
+    "MESSAGE_READ",
+    "MESSAGE_DELIVERY_FAILED",
+    "MESSAGE_RETRY_STARTED",
+    "MESSAGE_RETRY_COMPLETED",
+    "MESSAGE_DELETED",
+    "MESSAGE_EDITED",
+    "MESSAGE_FORWARDED",
+    "CONVERSATION_OPENED",
+    "NAVIGATE_SCREEN",
+    "GROUP_MEMBER_ADDED",
+    "GROUP_MEMBER_REMOVED",
+    "GROUP_ADMIN_CHANGED",
+    "GROUP_INFO_UPDATED",
+    "PIN_CONVERSATION",
+    "UNPIN_CONVERSATION",
+    "MUTE_CONVERSATION",
+    "UNMUTE_CONVERSATION",
+    "ARCHIVE_CONVERSATION",
+    "UNARCHIVE_CONVERSATION",
+    "SET_DRAFT",
   ] as const,
 
   // === TIER A: Assets ===
   assets: whatsappAssets,
   audioRules: whatsappAudioRules,
+  notificationAdapter: whatsappNotificationAdapter,
 
   // === TIER B: Lowering ===
   v2Lowering: whatsappV2Lowering,
@@ -164,9 +176,6 @@ export const WhatsAppPluginV2: TokovoPluginContract<"app_whatsapp"> & {
   // === TIER B: Behaviors ===
   behaviors: WhatsAppBehavior,
   collectAssetRefs: collectWhatsAppAssetRefs,
-
-  // === TIER C: DSL ===
-  dsl: whatsappDsl,
 
   // === Anchors ===
   anchorProvider: WhatsAppAnchorProvider,
@@ -200,5 +209,3 @@ export const whatsappRuntimeEntry = {
 export const tokovoRuntimeManifest = [whatsappRuntimeEntry] as const;
 
 export default WhatsAppPluginV2;
-
-export type { WhatsAppDslApi };

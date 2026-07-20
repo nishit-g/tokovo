@@ -44,10 +44,10 @@
     "typecheck": "tsc --noEmit",
     "lint": "eslint src --ext .ts,.tsx",
     "test": "vitest run",
+    "benchmark:long-thread": "vitest run src/__tests__/long-thread-performance.test.ts --reporter=verbose",
     "test:watch": "vitest"
   },
   "dependencies": {
-    "@remotion/media": "4.0.409",
     "@tokovo/core": "workspace:*",
     "@tokovo/device-camera": "workspace:*",
     "@tokovo/ir": "workspace:*",
@@ -61,8 +61,8 @@
   "devDependencies": {
     "@types/node": "^20.0.0",
     "@types/react": "18.3.1",
+    "immer": "^10.0.0",
     "typescript": "^5.0.0",
-    "vitest": "^1.0.0",
-    "immer": "^10.0.0"
+    "vitest": "^1.0.0"
   }
 }

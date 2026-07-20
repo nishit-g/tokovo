@@ -77,8 +77,8 @@ describe("release episode taxonomy", () => {
   });
 
   it("ships the full new-only curated wave", () => {
-    expect(appShowcaseEpisodes).toHaveLength(21);
-    expect(systemShowcaseEpisodes).toHaveLength(8);
+    expect(appShowcaseEpisodes).toHaveLength(22);
+    expect(systemShowcaseEpisodes).toHaveLength(9);
     expect(storyEpisodes).toHaveLength(8);
   });
 

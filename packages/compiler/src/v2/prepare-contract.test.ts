@@ -39,7 +39,10 @@ describe("compiler pipeline guarantees", () => {
       ],
     });
 
-    const prepared = prepareTrackEpisode(ir, [], { log: false, validate: true });
+    const prepared = prepareTrackEpisode(ir, [], {
+      log: false,
+      validate: true,
+    });
     expect(runtimeKinds(prepared.events)).toEqual([
       "DEVICE:UNLOCK",
       "DEVICE:OPEN_APP",
@@ -57,9 +60,9 @@ describe("compiler pipeline guarantees", () => {
       _declarationOrder: 0,
     } as TrackEvent;
 
-    expect(() => lowerTrackEvent(appEvent, { fps: 30, pluginLowerers: new Map() })).toThrow(
-      /No plugin lowerer registered for appId: app_missing/,
-    );
+    expect(() =>
+      lowerTrackEvent(appEvent, { fps: 30, pluginLowerers: new Map() }),
+    ).toThrow(/No plugin lowerer registered for appId: app_missing/);
   });
 
   it("prepareTrackEpisode signature and keyframe index are deterministic", () => {
@@ -83,11 +86,19 @@ describe("compiler pipeline guarantees", () => {
         },
       ],
     });
-    const preparedA = prepareTrackEpisode(ir, [], { log: false, validate: true });
-    const preparedB = prepareTrackEpisode(ir, [], { log: false, validate: true });
+    const preparedA = prepareTrackEpisode(ir, [], {
+      log: false,
+      validate: true,
+    });
+    const preparedB = prepareTrackEpisode(ir, [], {
+      log: false,
+      validate: true,
+    });
 
     expect(preparedA.eventSignature).toBe(preparedB.eventSignature);
-    expect(preparedA.keyframedEventIndex?.frames).toEqual(preparedB.keyframedEventIndex?.frames);
+    expect(preparedA.keyframedEventIndex?.frames).toEqual(
+      preparedB.keyframedEventIndex?.frames,
+    );
     expect(preparedA.events).toEqual(preparedB.events);
   });
 
@@ -107,10 +118,72 @@ describe("compiler pipeline guarantees", () => {
       ],
     });
 
-    const prepared = prepareTrackEpisode(ir, [], { log: false, validate: true });
+    const prepared = prepareTrackEpisode(ir, [], {
+      log: false,
+      validate: true,
+    });
 
     expect(prepared.initialWorld.camera.activeDeviceId).toBe("phone");
     expect(prepared.initialWorld.camera.layout?.primaryDeviceId).toBe("phone");
+  });
+
+  it("hydrates authored device OS state into the initial world", () => {
+    const time = new Date("2026-04-10T20:15:00Z");
+    const ir = createCanonicalTrackEpisodeIR({
+      devices: [
+        {
+          id: "phone",
+          profile: "iphone16",
+          app: "app_whatsapp",
+          os: {
+            time,
+            battery: 84,
+            charging: true,
+            network: "5G",
+            strength: 2,
+            dnd: true,
+          },
+        },
+      ],
+    });
+
+    const prepared = prepareTrackEpisode(ir, [], {
+      log: false,
+      validate: true,
+    });
+
+    expect(prepared.initialWorld.devices.phone.os).toMatchObject({
+      clock: time.getTime(),
+      battery: 84,
+      charging: true,
+      network: "5G",
+      cellStrength: 2,
+      dnd: true,
+    });
+  });
+
+  it("hydrates app theme and appearance as independent device state", () => {
+    const ir = createCanonicalTrackEpisodeIR({
+      devices: [
+        {
+          id: "phone",
+          profile: "pixel",
+          app: "app_whatsapp",
+          theme: "whatsapp-storybook",
+          appearance: "dark",
+        },
+      ],
+    });
+
+    const prepared = prepareTrackEpisode(ir, [], {
+      log: false,
+      validate: true,
+    });
+
+    expect(prepared.initialWorld.devices.phone).toMatchObject({
+      appTheme: "whatsapp-storybook",
+      appAppearance: "dark",
+    });
   });
 
   it("hydrates plugin-owned snapshots without compiler-owned conversation shaping", () => {
@@ -136,13 +209,13 @@ describe("compiler pipeline guarantees", () => {
         hydrate: ({ baseState, snapshot, initialView }: any) => ({
           ...baseState,
           conversations: Object.fromEntries(
-            (snapshot?.snapshot?.conversations ?? []).map((conversation: any) => [
-              conversation.id,
-              conversation,
-            ]),
+            (snapshot?.snapshot?.conversations ?? []).map(
+              (conversation: any) => [conversation.id, conversation],
+            ),
           ),
           currentScreen: initialView?.view?.screen ?? baseState.currentScreen,
-          viewMode: initialView?.view?.screen === "chat" ? "CHAT" : baseState.viewMode,
+          viewMode:
+            initialView?.view?.screen === "chat" ? "CHAT" : baseState.viewMode,
           conversationId: initialView?.view?.conversationId,
         }),
       },
@@ -177,7 +250,10 @@ describe("compiler pipeline guarantees", () => {
       validate: true,
     });
 
-    const app = prepared.initialWorld.appState.app_whatsapp as Record<string, unknown>;
+    const app = prepared.initialWorld.appState.app_whatsapp as Record<
+      string,
+      unknown
+    >;
     expect(app.viewMode).toBe("CHAT");
     expect(app.currentScreen).toBe("chat");
     expect(app.conversationId).toBe("dm_alex");
@@ -248,8 +324,14 @@ describe("compiler pipeline guarantees", () => {
     expect(collectedLabels).toEqual(["LEFT", "RIGHT"]);
     expect(prepared.assetRefs).toEqual(
       expect.arrayContaining([
-        expect.objectContaining({ src: "/avatars/left.png", appId: "app_same" }),
-        expect.objectContaining({ src: "/avatars/right.png", appId: "app_same" }),
+        expect.objectContaining({
+          src: "/avatars/left.png",
+          appId: "app_same",
+        }),
+        expect.objectContaining({
+          src: "/avatars/right.png",
+          appId: "app_same",
+        }),
       ]),
     );
   });
@@ -373,7 +455,10 @@ describe("compiler pipeline guarantees", () => {
 
     const prepared = prepareTrackEpisode(
       ir,
-      [createPlugin("app_whatsapp", "chats"), createPlugin("app_imessage", "list")],
+      [
+        createPlugin("app_whatsapp", "chats"),
+        createPlugin("app_imessage", "list"),
+      ],
       {
         log: false,
         validate: true,
@@ -412,7 +497,8 @@ describe("compiler pipeline guarantees", () => {
           },
           validate: ({ version, value }: any) => ({
             errors:
-              version === 2 && (value as Record<string, unknown>).migrated === true
+              version === 2 &&
+              (value as Record<string, unknown>).migrated === true
                 ? []
                 : ["snapshot was not migrated"],
           }),
@@ -466,7 +552,10 @@ describe("compiler pipeline guarantees", () => {
       validate: true,
     });
 
-    const app = prepared.initialWorld.appState.app_whatsapp as Record<string, unknown>;
+    const app = prepared.initialWorld.appState.app_whatsapp as Record<
+      string,
+      unknown
+    >;
     expect(app.viewMode).toBe("FEED");
     expect(app.currentScreen).toBe("chats");
     expect(app.conversationId).toBeUndefined();

@@ -36,6 +36,11 @@ import {
   VoiceScriptDefinition,
   VoiceScheduleItem,
   BackgroundConfigIR,
+  HandPerformanceIR,
+  HandMotionPreset,
+  HandTypingMode,
+  HandRigAssetsIR,
+  HandPerformanceStageIR,
 } from "@tokovo/ir";
 import {
   CameraDirectorPlugin,
@@ -48,6 +53,7 @@ import { AudioTrackBuilder } from "./audio-track.js";
 import { OSTrackBuilder } from "./os-track.js";
 import { DeviceTrackBuilderV2 } from "./device-track.js";
 import { OverlayTrackBuilder } from "./overlay-track.js";
+import { HandPerformanceTrackBuilder } from "./hand-performance-track.js";
 
 // =============================================================================
 // TYPES
@@ -58,6 +64,8 @@ export interface DeviceOptions {
   os?: OSConfig;
   /** UI theme/strategy to use (e.g., "whatsapp-storybook") */
   theme?: string;
+  /** App color appearance, independent of the selected theme variant. */
+  appearance?: "light" | "dark";
   /** Start locked at frame 0 */
   locked?: boolean;
   /** Apps installed on the home screen (deterministic icon layout) */
@@ -85,6 +93,15 @@ export interface SnapshotOptions {
 
 export interface ViewOptions {
   version?: number;
+}
+
+export interface HandPerformanceOptions {
+  rigId: string;
+  assets: HandRigAssetsIR;
+  defaultMotion?: HandMotionPreset;
+  defaultTypingMode?: HandTypingMode;
+  motionIntensity?: number;
+  stage?: HandPerformanceStageIR;
 }
 
 // Track factory function type for app-specific builders.
@@ -165,6 +182,7 @@ export class EpisodeBuilder {
       }
     | undefined;
   private _background?: BackgroundConfigIR;
+  private _handPerformances: HandPerformanceIR[] = [];
 
   constructor(id: string, config: TrackEpisodeConfig) {
     this._id = id;
@@ -198,6 +216,7 @@ export class EpisodeBuilder {
       app: options.app,
       os: options.os,
       theme: options.theme,
+      appearance: options.appearance,
       locked: options.locked,
       installedApps: options.installedApps,
       homeScreen: options.homeScreen,
@@ -268,6 +287,39 @@ export class EpisodeBuilder {
    */
   background(config: BackgroundConfigIR): this {
     this._background = config;
+    return this;
+  }
+
+  /**
+   * Attach a deterministic physical hand performance to a device.
+   * Keyboard-synchronized thumb poses are derived during rendering.
+   */
+  hands(
+    deviceId: string,
+    options: HandPerformanceOptions,
+    fn: TrackFn<HandPerformanceTrackBuilder>,
+  ): this {
+    if (!this._devices.some((device) => device.id === deviceId)) {
+      throw new Error(
+        `Cannot attach hand performance to unknown device "${deviceId}"`,
+      );
+    }
+
+    const builder = new HandPerformanceTrackBuilder(this._fps);
+    fn(builder);
+    this._handPerformances = this._handPerformances.filter(
+      (performance) => performance.deviceId !== deviceId,
+    );
+    this._handPerformances.push({
+      deviceId,
+      rigId: options.rigId,
+      assets: options.assets,
+      defaultMotion: options.defaultMotion,
+      defaultTypingMode: options.defaultTypingMode,
+      motionIntensity: options.motionIntensity,
+      stage: options.stage,
+      cues: [...builder._cues].sort((a, b) => a.startFrame - b.startFrame),
+    });
     return this;
   }
 
@@ -470,6 +522,10 @@ export class EpisodeBuilder {
       sections: this._sections,
       director: this._director,
       background: this._background,
+      handPerformances:
+        this._handPerformances.length > 0
+          ? this._handPerformances
+          : undefined,
       voice: this._voiceConfig
         ? {
             manifestPath: this._voiceConfig.script.manifestPath,

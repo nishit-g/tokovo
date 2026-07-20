@@ -5,6 +5,8 @@ import { registerTypingHandlers } from "./typing.js";
 import { registerMediaHandlers } from "./media.js";
 import { registerGroupHandlers } from "./group.js";
 import { registerConversationHandlers } from "./conversation.js";
+import { registerInteractionHandlers } from "./interactions.js";
+import { registerStatusHandlers } from "./status.js";
 import {
   createWhatsAppHandlerRegistry,
   type HandlerMap,
@@ -16,6 +18,8 @@ export { registerTypingHandlers } from "./typing.js";
 export { registerMediaHandlers } from "./media.js";
 export { registerGroupHandlers } from "./group.js";
 export { registerConversationHandlers } from "./conversation.js";
+export { registerInteractionHandlers } from "./interactions.js";
+export { registerStatusHandlers } from "./status.js";
 
 export function registerAllWhatsAppHandlers(
   registry: MutableHandlerRegistry,
@@ -25,6 +29,8 @@ export function registerAllWhatsAppHandlers(
   registerMediaHandlers(registry);
   registerGroupHandlers(registry);
   registerConversationHandlers(registry);
+  registerInteractionHandlers(registry);
+  registerStatusHandlers(registry);
 }
 
 export function createWhatsAppHandlers(): Readonly<HandlerMap> {

@@ -33,7 +33,17 @@ export default defineEpisode({
       .snapshot("app_whatsapp", "phone", {
         conversations: [
           { id: "dm_mina", name: "Mina", avatar: "/avatars/avatar-maya.jpg", unreadCount: 1, isPinned: true },
-          { id: "group_frames", name: "Frame Notes", type: "group", unreadCount: 6, participants: ["me", "Mina", "Aki"] },
+          {
+            id: "group_frames",
+            name: "Frame Notes",
+            type: "group",
+            unreadCount: 6,
+            members: [
+              { id: "me", name: "You" },
+              { id: "mina", name: "Mina" },
+              { id: "aki", name: "Aki" },
+            ],
+          },
         ],
       })
       .snapshot("app_x", "phone", {
@@ -87,7 +97,7 @@ export default defineEpisode({
         cam.at("0s").focus("device", { scale: 1.02, duration: "0.35s" });
         cam.at("0.8s").focus("chat_list", { scale: 1.04, duration: "0.35s" });
         cam.span("2.2s", "5.2s").trackCinematic("lastMessage", { scale: 1.14, smoothing: 0.16 });
-        cam.at("7.3s").focus("thread_card", { scale: 1.08, duration: "0.35s" });
+        cam.at("7.3s").focus("chat_thread", { scale: 1.08, duration: "0.35s" });
         cam.at("12.0s").focus("notification_banner", { scale: 1.12, duration: "0.28s" });
         cam.at("19.3s").focus("tweet_card", { scale: 1.1, duration: "0.35s" });
         cam.span("21.0s", "24.0s").trackCinematic("keyboard", { scale: 1.12, smoothing: 0.18 });

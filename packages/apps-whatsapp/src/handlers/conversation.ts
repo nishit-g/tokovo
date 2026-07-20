@@ -11,66 +11,74 @@ import type {
   ConversationOpenedEvent,
   ReadMessagesEvent,
 } from "../schemas/index.js";
+import type { WhatsAppState } from "../types/index.js";
 
 export function registerConversationHandlers(
   registry: MutableHandlerRegistry,
 ): void {
-  registry.registerHandler<PinConversationEvent>("PinConversation", (ctx) => {
+  registry.registerHandler<PinConversationEvent>("PIN_CONVERSATION", (ctx) => {
     ctx.conversation.isPinned = true;
   });
 
-  registry.registerHandler<UnpinConversationEvent>("UnpinConversation", (ctx) => {
+  registry.registerHandler<UnpinConversationEvent>("UNPIN_CONVERSATION", (ctx) => {
     ctx.conversation.isPinned = false;
   });
 
-  registry.registerHandler<MuteConversationEvent>("MuteConversation", (ctx, e) => {
+  registry.registerHandler<MuteConversationEvent>("MUTE_CONVERSATION", (ctx, e) => {
     ctx.conversation.isMuted = true;
-    ctx.conversation.mutedUntil = e.payload?.until;
+    ctx.conversation.mutedUntil = e.payload.until;
   });
 
-  registry.registerHandler<UnmuteConversationEvent>("UnmuteConversation", (ctx) => {
+  registry.registerHandler<UnmuteConversationEvent>("UNMUTE_CONVERSATION", (ctx) => {
     ctx.conversation.isMuted = false;
     ctx.conversation.mutedUntil = undefined;
   });
 
-  registry.registerHandler<ArchiveConversationEvent>("ArchiveConversation", (ctx) => {
+  registry.registerHandler<ArchiveConversationEvent>("ARCHIVE_CONVERSATION", (ctx) => {
     ctx.conversation.isArchived = true;
   });
 
   registry.registerHandler<UnarchiveConversationEvent>(
-    "UnarchiveConversation",
+    "UNARCHIVE_CONVERSATION",
     (ctx) => {
       ctx.conversation.isArchived = false;
     },
   );
 
-  registry.registerHandler<SetDraftEvent>("SetDraft", (ctx, e) => {
-    ctx.conversation.draftText = e.payload?.text;
+  registry.registerHandler<SetDraftEvent>("SET_DRAFT", (ctx, e) => {
+    ctx.conversation.draftText = e.payload.text;
   });
 
-  registry.registerHandler<NavigateScreenEvent>("NavigateScreen", (ctx, e) => {
-    const rawScreen = e.payload?.screen ?? e.screen;
-    const screen = rawScreen === "status" ? "updates" : rawScreen;
+  registry.registerHandler<NavigateScreenEvent>("NAVIGATE_SCREEN", (ctx, e) => {
+    const screen = e.payload.screen;
     const appState = ctx.draft.appState?.["app_whatsapp"];
-    if (appState && typeof screen === "string") {
+    if (appState) {
+      const targetConversationId = e.payload.conversationId;
+      if ((screen === "chat" || screen === "profile") && !targetConversationId) {
+        throw new Error(
+          `WhatsApp ${screen} navigation requires a conversationId`,
+        );
+      }
       (appState as { currentScreen?: string }).currentScreen = screen;
       // Keep LayoutEngine invariants in sync.
       (appState as { viewMode?: "CHAT" | "FEED" | "FULLSCREEN" | "TRANSITION" }).viewMode =
         screen === "chat" ? "CHAT" : "FEED";
-      if (screen !== "chat") {
+      if (screen === "chat") {
+        (appState as { conversationId?: string }).conversationId =
+          targetConversationId;
+      } else if (screen === "profile") {
+        (appState as { conversationId?: string }).conversationId =
+          targetConversationId;
+      } else {
         (appState as { conversationId?: string }).conversationId = undefined;
-        (appState as { currentConversationId?: string }).currentConversationId =
-          undefined;
       }
     }
   });
 
-  registry.registerHandler<ConversationOpenedEvent>("ConversationOpened", (ctx, e) => {
-    const conversationId = e.payload?.conversationId ?? e.conversationId;
+  registry.registerHandler<ConversationOpenedEvent>("CONVERSATION_OPENED", (ctx, e) => {
+    const conversationId = e.payload.conversationId;
     const appState = ctx.draft.appState?.["app_whatsapp"];
     if (appState && conversationId) {
-      (appState as { currentConversationId?: string }).currentConversationId =
-        conversationId;
       (appState as { conversationId?: string }).conversationId = conversationId;
       (appState as { currentScreen?: string }).currentScreen = "chat";
       (appState as { viewMode?: "CHAT" | "FEED" | "FULLSCREEN" | "TRANSITION" }).viewMode =
@@ -91,11 +99,21 @@ export function registerConversationHandlers(
         }
       }
     }
+    if (appState) {
+      const state = appState as WhatsAppState;
+      state.threadViewport = ctx.conversation.unreadDividerMessageId
+        ? {
+            conversationId,
+            anchorMessageId: ctx.conversation.unreadDividerMessageId,
+            reason: "unread",
+          }
+        : null;
+    }
     ctx.conversation.unreadCount = 0;
   });
 
-  registry.registerHandler<ReadMessagesEvent>("ReadMessages", (ctx, e) => {
-    const count = e.payload?.count ?? ctx.conversation.unreadCount ?? 0;
+  registry.registerHandler<ReadMessagesEvent>("READ", (ctx, e) => {
+    const count = e.payload.count ?? ctx.conversation.unreadCount ?? 0;
     if (ctx.conversation.unreadCount !== undefined) {
       ctx.conversation.unreadCount = Math.max(
         0,

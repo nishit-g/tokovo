@@ -171,6 +171,32 @@ function collectSystemAssetRefs(ir: TrackEpisodeIR): EpisodeAssetRef[] {
     });
   }
 
+  for (const [performanceIndex, performance] of (
+    ir.handPerformances ?? []
+  ).entries()) {
+    const handAssets = [
+      ["underlaySrc", performance.assets.underlaySrc],
+      ["leftThumbSrc", performance.assets.leftThumbSrc],
+      ["rightThumbSrc", performance.assets.rightThumbSrc],
+    ] as const;
+
+    for (const [assetKey, src] of handAssets) {
+      if (!isUsableAssetSource(src)) continue;
+      refs.push({
+        id: "",
+        src,
+        kind: "image",
+        owner: "system",
+        usage: "other",
+        strategy: "eager",
+        priority: 92,
+        fromFrame: 0,
+        source: "ir",
+        path: `handPerformances.${performanceIndex}.assets.${assetKey}`,
+      });
+    }
+  }
+
   if (ir.voice?.audioPath && isUsableAssetSource(ir.voice.audioPath)) {
     refs.push({
       id: "",

@@ -10,8 +10,9 @@
  * @see docs/architecture/dsl-v2.md
  */
 
-import type { TrackMessageRef } from "@tokovo/ir";
 import type { WhatsAppTrackEvent, WhatsAppEventType } from "../types/events.js";
+import type { WhatsAppLocale } from "../localization/index.js";
+import type { WhatsAppMessageGesture } from "../types/interactions.js";
 import { parseFileSizeToBytes } from "../utils/file-size.js";
 
 // =============================================================================
@@ -19,29 +20,25 @@ import { parseFileSizeToBytes } from "../utils/file-size.js";
 // =============================================================================
 
 type GetDeclarationOrder = () => number;
-type ReplyReference =
-  | TrackMessageRef
-  | {
-    messageId?: string;
-    id?: string;
-    index?: number | "last";
-  };
+export type MessageReference = { messageId: string };
 
 export interface ReceiveOptions {
+  messageId?: string;
   silent?: boolean;
-  replyTo?: ReplyReference;
+  replyTo?: MessageReference;
 }
 
 export interface SendOptions {
+  messageId?: string;
   silent?: boolean;
   typed?: boolean;
   charDelay?: number;
-  replyTo?: ReplyReference;
+  replyTo?: MessageReference;
 }
 
 export interface ImageOptions {
+  messageId?: string;
   caption?: string;
-  height?: number;
 }
 
 export interface CallOptions {
@@ -49,10 +46,6 @@ export interface CallOptions {
   duration?: number;
   missed?: boolean;
   text?: string;
-}
-
-export interface TypingOptions {
-  actor?: string;
 }
 
 // =============================================================================
@@ -79,8 +72,22 @@ export class WhatsAppPointBuilder {
       kind: "APP",
       appId: "app_whatsapp",
       type,
-      conversationId: this._conversationId,
       payload: { conversationId: this._conversationId, ...payload },
+      _declarationOrder: this._getOrder(),
+    } as WhatsAppTrackEvent);
+  }
+
+  private _pushGlobal<T extends WhatsAppEventType>(
+    type: T,
+    payload: Record<string, unknown>,
+  ): void {
+    this._events.push({
+      at: this._frame,
+      deviceId: this._deviceId,
+      kind: "APP",
+      appId: "app_whatsapp",
+      type,
+      payload,
       _declarationOrder: this._getOrder(),
     } as WhatsAppTrackEvent);
   }
@@ -89,6 +96,7 @@ export class WhatsAppPointBuilder {
     this._push("MESSAGE_RECEIVED", {
       from,
       text,
+      messageId: options.messageId,
       silent: options.silent,
       replyTo: options.replyTo,
     });
@@ -97,6 +105,7 @@ export class WhatsAppPointBuilder {
   send(text: string, options: SendOptions = {}): void {
     this._push("MESSAGE_SENT", {
       text,
+      messageId: options.messageId,
       silent: options.silent,
       typed: options.typed,
       charDelay: options.charDelay,
@@ -139,7 +148,7 @@ export class WhatsAppPointBuilder {
       from,
       url,
       caption: options.caption,
-      height: options.height,
+      messageId: options.messageId,
     });
   }
 
@@ -147,82 +156,188 @@ export class WhatsAppPointBuilder {
     this._push("IMAGE_SENT", {
       url,
       caption: options.caption,
-      messageType: "image",
+      messageId: options.messageId,
     });
   }
 
   receiveVideo(
     from: string,
     url: string,
-    options: { duration?: number; caption?: string } = {},
+    options: { duration?: number; caption?: string; messageId?: string } = {},
   ): void {
     this._push("VIDEO_RECEIVED", {
       from,
       url,
       duration: options.duration ?? 10,
       caption: options.caption,
-      messageType: "video",
+      messageId: options.messageId,
     });
   }
 
   sendVideo(
     url: string,
-    options: { duration?: number; caption?: string } = {},
+    options: { duration?: number; caption?: string; messageId?: string } = {},
   ): void {
     this._push("VIDEO_SENT", {
       url,
       duration: options.duration ?? 10,
       caption: options.caption,
-      messageType: "video",
+      messageId: options.messageId,
     });
   }
 
-  receiveVoice(from: string, duration: number): void {
-    this._push("VOICE_RECEIVED", { from, duration, messageType: "voice" });
+  receiveVoice(from: string, duration: number, options: { messageId?: string } = {}): void {
+    this._push("VOICE_RECEIVED", {
+      from,
+      duration,
+      messageId: options.messageId,
+    });
   }
 
-  sendVoice(duration: number): void {
-    this._push("VOICE_SENT", { duration, messageType: "voice" });
+  sendVoice(duration: number, options: { messageId?: string } = {}): void {
+    this._push("VOICE_SENT", {
+      duration,
+      messageId: options.messageId,
+    });
   }
 
-  receiveGif(from: string, url: string): void {
-    this._push("GIF_RECEIVED", { from, url, messageType: "gif" });
+  receiveGif(from: string, url: string, options: { messageId?: string } = {}): void {
+    this._push("GIF_RECEIVED", {
+      from,
+      url,
+      messageId: options.messageId,
+    });
   }
 
-  sendGif(url: string): void {
-    this._push("GIF_SENT", { url, messageType: "gif" });
+  sendGif(url: string, options: { messageId?: string } = {}): void {
+    this._push("GIF_SENT", {
+      url,
+      messageId: options.messageId,
+    });
   }
 
-  react(
-    messageRef: TrackMessageRef | { messageIndex: number } | { index: number },
-    emoji: string,
-  ): void {
-    let index: number;
-    if ("messageIndex" in messageRef) {
-      index = (messageRef as { messageIndex: number }).messageIndex;
-    } else if ("index" in messageRef) {
-      index = (messageRef as { index: number }).index;
-    } else {
-      index = 0;
-    }
-    this._push("REACT", { messageRef: { index }, emoji });
+  react(messageId: string, emoji: string): void {
+    this._push("REACTION_ADDED", { messageId, emoji, fromMe: true });
   }
 
   read(): void {
     this._push("READ", {});
   }
 
-  receiveSticker(from: string, url: string): void {
-    this._push("STICKER_RECEIVED", { from, url, messageType: "sticker" });
+  markMessageRead(messageId: string): void {
+    this._push("MESSAGE_READ", { messageId });
   }
 
-  sendSticker(url: string): void {
-    this._push("STICKER_SENT", { url, messageType: "sticker" });
+  failMessageDelivery(messageId: string, failureReason: string): void {
+    this._push("MESSAGE_DELIVERY_FAILED", { messageId, failureReason });
+  }
+
+  startMessageRetry(messageId: string): void {
+    this._push("MESSAGE_RETRY_STARTED", { messageId });
+  }
+
+  completeMessageRetry(messageId: string): void {
+    this._push("MESSAGE_RETRY_COMPLETED", { messageId });
+  }
+
+  addReaction(messageId: string, emoji: string, fromMe: boolean = false): void {
+    this._push("REACTION_ADDED", { messageId, emoji, fromMe });
+  }
+
+  startMediaDownload(messageId: string, progress: number = 0): void {
+    this._push("MEDIA_DOWNLOAD_STARTED", { messageId, progress });
+  }
+
+  updateMediaDownload(messageId: string, progress: number): void {
+    this._push("MEDIA_DOWNLOAD_PROGRESS", { messageId, progress });
+  }
+
+  completeMediaDownload(messageId: string): void {
+    this._push("MEDIA_DOWNLOAD_COMPLETED", { messageId });
+  }
+
+  failMediaDownload(messageId: string, failureReason: string): void {
+    this._push("MEDIA_DOWNLOAD_FAILED", { messageId, failureReason });
+  }
+
+  startMediaPlayback(messageId: string, progress: number = 0): void {
+    this._push("MEDIA_PLAYBACK_STARTED", { messageId, progress });
+  }
+
+  updateMediaPlayback(messageId: string, progress: number): void {
+    this._push("MEDIA_PLAYBACK_PROGRESS", { messageId, progress });
+  }
+
+  pauseMediaPlayback(messageId: string, progress?: number): void {
+    this._push("MEDIA_PLAYBACK_PAUSED", { messageId, progress });
+  }
+
+  completeMediaPlayback(messageId: string): void {
+    this._push("MEDIA_PLAYBACK_COMPLETED", { messageId });
+  }
+
+  openMediaViewer(messageId: string): void {
+    this._push("MEDIA_VIEWER_OPENED", { messageId });
+  }
+
+  closeMediaViewer(): void {
+    this._pushGlobal("MEDIA_VIEWER_CLOSED", {});
+  }
+
+  showStatusViewer(statusId: string): void {
+    this._pushGlobal("STATUS_VIEWER_OPENED", { statusId });
+  }
+
+  advanceStatusViewer(direction: "next" | "previous" = "next"): void {
+    this._pushGlobal("STATUS_VIEWER_ADVANCED", { direction });
+  }
+
+  closeStatusViewer(): void {
+    this._pushGlobal("STATUS_VIEWER_CLOSED", {});
+  }
+
+  startGesture(messageId: string, gesture: WhatsAppMessageGesture): void {
+    this._push("GESTURE_STARTED", { messageId, gesture });
+  }
+
+  updateGesture(messageId: string, progress: number): void {
+    this._push("GESTURE_UPDATED", { messageId, progress });
+  }
+
+  completeGesture(messageId: string): void {
+    this._push("GESTURE_COMPLETED", { messageId });
+  }
+
+  cancelGesture(messageId: string): void {
+    this._push("GESTURE_CANCELLED", { messageId });
+  }
+
+  dismissReplyComposer(): void {
+    this._push("REPLY_COMPOSER_DISMISSED", {});
+  }
+
+  setLocale(locale: WhatsAppLocale): void {
+    this._pushGlobal("SET_LOCALE", { locale });
+  }
+
+  receiveSticker(from: string, url: string, options: { messageId?: string } = {}): void {
+    this._push("STICKER_RECEIVED", {
+      from,
+      url,
+      messageId: options.messageId,
+    });
+  }
+
+  sendSticker(url: string, options: { messageId?: string } = {}): void {
+    this._push("STICKER_SENT", {
+      url,
+      messageId: options.messageId,
+    });
   }
 
   receiveDocument(
     from: string,
-    options: { fileName: string; fileSize: string; fileType?: string },
+    options: { fileName: string; fileSize: string; fileType?: string; messageId?: string; url?: string },
   ): void {
     const fileSizeBytes = parseFileSizeToBytes(options.fileSize);
     const fileSize = fileSizeBytes ?? options.fileSize;
@@ -231,7 +346,8 @@ export class WhatsAppPointBuilder {
       fileName: options.fileName,
       fileSize,
       fileType: options.fileType,
-      messageType: "document",
+      messageId: options.messageId,
+      url: options.url,
     });
   }
 
@@ -239,6 +355,8 @@ export class WhatsAppPointBuilder {
     fileName: string;
     fileSize: string;
     fileType?: string;
+    messageId?: string;
+    url?: string;
   }): void {
     const fileSizeBytes = parseFileSizeToBytes(options.fileSize);
     const fileSize = fileSizeBytes ?? options.fileSize;
@@ -246,7 +364,8 @@ export class WhatsAppPointBuilder {
       fileName: options.fileName,
       fileSize,
       fileType: options.fileType,
-      messageType: "document",
+      messageId: options.messageId,
+      url: options.url,
     });
   }
 
@@ -256,14 +375,15 @@ export class WhatsAppPointBuilder {
       contactName: string;
       contactPhone?: string;
       contactAvatarUrl?: string;
+      messageId?: string;
     },
   ): void {
     this._push("CONTACT_RECEIVED", {
       from,
       contactName: options.contactName,
       contactPhone: options.contactPhone,
-      contactAvatar: options.contactAvatarUrl,
-      messageType: "contact",
+      contactAvatarUrl: options.contactAvatarUrl,
+      messageId: options.messageId,
     });
   }
 
@@ -271,12 +391,13 @@ export class WhatsAppPointBuilder {
     contactName: string;
     contactPhone?: string;
     contactAvatarUrl?: string;
+    messageId?: string;
   }): void {
     this._push("CONTACT_SENT", {
       contactName: options.contactName,
       contactPhone: options.contactPhone,
-      contactAvatar: options.contactAvatarUrl,
-      messageType: "contact",
+      contactAvatarUrl: options.contactAvatarUrl,
+      messageId: options.messageId,
     });
   }
 
@@ -288,6 +409,7 @@ export class WhatsAppPointBuilder {
       locationName?: string;
       locationAddress?: string;
       mapThumbnailUrl?: string;
+      messageId?: string;
     },
   ): void {
     this._push("LOCATION_RECEIVED", {
@@ -297,7 +419,7 @@ export class WhatsAppPointBuilder {
       locationName: options.locationName,
       locationAddress: options.locationAddress,
       mapThumbnailUrl: options.mapThumbnailUrl,
-      messageType: "location",
+      messageId: options.messageId,
     });
   }
 
@@ -307,6 +429,7 @@ export class WhatsAppPointBuilder {
     locationName?: string;
     locationAddress?: string;
     mapThumbnailUrl?: string;
+    messageId?: string;
   }): void {
     this._push("LOCATION_SENT", {
       latitude: options.latitude,
@@ -314,33 +437,103 @@ export class WhatsAppPointBuilder {
       locationName: options.locationName,
       locationAddress: options.locationAddress,
       mapThumbnailUrl: options.mapThumbnailUrl,
-      messageType: "location",
+      messageId: options.messageId,
     });
   }
 
   forward(
-    messageIndex: number,
-    options?: { forwardedFrom?: string; text?: string },
+    sourceMessageId: string,
+    options?: { messageId?: string; forwardedFrom?: string; text?: string },
   ): void {
     this._push("MESSAGE_FORWARDED", {
-      messageRef: { index: messageIndex },
+      sourceMessageId,
+      messageId: options?.messageId,
       forwardedFrom: options?.forwardedFrom,
       text: options?.text,
     });
   }
 
-  deleteMessage(messageIndex: number): void {
+  deleteMessage(
+    messageId: string,
+    options: { deletedForEveryone?: boolean; deletedBy?: string } = {},
+  ): void {
     this._push("MESSAGE_DELETED", {
-      messageRef: { index: messageIndex },
-      deletedForEveryone: true,
+      messageId,
+      deletedForEveryone: options.deletedForEveryone ?? true,
+      deletedBy: options.deletedBy,
     });
   }
 
-  editMessage(messageIndex: number, newText: string): void {
+  editMessage(messageId: string, newText: string): void {
     this._push("MESSAGE_EDITED", {
-      messageRef: { index: messageIndex },
+      messageId,
       newText,
     });
+  }
+
+  addGroupMember(
+    memberId: string,
+    memberName: string,
+    addedBy: string = "me",
+  ): void {
+    this._push("GROUP_MEMBER_ADDED", { memberId, memberName, addedBy });
+  }
+
+  removeGroupMember(
+    memberId: string,
+    memberName: string,
+    removedBy: string = "me",
+  ): void {
+    this._push("GROUP_MEMBER_REMOVED", { memberId, memberName, removedBy });
+  }
+
+  changeGroupAdmin(
+    memberId: string,
+    action: "promote" | "demote",
+    options: { memberName?: string; changedBy?: string } = {},
+  ): void {
+    this._push("GROUP_ADMIN_CHANGED", {
+      memberId,
+      memberName: options.memberName,
+      action,
+      changedBy: options.changedBy ?? "me",
+    });
+  }
+
+  updateGroupInfo(
+    field: "name" | "avatar" | "description",
+    newValue: string,
+    changedBy: string = "me",
+  ): void {
+    this._push("GROUP_INFO_UPDATED", { field, newValue, changedBy });
+  }
+
+  pinConversation(): void {
+    this._push("PIN_CONVERSATION", {});
+  }
+
+  unpinConversation(): void {
+    this._push("UNPIN_CONVERSATION", {});
+  }
+
+  muteConversation(until?: string): void {
+    this._push("MUTE_CONVERSATION", { until });
+  }
+
+  unmuteConversation(): void {
+    this._push("UNMUTE_CONVERSATION", {});
+  }
+
+  archiveConversation(): void {
+    this._push("ARCHIVE_CONVERSATION", {});
+  }
+
+  unarchiveConversation(): void {
+    this._push("UNARCHIVE_CONVERSATION", {});
+  }
+
+  setDraft(text: string): void {
+    this._push("SET_DRAFT", { text });
   }
 }
 
@@ -362,7 +555,7 @@ export class WhatsAppSpanBuilder {
    * Show typing indicator for the span duration.
    * NOTE: Use keyboard track for actual key animation.
    */
-  typing(actor: string = "them"): void {
+  typing(actor: string): void {
     this._events.push(
       {
         at: this._startFrame,
@@ -371,7 +564,6 @@ export class WhatsAppSpanBuilder {
         kind: "APP",
         appId: "app_whatsapp",
         type: "TYPING_START",
-        conversationId: this._conversationId,
         payload: {
           conversationId: this._conversationId,
           actor,
@@ -384,7 +576,6 @@ export class WhatsAppSpanBuilder {
         kind: "APP",
         appId: "app_whatsapp",
         type: "TYPING_END",
-        conversationId: this._conversationId,
         payload: {
           conversationId: this._conversationId,
           actor,
@@ -416,7 +607,6 @@ function parseTime(time: string | number, fps: number): number {
 
 export class WhatsAppTrackBuilder {
   _events: WhatsAppTrackEvent[] = [];
-  private _currentTime: number = 0;
   private _currentConversation: string | null = null;
 
   constructor(
@@ -433,7 +623,6 @@ export class WhatsAppTrackBuilder {
    */
   at(time: string | number): WhatsAppPointBuilder {
     const frame = parseTime(time, this._fps);
-    this._currentTime = frame;
     const conversationId = this._currentConversation || this._conversationId;
     return new WhatsAppPointBuilder(
       frame,
@@ -464,32 +653,17 @@ export class WhatsAppTrackBuilder {
 
   /**
    * Switch to a different conversation at a specific time.
-   * Emits NAVIGATE_SCREEN and CONVERSATION_OPENED events (handled by navigation.ts)
+   * Emits the canonical conversation-opened event.
    */
   switchTo(conversationId: string, time: string | number = "0s"): void {
     const frame = parseTime(time, this._fps);
 
-    // Navigate to chat screen first
-    this._events.push({
-      at: frame,
-      deviceId: this._deviceId,
-      kind: "APP",
-      appId: "app_whatsapp",
-      type: "NAVIGATE_SCREEN",
-      payload: {
-        screen: "chat",
-      },
-      _declarationOrder: this._getOrder(),
-    });
-
-    // Then set the active conversation
     this._events.push({
       at: frame,
       deviceId: this._deviceId,
       kind: "APP",
       appId: "app_whatsapp",
       type: "CONVERSATION_OPENED",
-      conversationId,
       payload: {
         conversationId,
       },
@@ -534,13 +708,6 @@ export class WhatsAppTrackBuilder {
       },
       _declarationOrder: this._getOrder(),
     });
-  }
-
-  /**
-   * Backwards-compatible alias for older episodes.
-   */
-  openStatus(time: string | number = "0s"): void {
-    this.openUpdates(time);
   }
 
   /**
@@ -598,28 +765,6 @@ export class WhatsAppTrackBuilder {
   }
 
   /**
-   * Go back to previous screen. Uses currentTime if no time specified.
-   * Emits core GO_BACK event (handled by navigation.ts)
-   */
-  goBack(time?: string | number): this {
-    const frame =
-      time !== undefined ? parseTime(time, this._fps) : this._currentTime;
-    this._events.push({
-      at: frame,
-      deviceId: this._deviceId,
-      kind: "APP",
-      appId: "app_whatsapp",
-      type: "GO_BACK",
-      payload: {},
-      _declarationOrder: this._getOrder(),
-    });
-    if (time === undefined) {
-      this._currentTime = frame + 0.3 * this._fps;
-    }
-    return this;
-  }
-
-  /**
    * Open profile screen at a specific time.
    */
   openProfile(time: string | number = "0s"): void {
@@ -632,572 +777,12 @@ export class WhatsAppTrackBuilder {
       type: "NAVIGATE_SCREEN",
       payload: {
         screen: "profile",
-      },
-      _declarationOrder: this._getOrder(),
-    });
-  }
-
-  /**
-   * Add a date separator (e.g., "Today", "Yesterday").
-   */
-  dateSeparator(text: string = "Today"): void {
-    const frame = this._currentTime;
-    this._events.push({
-      at: frame,
-      deviceId: this._deviceId,
-      kind: "APP",
-      appId: "app_whatsapp",
-      type: "DATE_SEPARATOR",
-      conversationId: this._conversationId,
-      payload: {
         conversationId: this._conversationId,
-        text,
       },
       _declarationOrder: this._getOrder(),
     });
   }
 
-  private framesToTime(frames: number): number {
-    return frames / this._fps;
-  }
-
-  receive(from: string, text: string, options: ReceiveOptions = {}): this {
-    const conversationId = this._currentConversation || this._conversationId;
-    this._events.push({
-      at: this._currentTime,
-      deviceId: this._deviceId,
-      kind: "APP",
-      appId: "app_whatsapp",
-      type: "MESSAGE_RECEIVED",
-      conversationId,
-      payload: {
-        conversationId,
-        from,
-        text,
-        replyTo: options.replyTo,
-      },
-      _declarationOrder: this._getOrder(),
-    });
-    this._currentTime += 0.5 * this._fps;
-    return this;
-  }
-
-  send(text: string, options: SendOptions = {}): this {
-    const conversationId = this._currentConversation || this._conversationId;
-    this._events.push({
-      at: this._currentTime,
-      deviceId: this._deviceId,
-      kind: "APP",
-      appId: "app_whatsapp",
-      type: "MESSAGE_SENT",
-      conversationId,
-      payload: {
-        conversationId,
-        text,
-        typed: options.typed,
-        charDelay: options.charDelay,
-        replyTo: options.replyTo,
-      },
-      _declarationOrder: this._getOrder(),
-    });
-    this._currentTime += 0.5 * this._fps;
-    return this;
-  }
-
-  receiveCall(
-    from: string,
-    options: CallOptions = {},
-  ): this {
-    const conversationId = this._currentConversation || this._conversationId;
-    const messageType = options.missed ? "call_missed" : "call";
-    this._events.push({
-      at: this._currentTime,
-      deviceId: this._deviceId,
-      kind: "APP",
-      appId: "app_whatsapp",
-      type: "MESSAGE_RECEIVED",
-      conversationId,
-      payload: {
-        conversationId,
-        from,
-        text: options.text ?? "",
-        messageType,
-        callType: options.callType ?? "voice",
-        callDuration: options.duration,
-      },
-      _declarationOrder: this._getOrder(),
-    });
-    this._currentTime += 0.5 * this._fps;
-    return this;
-  }
-
-  sendCall(options: CallOptions = {}): this {
-    const conversationId = this._currentConversation || this._conversationId;
-    const messageType = options.missed ? "call_missed" : "call";
-    this._events.push({
-      at: this._currentTime,
-      deviceId: this._deviceId,
-      kind: "APP",
-      appId: "app_whatsapp",
-      type: "MESSAGE_SENT",
-      conversationId,
-      payload: {
-        conversationId,
-        text: options.text ?? "",
-        messageType,
-        callType: options.callType ?? "voice",
-        callDuration: options.duration,
-      },
-      _declarationOrder: this._getOrder(),
-    });
-    this._currentTime += 0.5 * this._fps;
-    return this;
-  }
-
-  encryptionNotice(text?: string): this {
-    const conversationId = this._currentConversation || this._conversationId;
-    this._events.push({
-      at: this._currentTime,
-      deviceId: this._deviceId,
-      kind: "APP",
-      appId: "app_whatsapp",
-      type: "MESSAGE_RECEIVED",
-      conversationId,
-      payload: {
-        conversationId,
-        from: "system",
-        text: text ?? "",
-        messageType: "system",
-        systemType: "encryption_notice",
-      },
-      _declarationOrder: this._getOrder(),
-    });
-    this._currentTime += 0.4 * this._fps;
-    return this;
-  }
-
-  receiveImage(
-    from: string,
-    url: string,
-    options?: { caption?: string },
-  ): this {
-    const conversationId = this._currentConversation || this._conversationId;
-    this._events.push({
-      at: this._currentTime,
-      deviceId: this._deviceId,
-      kind: "APP",
-      appId: "app_whatsapp",
-      type: "IMAGE_RECEIVED",
-      conversationId,
-      payload: { conversationId, from, url, caption: options?.caption },
-      _declarationOrder: this._getOrder(),
-    });
-    this._currentTime += 0.5 * this._fps;
-    return this;
-  }
-
-  sendImage(url: string, options?: { caption?: string }): this {
-    const conversationId = this._currentConversation || this._conversationId;
-    this._events.push({
-      at: this._currentTime,
-      deviceId: this._deviceId,
-      kind: "APP",
-      appId: "app_whatsapp",
-      type: "IMAGE_SENT",
-      conversationId,
-      payload: { conversationId, url, caption: options?.caption },
-      _declarationOrder: this._getOrder(),
-    });
-    this._currentTime += 0.5 * this._fps;
-    return this;
-  }
-
-  typing(actor: "me" | "them", duration: number = 2): this {
-    const conversationId = this._currentConversation || this._conversationId;
-    const startFrame = this._currentTime;
-    const endFrame = startFrame + duration * this._fps;
-
-    this._events.push({
-      at: startFrame,
-      deviceId: this._deviceId,
-      kind: "APP",
-      appId: "app_whatsapp",
-      type: "TYPING_START",
-      conversationId,
-      payload: { conversationId, actor },
-      _declarationOrder: this._getOrder(),
-    });
-
-    this._events.push({
-      at: endFrame,
-      deviceId: this._deviceId,
-      kind: "APP",
-      appId: "app_whatsapp",
-      type: "TYPING_END",
-      conversationId,
-      payload: { conversationId, actor },
-      _declarationOrder: this._getOrder(),
-    });
-
-    this._currentTime = endFrame;
-    return this;
-  }
-
-  openChat(conversationId: string): this {
-    this._conversationId = conversationId;
-    this._currentConversation = conversationId;
-
-    this._events.push({
-      at: this._currentTime,
-      deviceId: this._deviceId,
-      kind: "APP",
-      appId: "app_whatsapp",
-      type: "NAVIGATE_SCREEN",
-      payload: { screen: "chat" },
-      _declarationOrder: this._getOrder(),
-    });
-
-    this._events.push({
-      at: this._currentTime,
-      deviceId: this._deviceId,
-      kind: "APP",
-      appId: "app_whatsapp",
-      type: "CONVERSATION_OPENED",
-      conversationId,
-      payload: { conversationId },
-      _declarationOrder: this._getOrder(),
-    });
-
-    this._currentTime += 0.3 * this._fps;
-    return this;
-  }
-
-  pause(seconds: number): this {
-    this._currentTime += seconds * this._fps;
-    return this;
-  }
-
-  now(): this {
-    return this;
-  }
-
-  reply(text: string, typingDuration: number = 2): this {
-    const typingStart = this._currentTime;
-    const typingEnd = typingStart + typingDuration * this._fps;
-
-    this._events.push({
-      at: typingStart,
-      deviceId: this._deviceId,
-      kind: "APP",
-      appId: "app_whatsapp",
-      type: "TYPING_START",
-      conversationId: this._conversationId,
-      payload: {
-        conversationId: this._conversationId,
-        actor: "me",
-      },
-      _declarationOrder: this._getOrder(),
-    });
-
-    this._events.push({
-      at: typingEnd,
-      deviceId: this._deviceId,
-      kind: "APP",
-      appId: "app_whatsapp",
-      type: "TYPING_END",
-      conversationId: this._conversationId,
-      payload: {
-        conversationId: this._conversationId,
-        actor: "me",
-      },
-      _declarationOrder: this._getOrder(),
-    });
-
-    this._currentTime = typingEnd;
-
-    this._events.push({
-      at: this._currentTime,
-      deviceId: this._deviceId,
-      kind: "APP",
-      appId: "app_whatsapp",
-      type: "MESSAGE_SENT",
-      conversationId: this._conversationId,
-      payload: {
-        conversationId: this._conversationId,
-        text,
-      },
-      _declarationOrder: this._getOrder(),
-    });
-
-    this._currentTime += 0.5 * this._fps;
-    return this;
-  }
-
-  quoteReply(
-    messageRef: ReplyReference,
-    text: string,
-    typingDuration: number = 2,
-    options: Omit<SendOptions, "replyTo"> = {},
-  ): this {
-    const typingStart = this._currentTime;
-    const typingEnd = typingStart + typingDuration * this._fps;
-
-    this._events.push({
-      at: typingStart,
-      deviceId: this._deviceId,
-      kind: "APP",
-      appId: "app_whatsapp",
-      type: "TYPING_START",
-      conversationId: this._conversationId,
-      payload: {
-        conversationId: this._conversationId,
-        actor: "me",
-      },
-      _declarationOrder: this._getOrder(),
-    });
-
-    this._events.push({
-      at: typingEnd,
-      deviceId: this._deviceId,
-      kind: "APP",
-      appId: "app_whatsapp",
-      type: "TYPING_END",
-      conversationId: this._conversationId,
-      payload: {
-        conversationId: this._conversationId,
-        actor: "me",
-      },
-      _declarationOrder: this._getOrder(),
-    });
-
-    this._currentTime = typingEnd;
-    this.send(text, { ...options, replyTo: messageRef });
-    return this;
-  }
-
-  // ═══════════════════════════════════════════════════════════════════════════
-  // NEW DX: Additional media/action methods for relative timing
-  // ═══════════════════════════════════════════════════════════════════════════
-
-  receiveSticker(from: string, url: string): this {
-    const conversationId = this._currentConversation || this._conversationId;
-    this._events.push({
-      at: this._currentTime,
-      deviceId: this._deviceId,
-      kind: "APP",
-      appId: "app_whatsapp",
-      type: "STICKER_RECEIVED",
-      conversationId,
-      payload: { conversationId, from, url },
-      _declarationOrder: this._getOrder(),
-    });
-    this._currentTime += 0.5 * this._fps;
-    return this;
-  }
-
-  receiveVoice(from: string, duration: number): this {
-    const conversationId = this._currentConversation || this._conversationId;
-    this._events.push({
-      at: this._currentTime,
-      deviceId: this._deviceId,
-      kind: "APP",
-      appId: "app_whatsapp",
-      type: "VOICE_RECEIVED",
-      conversationId,
-      payload: { conversationId, from, duration },
-      _declarationOrder: this._getOrder(),
-    });
-    this._currentTime += 0.5 * this._fps;
-    return this;
-  }
-
-  receiveGif(from: string, url: string): this {
-    const conversationId = this._currentConversation || this._conversationId;
-    this._events.push({
-      at: this._currentTime,
-      deviceId: this._deviceId,
-      kind: "APP",
-      appId: "app_whatsapp",
-      type: "GIF_RECEIVED",
-      conversationId,
-      payload: { conversationId, from, url },
-      _declarationOrder: this._getOrder(),
-    });
-    this._currentTime += 0.5 * this._fps;
-    return this;
-  }
-
-  receiveLocation(
-    from: string,
-    options: {
-      latitude: number;
-      longitude: number;
-      locationName?: string;
-      locationAddress?: string;
-      mapThumbnailUrl?: string;
-    }
-  ): this {
-    const conversationId = this._currentConversation || this._conversationId;
-    this._events.push({
-      at: this._currentTime,
-      deviceId: this._deviceId,
-      kind: "APP",
-      appId: "app_whatsapp",
-      type: "LOCATION_RECEIVED",
-      conversationId,
-      payload: {
-        conversationId,
-        from,
-        latitude: options.latitude,
-        longitude: options.longitude,
-        locationName: options.locationName,
-        locationAddress: options.locationAddress,
-        mapThumbnailUrl: options.mapThumbnailUrl,
-      },
-      _declarationOrder: this._getOrder(),
-    });
-    this._currentTime += 0.5 * this._fps;
-    return this;
-  }
-
-  receiveDocument(
-    from: string,
-    options: { fileName: string; fileSize: string; fileType?: string }
-  ): this {
-    const conversationId = this._currentConversation || this._conversationId;
-    const fileSizeBytes = parseFileSizeToBytes(options.fileSize);
-    const fileSize = fileSizeBytes ?? options.fileSize;
-    this._events.push({
-      at: this._currentTime,
-      deviceId: this._deviceId,
-      kind: "APP",
-      appId: "app_whatsapp",
-      type: "DOCUMENT_RECEIVED",
-      conversationId,
-      payload: {
-        conversationId,
-        from,
-        url: "", // Documents require URL in payload
-        fileName: options.fileName,
-        fileSize,
-        fileType: options.fileType,
-      },
-      _declarationOrder: this._getOrder(),
-    });
-    this._currentTime += 0.5 * this._fps;
-    return this;
-  }
-
-  receiveContact(
-    from: string,
-    options: {
-      contactName: string;
-      contactPhone?: string;
-      contactAvatarUrl?: string;
-    }
-  ): this {
-    const conversationId = this._currentConversation || this._conversationId;
-    this._events.push({
-      at: this._currentTime,
-      deviceId: this._deviceId,
-      kind: "APP",
-      appId: "app_whatsapp",
-      type: "CONTACT_RECEIVED",
-      conversationId,
-      payload: {
-        conversationId,
-        from,
-        contactName: options.contactName,
-        contactPhone: options.contactPhone,
-        contactAvatar: options.contactAvatarUrl,
-      },
-      _declarationOrder: this._getOrder(),
-    });
-    this._currentTime += 0.5 * this._fps;
-    return this;
-  }
-
-  react(
-    messageRef: { conversationId?: string; messageIndex: number } | { index: number },
-    emoji: string
-  ): this {
-    const conversationId = this._currentConversation || this._conversationId;
-    let index: number;
-    if ("messageIndex" in messageRef) {
-      index = messageRef.messageIndex;
-    } else if ("index" in messageRef) {
-      index = messageRef.index;
-    } else {
-      index = 0;
-    }
-    this._events.push({
-      at: this._currentTime,
-      deviceId: this._deviceId,
-      kind: "APP",
-      appId: "app_whatsapp",
-      type: "REACT",
-      conversationId,
-      payload: { conversationId, messageRef: { index }, emoji },
-      _declarationOrder: this._getOrder(),
-    });
-    this._currentTime += 0.3 * this._fps;
-    return this;
-  }
-
-  read(): this {
-    const conversationId = this._currentConversation || this._conversationId;
-    this._events.push({
-      at: this._currentTime,
-      deviceId: this._deviceId,
-      kind: "APP",
-      appId: "app_whatsapp",
-      type: "READ",
-      conversationId,
-      payload: { conversationId },
-      _declarationOrder: this._getOrder(),
-    });
-    return this;
-  }
-
-  forward(messageIndex: number, options?: { forwardedFrom?: string; text?: string }): this {
-    const conversationId = this._currentConversation || this._conversationId;
-    this._events.push({
-      at: this._currentTime,
-      deviceId: this._deviceId,
-      kind: "APP",
-      appId: "app_whatsapp",
-      type: "MESSAGE_FORWARDED",
-      conversationId,
-      payload: {
-        conversationId,
-        messageRef: { index: messageIndex },
-        forwardedFrom: options?.forwardedFrom,
-        text: options?.text,
-      },
-      _declarationOrder: this._getOrder(),
-    });
-    this._currentTime += 0.5 * this._fps;
-    return this;
-  }
-
-  editMessage(messageIndex: number, newText: string): this {
-    const conversationId = this._currentConversation || this._conversationId;
-    this._events.push({
-      at: this._currentTime,
-      deviceId: this._deviceId,
-      kind: "APP",
-      appId: "app_whatsapp",
-      type: "MESSAGE_EDITED",
-      conversationId,
-      payload: {
-        conversationId,
-        messageRef: { index: messageIndex },
-        newText,
-      },
-      _declarationOrder: this._getOrder(),
-    });
-    return this;
-  }
 }
 
 /**

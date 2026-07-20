@@ -1,12 +1,8 @@
-import { PluginAnchorRegistry, WorldState } from "@tokovo/core";
+import type { PluginAnchorRegistry } from "@tokovo/core";
 
-export const WhatsAppAnchors: PluginAnchorRegistry = {
-  providers: {
-    default: (_world: WorldState, _deviceId: string) => {
-      return null;
-    },
-  },
-  framing: {
+export const WhatsAppAnchorFraming: NonNullable<
+  PluginAnchorRegistry["framing"]
+> = {
     message: {
       anchorPoint: { x: 0.5, y: 0.5 },
       paddingPx: 40,
@@ -42,60 +38,45 @@ export const WhatsAppAnchors: PluginAnchorRegistry = {
       paddingPx: 0,
       targetFill: 1.0,
     },
-    typing: {
-      anchorPoint: { x: 0.35, y: 0.5 },
-      paddingPx: 30,
-      targetFill: 0.3,
-    },
     typing_indicator: {
       anchorPoint: { x: 0.35, y: 0.5 },
       paddingPx: 30,
       targetFill: 0.3,
-    },
-    input: {
-      anchorPoint: { x: 0.5, y: 0.8 },
-      paddingPx: 20,
-      targetFill: 0.9,
     },
     input_area: {
       anchorPoint: { x: 0.5, y: 0.8 },
       paddingPx: 20,
       targetFill: 0.9,
     },
+    reply_composer: {
+      anchorPoint: { x: 0.5, y: 0.78 },
+      paddingPx: 14,
+      targetFill: 0.72,
+    },
+    message_actions: {
+      anchorPoint: { x: 0.5, y: 0.66 },
+      paddingPx: 16,
+      targetFill: 0.78,
+    },
+    media_viewer: {
+      anchorPoint: { x: 0.5, y: 0.5 },
+      paddingPx: 0,
+      targetFill: 1,
+    },
+    media_viewer_content: {
+      anchorPoint: { x: 0.5, y: 0.5 },
+      paddingPx: 10,
+      targetFill: 0.94,
+    },
     chat_thread: {
       anchorPoint: { x: 0.5, y: 0.52 },
       paddingPx: 24,
       targetFill: 0.84,
     },
-    message_thread: {
-      anchorPoint: { x: 0.5, y: 0.52 },
-      paddingPx: 24,
-      targetFill: 0.84,
-    },
-    thread_card: {
-      anchorPoint: { x: 0.5, y: 0.5 },
-      paddingPx: 18,
-      targetFill: 0.82,
-    },
-    message_list: {
-      anchorPoint: { x: 0.5, y: 0.52 },
-      paddingPx: 16,
-      targetFill: 0.9,
-    },
     header: {
       anchorPoint: { x: 0.5, y: 0.15 },
       paddingPx: 10,
       targetFill: 0.9,
-    },
-    chat_header: {
-      anchorPoint: { x: 0.5, y: 0.15 },
-      paddingPx: 10,
-      targetFill: 0.9,
-    },
-    status_row: {
-      anchorPoint: { x: 0.5, y: 0.32 },
-      paddingPx: 14,
-      targetFill: 0.8,
     },
     calls_list: {
       anchorPoint: { x: 0.5, y: 0.5 },
@@ -142,7 +123,7 @@ export const WhatsAppAnchors: PluginAnchorRegistry = {
       paddingPx: 50,
       targetFill: 0.4,
     },
-    content: {
+    chat_content: {
       anchorPoint: { x: 0.5, y: 0.5 },
       paddingPx: 20,
       targetFill: 0.8,
@@ -152,5 +133,4 @@ export const WhatsAppAnchors: PluginAnchorRegistry = {
       paddingPx: 0,
       targetFill: 1.0,
     },
-  },
 };

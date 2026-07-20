@@ -88,7 +88,13 @@ export default defineEpisode({
             avatar: "/avatars/avatar-group.png",
             unreadCount: 37,
             type: "group",
-            participants: ["Me", "Mina", "Omar", "Tess", "Jay"],
+            members: [
+              { id: "me", name: "You" },
+              { id: "mina", name: "Mina" },
+              { id: "omar", name: "Omar" },
+              { id: "tess", name: "Tess" },
+              { id: "jay", name: "Jay" },
+            ],
           },
         ],
       })

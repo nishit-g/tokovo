@@ -1,5 +1,5 @@
 export type Platform = "ios" | "android";
-export type WhatsAppThemeId = "whatsapp-storybook" | "whatsapp-cyberpunk";
+export type WhatsAppThemeId = "whatsapp-storybook";
 
 export interface WhatsAppColorPalette {
   sentBubble: string;
@@ -40,11 +40,78 @@ export interface WhatsAppColorPalette {
   unreadBadge: string;
   unreadBadgeText: string;
   onlineStatus: string;
+  mediaViewerBackground: string;
+  mediaViewerText: string;
+  mediaViewerTextMuted: string;
+  mediaViewerControlsBackground: string;
+  statusRingUnviewed: string;
+  statusRingViewed: string;
+  statusRingGap: string;
+  sentBubbleBorder: string;
+  receivedBubbleBorder: string;
+  bubbleShadow: string;
+  reactionSurface: string;
+  reactionBorder: string;
+  reactionShadow: string;
+  replySurfaceSent: string;
+  replySurfaceReceived: string;
+  mediaScrim: string;
+  wallpaperDoodle: string;
+  wallpaperGlow: string;
+  surfaceMuted: string;
+}
+
+export interface WhatsAppTextStyle {
+  fontSize: number;
+  fontWeight: "400" | "500" | "600" | "700";
+  letterSpacing?: number;
+}
+
+export interface WhatsAppUITypography {
+  largeTitle: WhatsAppTextStyle;
+  title: WhatsAppTextStyle;
+  headline: WhatsAppTextStyle;
+  body: WhatsAppTextStyle;
+  caption: WhatsAppTextStyle;
+  tabLabel: WhatsAppTextStyle;
+  badge: WhatsAppTextStyle;
+  chip: WhatsAppTextStyle;
+}
+
+export interface WhatsAppUISpacing {
+  chatListItemHeight: number;
+  avatarSize: number;
+  avatarMarginLeft: number;
+  contentMarginLeft: number;
+  contentMarginRight: number;
+  pagePaddingX: number;
+  pagePaddingWide: number;
+  headerActionGap: number;
+  filterChipPaddingX: number;
+  filterChipPaddingY: number;
+  filterChipGap: number;
+  searchPaddingX: number;
+  searchIconGap: number;
+  sectionGap: number;
+  tabBarHeight: number;
+  tabIconSize: number;
+  tabPaddingTop: number;
+  tabBadgeOffsetTop: number;
+  tabBadgeOffsetRight: number;
+  navBarHeight: number;
+  searchBarHeight: number;
+  filterChipHeight: number;
+  badgeMinWidth: number;
+  badgeHeight: number;
+  badgePadding: number;
+  avatarRadius: number;
+  searchBarRadius: number;
+  filterChipRadius: number;
+  badgeRadius: number;
 }
 
 export interface WhatsAppTypography {
   fontFamily: string;
-  fontFamilyMono: string;
   messageFontSize: number;
   messageLineHeight: number;
   timestampFontSize: number;
@@ -80,7 +147,11 @@ export interface WhatsAppTheme {
   typography: WhatsAppTypography;
   spacing: WhatsAppSpacing;
   safeArea: WhatsAppSafeArea;
+  uiTypography: WhatsAppUITypography;
+  uiSpacing: WhatsAppUISpacing;
 }
+
+export const WHATSAPP_FONT_FAMILY = '"Noto Sans Variable", "Noto Sans Arabic Variable", sans-serif';
 
 const sharedColors: WhatsAppColorPalette = {
   sentBubble: "#DCF8C6",
@@ -121,7 +192,80 @@ const sharedColors: WhatsAppColorPalette = {
   unreadBadge: "#25D366",
   unreadBadgeText: "#FFFFFF",
   onlineStatus: "#25D366",
+  mediaViewerBackground: "#000000",
+  mediaViewerText: "#FFFFFF",
+  mediaViewerTextMuted: "rgba(255,255,255,0.7)",
+  mediaViewerControlsBackground: "rgba(0,0,0,0.4)",
+  statusRingUnviewed: "#25D366",
+  statusRingViewed: "#AEB7BD",
+  statusRingGap: "#FFFFFF",
+  sentBubbleBorder: "rgba(0,0,0,0.055)",
+  receivedBubbleBorder: "rgba(0,0,0,0.07)",
+  bubbleShadow: "0 1px 1.5px rgba(0,0,0,0.13)",
+  reactionSurface: "#FFFFFF",
+  reactionBorder: "#E4E6EB",
+  reactionShadow: "0 1px 3px rgba(0,0,0,0.16)",
+  replySurfaceSent: "rgba(255,255,255,0.28)",
+  replySurfaceReceived: "rgba(0,0,0,0.045)",
+  mediaScrim: "rgba(0,0,0,0.54)",
+  wallpaperDoodle: "rgba(102,119,129,0.1)",
+  wallpaperGlow: "rgba(255,255,255,0.14)",
+  surfaceMuted: "#F7F9FA",
 };
+
+const sharedUITypography: WhatsAppUITypography = {
+  largeTitle: { fontSize: 34, fontWeight: "700", letterSpacing: 0.37 },
+  title: { fontSize: 17, fontWeight: "600", letterSpacing: -0.41 },
+  headline: { fontSize: 17, fontWeight: "600", letterSpacing: -0.41 },
+  body: { fontSize: 15, fontWeight: "400", letterSpacing: -0.24 },
+  caption: { fontSize: 14, fontWeight: "400", letterSpacing: -0.08 },
+  tabLabel: { fontSize: 10, fontWeight: "500", letterSpacing: 0 },
+  badge: { fontSize: 12, fontWeight: "600" },
+  chip: { fontSize: 15, fontWeight: "500" },
+};
+
+const sharedUISpacing: WhatsAppUISpacing = {
+  chatListItemHeight: 78,
+  avatarSize: 56,
+  avatarMarginLeft: 16,
+  contentMarginLeft: 12,
+  contentMarginRight: 16,
+  pagePaddingX: 16,
+  pagePaddingWide: 20,
+  headerActionGap: 20,
+  filterChipPaddingX: 14,
+  filterChipPaddingY: 6,
+  filterChipGap: 8,
+  searchPaddingX: 10,
+  searchIconGap: 8,
+  sectionGap: 16,
+  tabBarHeight: 49,
+  tabIconSize: 25,
+  tabPaddingTop: 6,
+  tabBadgeOffsetTop: -4,
+  tabBadgeOffsetRight: -8,
+  navBarHeight: 44,
+  searchBarHeight: 36,
+  filterChipHeight: 32,
+  badgeMinWidth: 20,
+  badgeHeight: 20,
+  badgePadding: 6,
+  avatarRadius: 28,
+  searchBarRadius: 12,
+  filterChipRadius: 16,
+  badgeRadius: 10,
+};
+
+export const WHATSAPP_GROUP_SENDER_COLORS = [
+  "#00A884",
+  "#53BDEB",
+  "#FF7E67",
+  "#FFD93D",
+  "#6C63FF",
+  "#F06595",
+  "#20C997",
+  "#FFC078",
+] as const;
 
 export const iosTheme: WhatsAppTheme = {
   platform: "ios",
@@ -151,9 +295,7 @@ export const iosTheme: WhatsAppTheme = {
     onlineStatus: "#25D366",
   },
   typography: {
-    fontFamily:
-      '-apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif',
-    fontFamilyMono: '"SF Mono", Menlo, monospace',
+    fontFamily: WHATSAPP_FONT_FAMILY,
     messageFontSize: 16.5,
     messageLineHeight: 22,
     timestampFontSize: 11,
@@ -180,6 +322,8 @@ export const iosTheme: WhatsAppTheme = {
     left: 0,
     right: 0,
   },
+  uiTypography: sharedUITypography,
+  uiSpacing: sharedUISpacing,
 };
 
 export const androidTheme: WhatsAppTheme = {
@@ -210,8 +354,7 @@ export const androidTheme: WhatsAppTheme = {
     onlineStatus: "#25D366",
   },
   typography: {
-    fontFamily: 'Roboto, "Noto Sans", "Helvetica Neue", sans-serif',
-    fontFamilyMono: '"Roboto Mono", monospace',
+    fontFamily: WHATSAPP_FONT_FAMILY,
     messageFontSize: 16,
     messageLineHeight: 21,
     timestampFontSize: 11,
@@ -238,6 +381,8 @@ export const androidTheme: WhatsAppTheme = {
     left: 0,
     right: 0,
   },
+  uiTypography: sharedUITypography,
+  uiSpacing: sharedUISpacing,
 };
 
 export const iosDarkTheme: WhatsAppTheme = {
@@ -274,6 +419,19 @@ export const iosDarkTheme: WhatsAppTheme = {
     callCardIcon: "#E8F6FF",
     callCardMissed: "#FF453A",
     callCardSubtext: "#8696A0",
+    statusRingViewed: "#64737C",
+    statusRingGap: "#0B141A",
+    sentBubbleBorder: "rgba(255,255,255,0.055)",
+    receivedBubbleBorder: "rgba(255,255,255,0.06)",
+    bubbleShadow: "0 1px 2px rgba(0,0,0,0.48)",
+    reactionSurface: "#1F2C34",
+    reactionBorder: "#2A3942",
+    reactionShadow: "0 1px 3px rgba(0,0,0,0.5)",
+    replySurfaceSent: "rgba(0,0,0,0.18)",
+    replySurfaceReceived: "rgba(0,0,0,0.22)",
+    wallpaperDoodle: "rgba(134,150,160,0.08)",
+    wallpaperGlow: "rgba(255,255,255,0.025)",
+    surfaceMuted: "#182229",
   },
 };
 
@@ -311,10 +469,32 @@ export const androidDarkTheme: WhatsAppTheme = {
     callCardIcon: "#E8F6FF",
     callCardMissed: "#FF453A",
     callCardSubtext: "#8696A0",
+    statusRingViewed: "#64737C",
+    statusRingGap: "#0B141A",
+    sentBubbleBorder: "rgba(255,255,255,0.055)",
+    receivedBubbleBorder: "rgba(255,255,255,0.06)",
+    bubbleShadow: "0 1px 2px rgba(0,0,0,0.48)",
+    reactionSurface: "#1F2C34",
+    reactionBorder: "#2A3942",
+    reactionShadow: "0 1px 3px rgba(0,0,0,0.5)",
+    replySurfaceSent: "rgba(0,0,0,0.18)",
+    replySurfaceReceived: "rgba(0,0,0,0.22)",
+    wallpaperDoodle: "rgba(134,150,160,0.08)",
+    wallpaperGlow: "rgba(255,255,255,0.025)",
+    surfaceMuted: "#182229",
   },
 };
 
-const STORYBOOK_OVERRIDES: Partial<WhatsAppTheme> = {
+type WhatsAppThemeOverrides = {
+  colors?: Partial<WhatsAppColorPalette>;
+  typography?: Partial<WhatsAppTypography>;
+  spacing?: Partial<WhatsAppSpacing>;
+  safeArea?: Partial<WhatsAppSafeArea>;
+  uiTypography?: Partial<WhatsAppUITypography>;
+  uiSpacing?: Partial<WhatsAppUISpacing>;
+};
+
+const STORYBOOK_OVERRIDES: WhatsAppThemeOverrides = {
   colors: {
     sentBubble: "#CFE6D7",
     receivedBubble: "#FFFDF7",
@@ -354,78 +534,104 @@ const STORYBOOK_OVERRIDES: Partial<WhatsAppTheme> = {
     onlineStatus: "#6BAA7A",
     checkmark: "#7C8F85",
     checkmarkRead: "#3E7FA8",
+    statusRingUnviewed: "#6BAA7A",
+    statusRingViewed: "#B7AA94",
+    statusRingGap: "#F7F2E8",
+    sentBubbleBorder: "rgba(67,82,70,0.16)",
+    receivedBubbleBorder: "rgba(92,73,51,0.14)",
+    bubbleShadow: "0 2px 5px rgba(75,59,41,0.14)",
+    reactionSurface: "#FFF9F0",
+    reactionBorder: "#D7C9B6",
+    reactionShadow: "0 2px 6px rgba(75,59,41,0.16)",
+    replySurfaceSent: "rgba(255,253,247,0.5)",
+    replySurfaceReceived: "rgba(107,170,122,0.1)",
+    mediaScrim: "rgba(47,42,36,0.58)",
+    wallpaperDoodle: "rgba(108,91,68,0.075)",
+    wallpaperGlow: "rgba(255,253,247,0.12)",
+    surfaceMuted: "#F2EADD",
+  },
+  spacing: {
+    bubbleRadius: 20,
+    bubbleRadiusTail: 6,
+  },
+  uiSpacing: {
+    searchBarRadius: 16,
+    filterChipRadius: 18,
   },
 };
 
-const CYBERPUNK_OVERRIDES: Partial<WhatsAppTheme> = {
-  colors: {
-    sentBubble: "#1A3D5A",
-    receivedBubble: "#2B103A",
-    sentBubbleText: "#E8F6FF",
-    receivedBubbleText: "#F8E7FF",
-    background: "#0B0F1E",
-    chatBackground: "#0F1326",
-    headerBackground: "#0C0F1F",
-    headerText: "#E8F6FF",
-    inputBackground: "#12172B",
-    inputText: "#E8F6FF",
-    inputPlaceholder: "#8AA0B8",
-    divider: "#1E2A3A",
-    timestamp: "#7BB4FF",
-    systemMessage: "#7BB4FF",
-    systemMessageBg: "rgba(15,19,38,0.92)",
-    systemMessageBorder: "rgba(0,245,255,0.2)",
-    systemMessageShadow: "0 1px 2px rgba(0,0,0,0.6)",
-    systemBannerBg: "#2C1C3C",
-    systemBannerText: "#F8E7FF",
-    systemBannerBorder: "#3D2C52",
-    systemBannerLink: "#FF2D95",
-    systemBannerIcon: "#FF2D95",
-    datePillBg: "rgba(18,23,43,0.92)",
-    datePillBorder: "#1E2A3A",
-    datePillText: "#7BB4FF",
-    callCardIconBgIncoming: "rgba(255,45,149,0.18)",
-    callCardIconBgOutgoing: "rgba(0,245,255,0.2)",
-    callCardIcon: "#E8F6FF",
-    callCardMissed: "#FF2D95",
-    callCardSubtext: "#7BB4FF",
-    typingIndicator: "#7BB4FF",
-    accent: "#00F5FF",
-    link: "#FF2D95",
-    unreadBadge: "#FF2D95",
-    unreadBadgeText: "#0B0F1E",
-    onlineStatus: "#00F5FF",
-    checkmark: "#7BB4FF",
-    checkmarkRead: "#00F5FF",
-  },
+const STORYBOOK_DARK_COLORS: Partial<WhatsAppColorPalette> = {
+  sentBubble: "#365B4A",
+  receivedBubble: "#292C29",
+  sentBubbleText: "#F5F0E6",
+  receivedBubbleText: "#F5F0E6",
+  background: "#171B18",
+  chatBackground: "#20241F",
+  headerBackground: "#24231F",
+  headerText: "#F5F0E6",
+  inputBackground: "#2C2B26",
+  inputText: "#F5F0E6",
+  inputPlaceholder: "#A99E89",
+  divider: "#413D34",
+  timestamp: "#B0A58E",
+  systemMessage: "#B0A58E",
+  systemMessageBg: "rgba(41,44,41,0.94)",
+  systemMessageBorder: "#4A463D",
+  systemMessageShadow: "0 2px 5px rgba(0,0,0,0.38)",
+  systemBannerBg: "#3E3724",
+  systemBannerText: "#F2DFA8",
+  systemBannerBorder: "#5A5033",
+  systemBannerLink: "#91C3DF",
+  systemBannerIcon: "#F2DFA8",
+  datePillBg: "rgba(41,44,41,0.96)",
+  datePillBorder: "#4A463D",
+  datePillText: "#B0A58E",
+  callCardIconBgIncoming: "rgba(255,255,255,0.08)",
+  callCardIconBgOutgoing: "rgba(255,255,255,0.14)",
+  callCardIcon: "#F5F0E6",
+  callCardMissed: "#E37A72",
+  callCardSubtext: "#B0A58E",
+  typingIndicator: "#B0A58E",
+  accent: "#7FBD8D",
+  link: "#91C3DF",
+  unreadBadge: "#7FBD8D",
+  unreadBadgeText: "#172019",
+  onlineStatus: "#7FBD8D",
+  checkmark: "#A8B7AE",
+  checkmarkRead: "#91C3DF",
+  statusRingUnviewed: "#7FBD8D",
+  statusRingViewed: "#716A5C",
+  statusRingGap: "#171B18",
+  sentBubbleBorder: "rgba(191,222,199,0.12)",
+  receivedBubbleBorder: "rgba(255,246,229,0.1)",
+  bubbleShadow: "0 2px 6px rgba(0,0,0,0.34)",
+  reactionSurface: "#34342F",
+  reactionBorder: "#4A463D",
+  reactionShadow: "0 2px 7px rgba(0,0,0,0.42)",
+  replySurfaceSent: "rgba(0,0,0,0.18)",
+  replySurfaceReceived: "rgba(127,189,141,0.09)",
+  mediaScrim: "rgba(17,20,18,0.68)",
+  wallpaperDoodle: "rgba(203,190,164,0.055)",
+  wallpaperGlow: "rgba(255,246,229,0.025)",
+  surfaceMuted: "#242823",
 };
 
-function mergeTheme(base: WhatsAppTheme, overrides: Partial<WhatsAppTheme>) {
+function mergeTheme(base: WhatsAppTheme, overrides: WhatsAppThemeOverrides): WhatsAppTheme {
   return {
     ...base,
     colors: { ...base.colors, ...overrides.colors },
     typography: { ...base.typography, ...overrides.typography },
     spacing: { ...base.spacing, ...overrides.spacing },
     safeArea: { ...base.safeArea, ...overrides.safeArea },
+    uiTypography: { ...base.uiTypography, ...overrides.uiTypography },
+    uiSpacing: { ...base.uiSpacing, ...overrides.uiSpacing },
   };
-}
-
-function normalizeThemeId(themeId?: string): WhatsAppThemeId | null {
-  if (!themeId) return null;
-  const normalized = themeId.toLowerCase();
-  if (normalized === "whatsapp-storybook" || normalized === "storybook") {
-    return "whatsapp-storybook";
-  }
-  if (normalized === "whatsapp-cyberpunk" || normalized === "cyberpunk") {
-    return "whatsapp-cyberpunk";
-  }
-  return null;
 }
 
 export function getTheme(
   platform: Platform,
   darkMode = false,
-  themeId?: string,
+  themeId?: WhatsAppThemeId,
 ): WhatsAppTheme {
   const base =
     platform === "ios"
@@ -436,25 +642,9 @@ export function getTheme(
         ? androidDarkTheme
         : androidTheme;
 
-  const normalizedTheme = normalizeThemeId(themeId);
-  if (normalizedTheme === "whatsapp-storybook") {
-    return mergeTheme(base, STORYBOOK_OVERRIDES);
-  }
-  if (normalizedTheme === "whatsapp-cyberpunk") {
-    return mergeTheme(base, CYBERPUNK_OVERRIDES);
+  if (themeId === "whatsapp-storybook") {
+    const themed = mergeTheme(base, STORYBOOK_OVERRIDES);
+    return darkMode ? mergeTheme(themed, { colors: STORYBOOK_DARK_COLORS }) : themed;
   }
   return base;
-}
-
-export function getThemeForDevice(
-  deviceId: string,
-  darkMode = false,
-  themeId?: string,
-): WhatsAppTheme {
-  const isAndroid =
-    deviceId.toLowerCase().includes("android") ||
-    deviceId.toLowerCase().includes("pixel") ||
-    deviceId.toLowerCase().includes("samsung") ||
-    deviceId.toLowerCase().includes("galaxy");
-  return getTheme(isAndroid ? "android" : "ios", darkMode, themeId);
 }

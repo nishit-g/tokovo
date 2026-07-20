@@ -1,6 +1,6 @@
 import type { WhatsAppMessage } from "../types/index.js";
 
-export type DeliveryStage = "sent" | "delivered" | "read";
+export type DeliveryStage = "sending" | "sent" | "delivered" | "read" | "failed";
 
 const DELIVERY_DELAY_FRAMES = 18;
 
@@ -12,6 +12,14 @@ export function resolveDeliveryStage(
   currentFrame: number,
 ): DeliveryStage | undefined {
   if (message.from !== "me") return undefined;
+
+  if (message.status === "failed") {
+    return "failed";
+  }
+
+  if (message.status === "sending") {
+    return "sending";
+  }
 
   if (
     message.status === "read" ||

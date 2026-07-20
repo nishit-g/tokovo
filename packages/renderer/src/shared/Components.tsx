@@ -5,6 +5,7 @@
 
 import React from "react";
 import { iOSTokens, androidTokens, Platform } from "@tokovo/core";
+import { DeterministicImage } from "@tokovo/react";
 
 function getTypography(platform: Platform) {
   if (platform === "ios") {
@@ -76,8 +77,7 @@ export const ChatBubble: React.FC<ChatBubbleProps> = ({
           caption1: andTokens.typography.labelMedium,
         };
 
-  const shadows =
-    platform === "ios" ? iosTokens.shadows.sm : "0 1px 2px rgba(0,0,0,0.1)";
+  const shadows = platform === "ios" ? iosTokens.shadows.sm : "0 1px 2px rgba(0,0,0,0.1)";
 
   const bubbleColor = isMe
     ? customColors?.myBubble || defaultMyColor
@@ -150,9 +150,7 @@ export const ChatBubble: React.FC<ChatBubbleProps> = ({
               {timestamp}
             </span>
           )}
-          {isMe && status && (
-            <ReadReceipt status={status} platform={platform} />
-          )}
+          {isMe && status && <ReadReceipt status={status} platform={platform} />}
         </div>
       </div>
     </div>
@@ -174,21 +172,8 @@ const ReadReceipt: React.FC<ReadReceiptProps> = ({ status, platform }) => {
 
   if (status === "sending") {
     return (
-      <svg
-        width={size * 0.6}
-        height={size * 0.6}
-        viewBox="0 0 24 24"
-        fill={color}
-      >
-        <circle
-          cx="12"
-          cy="12"
-          r="10"
-          stroke={color}
-          strokeWidth="2"
-          fill="none"
-          opacity="0.3"
-        />
+      <svg width={size * 0.6} height={size * 0.6} viewBox="0 0 24 24" fill={color}>
+        <circle cx="12" cy="12" r="10" stroke={color} strokeWidth="2" fill="none" opacity="0.3" />
       </svg>
     );
   }
@@ -280,9 +265,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
               strokeLinejoin="round"
             />
           </svg>
-          {backCount !== undefined && (
-            <span style={getTypography(platform).body}>{backCount}</span>
-          )}
+          {backCount !== undefined && <span style={getTypography(platform).body}>{backCount}</span>}
         </div>
       )}
 
@@ -303,9 +286,8 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
               width: platform === "ios" ? 111 : 105,
               height: platform === "ios" ? 111 : 105,
               borderRadius: "50%",
-              background: avatarUrl
-                ? `url(${avatarUrl}) center/cover`
-                : `linear-gradient(135deg, ${tokens.colors.primary} 0%, ${tokens.colors.secondaryLabel} 100%)`,
+              background: `linear-gradient(135deg, ${tokens.colors.primary} 0%, ${tokens.colors.secondaryLabel} 100%)`,
+              overflow: "hidden",
               marginRight: tokens.spacing.sm,
               display: "flex",
               alignItems: "center",
@@ -314,7 +296,15 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
               color: "white",
             }}
           >
-            {!avatarUrl && avatarEmoji}
+            {avatarUrl ? (
+              <DeterministicImage
+                src={avatarUrl}
+                alt=""
+                style={{ width: "100%", height: "100%", objectFit: "cover" }}
+              />
+            ) : (
+              avatarEmoji
+            )}
           </div>
         )}
 
@@ -349,9 +339,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
 
       {/* Right actions */}
       {rightActions && (
-        <div style={{ display: "flex", gap: tokens.spacing.lg }}>
-          {rightActions}
-        </div>
+        <div style={{ display: "flex", gap: tokens.spacing.lg }}>{rightActions}</div>
       )}
     </div>
   );
@@ -365,9 +353,7 @@ interface TypingIndicatorProps {
   platform: Platform;
 }
 
-export const TypingIndicator: React.FC<TypingIndicatorProps> = ({
-  platform,
-}) => {
+export const TypingIndicator: React.FC<TypingIndicatorProps> = ({ platform }) => {
   const tokens = platform === "ios" ? iOSTokens : androidTokens;
   const dotSize = platform === "ios" ? 24 : 21;
 
@@ -408,10 +394,7 @@ interface SystemMessageProps {
   text: string;
 }
 
-export const SystemMessage: React.FC<SystemMessageProps> = ({
-  platform,
-  text,
-}) => {
+export const SystemMessage: React.FC<SystemMessageProps> = ({ platform, text }) => {
   const tokens = platform === "ios" ? iOSTokens : androidTokens;
 
   return (

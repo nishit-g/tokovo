@@ -1,6 +1,7 @@
 import React from "react";
 import { Img } from "remotion";
 import type { NotificationLockScreenProps } from "../types.js";
+import { formatNotificationAppLabel } from "../app-label.js";
 
 export const IOSLockScreen: React.FC<NotificationLockScreenProps> = ({
   notifications,
@@ -116,7 +117,7 @@ export const IOSLockScreen: React.FC<NotificationLockScreenProps> = ({
                     color: "#fff",
                   }}
                 >
-                  {ir.appId?.charAt(0).toUpperCase() ?? "N"}
+                  {formatNotificationAppLabel(ir.appId).charAt(0)}
                 </div>
               )}
 
@@ -147,7 +148,7 @@ export const IOSLockScreen: React.FC<NotificationLockScreenProps> = ({
                       letterSpacing: 0.5 * scale,
                     }}
                   >
-                    {ir.appId}
+                    {formatNotificationAppLabel(ir.appId)}
                   </span>
                   <span
                     style={{

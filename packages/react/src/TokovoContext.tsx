@@ -11,6 +11,7 @@ interface TokovoContextValue {
   deviceId: string;
   appId: string;
   t: number;
+  fps: number;
   layout: LayoutState | undefined;
   platform: string;
   safeAreaInsets: {
@@ -30,6 +31,7 @@ interface TokovoProviderProps {
   deviceId: string;
   appId: string;
   t: number;
+  fps?: number;
   layout?: LayoutState;
   platform?: string;
   safeAreaInsets?: {
@@ -47,6 +49,7 @@ export function TokovoProvider({
   deviceId,
   appId,
   t,
+  fps = 30,
   layout,
   platform = "ios",
   safeAreaInsets = { top: 0, bottom: 0, left: 0, right: 0 },
@@ -58,12 +61,13 @@ export function TokovoProvider({
       deviceId,
       appId,
       t,
+      fps,
       layout,
       platform,
       safeAreaInsets,
       keyboardHeight,
     }),
-    [world, deviceId, appId, t, layout, platform, safeAreaInsets, keyboardHeight],
+    [world, deviceId, appId, t, fps, layout, platform, safeAreaInsets, keyboardHeight],
   );
 
   return <TokovoContext.Provider value={value}>{children}</TokovoContext.Provider>;
@@ -101,6 +105,10 @@ export function useLayout<T = unknown>(): T | undefined {
 
 export function useTime(): number {
   return useTokovoContext().t;
+}
+
+export function useFps(): number {
+  return useTokovoContext().fps;
 }
 
 export function usePlatform(): string {

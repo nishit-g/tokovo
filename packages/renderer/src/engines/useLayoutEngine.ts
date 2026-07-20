@@ -181,6 +181,10 @@ function computeWorldSignature(
     (appState as { conversationId?: string } | undefined)?.conversationId ?? "",
     // Include viewMode if present
     (appState as { viewMode?: string } | undefined)?.viewMode ?? "",
+    // Static plugin layouts must expose a monotonic invalidation key. Screen
+    // is included separately so authored bootstrap state is cache-safe too.
+    (appState as { currentScreen?: string } | undefined)?.currentScreen ?? "",
+    String((appState as { layoutRevision?: number } | undefined)?.layoutRevision ?? 0),
   ];
 
   // For chat apps, include message count for layout invalidation

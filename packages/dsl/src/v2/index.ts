@@ -6,7 +6,19 @@ export type {
   TrackBuilder,
   TrackFn,
   TrackFactory,
+  HandPerformanceOptions,
 } from "./episode.js";
+
+export {
+  HandPerformanceTrackBuilder,
+  HandPerformancePointBuilder,
+  HandPerformanceSpanBuilder,
+} from "./hand-performance-track.js";
+export type {
+  HandCueOptions,
+  HandTapOptions,
+  HandSwipeOptions,
+} from "./hand-performance-track.js";
 
 export {
   CameraTrackBuilder,

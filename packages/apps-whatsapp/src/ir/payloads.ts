@@ -1,8 +1,7 @@
 /**
  * WhatsApp Payloads
  *
- * Re-exports the canonical event types from types/events.ts
- * and provides legacy exports for backward compatibility.
+ * Re-exports the canonical event types from types/events.ts.
  */
 import type { WhatsAppEventMap } from "../types/events.js";
 
@@ -10,7 +9,6 @@ export type {
   WhatsAppTrackEvent,
   WhatsAppEventType,
   WhatsAppEventMap,
-  MessageReference,
   MessageReceivedPayload,
   MessageSentPayload,
   ImageReceivedPayload,
@@ -30,13 +28,31 @@ export type {
   LocationReceivedPayload,
   LocationSentPayload,
   TypingPayload,
-  ReactPayload,
   ReadPayload,
   MessageDeletedPayload,
   MessageEditedPayload,
   MessageForwardedPayload,
+  MediaLifecyclePayload,
+  MediaViewerOpenedPayload,
+  MediaViewerClosedPayload,
+  GestureStartedPayload,
+  GestureUpdatedPayload,
+  GestureCompletedPayload,
+  GestureCancelledPayload,
+  ReplyComposerDismissedPayload,
+  SetLocalePayload,
+  ConversationOpenedPayload,
   NavigateScreenPayload,
-  DateSeparatorPayload,
+  GroupMemberAddedPayload,
+  GroupMemberRemovedPayload,
+  GroupAdminChangedPayload,
+  GroupInfoUpdatedPayload,
+  PinPayload,
+  MutePayload,
+  ArchivePayload,
+  DraftPayload,
+  ReactionAddedPayload,
+  MessageReadPayload,
 } from "../types/events.js";
 
 export { isWhatsAppEvent } from "../types/events.js";

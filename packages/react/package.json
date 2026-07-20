@@ -20,12 +20,14 @@
   },
   "peerDependencies": {
     "react": "18.3.1",
-    "react-dom": "18.3.1"
+    "react-dom": "18.3.1",
+    "remotion": "4.0.409"
   },
   "devDependencies": {
     "@types/react": "18.3.1",
     "@types/react-dom": "18.3.1",
     "react-dom": "18.3.1",
+    "remotion": "4.0.409",
     "vitest": "^1.0.0"
   }
 }

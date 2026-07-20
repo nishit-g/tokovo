@@ -1,41 +1,34 @@
 import React from "react";
-import { Camera, Mic, Video } from "lucide-react";
-import { Img } from "remotion";
-import type { WhatsAppMessageType } from "../types/index.js";
-import { useTheme } from "../theme/ThemeContext.js";
-
-export interface ReplyToData {
-  messageId?: string;
-  text?: string;
-  from?: string;
-  type?: WhatsAppMessageType;
-  thumbnailUrl?: string;
-}
+import { DeterministicImage } from "@tokovo/react";
+import { Camera, FileText, Mic, Video } from "lucide-react";
+import type { ProjectedReply } from "../thread/projector.js";
+import {
+  useTheme,
+  useWhatsAppLocale,
+} from "../experience/ExperienceContext.js";
 
 interface ReplyQuoteProps {
-  replyTo: ReplyToData;
+  replyTo: ProjectedReply;
   isMyMessage?: boolean;
-  onClick?: () => void;
 }
 
 export const ReplyQuote: React.FC<ReplyQuoteProps> = ({
   replyTo,
   isMyMessage = false,
-  onClick,
 }) => {
   const theme = useTheme();
+  const { t } = useWhatsAppLocale();
   const barColor =
     replyTo.from === "me" ? theme.colors.link : theme.colors.accent;
   const surface = isMyMessage
-    ? "rgba(255,255,255,0.28)"
-    : "rgba(0,0,0,0.04)";
+    ? theme.colors.replySurfaceSent
+    : theme.colors.replySurfaceReceived;
   const secondaryText = isMyMessage
     ? `${theme.colors.sentBubbleText}B3`
     : theme.colors.timestamp;
 
   return (
     <div
-      onClick={onClick}
       style={{
         display: "flex",
         gap: 0,
@@ -43,7 +36,6 @@ export const ReplyQuote: React.FC<ReplyQuoteProps> = ({
         borderRadius: Math.max(6, theme.spacing.bubbleRadius - 12),
         overflow: "hidden",
         marginBottom: 4,
-        cursor: onClick ? "pointer" : "default",
       }}
     >
       <div
@@ -73,7 +65,11 @@ export const ReplyQuote: React.FC<ReplyQuoteProps> = ({
               marginBottom: 2,
             }}
           >
-            {replyTo.from === "me" ? "You" : replyTo.from}
+            {replyTo.resolution === "missing"
+              ? t("message.original")
+              : replyTo.from === "me"
+                ? t("chat.you")
+                : (replyTo.from ?? t("composer.placeholder"))}
           </div>
 
           <div
@@ -92,23 +88,29 @@ export const ReplyQuote: React.FC<ReplyQuoteProps> = ({
             {replyTo.type === "image" && (
               <>
                 <Camera size={12} color={secondaryText} />
-                <span>Photo</span>
+                <span>{t("message.photo")}</span>
               </>
             )}
             {replyTo.type === "video" && (
               <>
                 <Video size={12} color={secondaryText} />
-                <span>Video</span>
+                <span>{t("message.video")}</span>
               </>
             )}
             {replyTo.type === "voice" && (
               <>
                 <Mic size={12} color={secondaryText} />
-                <span>Voice message</span>
+                <span>{t("message.voice")}</span>
+              </>
+            )}
+            {replyTo.resolution === "missing" && (
+              <>
+                <FileText size={12} color={secondaryText} />
+                <span>{t("message.unavailable")}</span>
               </>
             )}
             {(!replyTo.type || replyTo.type === "text") && (
-              <span>{replyTo.text}</span>
+              replyTo.resolution !== "missing" && <span>{replyTo.text}</span>
             )}
           </div>
         </div>
@@ -124,9 +126,9 @@ export const ReplyQuote: React.FC<ReplyQuoteProps> = ({
               flexShrink: 0,
             }}
           >
-            <Img
+            <DeterministicImage
               src={replyTo.thumbnailUrl}
-              alt=""
+              alt={t("message.photo")}
               pauseWhenLoading
               style={{
                 position: "absolute",

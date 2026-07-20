@@ -1,13 +1,32 @@
-import React from "react";
-import { WorldState } from "@tokovo/core";
-import { Img } from "remotion";
-import { spacing, typography } from "../theme.js";
-import { PhoneCallIcon, VideoCallIcon } from "../Icons.js";
+import type { WorldState } from "@tokovo/core";
+import { DeterministicImage } from "@tokovo/react";
+import {
+  Ban,
+  Bell,
+  ChevronLeft,
+  FileImage,
+  Flag,
+  Lock,
+  Phone,
+  Search,
+  ShieldCheck,
+  Star,
+  Timer,
+  Users,
+  Video,
+} from "lucide-react";
+import {
+  useTheme,
+  useWhatsAppLocale,
+} from "../../experience/ExperienceContext.js";
+import type {
+  WhatsAppMessage,
+  WhatsAppState,
+} from "../../types/index.js";
 import { resolveAvatarWithFallback } from "../../utils/avatar.js";
-import { WhatsAppConversation, WhatsAppState } from "../../types/index.js";
+import { formatWhatsAppNumber } from "../../localization/index.js";
+import { AppScaffold, SettingsGroup, SettingsRow } from "../surfaces/index.js";
 import { GroupInfoScreen } from "./GroupInfoScreen.js";
-import { normalizeMessages } from "../../utils/messages.js";
-import { useTheme } from "../../theme/ThemeContext.js";
 
 export interface ProfileScreenProps {
   world: WorldState;
@@ -21,27 +40,76 @@ export interface ProfileScreenProps {
   height: number;
 }
 
-export const ProfileScreen: React.FC<ProfileScreenProps> = ({
+function mediaSource(message: WhatsAppMessage): string | undefined {
+  if (message.type === "image") return message.imageUrl;
+  if (message.type === "video") return message.thumbnailUrl;
+  if (message.type === "gif") return message.gifUrl;
+  if (message.type === "sticker") return message.stickerUrl;
+  return undefined;
+}
+
+function ActionTile({
+  label,
+  icon,
+}: {
+  label: string;
+  icon: React.ReactNode;
+}) {
+  const theme = useTheme();
+  const { uiTypography: typography } = theme;
+  return (
+    <div
+      style={{
+        flex: 1,
+        height: 52,
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: 3,
+        border: `1px solid ${theme.colors.divider}`,
+        borderRadius: 13,
+        color: theme.colors.accent,
+        backgroundColor: theme.colors.background,
+      }}
+    >
+      {icon}
+      <span
+        style={{
+          ...typography.caption,
+          fontSize: 12,
+          color: theme.colors.receivedBubbleText,
+          fontFamily: theme.typography.fontFamily,
+        }}
+      >
+        {label}
+      </span>
+    </div>
+  );
+}
+
+export function ProfileScreen({
   world,
   safeAreaInsets,
-  width: _width,
-  height: _height,
-}) => {
+  width,
+  height,
+}: ProfileScreenProps) {
   const theme = useTheme();
-  const safeAreaTop = safeAreaInsets?.top ?? 47;
-
-  const appState = (world.appState?.["app_whatsapp"] || {}) as WhatsAppState;
-  const conversations = (appState.conversations || {}) as Record<
-    string,
-    WhatsAppConversation
-  >;
-  const conversationId =
-    appState.currentConversationId ||
-    appState.conversationId ||
-    Object.keys(conversations)[0];
+  const { direction, locale, t } = useWhatsAppLocale();
+  const { uiTypography: typography } = theme;
+  const safeAreaTop = safeAreaInsets?.top ?? theme.safeArea.top;
+  const safeAreaBottom = safeAreaInsets?.bottom ?? theme.safeArea.bottom;
+  const state = world.appState?.app_whatsapp as WhatsAppState | undefined;
+  if (!state) {
+    throw new Error("WhatsApp profile screen requires app_whatsapp state");
+  }
+  const conversations = state.conversations;
+  const conversationId = state.conversationId;
   const conversation = conversationId ? conversations[conversationId] : undefined;
 
-  if (!conversation) return null;
+  if (!conversation) {
+    throw new Error("WhatsApp profile screen requires a current conversation");
+  }
 
   if (conversation.type === "group") {
     return (
@@ -49,180 +117,280 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
         world={world}
         conversationId={conversation.id}
         safeAreaInsets={safeAreaInsets}
-        width={_width}
-        height={_height}
+        width={width}
+        height={height}
       />
     );
   }
 
-  const deviceId = Object.keys(world.devices || {})[0];
-  const normalizedMessages = normalizeMessages(
-    world,
-    conversation.id,
-    (conversation.messages || []) as unknown[],
-    deviceId,
+  const messages = conversation.messages;
+  const media = messages
+    .map((message) => ({ message, src: mediaSource(message) }))
+    .filter((item): item is { message: WhatsAppMessage; src: string } => Boolean(item.src));
+  const remoteMember = conversation.members?.find(
+    (member) => member.id.toLowerCase() !== "me",
   );
-  const mediaCount = normalizedMessages.filter((msg) =>
-    ["image", "video", "gif"].includes(msg.type),
-  ).length;
+  const phone = conversation.contact?.phone ?? remoteMember?.phone;
+  const about = conversation.contact?.about ?? conversation.description;
+  const detail = conversation.contact?.lastSeenLabel ??
+    conversation.contact?.businessCategory ??
+    phone;
+  const fallbackContactName = t("profile.contact");
+  const contactName = conversation.name ?? fallbackContactName;
 
   return (
-    <div
-      style={{
-        width: "100%",
-        height: "100%",
-        backgroundColor: theme.colors.headerBackground,
-        display: "flex",
-        flexDirection: "column",
-        fontFamily: theme.typography.fontFamily,
-      }}
-    >
-      <div
-        style={{
-          paddingTop: safeAreaTop,
-          paddingLeft: spacing.pagePaddingWide,
-          paddingRight: spacing.pagePaddingX,
-          height: spacing.navBarHeight + safeAreaTop,
-          display: "flex",
-          alignItems: "center",
-          borderBottom: `0.5px solid ${theme.colors.divider}`,
-          backgroundColor: `${theme.colors.headerBackground}F2`,
-          backdropFilter: "blur(20px)",
-        }}
-      >
-        <div
-          style={{
-            ...typography.title,
-            color: theme.colors.receivedBubbleText,
-            fontFamily: theme.typography.fontFamily,
-          }}
-        >
-          Contact Info
+    <AppScaffold
+      title={t("screen.contactInfo")}
+      safeAreaTop={safeAreaTop}
+      safeAreaBottom={safeAreaBottom}
+      showTabs={false}
+      leading={
+        <div style={{ display: "flex", alignItems: "center", gap: 2 }}>
+          <ChevronLeft
+            size={21}
+            style={{ transform: direction === "rtl" ? "scaleX(-1)" : undefined }}
+          />
+          <span style={{ fontSize: 15 }}>{t("action.back")}</span>
         </div>
-      </div>
-
-      <div style={{ flex: 1, overflow: "auto" }}>
-        <div
-          style={{
-            padding: `${spacing.sectionGap}px ${spacing.pagePaddingX}px`,
-            display: "flex",
-            alignItems: "center",
-            gap: spacing.contentMarginLeft,
-            backgroundColor: theme.colors.background,
-            borderBottom: `0.5px solid ${theme.colors.divider}`,
-          }}
-        >
+      }
+      actions={<span style={{ fontSize: 15, fontWeight: 600 }}>{t("action.edit")}</span>}
+    >
+      <div data-anchor="profile_hero" style={{ padding: "16px 16px 12px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
           <div
             style={{
-              width: 72,
-              height: 72,
-              borderRadius: "50%",
+              width: 82,
+              height: 82,
               overflow: "hidden",
-              backgroundColor: `${theme.colors.divider}66`,
+              borderRadius: 41,
+              backgroundColor: theme.colors.divider,
+              flexShrink: 0,
             }}
           >
-            <Img
-              src={resolveAvatarWithFallback(
-                conversation.avatar,
-                conversation.name || "Contact",
-              )}
-              alt={conversation.name || "Contact"}
+            <DeterministicImage
+              src={resolveAvatarWithFallback(conversation.avatar, contactName)}
+              alt={contactName}
               style={{ width: "100%", height: "100%", objectFit: "cover" }}
             />
           </div>
-          <div>
+          <div style={{ flex: 1, minWidth: 0 }}>
             <div
               style={{
-                ...typography.headline,
-                fontSize: 20,
+                fontSize: 23,
+                fontWeight: 650,
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap",
                 color: theme.colors.receivedBubbleText,
                 fontFamily: theme.typography.fontFamily,
               }}
             >
-              {conversation.name || "Contact"}
+              {contactName}
             </div>
+            {detail && (
+              <div
+                style={{
+                  ...typography.caption,
+                  marginTop: 4,
+                  color: theme.colors.timestamp,
+                  fontFamily: theme.typography.fontFamily,
+                }}
+              >
+                {detail}
+              </div>
+            )}
+            {conversation.contact?.verifiedBusiness && (
+              <div
+                style={{
+                  ...typography.caption,
+                  marginTop: 5,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 4,
+                  color: theme.colors.link,
+                  fontFamily: theme.typography.fontFamily,
+                }}
+              >
+                <ShieldCheck size={14} /> {t("profile.verifiedBusiness")}
+              </div>
+            )}
+          </div>
+        </div>
+        <div style={{ display: "flex", gap: 8, marginTop: 13 }}>
+          <ActionTile label={t("action.audio")} icon={<Phone size={18} />} />
+          <ActionTile label={t("action.video")} icon={<Video size={19} />} />
+          <ActionTile label={t("action.search")} icon={<Search size={18} />} />
+        </div>
+      </div>
+
+      {(about || phone) && (
+        <div
+          style={{
+            margin: "0 16px 12px",
+            padding: "10px 12px",
+            border: `1px solid ${theme.colors.divider}`,
+            borderRadius: 13,
+            backgroundColor: theme.colors.background,
+          }}
+        >
+          {about && (
             <div
               style={{
                 ...typography.body,
+                color: theme.colors.receivedBubbleText,
+                fontFamily: theme.typography.fontFamily,
+              }}
+            >
+              {about}
+            </div>
+          )}
+          {phone && (
+            <div
+              style={{
+                ...typography.caption,
+                marginTop: about ? 4 : 0,
                 color: theme.colors.timestamp,
                 fontFamily: theme.typography.fontFamily,
               }}
             >
-              online
+              {phone}
             </div>
-          </div>
+          )}
         </div>
+      )}
 
+      <div
+        data-anchor="profile_media"
+        style={{
+          minHeight: 88,
+          margin: "0 16px 12px",
+          padding: "9px 11px",
+          border: `1px solid ${theme.colors.divider}`,
+          borderRadius: 13,
+          backgroundColor: theme.colors.background,
+        }}
+      >
         <div
           style={{
-            padding: `${spacing.sectionGap}px ${spacing.pagePaddingX}px`,
             display: "flex",
-            gap: spacing.contentMarginLeft,
-            backgroundColor: theme.colors.background,
-            borderBottom: `0.5px solid ${theme.colors.divider}`,
+            alignItems: "center",
+            justifyContent: "space-between",
+            marginBottom: 8,
           }}
         >
-          {[
-            { label: "Call", Icon: PhoneCallIcon },
-            { label: "Video", Icon: VideoCallIcon },
-          ].map(({ label, Icon }) => (
-            <div
-              key={label}
-              style={{
-                flex: 1,
-                backgroundColor: `${theme.colors.accent}10`,
-                borderRadius: 14,
-                padding: "12px 14px",
-                display: "flex",
-                alignItems: "center",
-                gap: 8,
-                justifyContent: "center",
-                border: `1px solid ${theme.colors.divider}`,
-              }}
-            >
-              <Icon color={theme.colors.accent} />
-              <span
-                style={{
-                  ...typography.body,
-                  color: theme.colors.receivedBubbleText,
-                  fontFamily: theme.typography.fontFamily,
-                }}
-              >
-                {label}
-              </span>
-            </div>
-          ))}
-        </div>
-
-        <div
-          style={{
-            padding: `${spacing.sectionGap}px ${spacing.pagePaddingX}px`,
-            backgroundColor: theme.colors.background,
-            borderBottom: `0.5px solid ${theme.colors.divider}`,
-          }}
-        >
-          <div
+          <span
+            style={{
+              ...typography.caption,
+              fontWeight: 600,
+              color: theme.colors.receivedBubbleText,
+              fontFamily: theme.typography.fontFamily,
+            }}
+          >
+            {t("profile.mediaLinksDocs")}
+          </span>
+          <span
             style={{
               ...typography.caption,
               color: theme.colors.timestamp,
               fontFamily: theme.typography.fontFamily,
             }}
           >
-            Media, links, and docs
-          </div>
-          <div
-            style={{
-              ...typography.headline,
-              color: theme.colors.receivedBubbleText,
-              fontFamily: theme.typography.fontFamily,
-            }}
-          >
-            {mediaCount} items
-          </div>
+            {formatWhatsAppNumber(locale, media.length)} {direction === "rtl" ? "‹" : "›"}
+          </span>
+        </div>
+        <div style={{ display: "flex", gap: 6 }}>
+          {media.slice(0, 4).map(({ message, src }) => (
+            <div
+              key={message.id}
+              style={{
+                width: 55,
+                height: 48,
+                overflow: "hidden",
+                borderRadius: 7,
+                backgroundColor: theme.colors.divider,
+              }}
+            >
+              <DeterministicImage
+                src={src}
+                alt={t("profile.sharedMedia")}
+                style={{ width: "100%", height: "100%", objectFit: "cover" }}
+              />
+            </div>
+          ))}
+          {media.length === 0 && (
+            <div
+              style={{
+                height: 48,
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+                color: theme.colors.timestamp,
+              }}
+            >
+              <FileImage size={19} />
+              <span style={{ ...typography.caption }}>
+                {t("profile.nothingShared")}
+              </span>
+            </div>
+          )}
         </div>
       </div>
-    </div>
+
+      <SettingsGroup>
+        <SettingsRow
+          icon={<Star size={17} />}
+          iconBackground="#F4B400"
+          title={t("profile.starredMessages")}
+        />
+        <SettingsRow
+          icon={<Bell size={17} />}
+          iconBackground="#F39C12"
+          title={t("profile.notifications")}
+          trailing={
+            conversation.preferences?.notifications ??
+            t(conversation.isMuted ? "profile.muted" : "profile.on")
+          }
+        />
+        <SettingsRow
+          icon={<Timer size={17} />}
+          iconBackground="#15A085"
+          title={t("profile.disappearingMessages")}
+          trailing={
+            conversation.preferences?.disappearingMessages ?? t("profile.off")
+          }
+        />
+        <SettingsRow
+          icon={<Lock size={17} />}
+          iconBackground="#607D8B"
+          title={t("profile.encryption")}
+          subtitle={t("profile.encryptionBody")}
+          isLast
+        />
+      </SettingsGroup>
+
+      <SettingsGroup>
+        <SettingsRow
+          icon={<Users size={17} />}
+          iconBackground="#4C6FFF"
+          title={t("profile.groupsInCommon")}
+          trailing={formatWhatsAppNumber(locale, 0)}
+        />
+        <SettingsRow
+          icon={<Ban size={17} />}
+          iconBackground="#D64545"
+          title={t("profile.block", { name: contactName })}
+          danger
+        />
+        <SettingsRow
+          icon={<Flag size={17} />}
+          iconBackground="#D64545"
+          title={t("profile.report", { name: contactName })}
+          danger
+          isLast
+        />
+      </SettingsGroup>
+    </AppScaffold>
   );
-};
+}
 
 export default ProfileScreen;

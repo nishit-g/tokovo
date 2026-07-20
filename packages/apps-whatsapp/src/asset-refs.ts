@@ -66,7 +66,7 @@ export const collectWhatsAppAssetRefs: PluginAssetCollector<"app_whatsapp"> = ({
   const refs: EpisodeAssetRef[] = [];
 
   if (state.currentScreen === "chat") {
-    const activeConversationId = state.currentConversationId ?? state.conversationId;
+    const activeConversationId = state.conversationId;
     const conversation = activeConversationId
       ? conversations[activeConversationId]
       : undefined;

@@ -29,4 +29,10 @@ export const testEpisodes: EpisodeDefinition[] = [
 
 export default testEpisodes;
 
-export { testEpisode, keyboardPluginDemo, typingPluginDemo, newDxTest, renderServiceSmoke };
+export {
+  testEpisode,
+  keyboardPluginDemo,
+  typingPluginDemo,
+  newDxTest,
+  renderServiceSmoke,
+};

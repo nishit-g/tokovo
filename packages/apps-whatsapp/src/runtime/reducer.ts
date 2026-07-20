@@ -1,364 +1,345 @@
-import { WHATSAPP_APP_ID } from "../constants.js";
 import { TimelineEvent, WorldState } from "@tokovo/core";
-import { WhatsAppMessage, WhatsAppConversation, WhatsAppState } from "../types/index.js";
-import { parseWhatsAppEvent, type CustomEvent } from "../schemas/index.js";
-import { type HandlerContext, createWhatsAppHandlers } from "../handlers/index.js";
 import {
-  GROUP_EVENT_TYPES,
-  isWhatsAppGroupEvent,
-  isGroupMemberAddPayload,
-  isGroupMemberRemovePayload,
-  isGroupAdminChangePayload,
-} from "../ir/group-ops.js";
-
-const APP_TYPE_TO_LEGACY_KIND: Record<string, string> = {
-  MESSAGE_RECEIVED: "MessageReceived",
-  MESSAGE_SENT: "MessageSent",
-  IMAGE_RECEIVED: "ImageReceived",
-  IMAGE_SENT: "ImageSent",
-  VIDEO_RECEIVED: "VideoReceived",
-  VIDEO_SENT: "VideoSent",
-  VOICE_RECEIVED: "VoiceReceived",
-  VOICE_SENT: "VoiceSent",
-  GIF_RECEIVED: "GifReceived",
-  GIF_SENT: "GifSent",
-  STICKER_RECEIVED: "StickerReceived",
-  STICKER_SENT: "StickerSent",
-  DOCUMENT_RECEIVED: "DocumentReceived",
-  DOCUMENT_SENT: "DocumentSent",
-  CONTACT_RECEIVED: "ContactReceived",
-  CONTACT_SENT: "ContactSent",
-  LOCATION_RECEIVED: "LocationReceived",
-  LOCATION_SENT: "LocationSent",
-  TYPING_START: "TypingStarted",
-  TYPING_END: "TypingEnded",
-  REACT: "React",
-  READ: "ReadMessages",
-  READ_MESSAGES: "ReadMessages",
-  MESSAGE_DELETED: "MessageDeleted",
-  MESSAGE_EDITED: "MessageEdited",
-  MESSAGE_FORWARDED: "MessageForwarded",
-  VOICE_PLAY: "VoicePlay",
-  VOICE_PAUSE: "VoicePause",
-  CONVERSATION_OPENED: "ConversationOpened",
-  NAVIGATE_SCREEN: "NavigateScreen",
-  GO_BACK: "NavigateScreen",
-  DATE_SEPARATOR: "DateSeparator",
-  GROUP_MEMBER_ADDED: "GroupMemberAdded",
-  GROUP_MEMBER_REMOVED: "GroupMemberRemoved",
-  PIN_CONVERSATION: "PinConversation",
-  UNPIN_CONVERSATION: "UnpinConversation",
-  MUTE_CONVERSATION: "MuteConversation",
-  UNMUTE_CONVERSATION: "UnmuteConversation",
-  ARCHIVE_CONVERSATION: "ArchiveConversation",
-  UNARCHIVE_CONVERSATION: "UnarchiveConversation",
-  SET_DRAFT: "SetDraft",
-  REACTION_ADDED: "ReactionAdded",
-  MESSAGE_READ: "MessageRead",
-  VOICE_MESSAGE_RECEIVED: "VoiceMessageReceived",
-};
+  WhatsAppMessage,
+  WhatsAppConversation,
+  WhatsAppState,
+  WhatsAppMediaLifecycle,
+} from "../types/index.js";
+import { parseWhatsAppEventStrict } from "../schemas/index.js";
+import {
+  type HandlerContext,
+  createWhatsAppHandlers,
+} from "../handlers/index.js";
 
 const HANDLERS = createWhatsAppHandlers();
 
 function syncViewMode(state: WhatsAppState): void {
-  state.currentScreen ??= "chats";
-  if (state.currentScreen === "status") {
-    state.currentScreen = "updates";
+  const requiresConversation =
+    state.currentScreen === "chat" || state.currentScreen === "profile";
+  if (requiresConversation && !state.conversationId) {
+    throw new Error(
+      `WhatsApp ${state.currentScreen} screen requires a canonical conversationId`,
+    );
   }
 
-  // Canonical mapping:
-  // - "chat" => CHAT + conversationId required
-  // - everything else => FEED
+  // CHAT is reserved for thread geometry. Profile keeps its explicit
+  // conversation context while using the FEED layout family.
   if (state.currentScreen === "chat") {
     state.viewMode = "CHAT";
-    state.conversationId = state.conversationId ?? state.currentConversationId ?? undefined;
     return;
   }
 
   state.viewMode = "FEED";
-  state.conversationId = undefined;
+  if (state.currentScreen !== "profile") {
+    state.conversationId = undefined;
+  }
 }
 
-function normalizeWhatsAppEvent(event: TimelineEvent): unknown {
-  if (event.kind !== "APP") return event;
-  const appId = (event as { appId?: string }).appId;
-  if (appId !== WHATSAPP_APP_ID) return event;
+function getEventConversationId(event: {
+  payload: unknown;
+}): string | undefined {
+  if (!event.payload || typeof event.payload !== "object") return undefined;
+  const conversationId = (event.payload as { conversationId?: unknown })
+    .conversationId;
+  return typeof conversationId === "string" ? conversationId : undefined;
+}
 
-  const type = (event as { type?: string }).type;
-  if (!type) return event;
-
-  const legacyKind = APP_TYPE_TO_LEGACY_KIND[type];
-  if (!legacyKind) return event;
-
-  const payload = (event as { payload?: Record<string, unknown> }).payload ?? {};
-
-  return {
-    ...event,
-    kind: legacyKind,
-    ...payload,
+function createGlobalHandlerContext(
+  draft: WorldState,
+  event: ReturnType<typeof parseWhatsAppEventStrict>,
+): HandlerContext {
+  const fail = (operation: string): never => {
+    throw new Error(
+      `WhatsApp global event "${event.type}" cannot ${operation} without a conversationId`,
+    );
   };
+  const context = {
+    draft,
+    event,
+    conversation: undefined as never,
+    addMessage: () => fail("add a message"),
+    getMessageById: () => fail("read a message"),
+    requireMessageById: () => fail("require a message"),
+    generateTimestamp: () => fail("generate a conversation timestamp"),
+  } satisfies HandlerContext;
+
+  Object.defineProperty(context, "conversation", {
+    configurable: false,
+    enumerable: false,
+    get: () => fail("access conversation state"),
+  });
+  return context;
 }
 
 function getAppState(draft: WorldState): WhatsAppState {
-  if (!draft.appState) {
-    draft.appState = {};
+  const state = draft.appState?.app_whatsapp as WhatsAppState | undefined;
+  if (!state) {
+    throw new Error(
+      "WhatsApp runtime requires bootstrapped app_whatsapp state",
+    );
   }
-  if (!draft.appState.app_whatsapp) {
-    draft.appState.app_whatsapp = {
-      viewMode: "FEED",
-      currentScreen: "chats",
-      conversationId: undefined,
-      currentConversationId: undefined,
-      conversations: {},
-    };
+
+  if (
+    typeof state.conversations !== "object" ||
+    state.conversations === null ||
+    Array.isArray(state.conversations)
+  ) {
+    throw new Error(
+      'WhatsApp state field "conversations" must be an object record',
+    );
   }
-  const state = draft.appState.app_whatsapp as WhatsAppState;
-  state.conversations ??= {};
-  state.viewMode ??= "FEED";
+  const requiredArrays = [
+    ["statuses", state.statuses],
+    ["channels", state.channels],
+    ["callLog", state.callLog],
+    ["communities", state.communities],
+  ] as const;
+  for (const [name, value] of requiredArrays) {
+    if (!Array.isArray(value)) {
+      throw new Error(`WhatsApp state is missing required field "${name}"`);
+    }
+  }
+  if (!Number.isInteger(state.layoutRevision) || state.layoutRevision < 0) {
+    throw new Error(
+      'WhatsApp state field "layoutRevision" must be a non-negative integer',
+    );
+  }
+  if (
+    !["chat", "chats", "updates", "calls", "communities", "settings", "profile"].includes(
+      state.currentScreen ?? "",
+    ) ||
+    !["CHAT", "FEED", "FULLSCREEN", "TRANSITION"].includes(state.viewMode) ||
+    !["en-US", "ar"].includes(state.locale) ||
+    !["all", "unread", "favorites", "groups", "drafts"].includes(
+      state.chatFilter,
+    )
+  ) {
+    throw new Error(
+      "WhatsApp state is missing required navigation or locale fields",
+    );
+  }
+  for (const field of [
+    "mediaViewer",
+    "statusViewer",
+    "activeGesture",
+    "replyComposer",
+    "threadViewport",
+  ] as const) {
+    if (
+      !Object.prototype.hasOwnProperty.call(state, field) ||
+      state[field] === undefined
+    ) {
+      throw new Error(`WhatsApp state is missing required field "${field}"`);
+    }
+  }
+  if (
+    typeof state.settings !== "object" ||
+    state.settings === null ||
+    Array.isArray(state.settings)
+  ) {
+    throw new Error('WhatsApp state field "settings" must be an object');
+  }
   syncViewMode(state);
   return state;
 }
 
-function getConversations(draft: WorldState): Record<string, WhatsAppConversation> {
+function getConversations(
+  draft: WorldState,
+): Record<string, WhatsAppConversation> {
   const appState = getAppState(draft);
-  if (!appState.conversations) {
-    appState.conversations = {};
-  }
   return appState.conversations as Record<string, WhatsAppConversation>;
 }
 
-function addMessage(conversation: WhatsAppConversation, message: WhatsAppMessage): void {
+function addMessage(
+  conversation: WhatsAppConversation,
+  message: WhatsAppMessage,
+): void {
+  ensureMessageMediaLifecycle(message);
+  if (getMessageById(conversation, message.id)) {
+    throw new Error(
+      `Duplicate WhatsApp message id "${message.id}" in conversation "${conversation.id}"`,
+    );
+  }
   conversation.messages.push(message);
-  if (!conversation.messagesById) {
-    conversation.messagesById = {};
+  const lastMessageAt = message.timestampMs ?? message.at;
+  if (typeof lastMessageAt === "number") {
+    conversation.lastMessageAt = lastMessageAt;
   }
-  conversation.messagesById[message.id] = message;
-  if (typeof message.at === "number") {
-    conversation.lastMessageAt = message.at;
+}
+
+function isLifecycleMedia(message: WhatsAppMessage): boolean {
+  return [
+    "image",
+    "video",
+    "voice",
+    "gif",
+    "sticker",
+    "document",
+    "location",
+  ].includes(message.type);
+}
+
+function hasMediaSource(message: WhatsAppMessage): boolean {
+  return Boolean(
+    message.imageUrl ??
+      message.videoUrl ??
+      message.thumbnailUrl ??
+      message.gifUrl ??
+      message.stickerUrl ??
+      message.documentUrl ??
+      message.mapThumbnailUrl ??
+      (message.type === "voice"),
+  );
+}
+
+function createMediaLifecycle(
+  transferState: WhatsAppMediaLifecycle["transferState"],
+): WhatsAppMediaLifecycle {
+  return {
+    transferState,
+    transferProgress: transferState === "ready" ? 1 : 0,
+    playbackState: "idle",
+    playbackProgress: 0,
+  };
+}
+
+function ensureMessageMediaLifecycle(message: WhatsAppMessage): void {
+  if (!isLifecycleMedia(message)) {
+    if (message.media !== undefined) {
+      throw new Error(
+        `WhatsApp message "${message.id}" cannot declare media lifecycle for type "${message.type}"`,
+      );
+    }
+    return;
   }
+  message.media ??= createMediaLifecycle(
+    hasMediaSource(message) ? "ready" : "remote",
+  );
 }
 
 function getMessageById(
   conversation: WhatsAppConversation,
   messageId: string,
 ): WhatsAppMessage | undefined {
-  if (conversation.messagesById) {
-    return conversation.messagesById[messageId];
-  }
   return conversation.messages.find((m) => m.id === messageId);
 }
 
-function generateTimestamp(frame: number, draft: WorldState, deviceId?: string): string {
+function requireMessageById(
+  conversation: WhatsAppConversation,
+  messageId: string,
+  operation: string,
+): WhatsAppMessage {
+  const message = getMessageById(conversation, messageId);
+  if (!message) {
+    throw new Error(
+      `Cannot ${operation}: WhatsApp message "${messageId}" does not exist in conversation "${conversation.id}"`,
+    );
+  }
+  return message;
+}
+
+function resolveFrameTimestampMs(
+  frame: number,
+  draft: WorldState,
+  deviceId?: string,
+): number | undefined {
   const fps = draft.config?.fps ?? 30;
+  const clock = deviceId ? draft.devices?.[deviceId]?.os?.clock : undefined;
+  if (typeof clock !== "number" || clock <= 0) return undefined;
+  return clock + Math.floor((frame / fps) * 1000);
+}
 
-  let baseHour = 10;
-  let baseMinute = 42;
-
-  if (deviceId && draft.devices?.[deviceId]) {
-    const osState = draft.devices[deviceId].os;
-    if (osState?.clock && typeof osState.clock === "number") {
-      const clockDate = new Date(osState.clock);
-      baseHour = clockDate.getUTCHours();
-      baseMinute = clockDate.getUTCMinutes();
-    }
+function generateTimestamp(
+  frame: number,
+  draft: WorldState,
+  deviceId?: string,
+): string {
+  const timestampMs = resolveFrameTimestampMs(frame, draft, deviceId);
+  if (timestampMs !== undefined) {
+    const date = new Date(timestampMs);
+    return `${date.getUTCHours().toString().padStart(2, "0")}:${date
+      .getUTCMinutes()
+      .toString()
+      .padStart(2, "0")}`;
   }
 
-  const totalSeconds = Math.floor(frame / fps);
-  const minutesElapsed = totalSeconds;
+  const fps = draft.config?.fps ?? 30;
 
-  const totalMinutes = baseHour * 60 + baseMinute + minutesElapsed;
+  const baseHour = 10;
+  const baseMinute = 42;
+
+  const totalSeconds = Math.floor(frame / fps);
+  const totalMinutes =
+    baseHour * 60 + baseMinute + Math.floor(totalSeconds / 60);
   const hour = Math.floor(totalMinutes / 60) % 24;
   const minute = totalMinutes % 60;
 
   return `${hour.toString().padStart(2, "0")}:${minute.toString().padStart(2, "0")}`;
 }
 
-function handleCustomOp(draft: WorldState, event: CustomEvent): void {
-  const payload = event.payload ?? {};
-  const conversationId = payload.conversationId as string | undefined;
-  if (!conversationId) return;
-
-  const conversations = getConversations(draft);
-  if (!conversations[conversationId]) {
-    conversations[conversationId] = {
-      id: conversationId,
-      messages: [],
-    };
+function addTimestampedMessage(
+  conversation: WhatsAppConversation,
+  message: WhatsAppMessage,
+  draft: WorldState,
+  deviceId?: string,
+): void {
+  if (message.timestampMs === undefined && typeof message.at === "number") {
+    message.timestampMs = resolveFrameTimestampMs(message.at, draft, deviceId);
   }
-  const conversation = conversations[conversationId];
-
-  if (!isWhatsAppGroupEvent(event.eventType)) return;
-
-  switch (event.eventType) {
-    case GROUP_EVENT_TYPES.MEMBER_ADDED: {
-      if (!isGroupMemberAddPayload(event.eventType, payload)) break;
-
-      if (!conversation.members) conversation.members = [];
-      if (!conversation.members.find((m) => m.id === payload.member.id)) {
-        conversation.members.push({
-          id: payload.member.id,
-          name: payload.member.name,
-          avatar: payload.member.avatar,
-        });
-      }
-
-      const addedByName = payload.addedBy === "me" ? "You" : payload.addedBy;
-      const msg: WhatsAppMessage = {
-        id: `sys_${event.at}_added_${payload.member.id}`,
-        from: "system",
-        type: "system",
-        systemType: "member_added",
-        text: `${addedByName} added ${payload.member.name}`,
-        targetMember: payload.member.name,
-        actorName: payload.addedBy,
-        at: event.at,
-      };
-      addMessage(conversation, msg);
-      break;
-    }
-
-    case GROUP_EVENT_TYPES.MEMBER_REMOVED: {
-      if (!isGroupMemberRemovePayload(event.eventType, payload)) break;
-
-      if (conversation.members) {
-        conversation.members = conversation.members.filter((m) => m.id !== payload.memberId);
-      }
-
-      const wasMe = payload.memberId === "me";
-      const removedByName = payload.removedBy === "me" ? "You" : payload.removedBy;
-
-      const text = wasMe ? "You left the group" : `${removedByName} removed ${payload.memberName}`;
-
-      const msg: WhatsAppMessage = {
-        id: `sys_${event.at}_removed_${payload.memberId}`,
-        from: "system",
-        type: "system",
-        systemType: "member_removed",
-        text,
-        targetMember: payload.memberName,
-        actorName: payload.removedBy,
-        at: event.at,
-      };
-      addMessage(conversation, msg);
-      break;
-    }
-
-    case GROUP_EVENT_TYPES.ADMIN_CHANGED: {
-      if (!isGroupAdminChangePayload(event.eventType, payload)) break;
-
-      if (!conversation.admins) conversation.admins = [];
-
-      if (payload.action === "promote") {
-        if (!conversation.admins.includes(payload.memberId)) {
-          conversation.admins.push(payload.memberId);
-        }
-      } else {
-        conversation.admins = conversation.admins.filter((id) => id !== payload.memberId);
-      }
-
-      const changedByName = payload.changedBy === "me" ? "You" : payload.changedBy;
-      const memberName = payload.memberName || payload.memberId;
-      const action = payload.action === "promote" ? "made" : "removed";
-      const role = payload.action === "promote" ? "an admin" : "as admin";
-
-      const msg: WhatsAppMessage = {
-        id: `sys_${event.at}_admin_${payload.memberId}`,
-        from: "system",
-        type: "system",
-        systemType: "admin_change",
-        text: `${changedByName} ${action} ${memberName} ${role}`,
-        targetMember: memberName,
-        actorName: payload.changedBy,
-        at: event.at,
-      };
-      addMessage(conversation, msg);
-      break;
-    }
-
-    case GROUP_EVENT_TYPES.INFO_UPDATED: {
-      const field = payload.field as string;
-      const newValue = payload.newValue as string;
-      const changedByName =
-        (payload.changedBy as string) === "me" ? "You" : (payload.changedBy as string);
-
-      if (field === "name") {
-        conversation.name = newValue;
-        const msg: WhatsAppMessage = {
-          id: `sys_${event.at}_name_changed`,
-          from: "system",
-          type: "system",
-          systemType: "group_name_changed",
-          text: `${changedByName} changed the group name to "${newValue}"`,
-          at: event.at,
-        };
-        addMessage(conversation, msg);
-      } else if (field === "avatar") {
-        conversation.avatar = newValue;
-      }
-      break;
-    }
-  }
+  addMessage(conversation, message);
 }
 
 export function whatsappReducer(draft: WorldState, event: TimelineEvent): void {
-  const normalizedEvent = normalizeWhatsAppEvent(event);
-  const parsed = parseWhatsAppEvent(normalizedEvent);
-  if (!parsed) {
-    return;
-  }
+  const parsed = parseWhatsAppEventStrict(event);
 
-  if (parsed.kind === "Custom") {
-    handleCustomOp(draft, parsed);
-    return;
-  }
-
-  const handler = HANDLERS[parsed.kind];
+  const handler = HANDLERS[parsed.type];
   if (!handler) {
-    return;
+    throw new Error(`No WhatsApp handler registered for "${parsed.type}"`);
   }
 
-  const conversationId = parsed.conversationId;
+  const conversationId = getEventConversationId(parsed);
 
-  // Some events (like NavigateScreen) don't require a conversationId
-  // Handle them with a minimal context
+  // Global events are valid without conversation state. Their context throws
+  // if a handler accidentally reaches for conversation-scoped APIs.
   if (!conversationId) {
-    // Ensure app state exists so navigation handlers can mutate it.
     getAppState(draft);
-    const conversation: WhatsAppConversation = {
-      id: "",
-      messages: [],
-    };
-    const ctx: HandlerContext = {
-      draft,
-      event: parsed,
-      conversation,
-      addMessage: (msg) => addMessage(conversation, msg),
-      getMessageById: (id) => getMessageById(conversation, id),
-      generateTimestamp: (at) => generateTimestamp(at, draft, parsed.deviceId),
-    };
+    const ctx = createGlobalHandlerContext(draft, parsed);
     handler(ctx, parsed);
-    syncViewMode(getAppState(draft));
+    const state = getAppState(draft);
+    state.layoutRevision += 1;
+    syncViewMode(state);
     return;
   }
 
   const conversations = getConversations(draft);
   if (!conversations[conversationId]) {
-    conversations[conversationId] = {
-      id: conversationId,
-      messages: [],
-    };
+    throw new Error(
+      `WhatsApp event references unknown conversation "${conversationId}"`,
+    );
   }
   const conversation = conversations[conversationId];
+  const previousMessageCount = conversation.messages.length;
 
   const ctx: HandlerContext = {
     draft,
     event: parsed,
     conversation,
-    addMessage: (msg) => addMessage(conversation, msg),
+    addMessage: (msg) =>
+      addTimestampedMessage(conversation, msg, draft, parsed.deviceId),
     getMessageById: (id) => getMessageById(conversation, id),
+    requireMessageById: (id, operation) =>
+      requireMessageById(conversation, id, operation),
     generateTimestamp: (at) => generateTimestamp(at, draft, parsed.deviceId),
   };
 
   handler(ctx, parsed);
-  syncViewMode(getAppState(draft));
+  const state = getAppState(draft);
+  if (
+    conversation.messages.length > previousMessageCount &&
+    state.threadViewport?.conversationId === conversationId
+  ) {
+    state.threadViewport = null;
+  }
+  state.layoutRevision += 1;
+  syncViewMode(state);
 }

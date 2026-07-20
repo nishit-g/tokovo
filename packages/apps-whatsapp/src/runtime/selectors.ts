@@ -1,10 +1,10 @@
 /**
  * WhatsApp State Selectors
  *
- * Memoized queries for accessing WhatsApp state.
+ * Device-aware queries for accessing immutable WhatsApp state.
  */
 
-import type { WorldState } from "@tokovo/core";
+import { getAppStateForDevice, type WorldState } from "@tokovo/core";
 import type {
   WhatsAppConversation,
   WhatsAppState,
@@ -18,8 +18,11 @@ import type {
 /**
  * Get WhatsApp app state.
  */
-export function selectAppState(world: WorldState): WhatsAppState | undefined {
-  return world.appState?.app_whatsapp as WhatsAppState | undefined;
+export function selectAppState(
+  world: WorldState,
+  deviceId?: string,
+): WhatsAppState | undefined {
+  return getAppStateForDevice<WhatsAppState>(world, "app_whatsapp", deviceId);
 }
 
 /**
@@ -27,8 +30,9 @@ export function selectAppState(world: WorldState): WhatsAppState | undefined {
  */
 export function selectConversations(
   world: WorldState,
+  deviceId?: string,
 ): Record<string, WhatsAppConversation> {
-  const appState = selectAppState(world);
+  const appState = selectAppState(world, deviceId);
   return (appState?.conversations ?? {}) as Record<
     string,
     WhatsAppConversation
@@ -40,9 +44,10 @@ export function selectConversations(
  */
 export function selectCurrentConversationId(
   world: WorldState,
+  deviceId?: string,
 ): string | undefined {
-  const appState = selectAppState(world);
-  return appState?.currentConversationId ?? appState?.conversationId;
+  const appState = selectAppState(world, deviceId);
+  return appState?.conversationId;
 }
 
 /**
@@ -50,10 +55,11 @@ export function selectCurrentConversationId(
  */
 export function selectCurrentConversation(
   world: WorldState,
+  deviceId?: string,
 ): WhatsAppConversation | undefined {
-  const convId = selectCurrentConversationId(world);
+  const convId = selectCurrentConversationId(world, deviceId);
   if (!convId) return undefined;
-  return selectConversations(world)[convId];
+  return selectConversations(world, deviceId)[convId];
 }
 
 /**
@@ -62,8 +68,9 @@ export function selectCurrentConversation(
 export function selectMessages(
   world: WorldState,
   conversationId: string,
+  deviceId?: string,
 ): WhatsAppMessage[] {
-  const conv = selectConversations(world)[conversationId];
+  const conv = selectConversations(world, deviceId)[conversationId];
   return conv?.messages ?? [];
 }
 
@@ -73,8 +80,9 @@ export function selectMessages(
 export function selectLastMessage(
   world: WorldState,
   conversationId: string,
+  deviceId?: string,
 ): WhatsAppMessage | undefined {
-  const messages = selectMessages(world, conversationId);
+  const messages = selectMessages(world, conversationId, deviceId);
   return messages[messages.length - 1];
 }
 
@@ -84,11 +92,12 @@ export function selectLastMessage(
 export function selectTypingMembers(
   world: WorldState,
   conversationId: string,
+  deviceId?: string,
 ): string[] {
-  const conv = selectConversations(world)[conversationId];
+  const conv = selectConversations(world, deviceId)[conversationId];
   if (!conv?.typing) return [];
   return Object.entries(conv.typing)
-    .filter(([_, isTyping]) => isTyping)
+    .filter(([actor, isTyping]) => isTyping && actor !== "me")
     .map(([name]) => name);
 }
 
@@ -98,7 +107,8 @@ export function selectTypingMembers(
 export function selectIsGroupConversation(
   world: WorldState,
   conversationId: string,
+  deviceId?: string,
 ): boolean {
-  const conv = selectConversations(world)[conversationId];
+  const conv = selectConversations(world, deviceId)[conversationId];
   return conv?.type === "group";
 }

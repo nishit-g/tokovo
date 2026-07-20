@@ -1,18 +1,16 @@
 import type { TrackEventBase } from "@tokovo/ir";
-import type { WhatsAppMessageType } from "./messages.js";
-
-export interface MessageReference {
-  messageId?: string;
-  id?: string;
-  index?: number | "last";
-}
+import type {
+  WhatsAppMessageType,
+  WhatsAppSystemMessageType,
+} from "./messages.js";
+import type { WhatsAppLocale } from "../localization/index.js";
+import type { WhatsAppMessageGesture } from "./interactions.js";
 
 export interface ReplyToPayload {
-  messageId?: string;
-  id?: string;
+  messageId: string;
   text?: string;
   from?: string;
-  type?: string;
+  type?: WhatsAppMessageType;
   thumbnailUrl?: string;
 }
 
@@ -23,10 +21,8 @@ export interface MessageReceivedPayload {
   messageId?: string;
   replyTo?: ReplyToPayload;
   silent?: boolean;
-  messageType?: WhatsAppMessageType;
-  url?: string;
-  caption?: string;
-  systemType?: string;
+  messageType?: "text" | "system" | "call" | "call_missed" | "screenshot_alert";
+  systemType?: WhatsAppSystemMessageType;
   callType?: "voice" | "video";
   callDuration?: number;
 }
@@ -36,13 +32,10 @@ export interface MessageSentPayload {
   text: string;
   messageId?: string;
   replyTo?: ReplyToPayload;
+  silent?: boolean;
   typed?: boolean;
   charDelay?: number;
-  messageType?: WhatsAppMessageType;
-  url?: string;
-  caption?: string;
-  durationSeconds?: number;
-  systemType?: string;
+  messageType?: "text" | "call" | "call_missed";
   callType?: "voice" | "video";
   callDuration?: number;
 }
@@ -121,7 +114,7 @@ export interface StickerSentPayload {
 export interface DocumentReceivedPayload {
   conversationId: string;
   from: string;
-  url: string;
+  url?: string;
   fileName: string;
   fileSize?: number | string;
   fileType?: string;
@@ -130,7 +123,7 @@ export interface DocumentReceivedPayload {
 
 export interface DocumentSentPayload {
   conversationId: string;
-  url: string;
+  url?: string;
   fileName: string;
   fileSize?: number | string;
   fileType?: string;
@@ -142,14 +135,7 @@ export interface ContactReceivedPayload {
   from: string;
   contactName: string;
   contactPhone?: string;
-  contactAvatar?: string;
   contactAvatarUrl?: string;
-  /** @deprecated Use contactName/contactPhone/contactAvatar instead. */
-  name?: string;
-  /** @deprecated Use contactName/contactPhone/contactAvatar instead. */
-  phone?: string;
-  /** @deprecated Use contactName/contactPhone/contactAvatar instead. */
-  avatar?: string;
   messageId?: string;
 }
 
@@ -157,14 +143,7 @@ export interface ContactSentPayload {
   conversationId: string;
   contactName: string;
   contactPhone?: string;
-  contactAvatar?: string;
   contactAvatarUrl?: string;
-  /** @deprecated Use contactName/contactPhone/contactAvatar instead. */
-  name?: string;
-  /** @deprecated Use contactName/contactPhone/contactAvatar instead. */
-  phone?: string;
-  /** @deprecated Use contactName/contactPhone/contactAvatar instead. */
-  avatar?: string;
   messageId?: string;
 }
 
@@ -176,16 +155,6 @@ export interface LocationReceivedPayload {
   locationName?: string;
   locationAddress?: string;
   mapThumbnailUrl?: string;
-  /** @deprecated Use locationName/locationAddress instead. */
-  label?: string;
-  /** @deprecated Use locationName/locationAddress instead. */
-  name?: string;
-  /** @deprecated Use locationName/locationAddress instead. */
-  address?: string;
-  /** @deprecated Use latitude/longitude instead. */
-  lat?: number;
-  /** @deprecated Use latitude/longitude instead. */
-  lng?: number;
   messageId?: string;
 }
 
@@ -196,16 +165,6 @@ export interface LocationSentPayload {
   locationName?: string;
   locationAddress?: string;
   mapThumbnailUrl?: string;
-  /** @deprecated Use locationName/locationAddress instead. */
-  label?: string;
-  /** @deprecated Use locationName/locationAddress instead. */
-  name?: string;
-  /** @deprecated Use locationName/locationAddress instead. */
-  address?: string;
-  /** @deprecated Use latitude/longitude instead. */
-  lat?: number;
-  /** @deprecated Use latitude/longitude instead. */
-  lng?: number;
   messageId?: string;
 }
 
@@ -214,35 +173,27 @@ export interface TypingPayload {
   actor: string;
 }
 
-export interface ReactPayload {
-  conversationId: string;
-  emoji: string;
-  messageRef?: MessageReference;
-}
-
 export interface ReadPayload {
   conversationId: string;
-  messageId?: string;
 }
 
 export interface MessageDeletedPayload {
   conversationId: string;
-  messageRef?: MessageReference;
-  messageId?: string;
+  messageId: string;
   deletedForEveryone?: boolean;
   deletedBy?: string;
 }
 
 export interface MessageEditedPayload {
   conversationId: string;
-  messageRef?: MessageReference;
-  messageId?: string;
+  messageId: string;
   newText: string;
 }
 
 export interface MessageForwardedPayload {
   conversationId: string;
-  messageRef?: MessageReference;
+  sourceMessageId: string;
+  /** Stable ID for the newly-created forwarded message. */
   messageId?: string;
   text?: string;
   messageType?: string;
@@ -252,16 +203,58 @@ export interface MessageForwardedPayload {
   gifUrl?: string;
 }
 
-export interface VoicePlayPayload {
+export interface MediaLifecyclePayload {
   conversationId: string;
-  messageId?: string;
-  messageRef?: MessageReference;
-  startAt?: number;
+  messageId: string;
+  progress?: number;
+  failureReason?: string;
 }
 
-export interface VoicePausePayload {
+export interface MediaViewerOpenedPayload {
   conversationId: string;
-  messageId?: string;
+  messageId: string;
+}
+
+export type MediaViewerClosedPayload = Record<string, never>;
+
+export interface StatusViewerOpenedPayload {
+  statusId: string;
+}
+
+export interface StatusViewerAdvancedPayload {
+  direction: "next" | "previous";
+}
+
+export type StatusViewerClosedPayload = Record<string, never>;
+
+export interface GestureStartedPayload {
+  conversationId: string;
+  messageId: string;
+  gesture: WhatsAppMessageGesture;
+}
+
+export interface GestureUpdatedPayload {
+  conversationId: string;
+  messageId: string;
+  progress: number;
+}
+
+export interface GestureCompletedPayload {
+  conversationId: string;
+  messageId: string;
+}
+
+export interface GestureCancelledPayload {
+  conversationId: string;
+  messageId: string;
+}
+
+export interface ReplyComposerDismissedPayload {
+  conversationId: string;
+}
+
+export interface SetLocalePayload {
+  locale: WhatsAppLocale;
 }
 
 export interface ConversationOpenedPayload {
@@ -272,18 +265,12 @@ export interface NavigateScreenPayload {
   screen:
     | "chats"
     | "updates"
-    | "status"
     | "calls"
     | "communities"
     | "settings"
     | "profile"
     | "chat";
   conversationId?: string;
-}
-
-export interface DateSeparatorPayload {
-  conversationId: string;
-  text?: string;
 }
 
 export interface GroupMemberAddedPayload {
@@ -300,13 +287,28 @@ export interface GroupMemberRemovedPayload {
   removedBy?: string;
 }
 
+export interface GroupAdminChangedPayload {
+  conversationId: string;
+  memberId: string;
+  memberName?: string;
+  action: "promote" | "demote";
+  changedBy: string;
+}
+
+export interface GroupInfoUpdatedPayload {
+  conversationId: string;
+  field: "name" | "avatar" | "description";
+  newValue: string;
+  changedBy: string;
+}
+
 export interface PinPayload {
   conversationId: string;
 }
 
 export interface MutePayload {
   conversationId: string;
-  until?: number;
+  until?: string;
 }
 
 export interface ArchivePayload {
@@ -330,11 +332,15 @@ export interface MessageReadPayload {
   messageId: string;
 }
 
-export interface VoiceMessageReceivedPayload {
+export interface MessageDeliveryFailedPayload {
   conversationId: string;
-  from: string;
-  duration: number;
-  messageId?: string;
+  messageId: string;
+  failureReason: string;
+}
+
+export interface MessageRetryPayload {
+  conversationId: string;
+  messageId: string;
 }
 
 export type WhatsAppEventMap = {
@@ -358,20 +364,35 @@ export type WhatsAppEventMap = {
   LOCATION_SENT: LocationSentPayload;
   TYPING_START: TypingPayload;
   TYPING_END: TypingPayload;
-  REACT: ReactPayload;
   READ: ReadPayload;
-  READ_MESSAGES: ReadPayload;
   MESSAGE_DELETED: MessageDeletedPayload;
   MESSAGE_EDITED: MessageEditedPayload;
   MESSAGE_FORWARDED: MessageForwardedPayload;
-  VOICE_PLAY: VoicePlayPayload;
-  VOICE_PAUSE: VoicePausePayload;
+  MEDIA_DOWNLOAD_STARTED: MediaLifecyclePayload;
+  MEDIA_DOWNLOAD_PROGRESS: MediaLifecyclePayload;
+  MEDIA_DOWNLOAD_COMPLETED: MediaLifecyclePayload;
+  MEDIA_DOWNLOAD_FAILED: MediaLifecyclePayload;
+  MEDIA_PLAYBACK_STARTED: MediaLifecyclePayload;
+  MEDIA_PLAYBACK_PROGRESS: MediaLifecyclePayload;
+  MEDIA_PLAYBACK_PAUSED: MediaLifecyclePayload;
+  MEDIA_PLAYBACK_COMPLETED: MediaLifecyclePayload;
+  MEDIA_VIEWER_OPENED: MediaViewerOpenedPayload;
+  MEDIA_VIEWER_CLOSED: MediaViewerClosedPayload;
+  STATUS_VIEWER_OPENED: StatusViewerOpenedPayload;
+  STATUS_VIEWER_ADVANCED: StatusViewerAdvancedPayload;
+  STATUS_VIEWER_CLOSED: StatusViewerClosedPayload;
+  GESTURE_STARTED: GestureStartedPayload;
+  GESTURE_UPDATED: GestureUpdatedPayload;
+  GESTURE_COMPLETED: GestureCompletedPayload;
+  GESTURE_CANCELLED: GestureCancelledPayload;
+  REPLY_COMPOSER_DISMISSED: ReplyComposerDismissedPayload;
+  SET_LOCALE: SetLocalePayload;
   CONVERSATION_OPENED: ConversationOpenedPayload;
   NAVIGATE_SCREEN: NavigateScreenPayload;
-  GO_BACK: Record<string, never>;
-  DATE_SEPARATOR: DateSeparatorPayload;
   GROUP_MEMBER_ADDED: GroupMemberAddedPayload;
   GROUP_MEMBER_REMOVED: GroupMemberRemovedPayload;
+  GROUP_ADMIN_CHANGED: GroupAdminChangedPayload;
+  GROUP_INFO_UPDATED: GroupInfoUpdatedPayload;
   PIN_CONVERSATION: PinPayload;
   UNPIN_CONVERSATION: PinPayload;
   MUTE_CONVERSATION: MutePayload;
@@ -381,7 +402,9 @@ export type WhatsAppEventMap = {
   SET_DRAFT: DraftPayload;
   REACTION_ADDED: ReactionAddedPayload;
   MESSAGE_READ: MessageReadPayload;
-  VOICE_MESSAGE_RECEIVED: VoiceMessageReceivedPayload;
+  MESSAGE_DELIVERY_FAILED: MessageDeliveryFailedPayload;
+  MESSAGE_RETRY_STARTED: MessageRetryPayload;
+  MESSAGE_RETRY_COMPLETED: MessageRetryPayload;
 };
 
 export type WhatsAppEventType = keyof WhatsAppEventMap;
@@ -401,7 +424,6 @@ export type WhatsAppTrackEvent = TrackEventBase & {
   kind: "APP";
   appId: "app_whatsapp";
   deviceId: string;
-  conversationId?: string;
 } & (
     | { type: "MESSAGE_RECEIVED"; payload: MessageReceivedPayload }
     | { type: "MESSAGE_SENT"; payload: MessageSentPayload }
@@ -423,20 +445,35 @@ export type WhatsAppTrackEvent = TrackEventBase & {
     | { type: "LOCATION_SENT"; payload: LocationSentPayload }
     | { type: "TYPING_START"; payload: TypingPayload }
     | { type: "TYPING_END"; payload: TypingPayload }
-    | { type: "REACT"; payload: ReactPayload }
     | { type: "READ"; payload: ReadPayload }
-    | { type: "READ_MESSAGES"; payload: ReadPayload }
     | { type: "MESSAGE_DELETED"; payload: MessageDeletedPayload }
     | { type: "MESSAGE_EDITED"; payload: MessageEditedPayload }
     | { type: "MESSAGE_FORWARDED"; payload: MessageForwardedPayload }
-    | { type: "VOICE_PLAY"; payload: VoicePlayPayload }
-    | { type: "VOICE_PAUSE"; payload: VoicePausePayload }
+    | { type: "MEDIA_DOWNLOAD_STARTED"; payload: MediaLifecyclePayload }
+    | { type: "MEDIA_DOWNLOAD_PROGRESS"; payload: MediaLifecyclePayload }
+    | { type: "MEDIA_DOWNLOAD_COMPLETED"; payload: MediaLifecyclePayload }
+    | { type: "MEDIA_DOWNLOAD_FAILED"; payload: MediaLifecyclePayload }
+    | { type: "MEDIA_PLAYBACK_STARTED"; payload: MediaLifecyclePayload }
+    | { type: "MEDIA_PLAYBACK_PROGRESS"; payload: MediaLifecyclePayload }
+    | { type: "MEDIA_PLAYBACK_PAUSED"; payload: MediaLifecyclePayload }
+    | { type: "MEDIA_PLAYBACK_COMPLETED"; payload: MediaLifecyclePayload }
+    | { type: "MEDIA_VIEWER_OPENED"; payload: MediaViewerOpenedPayload }
+    | { type: "MEDIA_VIEWER_CLOSED"; payload: MediaViewerClosedPayload }
+    | { type: "STATUS_VIEWER_OPENED"; payload: StatusViewerOpenedPayload }
+    | { type: "STATUS_VIEWER_ADVANCED"; payload: StatusViewerAdvancedPayload }
+    | { type: "STATUS_VIEWER_CLOSED"; payload: StatusViewerClosedPayload }
+    | { type: "GESTURE_STARTED"; payload: GestureStartedPayload }
+    | { type: "GESTURE_UPDATED"; payload: GestureUpdatedPayload }
+    | { type: "GESTURE_COMPLETED"; payload: GestureCompletedPayload }
+    | { type: "GESTURE_CANCELLED"; payload: GestureCancelledPayload }
+    | { type: "REPLY_COMPOSER_DISMISSED"; payload: ReplyComposerDismissedPayload }
+    | { type: "SET_LOCALE"; payload: SetLocalePayload }
     | { type: "CONVERSATION_OPENED"; payload: ConversationOpenedPayload }
     | { type: "NAVIGATE_SCREEN"; payload: NavigateScreenPayload }
-    | { type: "GO_BACK"; payload: Record<string, never> }
-    | { type: "DATE_SEPARATOR"; payload: DateSeparatorPayload }
     | { type: "GROUP_MEMBER_ADDED"; payload: GroupMemberAddedPayload }
     | { type: "GROUP_MEMBER_REMOVED"; payload: GroupMemberRemovedPayload }
+    | { type: "GROUP_ADMIN_CHANGED"; payload: GroupAdminChangedPayload }
+    | { type: "GROUP_INFO_UPDATED"; payload: GroupInfoUpdatedPayload }
     | { type: "PIN_CONVERSATION"; payload: PinPayload }
     | { type: "UNPIN_CONVERSATION"; payload: PinPayload }
     | { type: "MUTE_CONVERSATION"; payload: MutePayload }
@@ -446,7 +483,9 @@ export type WhatsAppTrackEvent = TrackEventBase & {
     | { type: "SET_DRAFT"; payload: DraftPayload }
     | { type: "REACTION_ADDED"; payload: ReactionAddedPayload }
     | { type: "MESSAGE_READ"; payload: MessageReadPayload }
-    | { type: "VOICE_MESSAGE_RECEIVED"; payload: VoiceMessageReceivedPayload }
+    | { type: "MESSAGE_DELIVERY_FAILED"; payload: MessageDeliveryFailedPayload }
+    | { type: "MESSAGE_RETRY_STARTED"; payload: MessageRetryPayload }
+    | { type: "MESSAGE_RETRY_COMPLETED"; payload: MessageRetryPayload }
   );
 
 export function isWhatsAppEvent(event: unknown): event is WhatsAppTrackEvent {

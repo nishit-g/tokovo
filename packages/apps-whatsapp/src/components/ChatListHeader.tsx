@@ -1,13 +1,18 @@
 import React from "react";
 import { CameraFillIcon, ComposeIcon, SearchIcon } from "./Icons.js";
-import { spacing, typography } from "./theme.js";
-import { useTheme } from "../theme/ThemeContext.js";
+import {
+  useTheme,
+  useWhatsAppLocale,
+  useWhatsAppPresentation,
+} from "../experience/ExperienceContext.js";
+import type { WhatsAppChatFilter } from "../presentation/strategy.js";
 
 export interface ChatListHeaderProps {
   safeAreaTop?: number;
-  activeFilter?: "all" | "unread" | "favorites" | "groups";
-  onFilterChange?: (filter: "all" | "unread" | "favorites" | "groups") => void;
+  activeFilter?: WhatsAppChatFilter;
+  onFilterChange?: (filter: WhatsAppChatFilter) => void;
   showEditButton?: boolean;
+  showDraftsFilter?: boolean;
 }
 
 const FilterChip: React.FC<{
@@ -16,12 +21,16 @@ const FilterChip: React.FC<{
   onClick?: () => void;
 }> = ({ label, isActive, onClick }) => {
   const theme = useTheme();
+  const { uiSpacing: spacing, uiTypography: typography } = theme;
   const activeBg = `${theme.colors.accent}1A`;
 
   return (
-    <div
+    <button
+      type="button"
       onClick={onClick}
+      aria-pressed={isActive}
       style={{
+        appearance: "none",
         padding: `${spacing.filterChipPaddingY}px ${spacing.filterChipPaddingX}px`,
         backgroundColor: isActive ? activeBg : theme.colors.background,
         borderRadius: spacing.filterChipRadius,
@@ -40,7 +49,7 @@ const FilterChip: React.FC<{
       }}
     >
       {label}
-    </div>
+    </button>
   );
 };
 
@@ -49,14 +58,29 @@ export const ChatListHeader: React.FC<ChatListHeaderProps> = ({
   activeFilter = "all",
   onFilterChange,
   showEditButton = false,
+  showDraftsFilter = false,
 }) => {
   const theme = useTheme();
-  const filters = [
-    { id: "all", label: "All" },
-    { id: "unread", label: "Unread" },
-    { id: "favorites", label: "Favorites" },
-    { id: "groups", label: "Groups" },
-  ] as const;
+  const { t } = useWhatsAppLocale();
+  const { uiSpacing: spacing, uiTypography: typography } = theme;
+  const presentation = useWhatsAppPresentation();
+  const filterLabels: Record<WhatsAppChatFilter, string> = {
+    all: t("filter.all"),
+    unread: t("filter.unread"),
+    favorites: t("filter.favorites"),
+    groups: t("filter.groups"),
+    drafts: t("filter.drafts"),
+  };
+  const filters = presentation.chatList.filters
+    .filter((id) => id !== "drafts" || showDraftsFilter)
+    .map((id) => ({
+      id,
+      label: filterLabels[id],
+    }));
+  const usesToolbarTitle = presentation.chatList.titleStyle === "toolbar";
+  const headerActionColor = usesToolbarTitle
+    ? theme.colors.headerText
+    : theme.colors.accent;
 
   return (
     <div
@@ -84,10 +108,24 @@ export const ChatListHeader: React.FC<ChatListHeaderProps> = ({
           boxSizing: "border-box",
         }}
       >
-        <div style={{ width: 60 }}>
-          {showEditButton && (
-            <div
+        <div
+          style={{
+            minWidth: 60,
+            color: theme.colors.headerText,
+            fontFamily: theme.typography.fontFamily,
+            fontSize: usesToolbarTitle ? 20 : 17,
+            fontWeight: usesToolbarTitle ? 600 : 400,
+          }}
+        >
+          {usesToolbarTitle ? (
+            t("app.name")
+          ) : showEditButton ? (
+            <button
+              type="button"
               style={{
+                padding: 0,
+                border: 0,
+                background: "transparent",
                 color: theme.colors.accent,
                 fontSize: 17,
                 fontWeight: "400",
@@ -95,9 +133,9 @@ export const ChatListHeader: React.FC<ChatListHeaderProps> = ({
                 fontFamily: theme.typography.fontFamily,
               }}
             >
-              Edit
-            </div>
-          )}
+              {t("action.edit")}
+            </button>
+          ) : null}
         </div>
 
         <div
@@ -107,27 +145,51 @@ export const ChatListHeader: React.FC<ChatListHeaderProps> = ({
             alignItems: "center",
           }}
         >
-          <div style={{ cursor: "pointer", display: "flex", alignItems: "center" }}>
-            <CameraFillIcon color={theme.colors.accent} />
-          </div>
-          <div style={{ cursor: "pointer", display: "flex", alignItems: "center" }}>
-            <ComposeIcon color={theme.colors.accent} size={24} />
-          </div>
+          <button
+            type="button"
+            aria-label={t("action.camera")}
+            style={{
+              padding: 0,
+              border: 0,
+              background: "transparent",
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+            }}
+          >
+            <CameraFillIcon color={headerActionColor} />
+          </button>
+          <button
+            type="button"
+            aria-label={t("action.newChat")}
+            style={{
+              padding: 0,
+              border: 0,
+              background: "transparent",
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+            }}
+          >
+            <ComposeIcon color={headerActionColor} size={24} />
+          </button>
         </div>
       </div>
 
-      <div
-        style={{
-          padding: `4px ${spacing.pagePaddingWide}px 10px ${spacing.pagePaddingWide}px`,
-          ...typography.largeTitle,
-          color: theme.colors.receivedBubbleText,
-          display: "flex",
-          alignItems: "center",
-          fontFamily: theme.typography.fontFamily,
-        }}
-      >
-        Chats
-      </div>
+      {!usesToolbarTitle && (
+        <div
+          style={{
+            padding: `4px ${spacing.pagePaddingWide}px 10px ${spacing.pagePaddingWide}px`,
+            ...typography.largeTitle,
+            color: theme.colors.receivedBubbleText,
+            display: "flex",
+            alignItems: "center",
+            fontFamily: theme.typography.fontFamily,
+          }}
+        >
+          {t("nav.chats")}
+        </div>
+      )}
 
       <div
         style={{
@@ -149,14 +211,14 @@ export const ChatListHeader: React.FC<ChatListHeaderProps> = ({
           <SearchIcon color={theme.colors.timestamp} size={16} />
           <div
             style={{
-              marginLeft: spacing.searchIconGap,
+              marginInlineStart: spacing.searchIconGap,
               fontSize: 17,
               color: theme.colors.timestamp,
               flex: 1,
               fontFamily: theme.typography.fontFamily,
             }}
           >
-            Search
+            {t("action.search")}
           </div>
         </div>
       </div>

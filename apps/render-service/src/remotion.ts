@@ -21,7 +21,10 @@ import { createPresignedAssetUrlMap } from "./storage";
 
 let serveUrlPromise: Promise<string> | null = null;
 let serveUrlSignature = "";
-let browserPromise: Promise<Awaited<ReturnType<typeof openBrowser>>> | null = null;
+const browserPromises = new Map<
+  RenderProfile["chromiumGl"],
+  Promise<Awaited<ReturnType<typeof openBrowser>>>
+>();
 
 function getEpisodeAssetSources(episodeId: string): string[] {
   return getEpisodeAssetRefs(episodeId).map((ref: { src: string }) => ref.src);
@@ -103,7 +106,11 @@ export async function getServeUrl(
   return { serveUrl, sourceSignature };
 }
 
-export async function getBrowser(logger?: RenderLogger) {
+export async function getBrowser(
+  chromiumGl: RenderProfile["chromiumGl"] = "angle",
+  logger?: RenderLogger,
+) {
+  let browserPromise = browserPromises.get(chromiumGl);
   if (!browserPromise) {
     await logger?.info("browser.launch", "Launching reusable render browser", {
       browserExecutable: getBrowserExecutable() ?? "auto",
@@ -112,12 +119,12 @@ export async function getBrowser(logger?: RenderLogger) {
       browserExecutable: getBrowserExecutable(),
       chromeMode: "headless-shell",
       chromiumOptions: {
-        gl: "angle",
+        gl: chromiumGl,
         enableMultiProcessOnLinux: false,
       },
       logLevel: "error",
     }).catch((error) => {
-      browserPromise = null;
+      browserPromises.delete(chromiumGl);
       throw createRenderServiceError({
         code: "BROWSER_LAUNCH_FAILED",
         stage: "browser",
@@ -129,6 +136,7 @@ export async function getBrowser(logger?: RenderLogger) {
         cause: error instanceof Error ? error : undefined,
       });
     });
+    browserPromises.set(chromiumGl, browserPromise);
   }
 
   const browser = await browserPromise;
@@ -139,10 +147,14 @@ export async function getBrowser(logger?: RenderLogger) {
 }
 
 export async function closeBrowser(): Promise<void> {
-  if (!browserPromise) return;
-  const browser = await browserPromise;
-  await browser.close({ silent: true });
-  browserPromise = null;
+  const browsers = [...browserPromises.values()];
+  browserPromises.clear();
+  await Promise.all(
+    browsers.map(async (browserPromise) => {
+      const browser = await browserPromise;
+      await browser.close({ silent: true });
+    }),
+  );
 }
 
 export async function renderEpisodeMedia(input: {
@@ -152,7 +164,7 @@ export async function renderEpisodeMedia(input: {
   posterLocation: string;
   logger: RenderLogger;
 }) {
-  const browser = await getBrowser(input.logger);
+  const browser = await getBrowser(input.profile.chromiumGl, input.logger);
   const publicAssetBaseUrl = getPublicAssetBaseUrl();
   const assetSources = getEpisodeAssetSources(input.episodeId);
   const presignedAssetUrlMap = await createPresignedAssetUrlMap(

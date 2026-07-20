@@ -1,7 +1,7 @@
 import React from "react";
 import { Img, staticFile } from "remotion";
 import { resolveStaticAssetSrc } from "@tokovo/core";
-import { useTheme } from "../theme/ThemeContext.js";
+import { useTheme } from "../experience/ExperienceContext.js";
 
 export interface LinkPreviewData {
   url: string;

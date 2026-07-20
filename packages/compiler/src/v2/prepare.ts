@@ -18,7 +18,12 @@ import type {
   TokovoConfigType,
   AutoSoundRule,
 } from "@tokovo/core";
-import { DEFAULT_CAMERA_STATE, DEFAULT_AUDIO_STATE, createScopedLogger } from "@tokovo/core";
+import {
+  DEFAULT_AUDIO_STATE,
+  DEFAULT_CAMERA_STATE,
+  DEFAULT_OS_STATE,
+  createScopedLogger,
+} from "@tokovo/core";
 import {
   compareEvents,
   createEventIndex,
@@ -28,7 +33,10 @@ import {
 } from "@tokovo/core";
 import { lowerEpisode } from "./lowering.js";
 import { validateV1RuntimeEpisode } from "./validation.js";
-import { CompilerSchemaValidationError, RuntimeValidationError } from "./errors.js";
+import {
+  CompilerSchemaValidationError,
+  RuntimeValidationError,
+} from "./errors.js";
 import { collectEpisodeAssetRefs } from "./asset-refs.js";
 
 const log = createScopedLogger("compiler");
@@ -177,7 +185,10 @@ export function prepareTrackEpisode(
     durationInFrames: ir.durationInFrames,
     events: sortedEvents,
     eventIndex: createEventIndex(sortedEvents),
-    keyframedEventIndex: createKeyframedEventIndex(sortedEvents, keyframeInterval),
+    keyframedEventIndex: createKeyframedEventIndex(
+      sortedEvents,
+      keyframeInterval,
+    ),
     keyframeInterval,
     eventSignature,
     initialWorld,
@@ -194,12 +205,26 @@ export function prepareTrackEpisode(
 /**
  * Build initial WorldState from TrackEpisodeIR device configs.
  */
-function buildInitialWorld(ir: TrackEpisodeIR, plugins: TokovoPlugin[]): WorldState {
+function buildInitialWorld(
+  ir: TrackEpisodeIR,
+  plugins: TokovoPlugin[],
+): WorldState {
   const devices: Record<string, DeviceState> = {};
   for (const device of ir.devices) {
     const platform = device.profile.includes("pixel") ? "android" : "ios";
     const installedApps = device.installedApps ?? [];
-    const hasHomeScreen = Boolean(device.homeScreen) || installedApps.length > 0;
+    const hasHomeScreen =
+      Boolean(device.homeScreen) || installedApps.length > 0;
+    const authoredTime = device.os?.time;
+    const clock =
+      authoredTime instanceof Date
+        ? authoredTime.getTime()
+        : (authoredTime ?? DEFAULT_OS_STATE.clock);
+    const network =
+      device.os?.network === "none"
+        ? "no-service"
+        : (device.os?.network ?? DEFAULT_OS_STATE.network);
+    const strength = device.os?.strength;
 
     devices[device.id] = {
       id: device.id,
@@ -208,7 +233,26 @@ function buildInitialWorld(ir: TrackEpisodeIR, plugins: TokovoPlugin[]): WorldSt
       isLocked: device.locked ?? false,
       platform,
       appTheme: device.theme,
+      appAppearance: device.appearance,
       notifications: [],
+      os: {
+        ...DEFAULT_OS_STATE,
+        clock,
+        battery: device.os?.battery ?? DEFAULT_OS_STATE.battery,
+        charging: device.os?.charging ?? DEFAULT_OS_STATE.charging,
+        network,
+        wifiStrength:
+          network === "wifi" && strength !== undefined
+            ? strength
+            : DEFAULT_OS_STATE.wifiStrength,
+        cellStrength:
+          network !== "wifi" && strength !== undefined
+            ? strength
+            : DEFAULT_OS_STATE.cellStrength,
+        dnd: device.os?.dnd ?? DEFAULT_OS_STATE.dnd,
+        notifications: [],
+        notificationHistory: [],
+      },
       keyboard: {
         visible: false,
         showFrame: null,
@@ -224,7 +268,8 @@ function buildInitialWorld(ir: TrackEpisodeIR, plugins: TokovoPlugin[]): WorldSt
       homeScreen: hasHomeScreen
         ? buildHomeScreenConfig({
             platform,
-            installedApps: installedApps.length > 0 ? installedApps : [device.app],
+            installedApps:
+              installedApps.length > 0 ? installedApps : [device.app],
             wallpaper: device.homeScreen?.wallpaper,
             dock: device.homeScreen?.dock,
             pages: device.homeScreen?.pages,
@@ -246,21 +291,32 @@ function buildInitialWorld(ir: TrackEpisodeIR, plugins: TokovoPlugin[]): WorldSt
     ...DEFAULT_CAMERA_STATE,
     activeDeviceId: firstDeviceId,
     layout: {
-      ...(DEFAULT_CAMERA_STATE.layout ?? { mode: "SINGLE", primaryDeviceId: firstDeviceId }),
+      ...(DEFAULT_CAMERA_STATE.layout ?? {
+        mode: "SINGLE",
+        primaryDeviceId: firstDeviceId,
+      }),
       primaryDeviceId: firstDeviceId,
     },
   };
   const audio = { ...DEFAULT_AUDIO_STATE };
 
-  const pluginsById = new Map<string, TokovoPlugin>(plugins.map((p) => [p.id, p]));
+  const pluginsById = new Map<string, TokovoPlugin>(
+    plugins.map((p) => [p.id, p]),
+  );
 
   const appState: Record<string, unknown> = {};
   const hydratedAppInstances = new Map<
     string,
     Array<{ deviceId: string; state: Record<string, unknown> }>
   >();
-  const snapshotEntries = new Map<string, import("@tokovo/ir").AppSnapshotEntry>();
-  const initialViewEntries = new Map<string, import("@tokovo/ir").AppInitialViewEntry>();
+  const snapshotEntries = new Map<
+    string,
+    import("@tokovo/ir").AppSnapshotEntry
+  >();
+  const initialViewEntries = new Map<
+    string,
+    import("@tokovo/ir").AppInitialViewEntry
+  >();
 
   for (const entry of ir.appSnapshots) {
     snapshotEntries.set(`${entry.appId}:${entry.deviceId}`, entry);
@@ -584,15 +640,30 @@ function resolveVersionedBootstrapValue(input: {
 }
 
 const DEFAULT_DEVICE_SFX_RULES: AutoSoundRule[] = [
-  { match: { kind: "DEVICE", type: "LOCK" }, action: "PLAY_ONE_SHOT", sound: "lock", bus: "sfx" },
+  {
+    match: { kind: "DEVICE", type: "LOCK" },
+    action: "PLAY_ONE_SHOT",
+    sound: "lock",
+    bus: "sfx",
+  },
   {
     match: { kind: "DEVICE", type: "UNLOCK" },
     action: "PLAY_ONE_SHOT",
     sound: "unlock",
     bus: "sfx",
   },
-  { match: { kind: "DEVICE", type: "OPEN_APP" }, action: "PLAY_ONE_SHOT", sound: "tap", bus: "ui" },
-  { match: { kind: "DEVICE", type: "GO_HOME" }, action: "PLAY_ONE_SHOT", sound: "tap", bus: "ui" },
+  {
+    match: { kind: "DEVICE", type: "OPEN_APP" },
+    action: "PLAY_ONE_SHOT",
+    sound: "tap",
+    bus: "ui",
+  },
+  {
+    match: { kind: "DEVICE", type: "GO_HOME" },
+    action: "PLAY_ONE_SHOT",
+    sound: "tap",
+    bus: "ui",
+  },
 ];
 
 function buildHomeScreenConfig(input: {

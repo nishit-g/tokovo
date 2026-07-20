@@ -8,6 +8,7 @@ export type HandlerContext = {
   conversation: WhatsAppConversation;
   addMessage: (msg: WhatsAppMessage) => void;
   getMessageById: (id: string) => WhatsAppMessage | undefined;
+  requireMessageById: (id: string, operation: string) => WhatsAppMessage;
   generateTimestamp: (at: number) => string;
 };
 
@@ -20,7 +21,7 @@ export type HandlerMap = Record<string, EventHandler>;
 
 export type MutableHandlerRegistry = {
   registerHandler<T extends AnyWhatsAppEvent>(
-    kind: T["kind"],
+    type: T["type"],
     handler: EventHandler<T>,
   ): void;
 };
@@ -35,10 +36,13 @@ export function createWhatsAppHandlerRegistry(): HandlerRegistry {
 
   return {
     registerHandler<T extends AnyWhatsAppEvent>(
-      kind: T["kind"],
+      type: T["type"],
       handler: EventHandler<T>,
     ): void {
-      handlers[kind] = handler as EventHandler;
+      if (handlers[type]) {
+        throw new Error(`WhatsApp handler "${type}" is already registered`);
+      }
+      handlers[type] = handler as EventHandler;
     },
     getHandler(kind: string): EventHandler | undefined {
       return handlers[kind];

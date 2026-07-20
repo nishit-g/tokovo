@@ -301,12 +301,17 @@ const TokovoRendererInner: React.FC<TokovoRendererProps> = ({
       return "dark";
     }
     const fallbackTheme =
-      variant === "android" ? "dark" : device.isLocked || !!device.homeScreen ? "dark" : "light";
+      device.appAppearance === "dark" ||
+      variant === "android" ||
+      device.isLocked ||
+      !!device.homeScreen
+        ? "dark"
+        : "light";
     if (!appId) return fallbackTheme;
     const state = renderWorld.appState?.[appId];
     if (!state || typeof state === "string") return fallbackTheme;
     const theme = (state as { statusBarTheme?: "light" | "dark" }).statusBarTheme;
-    return theme === "dark" ? "dark" : "light";
+    return theme === "dark" || theme === "light" ? theme : fallbackTheme;
   })();
 
   const StatusBarStrategy = deviceRegistries.statusBars.getWithFallback(variant, "ios");
@@ -390,6 +395,7 @@ const TokovoRendererInner: React.FC<TokovoRendererProps> = ({
                           deviceId={deviceId}
                           appId={appId}
                           t={t}
+                          fps={fps}
                           layout={layout}
                           platform={variant}
                           safeAreaInsets={{

@@ -1,11 +1,6 @@
 import React from "react";
-import {
-  HomeScreenConfig,
-  AppIcon,
-  AppFolder,
-  Platform,
-  getAppConfig,
-} from "@tokovo/core";
+import { DeterministicImage } from "@tokovo/react";
+import { HomeScreenConfig, AppIcon, AppFolder, Platform, getAppConfig } from "@tokovo/core";
 
 interface HomeScreenStyleConfig {
   gridColumns: number;
@@ -43,11 +38,7 @@ interface AppIconItemProps {
   styleConfig: HomeScreenStyleConfig;
 }
 
-const AppIconItem: React.FC<AppIconItemProps> = ({
-  app,
-  size,
-  styleConfig,
-}) => {
+const AppIconItem: React.FC<AppIconItemProps> = ({ app, size, styleConfig }) => {
   const iconSize = size || styleConfig.iconSize;
   // Android icons are often circular or different shape; iOS are rounded rects
   const isEmoji = /^\p{Emoji}/u.test(app.icon);
@@ -74,16 +65,26 @@ const AppIconItem: React.FC<AppIconItemProps> = ({
           borderRadius: radius,
           position: "relative",
           backgroundColor: isEmoji ? "rgba(255,255,255,0.15)" : "#333",
-          backgroundImage: !isEmoji ? `url(${app.icon})` : undefined,
-          backgroundSize: "cover",
+          overflow: "hidden",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
         }}
       >
-        {isEmoji && (
-          <span style={{ fontSize: iconSize * 0.5 }}>{app.icon}</span>
-        )}
+        {!isEmoji ? (
+          <DeterministicImage
+            src={app.icon}
+            alt=""
+            style={{
+              position: "absolute",
+              inset: 0,
+              width: "100%",
+              height: "100%",
+              objectFit: "cover",
+            }}
+          />
+        ) : null}
+        {isEmoji && <span style={{ fontSize: iconSize * 0.5 }}>{app.icon}</span>}
 
         {/* Badge - Keeping hardcoded red for now as it's standard notification color */}
         {app.badge && app.badge > 0 && (
@@ -103,8 +104,7 @@ const AppIconItem: React.FC<AppIconItemProps> = ({
               alignItems: "center",
               justifyContent: "center",
               padding: `0 ${15 * scale}px`,
-              fontFamily:
-                "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif",
+              fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif",
             }}
           >
             {app.badge > 99 ? "99+" : app.badge}
@@ -122,8 +122,7 @@ const AppIconItem: React.FC<AppIconItemProps> = ({
           overflow: "hidden",
           textOverflow: "ellipsis",
           whiteSpace: "nowrap",
-          fontFamily:
-            "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif",
+          fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif",
           textShadow: "0 1px 4px rgba(0,0,0,0.4)",
         }}
       >
@@ -143,11 +142,7 @@ interface FolderItemProps {
   styleConfig: HomeScreenStyleConfig;
 }
 
-const FolderItem: React.FC<FolderItemProps> = ({
-  folder,
-  size,
-  styleConfig,
-}) => {
+const FolderItem: React.FC<FolderItemProps> = ({ folder, size, styleConfig }) => {
   const iconSize = size || styleConfig.iconSize;
   const miniSize = (iconSize - 30) / 3; // Approx calculation for 3x3 grid
   const scale = iconSize / styleConfig.iconSize;
@@ -188,17 +183,22 @@ const FolderItem: React.FC<FolderItemProps> = ({
               height: miniSize,
               borderRadius: miniSize * styleConfig.folderMiniIconRadius,
               backgroundColor: "rgba(255,255,255,0.3)",
-              backgroundImage: !/^\p{Emoji}/u.test(app.icon)
-                ? `url(${app.icon})`
-                : undefined,
-              backgroundSize: "cover",
+              overflow: "hidden",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
               fontSize: miniSize * 0.6,
             }}
           >
-            {/^\p{Emoji}/u.test(app.icon) && app.icon}
+            {!/^\p{Emoji}/u.test(app.icon) ? (
+              <DeterministicImage
+                src={app.icon}
+                alt=""
+                style={{ width: "100%", height: "100%", objectFit: "cover" }}
+              />
+            ) : (
+              app.icon
+            )}
           </div>
         ))}
       </div>
@@ -231,6 +231,7 @@ const Dock: React.FC<DockProps> = ({ apps, styleConfig }) => (
   <div
     style={{
       position: "absolute",
+      zIndex: 1,
       bottom: styleConfig.dockBottom,
       left: "50%",
       transform: "translateX(-50%)",
@@ -246,12 +247,7 @@ const Dock: React.FC<DockProps> = ({ apps, styleConfig }) => (
     }}
   >
     {apps.slice(0, 4).map((app, i) => (
-      <AppIconItem
-        key={i}
-        app={app}
-        size={styleConfig.dockIconSize}
-        styleConfig={styleConfig}
-      />
+      <AppIconItem key={i} app={app} size={styleConfig.dockIconSize} styleConfig={styleConfig} />
     ))}
   </div>
 );
@@ -266,11 +262,7 @@ interface PageDotsProps {
   styleConfig: HomeScreenStyleConfig;
 }
 
-const PageDots: React.FC<PageDotsProps> = ({
-  count,
-  activeIndex,
-  styleConfig,
-}) => (
+const PageDots: React.FC<PageDotsProps> = ({ count, activeIndex, styleConfig }) => (
   <div
     style={{
       display: "flex",
@@ -286,9 +278,7 @@ const PageDots: React.FC<PageDotsProps> = ({
           height: styleConfig.dotSize,
           borderRadius: "50%",
           backgroundColor:
-            i === activeIndex
-              ? styleConfig.dotActiveColor
-              : styleConfig.dotInactiveColor,
+            i === activeIndex ? styleConfig.dotActiveColor : styleConfig.dotInactiveColor,
           boxShadow: "0 1px 2px rgba(0,0,0,0.2)",
         }}
       />
@@ -315,15 +305,12 @@ export const HomeScreenView: React.FC<HomeScreenViewProps> = ({
 }) => {
   // Use platform prop if provided, otherwise fallback to variant
   const effectivePlatform = (platform || variant) as Platform;
-  const styleConfig = getAppConfig(
-    "homescreen",
-    effectivePlatform,
-  ) as HomeScreenStyleConfig;
+  const styleConfig = getAppConfig("homescreen", effectivePlatform) as HomeScreenStyleConfig;
 
   const currentPage = config.pages[activePage] || config.pages[0];
   const wallpaper =
-    config.wallpaper ||
-    "linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)";
+    config.wallpaper || "linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)";
+  const hasImageWallpaper = /^(?:https?:\/\/|\/|data:|r2:\/\/)/.test(wallpaper);
 
   return (
     <div
@@ -333,15 +320,26 @@ export const HomeScreenView: React.FC<HomeScreenViewProps> = ({
         left: 0,
         right: 0,
         bottom: 0,
-        background: wallpaper.startsWith("http")
-          ? `url(${wallpaper}) center/cover`
-          : wallpaper,
+        background: hasImageWallpaper ? "#111827" : wallpaper,
         display: "flex",
         flexDirection: "column",
-        fontFamily:
-          "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif",
+        fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif",
       }}
     >
+      {hasImageWallpaper ? (
+        <DeterministicImage
+          src={wallpaper}
+          alt=""
+          style={{
+            position: "absolute",
+            inset: 0,
+            width: "100%",
+            height: "100%",
+            objectFit: "cover",
+            zIndex: 0,
+          }}
+        />
+      ) : null}
       {/* App Grid */}
       <div
         style={{
@@ -353,17 +351,15 @@ export const HomeScreenView: React.FC<HomeScreenViewProps> = ({
           padding: `${styleConfig.gridPaddingTop}px ${styleConfig.gridPaddingHorizontal}px 0`,
           justifyItems: "center",
           overflow: "hidden",
+          position: "relative",
+          zIndex: 1,
         }}
       >
         {currentPage?.apps.map((item, i) =>
           "type" in item && item.type === "folder" ? (
             <FolderItem key={i} folder={item} styleConfig={styleConfig} />
           ) : (
-            <AppIconItem
-              key={i}
-              app={item as AppIcon}
-              styleConfig={styleConfig}
-            />
+            <AppIconItem key={i} app={item as AppIcon} styleConfig={styleConfig} />
           ),
         )}
       </div>
@@ -374,13 +370,11 @@ export const HomeScreenView: React.FC<HomeScreenViewProps> = ({
           display: "flex",
           justifyContent: "center",
           marginBottom: 12,
+          position: "relative",
+          zIndex: 1,
         }}
       >
-        <PageDots
-          count={config.pages.length}
-          activeIndex={activePage}
-          styleConfig={styleConfig}
-        />
+        <PageDots count={config.pages.length} activeIndex={activePage} styleConfig={styleConfig} />
       </div>
 
       {/* Dock */}

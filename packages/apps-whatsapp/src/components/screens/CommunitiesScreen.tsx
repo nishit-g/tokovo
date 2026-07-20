@@ -1,12 +1,24 @@
-import React from "react";
-import { WorldState } from "@tokovo/core";
-import { Img } from "remotion";
-import { spacing, typography } from "../theme.js";
-import { TabNavigation } from "../TabNavigation.js";
-import { PlusCircleIcon } from "../Icons.js";
+import type { WorldState } from "@tokovo/core";
+import { DeterministicImage } from "@tokovo/react";
+import {
+  BellRing,
+  ChevronRight,
+  Megaphone,
+  Plus,
+  Users,
+} from "lucide-react";
+import {
+  useTheme,
+  useWhatsAppLocale,
+} from "../../experience/ExperienceContext.js";
+import type {
+  WhatsAppCommunity,
+  WhatsAppConversation,
+  WhatsAppState,
+} from "../../types/index.js";
 import { resolveAvatarWithFallback } from "../../utils/avatar.js";
-import { WhatsAppConversation, WhatsAppState } from "../../types/index.js";
-import { useTheme } from "../../theme/ThemeContext.js";
+import { formatWhatsAppNumber } from "../../localization/index.js";
+import { AppScaffold, EmptyState, SectionHeader } from "../surfaces/index.js";
 
 export interface CommunitiesScreenProps {
   world: WorldState;
@@ -20,190 +32,341 @@ export interface CommunitiesScreenProps {
   height: number;
 }
 
-export const CommunitiesScreen: React.FC<CommunitiesScreenProps> = ({
-  world,
-  safeAreaInsets,
-  width: _width,
-}) => {
+function CommunityGroupRow({
+  conversation,
+  isAnnouncement,
+}: {
+  conversation: WhatsAppConversation;
+  isAnnouncement: boolean;
+}) {
   const theme = useTheme();
-  const safeAreaTop = safeAreaInsets?.top ?? 47;
-  const safeAreaBottom = safeAreaInsets?.bottom ?? 34;
-
-  const appState = (world.appState?.["app_whatsapp"] || {}) as WhatsAppState;
-  const conversations = Object.values(
-    appState.conversations || {},
-  ) as WhatsAppConversation[];
-  const groupConversations = conversations.filter((conv) => conv.type === "group");
+  const { locale, t } = useWhatsAppLocale();
+  const { uiTypography: typography } = theme;
+  const lastMessage = conversation.messages.at(-1);
+  const fallbackGroupName = t("profile.group");
+  const preview =
+    lastMessage?.text ?? conversation.description ?? t("chat.noMessages");
 
   return (
     <div
+      data-community-group-id={conversation.id}
       style={{
-        width: "100%",
-        height: "100%",
-        backgroundColor: theme.colors.headerBackground,
+        minHeight: 62,
+        padding: "7px 12px",
         display: "flex",
-        flexDirection: "column",
-        fontFamily: theme.typography.fontFamily,
+        alignItems: "center",
+        gap: 10,
+        borderTop: `0.5px solid ${theme.colors.divider}`,
       }}
     >
       <div
         style={{
-          paddingTop: safeAreaTop,
-          paddingLeft: spacing.pagePaddingWide,
-          paddingRight: spacing.pagePaddingX,
-          height: spacing.navBarHeight + safeAreaTop,
+          width: 40,
+          height: 40,
           display: "flex",
-          justifyContent: "space-between",
           alignItems: "center",
-          borderBottom: `0.5px solid ${theme.colors.divider}`,
-          backgroundColor: `${theme.colors.headerBackground}F2`,
-          backdropFilter: "blur(20px)",
+          justifyContent: "center",
+          overflow: "hidden",
+          borderRadius: isAnnouncement ? 11 : 20,
+          color: isAnnouncement ? theme.colors.accent : undefined,
+          backgroundColor: isAnnouncement
+            ? `${theme.colors.accent}18`
+            : theme.colors.divider,
+          flexShrink: 0,
         }}
       >
+        {isAnnouncement ? (
+          <Megaphone size={19} />
+        ) : (
+          <DeterministicImage
+            src={resolveAvatarWithFallback(
+              conversation.avatar,
+              conversation.name ?? fallbackGroupName,
+            )}
+            alt={conversation.name ?? fallbackGroupName}
+            style={{ width: "100%", height: "100%", objectFit: "cover" }}
+          />
+        )}
+      </div>
+      <div style={{ flex: 1, minWidth: 0 }}>
         <div
           style={{
-            ...typography.title,
+            ...typography.body,
+            fontWeight: 600,
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            whiteSpace: "nowrap",
             color: theme.colors.receivedBubbleText,
             fontFamily: theme.typography.fontFamily,
           }}
         >
-          Communities
+          {isAnnouncement
+            ? t("communities.announcements")
+            : conversation.name ?? fallbackGroupName}
         </div>
-        <PlusCircleIcon color={theme.colors.accent} />
-      </div>
-
-      <div
-        style={{
-          flex: 1,
-          overflow: "auto",
-          paddingBottom: spacing.tabBarHeight + safeAreaBottom,
-        }}
-      >
         <div
           style={{
-            margin: `${spacing.sectionGap}px ${spacing.pagePaddingX}px`,
-            padding: spacing.sectionGap,
-            backgroundColor: theme.colors.background,
-            borderRadius: 16,
-            border: `1px solid ${theme.colors.divider}`,
-            display: "flex",
-            alignItems: "center",
-            gap: spacing.contentMarginLeft,
-          }}
-        >
-          <div
-            style={{
-              width: 48,
-              height: 48,
-              borderRadius: 12,
-              backgroundColor: `${theme.colors.accent}14`,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-          >
-            <PlusCircleIcon color={theme.colors.accent} />
-          </div>
-          <div>
-            <div
-              style={{
-                ...typography.headline,
-                color: theme.colors.receivedBubbleText,
-                fontFamily: theme.typography.fontFamily,
-              }}
-            >
-              New community
-            </div>
-            <div
-              style={{
-                ...typography.body,
-                color: theme.colors.timestamp,
-                fontFamily: theme.typography.fontFamily,
-              }}
-            >
-              Create a space for multiple groups
-            </div>
-          </div>
-        </div>
-
-        <div
-          style={{
-            padding: `0 ${spacing.pagePaddingX}px 8px`,
             ...typography.caption,
+            marginTop: 1,
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            whiteSpace: "nowrap",
             color: theme.colors.timestamp,
             fontFamily: theme.typography.fontFamily,
           }}
         >
-          Your communities
+          {preview}
         </div>
-
-        {groupConversations.map((conv) => {
-          const subtitle =
-            conv.description ||
-            (conv.members && conv.members.length > 0
-              ? `${conv.members
-                  .map((m) => m.name)
-                  .filter(Boolean)
-                  .slice(0, 3)
-                  .join(", ")}${conv.members.length > 3 ? "…" : ""}`
-              : "Group chat");
-
-          return (
-            <div
-              key={conv.id}
-              style={{
-                padding: `${spacing.sectionGap}px ${spacing.pagePaddingX}px`,
-                backgroundColor: theme.colors.background,
-                borderBottom: `0.5px solid ${theme.colors.divider}`,
-                display: "flex",
-                alignItems: "center",
-                gap: spacing.contentMarginLeft,
-              }}
-            >
-              <div
-                style={{
-                  width: 56,
-                  height: 56,
-                  borderRadius: 16,
-                  overflow: "hidden",
-                  backgroundColor: `${theme.colors.divider}66`,
-                  flexShrink: 0,
-                }}
-              >
-                <Img
-                  src={resolveAvatarWithFallback(conv.avatar, conv.name || "Group")}
-                  alt={conv.name || "Group"}
-                  style={{ width: "100%", height: "100%", objectFit: "cover" }}
-                />
-              </div>
-              <div style={{ flex: 1 }}>
-                <div
-                  style={{
-                    ...typography.headline,
-                    color: theme.colors.receivedBubbleText,
-                    fontFamily: theme.typography.fontFamily,
-                  }}
-                >
-                  {conv.name || "Community"}
-                </div>
-                <div
-                  style={{
-                    ...typography.body,
-                    color: theme.colors.timestamp,
-                    fontFamily: theme.typography.fontFamily,
-                  }}
-                >
-                  {subtitle}
-                </div>
-              </div>
-            </div>
-          );
-        })}
       </div>
-
-      <TabNavigation activeTab="communities" safeAreaBottom={safeAreaBottom} />
+      {(conversation.unreadCount ?? 0) > 0 && (
+        <div
+          style={{
+            minWidth: 19,
+            height: 19,
+            padding: "0 5px",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            borderRadius: 10,
+            color: theme.colors.unreadBadgeText,
+            backgroundColor: theme.colors.unreadBadge,
+            fontSize: 10,
+            fontWeight: 700,
+          }}
+        >
+          {formatWhatsAppNumber(
+            locale,
+            Math.min(conversation.unreadCount ?? 0, 99),
+          )}
+        </div>
+      )}
     </div>
   );
-};
+}
+
+function CommunityCard({
+  community,
+  conversations,
+}: {
+  community: WhatsAppCommunity;
+  conversations: Record<string, WhatsAppConversation>;
+}) {
+  const theme = useTheme();
+  const { direction, locale, t } = useWhatsAppLocale();
+  const { uiTypography: typography } = theme;
+  const announcement = community.announcementConversationId
+    ? conversations[community.announcementConversationId]
+    : undefined;
+  const groups = community.groupConversationIds
+    .filter((id) => id !== community.announcementConversationId)
+    .map((id) => conversations[id])
+    .filter((value): value is WhatsAppConversation => Boolean(value))
+    .slice(0, 2);
+
+  return (
+    <div
+      data-community-id={community.id}
+      style={{
+        margin: "0 16px 14px",
+        overflow: "hidden",
+        border: `1px solid ${theme.colors.divider}`,
+        borderRadius: 16,
+        backgroundColor: theme.colors.background,
+      }}
+    >
+      <div
+        style={{
+          minHeight: 72,
+          padding: "10px 12px",
+          display: "flex",
+          alignItems: "center",
+          gap: 11,
+        }}
+      >
+        <div
+          style={{
+            width: 50,
+            height: 50,
+            overflow: "hidden",
+            borderRadius: 14,
+            backgroundColor: theme.colors.divider,
+            flexShrink: 0,
+          }}
+        >
+          <DeterministicImage
+            src={resolveAvatarWithFallback(community.avatar, community.name)}
+            alt={community.name}
+            style={{ width: "100%", height: "100%", objectFit: "cover" }}
+          />
+        </div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div
+            style={{
+              ...typography.headline,
+              color: theme.colors.receivedBubbleText,
+              fontFamily: theme.typography.fontFamily,
+            }}
+          >
+            {community.name}
+          </div>
+          <div
+            style={{
+              ...typography.caption,
+              marginTop: 2,
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              whiteSpace: "nowrap",
+              color: theme.colors.timestamp,
+              fontFamily: theme.typography.fontFamily,
+            }}
+          >
+            {community.description ??
+              t("group.members", { count: community.memberCount ?? 0 })}
+          </div>
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          {(community.unreadCount ?? 0) > 0 && (
+            <BellRing size={15} color={theme.colors.accent} />
+          )}
+          <ChevronRight
+            size={17}
+            color={theme.colors.timestamp}
+            style={{ transform: direction === "rtl" ? "scaleX(-1)" : undefined }}
+          />
+        </div>
+      </div>
+      {announcement && (
+        <CommunityGroupRow conversation={announcement} isAnnouncement />
+      )}
+      {groups.map((group) => (
+        <CommunityGroupRow
+          key={group.id}
+          conversation={group}
+          isAnnouncement={false}
+        />
+      ))}
+      <div
+        style={{
+          height: 38,
+          padding: "0 13px",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          borderTop: `0.5px solid ${theme.colors.divider}`,
+          color: theme.colors.accent,
+          fontSize: 13,
+          fontWeight: 600,
+          fontFamily: theme.typography.fontFamily,
+        }}
+      >
+        <span>{t("communities.viewAllGroups")}</span>
+        <span>
+          {formatWhatsAppNumber(
+            locale,
+            new Set(community.groupConversationIds).size,
+          )}
+        </span>
+      </div>
+    </div>
+  );
+}
+
+export function CommunitiesScreen({
+  world,
+  safeAreaInsets,
+}: CommunitiesScreenProps) {
+  const theme = useTheme();
+  const { direction, t } = useWhatsAppLocale();
+  const { uiTypography: typography } = theme;
+  const safeAreaTop = safeAreaInsets?.top ?? theme.safeArea.top;
+  const safeAreaBottom = safeAreaInsets?.bottom ?? theme.safeArea.bottom;
+  const state = (world.appState?.app_whatsapp ?? {}) as Partial<WhatsAppState>;
+  const conversations = state.conversations ?? {};
+  const communities = state.communities ?? [];
+
+  return (
+    <AppScaffold
+      title={t("nav.communities")}
+      activeTab="communities"
+      safeAreaTop={safeAreaTop}
+      safeAreaBottom={safeAreaBottom}
+      actions={<Plus size={20} />}
+    >
+      <div
+        style={{
+          margin: "14px 16px 10px",
+          minHeight: 70,
+          padding: "10px 12px",
+          display: "flex",
+          alignItems: "center",
+          gap: 12,
+          border: `1px solid ${theme.colors.divider}`,
+          borderRadius: 16,
+          backgroundColor: theme.colors.headerBackground,
+        }}
+      >
+        <div
+          style={{
+            width: 48,
+            height: 48,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            borderRadius: 14,
+            color: theme.colors.unreadBadgeText,
+            backgroundColor: theme.colors.accent,
+          }}
+        >
+          <Users size={23} />
+        </div>
+        <div style={{ flex: 1 }}>
+          <div
+            style={{
+              ...typography.headline,
+              color: theme.colors.receivedBubbleText,
+              fontFamily: theme.typography.fontFamily,
+            }}
+          >
+            {t("communities.new")}
+          </div>
+          <div
+            style={{
+              ...typography.caption,
+              marginTop: 2,
+              color: theme.colors.timestamp,
+              fontFamily: theme.typography.fontFamily,
+            }}
+          >
+            {t("communities.newBody")}
+          </div>
+        </div>
+        <ChevronRight
+          size={17}
+          color={theme.colors.timestamp}
+          style={{ transform: direction === "rtl" ? "scaleX(-1)" : undefined }}
+        />
+      </div>
+
+      <SectionHeader title={t("communities.yours")} />
+      <div data-anchor="communities_list">
+        {communities.length > 0 ? (
+          communities.slice(0, 2).map((community) => (
+            <CommunityCard
+              key={community.id}
+              community={community}
+              conversations={conversations}
+            />
+          ))
+        ) : (
+          <EmptyState
+            icon={<Users size={28} />}
+            title={t("communities.emptyTitle")}
+            body={t("communities.emptyBody")}
+          />
+        )}
+      </div>
+    </AppScaffold>
+  );
+}
 
 export default CommunitiesScreen;

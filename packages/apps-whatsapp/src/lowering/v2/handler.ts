@@ -1,13 +1,10 @@
 import type { TrackEvent } from "@tokovo/ir";
 import {
-  createScopedLogger,
   getLoweringScratchpad,
   planTypedKeyboard,
   type RuntimeEvent,
 } from "@tokovo/core";
 import type { WhatsAppTrackEvent, WhatsAppEventType } from "../../types/events.js";
-
-const log = createScopedLogger("app");
 
 export interface V2LoweringHandler {
   lower: (event: TrackEvent, ctx?: unknown) => RuntimeEvent[];
@@ -41,20 +38,35 @@ const EVENT_TYPE_TO_KIND: Record<WhatsAppEventType, true> = {
   LOCATION_SENT: true,
   TYPING_START: true,
   TYPING_END: true,
-  REACT: true,
   READ: true,
-  READ_MESSAGES: true,
   MESSAGE_DELETED: true,
   MESSAGE_EDITED: true,
   MESSAGE_FORWARDED: true,
-  VOICE_PLAY: true,
-  VOICE_PAUSE: true,
+  MEDIA_DOWNLOAD_STARTED: true,
+  MEDIA_DOWNLOAD_PROGRESS: true,
+  MEDIA_DOWNLOAD_COMPLETED: true,
+  MEDIA_DOWNLOAD_FAILED: true,
+  MEDIA_PLAYBACK_STARTED: true,
+  MEDIA_PLAYBACK_PROGRESS: true,
+  MEDIA_PLAYBACK_PAUSED: true,
+  MEDIA_PLAYBACK_COMPLETED: true,
+  MEDIA_VIEWER_OPENED: true,
+  MEDIA_VIEWER_CLOSED: true,
+  STATUS_VIEWER_OPENED: true,
+  STATUS_VIEWER_ADVANCED: true,
+  STATUS_VIEWER_CLOSED: true,
+  GESTURE_STARTED: true,
+  GESTURE_UPDATED: true,
+  GESTURE_COMPLETED: true,
+  GESTURE_CANCELLED: true,
+  REPLY_COMPOSER_DISMISSED: true,
+  SET_LOCALE: true,
   CONVERSATION_OPENED: true,
   NAVIGATE_SCREEN: true,
-  GO_BACK: true,
-  DATE_SEPARATOR: true,
   GROUP_MEMBER_ADDED: true,
   GROUP_MEMBER_REMOVED: true,
+  GROUP_ADMIN_CHANGED: true,
+  GROUP_INFO_UPDATED: true,
   PIN_CONVERSATION: true,
   UNPIN_CONVERSATION: true,
   MUTE_CONVERSATION: true,
@@ -64,72 +76,23 @@ const EVENT_TYPE_TO_KIND: Record<WhatsAppEventType, true> = {
   SET_DRAFT: true,
   REACTION_ADDED: true,
   MESSAGE_READ: true,
-  VOICE_MESSAGE_RECEIVED: true,
+  MESSAGE_DELIVERY_FAILED: true,
+  MESSAGE_RETRY_STARTED: true,
+  MESSAGE_RETRY_COMPLETED: true,
 };
 
 function createRuntimeEvent(event: WhatsAppTrackEvent, overrideType?: string): RuntimeEvent {
   const type = overrideType ?? event.type;
-  const payload = (event.payload ?? {}) as Record<string, unknown>;
+  const payload = (event.payload ?? {}) as unknown as Record<string, unknown>;
 
-  const base = {
+  return {
     at: event.at,
     appId: event.appId,
     deviceId: event.deviceId,
-    conversationId: (payload as { conversationId?: string }).conversationId ?? event.conversationId,
     kind: "APP" as const,
     type,
     payload: { ...payload },
-  };
-
-  const result: Record<string, unknown> = { ...base };
-
-  switch (type) {
-    case "MESSAGE_RECEIVED":
-      result.from = (payload as { from?: string }).from;
-      result.text = (payload as { text?: string }).text;
-      break;
-
-    case "MESSAGE_SENT":
-      result.text = (payload as { text?: string }).text;
-      break;
-
-    case "TYPING_START":
-    case "TYPING_END":
-      result.actor = (payload as { actor?: string }).actor;
-      break;
-
-    case "IMAGE_RECEIVED":
-      result.from = (payload as { from?: string }).from;
-      result.url = (payload as { url?: string }).url;
-      result.caption = (payload as { caption?: string }).caption;
-      break;
-
-    case "IMAGE_SENT":
-      result.url = (payload as { url?: string }).url;
-      result.caption = (payload as { caption?: string }).caption;
-      break;
-
-    case "VIDEO_RECEIVED":
-      result.from = (payload as { from?: string }).from;
-      result.url = (payload as { url?: string }).url;
-      result.duration = (payload as { duration?: number }).duration;
-      break;
-
-    case "VIDEO_SENT":
-      result.url = (payload as { url?: string }).url;
-      result.duration = (payload as { duration?: number }).duration;
-      break;
-
-    case "CONVERSATION_OPENED":
-      result.conversationId = (payload as { conversationId?: string }).conversationId;
-      break;
-
-    case "NAVIGATE_SCREEN":
-      result.screen = (payload as { screen?: string }).screen;
-      break;
-  }
-
-  return result as unknown as RuntimeEvent;
+  } as RuntimeEvent;
 }
 
 function createKeyboardClearEvent(deviceId: string, at: number): RuntimeEvent {
@@ -160,8 +123,7 @@ function shouldTrackConversationTiming(eventType: WhatsAppEventType): boolean {
 }
 
 function getConversationKey(event: WhatsAppTrackEvent): string {
-  const conversationId =
-    event.conversationId ?? (event.payload as { conversationId?: string })?.conversationId;
+  const conversationId = (event.payload as { conversationId?: string })?.conversationId;
   return `${event.deviceId}::${conversationId ?? "unknown"}`;
 }
 
@@ -172,34 +134,16 @@ function getTypingActor(event: WhatsAppTrackEvent): string | undefined {
 export const whatsappV2Lowering: V2LoweringHandler = {
   lower(event: TrackEvent, ctx?: unknown): RuntimeEvent[] {
     if (!isWhatsAppTrackEvent(event)) {
-      log.warn("WhatsApp lowering received non-WhatsApp event", {
-        event: "whatsapp.lowering.non_whatsapp_event",
-      });
-      return [];
+      throw new Error(
+        `WhatsApp lowering received an event for "${(event as { appId?: string }).appId ?? "unknown"}"`,
+      );
     }
 
     const eventType = event.type;
     const isKnownType = EVENT_TYPE_TO_KIND[eventType];
 
     if (!isKnownType) {
-      log.warn(`WhatsApp lowering received unknown event type ${eventType}`, {
-        event: "whatsapp.lowering.unknown_event_type",
-        type: eventType,
-      });
-      return [];
-    }
-
-    if (eventType === "GO_BACK") {
-      const goBackEvent: Record<string, unknown> = {
-        at: event.at,
-        appId: event.appId,
-        deviceId: event.deviceId,
-        conversationId: event.conversationId,
-        kind: "APP",
-        type: "NAVIGATE_SCREEN",
-        payload: { screen: "chats" },
-      };
-      return [goBackEvent as unknown as RuntimeEvent];
+      throw new Error(`Unknown WhatsApp event type "${eventType}"`);
     }
 
     const scratchpad = getLoweringScratchpad<WhatsAppTypingScratchpad>(

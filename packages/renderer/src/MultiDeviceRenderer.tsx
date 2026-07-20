@@ -39,6 +39,10 @@ export const MultiDeviceRenderer: React.FC<{
     compositionHeight?: number;
     pluginManager: PluginManagerClass;
     registries: RendererRegistries;
+    /** Disable when the host composition already owns the shared audio layer. */
+    renderAudio?: boolean;
+    /** Disable when the host composition already owns the shared story overlay. */
+    renderOverlay?: boolean;
 }> = ({
     world,
     t,
@@ -48,12 +52,15 @@ export const MultiDeviceRenderer: React.FC<{
     compositionHeight = 1920,
     pluginManager,
     registries,
+    renderAudio = true,
+    renderOverlay = true,
 }) => {
     const layout = world.camera?.layout;
+    const audioLayer = renderAudio ? <AudioLayer world={world} t={t} /> : null;
 
     const content = !layout ? (
         <>
-            <AudioLayer world={world} t={t} />
+            {audioLayer}
             <SingleDeviceLayout
                 world={world}
                 t={t}
@@ -71,7 +78,7 @@ export const MultiDeviceRenderer: React.FC<{
             case "SINGLE":
                 return (
                     <>
-                        <AudioLayer world={world} t={t} />
+                        {audioLayer}
                         <SingleDeviceLayout
                             world={world}
                             t={t}
@@ -89,7 +96,7 @@ export const MultiDeviceRenderer: React.FC<{
             case "SPLIT_HORIZONTAL":
                 return (
                     <>
-                        <AudioLayer world={world} t={t} />
+                        {audioLayer}
                         <SplitHorizontalLayout
                             world={world}
                             t={t}
@@ -108,7 +115,7 @@ export const MultiDeviceRenderer: React.FC<{
             case "SPLIT_VERTICAL":
                 return (
                     <>
-                        <AudioLayer world={world} t={t} />
+                        {audioLayer}
                         <SplitVerticalLayout
                             world={world}
                             t={t}
@@ -127,7 +134,7 @@ export const MultiDeviceRenderer: React.FC<{
             case "PIP":
                 return (
                     <>
-                        <AudioLayer world={world} t={t} />
+                        {audioLayer}
                         <PIPLayout
                             world={world}
                             t={t}
@@ -148,7 +155,7 @@ export const MultiDeviceRenderer: React.FC<{
             default:
                 return (
                     <>
-                        <AudioLayer world={world} t={t} />
+                        {audioLayer}
                         <SingleDeviceLayout
                             world={world}
                             t={t}
@@ -168,7 +175,14 @@ export const MultiDeviceRenderer: React.FC<{
         <RendererRegistryProvider registries={registries}>
             <div style={{ position: "relative", width: compositionWidth, height: compositionHeight }}>
                 {content}
-                <StoryOverlay world={world} t={t} width={compositionWidth} height={compositionHeight} />
+                {renderOverlay ? (
+                    <StoryOverlay
+                        world={world}
+                        t={t}
+                        width={compositionWidth}
+                        height={compositionHeight}
+                    />
+                ) : null}
             </div>
         </RendererRegistryProvider>
     );

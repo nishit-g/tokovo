@@ -7,19 +7,8 @@
 // Messages
 export type {
   WhatsAppMessageType,
+  WhatsAppSystemMessageType,
   BaseMessage,
-  TextMessage,
-  ImageMessage,
-  VideoMessage,
-  VoiceMessage,
-  PollMessage,
-  GifMessage,
-  SystemMessage,
-  CallMessage,
-  MissedCallMessage,
-  ScreenshotAlertMessage,
-  DeletedMessage,
-  MessageData,
   WhatsAppReaction,
   ReplyToData,
   LinkPreviewData,
@@ -30,8 +19,38 @@ export type {
 export type { WhatsAppGroupMember, WhatsAppConversation } from "./conversation.js";
 
 // State
-export type { WhatsAppState } from "./state.js";
-export { asWhatsAppConversations, asWhatsAppState } from "./state.js";
+export type {
+  WhatsAppState,
+  WhatsAppScreenId,
+  WhatsAppChatFilter,
+} from "./state.js";
+
+export type {
+  WhatsAppMediaTransferState,
+  WhatsAppMediaPlaybackState,
+  WhatsAppMediaLifecycle,
+  WhatsAppMediaViewerState,
+} from "./media.js";
+
+export type {
+  WhatsAppMessageGesture,
+  WhatsAppGesturePhase,
+  WhatsAppGestureState,
+  WhatsAppReplyComposerState,
+} from "./interactions.js";
+
+export type {
+  WhatsAppStatusUpdate,
+  WhatsAppStatusViewerState,
+  WhatsAppChannelUpdate,
+  WhatsAppChannel,
+  WhatsAppCallDirection,
+  WhatsAppCallMode,
+  WhatsAppCallLogEntry,
+  WhatsAppCommunity,
+  WhatsAppAccountProfile,
+  WhatsAppSettings,
+} from "./product.js";
 
 export type {
   WhatsAppEventType,
@@ -39,7 +58,6 @@ export type {
   WhatsAppEventMap,
   WhatsAppEventPayload,
   WhatsAppTypedEvent,
-  MessageReference,
   ReplyToPayload,
   MessageReceivedPayload,
   MessageSentPayload,
@@ -60,13 +78,36 @@ export type {
   LocationReceivedPayload,
   LocationSentPayload,
   TypingPayload,
-  ReactPayload,
   ReadPayload,
   MessageDeletedPayload,
   MessageEditedPayload,
   MessageForwardedPayload,
+  MediaLifecyclePayload,
+  MediaViewerOpenedPayload,
+  MediaViewerClosedPayload,
+  StatusViewerOpenedPayload,
+  StatusViewerAdvancedPayload,
+  StatusViewerClosedPayload,
+  GestureStartedPayload,
+  GestureUpdatedPayload,
+  GestureCompletedPayload,
+  GestureCancelledPayload,
+  ReplyComposerDismissedPayload,
+  SetLocalePayload,
+  ConversationOpenedPayload,
   NavigateScreenPayload,
-  DateSeparatorPayload,
+  GroupMemberAddedPayload,
+  GroupMemberRemovedPayload,
+  GroupAdminChangedPayload,
+  GroupInfoUpdatedPayload,
+  PinPayload,
+  MutePayload,
+  ArchivePayload,
+  DraftPayload,
+  ReactionAddedPayload,
+  MessageReadPayload,
+  MessageDeliveryFailedPayload,
+  MessageRetryPayload,
 } from "./events.js";
 export { isWhatsAppEvent, getEventPayload, assertEventType } from "./events.js";
 

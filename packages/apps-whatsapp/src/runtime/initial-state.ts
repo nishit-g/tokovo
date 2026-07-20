@@ -16,9 +16,23 @@ import type { WhatsAppState } from "../types/index.js";
  */
 export function createWhatsAppInitialState(): WhatsAppState {
   return {
+    layoutRevision: 0,
+    locale: "en-US",
+    mediaViewer: null,
+    statusViewer: null,
+    activeGesture: null,
+    replyComposer: null,
+    threadViewport: null,
     currentScreen: "chats",
+    chatFilter: "all",
     viewMode: "FEED",
     conversationId: undefined,
+    conversations: {},
+    statuses: [],
+    channels: [],
+    callLog: [],
+    communities: [],
+    settings: {},
   };
 }
 

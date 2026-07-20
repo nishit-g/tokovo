@@ -5,7 +5,11 @@
  * Apps reference global presets by name, with optional delta overrides.
  */
 
-import type { AppBehavior, CameraIntent } from "@tokovo/core";
+import type {
+  AppBehavior,
+  CameraIntent,
+  SemanticAnchorId,
+} from "@tokovo/core";
 
 const APP_ID = "app_whatsapp";
 
@@ -30,8 +34,12 @@ export const WHATSAPP_INTENT_MAPPINGS: Record<string, CameraIntent> = {
   },
   MESSAGE_SENT: { type: "FOCUS", anchor: "lastMessage", preset: "message" },
 
-  // Typing events (use stable inputArea, not volatile typingIndicator)
-  TYPING_START: { type: "FOCUS", anchor: "inputArea", preset: "subtle" },
+  // Typing events use the stable composer region, not the volatile indicator.
+  TYPING_START: {
+    type: "FOCUS",
+    anchor: "input_area" as SemanticAnchorId,
+    preset: "subtle",
+  },
   TYPING_END: { type: "RESET", preset: "reset" },
 
   // Reaction events

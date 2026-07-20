@@ -616,20 +616,22 @@ export class SceneBuilder {
             new SceneConversation(this, {
               ...common,
               open: (frame) => track.switchTo(options.conversationId, frame),
-              send: (frame, _id, text, message) =>
+              send: (frame, id, text, message) =>
                 track.at(frame).send(text, {
+                  messageId: id,
                   silent: message.silent,
                   typed: message.typed,
                   charDelay: message.charDelay,
                   replyTo: message.replyTo
-                    ? { id: message.replyTo.id }
+                    ? { messageId: message.replyTo.id }
                     : undefined,
                 }),
-              receive: (frame, _id, from, text, message) =>
+              receive: (frame, id, from, text, message) =>
                 track.at(frame).receive(from.name, text, {
+                  messageId: id,
                   silent: message.silent,
                   replyTo: message.replyTo
-                    ? { id: message.replyTo.id }
+                    ? { messageId: message.replyTo.id }
                     : undefined,
                 }),
             }),

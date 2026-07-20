@@ -77,27 +77,15 @@ function hashField(
   return next;
 }
 
-function hashMaybeString(
-  hash: number,
-  key: string,
-  value?: string | null,
-): number {
+function hashMaybeString(hash: number, key: string, value?: string | null): number {
   return hashField(hash, key, value ?? null);
 }
 
-function hashMaybeNumber(
-  hash: number,
-  key: string,
-  value?: number | null,
-): number {
+function hashMaybeNumber(hash: number, key: string, value?: number | null): number {
   return hashField(hash, key, value ?? null);
 }
 
-function hashMaybeBoolean(
-  hash: number,
-  key: string,
-  value?: boolean | null,
-): number {
+function hashMaybeBoolean(hash: number, key: string, value?: boolean | null): number {
   return hashField(hash, key, value ?? null);
 }
 
@@ -165,18 +153,21 @@ export class LayoutCache {
       hash = hashMaybeString(hash, "forwardedFrom", message.forwardedFrom);
       hash = hashMaybeString(hash, "text", message.text);
       hash = hashMaybeString(hash, "caption", message.caption);
+      hash = hashMaybeString(hash, "pollQuestion", message.pollQuestion);
+      hash = hashMaybeNumber(hash, "totalVotes", message.totalVotes);
+      hash = hashMaybeString(hash, "pollStatus", message.pollStatus);
       hash = hashMaybeString(hash, "imageUrl", message.imageUrl);
-      hash = hashMaybeString(hash, "voiceUrl", message.voiceUrl);
-      hash = hashMaybeString(hash, "audioUrl", message.audioUrl);
-      hash = hashMaybeString(hash, "fileUrl", message.fileUrl);
       hash = hashMaybeString(hash, "videoUrl", message.videoUrl);
       hash = hashMaybeString(hash, "gifUrl", message.gifUrl);
       hash = hashMaybeString(hash, "stickerUrl", message.stickerUrl);
       hash = hashMaybeString(hash, "thumbnailUrl", message.thumbnailUrl);
       hash = hashMaybeNumber(hash, "duration", message.duration);
       hash = hashMaybeString(hash, "callType", message.callType);
-      hash = hashMaybeBoolean(hash, "isPlaying", message.isPlaying);
-      hash = hashMaybeNumber(hash, "playProgress", message.playProgress);
+      hash = hashMaybeString(hash, "media.transferState", message.media?.transferState);
+      hash = hashMaybeNumber(hash, "media.transferProgress", message.media?.transferProgress);
+      hash = hashMaybeString(hash, "media.playbackState", message.media?.playbackState);
+      hash = hashMaybeNumber(hash, "media.playbackProgress", message.media?.playbackProgress);
+      hash = hashMaybeString(hash, "media.failureReason", message.media?.failureReason);
       hash = hashMaybeString(hash, "fileName", message.fileName);
       hash = hashMaybeString(hash, "fileSize", message.fileSize);
       hash = hashMaybeString(hash, "fileType", message.fileType);
@@ -208,11 +199,7 @@ export class LayoutCache {
         hash = hashMaybeString(hash, "replyTo.text", message.replyTo.text);
         hash = hashMaybeString(hash, "replyTo.from", message.replyTo.from);
         hash = hashMaybeString(hash, "replyTo.type", message.replyTo.type);
-        hash = hashMaybeString(
-          hash,
-          "replyTo.thumb",
-          message.replyTo.thumbnailUrl,
-        );
+        hash = hashMaybeString(hash, "replyTo.thumb", message.replyTo.thumbnailUrl);
       } else {
         hash = hashField(hash, "replyTo", null);
       }
@@ -228,20 +215,22 @@ export class LayoutCache {
         hash = hashField(hash, "reactions.length", 0);
       }
 
+      if (message.options) {
+        hash = hashField(hash, "options.length", message.options.length);
+        for (const option of message.options) {
+          hash = hashMaybeString(hash, "option.text", option.text);
+          hash = hashMaybeNumber(hash, "option.votes", option.votes);
+        }
+      } else {
+        hash = hashField(hash, "options.length", 0);
+      }
+
       if (message.linkPreview) {
         hash = hashMaybeString(hash, "link.url", message.linkPreview.url);
         hash = hashMaybeString(hash, "link.title", message.linkPreview.title);
-        hash = hashMaybeString(
-          hash,
-          "link.description",
-          message.linkPreview.description,
-        );
+        hash = hashMaybeString(hash, "link.description", message.linkPreview.description);
         hash = hashMaybeString(hash, "link.image", message.linkPreview.image);
-        hash = hashMaybeString(
-          hash,
-          "link.siteName",
-          message.linkPreview.siteName,
-        );
+        hash = hashMaybeString(hash, "link.siteName", message.linkPreview.siteName);
       } else {
         hash = hashField(hash, "linkPreview", null);
       }
@@ -253,20 +242,14 @@ export class LayoutCache {
     return result;
   }
 
-  private generateCacheKey(
-    conversation: WhatsAppConversation,
-    configSignature: string,
-  ): string {
+  private generateCacheKey(conversation: WhatsAppConversation, configSignature: string): string {
     const messages = conversation.messages as WhatsAppMessage[];
     const lastMessage = messages[messages.length - 1];
     const layoutHash = this.computeLayoutHash(conversation);
     return `${this.scopeKey}_${conversation.id}_${messages.length}_${lastMessage?.id || "empty"}_${configSignature}_${layoutHash}`;
   }
 
-  get(
-    conversation: WhatsAppConversation,
-    configSignature: string,
-  ): ConversationLayout | null {
+  get(conversation: WhatsAppConversation, configSignature: string): ConversationLayout | null {
     if (!this.config.enabled) return null;
     const key = this.generateCacheKey(conversation, configSignature);
     return this.cache.get(key) || null;
@@ -331,11 +314,7 @@ export function computeConversationLayout(
   const config = options.layoutConfig ?? DEFAULT_LAYOUT_CONFIG;
   const configSignature =
     options.configSignature ??
-    computeConfigSignature(
-      config,
-      options.viewportWidth,
-      options.viewportHeight,
-    );
+    computeConfigSignature(config, options.viewportWidth, options.viewportHeight);
 
   const cache = options.cache ?? null;
   const cached = cache?.get(conversation, configSignature);
@@ -348,8 +327,7 @@ export function computeConversationLayout(
   let currentY = config.spacing.global.topPadding;
   let lastMessageId: string | null = null;
 
-  const uniqueSenders = new Set(messages.map((m) => m.from));
-  const isGroupChat = uniqueSenders.size > 2;
+  const isGroupChat = conversation.type === "group";
 
   for (let i = 0; i < messages.length; i++) {
     const msg = messages[i] as WhatsAppMessage;
@@ -363,8 +341,7 @@ export function computeConversationLayout(
         at: prevMsg.at,
         hasReply: prevMsg.replyTo !== undefined && prevMsg.replyTo !== null,
         hasReactions: (prevMsg.reactions?.length ?? 0) > 0,
-        hasLinkPreview:
-          prevMsg.linkPreview !== undefined && prevMsg.linkPreview !== null,
+        hasLinkPreview: prevMsg.linkPreview !== undefined && prevMsg.linkPreview !== null,
       };
       const nextForGap: MessageForGap = {
         type: msg.type as MessageType,
@@ -372,8 +349,7 @@ export function computeConversationLayout(
         at: msg.at,
         hasReply: msg.replyTo !== undefined && msg.replyTo !== null,
         hasReactions: (msg.reactions?.length ?? 0) > 0,
-        hasLinkPreview:
-          msg.linkPreview !== undefined && msg.linkPreview !== null,
+        hasLinkPreview: msg.linkPreview !== undefined && msg.linkPreview !== null,
       };
 
       const gapContext: GapContext = {
@@ -389,6 +365,11 @@ export function computeConversationLayout(
       type: msgType,
       text: "text" in msg ? msg.text : undefined,
       caption: "caption" in msg ? msg.caption : undefined,
+      systemType: msg.systemType,
+      pollQuestion: msg.pollQuestion,
+      pollOptionCount: msg.options?.length,
+      locationName: msg.locationName,
+      locationAddress: msg.locationAddress,
       from: msg.from,
       prevFrom: (() => {
         const prev = i > 0 ? messages[i - 1] : undefined;
@@ -400,22 +381,15 @@ export function computeConversationLayout(
         return prev.from;
       })(),
       isGroupChat,
+      isForwarded: msg.isForwarded,
       reactions: msg.reactions,
       replyTo: msg.replyTo,
       linkPreview: msg.linkPreview,
     };
 
-    const height = calculateMessageHeight(
-      msgForHeight,
-      options.viewportWidth,
-      config,
-    );
+    const height = calculateMessageHeight(msgForHeight, options.viewportWidth, config);
 
-    const bubbleWidth = calculateBubbleWidth(
-      msgForHeight,
-      options.viewportWidth,
-      config,
-    );
+    const bubbleWidth = calculateBubbleWidth(msgForHeight, options.viewportWidth, config);
 
     const isMe = msg.from === "me";
     const isCentered = isMessageCentered(msgType, config);
@@ -423,9 +397,7 @@ export function computeConversationLayout(
     const rectX = isCentered
       ? (options.viewportWidth - bubbleWidth) / 2
       : isMe
-        ? options.viewportWidth -
-        config.spacing.global.bubbleMargin -
-        bubbleWidth
+        ? options.viewportWidth - config.spacing.global.bubbleMargin - bubbleWidth
         : config.spacing.global.bubbleMargin;
 
     const rect: LayoutRect = {

@@ -1,7 +1,11 @@
 import React from "react";
 import { useCurrentFrame, useVideoConfig } from "remotion";
-import { Keyboard, Camera, Mic, Send } from "lucide-react";
-import { useTheme } from "../theme/ThemeContext.js";
+import { Camera, Mic, Paperclip, Plus, Send, Smile } from "lucide-react";
+import {
+  useTheme,
+  useWhatsAppLocale,
+  useWhatsAppPresentation,
+} from "../experience/ExperienceContext.js";
 
 export const InputArea: React.FC<{
   text?: string;
@@ -11,6 +15,8 @@ export const InputArea: React.FC<{
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
   const theme = useTheme();
+  const { direction, t } = useWhatsAppLocale();
+  const presentation = useWhatsAppPresentation();
 
   const hasContent = text.length > 0;
   const cursorVisible = Math.floor(frame / (fps * 0.5)) % 2 === 0;
@@ -19,32 +25,79 @@ export const InputArea: React.FC<{
   return (
     <div
       data-anchor="input"
+      role="group"
+      aria-label={t("composer.placeholder")}
+      dir={direction}
       style={{
         backgroundColor: theme.colors.inputBackground,
         borderTop: `1px solid ${theme.colors.divider}`,
-        padding: `8px 14px ${paddingBottom}px 10px`,
+        paddingBlock: `8px ${paddingBottom}px`,
+        paddingInline: "10px 14px",
         display: "flex",
         alignItems: "flex-end",
         gap: 12,
         position: "absolute",
         bottom: 0,
-        left: 0,
-        right: 0,
+        insetInline: 0,
         minHeight: 50,
       }}
     >
-      <div style={{ paddingBottom: 8, cursor: "pointer" }}>
-        <Keyboard size={28} color={theme.colors.inputText} strokeWidth={1.5} />
-      </div>
+      <button
+        type="button"
+        aria-label={
+          presentation.conversation.composerLeadingAction === "add"
+            ? t("action.add")
+            : t("action.emoji")
+        }
+        style={{
+          width: 30,
+          height: 30,
+          marginBottom: 8,
+          borderRadius: "50%",
+          border:
+            presentation.conversation.composerLeadingAction === "add"
+              ? `1.5px solid ${theme.colors.inputText}`
+              : "none",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          flexShrink: 0,
+          padding: 0,
+          color: "inherit",
+          background: "transparent",
+          font: "inherit",
+        }}
+      >
+        {presentation.conversation.composerLeadingAction === "add" ? (
+          <Plus
+            size={20}
+            color={theme.colors.inputText}
+            strokeWidth={1.8}
+            aria-hidden="true"
+          />
+        ) : (
+          <Smile
+            size={25}
+            color={theme.colors.inputText}
+            strokeWidth={1.6}
+            aria-hidden="true"
+          />
+        )}
+      </button>
 
       <div
         data-anchor="typing"
+        role="textbox"
+        aria-label={t("composer.placeholder")}
+        aria-multiline="true"
+        aria-readonly="true"
         style={{
           flex: 1,
           backgroundColor: theme.colors.background,
           borderRadius: 22,
           border: `1px solid ${theme.colors.divider}`,
-          padding: "6px 4px 6px 12px",
+          paddingBlock: 6,
+          paddingInline: "12px 4px",
           minHeight: 40,
           display: "flex",
           alignItems: "center",
@@ -72,56 +125,49 @@ export const InputArea: React.FC<{
                   width: 2,
                   height: 18,
                   backgroundColor: theme.colors.accent,
-                  marginLeft: 1,
+                  marginInlineStart: 1,
                   verticalAlign: "middle",
                 }}
               />
             )}
-            {!hasContent && !showCursor && "Message"}
+            {!hasContent && !showCursor && t("composer.placeholder")}
           </span>
         </div>
 
         <div
+          aria-hidden="true"
           style={{
-            cursor: "pointer",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
             height: 30,
             width: 30,
-            marginRight: 4,
+            marginInlineEnd: 4,
           }}
         >
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-            <path
-              d="M19 19L22 22"
-              stroke={theme.colors.inputText}
-              strokeWidth={1.5}
-              strokeLinecap="round"
-            />
-            <path
-              d="M12 21C16.9706 21 21 16.9706 21 12C21 7.02944 16.9706 3 12 3C7.02944 3 3 7.02944 3 12C3 16.9706 7.02944 21 12 21Z"
-              stroke={theme.colors.inputText}
-              strokeWidth={1.5}
-            />
-            <path
-              d="M9 10L9.01 10"
-              stroke={theme.colors.inputText}
-              strokeWidth={2}
-              strokeLinecap="round"
-            />
-            <path
-              d="M15 10L15.01 10"
-              stroke={theme.colors.inputText}
-              strokeWidth={2}
-              strokeLinecap="round"
-            />
-          </svg>
+          <Smile
+            size={23}
+            color={theme.colors.inputText}
+            strokeWidth={1.5}
+            aria-hidden="true"
+          />
         </div>
       </div>
 
       {hasContent ? (
-        <div style={{ paddingBottom: 6, cursor: "pointer" }}>
+        <button
+          type="button"
+          aria-label={t("action.send")}
+          style={{
+            padding: 0,
+            paddingBottom: 6,
+            border: 0,
+            color: "inherit",
+            background: "transparent",
+            cursor: "pointer",
+            font: "inherit",
+          }}
+        >
           <div
             style={{
               width: 34,
@@ -131,17 +177,18 @@ export const InputArea: React.FC<{
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              boxShadow: `0 6px 12px ${theme.colors.accent}40`,
+              boxShadow: `0 2px 6px ${theme.colors.accent}38`,
             }}
           >
             <Send
               size={18}
               color={theme.colors.background}
               fill={theme.colors.background}
-              style={{ marginLeft: 2 }}
+              aria-hidden="true"
+              style={{ marginInlineStart: 2 }}
             />
           </div>
-        </div>
+        </button>
       ) : (
         <div
           style={{
@@ -151,8 +198,53 @@ export const InputArea: React.FC<{
             alignItems: "center",
           }}
         >
-          <Camera size={26} color={theme.colors.inputText} strokeWidth={1.5} />
-          <Mic size={24} color={theme.colors.inputText} strokeWidth={1.5} />
+          {presentation.conversation.composerIdleActions.map((action) => {
+            const label =
+              action === "attachment"
+                ? t("action.attachment")
+                : action === "camera"
+                  ? t("action.camera")
+                  : t("action.voiceMessage");
+            const icon =
+              action === "attachment" ? (
+                <Paperclip
+                  size={23}
+                  color={theme.colors.inputText}
+                  strokeWidth={1.6}
+                  aria-hidden="true"
+                />
+              ) : action === "camera" ? (
+                <Camera
+                  size={25}
+                  color={theme.colors.inputText}
+                  strokeWidth={1.5}
+                  aria-hidden="true"
+                />
+              ) : (
+                <Mic
+                  size={23}
+                  color={theme.colors.inputText}
+                  strokeWidth={1.6}
+                  aria-hidden="true"
+                />
+              );
+            return (
+              <button
+                key={action}
+                type="button"
+                aria-label={label}
+                style={{
+                  padding: 0,
+                  border: 0,
+                  color: "inherit",
+                  background: "transparent",
+                  font: "inherit",
+                }}
+              >
+                {icon}
+              </button>
+            );
+          })}
         </div>
       )}
     </div>

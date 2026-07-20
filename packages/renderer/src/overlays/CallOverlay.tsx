@@ -1,5 +1,6 @@
 import React from "react";
 import { CallState } from "@tokovo/core";
+import { DeterministicImage } from "@tokovo/react";
 import type { DeviceProfile } from "@tokovo/devices";
 import { getIOSChromeMetrics } from "@tokovo/devices";
 
@@ -13,7 +14,10 @@ const iconBase = {
 
 const MuteIcon = ({ size }: { size: number }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-    <path d="M12 3.75a2.75 2.75 0 0 0-2.75 2.75v4.5a2.75 2.75 0 1 0 5.5 0V6.5A2.75 2.75 0 0 0 12 3.75Z" {...iconBase} />
+    <path
+      d="M12 3.75a2.75 2.75 0 0 0-2.75 2.75v4.5a2.75 2.75 0 1 0 5.5 0V6.5A2.75 2.75 0 0 0 12 3.75Z"
+      {...iconBase}
+    />
     <path d="M7.5 10.5v.5a4.5 4.5 0 1 0 9 0v-.5" {...iconBase} />
     <path d="M12 15.5v4" {...iconBase} />
     <path d="M9.5 19.5h5" {...iconBase} />
@@ -23,9 +27,7 @@ const MuteIcon = ({ size }: { size: number }) => (
 const KeypadIcon = ({ size }: { size: number }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor">
     {[5, 12, 19].flatMap((x) =>
-      [5, 12, 19].map((y) => (
-        <circle key={`${x}-${y}`} cx={x} cy={y} r="1.7" />
-      )),
+      [5, 12, 19].map((y) => <circle key={`${x}-${y}`} cx={x} cy={y} r="1.7" />),
     )}
   </svg>
 );
@@ -151,10 +153,7 @@ const ControlButton: React.FC<ControlButtonProps> = ({
             variant === "accept" || variant === "decline"
               ? "0 18px 34px rgba(0,0,0,0.26)"
               : "inset 0 1px 0 rgba(255,255,255,0.18), 0 18px 32px rgba(0,0,0,0.24)",
-          border:
-            variant === "default"
-              ? "1px solid rgba(255,255,255,0.12)"
-              : "none",
+          border: variant === "default" ? "1px solid rgba(255,255,255,0.12)" : "none",
         }}
       >
         {icon}
@@ -195,23 +194,15 @@ export const CallOverlay: React.FC<CallOverlayProps> = ({
   const safeTop = deviceProfile?.safeArea?.top ?? 47 * pointScale;
   const safeBottom = deviceProfile?.safeArea?.bottom ?? 34 * pointScale;
   const pulse =
-    call.status === "incoming"
-      ? 0.92 + 0.08 * (0.5 + 0.5 * Math.sin(currentTime * 0.12))
-      : 1;
+    call.status === "incoming" ? 0.92 + 0.08 * (0.5 + 0.5 * Math.sin(currentTime * 0.12)) : 1;
   const isIncoming = call.status === "incoming" || call.status === "ringing";
   const callerMetadata = call.callerMetadata;
-  const posterBackground = call.callerAvatar
+  const posterBackground = callerMetadata?.posterColor
     ? [
-        `linear-gradient(180deg, rgba(8,11,18,0.18), rgba(8,11,18,0.78))`,
-        `url(${call.callerAvatar}) center/cover no-repeat`,
-        "linear-gradient(180deg, #273447 0%, #0b1018 100%)",
+        `linear-gradient(180deg, ${callerMetadata.posterColor} 0%, rgba(11,16,24,0.9) 100%)`,
+        "linear-gradient(180deg, #22324a 0%, #0b1018 100%)",
       ].join(", ")
-    : callerMetadata?.posterColor
-      ? [
-          `linear-gradient(180deg, ${callerMetadata.posterColor} 0%, rgba(11,16,24,0.9) 100%)`,
-          "linear-gradient(180deg, #22324a 0%, #0b1018 100%)",
-        ].join(", ")
-      : "radial-gradient(70% 60% at 50% 14%, rgba(109,149,255,0.38) 0%, rgba(109,149,255,0.06) 48%, rgba(0,0,0,0) 70%), linear-gradient(180deg, #22324a 0%, #111827 48%, #070b11 100%)";
+    : "radial-gradient(70% 60% at 50% 14%, rgba(109,149,255,0.38) 0%, rgba(109,149,255,0.06) 48%, rgba(0,0,0,0) 70%), linear-gradient(180deg, #22324a 0%, #111827 48%, #070b11 100%)";
   const topPillFontSize = 15 * pointScale;
   const iconSize = 29 * pointScale;
   const buttonSize = 84 * pointScale;
@@ -230,13 +221,25 @@ export const CallOverlay: React.FC<CallOverlayProps> = ({
         inset: 0,
         backgroundColor: "#0a0d14",
         background: posterBackground,
-        fontFamily:
-          "-apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif",
+        fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif",
         color: "white",
         zIndex: 7000,
         overflow: "hidden",
       }}
     >
+      {call.callerAvatar ? (
+        <DeterministicImage
+          src={call.callerAvatar}
+          alt=""
+          style={{
+            position: "absolute",
+            inset: 0,
+            width: "100%",
+            height: "100%",
+            objectFit: "cover",
+          }}
+        />
+      ) : null}
       <div
         style={{
           position: "absolute",
@@ -314,9 +317,8 @@ export const CallOverlay: React.FC<CallOverlayProps> = ({
               height: isIncoming ? 164 * pointScale : 130 * pointScale,
               borderRadius: "50%",
               background:
-                call.callerAvatar
-                  ? `url(${call.callerAvatar}) center/cover no-repeat`
-                  : "linear-gradient(135deg, rgba(255,255,255,0.34) 0%, rgba(255,255,255,0.12) 100%)",
+                "linear-gradient(135deg, rgba(255,255,255,0.34) 0%, rgba(255,255,255,0.12) 100%)",
+              overflow: "hidden",
               border: "1px solid rgba(255,255,255,0.14)",
               boxShadow: isIncoming
                 ? "0 44px 120px rgba(0,0,0,0.48), 0 0 0 18px rgba(255,255,255,0.03)"
@@ -330,7 +332,15 @@ export const CallOverlay: React.FC<CallOverlayProps> = ({
               color: "white",
             }}
           >
-            {!call.callerAvatar ? getDisplayInitial(call.callerName).toUpperCase() : null}
+            {call.callerAvatar ? (
+              <DeterministicImage
+                src={call.callerAvatar}
+                alt=""
+                style={{ width: "100%", height: "100%", objectFit: "cover" }}
+              />
+            ) : (
+              getDisplayInitial(call.callerName).toUpperCase()
+            )}
           </div>
 
           <div
@@ -354,13 +364,18 @@ export const CallOverlay: React.FC<CallOverlayProps> = ({
               letterSpacing: -0.45,
             }}
           >
-            {isIncoming
-              ? "incoming call"
-              : call.status === "connecting"
-                ? "connecting…"
-                : (call.answeredAt ?? call.startedAt) !== undefined
-                  ? <CallTimer startedAt={call.answeredAt ?? call.startedAt ?? currentTime} currentTime={currentTime} />
-                  : "active call"}
+            {isIncoming ? (
+              "incoming call"
+            ) : call.status === "connecting" ? (
+              "connecting…"
+            ) : (call.answeredAt ?? call.startedAt) !== undefined ? (
+              <CallTimer
+                startedAt={call.answeredAt ?? call.startedAt ?? currentTime}
+                currentTime={currentTime}
+              />
+            ) : (
+              "active call"
+            )}
           </div>
 
           {callerMetadata?.posterStyle === "modern" && (
@@ -379,15 +394,15 @@ export const CallOverlay: React.FC<CallOverlayProps> = ({
 
         {isIncoming ? (
           <div
-              style={{
-                width: "100%",
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "flex-end",
-                padding: `0 ${14 * pointScale}px`,
-                maxWidth: 344 * pointScale,
-              }}
-            >
+            style={{
+              width: "100%",
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "flex-end",
+              padding: `0 ${14 * pointScale}px`,
+              maxWidth: 344 * pointScale,
+            }}
+          >
             <ControlButton
               icon={<PhoneIcon size={iconSize} rotate={135} />}
               label="decline"
@@ -396,7 +411,13 @@ export const CallOverlay: React.FC<CallOverlayProps> = ({
               variant="decline"
             />
             <ControlButton
-              icon={call.isVideo ? <VideoIcon size={iconSize} /> : <PhoneIcon size={iconSize} rotate={-45} />}
+              icon={
+                call.isVideo ? (
+                  <VideoIcon size={iconSize} />
+                ) : (
+                  <PhoneIcon size={iconSize} rotate={-45} />
+                )
+              }
               label="accept"
               size={actionButtonSize}
               labelSize={labelSize}

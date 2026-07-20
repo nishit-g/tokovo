@@ -30,13 +30,29 @@ export interface WhatsAppConversation {
   members?: WhatsAppGroupMember[];
   admins?: string[];
   messages: WhatsAppMessage[];
-  messagesById?: Record<string, WhatsAppMessage>;
   unreadCount?: number;
   typing?: Record<string, boolean>;
   draftText?: string;
+  contact?: {
+    phone?: string;
+    about?: string;
+    businessCategory?: string;
+    lastSeenLabel?: string;
+    verifiedBusiness?: boolean;
+  };
+  trust?: {
+    endToEndEncrypted?: boolean;
+    businessNotice?: string;
+    safetyCodeNotice?: string;
+  };
+  preferences?: {
+    notifications?: string;
+    mediaVisibility?: string;
+    disappearingMessages?: string;
+    chatLock?: boolean;
+  };
   isMuted?: boolean;
   isPinned?: boolean;
-  hasStatus?: boolean;
   isArchived?: boolean;
   unreadDividerMessageId?: string;
   lastMessageAt?: number;
@@ -44,19 +60,8 @@ export interface WhatsAppConversation {
   description?: string;
   createdAt?: string;
   createdBy?: string;
-  isLocked?: boolean;
-  businessLabel?: string;
-  isVerifiedBusiness?: boolean;
-  isChannel?: boolean;
-  isFollowed?: boolean;
-  channelUnreadCount?: number;
-  channelDescription?: string;
-  channelLatestSnippet?: string;
-  channelFollowersLabel?: string;
-  channelCategory?: string;
   pinnedMessage?: {
     text: string;
     from?: string;
   };
-  disappearingMessagesLabel?: string;
 }

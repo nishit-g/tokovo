@@ -35,6 +35,7 @@ import {
 } from "@tokovo/core";
 import {
   TokovoRenderer,
+  MultiDeviceRenderer,
   AudioLayer,
   StoryOverlay,
   RendererRegistryProvider,
@@ -415,6 +416,9 @@ const EpisodeRendererInner: React.FC<EpisodeRendererProps> = ({
   }
 
   const hasDevices = Object.keys(world.devices ?? {}).length > 0;
+  const usesMultiDeviceLayout =
+    Object.keys(world.devices ?? {}).length > 1 &&
+    world.camera.layout?.mode !== "SINGLE";
 
   // Log which audio path is being used (only on first few frames to avoid spam)
   // === RENDER ===
@@ -461,7 +465,20 @@ const EpisodeRendererInner: React.FC<EpisodeRendererProps> = ({
               volume={renderData.voiceConfig.volume ?? 1}
             />
           ))}
-        {hasDevices && (
+        {hasDevices && usesMultiDeviceLayout ? (
+          <MultiDeviceRenderer
+            world={world}
+            t={frame}
+            fps={fps}
+            debug={cameraDebugEnabled}
+            compositionWidth={fmt.width}
+            compositionHeight={fmt.height}
+            pluginManager={pluginManager}
+            registries={rendererRegistries}
+            renderAudio={false}
+            renderOverlay={false}
+          />
+        ) : hasDevices ? (
           <div
             style={{
               transform: `scale(${scale})`,
@@ -483,7 +500,7 @@ const EpisodeRendererInner: React.FC<EpisodeRendererProps> = ({
               cameraDebugShowAllAnchors={showAllAnchors}
             />
           </div>
-        )}
+        ) : null}
         <StoryOverlay
           world={world}
           t={frame}

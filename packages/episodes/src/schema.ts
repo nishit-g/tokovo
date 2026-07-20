@@ -355,16 +355,6 @@ export const AppEventSchema = z.discriminatedUnion("type", [
     conversationId: z.string(),
     from: z.string(),
   }),
-  // Voice message
-  z.object({
-    at: z.number(),
-    kind: z.literal("APP"),
-    appId: z.string(),
-    type: z.literal("VOICE_MESSAGE_RECEIVED"),
-    conversationId: z.string(),
-    from: z.string(),
-    duration: z.number(),
-  }),
   // Message interactions
   z.object({
     at: z.number(),
@@ -495,8 +485,16 @@ export const MessageSchema = z.object({
 
   // Voice/Video specific
   duration: z.number().optional(),
-  isPlaying: z.boolean().optional(),
-  playProgress: z.number().optional(),
+  media: z
+    .object({
+      transferState: z.enum(["remote", "downloading", "ready", "failed"]),
+      transferProgress: z.number().min(0).max(1),
+      playbackState: z.enum(["idle", "playing", "paused", "complete"]),
+      playbackProgress: z.number().min(0).max(1),
+      failureReason: z.string().optional(),
+    })
+    .strict()
+    .optional(),
   callType: z.enum(["voice", "video"]).optional(),
 
   // Interactions
@@ -531,6 +529,14 @@ export const MessageSchema = z.object({
       "group_name_changed",
       "date_change",
       "encryption_notice",
+      "business_notice",
+      "safety_code_changed",
+      "unread_divider",
+      "disappearing_messages",
+      "group_description_changed",
+      "group_icon_changed",
+      "phone_number_changed",
+      "pinned_message",
     ])
     .optional(),
   targetMember: z.string().optional(),
@@ -589,6 +595,8 @@ export const DeviceStateSchema = z.object({
   profileId: z.string(),
   isLocked: z.boolean(),
   foregroundAppId: z.string().optional(),
+  appTheme: z.string().optional(),
+  appAppearance: z.enum(["light", "dark"]).optional(),
   notifications: z.array(NotificationSchema).optional(),
   call: CallStateSchema.optional(),
   homeScreen: HomeScreenConfigSchema.optional(),

@@ -1,14 +1,9 @@
 /**
  * WhatsApp DSL Layer - Barrel Export
  * 
- * DSL extensions for WhatsApp authoring:
- * - extension.ts: b.use("app_whatsapp") API for beat DSL
- * - track-builder.ts: V2 track-based DSL
- * - group-builder.ts: Group operations DSL
+ * Track-based WhatsApp authoring surfaces:
+ * - track-builder.ts: deterministic point/span DSL
  */
-
-// b.use() Extension (Legacy beat DSL)
-export { whatsappDsl, type WhatsAppDslApi } from "./extension.js";
 
 // V2 Track Builder
 export {
@@ -19,8 +14,4 @@ export {
     type ReceiveOptions,
     type SendOptions,
     type ImageOptions,
-    type TypingOptions,
 } from "./track-builder.js";
-
-// Group Builder
-export * from "./group-builder.js";

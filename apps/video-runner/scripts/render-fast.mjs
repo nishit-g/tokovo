@@ -43,13 +43,12 @@ function parseConcurrency(rawValue) {
 
   const parsed = Number(rawValue);
   if (!Number.isFinite(parsed) || parsed < 1) {
-    throw new Error(
-      `CONCURRENCY must be a positive number, received: ${rawValue}`,
-    );
+    throw new Error(`CONCURRENCY must be a positive number, received: ${rawValue}`);
   }
   return Math.floor(parsed);
 }
 const concurrency = parseConcurrency(process.env.CONCURRENCY);
+const chromiumGl = process.env.TOKOVO_CHROMIUM_GL ?? "swangle";
 
 function readJson(filePath) {
   return JSON.parse(fs.readFileSync(filePath, "utf8"));
@@ -139,8 +138,7 @@ function resolveBundleRoots() {
     }
 
     const packageJson = readJson(packageJsonPath);
-    const packageName =
-      typeof packageJson.name === "string" ? packageJson.name : currentDir;
+    const packageName = typeof packageJson.name === "string" ? packageJson.name : currentDir;
     if (visited.has(packageName)) {
       continue;
     }
@@ -162,13 +160,9 @@ function resolveBundleRoots() {
 }
 
 function getRelevantPathspecs() {
-  const bundleRoots = resolveBundleRoots().map((dir) =>
-    toPosixPath(path.relative(repoRoot, dir)),
-  );
+  const bundleRoots = resolveBundleRoots().map((dir) => toPosixPath(path.relative(repoRoot, dir)));
   const publicDir = path.join(appRoot, "public");
-  const configFiles = rootConfigFiles.filter((file) =>
-    fs.existsSync(path.join(repoRoot, file)),
-  );
+  const configFiles = rootConfigFiles.filter((file) => fs.existsSync(path.join(repoRoot, file)));
   if (fs.existsSync(publicDir)) {
     bundleRoots.push(toPosixPath(path.relative(repoRoot, publicDir)));
   }
@@ -191,10 +185,7 @@ function getDirtyFiles(pathspecs) {
       continue;
     }
 
-    const relativePath = match[1]
-      .split(" -> ")
-      .pop()
-      ?.trim();
+    const relativePath = match[1].split(" -> ").pop()?.trim();
     if (relativePath) {
       dirtyFiles.add(relativePath);
     }
@@ -228,9 +219,7 @@ function createSourceSignature() {
     ...[...dirtyFiles].sort().map((relativePath) => getFileSignature(relativePath)),
   ];
 
-  return Buffer.from(signatureParts.join("\n"))
-    .toString("base64url")
-    .slice(0, 32);
+  return Buffer.from(signatureParts.join("\n")).toString("base64url").slice(0, 32);
 }
 
 async function getServeUrl() {
@@ -288,13 +277,11 @@ async function main() {
     x264Preset: "veryfast",
     hardwareAcceleration: "if-possible",
     chromiumOptions: {
-      gl: "angle",
+      gl: chromiumGl,
     },
     envVariables: {
       TOKOVO_RENDER_PROFILE: "fast",
-      ...(publicAssetBaseUrl
-        ? { TOKOVO_PUBLIC_ASSET_BASE_URL: publicAssetBaseUrl }
-        : {}),
+      ...(publicAssetBaseUrl ? { TOKOVO_PUBLIC_ASSET_BASE_URL: publicAssetBaseUrl } : {}),
     },
   });
 }

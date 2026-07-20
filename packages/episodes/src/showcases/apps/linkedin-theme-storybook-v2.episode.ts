@@ -36,7 +36,7 @@ export default defineEpisode({
           network: "wifi",
         },
       })
-      .background({ type: "image", src: "/backgrounds/storybook-forest.png" })
+      .background({ type: "image", src: "/backgrounds/storybook-forest.jpg" })
       .snapshot("app_linkedin", "phone", {
         currentUserId: "me",
         users: [

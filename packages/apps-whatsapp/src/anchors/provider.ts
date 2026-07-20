@@ -15,8 +15,10 @@ import type {
   SemanticLayoutState,
   WorldState,
 } from "@tokovo/core";
+import { getAppStateForDevice } from "@tokovo/core";
+import type { WhatsAppState } from "../types/index.js";
 
-import { WhatsAppAnchors } from "../runtime/adapters/anchors.js";
+import { WhatsAppAnchorFraming } from "../runtime/adapters/anchors.js";
 
 const APP_ID = "app_whatsapp";
 
@@ -73,18 +75,12 @@ function addContentAnchor(
   }
 
   if (!Number.isFinite(minX) || !Number.isFinite(minY)) return;
-  anchors.content = {
+  anchors.chat_content = {
     x: minX,
     y: minY,
     width: Math.max(0, maxX - minX),
     height: Math.max(0, maxY - minY),
   };
-}
-
-function aliasAnchor(anchors: Record<string, LayoutRect>, alias: string, source: string): void {
-  if (!anchors[alias] && anchors[source]) {
-    anchors[alias] = anchors[source];
-  }
 }
 
 function addChatThreadAnchor(
@@ -96,7 +92,7 @@ function addChatThreadAnchor(
   if ((layout as LayoutState).kind !== "CHAT") return;
 
   const header = anchors.header;
-  const input = anchors.input_area ?? anchors.inputArea;
+  const input = anchors.input_area;
   const top = header ? header.y + header.height : viewport.height * 0.11;
   const bottom = input ? input.y : viewport.height * 0.86;
 
@@ -110,7 +106,7 @@ function addChatThreadAnchor(
 
 export const WhatsAppAnchorProvider: AnchorProvider = {
   appId: APP_ID,
-  framing: WhatsAppAnchors.framing ?? {},
+  framing: WhatsAppAnchorFraming,
 
   getAnchors(
     world: WorldState,
@@ -132,24 +128,11 @@ export const WhatsAppAnchorProvider: AnchorProvider = {
       }
     }
 
-    // Aliases for common anchor names.
-    if (anchors.input_area && !anchors.inputArea) {
-      anchors.inputArea = anchors.input_area;
-    }
-    if (anchors.typing_indicator && !anchors.typingIndicator) {
-      anchors.typingIndicator = anchors.typing_indicator;
-    }
-
     addChatThreadAnchor(anchors, layout as LayoutState, viewport);
 
-    // Map message groups to message-N anchors and lastMessage.
+    // Stable direct message IDs are anchors; latest-message selectors are
+    // explicit dynamic camera targets for authored conversation beats.
     const messageIds = semantic?.groups?.message ?? [];
-    messageIds.forEach((id, index) => {
-      const rect = semantic?.regions?.[id]?.rect;
-      if (rect) {
-        anchors[`message-${index}`] = rect;
-      }
-    });
     const lastMessageId = messageIds[messageIds.length - 1];
     const lastMessageRect = lastMessageId ? semantic?.regions?.[lastMessageId]?.rect : undefined;
     if (lastMessageRect) {
@@ -171,12 +154,50 @@ export const WhatsAppAnchorProvider: AnchorProvider = {
     }
 
     addContentAnchor(anchors, layout as LayoutState);
-    aliasAnchor(anchors, "chat_header", "header");
-    aliasAnchor(anchors, "message_thread", "chat_thread");
-    aliasAnchor(anchors, "thread_card", "chat_thread");
-    aliasAnchor(anchors, "message_list", "chat_list");
-    aliasAnchor(anchors, "status_row", "updates_status_strip");
-    aliasAnchor(anchors, "content", "chat_thread");
+
+    const state = getAppStateForDevice<WhatsAppState>(
+      world,
+      APP_ID,
+      deviceId,
+    );
+    if (state?.mediaViewer) {
+      anchors.media_viewer = anchors.device;
+      anchors.media_viewer_header = {
+        x: 0,
+        y: 0,
+        width: viewport.width,
+        height: 64,
+      };
+      anchors.media_viewer_content = {
+        x: 0,
+        y: 64,
+        width: viewport.width,
+        height: Math.max(0, viewport.height - 128),
+      };
+      anchors.media_viewer_caption = {
+        x: 0,
+        y: Math.max(64, viewport.height - 96),
+        width: viewport.width,
+        height: 96,
+      };
+    }
+
+    if (state?.statusViewer) {
+      anchors.status_viewer = anchors.device;
+      anchors.status_progress = {
+        x: 10,
+        y: 52,
+        width: Math.max(0, viewport.width - 20),
+        height: 3,
+      };
+      anchors.status_content = anchors.device;
+      anchors.status_reply = {
+        x: 14,
+        y: Math.max(0, viewport.height - 72),
+        width: Math.max(0, viewport.width - 28),
+        height: 54,
+      };
+    }
 
     return {
       anchors,

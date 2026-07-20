@@ -36,7 +36,17 @@ export default defineEpisode({
       .snapshot("app_whatsapp", "phone", {
         conversations: [
           { id: "dm_ops", name: "Ops Lead", avatar: "/avatars/avatar-ava.jpg", unreadCount: 2, isPinned: true },
-          { id: "group_launch", name: "Launch Night", type: "group", unreadCount: 4, participants: ["me", "Mina", "Ravi"] },
+          {
+            id: "group_launch",
+            name: "Launch Night",
+            type: "group",
+            unreadCount: 4,
+            members: [
+              { id: "me", name: "You" },
+              { id: "mina", name: "Mina" },
+              { id: "ravi", name: "Ravi" },
+            ],
+          },
         ],
       })
       .snapshot("app_instagram", "phone", {

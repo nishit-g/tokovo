@@ -65,6 +65,7 @@ export type SemanticAnchorId =
   | "header"
   | "content"
   | "inputArea"
+  | "input_area"
   | "lastMessage"
   | "typingIndicator"
   | "notification"

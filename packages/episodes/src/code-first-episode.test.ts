@@ -91,7 +91,7 @@ describe("canonical code-first app tracks", () => {
       ir.events
         .filter((event) => event.kind === "APP")
         .map((event) => event.at),
-    ).toEqual([60, 60, 90, 135, 240, 270]);
+    ).toEqual([60, 90, 135, 240, 270]);
     expect(
       ir.events.some(
         (event) =>

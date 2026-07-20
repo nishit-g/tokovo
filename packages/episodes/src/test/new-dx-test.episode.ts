@@ -3,7 +3,7 @@
  *
  * Exercises:
  * - seeded message history
- * - openChat()/goBack()
+ * - explicit conversation and screen navigation
  * - pause()/now()
  * - reply()
  */
@@ -37,7 +37,7 @@ export default defineEpisode({
       duration: "60s",
       title: "New DX Test - Initial Messages + Context Switching + Relative Timing",
       description:
-        "Tests: seeded message history, openChat(), pause(), now(), reply()",
+        "Tests seeded message history and explicit conversation switching.",
     })
       .device("phone", "iphone16", {
         app: "app_whatsapp",
@@ -50,12 +50,22 @@ export default defineEpisode({
             avatar: "https://i.pravatar.cc/150?img=1",
             messages: [
               {
+                id: "seed_alex_1",
+                type: "text",
                 from: "Alex",
                 text: "Hey! See you tomorrow at 2pm?",
                 timestamp: -3600,
               },
-              { from: "Me", text: "Yeah sounds good!", timestamp: -3500 },
               {
+                id: "seed_alex_2",
+                type: "text",
+                from: "Me",
+                text: "Yeah sounds good!",
+                timestamp: -3500,
+              },
+              {
+                id: "seed_alex_3",
+                type: "text",
                 from: "Alex",
                 text: "Perfect! Coffee shop on Main St",
                 timestamp: -3400,
@@ -75,24 +85,18 @@ export default defineEpisode({
         "app_whatsapp",
         () => new WhatsAppTrackBuilder(30, "phone", "", getOrder),
         (wa) => {
-          wa.openChat("dm_alex");
-          wa.pause(1);
-          wa.at("0s").receive("Alex", "I'm here!");
-          wa.pause(2);
-          wa.now().reply("Coming down now!");
-          wa.pause(1);
-          wa.at("0s").receive("Alex", "Cool, I'm at a table inside");
+          wa.switchTo("dm_alex", "0s");
+          wa.at("1.3s").receive("Alex", "I'm here!");
+          wa.span("3.8s", "5.8s").typing("me");
+          wa.at("5.8s").send("Coming down now!");
+          wa.at("7.3s").receive("Alex", "Cool, I'm at a table inside");
 
-          wa.pause(2);
-          wa.goBack();
-          wa.pause(1);
-          wa.now().openChat("dm_sarah");
-          wa.pause(1);
-          wa.at("0s").send("Hey Sarah! Long time no talk");
-          wa.pause(3);
-          wa.at("0s").receive("Sarah", "Hey! How are you?");
-          wa.pause(1);
-          wa.now().reply("Good! Want to grab coffee sometime?", 3);
+          wa.openChatList("9.8s");
+          wa.switchTo("dm_sarah", "11.1s");
+          wa.at("12.4s").send("Hey Sarah! Long time no talk");
+          wa.at("15.9s").receive("Sarah", "Hey! How are you?");
+          wa.span("17.4s", "20.4s").typing("me");
+          wa.at("20.4s").send("Good! Want to grab coffee sometime?");
         },
       )
       .camera((cam) => {

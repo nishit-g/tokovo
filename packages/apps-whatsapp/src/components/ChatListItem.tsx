@@ -1,5 +1,7 @@
 import React, { memo } from "react";
-import { Img, useCurrentFrame, interpolate } from "remotion";
+import { AlertCircle, Clock3 } from "lucide-react";
+import { DeterministicImage } from "@tokovo/react";
+import { useCurrentFrame, interpolate } from "remotion";
 import {
   DoubleCheckIcon,
   MutedIcon,
@@ -7,9 +9,13 @@ import {
   LockIcon,
   SingleCheckIcon,
 } from "./Icons.js";
-import { spacing, typography } from "./theme.js";
 import { resolveAvatarWithFallback } from "../utils/avatar.js";
-import { useTheme } from "../theme/ThemeContext.js";
+import {
+  useTheme,
+  useWhatsAppLocale,
+} from "../experience/ExperienceContext.js";
+import { formatWhatsAppNumber } from "../localization/index.js";
+import { StatusRing, type StatusSegmentState } from "./StatusRing.js";
 
 // =============================================================================
 // TYPES
@@ -21,31 +27,26 @@ export interface ChatListItemProps {
   avatarUrl?: string;
   groupAvatars?: string[];
   lastMessage?: string;
-  subtitle?: string;
   timestamp?: string;
   unreadCount?: number;
-  status?: "sent" | "delivered" | "read";
-  isGroup?: boolean;
+  status?: "sending" | "sent" | "delivered" | "read" | "failed";
   isTyping?: boolean;
   isLast?: boolean;
   isMuted?: boolean;
   isPinned?: boolean;
-  hasStatus?: boolean;
+  statusSegments?: readonly StatusSegmentState[];
   mediaType?:
-  | "photo"
-  | "video"
-  | "voice"
-  | "sticker"
-  | "document"
-  | "gif"
-  | null;
+    | "photo"
+    | "video"
+    | "voice"
+    | "sticker"
+    | "document"
+    | "gif"
+    | null;
   senderName?: string;
   typingText?: string;
-  isLocked?: boolean;
-  isVerifiedBusiness?: boolean;
-  isChannel?: boolean;
-  isFollowed?: boolean;
-  channelUnreadCount?: number;
+  locked?: boolean;
+  verifiedBusiness?: boolean;
 }
 
 // =============================================================================
@@ -101,53 +102,23 @@ const TypingDots: React.FC<{ color: string }> = ({ color }) => {
   );
 };
 
-const StatusRing: React.FC<{ size: number; color: string }> = ({
-  size,
-  color,
-}) => {
-  const strokeWidth = 2;
-  const radius = (size - strokeWidth) / 2;
-  const circ = 2 * Math.PI * radius;
-
-  return (
-    <svg
-      width={size}
-      height={size}
-      style={{
-        position: "absolute",
-        top: 0,
-        left: 0,
-        transform: "rotate(-90deg)",
-      }}
-    >
-      <circle
-        cx={size / 2}
-        cy={size / 2}
-        r={radius}
-        fill="none"
-        stroke={color}
-        strokeWidth={strokeWidth}
-        strokeDasharray={`${circ * 0.15} ${circ * 0.05}`}
-        strokeLinecap="round"
-      />
-    </svg>
-  );
-};
-
-const getMediaPrefix = (mediaType: ChatListItemProps["mediaType"]): string => {
+const getMediaPrefix = (
+  mediaType: ChatListItemProps["mediaType"],
+  t: ReturnType<typeof useWhatsAppLocale>["t"],
+): string => {
   switch (mediaType) {
     case "photo":
-      return "📷 Photo";
+      return `📷 ${t("message.photo")}`;
     case "video":
-      return "🎥 Video";
+      return `🎥 ${t("message.video")}`;
     case "voice":
-      return "🎤 Voice message";
+      return `🎤 ${t("message.voice")}`;
     case "sticker":
-      return "🎭 Sticker";
+      return `🎭 ${t("message.sticker")}`;
     case "document":
-      return "📄 Document";
+      return `📄 ${t("message.document")}`;
     case "gif":
-      return "GIF";
+      return t("message.gif");
     default:
       return "";
   }
@@ -162,7 +133,6 @@ export const ChatListItem = memo(function ChatListItem({
   avatarUrl,
   groupAvatars,
   lastMessage,
-  subtitle,
   timestamp,
   unreadCount = 0,
   status,
@@ -170,21 +140,19 @@ export const ChatListItem = memo(function ChatListItem({
   isLast,
   isMuted,
   isPinned,
-  hasStatus,
+  statusSegments,
   mediaType,
   senderName,
   typingText,
-  isLocked,
-  isVerifiedBusiness,
-  isChannel,
-  isFollowed,
-  channelUnreadCount = 0,
+  locked,
+  verifiedBusiness,
 }: ChatListItemProps) {
   const theme = useTheme();
+  const { locale, t } = useWhatsAppLocale();
+  const { uiSpacing: spacing, uiTypography: typography } = theme;
   const hasUnread = unreadCount > 0;
   const primaryText = theme.colors.receivedBubbleText;
   const secondaryText = theme.colors.timestamp;
-  const tertiaryText = `${theme.colors.timestamp}B3`;
   const accent = theme.colors.accent;
   const background = theme.colors.background;
   const divider = theme.colors.divider;
@@ -192,10 +160,6 @@ export const ChatListItem = memo(function ChatListItem({
   const avatarBorder = theme.colors.background;
 
   const buildMessagePreview = (): React.ReactNode => {
-    if (isChannel) {
-      return <span style={{ color: secondaryText }}>{lastMessage}</span>;
-    }
-
     if (isTyping) {
       return (
         <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
@@ -207,14 +171,14 @@ export const ChatListItem = memo(function ChatListItem({
               fontFamily: theme.typography.fontFamily,
             }}
           >
-            {typingText || "typing…"}
+            {typingText || t("chat.typing")}
           </span>
         </span>
       );
     }
 
     if (mediaType) {
-      const prefix = getMediaPrefix(mediaType);
+      const prefix = getMediaPrefix(mediaType, t);
       if (prefix) {
         return (
           <span style={{ color: secondaryText }}>
@@ -243,7 +207,15 @@ export const ChatListItem = memo(function ChatListItem({
 
   return (
     <div
-      data-anchor={isChannel ? "channel_row" : "chat_row"}
+      data-anchor="chat_row"
+      role="listitem"
+      aria-label={`${name}. ${lastMessage ?? ""}${
+        hasUnread
+          ? `. ${t("a11y.unreadMessages", {
+              count: formatWhatsAppNumber(locale, unreadCount),
+            })}`
+          : ""
+      }`}
       style={{
         display: "flex",
         backgroundColor: background,
@@ -261,20 +233,23 @@ export const ChatListItem = memo(function ChatListItem({
           alignItems: "center",
           justifyContent: "center",
           flexShrink: 0,
-          paddingLeft: spacing.avatarMarginLeft,
+          paddingInlineStart: spacing.avatarMarginLeft,
           position: "relative",
         }}
       >
-        {hasStatus && (
+        {statusSegments && statusSegments.length > 0 && (
           <div
             style={{
               position: "absolute",
-              left: spacing.avatarMarginLeft - 2,
+              insetInlineStart: spacing.avatarMarginLeft - 2,
               top: "50%",
               transform: "translateY(-50%)",
             }}
           >
-            <StatusRing size={spacing.avatarSize + 4} color={accent} />
+            <StatusRing
+              size={spacing.avatarSize + 4}
+              segments={statusSegments}
+            />
           </div>
         )}
 
@@ -290,7 +265,7 @@ export const ChatListItem = memo(function ChatListItem({
             }}
           >
             {groupAvatars.slice(0, 2).map((avatar, idx) => (
-              <Img
+              <DeterministicImage
                 key={`${avatar}_${idx}`}
                 src={resolveAvatarWithFallback(avatar, name)}
                 alt={name}
@@ -301,7 +276,7 @@ export const ChatListItem = memo(function ChatListItem({
                   objectFit: "cover",
                   position: "absolute",
                   top: idx === 0 ? 0 : spacing.avatarSize * 0.3,
-                  left: idx === 0 ? 0 : spacing.avatarSize * 0.3,
+                  insetInlineStart: idx === 0 ? 0 : spacing.avatarSize * 0.3,
                   border: `2px solid ${avatarBorder}`,
                   backgroundColor: avatarPlaceholder,
                 }}
@@ -320,34 +295,11 @@ export const ChatListItem = memo(function ChatListItem({
               position: "relative",
             }}
           >
-            <Img
+            <DeterministicImage
               src={resolveAvatarWithFallback(avatarUrl, name)}
               alt={name}
               style={{ width: "100%", height: "100%", objectFit: "cover" }}
             />
-            {isChannel && channelUnreadCount > 0 && (
-              <div
-                style={{
-                  position: "absolute",
-                  right: 2,
-                  top: 2,
-                  minWidth: 18,
-                  height: 18,
-                  padding: "0 5px",
-                  borderRadius: 999,
-                  backgroundColor: theme.colors.unreadBadge,
-                  color: theme.colors.unreadBadgeText,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  fontSize: 10,
-                  fontWeight: 700,
-                  border: `2px solid ${background}`,
-                }}
-              >
-                {channelUnreadCount > 99 ? "99+" : channelUnreadCount}
-              </div>
-            )}
           </div>
         )}
       </div>
@@ -362,9 +314,7 @@ export const ChatListItem = memo(function ChatListItem({
           height: "100%",
           paddingRight: spacing.contentMarginRight,
           paddingLeft: spacing.contentMarginLeft,
-          borderBottom: isLast
-            ? "none"
-            : `0.5px solid ${divider}`,
+          borderBottom: isLast ? "none" : `0.5px solid ${divider}`,
           minWidth: 0,
         }}
       >
@@ -374,7 +324,7 @@ export const ChatListItem = memo(function ChatListItem({
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center",
-            marginBottom: subtitle ? 1 : 2,
+            marginBottom: 2,
           }}
         >
           <div
@@ -392,21 +342,6 @@ export const ChatListItem = memo(function ChatListItem({
             {name}
           </div>
 
-          {isChannel && (
-            <div
-              style={{
-                ...typography.caption,
-                fontFamily: theme.typography.fontFamily,
-                color: isFollowed ? primaryText : accent,
-                fontWeight: 700,
-                marginRight: 8,
-                whiteSpace: "nowrap",
-              }}
-            >
-              {isFollowed ? "Following" : "Follow"}
-            </div>
-          )}
-
           <div
             style={{
               display: "flex",
@@ -415,38 +350,18 @@ export const ChatListItem = memo(function ChatListItem({
               flexShrink: 0,
             }}
           >
-            {isMuted && (
-              <MutedIcon size={14} color={secondaryText} />
-            )}
+            {isMuted && <MutedIcon size={14} color={secondaryText} />}
             <span
               style={{
                 ...typography.caption,
                 fontFamily: theme.typography.fontFamily,
-                color: hasUnread
-                  ? accent
-                  : secondaryText,
+                color: hasUnread ? accent : secondaryText,
               }}
             >
               {timestamp}
             </span>
           </div>
         </div>
-
-        {subtitle && (
-          <div
-            style={{
-              ...typography.caption,
-              color: tertiaryText,
-              fontFamily: theme.typography.fontFamily,
-              marginBottom: 2,
-              whiteSpace: "nowrap",
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-            }}
-          >
-            {subtitle}
-          </div>
-        )}
 
         {/* Bottom Row */}
         <div
@@ -475,11 +390,12 @@ export const ChatListItem = memo(function ChatListItem({
               <span
                 style={{ display: "flex", alignItems: "center", flexShrink: 0 }}
               >
-                {status === "sent" ? (
-                  <SingleCheckIcon
-                    size={16}
-                    color={theme.colors.checkmark}
-                  />
+                {status === "failed" ? (
+                  <AlertCircle size={14} color={theme.colors.callCardMissed} />
+                ) : status === "sending" ? (
+                  <Clock3 size={13} color={theme.colors.checkmark} />
+                ) : status === "sent" ? (
+                  <SingleCheckIcon size={16} color={theme.colors.checkmark} />
                 ) : (
                   <DoubleCheckIcon read={status === "read"} size={16} />
                 )}
@@ -505,13 +421,9 @@ export const ChatListItem = memo(function ChatListItem({
               marginLeft: 8,
             }}
           >
-            {isPinned && (
-              <PinIcon size={14} color={secondaryText} />
-            )}
-            {isLocked && (
-              <LockIcon size={13} color={secondaryText} />
-            )}
-            {isVerifiedBusiness && (
+            {isPinned && <PinIcon size={14} color={secondaryText} />}
+            {locked && <LockIcon size={13} color={secondaryText} />}
+            {verifiedBusiness && (
               <div
                 style={{
                   width: 14,

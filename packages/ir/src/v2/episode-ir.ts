@@ -28,6 +28,8 @@ export interface DeviceConfig {
   os?: OSConfig;
   /** UI theme/strategy to use (e.g., "whatsapp-storybook") */
   theme?: string;
+  /** App color appearance, independent of the selected theme variant. */
+  appearance?: "light" | "dark";
   /** Start the device locked at frame 0 */
   locked?: boolean;
   /** Apps installed on the home screen (deterministic icon layout) */
@@ -160,6 +162,86 @@ export type BackgroundConfigIR =
   };
 
 // =============================================================================
+// HAND PERFORMANCE CONFIG
+// =============================================================================
+
+export type HandTypingMode = "oneThumb" | "twoThumbs";
+export type HandMotionPreset = "steady" | "walking" | "nervous";
+export type Handedness = "left" | "right";
+
+export interface HandRigAssetsIR {
+  /** Rear grip/palm plate rendered behind the simulated device. */
+  underlaySrc: string;
+  /** Foreground left-thumb cutout used for key, tap, and swipe motion. */
+  leftThumbSrc: string;
+  /** Foreground right-thumb cutout used for key, tap, and swipe motion. */
+  rightThumbSrc: string;
+}
+
+export interface HandPerformanceStageIR {
+  /** Multiplier applied after the normal fit-to-composition device scale. */
+  deviceScale?: number;
+  /** Stage offset in composition pixels after scaling. */
+  offsetX?: number;
+  offsetY?: number;
+  /** Generated grip-plate width as a multiple of the device width. */
+  gripWidthRatio?: number;
+  /** Grip-plate top as a multiple of the device height. */
+  gripTopRatio?: number;
+  /** Foreground thumb width as a multiple of the device width. */
+  thumbWidthRatio?: number;
+}
+
+export type HandPerformanceCueIR =
+  | {
+      kind: "hold";
+      startFrame: number;
+      endFrame: number;
+      motion: HandMotionPreset;
+      intensity?: number;
+    }
+  | {
+      kind: "type";
+      startFrame: number;
+      endFrame: number;
+      mode: HandTypingMode;
+      intensity?: number;
+    }
+  | {
+      kind: "tap";
+      startFrame: number;
+      endFrame: number;
+      target: string;
+      hand?: Handedness;
+      intensity?: number;
+    }
+  | {
+      kind: "swipe";
+      startFrame: number;
+      endFrame: number;
+      direction: "up" | "down" | "left" | "right";
+      hand?: Handedness;
+      intensity?: number;
+    };
+
+/**
+ * Visual direction for a deterministic, device-attached hand rig.
+ *
+ * Authored cues plus runtime keyboard state are sufficient to derive the
+ * complete pose at any frame, so this does not introduce hidden timers.
+ */
+export interface HandPerformanceIR {
+  deviceId: string;
+  rigId: string;
+  assets: HandRigAssetsIR;
+  defaultMotion?: HandMotionPreset;
+  defaultTypingMode?: HandTypingMode;
+  motionIntensity?: number;
+  stage?: HandPerformanceStageIR;
+  cues: HandPerformanceCueIR[];
+}
+
+// =============================================================================
 // TRACK EPISODE IR
 // =============================================================================
 
@@ -214,6 +296,9 @@ export interface TrackEpisodeIR {
 
   /** Background configuration for the video canvas */
   background?: BackgroundConfigIR;
+
+  /** Optional physical hand rigs composited around authored devices. */
+  handPerformances?: HandPerformanceIR[];
 }
 
 // =============================================================================

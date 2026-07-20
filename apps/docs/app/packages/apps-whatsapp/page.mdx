@@ -8,8 +8,16 @@ The flagship messaging plugin package for Tokovo.
 - snapshot and initial-view schema ownership
 - bootstrap validation and hydration
 - v2 lowering and DSL helpers
-- chat, updates, calls, and channel surfaces
+- chat, updates, calls, communities, settings, profile, channel, and status surfaces
 - semantic layout and anchor integration
+- stable-ID message targeting with strict runtime validation
+- immutable thread projection and revision-based layout caching
+- deterministic 120-message render windows over complete 10,000-message histories
+- explicit media transfer/playback lifecycle and full-screen viewer state
+- explicit outgoing delivery failure/retry and fullscreen Status progression
+- authored long-press and swipe-to-reply interaction state
+- deterministic English and Arabic RTL localization
+- screen-reader labels, landmarks, native controls, and live-thread semantics
 - notification and audio behavior
 
 ## Key Exports
@@ -21,3 +29,24 @@ The flagship messaging plugin package for Tokovo.
 - `@tokovo/apps-whatsapp/dsl` for track builders and authoring helpers
 - `@tokovo/apps-whatsapp/lowering` for event lowering
 - `@tokovo/apps-whatsapp/ui` for React surfaces
+
+## Authoring invariants
+
+Use the point/span track DSL. Messages that will be replied to, edited, deleted,
+forwarded, reacted to, or played must have an explicit `messageId`; every targeted
+operation uses that ID. Array indexes, `last` references, and compatibility aliases are
+rejected. Camera code should target documented semantic anchors or stable message IDs.
+
+Media transfer (`remote`, `downloading`, `ready`, `failed`) is distinct from playback
+(`idle`, `playing`, `paused`, `complete`). The legacy `VOICE_PLAY` / `VOICE_PAUSE` events
+and flat `isPlaying` / `playProgress` snapshot fields were removed; invalid snapshots and
+impossible transitions fail validation.
+
+Conversation snapshots persist one canonical `messages` array. Render-time indexes are
+derived and immutable, preventing message edits, deletion, receipts, and lifecycle
+changes from mutating a stale duplicate collection.
+
+Use `whatsapp-interaction-matrix-v3` as the acceptance render for light/dark platform
+coverage, Arabic RTL, privacy notices, message delivery failure/retry, media download
+and playback, media and Status viewers, long-press actions, swipe-to-reply, chat lists,
+Calls, Communities, Settings, and profile surfaces.

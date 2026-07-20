@@ -6,9 +6,13 @@ import {
   BadgeCheck,
   Briefcase,
 } from "lucide-react";
-import { Img } from "remotion";
+import { DeterministicImage } from "@tokovo/react";
 import { UI_CONSTANTS } from "../config/layout-config.js";
-import { useTheme } from "../theme/ThemeContext.js";
+import {
+  useTheme,
+  useWhatsAppLocale,
+  useWhatsAppPresentation,
+} from "../experience/ExperienceContext.js";
 import { resolveAvatarWithFallback } from "../utils/avatar.js";
 
 export interface HeaderProps {
@@ -16,9 +20,9 @@ export interface HeaderProps {
   avatarUrl?: string;
   status: string;
   safeAreaTop?: number;
-  isLocked?: boolean;
-  businessLabel?: string;
-  isVerifiedBusiness?: boolean;
+  locked?: boolean;
+  contactLabel?: string;
+  verifiedBusiness?: boolean;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -26,16 +30,22 @@ export const Header: React.FC<HeaderProps> = ({
   avatarUrl,
   status,
   safeAreaTop = 47,
-  isLocked = false,
-  businessLabel,
-  isVerifiedBusiness = false,
+  locked = false,
+  contactLabel,
+  verifiedBusiness = false,
 }) => {
   const theme = useTheme();
+  const { direction, t } = useWhatsAppLocale();
+  const presentation = useWhatsAppPresentation();
   // Use fallback avatar when local paths don't exist
   const resolvedAvatarUrl = resolveAvatarWithFallback(avatarUrl, contactName);
 
   const contentHeight = UI_CONSTANTS.HEADER_CONTENT_HEIGHT;
   const totalHeight = safeAreaTop + contentHeight;
+  const actionColor =
+    presentation.conversation.headerActionColor === "accent"
+      ? theme.colors.accent
+      : theme.colors.headerText;
 
   return (
     <div
@@ -46,8 +56,7 @@ export const Header: React.FC<HeaderProps> = ({
         paddingTop: safeAreaTop,
         display: "flex",
         alignItems: "center",
-        paddingLeft: UI_CONSTANTS.HEADER_PADDING_X,
-        paddingRight: UI_CONSTANTS.HEADER_PADDING_X,
+        paddingInline: UI_CONSTANTS.HEADER_PADDING_X,
         borderBottom: `0.5px solid ${theme.colors.divider}`,
         backdropFilter: "blur(20px)",
         position: "relative",
@@ -55,21 +64,31 @@ export const Header: React.FC<HeaderProps> = ({
         boxSizing: "border-box",
       }}
     >
-      <div
+      <button
+        type="button"
+        aria-label={t("action.back")}
         style={{
-          marginRight: 8,
+          marginInlineEnd: 8,
           color: theme.colors.headerText,
           display: "flex",
           alignItems: "center",
           cursor: "pointer",
+          padding: 0,
+          border: 0,
+          background: "transparent",
+          font: "inherit",
         }}
       >
         <ChevronLeft
           size={34}
           color={theme.colors.headerText}
-          style={{ marginLeft: -8 }}
+          aria-hidden="true"
+          style={{
+            marginInlineStart: -8,
+            transform: direction === "rtl" ? "scaleX(-1)" : undefined,
+          }}
         />
-      </div>
+      </button>
 
       <div
         data-anchor="profile"
@@ -78,13 +97,14 @@ export const Header: React.FC<HeaderProps> = ({
           height: UI_CONSTANTS.HEADER_AVATAR_SIZE,
           borderRadius: "50%",
           backgroundColor: theme.colors.divider,
-          marginRight: UI_CONSTANTS.HEADER_AVATAR_MARGIN_RIGHT,
+          marginInlineEnd: UI_CONSTANTS.HEADER_AVATAR_MARGIN_RIGHT,
           overflow: "hidden",
           flexShrink: 0,
         }}
       >
-        <Img
+        <DeterministicImage
           src={resolvedAvatarUrl}
+          alt={contactName}
           style={{ width: "100%", height: "100%", objectFit: "cover" }}
         />
       </div>
@@ -110,7 +130,7 @@ export const Header: React.FC<HeaderProps> = ({
           }}
         >
           <span>{contactName}</span>
-          {isVerifiedBusiness && (
+          {verifiedBusiness && (
             <BadgeCheck
               size={15}
               color={theme.colors.link}
@@ -118,7 +138,7 @@ export const Header: React.FC<HeaderProps> = ({
               strokeWidth={1.5}
             />
           )}
-          {isLocked && (
+          {locked && (
             <Lock size={13} color={theme.colors.timestamp} strokeWidth={1.8} />
           )}
         </div>
@@ -133,20 +153,46 @@ export const Header: React.FC<HeaderProps> = ({
             fontFamily: theme.typography.fontFamily,
           }}
         >
-          {businessLabel && (
+          {contactLabel && (
             <Briefcase
               size={12}
               color={theme.colors.timestamp}
               strokeWidth={1.8}
             />
           )}
-          {businessLabel ? `${businessLabel} • ${status}` : status}
+          {contactLabel ? `${contactLabel} • ${status}` : status}
         </div>
       </div>
 
-      <div style={{ display: "flex", gap: 28, paddingRight: 4 }}>
-        <Video size={22} color={theme.colors.headerText} strokeWidth={1.7} />
-        <Phone size={20} color={theme.colors.headerText} strokeWidth={1.7} />
+      <div
+        role="group"
+        aria-label={t("nav.calls")}
+        style={{ display: "flex", gap: 28, paddingInlineEnd: 4 }}
+      >
+        <button
+          type="button"
+          aria-label={t("action.video")}
+          style={{ padding: 0, border: 0, color: "inherit", background: "transparent" }}
+        >
+          <Video
+            size={22}
+            color={actionColor}
+            strokeWidth={1.7}
+            aria-hidden="true"
+          />
+        </button>
+        <button
+          type="button"
+          aria-label={t("message.voiceCall")}
+          style={{ padding: 0, border: 0, color: "inherit", background: "transparent" }}
+        >
+          <Phone
+            size={20}
+            color={actionColor}
+            strokeWidth={1.7}
+            aria-hidden="true"
+          />
+        </button>
       </div>
     </div>
   );

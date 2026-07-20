@@ -2,6 +2,7 @@ import React from "react";
 import { Img } from "remotion";
 import type { NotificationBannerProps } from "../types.js";
 import { useNotificationAnimation } from "../../hooks/useNotificationAnimation.js";
+import { formatNotificationAppLabel } from "../app-label.js";
 
 export const AndroidBanner: React.FC<NotificationBannerProps> = ({
   notification,
@@ -77,7 +78,7 @@ export const AndroidBanner: React.FC<NotificationBannerProps> = ({
         color: "#fff",
       }}
     >
-      {ir.appId?.charAt(0).toUpperCase() ?? "N"}
+      {formatNotificationAppLabel(ir.appId).charAt(0)}
     </div>
   );
 
@@ -139,7 +140,7 @@ export const AndroidBanner: React.FC<NotificationBannerProps> = ({
                 opacity: text.appName.opacity,
               }}
             >
-              {ir.appId}
+              {formatNotificationAppLabel(ir.appId)}
             </span>
             <span
               style={{

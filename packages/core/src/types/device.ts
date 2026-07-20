@@ -286,6 +286,9 @@ export interface DeviceState {
   // App UI theme/strategy (e.g., "whatsapp-storybook")
   appTheme?: string;
 
+  // App color appearance authored independently from the theme strategy.
+  appAppearance?: "light" | "dark";
+
   /**
    * Deterministic device-level transitions authored by DEVICE events.
    * Renderer uses this as state-only input (no hidden timers/global singletons).

@@ -52,18 +52,21 @@ Tokovo's v1 target surface covers:
 
 ## Render The Showcase
 
-Start with the creator-series showcase:
+Start with the multi-device social showcase:
 
 ```bash
-EPISODE_ID=v2-creator-series-showcase pnpm --filter video-runner render:fast
+EPISODE_ID=social-launch-multi-device pnpm --filter video-runner render:fast
 ```
 
 The render writes an MP4 and manifest under `apps/video-runner/out/`.
+`render:fast` builds its workspace dependencies first so the MP4 cannot silently
+use stale package output. Set `TOKOVO_SKIP_WORKSPACE_BUILD=1` only when those
+dependencies were already built from the current source tree.
 
 Then try app-specific showcases:
 
 ```bash
-EPISODE_ID=whatsapp-flagship-v2 pnpm --filter video-runner render:fast
+EPISODE_ID=whatsapp-interaction-matrix-v3 pnpm --filter video-runner render:fast
 EPISODE_ID=instagram-flagship-v2 pnpm --filter video-runner render:fast
 EPISODE_ID=x-flagship-v2 pnpm --filter video-runner render:fast
 EPISODE_ID=typewriter-flagship-v2 pnpm --filter video-runner render:fast
@@ -116,7 +119,7 @@ These are good first renders when checking the v1 target surface:
 | ----------------------------- | -------------------------------------------------------------------------- |
 | `v2-creator-series-showcase`  | lockscreen, notifications, app switching, typed keyboard, camera direction |
 | `multi-device-exhaustive`     | parallel phones, split pacing, screen recording, cross-app continuity      |
-| `whatsapp-flagship-v2`        | chat list, group thread, updates, calls, typed replies                     |
+| `whatsapp-interaction-matrix-v3` | two devices, RTL, message/media lifecycle, gestures, Status, calls, communities, settings |
 | `instagram-flagship-v2`       | story, DM, profile, creator-facing pacing                                  |
 | `x-flagship-v2`               | timeline, post detail, replies, notifications                              |
 | `typewriter-flagship-v2`      | typewriter app, procedural sound effects, text timing                      |
