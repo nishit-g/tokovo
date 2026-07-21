@@ -170,32 +170,12 @@ export default defineEpisode({
       // DEVICE: lockscreen bait + deterministic unlock + transitions
       // ---------------------------------------------------------------------
       .deviceTrack("phone", (d) => {
-        // Lockscreen bait (rendered by lockscreen UI; not a heads-up banner)
-        d.at("0.8s").notificationShow({
-          id: "bait-wa",
-          appId: "app_whatsapp",
-          title: "Receipts Committee",
-          body: "Jay: no way you still defending him 💀",
-          mode: "lockscreen",
-          priority: "high",
-        });
-
         // Unlock into the app (transition is handled by device runtime)
         d.at("3.2s").unlock();
 
         // Open WhatsApp with manual transition
         d.at("3.8s").openApp("app_whatsapp", {
           transition: { durationFrames: 18, style: "iosZoom" },
-        });
-
-        // While in WhatsApp: show a heads-up X banner so we can demo device-owned anchor `notification_banner`.
-        d.at("14.0s").notificationShow({
-          id: "heads-up-x",
-          appId: "app_x",
-          title: "X",
-          body: "Your name is trending.",
-          mode: "headsup",
-          priority: "high",
         });
 
         // Switch to X with manual transition
@@ -208,23 +188,44 @@ export default defineEpisode({
           transition: { durationFrames: 18, style: "iosZoom" },
         });
 
-        // End: go home, lock, and leave a final lockscreen cliffhanger notification.
+        // End: go home and lock on the final cliffhanger.
         d.at("82.0s").goHome({
           transition: { durationFrames: 14, style: "iosZoom" },
         });
         d.at("84.0s").lock();
-        d.at("86.0s").notificationShow({
+      })
+      .notificationTrack("phone", (notifications) => {
+        notifications.at("0.8s").deliver({
+          id: "bait-wa",
+          appId: "app_whatsapp",
+          content: { title: "Receipts Committee", body: "Jay: no way you still defending him 💀" },
+          category: "message",
+          interruption: "timeSensitive",
+          privacy: "private",
+          threadId: "wa_grp",
+        });
+        notifications.at("14.0s").deliver({
+          id: "heads-up-x",
+          appId: "app_x",
+          content: { title: "X", body: "Your name is trending." },
+          category: "social",
+          interruption: "timeSensitive",
+          privacy: "public",
+          threadId: "trending",
+        });
+        notifications.at("86.0s").deliver({
           id: "cliff-1",
           appId: "app_whatsapp",
-          title: "Mina",
-          body: "He tagged your mom.",
-          mode: "lockscreen",
-          priority: "high",
+          content: { title: "Mina", body: "He tagged your mom." },
+          category: "message",
+          interruption: "timeSensitive",
+          privacy: "private",
+          threadId: "wa_grp",
         });
       })
 
       // ---------------------------------------------------------------------
-      // WHATSAPP: group banter pacing + typed send (auto keyboard)
+      // WHATSAPP: group banter pacing.
       // ---------------------------------------------------------------------
       .whatsapp("phone", "wa_grp", (wa) => {
         wa.switchTo("wa_grp", "0s");
@@ -245,10 +246,8 @@ export default defineEpisode({
         wa.span("9.2s", "10.0s").typing("Rhea");
         wa.at("10.1s").receive("Rhea", "Caption is giving: 'I lie for sport'");
 
-        // Creator POV: typed send (should auto keyboard via plugin lowering)
+        // Creator POV send.
         wa.at("11.6s").send("Stop. The audacity has a subscription plan now.", {
-          typed: true,
-          charDelay: 2,
         });
 
         wa.at("16.2s").receive("Omar", "subscription plan is CRAZY 😭");
@@ -271,8 +270,6 @@ export default defineEpisode({
         x.at("44.0s").postTweet({
           authorId: "u_me",
           text: "He said 'remix' like honesty is a playlist.",
-          typed: true,
-          charDelay: 2,
           viewCount: 1800,
           shareCount: 34,
           bookmarkCount: 120,
@@ -281,7 +278,7 @@ export default defineEpisode({
       })
 
       // ---------------------------------------------------------------------
-      // iMessage: DM tension + typed reply
+      // iMessage: DM tension and reply.
       // ---------------------------------------------------------------------
       .imessage("phone", "im_dm", (im) => {
         im.at("58.0s").openConversation("im_dm");
@@ -294,10 +291,8 @@ export default defineEpisode({
           "Do NOT open the replies if you're fragile.",
         );
 
-        // Typed reply: we want camera to be able to follow keyboard deterministically.
+        // Reply beat.
         im.at("66.0s").send("Too late. I'm already opening them.", {
-          typed: true,
-          charDelay: 2,
         });
         im.at("70.0s").receive("Mina", "Okay. Then at least screen record it.");
       })
@@ -322,7 +317,7 @@ export default defineEpisode({
         // Heads-up banner (device-owned) should exist even while WhatsApp is foreground.
         cam
           .at("14.05s")
-          .focus("notification_banner", { scale: 1.18, duration: "0.45s" });
+          .focus("notification.banner", { scale: 1.18, duration: "0.45s" });
         cam
           .at("15.2s")
           .focus("lastMessage", { scale: 1.12, duration: "0.35s" });
@@ -336,7 +331,7 @@ export default defineEpisode({
           .span("39.2s", "44.2s")
           .trackCinematic("keyboard", { scale: 1.12, smoothing: 0.16 });
 
-        // iMessage: keep the keyboard in frame during the typed reply.
+        // iMessage reply framing.
         cam
           .at("58.2s")
           .focus("imessage_thread", { scale: 1.08, duration: "0.45s" });

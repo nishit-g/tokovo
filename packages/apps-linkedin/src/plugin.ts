@@ -19,6 +19,7 @@ const views: PluginViews = {
 
 export const LinkedInPlugin: TokovoPluginContract<"app_linkedin"> & {
   v2Lowering: typeof linkedInLowering;
+  notificationAdapter: typeof linkedInNotificationAdapter;
 } = {
   id: LINKEDIN_APP_ID,
   version: LINKEDIN_VERSION,

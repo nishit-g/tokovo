@@ -249,26 +249,6 @@ export const DeviceEventSchema = z.discriminatedUnion("type", [
     appId: z.string(),
     count: z.number(),
   }),
-  // Show notification
-  z.object({
-    at: z.number(),
-    kind: z.literal("DEVICE"),
-    deviceId: z.string(),
-    type: z.literal("SHOW_NOTIFICATION"),
-    appId: z.string(),
-    title: z.string(),
-    body: z.string(),
-    mode: z.enum(["lockscreen", "headsup", "both"]).optional(),
-    icon: z.string().optional(),
-  }),
-  // Dismiss notification
-  z.object({
-    at: z.number(),
-    kind: z.literal("DEVICE"),
-    deviceId: z.string(),
-    type: z.literal("DISMISS_NOTIFICATION"),
-    notificationId: z.string(),
-  }),
   // Incoming call
   z.object({
     at: z.number(),
@@ -566,18 +546,6 @@ export const ConversationStateSchema = z.object({
   typing: z.record(z.string(), z.boolean()).optional(),
 });
 
-// --- Notification Schema ---
-export const NotificationSchema = z.object({
-  id: z.string(),
-  appId: z.string(),
-  title: z.string(),
-  body: z.string(),
-  at: z.number(),
-  dismissedAt: z.number().optional(),
-  mode: z.enum(["lockscreen", "headsup", "both"]).optional(),
-  icon: z.string().optional(),
-});
-
 // --- Call State Schema ---
 export const CallStateSchema = z.object({
   status: z.enum(["incoming", "active", "ended"]),
@@ -597,7 +565,6 @@ export const DeviceStateSchema = z.object({
   foregroundAppId: z.string().optional(),
   appTheme: z.string().optional(),
   appAppearance: z.enum(["light", "dark"]).optional(),
-  notifications: z.array(NotificationSchema).optional(),
   call: CallStateSchema.optional(),
   homeScreen: HomeScreenConfigSchema.optional(),
 });

@@ -13,29 +13,6 @@ import type {
 } from "@tokovo/core";
 import type { WorldState } from "@tokovo/core";
 
-import { NotificationAnchorProvider } from "./notification.js";
-
-export function registerBuiltInAnchorProviders(
-    registry: AnchorRegistryClass,
-): void {
-    // Renderer only provides OS-level anchor providers.
-    // App-specific anchor providers must come from the app plugins.
-    registry.register(NotificationAnchorProvider);
-}
-
-// Best-in-class naming: make it hard to accidentally re-add app providers here.
-export const registerOSAnchorProviders = registerBuiltInAnchorProviders;
-
-export const rendererOsAnchorsRuntimeEntry = {
-    id: "@tokovo/renderer/os-anchor-providers",
-    scope: "renderer" as const,
-    register(input: { tokovoRegistries: { plugins: { anchors: AnchorRegistryClass } } }): void {
-        registerOSAnchorProviders(input.tokovoRegistries.plugins.anchors);
-    },
-};
-
-export const tokovoRuntimeManifest = [rendererOsAnchorsRuntimeEntry] as const;
-
 // =============================================================================
 // ANCHOR EXTRACTION
 // =============================================================================

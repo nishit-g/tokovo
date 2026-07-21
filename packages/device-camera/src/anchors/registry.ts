@@ -31,7 +31,8 @@ export type { AnchorProvider, AnchorSnapshot, AnchorFraming, Rect } from "@tokov
 export { DEFAULT_FRAMING, EMPTY_SNAPSHOT } from "@tokovo/core";
 
 const defaultRegistry = createAnchorRegistry();
-// Official device-owned anchors must always be present (device/app/keyboard/...).
+// Static device-owned anchors are always present. Projection-owned anchors,
+// such as the software keyboard, are merged by the renderer for that frame.
 defaultRegistry.register(DeviceAnchorProvider);
 
 export function registerAnchorProvider(provider: AnchorProvider): void {

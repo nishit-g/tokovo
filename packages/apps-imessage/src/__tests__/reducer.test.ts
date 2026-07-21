@@ -72,9 +72,26 @@ describe("iMessage Reducer", () => {
       payload: { conversationId: "c1", messageId: "m1", type: "heart" },
     });
 
-    const conv = (reacted.appState?.app_imessage as IMessageState | undefined)?.conversations?.["c1"];
+    const conv = (reacted.appState?.app_imessage as IMessageState | undefined)
+      ?.conversations?.["c1"];
 
     const msg = conv?.messages[0];
     expect(msg?.tapbacks.length).toBe(1);
+  });
+
+  it("records the authored frame for screen effects", () => {
+    const nextState = runReducer(createTestWorldState(), {
+      at: 123,
+      kind: "APP",
+      appId: "app_imessage",
+      type: "IMESSAGE_SCREEN_EFFECT",
+      payload: { effect: "confetti" },
+    });
+
+    const appState = nextState.appState?.app_imessage as
+      | IMessageState
+      | undefined;
+    expect(appState?.activeScreenEffect).toBe("confetti");
+    expect(appState?.activeScreenEffectStartedAtFrame).toBe(123);
   });
 });

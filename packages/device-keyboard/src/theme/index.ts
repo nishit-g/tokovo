@@ -18,16 +18,18 @@ const IOS_GEOMETRY: InputThemeProjection["geometry"] = {
   height: 300,
   suggestionHeight: 44,
   keyHeight: 44,
-  keyRadius: 5,
+  keyRadius: 6,
   keyGap: 6,
-  rowGap: 11,
+  // Four key rows plus the suggestion strip must fit above the home
+  // indicator safe area. The previous 11pt gap overflowed this surface.
+  rowGap: 8,
   horizontalPadding: 4,
   topPadding: 6,
   bottomPadding: 34,
 };
 
 const ANDROID_GEOMETRY: InputThemeProjection["geometry"] = {
-  height: 292,
+  height: 300,
   suggestionHeight: 48,
   keyHeight: 48,
   keyRadius: 8,

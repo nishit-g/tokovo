@@ -38,6 +38,16 @@ const defaultProbes = [
   { episodeId: "whatsapp-interaction-matrix-v3", frame: 1005 },
   { episodeId: "whatsapp-interaction-matrix-v3", frame: 1095 },
   { episodeId: "whatsapp-interaction-matrix-v3", frame: 1185 },
+  // Canonical input-session lifecycle: entrance, multilingual key press,
+  // correction, submit/clear and deterministic surface exit.
+  { episodeId: "keyboard-input-exhaustive", frame: 64 },
+  { episodeId: "keyboard-input-exhaustive", frame: 68 },
+  { episodeId: "keyboard-input-exhaustive", frame: 927 },
+  { episodeId: "keyboard-input-exhaustive", frame: 948 },
+  { episodeId: "keyboard-input-exhaustive", frame: 958 },
+  // Canonical iOS notification anatomy: live banner and grouped center stack.
+  { episodeId: "notification-center-exhaustive", frame: 42 },
+  { episodeId: "notification-center-exhaustive", frame: 150 },
 ];
 
 function parseProbes(raw) {

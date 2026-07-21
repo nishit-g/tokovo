@@ -1,14 +1,15 @@
 # @tokovo/device-keyboard
 
-`@tokovo/device-keyboard` provides keyboard runtime support and keyboard-aware UI helpers for Tokovo.
+`@tokovo/device-keyboard` is Tokovo's deterministic multilingual text-input capability.
 
 ## Responsibilities
 
-- keyboard runtime state and reducer behavior
-- keyboard registration into engine registries
-- keyboard UI components and layouts
-- keyboard authoring helpers
+- serializable, field-scoped input-session contracts
+- compile-time preparation of grapheme-safe operations
+- random-access evaluation of drafts, selection, IME composition, and submission
+- locale, direction, platform, theme, and presentation resolution
+- the single canonical software-keyboard painter
 
 ## Current Role
 
-This package is a reusable device feature layer. It should support messaging and text-entry scenes without pushing keyboard behavior into app packages directly.
+Apps declare stable field IDs and read them with `useInputField`. A normal WhatsApp `send(..., { input })` and the advanced `.input(deviceId, fieldId, options)` builder both prepare the same canonical input program. Core does not store keyboard state, app runtime events do not trigger keyboard side effects, and no app owns a keyboard painter.

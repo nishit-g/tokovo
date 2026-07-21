@@ -23,9 +23,7 @@ const snapchatViews: PluginViews = {
 
 const snapchatAssets = {
     sounds: {
-        "app_snapchat.message_in": "plugins/snapchat/received.wav",
         "app_snapchat.message_out": "plugins/snapchat/sent.wav",
-        "app_snapchat.snap_in": "plugins/snapchat/snap_received.wav",
         "app_snapchat.typing_loop": "core/keyboard/typing_loop.wav",
     },
     icons: {
@@ -38,20 +36,6 @@ const snapchatAudioRules: NonNullable<TokovoPluginContract["audioRules"]> = [
         match: { kind: "APP", appId: SNAPCHAT_APP_ID, type: "SNAPCHAT_MESSAGE_SEND" },
         action: "PLAY_ONE_SHOT",
         sound: "app_snapchat.message_out",
-        bus: "ui",
-        duckMusic: true,
-    },
-    {
-        match: { kind: "APP", appId: SNAPCHAT_APP_ID, type: "SNAPCHAT_MESSAGE_RECEIVE" },
-        action: "PLAY_ONE_SHOT",
-        sound: "app_snapchat.message_in",
-        bus: "ui",
-        duckMusic: true,
-    },
-    {
-        match: { kind: "APP", appId: SNAPCHAT_APP_ID, type: "SNAPCHAT_SNAP_RECEIVE" },
-        action: "PLAY_ONE_SHOT",
-        sound: "app_snapchat.snap_in",
         bus: "ui",
         duckMusic: true,
     },
@@ -72,6 +56,7 @@ const snapchatAudioRules: NonNullable<TokovoPluginContract["audioRules"]> = [
 
 export const SnapchatPlugin: TokovoPluginContract<"app_snapchat"> & {
     v2Lowering: typeof snapchatV2Lowering;
+    notificationAdapter: typeof snapchatNotificationAdapter;
 } = {
     id: SNAPCHAT_APP_ID,
     version: SNAPCHAT_VERSION,

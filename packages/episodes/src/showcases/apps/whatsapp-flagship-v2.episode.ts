@@ -1,4 +1,3 @@
-import { KeyboardPlugin } from "@tokovo/compiler";
 import { defineEpisode } from "../../types/episode-definition.js";
 import { episode } from "../../code-first-episode.js";
 
@@ -262,8 +261,6 @@ export default defineEpisode({
           "Teaser is in export. Sound mix still rendering.",
         );
         wa.at("4.8s").send("Ship picture first. Audio can trail by a minute.", {
-          typed: true,
-          charDelay: 2,
         });
         wa.at("7.8s").receive(
           "Rhea",
@@ -278,8 +275,6 @@ export default defineEpisode({
           "Driver is downstairs with 12 launch kits.",
         );
         wa.at("22.0s").send("Lobby desk has clearance. Send them up.", {
-          typed: true,
-          charDelay: 2,
         });
         wa.openChatList("25.8s");
         wa.switchTo("dm_studio_ops", "27.5s");
@@ -288,8 +283,6 @@ export default defineEpisode({
           "Post is live. Watching comments.",
         );
         wa.at("30.6s").send("Good. Keep one eye on X and one on invoices.", {
-          typed: true,
-          charDelay: 2,
         });
         wa.openUpdates("34.8s");
         wa.openCalls("37.0s");
@@ -305,6 +298,5 @@ export default defineEpisode({
         cam.at("20.1s").focus("lastMessage", { scale: 1.1, duration: "0.35s" });
         cam.at("28.9s").focus("lastMessage", { scale: 1.1, duration: "0.35s" });
       })
-      .use(new KeyboardPlugin())
       .build(),
 });

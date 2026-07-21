@@ -6,6 +6,12 @@
  * prepareTrackEpisode() transforms this into a prepared runtime episode.
  */
 
+import type { InputSessionIR } from "./input-session.js";
+import type {
+  NotificationIntentIR,
+  NotificationInteractionIR,
+} from "./notification.js";
+
 import type { TrackEvent } from "./track-event.js";
 
 // =============================================================================
@@ -13,6 +19,14 @@ import type { TrackEvent } from "./track-event.js";
 // =============================================================================
 
 export interface OSConfig {
+  /** BCP 47 locale used by OS-owned surfaces. */
+  locale?: string;
+  /** OS-owned surface appearance, independent from app appearance. */
+  appearance?: "light" | "dark";
+  /** Explicit 12/24-hour convention. Locale rules apply when omitted. */
+  hourCycle?: "h12" | "h24";
+  /** Lockscreen wallpaper asset path, URL, data URI, or CSS background. */
+  lockScreenWallpaper?: string;
   time?: Date | number;
   battery?: number;
   charging?: boolean;
@@ -227,7 +241,7 @@ export type HandPerformanceCueIR =
 /**
  * Visual direction for a deterministic, device-attached hand rig.
  *
- * Authored cues plus runtime keyboard state are sufficient to derive the
+ * Authored cues plus the prepared input program are sufficient to derive the
  * complete pose at any frame, so this does not introduce hidden timers.
  */
 export interface HandPerformanceIR {
@@ -281,6 +295,15 @@ export interface TrackEpisodeIR {
 
   /** All track events (sorted by frame + declaration order) */
   events: TrackEvent[];
+
+  /** Immutable, field-scoped input sessions compiled for random-frame replay. */
+  inputSessions?: InputSessionIR[];
+
+  /** Semantic notification delivery requests. Never lowered to device-state events. */
+  notificationIntents?: NotificationIntentIR[];
+
+  /** Authored notification actions and notification-center lifecycle operations. */
+  notificationInteractions?: NotificationInteractionIR[];
 
   /** Point markers for debugging */
   markers: Marker[];

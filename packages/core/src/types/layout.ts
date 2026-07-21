@@ -147,26 +147,14 @@ export interface StoryLayoutConfig {
   storyTransitionDuration: number;
 }
 
-export interface LockscreenLayoutConfig {
-  topPadding: number;
-  notificationGap: number;
-  notificationWidth: number;
-  baseNotificationHeight: number;
-  charsPerLine: number;
-  lineHeight: number;
-  stackMaxNotifications: number;
-  appearDuration: number;
-}
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
+export interface LockscreenLayoutConfig {}
 
 export interface TransitionLayoutConfig {
   defaultScale: number;
   zoomedScale: number;
   panDuration: number;
   zoomDuration: number;
-  notifications?: {
-    appearDuration: number;
-    dismissDuration: number;
-  };
 }
 
 // =============================================================================
@@ -277,16 +265,7 @@ export interface StoryItemLayout {
 // Lockscreen Layout
 export interface LockscreenLayoutState extends BaseLayoutState {
   kind: "LOCKSCREEN";
-  notificationLayouts: NotificationLayout[];
   meta: LockscreenLayoutMeta;
-}
-
-export interface NotificationLayout {
-  id: string;
-  y: number;
-  height: number;
-  opacity: number;
-  translateY: number;
 }
 
 // eslint-disable-next-line @typescript-eslint/no-empty-object-type

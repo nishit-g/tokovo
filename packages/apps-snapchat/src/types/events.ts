@@ -24,8 +24,6 @@ export interface MessageSendPayload {
     text?: string;
     attachments?: SnapchatAttachment[];
     messageId?: string;
-    typed?: boolean;
-    charDelay?: number;
 }
 
 export interface MessageReceivePayload {

@@ -28,7 +28,7 @@ function runPerf(fps: number): { avg: number; p95: number } {
       id: "p_focus_n",
       startFrame: Math.floor(frames * 0.5),
       endFrame: Math.floor(frames * 0.55),
-      anchorId: "headsUpNotification",
+      anchorId: "notification.banner",
       scale: 1.2,
     },
   ];
@@ -40,7 +40,7 @@ function runPerf(fps: number): { avg: number; p95: number } {
       device: { x: 0, y: 0, width: 393, height: 852 },
       app: { x: 0, y: 80, width: 393, height: 772 },
       lastMessage: { x: 20, y: 620, width: 280, height: 64 },
-      headsUpNotification: { x: 20, y: 94, width: 353, height: 84 },
+      "notification.banner": { x: 20, y: 94, width: 353, height: 84 },
     },
   };
 

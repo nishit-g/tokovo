@@ -9,18 +9,6 @@ export const teamsAudioRules: NonNullable<TokovoPluginContract["audioRules"]> = 
     bus: "ui",
   },
   {
-    match: { kind: "APP", appId: TEAMS_APP_ID, type: "TEAMS_MESSAGE_RECEIVE" },
-    action: "PLAY_ONE_SHOT",
-    sound: "app_teams.message_in",
-    bus: "ui",
-  },
-  {
-    match: { kind: "APP", appId: TEAMS_APP_ID, type: "TEAMS_NOTIFICATION_PUSH" },
-    action: "PLAY_ONE_SHOT",
-    sound: "app_teams.notify",
-    bus: "ui",
-  },
-  {
     match: { kind: "APP", appId: TEAMS_APP_ID, type: "TEAMS_CALL_START" },
     action: "PLAY_ONE_SHOT",
     sound: "app_teams.call_start",

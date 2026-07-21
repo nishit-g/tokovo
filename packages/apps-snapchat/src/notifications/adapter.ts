@@ -1,19 +1,29 @@
-import type { Notification, PluginNotificationAdapter } from "@tokovo/core";
+import type { NotificationAppAdapter } from "@tokovo/device-notifications";
 
-function resolveColor(notification: Notification): string {
-  const kind = notification.ir.payload?.kind;
+function resolveColor(kind: unknown): string {
   if (kind === "snap") return "#ff5a5f";
   return "#0f8fff";
 }
 
-export const snapchatNotificationAdapter: PluginNotificationAdapter = {
-  format(notification: Notification) {
+export const snapchatNotificationAdapter: NotificationAppAdapter = {
+  appId: "app_snapchat",
+  format(intent) {
     return {
-      icon: notification.icon ?? "/icons/snapchat.svg",
-      color: resolveColor(notification),
-      title: notification.title,
-      body: notification.body,
-      subtitle: "Snapchat",
+      appName: "Snapchat",
+      icon: "/icons/snapchat.svg",
+      accentColor: resolveColor(intent.metadata?.kind),
+      leadingImage: intent.content.avatar?.src,
+      leadingImageAlt: intent.content.avatar?.alt,
+      title: intent.content.title,
+      body: intent.content.body,
+      subtitle: intent.content.subtitle,
     };
   },
+  defaultAction: (intent) => ({
+    navigation: {
+      appId: "app_snapchat",
+      route: "conversation",
+      params: { conversationId: intent.threadId },
+    },
+  }),
 };

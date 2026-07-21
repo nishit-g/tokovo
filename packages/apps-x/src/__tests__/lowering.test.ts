@@ -1,8 +1,16 @@
 import { describe, expect, it } from "vitest";
 import type { RuntimeEvent } from "@tokovo/core";
+import type { NotificationIntentIR } from "@tokovo/ir";
 import { xLowering } from "../lowering/index.js";
 
-function lower(event: Record<string, unknown>, ctx: object = {}): RuntimeEvent[] {
+function createContext(intents: NotificationIntentIR[] = []) {
+  return {
+    emitNotification: (intent: NotificationIntentIR) => intents.push(intent),
+    emitNotificationInteraction: () => undefined,
+  };
+}
+
+function lower(event: Record<string, unknown>, ctx = createContext()): RuntimeEvent[] {
   return xLowering.lower(event as any, ctx);
 }
 
@@ -33,7 +41,7 @@ describe("X lowering", () => {
     expect(appEvents(events, "VIEW_TWEET")).toHaveLength(0);
   });
 
-  it("falls back to direct ADD_TWEET when typed create has no compose-open timing", () => {
+  it("lowers creates directly to ADD_TWEET", () => {
     const events = lower({
       at: 30,
       kind: "APP",
@@ -44,7 +52,6 @@ describe("X lowering", () => {
         id: "tw-1",
         authorId: "u1",
         text: "hello",
-        typed: true,
       },
     });
 
@@ -52,8 +59,8 @@ describe("X lowering", () => {
     expect(events.some((event) => event.kind === "DEVICE")).toBe(false);
   });
 
-  it("supports typed create/reply/quote after compose navigation", () => {
-    const ctx = {};
+  it("preserves create, reply, and quote semantics after compose navigation", () => {
+    const ctx = createContext();
     lower(
       {
         at: 10,
@@ -77,7 +84,6 @@ describe("X lowering", () => {
           id: "tw-create",
           authorId: "u1",
           text: "create",
-          typed: true,
         },
       },
       ctx,
@@ -95,7 +101,6 @@ describe("X lowering", () => {
           authorId: "u1",
           text: "reply",
           replyToId: "tw-create",
-          typed: true,
         },
       },
       ctx,
@@ -113,15 +118,14 @@ describe("X lowering", () => {
           authorId: "u1",
           text: "quote",
           quoteTweetId: "tw-create",
-          typed: true,
         },
       },
       ctx,
     );
 
-    expect(createEvents.some((event) => event.kind === "DEVICE")).toBe(true);
-    expect(replyEvents.some((event) => event.kind === "DEVICE")).toBe(true);
-    expect(quoteEvents.some((event) => event.kind === "DEVICE")).toBe(true);
+    expect(createEvents.some((event) => event.kind === "DEVICE")).toBe(false);
+    expect(replyEvents.some((event) => event.kind === "DEVICE")).toBe(false);
+    expect(quoteEvents.some((event) => event.kind === "DEVICE")).toBe(false);
 
     expect((appPayload(replyEvents, "ADD_TWEET") as { replyToId?: string } | undefined)?.replyToId).toBe(
       "tw-create",
@@ -131,8 +135,8 @@ describe("X lowering", () => {
     ).toBe("tw-create");
   });
 
-  it("supports typed replies after opening tweet detail", () => {
-    const ctx = {};
+  it("preserves replies after opening tweet detail", () => {
+    const ctx = createContext();
     lower(
       {
         at: 10,
@@ -157,19 +161,19 @@ describe("X lowering", () => {
           authorId: "u1",
           text: "reply",
           replyToId: "tw-1",
-          typed: true,
         },
       },
       ctx,
     );
 
-    expect(events.some((event) => event.kind === "DEVICE")).toBe(true);
+    expect(events.some((event) => event.kind === "DEVICE")).toBe(false);
     expect((appPayload(events, "ADD_TWEET") as { replyToId?: string } | undefined)?.replyToId).toBe(
       "tw-1",
     );
   });
 
-  it("lowers notifications into app and device runtime events", () => {
+  it("lowers app activity and emits one semantic notification intent", () => {
+    const intents: NotificationIntentIR[] = [];
     const events = lower({
       at: 40,
       kind: "APP",
@@ -184,9 +188,20 @@ describe("X lowering", () => {
         title: "Avery mentioned you",
         body: "Check the thread",
       },
-    });
+    }, createContext(intents));
 
     expect(appEvents(events, "ADD_NOTIFICATION")).toHaveLength(1);
-    expect(events.some((event) => event.kind === "DEVICE" && event.type === "SHOW_NOTIFICATION")).toBe(true);
+    expect(events.some((event) => event.kind === "DEVICE")).toBe(false);
+    expect(intents).toMatchObject([
+      {
+        id: "nt-1",
+        deviceId: "device-1",
+        appId: "app_x",
+        content: {
+          title: "Avery mentioned you",
+          body: "Check the thread",
+        },
+      },
+    ]);
   });
 });

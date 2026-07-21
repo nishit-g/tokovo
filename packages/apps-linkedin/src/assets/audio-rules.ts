@@ -20,11 +20,4 @@ export const linkedInAudioRules: NonNullable<TokovoPluginContract["audioRules"]>
     bus: "ui",
     duckMusic: true,
   },
-  {
-    match: { kind: "APP", appId: "app_linkedin", type: "LINKEDIN_ADD_NOTIFICATION" },
-    action: "PLAY_ONE_SHOT",
-    sound: "notification_soft",
-    bus: "ui",
-    duckMusic: true,
-  },
 ];

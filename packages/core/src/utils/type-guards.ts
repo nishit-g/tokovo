@@ -42,21 +42,6 @@ export function isOpenAppEvent(e: TimelineEvent): e is TimelineEvent & {
   return e.kind === "DEVICE" && e.type === "OPEN_APP";
 }
 
-export function isShowNotificationEvent(
-  e: TimelineEvent,
-): e is TimelineEvent & {
-  kind: "DEVICE";
-  type: "SHOW_NOTIFICATION";
-  deviceId: string;
-  appId: string;
-  title: string;
-  body: string;
-  mode?: "lockscreen" | "headsup" | "both";
-  icon?: string;
-} {
-  return e.kind === "DEVICE" && e.type === "SHOW_NOTIFICATION";
-}
-
 export function isIncomingCallEvent(e: TimelineEvent): e is TimelineEvent & {
   kind: "DEVICE";
   type: "INCOMING_CALL";

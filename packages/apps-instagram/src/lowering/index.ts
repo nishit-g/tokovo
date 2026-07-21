@@ -1,12 +1,7 @@
-import type { TrackEvent } from "@tokovo/ir";
-import { getLoweringScratchpad, planTypedKeyboard, type RuntimeEvent } from "@tokovo/core";
+import type { NotificationIntentEmitter, TrackEvent } from "@tokovo/ir";
+import type { RuntimeEvent } from "@tokovo/core";
 import type { InstagramDMMessagePayload, InstagramPostPayload, InstagramTrackEvent } from "../types/index.js";
 import { isInstagramTrackEvent } from "../schemas/index.js";
-
-type Scratchpad = {
-  lastComposerOpenAtByDevice: Map<string, number>;
-  lastThreadOpenAtByDeviceThread: Map<string, number>;
-};
 
 function createRuntimeEvent(
   event: TrackEvent,
@@ -27,10 +22,8 @@ function timestamp(event: TrackEvent, override?: number): number {
   return typeof override === "number" ? override : event.at;
 }
 
-function lowerTypedPost(
+function lowerPost(
   event: InstagramTrackEvent & { type: "POST_ADD"; payload: InstagramPostPayload },
-  deviceId: string,
-  notBeforeFrame: number | undefined,
 ): RuntimeEvent[] {
   const addEvent = createRuntimeEvent(event, "INSTAGRAM_ADD_POST", {
     id: event.payload.id ?? `ig-post-${event.at}-${event._declarationOrder ?? 0}`,
@@ -44,42 +37,14 @@ function lowerTypedPost(
     commentCount: event.payload.commentCount ?? 0,
   });
 
-  if (!event.payload.typed || typeof notBeforeFrame !== "number" || notBeforeFrame > event.at) {
-    return [addEvent];
-  }
-
-  const plan = planTypedKeyboard({
-    deviceId,
-    submitAt: event.at,
-    text: event.payload.caption,
-    requestedCharDelay: event.payload.charDelay ?? 2,
-    notBeforeFrame,
-    keyboardType: "default",
-    returnKeyType: "send",
-  });
-
-  const after: RuntimeEvent[] = [
-    createRuntimeEvent(event, "INSTAGRAM_SET_COMPOSER_DRAFT", {
-      caption: event.payload.caption,
-      imageUrl: event.payload.imageUrl,
-      location: event.payload.location,
-    }),
-    addEvent,
-    createRuntimeEvent(event, "INSTAGRAM_SET_COMPOSER_DRAFT", { caption: "", imageUrl: undefined }),
-  ];
-
-  if (!plan.ok) return after;
-  const [showEv, typeEv, pressEv, hideEv] = plan.events;
-  return [showEv, typeEv, pressEv, ...after, hideEv];
+  return [addEvent];
 }
 
-function lowerTypedDM(
+function lowerDM(
   event: InstagramTrackEvent & {
     type: "DM_MESSAGE_ADD" | "STORY_REPLY";
     payload: InstagramDMMessagePayload;
   },
-  deviceId: string,
-  notBeforeFrame: number | undefined,
 ): RuntimeEvent[] {
   const addEvent = createRuntimeEvent(event, "INSTAGRAM_ADD_DM_MESSAGE", {
     id: event.payload.id ?? `ig-msg-${event.at}-${event._declarationOrder ?? 0}`,
@@ -90,38 +55,11 @@ function lowerTypedDM(
     storyId: event.payload.storyId,
   });
 
-  if (!event.payload.typed || typeof notBeforeFrame !== "number" || notBeforeFrame > event.at) {
-    return [addEvent];
-  }
-
-  const plan = planTypedKeyboard({
-    deviceId,
-    submitAt: event.at,
-    text: event.payload.text,
-    requestedCharDelay: event.payload.charDelay ?? 2,
-    notBeforeFrame,
-    keyboardType: "default",
-    returnKeyType: "send",
-  });
-
-  const after: RuntimeEvent[] = [
-    createRuntimeEvent(event, "INSTAGRAM_SET_THREAD_DRAFT", {
-      threadId: event.payload.threadId,
-      text: event.payload.text,
-    }),
-    addEvent,
-    createRuntimeEvent(event, "INSTAGRAM_SET_THREAD_DRAFT", {
-      threadId: event.payload.threadId,
-      text: "",
-    }),
-  ];
-  if (!plan.ok) return after;
-  const [showEv, typeEv, pressEv, hideEv] = plan.events;
-  return [showEv, typeEv, pressEv, ...after, hideEv];
+  return [addEvent];
 }
 
 export const instagramLowering = {
-  lower(event: TrackEvent, ctx?: unknown): RuntimeEvent[] {
+  lower(event: TrackEvent, ctx: NotificationIntentEmitter): RuntimeEvent[] {
     if ((event as { kind?: string }).kind !== "APP" || (event as { appId?: string }).appId !== "app_instagram") {
       return [];
     }
@@ -129,15 +67,6 @@ export const instagramLowering = {
     if (!isInstagramTrackEvent(event)) return [];
     const deviceId = event.deviceId;
     if (!deviceId) return [];
-    const scratchpad = getLoweringScratchpad<Scratchpad>(
-      ctx,
-      "app_instagram.lowering",
-      () => ({
-        lastComposerOpenAtByDevice: new Map(),
-        lastThreadOpenAtByDeviceThread: new Map(),
-      }),
-    );
-
     switch (event.type) {
       case "USER_ADD":
         return [createRuntimeEvent(event, "INSTAGRAM_ADD_USER", event.payload)];
@@ -146,11 +75,7 @@ export const instagramLowering = {
       case "FOLLOW_USER":
         return [createRuntimeEvent(event, "INSTAGRAM_FOLLOW_USER", event.payload)];
       case "POST_ADD":
-        return lowerTypedPost(
-          event,
-          deviceId,
-          scratchpad.lastComposerOpenAtByDevice.get(deviceId),
-        );
+        return lowerPost(event);
       case "POST_LIKE":
         return [createRuntimeEvent(event, "INSTAGRAM_LIKE_POST", event.payload)];
       case "POST_COMMENT":
@@ -184,10 +109,6 @@ export const instagramLowering = {
       case "STORY_ADVANCE":
         return [createRuntimeEvent(event, "INSTAGRAM_ADVANCE_STORY", event.payload)];
       case "STORY_REPLY": {
-        scratchpad.lastThreadOpenAtByDeviceThread.set(
-          `${deviceId}::${event.payload.threadId}`,
-          event.at,
-        );
         const openEvents: RuntimeEvent[] = [
           createRuntimeEvent(event, "INSTAGRAM_SET_SCREEN", {
             screen: "thread",
@@ -199,7 +120,7 @@ export const instagramLowering = {
         ];
         return [
           ...openEvents,
-          ...lowerTypedDM(
+          ...lowerDM(
             {
               ...event,
               payload: {
@@ -209,12 +130,8 @@ export const instagramLowering = {
                 text: event.payload.text,
                 createdAt: event.payload.createdAt,
                 storyId: event.payload.storyId,
-                typed: event.payload.typed,
-                charDelay: event.payload.charDelay,
               } as InstagramDMMessagePayload,
             } as InstagramTrackEvent & { type: "STORY_REPLY"; payload: InstagramDMMessagePayload },
-            deviceId,
-            event.at,
           ),
         ];
       }
@@ -226,13 +143,7 @@ export const instagramLowering = {
           lastMessageAt: null,
         })];
       case "DM_MESSAGE_ADD":
-        return lowerTypedDM(
-          event,
-          deviceId,
-          scratchpad.lastThreadOpenAtByDeviceThread.get(
-            `${deviceId}::${event.payload.threadId}`,
-          ),
-        );
+        return lowerDM(event);
       case "SET_THREAD_DRAFT":
         return [createRuntimeEvent(event, "INSTAGRAM_SET_THREAD_DRAFT", event.payload)];
       case "SET_THREAD_TYPING":
@@ -248,56 +159,59 @@ export const instagramLowering = {
               : event.payload.type === "story_reply"
                 ? "replied to your story"
                 : "interacted with your post");
+        const threadId =
+          event.payload.threadId ??
+          event.payload.postId ??
+          event.payload.storyId ??
+          event.payload.actorId;
+        ctx.emitNotification({
+          id,
+          deviceId,
+          appId: "app_instagram",
+          deliverAtFrame: event.at,
+          sequence: event._declarationOrder,
+          content: {
+            title: event.payload.title ?? "Instagram",
+            body,
+          },
+          category: event.payload.type === "dm" ? "message" : "social",
+          threadId,
+          groupId: threadId,
+          interruption:
+            event.payload.type === "dm" || event.payload.type === "story_reply"
+              ? "timeSensitive"
+              : "active",
+          privacy: event.payload.type === "dm" ? "private" : "public",
+          metadata: {
+            kind: event.payload.type,
+            route:
+              event.payload.type === "dm"
+                ? "thread"
+                : event.payload.type === "follow"
+                  ? "profile"
+                  : "notifications",
+          },
+        });
         return [
           createRuntimeEvent(event, "INSTAGRAM_ADD_NOTIFICATION", {
             ...event.payload,
             id,
             createdAt: timestamp(event, event.payload.createdAt),
           }),
-          {
-            at: event.at,
-            kind: "DEVICE",
-            type: "SHOW_NOTIFICATION",
-            deviceId,
-            payload: {
-              id,
-              appId: "app_instagram",
-              title: event.payload.title ?? "Instagram",
-              body,
-              threadKey:
-                event.payload.threadId ??
-                event.payload.postId ??
-                event.payload.storyId ??
-                event.payload.actorId,
-              priority:
-                event.payload.type === "dm" || event.payload.type === "story_reply"
-                  ? "HIGH"
-                  : "DEFAULT",
-            },
-          } as RuntimeEvent,
         ];
       }
       case "NOTIFICATION_DISMISS":
+        ctx.emitNotificationInteraction({
+          deviceId,
+          atFrame: event.at,
+          type: "dismiss",
+          notificationId: event.payload.id,
+          sequence: event._declarationOrder,
+        });
         return [
           createRuntimeEvent(event, "INSTAGRAM_DISMISS_NOTIFICATION", event.payload),
-          {
-            at: event.at,
-            kind: "DEVICE",
-            type: "DISMISS_NOTIFICATION",
-            deviceId,
-            payload: { id: event.payload.id },
-          } as RuntimeEvent,
         ];
       case "NAVIGATE": {
-        if (event.payload.screen === "composer") {
-          scratchpad.lastComposerOpenAtByDevice.set(deviceId, event.at);
-        }
-        if (event.payload.screen === "thread" && event.payload.threadId) {
-          scratchpad.lastThreadOpenAtByDeviceThread.set(
-            `${deviceId}::${event.payload.threadId}`,
-            event.at,
-          );
-        }
         const events: RuntimeEvent[] = [createRuntimeEvent(event, "INSTAGRAM_SET_SCREEN", event.payload)];
         if (event.payload.postId) {
           events.push(createRuntimeEvent(event, "INSTAGRAM_SET_ACTIVE_POST", { postId: event.payload.postId }));

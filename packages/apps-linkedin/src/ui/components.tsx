@@ -4,6 +4,7 @@
  * Core reusable components using token-based styling.
  */
 import React from "react";
+import { DeterministicImage } from "@tokovo/react";
 import { useLinkedInTheme } from "./ThemeContext.js";
 import type { LIReactionType } from "../types/index.js";
 
@@ -17,12 +18,7 @@ export interface LIAvatarProps {
   showOnline?: boolean;
 }
 
-export const LIAvatar: React.FC<LIAvatarProps> = ({
-  size = "md",
-  src,
-  name,
-  showOnline,
-}) => {
+export const LIAvatar: React.FC<LIAvatarProps> = ({ size = "md", src, name, showOnline }) => {
   const theme = useLinkedInTheme();
 
   const sizeMap = {
@@ -37,11 +33,11 @@ export const LIAvatar: React.FC<LIAvatarProps> = ({
   // Generate initials from name
   const initials = name
     ? name
-      .split(" ")
-      .map((n) => n[0])
-      .join("")
-      .slice(0, 2)
-      .toUpperCase()
+        .split(" ")
+        .map((n) => n[0])
+        .join("")
+        .slice(0, 2)
+        .toUpperCase()
     : "";
 
   return (
@@ -51,10 +47,9 @@ export const LIAvatar: React.FC<LIAvatarProps> = ({
           width: px,
           height: px,
           borderRadius: theme.radius.avatar,
-          background: src
-            ? `url(${src}) center/cover`
-            : theme.colors.accentLight,
+          background: theme.colors.accentLight,
           border: `1px solid ${theme.colors.border}`,
+          overflow: "hidden",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
@@ -63,7 +58,15 @@ export const LIAvatar: React.FC<LIAvatarProps> = ({
           fontWeight: 600,
         }}
       >
-        {!src && initials}
+        {src ? (
+          <DeterministicImage
+            src={src}
+            alt=""
+            style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: "inherit" }}
+          />
+        ) : (
+          initials
+        )}
       </div>
       {showOnline && (
         <div
@@ -132,10 +135,7 @@ export const LIIcon: React.FC<{
       />
     ),
     "home-fill": (
-      <path
-        d="M23 9v2h-2v7a3 3 0 01-3 3h-4v-6h-4v6H6a3 3 0 01-3-3v-7H1V9l11-7 11 7z"
-        fill={c}
-      />
+      <path d="M23 9v2h-2v7a3 3 0 01-3 3h-4v-6h-4v6H6a3 3 0 01-3-3v-7H1V9l11-7 11 7z" fill={c} />
     ),
     network: (
       <>
@@ -201,12 +201,7 @@ export const LIIcon: React.FC<{
     "bell-fill": (
       <>
         <path d="M18 15v-4a6 6 0 10-12 0v4l-2 2h16l-2-2z" fill={c} />
-        <path
-          d="M13.73 21a2 2 0 01-3.46 0"
-          fill="none"
-          stroke={c}
-          strokeWidth="2"
-        />
+        <path d="M13.73 21a2 2 0 01-3.46 0" fill="none" stroke={c} strokeWidth="2" />
       </>
     ),
     search: (
@@ -275,26 +270,10 @@ export const LIIcon: React.FC<{
         strokeLinejoin="round"
       />
     ),
-    close: (
-      <path
-        d="M18 6L6 18M6 6l12 12"
-        stroke={c}
-        strokeWidth="2"
-        strokeLinecap="round"
-      />
-    ),
+    close: <path d="M18 6L6 18M6 6l12 12" stroke={c} strokeWidth="2" strokeLinecap="round" />,
     photo: (
       <>
-        <rect
-          x="3"
-          y="3"
-          width="18"
-          height="18"
-          rx="2"
-          fill="none"
-          stroke={c}
-          strokeWidth="2"
-        />
+        <rect x="3" y="3" width="18" height="18" rx="2" fill="none" stroke={c} strokeWidth="2" />
         <circle cx="8.5" cy="8.5" r="1.5" fill={c} />
         <path d="M21 15l-5-5L5 21" fill="none" stroke={c} strokeWidth="2" />
       </>
@@ -310,16 +289,7 @@ export const LIIcon: React.FC<{
     ),
     calendar: (
       <>
-        <rect
-          x="3"
-          y="4"
-          width="18"
-          height="18"
-          rx="2"
-          fill="none"
-          stroke={c}
-          strokeWidth="2"
-        />
+        <rect x="3" y="4" width="18" height="18" rx="2" fill="none" stroke={c} strokeWidth="2" />
         <path d="M16 2v4M8 2v4M3 10h18" stroke={c} strokeWidth="2" strokeLinecap="round" />
       </>
     ),
@@ -346,29 +316,14 @@ export const LIIcon: React.FC<{
     ),
     article: (
       <>
-        <rect
-          x="4"
-          y="3"
-          width="16"
-          height="18"
-          rx="2"
-          fill="none"
-          stroke={c}
-          strokeWidth="2"
-        />
+        <rect x="4" y="3" width="16" height="18" rx="2" fill="none" stroke={c} strokeWidth="2" />
         <path d="M8 8h8M8 12h8M8 16h5" stroke={c} strokeWidth="2" strokeLinecap="round" />
       </>
     ),
   };
 
   return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 24 24"
-      fill="none"
-      style={{ flexShrink: 0 }}
-    >
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0 }}>
       {icons[name]}
     </svg>
   );
@@ -422,9 +377,7 @@ export const ReactionIcon: React.FC<{
     );
   }
 
-  return (
-    <span style={{ fontSize: size, lineHeight: 1 }}>{REACTION_EMOJI[reaction]}</span>
-  );
+  return <span style={{ fontSize: size, lineHeight: 1 }}>{REACTION_EMOJI[reaction]}</span>;
 };
 
 export const ReactionStack: React.FC<{
@@ -594,11 +547,7 @@ export const BottomNav: React.FC<{
                 }}
               />
             )}
-            <LIIcon
-              name={isActive ? activeIcon : icon}
-              size={22}
-              color={color}
-            />
+            <LIIcon name={isActive ? activeIcon : icon} size={22} color={color} />
             <span
               style={{
                 fontSize: theme.typography.micro.fontSize,
@@ -745,11 +694,7 @@ export interface ButtonProps {
   children: React.ReactNode;
 }
 
-export const Button: React.FC<ButtonProps> = ({
-  variant = "primary",
-  size = "md",
-  children,
-}) => {
+export const Button: React.FC<ButtonProps> = ({ variant = "primary", size = "md", children }) => {
   const theme = useLinkedInTheme();
 
   const baseStyle: React.CSSProperties = {

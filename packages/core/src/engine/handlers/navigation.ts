@@ -94,9 +94,6 @@ export function navigationReducer(draft: WorldState, event: unknown): void {
         device.foregroundAppId = undefined;
         break;
 
-      case "SHOW_NOTIFICATION":
-        break;
-
       default:
         break;
     }

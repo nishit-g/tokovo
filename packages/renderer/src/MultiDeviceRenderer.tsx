@@ -13,6 +13,8 @@ import {
   RendererRegistryProvider,
   type RendererRegistries,
 } from "./RegistryContext.js";
+import type { PreparedInputProgram } from "@tokovo/device-keyboard";
+import type { PreparedNotificationProgram } from "@tokovo/device-notifications";
 
 // Helper to get video config with defaults
 const getVideoConfig = (world: WorldState): VideoConfig => ({
@@ -39,6 +41,8 @@ export const MultiDeviceRenderer: React.FC<{
     compositionHeight?: number;
     pluginManager: PluginManagerClass;
     registries: RendererRegistries;
+    inputProgram?: PreparedInputProgram;
+    notificationProgram?: PreparedNotificationProgram;
     /** Disable when the host composition already owns the shared audio layer. */
     renderAudio?: boolean;
     /** Disable when the host composition already owns the shared story overlay. */
@@ -52,11 +56,17 @@ export const MultiDeviceRenderer: React.FC<{
     compositionHeight = 1920,
     pluginManager,
     registries,
+    inputProgram,
+
+    notificationProgram,
     renderAudio = true,
     renderOverlay = true,
 }) => {
     const layout = world.camera?.layout;
-    const audioLayer = renderAudio ? <AudioLayer world={world} t={t} /> : null;
+    const audioLayer = renderAudio ? (
+      <AudioLayer world={world} t={t} inputProgram={inputProgram}
+                    notificationProgram={notificationProgram} />
+    ) : null;
 
     const content = !layout ? (
         <>
@@ -71,6 +81,8 @@ export const MultiDeviceRenderer: React.FC<{
                 height={compositionHeight}
                 pluginManager={pluginManager}
                 registries={registries}
+                inputProgram={inputProgram}
+                    notificationProgram={notificationProgram}
             />
         </>
     ) : (() => {
@@ -89,6 +101,8 @@ export const MultiDeviceRenderer: React.FC<{
                             height={compositionHeight}
                             pluginManager={pluginManager}
                             registries={registries}
+                            inputProgram={inputProgram}
+                    notificationProgram={notificationProgram}
                         />
                     </>
                 );
@@ -108,6 +122,8 @@ export const MultiDeviceRenderer: React.FC<{
                             height={compositionHeight}
                             pluginManager={pluginManager}
                             registries={registries}
+                            inputProgram={inputProgram}
+                    notificationProgram={notificationProgram}
                         />
                     </>
                 );
@@ -127,6 +143,8 @@ export const MultiDeviceRenderer: React.FC<{
                             height={compositionHeight}
                             pluginManager={pluginManager}
                             registries={registries}
+                            inputProgram={inputProgram}
+                    notificationProgram={notificationProgram}
                         />
                     </>
                 );
@@ -148,6 +166,8 @@ export const MultiDeviceRenderer: React.FC<{
                             height={compositionHeight}
                             pluginManager={pluginManager}
                             registries={registries}
+                            inputProgram={inputProgram}
+                    notificationProgram={notificationProgram}
                         />
                     </>
                 );
@@ -166,6 +186,8 @@ export const MultiDeviceRenderer: React.FC<{
                             height={compositionHeight}
                             pluginManager={pluginManager}
                             registries={registries}
+                            inputProgram={inputProgram}
+                    notificationProgram={notificationProgram}
                         />
                     </>
                 );
@@ -201,6 +223,8 @@ interface LayoutProps {
     height: number;
     pluginManager: PluginManagerClass;
     registries: RendererRegistries;
+    inputProgram?: PreparedInputProgram;
+    notificationProgram?: PreparedNotificationProgram;
 }
 
 /**
@@ -216,6 +240,9 @@ const SingleDeviceLayout: React.FC<LayoutProps & { deviceId: string }> = ({
     height,
     pluginManager,
     registries,
+    inputProgram,
+
+    notificationProgram,
 }) => {
     const device = world.devices[deviceId];
     if (!device) {
@@ -249,6 +276,8 @@ const SingleDeviceLayout: React.FC<LayoutProps & { deviceId: string }> = ({
                     disableCamera={deviceId !== world.camera.activeDeviceId}
                     pluginManager={pluginManager}
                     registries={registries}
+                    inputProgram={inputProgram}
+                    notificationProgram={notificationProgram}
                 />
             </div>
         </div>
@@ -275,6 +304,9 @@ const SplitHorizontalLayout: React.FC<
     height,
     pluginManager,
     registries,
+    inputProgram,
+
+    notificationProgram,
 }) => {
     const halfWidth = width / 2;
 
@@ -300,6 +332,8 @@ const SplitHorizontalLayout: React.FC<
                 paneHeight={height}
                 pluginManager={pluginManager}
                 registries={registries}
+                inputProgram={inputProgram}
+                    notificationProgram={notificationProgram}
             />
 
             {/* Divider */}
@@ -317,6 +351,8 @@ const SplitHorizontalLayout: React.FC<
                     paneHeight={height}
                     pluginManager={pluginManager}
                     registries={registries}
+                    inputProgram={inputProgram}
+                    notificationProgram={notificationProgram}
                 />
             )}
         </div>
@@ -346,6 +382,9 @@ const SplitVerticalLayout: React.FC<
     height,
     pluginManager,
     registries,
+    inputProgram,
+
+    notificationProgram,
 }) => {
     const halfHeight = height / 2;
 
@@ -371,6 +410,8 @@ const SplitVerticalLayout: React.FC<
                 paneHeight={halfHeight}
                 pluginManager={pluginManager}
                 registries={registries}
+                inputProgram={inputProgram}
+                    notificationProgram={notificationProgram}
             />
 
             {/* Divider */}
@@ -388,6 +429,8 @@ const SplitVerticalLayout: React.FC<
                     paneHeight={halfHeight - 2}
                     pluginManager={pluginManager}
                     registries={registries}
+                    inputProgram={inputProgram}
+                    notificationProgram={notificationProgram}
                 />
             )}
         </div>
@@ -423,6 +466,9 @@ const PIPLayout: React.FC<
     height,
     pluginManager,
     registries,
+    inputProgram,
+
+    notificationProgram,
 }) => {
     // PIP window size
     const pipWidth = width * pipScale;
@@ -481,6 +527,8 @@ const PIPLayout: React.FC<
                 height={height}
                 pluginManager={pluginManager}
                 registries={registries}
+                inputProgram={inputProgram}
+                    notificationProgram={notificationProgram}
             />
 
             {/* PIP overlay */}
@@ -496,6 +544,8 @@ const PIPLayout: React.FC<
                         paneHeight={pipHeight}
                         pluginManager={pluginManager}
                         registries={registries}
+                        inputProgram={inputProgram}
+                    notificationProgram={notificationProgram}
                     />
                 </div>
             )}
@@ -521,6 +571,8 @@ const DevicePane: React.FC<{
     paneHeight: number;
     pluginManager: PluginManagerClass;
     registries: RendererRegistries;
+    inputProgram?: PreparedInputProgram;
+    notificationProgram?: PreparedNotificationProgram;
 }> = ({
     world,
     t,
@@ -531,6 +583,9 @@ const DevicePane: React.FC<{
     paneHeight,
     pluginManager,
     registries,
+    inputProgram,
+
+    notificationProgram,
 }) => {
     const device = world.devices[deviceId];
     if (!device) {
@@ -578,6 +633,8 @@ const DevicePane: React.FC<{
                     disableCamera={deviceId !== world.camera.activeDeviceId}
                     pluginManager={pluginManager}
                     registries={registries}
+                    inputProgram={inputProgram}
+                    notificationProgram={notificationProgram}
                 />
             </div>
         </div>
@@ -598,6 +655,8 @@ const DevicePaneFit: React.FC<{
     paneHeight: number;
     pluginManager: PluginManagerClass;
     registries: RendererRegistries;
+    inputProgram?: PreparedInputProgram;
+    notificationProgram?: PreparedNotificationProgram;
 }> = ({
     world,
     t,
@@ -608,6 +667,9 @@ const DevicePaneFit: React.FC<{
     paneHeight,
     pluginManager,
     registries,
+    inputProgram,
+
+    notificationProgram,
 }) => {
     const device = world.devices[deviceId];
     if (!device) {
@@ -641,6 +703,8 @@ const DevicePaneFit: React.FC<{
                     disableCamera={deviceId !== world.camera.activeDeviceId}
                     pluginManager={pluginManager}
                     registries={registries}
+                    inputProgram={inputProgram}
+                    notificationProgram={notificationProgram}
                 />
             </div>
         </div>

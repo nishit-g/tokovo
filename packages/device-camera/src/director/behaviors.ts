@@ -5,7 +5,7 @@ import type {
   CameraEffect,
   CameraEvent,
   MessageEventPayload,
-  NotificationEventPayload,
+  InterruptionEventPayload,
 } from "./types.js";
 
 export interface FluidTennisConfig {
@@ -113,7 +113,7 @@ function createFluidTennisBehavior(
 
 function createInterruptFocusBehavior(): BehaviorFunction {
   return (event: CameraEvent, context: CameraContext): CameraEffect[] => {
-    const payload = event.payload as NotificationEventPayload;
+    const payload = event.payload as InterruptionEventPayload;
     const effects: CameraEffect[] = [];
 
     effects.push({

@@ -1,18 +1,24 @@
 # @tokovo/device-keyboard
 
-Keyboard runtime support and keyboard-aware UI helpers.
+Deterministic, multilingual text-input capability and keyboard projection.
 
 ## Responsibilities
 
-- keyboard runtime behavior
-- keyboard registration helpers
-- keyboard UI layouts and components
-- keyboard authoring support
+- field-scoped input-session contracts
+- grapheme-safe editing, selection, composition, and submission
+- locale, script, direction, platform, and appearance resolution
+- deterministic runtime evaluation and keyboard projection
+- one canonical keyboard renderer
 
 ## Key Exports
 
-- runtime state and selectors
-- `KeyboardTrackBuilder`
-- keyboard components: `Keyboard`, `Key`, `KeyRow`
-- layout presets: `qwertyLayout`, `numericLayout`, `phoneLayout`, `emailLayout`
-- plugin registration: `registerKeyboardPlugin`
+- contracts: `InputSessionDefinition`, `InputOperation`, `InputProjection`
+- preparation: `prepareInputProgram`
+- replay: `evaluateInputProgram`
+- projection: `projectInputSession`, `findInputSessionForProjection`
+- UI: `InputKeyboard`, `resolveInputKeyboardRows`
+- theme and presentation resolvers
+
+WhatsApp's structured `send(..., { input })` is the common semantic path. The
+explicit `.input(...)` builder remains available for advanced editing and IME
+choreography; both lower to identical prepared input sessions.

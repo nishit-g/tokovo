@@ -9,7 +9,11 @@ import {
 } from "@tokovo/core";
 import type { WorldState, RuntimeEvent } from "@tokovo/core";
 
-import { computeLayout } from "@tokovo/renderer";
+import {
+  computeLayout,
+  mergeNotificationProjectionAnchors,
+} from "@tokovo/renderer";
+import { projectNotifications } from "@tokovo/device-notifications";
 
 import {
   getAnchorsForApp,
@@ -229,9 +233,26 @@ describe("v1 render smoke", () => {
         const active = getActiveAnchorEffect(world, t);
         if (!active?.anchorId || !snapshot) continue;
 
+        const notificationProjection = projectNotifications(
+          prepared.notificationProgram,
+          deviceId,
+          t,
+          {
+            viewportWidth: profile.dimensions.width,
+            viewportHeight: profile.dimensions.height,
+            pointScale: profile.pixelDensity || 1,
+            safeAreaTop:
+              (profile.safeArea?.top ?? profile.camera?.safeAreaTop ?? 0) /
+              (profile.pixelDensity || 1),
+          },
+        );
+        const canonicalSnapshot = mergeNotificationProjectionAnchors(
+          snapshot,
+          notificationProjection,
+        );
         const resolved = resolveAnchorWithFallback(
           active.anchorId,
-          snapshot.anchors ?? {},
+          canonicalSnapshot.anchors ?? {},
           {
             width: profile.dimensions.width,
             height: profile.dimensions.height,

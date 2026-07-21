@@ -7,7 +7,6 @@ type TeamsListFilter = "all" | "unread" | "chat" | "channels" | "meetings" | "mu
 type TeamsCallStatus = "idle" | "ringing" | "active" | "ended";
 type TeamsCallMode = "audio" | "video";
 type TeamsCallScope = "dm" | "channel" | "thread";
-type TeamsNotificationKind = "mention" | "message" | "system";
 
 export interface TeamsOpenChatListPayload {
   filter?: TeamsListFilter;
@@ -34,8 +33,6 @@ export interface TeamsMessageSendPayload {
   target: TeamsMessageTarget;
   mentionedUserIds?: string[];
   replyToMessageId?: string;
-  typed?: boolean;
-  charDelay?: number;
 }
 
 export type TeamsMessageReceivePayload = TeamsMessageSendPayload;
@@ -58,23 +55,6 @@ export interface TeamsDraftSetPayload {
 export interface TeamsPresenceSetPayload {
   userId: string;
   presence: TeamsPresence;
-}
-
-export interface TeamsNotificationPushPayload {
-  id: string;
-  title: string;
-  text: string;
-  kind?: TeamsNotificationKind;
-  ttlFrames?: number;
-  target?: {
-    dmId?: string;
-    channelId?: string;
-    threadId?: string;
-  };
-}
-
-export interface TeamsNotificationDismissPayload {
-  id: string;
 }
 
 export interface TeamsCallStartPayload {
@@ -112,8 +92,6 @@ export type TeamsEventMap = {
   TEAMS_TYPING_END: TeamsTypingEndPayload;
   TEAMS_DRAFT_SET: TeamsDraftSetPayload;
   TEAMS_PRESENCE_SET: TeamsPresenceSetPayload;
-  TEAMS_NOTIFICATION_PUSH: TeamsNotificationPushPayload;
-  TEAMS_NOTIFICATION_DISMISS: TeamsNotificationDismissPayload;
   TEAMS_CALL_START: TeamsCallStartPayload;
   TEAMS_CALL_UPDATE: TeamsCallUpdatePayload;
   TEAMS_CALL_END: TeamsCallEndPayload;
@@ -143,8 +121,6 @@ export const TEAMS_EVENT_TYPES: TeamsEventType[] = [
   "TEAMS_TYPING_END",
   "TEAMS_DRAFT_SET",
   "TEAMS_PRESENCE_SET",
-  "TEAMS_NOTIFICATION_PUSH",
-  "TEAMS_NOTIFICATION_DISMISS",
   "TEAMS_CALL_START",
   "TEAMS_CALL_UPDATE",
   "TEAMS_CALL_END",
@@ -186,9 +162,7 @@ function hasMessageShape(value: unknown): value is TeamsMessageSendPayload {
     isTarget(value.target) &&
     (value.senderName === undefined || isNonEmptyString(value.senderName)) &&
     (value.mentionedUserIds === undefined || isStringArray(value.mentionedUserIds)) &&
-    (value.replyToMessageId === undefined || isNonEmptyString(value.replyToMessageId)) &&
-    (value.typed === undefined || typeof value.typed === "boolean") &&
-    (value.charDelay === undefined || isNumber(value.charDelay))
+    (value.replyToMessageId === undefined || isNonEmptyString(value.replyToMessageId))
   );
 }
 
@@ -222,14 +196,6 @@ function validatePayload(type: TeamsEventType, payload: unknown): boolean {
         isNonEmptyString(payload.userId) &&
         ["available", "busy", "away", "offline"].includes(String(payload.presence))
       );
-    case "TEAMS_NOTIFICATION_PUSH":
-      return (
-        isNonEmptyString(payload.id) &&
-        isNonEmptyString(payload.title) &&
-        isNonEmptyString(payload.text)
-      );
-    case "TEAMS_NOTIFICATION_DISMISS":
-      return isNonEmptyString(payload.id);
     case "TEAMS_CALL_START":
       return (
         isNonEmptyString(payload.callId) &&

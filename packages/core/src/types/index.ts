@@ -9,10 +9,8 @@
 // DOMAIN TYPES (New - Split from types.ts)
 // =============================================================================
 
-// Notification system
-export * from "./notification.js";
 
-// Device, OS, Keyboard, Call
+// Device, OS, Call
 export * from "./device.js";
 
 // Camera effects and transforms

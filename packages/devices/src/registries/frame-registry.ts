@@ -26,6 +26,8 @@ export interface FrameProps {
   scale?: number;
   showStatusBar?: boolean;
   statusBar?: React.ReactNode;
+  /** Color treatment for the OS gesture indicator. */
+  homeIndicatorTheme?: "light" | "dark" | "hidden";
   variant?: string;
   className?: string;
   style?: React.CSSProperties;

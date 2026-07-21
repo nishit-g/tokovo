@@ -115,8 +115,6 @@ export default defineEpisode({
           authorId: "u_me",
           replyToId: "tw_flagship_hook_v2",
           text: "Operational consequences is the most honest launch metric I've seen this year.",
-          typed: true,
-          charDelay: 2,
           createdAt: baseTs + 10000,
         });
         x.at("7.8s").addNotification({
@@ -147,8 +145,6 @@ export default defineEpisode({
           senderId: "u_me",
           text: "Then let them work. We need better copy, not a better excuse.",
           createdAt: baseTs + 35000,
-          typed: true,
-          charDelay: 2,
         });
         x.at("19.8s").navigate("profile", { userId: "u_founder_v2" });
       })

@@ -25,8 +25,6 @@ export interface SendMessageInput {
     text?: string;
     attachments?: SnapchatAttachment[];
     messageId?: string;
-    typed?: boolean;
-    charDelay?: number;
 }
 
 export interface ReceiveMessageInput {
@@ -116,8 +114,6 @@ export class SnapchatPointBuilder {
             text,
             attachments: options?.attachments,
             messageId: options?.messageId ?? createMessageId(this._frame, order),
-            typed: options?.typed,
-            charDelay: options?.charDelay,
         }));
     }
 

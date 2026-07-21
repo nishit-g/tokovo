@@ -92,7 +92,7 @@ export class ReducerRegistryClass {
   }
 
   /**
-   * Register a generic feature reducer (handles specific event kinds like KEYBOARD, AUDIO)
+   * Register a generic feature reducer for an explicitly registered event kind.
    */
   registerFeatureReducer(kind: string, reducer: FeatureReducer): void {
     this._featureReducers.set(kind, reducer);

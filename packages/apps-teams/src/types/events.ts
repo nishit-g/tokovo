@@ -9,8 +9,6 @@ export type {
   TeamsTypingEndPayload,
   TeamsDraftSetPayload,
   TeamsPresenceSetPayload,
-  TeamsNotificationPushPayload,
-  TeamsNotificationDismissPayload,
   TeamsCallStartPayload,
   TeamsCallUpdatePayload,
   TeamsCallEndPayload,

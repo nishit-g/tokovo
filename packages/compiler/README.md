@@ -6,7 +6,9 @@
 
 - lower track IR into runtime events
 - normalize authored episode input
-- host compile-time plugins such as camera, typing-indicator, and keyboard automation
+- host compile-time plugins such as camera and typing-indicator automation
+- prepare explicit input sessions for deterministic replay
+- prepare notification intents, interactions, policy, and action effects
 
 ## Current Role
 
@@ -23,12 +25,12 @@ It should:
 Current exported compile-time plugins include:
 
 - `CameraDirectorPlugin`
+- `AudioDirectorPlugin`
+- `OSDirectorPlugin`
 - `TypingIndicatorPlugin`
-- `KeyboardPlugin`
 
 Those plugins are optional authoring accelerators. They should help eliminate repetitive timeline code, but they do not replace explicit scene direction when an episode needs custom pacing.
 
 See:
 
-- `docs/KEYBOARD_PLUGIN.md`
 - `docs/TYPING_INDICATOR_PLUGIN.md`

@@ -6,7 +6,10 @@ import {
 import { produce } from "immer";
 import { describe, expect, it } from "vitest";
 
-import { WhatsAppTrackBuilder } from "../dsl/track-builder.js";
+import {
+  WhatsAppTrackBuilder,
+  type WhatsAppSendInputIntent,
+} from "../dsl/track-builder.js";
 import { whatsappV2Lowering } from "../lowering/v2/handler.js";
 import { createWhatsAppInitialState } from "../runtime/initial-state.js";
 import { whatsappReducer } from "../runtime/reducer.js";
@@ -29,7 +32,12 @@ function reduce(state: WorldState, event: Parameters<typeof whatsappReducer>[1])
 }
 
 function reduceTrack(state: WorldState, track: WhatsAppTrackBuilder): WorldState {
-  const context = { pluginLowerers: new Map(), fps: 30 };
+  const context = {
+    pluginLowerers: new Map(),
+    fps: 30,
+    emitNotification: () => undefined,
+    emitNotificationInteraction: () => undefined,
+  };
   return track._events
     .flatMap((event) => whatsappV2Lowering.lower(event as never, context))
     .reduce((next, event) => reduce(next, event), state);
@@ -166,6 +174,42 @@ describe("WhatsApp canonical authoring contract", () => {
     for (const event of track._events) {
       expect(event).not.toHaveProperty("conversationId");
     }
+  });
+
+  it("keeps structured input out of app events and fails without canonical integration", () => {
+    let order = 0;
+    const intents: WhatsAppSendInputIntent[] = [];
+    const track = new WhatsAppTrackBuilder(
+      30,
+      "phone",
+      "dm",
+      () => order++,
+      (intent) => intents.push(intent),
+    );
+    track.at("3s").send("I’ll fix it.", {
+      input: {
+        duration: "2s",
+        correction: { typed: "I’ll fox it.", replace: "fox", with: "fix" },
+      },
+    });
+
+    expect(track._events[0]?.payload).not.toHaveProperty("input");
+    expect(intents).toEqual([
+      expect.objectContaining({
+        deviceId: "phone",
+        conversationId: "dm",
+        fieldId: "composer",
+        sendFrame: 90,
+        text: "I’ll fix it.",
+      }),
+    ]);
+
+    const detached = new WhatsAppTrackBuilder(30, "phone", "dm", () => 0);
+    expect(() =>
+      detached.at("3s").send("No hidden fallback.", {
+        input: { duration: "2s" },
+      }),
+    ).toThrow(/WHATSAPP_INPUT_INTEGRATION_MISSING/);
   });
 
   it("runs media and message actions through the strict point DSL", () => {

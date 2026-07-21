@@ -1,4 +1,5 @@
 import React from "react";
+import { DeterministicImage } from "@tokovo/react";
 import type { InstagramPost, InstagramStory, InstagramUser } from "../runtime/state.js";
 import { useInstagramTheme } from "./ThemeContext.js";
 
@@ -52,7 +53,11 @@ export const Avatar: React.FC<{
         }}
       >
         {src ? (
-          <img src={src} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+          <DeterministicImage
+            src={src}
+            alt=""
+            style={{ width: "100%", height: "100%", objectFit: "cover" }}
+          />
         ) : (
           "•"
         )}
@@ -504,7 +509,7 @@ export const PostCard: React.FC<{
           overflow: "hidden",
         }}
       >
-        <img
+        <DeterministicImage
           src={post.imageUrl}
           alt=""
           style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}

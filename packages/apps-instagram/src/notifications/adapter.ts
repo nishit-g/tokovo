@@ -1,20 +1,30 @@
-import type { Notification, PluginNotificationAdapter } from "@tokovo/core";
+import type { NotificationAppAdapter } from "@tokovo/device-notifications";
 
-function resolveColor(notification: Notification): string {
-  const kind = notification.ir.payload?.kind;
+function resolveColor(kind: unknown): string {
   if (kind === "follow") return "#5851DB";
   if (kind === "dm") return "#0095F6";
   return "#E1306C";
 }
 
-export const instagramNotificationAdapter: PluginNotificationAdapter = {
-  format(notification: Notification) {
+export const instagramNotificationAdapter: NotificationAppAdapter = {
+  appId: "app_instagram",
+  format(intent) {
     return {
-      icon: notification.icon ?? "/icons/instagram.svg",
-      color: resolveColor(notification),
-      title: notification.title,
-      body: notification.body,
-      subtitle: "Instagram",
+      appName: "Instagram",
+      icon: "/icons/instagram.svg",
+      accentColor: resolveColor(intent.metadata?.kind),
+      leadingImage: intent.content.avatar?.src,
+      leadingImageAlt: intent.content.avatar?.alt,
+      title: intent.content.title,
+      body: intent.content.body,
+      subtitle: intent.content.subtitle,
     };
   },
+  defaultAction: (intent) => ({
+    navigation: {
+      appId: "app_instagram",
+      route: intent.metadata?.route as string | undefined,
+      params: { threadId: intent.threadId },
+    },
+  }),
 };

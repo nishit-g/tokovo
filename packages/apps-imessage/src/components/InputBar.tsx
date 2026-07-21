@@ -14,6 +14,8 @@ interface InputBarProps {
   draft?: string;
   safeAreaBottom?: number;
   showCursor?: boolean;
+  inputDirection?: "ltr" | "rtl";
+  inputLanguage?: string;
 }
 
 export const InputBar: React.FC<InputBarProps> = ({
@@ -21,6 +23,8 @@ export const InputBar: React.FC<InputBarProps> = ({
   draft = "",
   safeAreaBottom,
   showCursor = false,
+  inputDirection,
+  inputLanguage,
 }) => {
   const contextTheme = useIMessageTheme();
   const theme = propTheme ?? contextTheme;
@@ -67,6 +71,8 @@ export const InputBar: React.FC<InputBarProps> = ({
         }}
       >
         <span
+          dir={inputDirection}
+          lang={inputLanguage}
           style={{
             color: hasDraft ? colors.bubble.otherText : colors.input.placeholder,
             display: "inline-flex",

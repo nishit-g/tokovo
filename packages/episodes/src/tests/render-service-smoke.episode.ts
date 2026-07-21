@@ -30,7 +30,7 @@ export default defineEpisode({
         (wa) => {
           wa.switchTo("smoke-thread", "0s");
           wa.at("0.6s").receive("Ops", "Render service smoke test");
-          wa.at("2.2s").send("Smoke render completed.", { typed: true });
+          wa.at("2.2s").send("Smoke render completed.", {});
         },
       )
       .build(),

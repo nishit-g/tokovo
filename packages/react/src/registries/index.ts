@@ -14,7 +14,7 @@ export { createAppRegistry } from "./app.js";
 export type { AppRegistryAPI } from "./app.js";
 
 // Widget Registry
-export { createWidgetRegistry, getDynamicIslandWidget, getNotificationWidgets } from "./widget.js";
+export { createWidgetRegistry, getDynamicIslandWidget } from "./widget.js";
 export type { WidgetRegistryClass } from "./widget.js";
 
 // App Metadata Registry

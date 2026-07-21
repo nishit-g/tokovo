@@ -1,29 +1,41 @@
 import { defineEpisode } from "../../types/episode-definition.js";
 import { episode } from "../../code-first-episode.js";
-import { KeyboardPlugin } from "@tokovo/compiler";
 
 export default defineEpisode({
   meta: {
     id: "keyboard-input-exhaustive",
     title: "Keyboard Input Exhaustive",
     description:
-      "New keyboard showcase proving reveal, text entry, suggestions, clear-on-send, and cross-app cleanup without leaking stale input.",
+      "Canonical multilingual input showcase proving grapheme-safe Hindi and Arabic, Japanese IME composition, emoji layout switching, corrections, light/dark themes, and clear-on-send.",
     category: "showcase",
     catalogType: "system_showcase",
     visibility: "public",
     sortOrder: 130,
-    tags: ["system", "keyboard", "input", "typing", "composer"],
+    tags: [
+      "system",
+      "keyboard",
+      "input",
+      "multilingual",
+      "ime",
+      "rtl",
+      "themes",
+    ],
   },
   config: {
     format: "1080x1920",
-    durationInFrames: 840,
-    apps: ["app_whatsapp", "app_linkedin"],
+    durationInFrames: 1020,
+    apps: ["app_whatsapp"],
   },
   build: () =>
-    episode("keyboard-input-exhaustive", { fps: 30, duration: "28s", title: "Keyboard Input Exhaustive" })
+    episode("keyboard-input-exhaustive", {
+      fps: 30,
+      duration: "34s",
+      title: "Keyboard Input Exhaustive",
+      seed: "keyboard-input-exhaustive-vnext",
+    })
       .device("phone", "iphone16", {
         app: "app_whatsapp",
-        installedApps: ["app_whatsapp", "app_linkedin"],
+        installedApps: ["app_whatsapp"],
         os: {
           time: new Date("2026-04-10T19:05:00Z"),
           battery: 63,
@@ -33,54 +45,111 @@ export default defineEpisode({
       .background({ type: "image", src: "/backgrounds/soft-gradient.png" })
       .snapshot("app_whatsapp", "phone", {
         conversations: [
-          { id: "dm_editor", name: "Editor", avatar: "/avatars/avatar-priya.jpg", unreadCount: 1 },
+          {
+            id: "dm_editor",
+            name: "Language QA",
+            avatar: "/avatars/avatar-priya.jpg",
+            unreadCount: 1,
+            messages: [],
+          },
         ],
-      })
-      .snapshot("app_linkedin", "phone", {
-        users: [
-          { id: "me", name: "Ira Sen", handle: "irasen", headline: "Design systems + storytelling", avatarUrl: "/avatars/avatar-zoe.jpg" },
-          { id: "u1", name: "Noor Ahmed", handle: "noorahmed", headline: "Founder hiring PMs", avatarUrl: "/avatars/avatar-alex.jpg" },
-        ],
-        currentUserId: "me",
       })
       .whatsapp("phone", "dm_editor", (wa) => {
         wa.switchTo("dm_editor", "0.8s");
-        wa.at("1.6s").receive("Editor", "Need the caption pass before upload.");
-        wa.at("3.0s").send("On it. Rewriting now.", { typed: true, charDelay: 2 });
-      })
-      .deviceTrack("phone", (d) => {
-        d.at("7.5s").keyboardShow({ returnKeyType: "send" });
-        d.at("8.0s").keyboardType("Use the quieter opener and kill the exclamation mark.", { speed: "natural" });
-        d.at("11.0s").keyboardSetSuggestions(["Looks good", "Ship it", "Need more time"]);
-        d.at("11.8s").keyboardTapSuggestion(0);
-        d.at("13.0s").keyboardHide();
-        d.at("14.4s").openApp("app_linkedin", {
-          transition: { durationFrames: 18, style: "iosZoom" },
+        wa.at("1.3s").receive("Language QA", "Hindi first — keep every matra intact.");
+        wa.at("7.4s").send("कल सुबह 9 बजे भेज दूँगा।");
+        wa.at("7.8s").receive("Language QA", "Now RTL. The cursor must stay correct.");
+        wa.at("13.6s").send("سأرسل النسخة النهائية الليلة.");
+        wa.at("14.0s").receive("Language QA", "IME next — composition is not committed text.");
+        wa.at("19.6s").send("明日の朝、最終版を送ります。");
+        wa.at("20.0s").receive("Language QA", "Switch layouts without losing the draft.");
+        wa.at("25.2s").send("Looks 10/10 🔥🚀");
+        wa.at("25.6s").receive("Language QA", "Last one: make a typo, then repair it.");
+        wa.at("31.6s").send("Ship the fix", {
+          input: {
+            duration: "5.6s",
+            style: "natural",
+            correction: {
+              typed: "Ship the fox",
+              replace: "fox",
+              with: "fix",
+            },
+            keyboard: { appearance: "dark" },
+          },
         });
-        d.at("18.0s").keyboardShow({ returnKeyType: "default" });
-        d.at("18.5s").keyboardType("Hiring for taste is harder than hiring for output.", { speed: "natural" });
-        d.at("22.0s").keyboardHide();
       })
-      .linkedin("phone", (li) => {
-        li.at("15.2s").navigate("compose");
-        li.at("16.2s").setComposeDraft("Hiring for taste is harder than hiring for output.");
-        li.at("22.6s").post({
-          id: "li_keyboard_post",
-          authorId: "me",
-          text: "Hiring for taste is harder than hiring for output.",
-          createdAt: new Date("2026-04-10T19:06:00Z").getTime(),
-          typed: true,
-          charDelay: 2,
-        });
-        li.at("24.4s").navigate("feed");
+      .input("phone", "composer", {
+        id: "hindi-light",
+        at: "2s",
+        submitAt: "7s",
+        until: "7.4s",
+        locale: "hi-IN",
+        text: "कल सुबह 9 बजे भेज दूँगा।",
+        expectedFinalValue: "कल सुबह 9 बजे भेज दूँगा।",
+        cadence: { style: "fast" },
+        keyboard: { appearance: "light", returnKey: "send" },
+      })
+      .input("phone", "composer", {
+        id: "arabic-dark-rtl",
+        at: "8.2s",
+        submitAt: "13.2s",
+        until: "13.6s",
+        locale: "ar-SA",
+        direction: "auto",
+        text: "سأرسل النسخة النهائية الليلة.",
+        expectedFinalValue: "سأرسل النسخة النهائية الليلة.",
+        cadence: { style: "fast" },
+        keyboard: { appearance: "dark", returnKey: "send" },
+      })
+      .input("phone", "composer", {
+        id: "japanese-ime-dark",
+        at: "14.4s",
+        submitAt: "19.2s",
+        until: "19.6s",
+        locale: "ja-JP",
+        script: [
+          {
+            type: "compose",
+            updates: [
+              "ashita",
+              "あした",
+              "明日",
+              "明日の朝",
+              "明日の朝、最終版を送ります",
+            ],
+            commit: "明日の朝、最終版を送ります。",
+            keys: ["a", "し", "明", "朝", "送"],
+            intervalFrames: 16,
+          },
+          {
+            type: "setSuggestions",
+            suggestions: ["送ります", "共有します", "確認します"],
+          },
+        ],
+        expectedFinalValue: "明日の朝、最終版を送ります。",
+        keyboard: { appearance: "dark", returnKey: "send" },
+      })
+      .input("phone", "composer", {
+        id: "emoji-layout-switch",
+        at: "20.4s",
+        submitAt: "24.8s",
+        until: "25.2s",
+        locale: "en-US",
+        script: [
+          { type: "type", text: "Looks 10/10 ", cadence: { style: "fast" } },
+          { type: "switchLayout", layout: "emoji" },
+          { type: "type", text: "🔥🚀", cadence: { framesPerGrapheme: 12 } },
+        ],
+        expectedFinalValue: "Looks 10/10 🔥🚀",
+        keyboard: { appearance: "light", returnKey: "send" },
       })
       .camera((cam) => {
         cam.at("0s").focus("device", { scale: 1.02, duration: "0.3s" });
-        cam.span("2.8s", "5.5s").trackCinematic("keyboard", { scale: 1.12, smoothing: 0.16 });
-        cam.at("8.2s").focus("keyboard", { scale: 1.14, duration: "0.25s" });
-        cam.at("15.4s").focus("composer", { scale: 1.08, duration: "0.3s" });
-        cam.span("18.5s", "22.2s").trackCinematic("keyboard", { scale: 1.1, smoothing: 0.16 });
+        cam.at("2.2s").focus("input", { scale: 1.08, duration: "0.3s" });
+        cam.at("8.4s").focus("typing", { scale: 1.1, duration: "0.3s" });
+        cam.at("14.6s").focus("input", { scale: 1.08, duration: "0.3s" });
+        cam.at("20.6s").focus("typing", { scale: 1.1, duration: "0.3s" });
+        cam.at("26.2s").focus("input", { scale: 1.08, duration: "0.3s" });
       })
-      .use(new KeyboardPlugin())
       .build(),
 });

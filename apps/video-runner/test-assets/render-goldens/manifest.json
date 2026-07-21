@@ -90,6 +90,120 @@
       "frame": 1185,
       "file": "whatsapp/interaction-matrix-frame-1185.png",
       "channelTolerance": 0
+    },
+    {
+      "episodeId": "keyboard-input-exhaustive",
+      "frame": 64,
+      "file": "keyboard/input-exhaustive-entrance-frame-64.png",
+      "channelTolerance": 0
+    },
+    {
+      "episodeId": "keyboard-input-exhaustive",
+      "frame": 68,
+      "file": "keyboard/input-exhaustive-hindi-key-frame-68.png",
+      "channelTolerance": 0
+    },
+    {
+      "episodeId": "keyboard-input-exhaustive",
+      "frame": 927,
+      "file": "keyboard/input-exhaustive-correction-frame-927.png",
+      "channelTolerance": 0
+    },
+    {
+      "episodeId": "keyboard-input-exhaustive",
+      "frame": 948,
+      "file": "keyboard/input-exhaustive-submit-frame-948.png",
+      "channelTolerance": 0
+    },
+    {
+      "episodeId": "keyboard-input-exhaustive",
+      "frame": 958,
+      "file": "keyboard/input-exhaustive-exit-frame-958.png",
+      "channelTolerance": 0
+    },
+    {
+      "episodeId": "notification-center-exhaustive",
+      "frame": 42,
+      "file": "system/notification-banner-frame-42.png",
+      "channelTolerance": 0
+    },
+    {
+      "episodeId": "notification-center-exhaustive",
+      "frame": 150,
+      "file": "system/notification-center-frame-150.png",
+      "channelTolerance": 0
+    },
+    {
+      "episodeId": "os-surface-mega-exhaustive",
+      "frame": 60,
+      "file": "system/os-surface-mega-lock-notifications-frame-60.png",
+      "channelTolerance": 0
+    },
+    {
+      "episodeId": "os-surface-mega-exhaustive",
+      "frame": 240,
+      "file": "system/os-surface-mega-ios-light-home-frame-240.png",
+      "channelTolerance": 0
+    },
+    {
+      "episodeId": "os-surface-mega-exhaustive",
+      "frame": 375,
+      "file": "system/os-surface-mega-android-dark-home-frame-375.png",
+      "channelTolerance": 0
+    },
+    {
+      "episodeId": "os-surface-mega-exhaustive",
+      "frame": 480,
+      "file": "system/os-surface-mega-dark-light-lock-frame-480.png",
+      "channelTolerance": 0
+    },
+    {
+      "episodeId": "os-surface-mega-exhaustive",
+      "frame": 660,
+      "file": "system/os-surface-mega-ios-dark-home-frame-660.png",
+      "channelTolerance": 0
+    },
+    {
+      "episodeId": "os-surface-mega-exhaustive",
+      "frame": 825,
+      "file": "system/os-surface-mega-hindi-keyboard-frame-825.png",
+      "channelTolerance": 0
+    },
+    {
+      "episodeId": "os-surface-mega-exhaustive",
+      "frame": 1095,
+      "file": "system/os-surface-mega-arabic-keyboard-frame-1095.png",
+      "channelTolerance": 0
+    },
+    {
+      "episodeId": "os-surface-mega-exhaustive",
+      "frame": 1365,
+      "file": "system/os-surface-mega-japanese-ime-frame-1365.png",
+      "channelTolerance": 0
+    },
+    {
+      "episodeId": "os-surface-mega-exhaustive",
+      "frame": 1635,
+      "file": "system/os-surface-mega-correction-emoji-frame-1635.png",
+      "channelTolerance": 0
+    },
+    {
+      "episodeId": "os-surface-mega-exhaustive",
+      "frame": 1875,
+      "file": "system/os-surface-mega-notification-center-frame-1875.png",
+      "channelTolerance": 0
+    },
+    {
+      "episodeId": "os-surface-mega-exhaustive",
+      "frame": 1995,
+      "file": "system/os-surface-mega-quick-reply-frame-1995.png",
+      "channelTolerance": 0
+    },
+    {
+      "episodeId": "os-surface-mega-exhaustive",
+      "frame": 2055,
+      "file": "system/os-surface-mega-reply-result-frame-2055.png",
+      "channelTolerance": 0
     }
   ]
 }

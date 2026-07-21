@@ -7,7 +7,10 @@ The compilation layer between authored episode input and runtime replay.
 - lower authored events and tracks into runtime data
 - validate and migrate plugin-owned snapshots and initial views
 - hydrate initial world state through plugin bootstrap contracts
-- host compile-time plugins such as camera, keyboard, and typing-indicator helpers
+- host compile-time plugins such as camera and typing-indicator helpers
+- prepare explicit input sessions into a deterministic input program
+- prepare notification intents, policy, interactions, and typed action effects into an
+  immutable notification program
 
 `@tokovo/compiler` does not own app-domain bootstrap semantics. It orchestrates plugin-owned
 snapshot/view schemas; it does not synthesize chats, feeds, or threads on behalf of apps.
@@ -22,7 +25,6 @@ snapshot/view schemas; it does not synthesize chats, feeds, or threads on behalf
   - `AudioDirectorPlugin`
   - `OSDirectorPlugin`
   - `TypingIndicatorPlugin`
-  - `KeyboardPlugin`
 
 ## Important Boundary
 

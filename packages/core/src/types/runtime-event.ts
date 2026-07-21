@@ -21,7 +21,6 @@ export type RuntimeEventKind =
   | "CAMERA"
   | "AUDIO"
   | "VOICE"
-  | "KEYBOARD"
   | "OVERLAY"
   | "OS"
   | "CALL"
@@ -92,28 +91,13 @@ export type DeviceEventType =
   | "CLOSE_APP"
   | "GO_HOME"
   | "SET_SCREEN_RECORDING"
-  | "SHOW_NOTIFICATION"
-  | "DISMISS_NOTIFICATION"
-  | "TAP_NOTIFICATION"
-  | "UPDATE_NOTIFICATION"
-  | "SWIPE_NOTIFICATION"
-  | "REPLY_NOTIFICATION"
-  | "TOGGLE_NOTIFICATION_PANEL"
-  | "CLEAR_ALL_NOTIFICATIONS"
   | "SET_DYNAMIC_ISLAND"
   | "SET_BADGE"
   | "INCOMING_CALL"
   | "CALL_ANSWERED"
   | "CALL_ENDED"
   | "START_BACKGROUND_APP"
-  | "STOP_BACKGROUND_APP"
-  | "KEYBOARD_SHOW"
-  | "KEYBOARD_HIDE"
-  | "KEYBOARD_KEY_PRESS"
-  | "KEYBOARD_TYPE"
-  | "KEYBOARD_CLEAR"
-  | "KEYBOARD_SET_SUGGESTIONS"
-  | "KEYBOARD_TAP_SUGGESTION";
+  | "STOP_BACKGROUND_APP";
 
 export interface OpenAppPayload {
   appId: string;
@@ -145,17 +129,6 @@ export interface BackgroundAppPayload {
   appId: string;
   indicator?: "music" | "call" | "recording" | "location";
   label?: string;
-}
-
-export interface NotificationPayload {
-  id: string;
-  appId: string;
-  title: string;
-  body: string;
-  threadKey?: string;
-  priority?: "HIGH" | "DEFAULT" | "LOW";
-  icon?: string;
-  actions?: Array<{ label: string; action: string }>;
 }
 
 interface BaseDeviceRuntimeEvent<
@@ -193,11 +166,6 @@ export type StopBackgroundAppEvent = BaseDeviceRuntimeEvent<
   "STOP_BACKGROUND_APP",
   BackgroundAppPayload
 >;
-export type ShowNotificationEvent = BaseDeviceRuntimeEvent<
-  "SHOW_NOTIFICATION",
-  NotificationPayload
->;
-
 export type LockEvent = BaseDeviceRuntimeEvent<"LOCK">;
 export type UnlockEvent = BaseDeviceRuntimeEvent<"UNLOCK">;
 export type CloseAppEvent = BaseDeviceRuntimeEvent<"CLOSE_APP">;
@@ -218,40 +186,7 @@ export type DeviceRuntimeEvent =
   | CallAnsweredEvent
   | CallEndedEvent
   | StartBackgroundAppEvent
-  | StopBackgroundAppEvent
-  | ShowNotificationEvent
-  | BaseDeviceRuntimeEvent<"DISMISS_NOTIFICATION">
-  | BaseDeviceRuntimeEvent<"TAP_NOTIFICATION">
-  | BaseDeviceRuntimeEvent<"UPDATE_NOTIFICATION">
-  | BaseDeviceRuntimeEvent<"SWIPE_NOTIFICATION">
-  | BaseDeviceRuntimeEvent<"REPLY_NOTIFICATION">
-  | BaseDeviceRuntimeEvent<"TOGGLE_NOTIFICATION_PANEL", { open?: boolean }>
-  | BaseDeviceRuntimeEvent<"CLEAR_ALL_NOTIFICATIONS">
-  | BaseDeviceRuntimeEvent<"KEYBOARD_SHOW", { returnKeyType?: string }>
-  | BaseDeviceRuntimeEvent<"KEYBOARD_HIDE">
-  | BaseDeviceRuntimeEvent<"KEYBOARD_KEY_PRESS", { key: string }>
-  | BaseDeviceRuntimeEvent<
-      "KEYBOARD_TYPE",
-      {
-        text: string;
-        /**
-         * Preferred authoring option (v2 IR / deviceTrack):
-         * "slow" | "natural" | "fast" (or custom).
-         */
-        speed?: string;
-        /**
-         * Back-compat + low-level control:
-         * frames-per-character used by the keyboard typing animation.
-         */
-        charDelay?: number;
-      }
-    >
-  | BaseDeviceRuntimeEvent<"KEYBOARD_CLEAR">
-  | BaseDeviceRuntimeEvent<
-      "KEYBOARD_SET_SUGGESTIONS",
-      { suggestions: string[] }
-    >
-  | BaseDeviceRuntimeEvent<"KEYBOARD_TAP_SUGGESTION", { index: number }>;
+  | StopBackgroundAppEvent;
 
 // =============================================================================
 // CAMERA EVENT (Flat structure - matches DSL factories and reducers)
@@ -436,41 +371,11 @@ export type AudioRuntimeEvent =
   | (BaseAudioRuntimeEvent & Record<string, unknown>);
 
 // =============================================================================
-// KEYBOARD EVENT
-// =============================================================================
-
-export type KeyboardEventType =
-  | "SHOW"
-  | "HIDE"
-  | "KEY_DOWN"
-  | "KEY_UP"
-  | "TYPE_CHAR"
-  | "BACKSPACE"
-  | "SET_TEXT"
-  | "CLEAR";
-
-export interface KeyboardPayload {
-  key?: string;
-  char?: string;
-  text?: string;
-  layout?: string;
-}
-
-export interface KeyboardRuntimeEvent<
-  Type extends KeyboardEventType = KeyboardEventType,
-  Payload = KeyboardPayload,
-> extends BaseRuntimeEvent {
-  kind: "KEYBOARD";
-  deviceId: string;
-  type: Type;
-  payload?: Payload;
-}
-
-// =============================================================================
 // OS EVENT
 // =============================================================================
 
 export type OSEventType =
+  | "SET_STATE"
   | "SET_TIME"
   | "SET_BATTERY"
   | "DRAIN_BATTERY"
@@ -483,13 +388,19 @@ export interface OSRuntimeEvent extends BaseRuntimeEvent {
   kind: "OS";
   type: OSEventType;
   deviceId?: string;
+  locale?: string;
+  appearance?: "light" | "dark";
+  hourCycle?: "h12" | "h24";
+  lockScreenWallpaper?: string;
   time?: number;
+  battery?: number;
   level?: number;
   charging?: boolean;
   rate?: number;
   network?: string;
   strength?: number;
   enabled?: boolean;
+  lowPowerMode?: boolean;
 }
 
 // =============================================================================
@@ -674,7 +585,6 @@ export type RuntimeEvent =
   | CameraRuntimeEvent
   | AudioRuntimeEvent
   | VoiceRuntimeEvent
-  | KeyboardRuntimeEvent
   | OverlayRuntimeEvent
   | OSRuntimeEvent
   | CallRuntimeEvent
@@ -771,15 +681,6 @@ export function isRuntimeAudioEvent(
   event: RuntimeEvent,
 ): event is AudioRuntimeEvent {
   return event.kind === "AUDIO";
-}
-
-/**
- * Check if event is a keyboard event
- */
-export function isRuntimeKeyboardEvent(
-  event: RuntimeEvent,
-): event is KeyboardRuntimeEvent {
-  return event.kind === "KEYBOARD";
 }
 
 export function isRuntimeVoiceEvent(

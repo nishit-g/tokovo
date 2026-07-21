@@ -52,8 +52,6 @@ export default defineEpisode({
           replyToId: "tw_story_hook_v2",
           text: "This lands like a labor violation wearing a hoodie.",
           createdAt: baseTs + 12000,
-          typed: true,
-          charDelay: 2,
         });
         x.at("5.6s").addNotification({ id: "nt_story_x_1", type: "repost", actorId: "u_banter_story", tweetId: "tw_story_reply_v2" });
         x.at("6.6s").navigate("notifications");
@@ -72,8 +70,6 @@ export default defineEpisode({
           senderId: "u_me",
           text: "Delete the thread and pretend you were hacked by sincerity.",
           createdAt: baseTs + 26000,
-          typed: true,
-          charDelay: 2,
         });
       })
       .camera((cam) => {

@@ -55,7 +55,7 @@ export default defineEpisode({
         wa.at("4.0s").receive("Tina", "Drop link.");
         wa.span("4.8s", "5.6s").typing("Jay");
         wa.at("5.7s").receive("Jay", "he really thought he ate with that caption");
-        wa.at("7.8s").send("Stop. The audacity is subscription-based.", { typed: true, charDelay: 2 });
+        wa.at("7.8s").send("Stop. The audacity is subscription-based.", {});
         wa.at("10.4s").receive("Omar", "subscription-based is crazy 😭");
         wa.at("12.8s").receive("Rhea", "Okay but open X, you're trending.");
       })

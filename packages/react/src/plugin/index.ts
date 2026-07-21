@@ -12,7 +12,6 @@ export type {
   LoweringHandler,
   DslExtension,
   PluginAnchorRegistry,
-  PluginNotificationAdapter,
   PluginTier,
   PluginLayoutStrategy,
   PluginLayoutConstants,

@@ -1,13 +1,24 @@
-import type { Notification, PluginNotificationAdapter } from "@tokovo/core";
+import type { NotificationAppAdapter } from "@tokovo/device-notifications";
 
-export const whatsappNotificationAdapter: PluginNotificationAdapter = {
-  format(notification: Notification) {
+export const whatsappNotificationAdapter: NotificationAppAdapter = {
+  appId: "app_whatsapp",
+  format(intent) {
     return {
-      icon: notification.icon ?? "/icons/whatsapp.svg",
-      color: "#25D366",
-      title: notification.title,
-      body: notification.body,
-      subtitle: "WhatsApp",
+      appName: "WhatsApp",
+      icon: "/icons/whatsapp.svg",
+      accentColor: "#25D366",
+      leadingImage: intent.content.avatar?.src,
+      leadingImageAlt: intent.content.avatar?.alt,
+      title: intent.content.title,
+      body: intent.content.body,
+      subtitle: intent.content.subtitle,
     };
   },
+  defaultAction: (intent) => ({
+    navigation: {
+      appId: "app_whatsapp",
+      route: "conversation",
+      params: { conversationId: intent.threadId },
+    },
+  }),
 };

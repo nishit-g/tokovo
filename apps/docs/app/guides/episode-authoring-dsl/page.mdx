@@ -57,6 +57,107 @@ The complete set is `whatsapp`, `imessage`, `instagram`, `x`, `linkedin`,
 `snapchat`, `teams`, and `typewriter`. Use generic `track()` only while developing an
 external app plugin; it is not the normal story-authoring surface.
 
+## Device OS, lockscreen, and homescreen
+
+Author OS appearance separately from app appearance. The OS value controls lockscreen,
+homescreen, system chrome, notifications, and the default keyboard theme; the app keeps
+ownership of its internal theme.
+
+```ts
+episode("system-demo", { fps: 30, duration: "12s" })
+  .device("phone", "pixel", {
+    app: "app_whatsapp",
+    appearance: "light",
+    locked: true,
+    installedApps: ["app_whatsapp", "app_teams", "app_camera"],
+    homeScreen: {
+      pages: [["app_teams"]],
+      dock: ["app_camera", "app_whatsapp"],
+    },
+    os: {
+      locale: "ar-SA",
+      appearance: "dark",
+      hourCycle: "h24",
+      time: new Date("2026-07-21T09:41:00Z"),
+      dnd: true,
+    },
+  })
+  .deviceTrack("phone", (device) => {
+    device.at("2s").unlock();
+    device.at("2.6s").goHome();
+  });
+```
+
+Use `lockscreen.clock`, `lockscreen.controls`, `homescreen.grid`,
+`homescreen.dock`, `homescreen.search`, or `homescreen.icon:<appId>` as camera targets.
+
+## Input sessions
+
+The explicit input capability is field-scoped and random-access safe. It supports
+grapheme-safe selection, replacement, IME composition, suggestions, RTL, and emoji.
+
+```ts
+episode("input-demo", { fps: 30, duration: "8s" })
+  .device("phone", "iphone16", { app: "app_whatsapp" })
+  .input("phone", "composer", {
+    at: "1s",
+    submitAt: "6s",
+    locale: "ja-JP",
+    script: [
+      {
+        type: "compose",
+        updates: ["ashita", "あした", "明日"],
+        commit: "明日送ります。",
+      },
+    ],
+    expectedFinalValue: "明日送ります。",
+    keyboard: { appearance: "dark", returnKey: "send" },
+  });
+```
+
+## Notifications
+
+Author semantic intent once. The notification capability resolves platform policy,
+grouping, privacy, DND, foreground behavior, lifecycle, audio, and presentation.
+
+```ts
+episode("notification-demo", { fps: 30, duration: "10s" })
+  .device("phone", "pixel", { app: "app_whatsapp" })
+  .notificationTrack("phone", (notifications) => {
+    notifications.at("1s").deliver({
+      id: "release_reply",
+      appId: "app_whatsapp",
+      content: {
+        title: "Release room",
+        body: "Ready to ship?",
+        avatar: { src: "/avatars/release-room.png", alt: "Release room" },
+      },
+      interruption: "timeSensitive",
+      privacy: "private",
+      threadId: "release_room",
+      reply: {
+        actionId: "reply",
+        placeholder: "Reply",
+        textPayloadKey: "text",
+        target: {
+          appEvent: {
+            appId: "app_whatsapp",
+            type: "MESSAGE_SENT",
+            payload: { conversationId: "release_room" },
+          },
+        },
+      },
+    });
+    notifications.at("3s").openCenter();
+    notifications.at("5s").reply("release_reply", "Ship it.");
+    notifications.at("5.2s").closeCenter();
+  });
+```
+
+Interruption levels are `passive`, `active`, `timeSensitive`, and `critical`.
+Preview policy is explicit (`always`, `whenUnlocked`, or `never`), and invalid app IDs,
+actions, assets, or out-of-lifecycle interactions fail during preparation.
+
 ## Story language
 
 Use scenes when the episode is a narrative rather than a systems showcase. Scene time is
@@ -96,10 +197,7 @@ episode("reveal", { fps: 30, duration: "20s" }).scene(
         const reveal = chat.receive(people.riya, "That someone is for you.", {
           hold: "2s",
         });
-        chat.reply("Delete this from the universe.", reveal, {
-          typed: true,
-          charDelay: 2,
-        });
+        chat.reply("Delete this from the universe.", reveal);
         scene.focus(reveal, { scale: 1.1 });
       },
     );

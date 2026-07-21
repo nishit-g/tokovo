@@ -1,9 +1,9 @@
-import type { TrackEvent } from "@tokovo/ir";
-import { getLoweringScratchpad, planTypedKeyboard, type RuntimeEvent } from "@tokovo/core";
+import type { NotificationIntentEmitter, TrackEvent } from "@tokovo/ir";
+import type { RuntimeEvent } from "@tokovo/core";
 import type { XTrackEvent } from "../types/index.js";
 
 export interface XLoweringHandler {
-  lower: (event: TrackEvent, ctx?: unknown) => RuntimeEvent[];
+  lower: (event: TrackEvent, ctx: NotificationIntentEmitter) => RuntimeEvent[];
 }
 
 function isXTrackEvent(event: TrackEvent): event is XTrackEvent {
@@ -32,12 +32,6 @@ function createRuntimeEvent(
   };
 }
 
-type XLoweringScratchpad = {
-  lastComposeOpenAtByDevice: Map<string, number>;
-  lastThreadOpenAtByDeviceThread: Map<string, number>;
-  lastTweetOpenAtByDeviceTweet: Map<string, number>;
-};
-
 type TweetAddPayload = {
   id?: string;
   authorId: string;
@@ -54,8 +48,6 @@ type TweetAddPayload = {
   shareCount?: number;
   replyToId?: string;
   repostOfId?: string;
-  typed?: boolean;
-  charDelay?: number;
 };
 
 function buildAddTweetPayload(
@@ -82,61 +74,19 @@ function buildAddTweetPayload(
   };
 }
 
-function lowerTweetWithOptionalTyping(
+function lowerTweet(
   event: TrackEvent & { payload: TweetAddPayload },
-  deviceId: string,
-  notBeforeFrame: number | undefined,
   addTweetPayload: Record<string, unknown>,
 ): RuntimeEvent[] {
-  const text = event.payload.text ?? "";
   const addTweetEvent = createRuntimeEvent(event, "ADD_TWEET", addTweetPayload);
-  if (!event.payload.typed) {
-    return [addTweetEvent];
-  }
-
-  if (typeof notBeforeFrame !== "number" || notBeforeFrame > event.at) {
-    return [addTweetEvent];
-  }
-
-  const plan = planTypedKeyboard({
-    deviceId,
-    submitAt: event.at,
-    text,
-    requestedCharDelay: event.payload.charDelay ?? 2,
-    notBeforeFrame,
-    keyboardType: "default",
-    returnKeyType: "send",
-  });
-
-  const after: RuntimeEvent[] = [
-    createRuntimeEvent(event, "SET_COMPOSE_DRAFT", { text }),
-    addTweetEvent,
-    createRuntimeEvent(event, "SET_COMPOSE_DRAFT", { text: "" }),
-  ];
-
-  if (!plan.ok) {
-    return after;
-  }
-
-  const [showEv, typeEv, pressEv, hideEv] = plan.events;
-  return [showEv, typeEv, pressEv, ...after, hideEv];
+  return [addTweetEvent];
 }
 
 export const xLowering: XLoweringHandler = {
-  lower: (event: TrackEvent, ctx?: unknown): RuntimeEvent[] => {
+  lower: (event: TrackEvent, ctx: NotificationIntentEmitter): RuntimeEvent[] => {
     if (!isXTrackEvent(event)) return [];
     const deviceId = (event as { deviceId?: string }).deviceId;
     if (!deviceId) return [];
-    const scratchpad = getLoweringScratchpad<XLoweringScratchpad>(
-      ctx,
-      "app_x.lowering",
-      () => ({
-        lastComposeOpenAtByDevice: new Map(),
-        lastThreadOpenAtByDeviceThread: new Map(),
-        lastTweetOpenAtByDeviceTweet: new Map(),
-      }),
-    );
-
     switch (event.type) {
       case "USER_CREATE":
         return [
@@ -162,26 +112,18 @@ export const xLowering: XLoweringHandler = {
       case "UNFOLLOW_USER":
         return [createRuntimeEvent(event, "UNFOLLOW_USER", event.payload)];
       case "TWEET_CREATE":
-        return lowerTweetWithOptionalTyping(
+        return lowerTweet(
           event,
-          deviceId,
-          scratchpad.lastComposeOpenAtByDevice.get(deviceId),
           buildAddTweetPayload(event),
         );
       case "TWEET_REPLY":
-        return lowerTweetWithOptionalTyping(
+        return lowerTweet(
           event,
-          deviceId,
-          scratchpad.lastTweetOpenAtByDeviceTweet.get(
-            `${deviceId}::${event.payload.replyToId}`,
-          ) ?? scratchpad.lastComposeOpenAtByDevice.get(deviceId),
           buildAddTweetPayload(event, { replyToId: event.payload.replyToId }),
         );
       case "TWEET_QUOTE":
-        return lowerTweetWithOptionalTyping(
+        return lowerTweet(
           event,
-          deviceId,
-          scratchpad.lastComposeOpenAtByDevice.get(deviceId),
           buildAddTweetPayload(event, { quoteTweetId: event.payload.quoteTweetId }),
         );
       case "TWEET_REPOST":
@@ -205,23 +147,6 @@ export const xLowering: XLoweringHandler = {
       case "TWEET_SHARE":
         return [createRuntimeEvent(event, "SHARE_TWEET", event.payload)];
       case "NAVIGATE": {
-        {
-          if (event.payload.screen === "compose") {
-            scratchpad.lastComposeOpenAtByDevice.set(deviceId, event.at);
-          }
-          if (event.payload.screen === "thread" && event.payload.threadId) {
-            scratchpad.lastThreadOpenAtByDeviceThread.set(
-              `${deviceId}::${event.payload.threadId}`,
-              event.at,
-            );
-          }
-          if (event.payload.screen === "tweet" && event.payload.tweetId) {
-            scratchpad.lastTweetOpenAtByDeviceTweet.set(
-              `${deviceId}::${event.payload.tweetId}`,
-              event.at,
-            );
-          }
-        }
         const events: RuntimeEvent[] = [
           createRuntimeEvent(event, "SET_SCREEN", {
             screen: event.payload.screen,
@@ -281,10 +206,43 @@ export const xLowering: XLoweringHandler = {
         return [createRuntimeEvent(event, "SET_PROFILE_TAB", event.payload)];
       case "SET_NOTIFICATIONS_TAB":
         return [createRuntimeEvent(event, "SET_NOTIFICATIONS_TAB", event.payload)];
-      case "NOTIFICATION_ADD":
+      case "NOTIFICATION_ADD": {
+        const id = event.payload.id ?? `nt-${event.at}-${event._declarationOrder ?? 0}`;
+        const body =
+          event.payload.body ??
+          (event.payload.type === "mention"
+            ? "You were mentioned in a post"
+            : event.payload.type === "reply"
+              ? "New reply to your post"
+              : event.payload.type === "follow"
+                ? "You have a new follower"
+                : "New activity on X");
+        const threadId = event.payload.tweetId
+          ? `tweet:${event.payload.tweetId}`
+          : `user:${event.payload.actorId}`;
+        ctx.emitNotification({
+          id,
+          deviceId,
+          appId: "app_x",
+          deliverAtFrame: event.at,
+          sequence: event._declarationOrder,
+          content: { title: event.payload.title ?? "X", body },
+          category: "social",
+          threadId,
+          groupId: threadId,
+          interruption:
+            event.payload.type === "mention" || event.payload.type === "reply"
+              ? "timeSensitive"
+              : "active",
+          privacy: "public",
+          metadata: {
+            kind: event.payload.type,
+            route: event.payload.tweetId ? "tweet" : "notifications",
+          },
+        });
         return [
           createRuntimeEvent(event, "ADD_NOTIFICATION", {
-            id: event.payload.id ?? `nt-${event.at}-${event._declarationOrder ?? 0}`,
+            id,
             type: event.payload.type,
             actorId: event.payload.actorId,
             tweetId: event.payload.tweetId,
@@ -294,34 +252,8 @@ export const xLowering: XLoweringHandler = {
             body: event.payload.body,
             read: event.payload.read,
           }),
-          {
-            at: event.at,
-            kind: "DEVICE",
-            type: "SHOW_NOTIFICATION",
-            deviceId,
-            payload: {
-              id: event.payload.id ?? `nt-${event.at}-${event._declarationOrder ?? 0}`,
-              appId: "app_x",
-              title: event.payload.title ?? "X",
-              body:
-                event.payload.body ??
-                (event.payload.type === "mention"
-                  ? "You were mentioned in a post"
-                  : event.payload.type === "reply"
-                    ? "New reply to your post"
-                    : event.payload.type === "follow"
-                      ? "You have a new follower"
-                      : "New activity on X"),
-              threadKey: event.payload.tweetId
-                ? `tweet:${event.payload.tweetId}`
-                : `user:${event.payload.actorId}`,
-              priority:
-                event.payload.type === "mention" || event.payload.type === "reply"
-                  ? "HIGH"
-                  : "DEFAULT",
-            },
-          } as RuntimeEvent,
         ];
+      }
       case "DM_THREAD_CREATE":
         return [
           createRuntimeEvent(event, "ADD_DM_THREAD", {
@@ -336,47 +268,6 @@ export const xLowering: XLoweringHandler = {
           }),
         ];
       case "DM_SEND":
-        if (event.payload?.typed) {
-          const text = event.payload.text ?? "";
-          const threadOpenedAt =
-            scratchpad.lastThreadOpenAtByDeviceThread.get(
-              `${deviceId}::${event.payload.threadId}`,
-            ) ?? 0;
-
-          const after: RuntimeEvent[] = [
-            createRuntimeEvent(event, "SET_THREAD_DRAFT", {
-              threadId: event.payload.threadId,
-              text,
-            }),
-            createRuntimeEvent(event, "ADD_DM_MESSAGE", {
-              id: event.payload.id ?? `msg-${event.at}-${event._declarationOrder ?? 0}`,
-              threadId: event.payload.threadId,
-              senderId: event.payload.senderId,
-              text,
-              createdAt: getTimestamp(event, event.payload.createdAt),
-            }),
-            createRuntimeEvent(event, "SET_THREAD_DRAFT", {
-              threadId: event.payload.threadId,
-              text: "",
-            }),
-          ];
-
-          const plan = planTypedKeyboard({
-            deviceId,
-            submitAt: event.at,
-            text,
-            requestedCharDelay: event.payload.charDelay ?? 2,
-            notBeforeFrame: threadOpenedAt,
-            keyboardType: "default",
-            returnKeyType: "send",
-          });
-
-          if (!plan.ok) return after;
-
-          const [showEv, typeEv, pressEv, hideEv] = plan.events;
-          return [showEv, typeEv, pressEv, ...after, hideEv];
-        }
-
         return [
           createRuntimeEvent(event, "ADD_DM_MESSAGE", {
             id: event.payload.id ?? `msg-${event.at}-${event._declarationOrder ?? 0}`,

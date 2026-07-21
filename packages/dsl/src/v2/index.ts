@@ -7,7 +7,11 @@ export type {
   TrackFn,
   TrackFactory,
   HandPerformanceOptions,
+  InputSessionOptions,
+  NotificationIntentOptions,
+  NotificationInteractionOptions,
 } from "./episode.js";
+export { NotificationPointBuilder, NotificationTrackBuilder } from "./episode.js";
 
 export {
   HandPerformanceTrackBuilder,
@@ -59,7 +63,6 @@ export type {
   OSStateOptions,
   BatteryOptions,
   NetworkOptions,
-  NotificationOptions,
 } from "./os-track.js";
 
 export { DeviceTrackBuilderV2, DevicePointBuilderV2 } from "./device-track.js";
@@ -67,7 +70,6 @@ export type {
   DeviceEventMetaOptions,
   SfxOverride,
   TransitionOptions,
-  NotificationShowOptions,
 } from "./device-track.js";
 
 export { OverlayTrackBuilder, OverlayPointBuilder } from "./overlay-track.js";

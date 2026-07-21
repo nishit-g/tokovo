@@ -189,6 +189,12 @@ export function applyPreparedInputOperation(
       }
       next.status = "submitted";
       next.submittedValue = next.draft;
+      if (operation.clearDraft) {
+        next.draft = "";
+        next.selection = { anchor: 0, focus: 0 };
+        next.suggestions = [];
+        next.activeSuggestionIndex = null;
+      }
       break;
 
     case "blur":

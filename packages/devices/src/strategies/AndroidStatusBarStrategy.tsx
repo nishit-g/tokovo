@@ -5,6 +5,8 @@
  */
 
 import React from "react";
+import { STATUS_BAR_PRESETS } from "@tokovo/core";
+import { DeterministicImage } from "@tokovo/react";
 import type { StatusBarStrategyProps } from "../registries/index.js";
 import {
     SignalBarsIcon,
@@ -15,35 +17,52 @@ import {
     formatTime,
 } from "./shared-icons.js";
 
-// Notification icon for Android left side
-const NotificationIcon: React.FC<{ icon?: string; count: number }> = ({ icon, count }) => (
-    <div style={{ position: "relative" }}>
-        <span style={{ fontSize: 28 }}>{icon || "📱"}</span>
+const NotificationIcon: React.FC<{ icon?: string; count: number; color: string; scale: number }> = ({ icon, count, color, scale }) => {
+    const imageSource = icon && /^(?:https?:|data:|\/)/u.test(icon) ? icon : undefined;
+    return (
+    <div style={{ position: "relative", width: 9.5 * scale, height: 9.5 * scale }}>
+        {imageSource ? (
+            <DeterministicImage
+                src={imageSource}
+                alt=""
+                style={{
+                    width: 9.5 * scale,
+                    height: 9.5 * scale,
+                    objectFit: "contain",
+                    filter: color === "#FFFFFF" ? "grayscale(1) brightness(0) invert(1)" : "grayscale(1) brightness(0)",
+                }}
+            />
+        ) : (
+            <span style={{ color, fontSize: 8 * scale, lineHeight: `${9.5 * scale}px` }}>{icon || "•"}</span>
+        )}
         {count > 1 && (
             <div style={{
                 position: "absolute",
-                top: -6,
-                right: -8,
+                top: -2 * scale,
+                right: -3 * scale,
                 background: "#ff3b30",
                 borderRadius: 10,
-                padding: "2px 6px",
-                fontSize: 18,
+                padding: `0 ${1.5 * scale}px`,
+                fontSize: 5.5 * scale,
                 fontWeight: 600,
                 color: "white",
-                minWidth: 12,
+                minWidth: 4 * scale,
                 textAlign: "center",
             }}>
                 {count > 9 ? "9+" : count}
             </div>
         )}
     </div>
-);
+    );
+};
 
 export const AndroidStatusBarStrategy: React.FC<StatusBarStrategyProps> = ({
     os,
     time = "9:41",
     batteryPercentage = 100,
     notificationIcons = [],
+    theme = "dark",
+    deviceProfile,
 }) => {
     // Read from device.os if available
     const displayTime = os ? formatTime(os.clock) : time;
@@ -53,43 +72,51 @@ export const AndroidStatusBarStrategy: React.FC<StatusBarStrategyProps> = ({
     const wifiStrength = os?.wifiStrength ?? 3;
     const cellStrength = os?.cellStrength ?? 4;
     const isDND = os?.dnd ?? false;
+    const resolvedTheme = typeof theme === "string"
+        ? STATUS_BAR_PRESETS[theme]
+        : theme;
+    const textColor = resolvedTheme?.iconColor ?? "#FFFFFF";
+    const backgroundColor = resolvedTheme?.backgroundColor ?? "transparent";
+    const scale = deviceProfile?.pixelDensity || 3;
+    const statusHeight = Math.max(deviceProfile?.safeArea?.top ?? 0, 30 * scale);
 
     return (
         <div style={{
             width: "100%",
-            height: 90,
+            height: statusHeight,
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center",
-            padding: "0 45px",
+            padding: `0 ${15 * scale}px`,
             boxSizing: "border-box",
-            fontSize: 36,
+            fontSize: 12 * scale,
             fontWeight: "500",
-            color: "white",
+            color: textColor,
+            backgroundColor,
             position: "absolute",
-            top: 15,
+            top: 0,
             left: 0,
             zIndex: 20,
-            fontFamily: "Roboto, sans-serif"
+            fontFamily: '"Noto Sans Variable", "Noto Sans Arabic Variable", Roboto, sans-serif'
         }}>
             {/* Left side - Time and notification icons */}
             <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
                 <span>{displayTime}</span>
                 {notificationIcons.slice(0, 5).map((n, i) => (
-                    <NotificationIcon key={i} icon={n.icon} count={n.count} />
+                    <NotificationIcon key={i} icon={n.icon} count={n.count} color={textColor} scale={scale} />
                 ))}
                 {notificationIcons.length > 5 && (
-                    <span style={{ fontSize: 28 }}>•</span>
+                    <span style={{ fontSize: 9 * scale }}>•</span>
                 )}
             </div>
 
             {/* Right side - Status icons */}
             <div style={{ display: "flex", gap: 18, alignItems: "center" }}>
-                {isDND && <DNDIcon color="white" />}
-                {network !== "wifi" && <NetworkTypeLabel network={network} color="white" />}
-                <SignalBarsIcon color="white" strength={cellStrength} />
-                {network === "wifi" && <WifiIcon color="white" strength={wifiStrength} />}
-                <BatteryIcon color="white" percentage={displayBattery} charging={isCharging} />
+                {isDND && <DNDIcon color={textColor} scale={scale} />}
+                {network !== "wifi" && <NetworkTypeLabel network={network} color={textColor} fontSize={9 * scale} />}
+                <SignalBarsIcon color={textColor} strength={cellStrength} scale={scale} />
+                {network === "wifi" && <WifiIcon color={textColor} strength={wifiStrength} scale={scale} />}
+                <BatteryIcon color={textColor} percentage={displayBattery} charging={isCharging} scale={scale} />
             </div>
         </div>
     );

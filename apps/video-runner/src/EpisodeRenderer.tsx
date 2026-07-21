@@ -446,6 +446,8 @@ const EpisodeRendererInner: React.FC<EpisodeRendererProps> = ({
           world={world}
           t={frame}
           musicDuckMultiplierOverride={musicDuckMultiplier}
+          inputProgram={renderData.prepared.inputProgram}
+          notificationProgram={renderData.prepared.notificationProgram}
         />
         {renderData.voiceManifest &&
           renderData.voiceConfig?.audioPath &&
@@ -477,6 +479,8 @@ const EpisodeRendererInner: React.FC<EpisodeRendererProps> = ({
             registries={rendererRegistries}
             renderAudio={false}
             renderOverlay={false}
+            inputProgram={renderData.prepared.inputProgram}
+            notificationProgram={renderData.prepared.notificationProgram}
           />
         ) : hasDevices ? (
           <div
@@ -496,6 +500,8 @@ const EpisodeRendererInner: React.FC<EpisodeRendererProps> = ({
               eventIndex={keyframedEventIndex}
               pluginManager={pluginManager}
               registries={rendererRegistries}
+              inputProgram={renderData.prepared.inputProgram}
+              notificationProgram={renderData.prepared.notificationProgram}
               onCameraDebugFrame={handleCameraDebugFrame}
               cameraDebugShowAllAnchors={showAllAnchors}
             />

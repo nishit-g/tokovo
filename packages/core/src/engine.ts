@@ -657,7 +657,6 @@ function finalizeDraftState(draft: WorldState, t: number, config: TokovoConfigTy
   }
 
   cleanupExpiredSounds(draft, t);
-  cleanupExpiredNotifications(draft, t, config.notifications.cleanupDelayFrames);
 
   if (!draft.camera.deviceTransforms) {
     draft.camera.deviceTransforms = {};
@@ -667,19 +666,6 @@ function finalizeDraftState(draft: WorldState, t: number, config: TokovoConfigTy
   for (const deviceId in draft.devices) {
     if (Object.hasOwn(draft.devices, deviceId)) {
       if (!firstDeviceId) firstDeviceId = deviceId;
-      const device = draft.devices[deviceId];
-      if (device?.keyboard?.activeKeyPresses?.length) {
-        device.keyboard.activeKeyPresses = device.keyboard.activeKeyPresses.filter(
-          (kp) => t < kp.startFrame + kp.duration,
-        );
-      }
-      if (device?.keyboard?.typingAnimation) {
-        const { text, startFrame, charDelay } = device.keyboard.typingAnimation;
-        const lastFrame = startFrame + Math.max(0, (text.length - 1) * charDelay);
-        if (t > lastFrame) {
-          device.keyboard.typingAnimation = undefined;
-        }
-      }
       draft.camera.deviceTransforms[deviceId] = DEFAULT_CAMERA_TRANSFORM as CameraTransform;
     }
   }
@@ -688,33 +674,4 @@ function finalizeDraftState(draft: WorldState, t: number, config: TokovoConfigTy
   draft.camera.transform = activeDeviceId
     ? draft.camera.deviceTransforms[activeDeviceId] || DEFAULT_CAMERA_TRANSFORM
     : DEFAULT_CAMERA_TRANSFORM;
-}
-
-function cleanupExpiredNotifications(
-  draft: WorldState,
-  frame: number,
-  cleanupDelayFrames: number,
-): void {
-  for (const deviceId in draft.devices) {
-    if (!Object.hasOwn(draft.devices, deviceId)) {
-      continue;
-    }
-    const device = draft.devices[deviceId];
-    if (!device?.notifications || device.notifications.length === 0) {
-      continue;
-    }
-
-    device.notifications = device.notifications.filter((notification) => {
-      const dismissed = notification.state === "dismissed";
-      const expired =
-        notification.expiresAtFrame !== undefined && frame > notification.expiresAtFrame;
-
-      if (!dismissed && !expired) {
-        return true;
-      }
-
-      const effectiveEndFrame = notification.dismissedAtFrame ?? notification.expiresAtFrame ?? 0;
-      return effectiveEndFrame > frame - cleanupDelayFrames;
-    });
-  }
 }

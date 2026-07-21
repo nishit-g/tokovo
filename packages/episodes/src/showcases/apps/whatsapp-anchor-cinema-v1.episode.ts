@@ -1,4 +1,3 @@
-import { KeyboardPlugin } from "@tokovo/compiler";
 import { episode } from "../../code-first-episode.js";
 import { defineEpisode } from "../../types/episode-definition.js";
 
@@ -16,7 +15,7 @@ export default defineEpisode({
     id: "whatsapp-anchor-cinema-v1",
     title: "WhatsApp Anchor Cinema",
     description:
-      "Cinematic two-device WhatsApp film driven entirely by semantic anchors: English and Arabic RTL, split-screen, PIP, notification handoff, typed replies, long press, swipe-to-reply, Updates, calls, and live media.",
+      "Cinematic two-device WhatsApp film driven entirely by semantic anchors: English and Arabic RTL, split-screen, PIP, notification handoff, replies, long press, swipe-to-reply, Updates, calls, and live media.",
     category: "showcase",
     catalogType: "app_showcase_exhaustive",
     appId: "app_whatsapp",
@@ -329,16 +328,17 @@ export default defineEpisode({
       .deviceTrack("creator_ios", (device) => {
         device.at("0s").screenRecording(true, { mode: "compact" });
       })
-      .deviceTrack("launch_android", (device) => {
-        device.at("18.35s").notificationShow({
+      .notificationTrack("launch_android", (notifications) => {
+        notifications.at("18.35s").deliver({
           id: "arabic_launch_alert",
           appId: "app_whatsapp",
-          title: "غرفة الإطلاق",
-          body: "النسخة النظيفة تتصدر القنوات الآن.",
-          mode: "headsup",
-          priority: "high",
+          content: { title: "غرفة الإطلاق", body: "النسخة النظيفة تتصدر القنوات الآن." },
+          category: "message",
+          interruption: "timeSensitive",
+          privacy: "private",
+          threadId: "launch_room",
         });
-        device.at("19.65s").notificationDismiss("arabic_launch_alert");
+        notifications.at("19.65s").dismiss("arabic_launch_alert");
       })
       .whatsapp("creator_ios", "launch_room", (whatsapp) => {
         whatsapp.openChatList("0s");
@@ -352,7 +352,7 @@ export default defineEpisode({
           .at("6.2s")
           .send(
             "Lock comments. Publish the clean export. I’ll handle the chat.",
-            { messageId: "ios_command", typed: true, charDelay: 1 },
+            { messageId: "ios_command" },
           );
         whatsapp.at("9.8s").startGesture("ios_velocity", "long_press");
         whatsapp.at("10.2s").completeGesture("ios_velocity");
@@ -363,8 +363,6 @@ export default defineEpisode({
         whatsapp.at("13s").completeGesture("ios_velocity");
         whatsapp.at("14.2s").send("Clean export is live. Pin that link.", {
           messageId: "ios_reply",
-          typed: true,
-          charDelay: 1,
           replyTo: { messageId: "ios_velocity" },
         });
         whatsapp.at("14.25s").dismissReplyComposer();
@@ -394,8 +392,6 @@ export default defineEpisode({
         whatsapp.at("22.45s").completeGesture("ar_velocity");
         whatsapp.at("23.4s").send("ثبّتوا الرابط. نتابع التعليقات من هنا.", {
           messageId: "ar_reply",
-          typed: true,
-          charDelay: 1,
           replyTo: { messageId: "ar_velocity" },
         });
         whatsapp.at("23.45s").dismissReplyComposer();
@@ -487,7 +483,7 @@ export default defineEpisode({
         camera
           .at("19.05s")
           .focus(
-            { deviceId: "launch_android", anchorId: "notification_banner" },
+            { deviceId: "launch_android", anchorId: "notification.banner" },
             { scale: 1.12, duration: "0.24s" },
           );
         camera
@@ -554,6 +550,5 @@ export default defineEpisode({
           secondaryDeviceId: "launch_android",
         });
       })
-      .use(new KeyboardPlugin())
       .build(),
 });

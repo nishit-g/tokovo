@@ -32,11 +32,9 @@ const teamsViews: PluginViews = {
 
 const teamsAssets = {
   sounds: {
-    "app_teams.message_in": "plugins/teams/received.wav",
     "app_teams.message_out": "plugins/teams/sent.wav",
     "app_teams.call_start": "plugins/teams/call_start.wav",
     "app_teams.call_end": "plugins/teams/call_end.wav",
-    "app_teams.notify": "plugins/teams/notify.wav",
   },
   icons: {
     app_icon: "/icons/teams.svg",
@@ -47,6 +45,7 @@ const teamsAssets = {
 export const TeamsPluginV2: TokovoPluginContract<"app_teams"> & {
   v2Lowering: typeof teamsV2Lowering;
   behaviors: typeof TeamsBehavior;
+  notificationAdapter: typeof teamsNotificationAdapter;
 } = {
   id: TEAMS_APP_ID,
   version: TEAMS_VERSION,

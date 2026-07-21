@@ -1,5 +1,4 @@
 import { describe, expect, it } from "vitest";
-import { getAppConfig } from "../apps-config.js";
 import {
   TIMING,
   LAYOUT,
@@ -13,16 +12,6 @@ import {
 import { iOSTokens, androidTokens } from "../tokens.js";
 
 describe("core constants and tokens", () => {
-  it("returns homescreen configs by platform", () => {
-    const ios = getAppConfig("homescreen", "ios");
-    const android = getAppConfig("homescreen", "android");
-    const unknown = getAppConfig("unknown", "ios");
-
-    expect(ios.gridColumns).toBe(4);
-    expect(android.gridColumns).toBe(5);
-    expect(unknown).toEqual({});
-  });
-
   it("exposes timing helpers and duration frames", () => {
     expect(secondsToFrames(1, 30)).toBe(30);
     expect(framesToSeconds(60, 30)).toBe(2);

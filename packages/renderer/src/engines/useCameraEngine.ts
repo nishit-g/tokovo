@@ -127,6 +127,62 @@ export interface CameraEngineOutput {
 
 type CameraEffect = Parameters<typeof processActiveEffects>[1][number];
 
+export function mergeInputProjectionAnchor(
+  snapshot: AnchorSnapshot,
+  projection: LayoutEngineOutput["inputProjection"],
+  viewport: { width: number; height: number },
+): AnchorSnapshot {
+  const surface = projection?.surface;
+  if (!surface?.visible || surface.viewportInset <= 0) return snapshot;
+
+  const visibleHeight = Math.min(viewport.height, surface.viewportInset);
+  return {
+    ...snapshot,
+    anchors: {
+      ...snapshot.anchors,
+      keyboard: {
+        x: 0,
+        y: viewport.height - visibleHeight,
+        width: viewport.width,
+        height: visibleHeight,
+      },
+    },
+  };
+}
+
+export function mergeNotificationProjectionAnchors(
+  snapshot: AnchorSnapshot,
+  projection: LayoutEngineOutput["notificationProjection"],
+): AnchorSnapshot {
+  if (!projection) return snapshot;
+  const projected = projection.anchors;
+  const anchors = { ...snapshot.anchors };
+  if (projected.banner) {
+    anchors["notification.banner"] = projected.banner;
+    anchors.notification = projected.banner;
+  }
+  if (projected.lockScreen) {
+    anchors["notification.lockScreen"] = projected.lockScreen;
+    anchors.notification = projected.lockScreen;
+  }
+  if (projected.center) {
+    anchors["notification.center"] = projected.center;
+    anchors.notification = projected.center;
+  }
+  return { ...snapshot, anchors };
+}
+
+export function mergeSystemSurfaceProjectionAnchors(
+  snapshot: AnchorSnapshot,
+  projection: LayoutEngineOutput["systemSurfaceProjection"],
+): AnchorSnapshot {
+  if (!projection) return snapshot;
+  return {
+    ...snapshot,
+    anchors: { ...snapshot.anchors, ...projection.anchors },
+  };
+}
+
 export function useCameraEngine(input: CameraEngineInput): CameraEngineOutput {
   const {
     world,
@@ -227,6 +283,22 @@ export function useCameraEngine(input: CameraEngineInput): CameraEngineOutput {
           layout,
           deviceId,
           anchorContext,
+        );
+      }
+
+      if (anchorSnapshot) {
+        anchorSnapshot = mergeInputProjectionAnchor(
+          anchorSnapshot,
+          layoutOutput.inputProjection,
+          viewport,
+        );
+        anchorSnapshot = mergeNotificationProjectionAnchors(
+          anchorSnapshot,
+          layoutOutput.notificationProjection,
+        );
+        anchorSnapshot = mergeSystemSurfaceProjectionAnchors(
+          anchorSnapshot,
+          layoutOutput.systemSurfaceProjection,
         );
       }
     }

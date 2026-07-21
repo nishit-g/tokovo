@@ -1,7 +1,7 @@
 import React from "react";
 import { Pin } from "lucide-react";
 import { WorldState } from "@tokovo/core";
-import { KeyboardAwareView, useKeyboardState } from "@tokovo/react";
+import { KeyboardAwareView, useInputField } from "@tokovo/react";
 import { Header as DefaultHeader } from "../Header.js";
 import { GroupHeader } from "../GroupHeader.js";
 import { MessageList } from "../MessageList.js";
@@ -11,16 +11,9 @@ import {
   useWhatsAppLocale,
 } from "../../experience/ExperienceContext.js";
 import { formatWhatsAppNumber } from "../../localization/index.js";
-import type {
-  WhatsAppState,
-  WhatsAppConversation,
-} from "../../types/index.js";
-import {
-  getBaseTime,
-} from "../../utils/messages.js";
-import {
-  resolveTypingMembers,
-} from "../../utils/participants.js";
+import type { WhatsAppState, WhatsAppConversation } from "../../types/index.js";
+import { getBaseTime } from "../../utils/messages.js";
+import { resolveTypingMembers } from "../../utils/participants.js";
 import { projectWhatsAppThread } from "../../thread/projector.js";
 import { MessageActionMenu } from "../surfaces/MessageActionMenu.js";
 import { ReplyComposerBanner } from "../surfaces/ReplyComposerBanner.js";
@@ -133,15 +126,17 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({
   // TokovoRenderer already provides safeAreaInsets in design coordinates.
   const safeAreaTop = safeAreaInsets?.top ?? 47;
   const safeAreaBottom = safeAreaInsets?.bottom ?? 34;
+  const composerInput = useInputField("composer");
+  const composerText = composerInput?.value ?? conversation.draftText ?? "";
+  const composerFocused = composerInput?.isKeyboardVisible ?? false;
+  // A system keyboard already owns the bottom safe area. Keeping the app's
+  // home-indicator inset while it is attached creates a conspicuous dead band
+  // between the WhatsApp composer and the keyboard.
+  const composerSafeAreaBottom = composerFocused ? 0 : safeAreaBottom;
   const bottomPadding = getChatChromeGeometry({
     top: safeAreaTop,
-    bottom: safeAreaBottom,
+    bottom: composerSafeAreaBottom,
   }).messageBottomInset;
-  const keyboardState = useKeyboardState();
-  const composerText =
-    keyboardState.isKeyboardVisible && keyboardState.inputText
-      ? keyboardState.inputText
-      : (conversation?.draftText ?? "");
 
   return (
     <KeyboardAwareView>
@@ -176,32 +171,36 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({
             gap: 9,
           }}
         >
-          <Pin size={15} color={theme.colors.accent} style={{ flexShrink: 0 }} />
+          <Pin
+            size={15}
+            color={theme.colors.accent}
+            style={{ flexShrink: 0 }}
+          />
           <div style={{ minWidth: 0 }}>
-          <div
-            style={{
-              fontSize: 11,
-              color: theme.colors.accent,
-              fontWeight: 600,
-              fontFamily: theme.typography.fontFamily,
-            }}
-          >
-            {t("chat.pinnedMessage")}
-          </div>
-          <div
-            style={{
-              fontSize: 13,
-              color: theme.colors.receivedBubbleText,
-              whiteSpace: "nowrap",
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-              fontFamily: theme.typography.fontFamily,
-            }}
-          >
-            {conversation.pinnedMessage.from
-              ? `${conversation.pinnedMessage.from}: ${conversation.pinnedMessage.text}`
-              : conversation.pinnedMessage.text}
-          </div>
+            <div
+              style={{
+                fontSize: 11,
+                color: theme.colors.accent,
+                fontWeight: 600,
+                fontFamily: theme.typography.fontFamily,
+              }}
+            >
+              {t("chat.pinnedMessage")}
+            </div>
+            <div
+              style={{
+                fontSize: 13,
+                color: theme.colors.receivedBubbleText,
+                whiteSpace: "nowrap",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                fontFamily: theme.typography.fontFamily,
+              }}
+            >
+              {conversation.pinnedMessage.from
+                ? `${conversation.pinnedMessage.from}: ${conversation.pinnedMessage.text}`
+                : conversation.pinnedMessage.text}
+            </div>
           </div>
         </div>
       )}
@@ -213,12 +212,12 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({
         typingMembers={typingMembers}
         isGroupChat={conversation?.type === "group"}
         bottomPadding={bottomPadding}
-      activeGesture={appState.activeGesture}
-      anchorMessageId={
-        appState.threadViewport?.conversationId === conversationId
-          ? appState.threadViewport.anchorMessageId
-          : undefined
-      }
+        activeGesture={appState.activeGesture}
+        anchorMessageId={
+          appState.threadViewport?.conversationId === conversationId
+            ? appState.threadViewport.anchorMessageId
+            : undefined
+        }
       />
 
       {appState.activeGesture?.gesture === "long_press" &&
@@ -230,8 +229,10 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({
 
       <DefaultInputArea
         text={composerText}
-        showCursor={keyboardState.isKeyboardVisible}
-        safeAreaBottom={safeAreaBottom}
+        showCursor={composerFocused}
+        inputDirection={composerInput?.direction}
+        inputLanguage={composerInput?.locale.tag}
+        safeAreaBottom={composerSafeAreaBottom}
       />
     </KeyboardAwareView>
   );

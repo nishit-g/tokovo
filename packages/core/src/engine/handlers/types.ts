@@ -65,6 +65,3 @@ export type DeviceEvent = TimelineEvent & { kind: "DEVICE" };
 
 /** Call event with typed kind */
 export type CallEvent = TimelineEvent & { kind: "CALL" };
-
-/** Keyboard event with typed kind */
-export type KeyboardEvent = TimelineEvent & { kind: "KEYBOARD" };

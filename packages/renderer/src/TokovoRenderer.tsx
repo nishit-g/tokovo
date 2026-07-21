@@ -23,37 +23,34 @@ import {
 import { PluginManagerClass } from "@tokovo/react";
 import { AppSurface, TokovoProvider } from "@tokovo/react";
 import {
-  createSelectors,
-  NotificationBanner,
-  getNotificationTokens,
-  createDeviceAwareTokens,
+  NotificationSurface,
+  type PreparedNotificationProgram,
 } from "@tokovo/device-notifications";
-import type { StackedNotificationInfo } from "@tokovo/device-notifications";
-import { Keyboard, getKeyboardHeight, getKeyboardSlideProgress } from "@tokovo/device-keyboard";
+import {
+  InputKeyboard,
+  type PreparedInputProgram,
+} from "@tokovo/device-keyboard";
 
-import { getIOSPointScale, useDeviceRegistries } from "@tokovo/devices";
-import { CallOverlay, NotificationOverlay } from "./overlays/index.js";
-import { LockscreenView, HomeScreenView } from "./screens/index.js";
+import {
+  SystemSurface,
+  projectLockscreen,
+  useDeviceRegistries,
+} from "@tokovo/devices";
+import { CallOverlay } from "./overlays/index.js";
 import { VisualDebugger } from "./VisualDebugger.js";
-import { DynamicIsland, NotificationShade } from "./os/index.js";
+import { DynamicIsland } from "./os/index.js";
 import { useLayoutEngine } from "./engines/useLayoutEngine.js";
 import { useCameraEngine } from "./engines/useCameraEngine.js";
 import type { CameraEngineOutput } from "./engines/useCameraEngine.js";
 import { AppErrorBoundary } from "./ErrorBoundary.js";
 import { RendererRegistryProvider, type RendererRegistries } from "./RegistryContext.js";
 import { AppTransition, UnlockTransition } from "./AppTransition.js";
-import { computeLockscreenLayout } from "./layout/strategies/lockscreen.js";
 
 const log = createScopedLogger("renderer");
 
 // =============================================================================
 // TYPES
 // =============================================================================
-
-interface NotificationConfig {
-  headsUpDuration?: number;
-  showHeadsUpWhenAppOpen?: boolean;
-}
 
 interface TokovoRendererProps {
   world: WorldState;
@@ -63,11 +60,12 @@ interface TokovoRendererProps {
   mode?: "preview" | "render";
   config?: TokovoConfigType;
   layoutCacheKey?: string;
-  notificationConfig?: NotificationConfig;
   focusDeviceId?: string;
   eventIndex?: EventIndex;
   pluginManager: PluginManagerClass;
   registries: RendererRegistries;
+  inputProgram?: PreparedInputProgram;
+  notificationProgram?: PreparedNotificationProgram;
   /**
    * In multi-device layouts, only the active device should apply camera transforms.
    * Non-active devices must render with an identity transform to avoid flakiness.
@@ -113,10 +111,11 @@ const TokovoRendererInner: React.FC<TokovoRendererProps> = ({
   mode = "preview",
   config = TokovoConfig,
   layoutCacheKey,
-  notificationConfig = {},
   focusDeviceId,
   eventIndex,
   pluginManager,
+  inputProgram,
+  notificationProgram,
   disableCamera = false,
   onCameraDebugFrame,
   cameraDebugShowAllAnchors,
@@ -127,8 +126,6 @@ const TokovoRendererInner: React.FC<TokovoRendererProps> = ({
     () => createLayoutCacheStore(layoutCacheKey ?? "tokovo:layout-cache:default"),
     [layoutCacheKey],
   );
-
-  void notificationConfig;
 
   // ==========================================================================
   // 1. LAYOUT ENGINE — Get layout blueprint
@@ -141,6 +138,8 @@ const TokovoRendererInner: React.FC<TokovoRendererProps> = ({
     mode,
     config,
     layoutCache,
+    inputProgram,
+    notificationProgram,
   });
 
   // Handle error state (device not found)
@@ -152,7 +151,17 @@ const TokovoRendererInner: React.FC<TokovoRendererProps> = ({
     );
   }
 
-  const { deviceId, device, appId, layout, profile, variant } = layoutOutput;
+  const {
+    deviceId,
+    device,
+    appId,
+    layout,
+    profile,
+    variant,
+    inputProjection,
+    notificationProjection,
+    systemSurfaceProjection,
+  } = layoutOutput;
   const renderWorld = React.useMemo(
     () => projectWorldForDevice(world, deviceId),
     [world, deviceId],
@@ -184,60 +193,9 @@ const TokovoRendererInner: React.FC<TokovoRendererProps> = ({
     });
   }, [debug, onCameraDebugFrame, t, appId, deviceId, transform, debugInfo]);
 
-  // ==========================================================================
-  // 3. HELPER: Find active heads-up notification
-  // ==========================================================================
-  // ==========================================================================
-  // 3. LOGIC: NOTIFICATION SCHEDULER (Moved to Core)
-  // ==========================================================================
-  const notificationTokens = React.useMemo(() => {
-    const platform = profile.platform === "android" ? "android" : "ios";
-    if (platform === "ios") {
-      const pointScale = getIOSPointScale(profile);
-      return createDeviceAwareTokens({
-        platform,
-        theme: "light",
-        safeArea: {
-          top: (profile.safeArea?.top ?? 0) / pointScale,
-          bottom: (profile.safeArea?.bottom ?? 0) / pointScale,
-          left: (profile.safeArea?.left ?? 0) / pointScale,
-          right: (profile.safeArea?.right ?? 0) / pointScale,
-        },
-      });
-    }
-    return getNotificationTokens(platform, "light");
-  }, [profile]);
-
-  const notificationSelectors = React.useMemo(
-    () => createSelectors(notificationTokens),
-    [notificationTokens],
-  );
-
-  const stackedNotifications = React.useMemo(() => {
-    return notificationSelectors.getStackedBannerNotifications(device, t, fps);
-  }, [device, t, fps, notificationSelectors]);
-
-  const activeHeadsUp = stackedNotifications.length > 0 ? stackedNotifications[0] : null;
-
-  if (debug && t % 30 === 0) {
-    log.debug(`Frame ${t}`, {
-      totalNotifs: device.notifications?.length ?? 0,
-      visibleBannerCount: stackedNotifications.length,
-      activeHeadsUp: activeHeadsUp ? activeHeadsUp.notification.id : "none",
-      isLocked: device.isLocked,
-      appId,
-    });
-  }
-
   const hasActiveCall = device.call && device.call.status !== "ended";
-  const keyboardState = device.keyboard as unknown as
-    | import("@tokovo/device-keyboard").KeyboardState
-    | undefined;
-  const keyboardSlideProgress = keyboardState ? getKeyboardSlideProgress(keyboardState, t, fps) : 0;
   const keyboardHeightForLayout =
-    keyboardState && keyboardSlideProgress > 0 ? getKeyboardHeight(3) * keyboardSlideProgress : 0;
-  const shouldRenderKeyboard =
-    !!keyboardState && (keyboardState.visible || keyboardSlideProgress > 0);
+    inputProjection?.surface.viewportInset ?? 0;
 
   const transition = (device as unknown as { transition?: unknown }).transition as
     | {
@@ -294,17 +252,11 @@ const TokovoRendererInner: React.FC<TokovoRendererProps> = ({
     deviceRegistries.frames.getWithFallback(device.profileId, "iphone16") ?? FallbackFrame;
 
   const statusBarTheme = (() => {
-    if (variant !== "android" && device.isLocked) {
-      return "dark";
-    }
-    if (variant !== "android" && !appId && device.homeScreen) {
-      return "dark";
-    }
+    if (systemSurfaceProjection) return systemSurfaceProjection.theme.statusBarTheme;
     const fallbackTheme =
       device.appAppearance === "dark" ||
       variant === "android" ||
-      device.isLocked ||
-      !!device.homeScreen
+      device.isLocked
         ? "dark"
         : "light";
     if (!appId) return fallbackTheme;
@@ -315,26 +267,6 @@ const TokovoRendererInner: React.FC<TokovoRendererProps> = ({
   })();
 
   const StatusBarStrategy = deviceRegistries.statusBars.getWithFallback(variant, "ios");
-
-  const lockscreenLayoutForUnlock = React.useMemo(() => {
-    if (!isUnlockTransitionActive) return undefined;
-    return computeLockscreenLayout({
-      world: renderWorld,
-      t,
-      activeDeviceId: deviceId,
-      activeAppId: "lockscreen",
-      viewKind: "LOCKSCREEN",
-      viewportWidth: profile.dimensions.width,
-      viewportHeight: profile.dimensions.height,
-      safeAreaInsets: {
-        top: profile.camera?.safeAreaTop ?? 0,
-        bottom: profile.camera?.safeAreaBottom ?? 0,
-        left: 0,
-        right: 0,
-      },
-      config: config as unknown as Partial<import("@tokovo/core").LayoutConfig>,
-    } as unknown as import("@tokovo/core").LayoutContext);
-  }, [isUnlockTransitionActive, renderWorld, t, deviceId, profile, config]);
 
   return (
     <div
@@ -351,13 +283,16 @@ const TokovoRendererInner: React.FC<TokovoRendererProps> = ({
           {/* Extract statusBarTheme from foreground app's state */}
           <FrameComponent
             variant={variant}
+            homeIndicatorTheme={statusBarTheme}
             statusBar={
               StatusBarStrategy ? (
                 <StatusBarStrategy
                   os={device.os}
                   theme={statusBarTheme}
+                  notificationIcons={notificationProjection?.statusBarIcons}
                   screenRecording={device.screenRecording}
                   currentFrame={t}
+                  deviceProfile={profile}
                 />
               ) : null
             }
@@ -405,6 +340,8 @@ const TokovoRendererInner: React.FC<TokovoRendererProps> = ({
                             right: 0,
                           }}
                           keyboardHeight={keyboardHeightForLayout / scale}
+                          inputProgram={inputProgram}
+                          inputProjection={inputProjection}
                         >
                           <AppView
                             world={renderWorld}
@@ -426,18 +363,14 @@ const TokovoRendererInner: React.FC<TokovoRendererProps> = ({
                 }
               } else if (!device.isLocked && device.homeScreen) {
                 // System: Home
-                baseContent = <HomeScreenView config={device.homeScreen} variant={variant} />;
+                baseContent = systemSurfaceProjection
+                  ? <SystemSurface projection={systemSurfaceProjection} />
+                  : <div style={{ flex: 1, backgroundColor: "black" }} />;
               } else if (device.isLocked) {
                 // System: Lockscreen
-                baseContent = (
-                  <LockscreenView
-                    notifications={device.notifications || []}
-                    layout={layout}
-                    variant={variant}
-                    timestampMs={device.os?.clock}
-                    deviceProfile={profile}
-                  />
-                );
+                baseContent = systemSurfaceProjection
+                  ? <SystemSurface projection={systemSurfaceProjection} />
+                  : <div style={{ flex: 1, backgroundColor: "black" }} />;
               } else {
                 baseContent = <div style={{ flex: 1, backgroundColor: "black" }} />;
               }
@@ -467,12 +400,12 @@ const TokovoRendererInner: React.FC<TokovoRendererProps> = ({
 
                 baseContent = (
                   <div style={{ position: "relative", width: "100%", height: "100%" }}>
-                    <LockscreenView
-                      notifications={device.notifications || []}
-                      layout={lockscreenLayoutForUnlock}
-                      variant={variant}
-                      timestampMs={device.os?.clock}
-                      deviceProfile={profile}
+                    <SystemSurface
+                      projection={projectLockscreen({
+                        profile,
+                        os: device.os,
+                        fallbackWallpaper: device.homeScreen?.wallpaper,
+                      })}
                     />
                     <div style={{ position: "absolute", inset: 0 }}>
                       <UnlockTransition phase={phase} progress={p}>
@@ -490,25 +423,12 @@ const TokovoRendererInner: React.FC<TokovoRendererProps> = ({
             {/* LAYER 2: SYSTEM OVERLAYS                                                  */}
             {/* ========================================================================= */}
 
-            {/* Lockscreen Notification Overlay */}
-            {!device.isLocked &&
-              !isUnlockTransitionActive &&
-              !device.notificationCenter?.isOpen && (
-                <NotificationOverlay
-                  notifications={device.notifications || []}
-                  variant={variant}
-                  layout={layout}
-                  currentFrame={t}
-                />
-              )}
-
-            {!device.isLocked && device.notificationCenter?.isOpen && (
-              <NotificationShade
-                notificationCenter={device.notificationCenter}
-                platform={variant}
-                currentFrame={t}
+            {!isUnlockTransitionActive && notificationProjection ? (
+              <NotificationSurface
+                projection={notificationProjection}
+                pointScale={profile.pixelDensity || 1}
               />
-            )}
+            ) : null}
 
             {device.call && hasActiveCall && (
               <CallOverlay
@@ -519,39 +439,10 @@ const TokovoRendererInner: React.FC<TokovoRendererProps> = ({
               />
             )}
 
-            {/* Heads-Up Notifications (Stacked) */}
-            {!hasActiveCall &&
-              !device.notificationCenter?.isOpen &&
-              stackedNotifications.length > 0 &&
-              (() => {
-                const bannerScale =
-                  profile.platform === "ios"
-                    ? getIOSPointScale(profile)
-                    : profile.dimensions.width / 393;
-                return stackedNotifications.map((info: StackedNotificationInfo) => (
-                  <NotificationBanner
-                    key={info.notification.id}
-                    notification={info.notification}
-                    animationState={info.animationState}
-                    animationProgress={info.animationProgress}
-                    tokens={notificationTokens}
-                    scale={bannerScale}
-                    currentFrame={t}
-                    fps={fps}
-                    stackIndex={info.stackIndex}
-                    stackOffset={info.stackOffset}
-                    stackIndexChangedAtFrame={info.stackIndexChangedAtFrame}
-                    previousStackOffset={info.previousStackOffset}
-                  />
-                ));
-              })()}
-
             {/* Keyboard - Device Level */}
-            {shouldRenderKeyboard && (
-              <Keyboard
-                state={keyboardState}
-                currentFrame={t}
-                fps={fps}
+            {inputProjection?.surface.visible && (
+              <InputKeyboard
+                projection={inputProjection}
                 scale={profile.pixelDensity || 1}
               />
             )}

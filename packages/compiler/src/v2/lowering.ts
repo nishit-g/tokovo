@@ -18,6 +18,8 @@ import type {
   DeviceTrackEvent,
   OverlayTrackEvent,
   VoiceTrackEvent,
+  NotificationIntentIR,
+  NotificationInteractionIR,
 } from "@tokovo/ir";
 import {
   isCameraEvent,
@@ -67,6 +69,14 @@ export interface PluginLowering {
 export interface LoweringContext {
   pluginLowerers: Map<string, PluginLowering>;
   fps: number;
+  emitNotification(intent: NotificationIntentIR): void;
+  emitNotificationInteraction(interaction: NotificationInteractionIR): void;
+}
+
+export interface LoweredEpisodeCapabilities {
+  events: RuntimeEvent[];
+  notificationIntents: NotificationIntentIR[];
+  notificationInteractions: NotificationInteractionIR[];
 }
 
 // =============================================================================
@@ -322,7 +332,7 @@ function lowerOSEvent(event: OSTrackEvent): OSRuntimeEvent[] {
       return [{ ...base, type: "SET_DND", enabled: event.payload.enabled }];
 
     case "SET_STATE":
-      return [{ ...base, type: "SET_TIME", ...event.payload }];
+      return [{ ...base, type: "SET_STATE", ...event.payload }];
 
     default:
       return [];
@@ -562,181 +572,6 @@ function lowerDeviceEvent(event: TrackEvent): RuntimeEvent[] {
         } as DeviceRuntimeEvent,
       ];
 
-    case "NOTIFICATION_SHOW": {
-      // Map IR uppercase priorities to runtime lowercase
-      const irPriority = (p.priority ?? e.priority) as string | undefined;
-      const priority = irPriority ? irPriority.toLowerCase() : "default";
-      return [
-        {
-          ...base,
-          type: "SHOW_NOTIFICATION",
-          payload: {
-            kind: "show",
-            id: p.id ?? e.id,
-            appId: p.appId ?? e.appId,
-            title: p.title ?? e.title,
-            body: p.body ?? e.body,
-            priority,
-            icon: p.icon ?? e.icon,
-            mode: (p.mode ?? e.mode ?? "headsup") as string,
-          },
-        } as DeviceRuntimeEvent,
-      ];
-    }
-
-    case "NOTIFICATION_DISMISS":
-      return [
-        {
-          ...base,
-          type: "DISMISS_NOTIFICATION",
-          payload: { kind: "dismiss", id: (p.id ?? e.id) as string },
-        } as DeviceRuntimeEvent,
-      ];
-
-    case "NOTIFICATION_TAP":
-      return [
-        {
-          ...base,
-          type: "TAP_NOTIFICATION",
-          payload: { kind: "tap", id: (p.id ?? e.id) as string },
-        } as DeviceRuntimeEvent,
-      ];
-
-    case "NOTIFICATION_SWIPE":
-      return [
-        {
-          ...base,
-          type: "SWIPE_NOTIFICATION",
-          payload: {
-            kind: "swipe",
-            id: (p.id ?? e.id) as string,
-            direction: (p.direction ?? e.direction) as string,
-          },
-        } as DeviceRuntimeEvent,
-      ];
-
-    case "NOTIFICATION_DYNAMIC_ISLAND":
-      return [
-        {
-          ...base,
-          type: "SET_DYNAMIC_ISLAND",
-          payload: {
-            kind: "dynamicIsland",
-            visible: true,
-            mode: (p.mode ?? e.mode) as string,
-          },
-        } as DeviceRuntimeEvent,
-      ];
-
-    case "NOTIFICATION_OPEN_PANEL":
-      return [
-        {
-          ...base,
-          type: "TOGGLE_NOTIFICATION_PANEL",
-          payload: { open: true },
-        } as DeviceRuntimeEvent,
-      ];
-
-    case "NOTIFICATION_CLOSE_PANEL":
-      return [
-        {
-          ...base,
-          type: "TOGGLE_NOTIFICATION_PANEL",
-          payload: { open: false },
-        } as DeviceRuntimeEvent,
-      ];
-
-    case "NOTIFICATION_CLEAR_ALL":
-      return [
-        {
-          ...base,
-          type: "CLEAR_ALL_NOTIFICATIONS",
-          payload: { kind: "clearAll" },
-        } as DeviceRuntimeEvent,
-      ];
-
-    case "NOTIFICATION_REPLY":
-      return [
-        {
-          ...base,
-          type: "REPLY_NOTIFICATION",
-          payload: {
-            kind: "reply",
-            id: (p.id ?? e.id) as string,
-            text: (p.text ?? e.text) as string,
-          },
-        } as DeviceRuntimeEvent,
-      ];
-
-    case "KEYBOARD_SHOW":
-      return [
-        {
-          ...base,
-          type: "KEYBOARD_SHOW",
-          payload: { returnKeyType: (p.returnKeyType ?? e.returnKeyType) as string | undefined },
-        } as DeviceRuntimeEvent,
-      ];
-
-    case "KEYBOARD_HIDE":
-      return [
-        {
-          ...base,
-          type: "KEYBOARD_HIDE",
-          payload: {},
-        } as DeviceRuntimeEvent,
-      ];
-
-    case "KEYBOARD_KEY_PRESS":
-      return [
-        {
-          ...base,
-          type: "KEYBOARD_KEY_PRESS",
-          payload: {
-            key: (p.key ?? e.key) as string,
-            duration: (p.duration ?? e.duration) as number | undefined,
-          },
-        } as DeviceRuntimeEvent,
-      ];
-
-    case "KEYBOARD_TYPE":
-      return [
-        {
-          ...base,
-          type: "KEYBOARD_TYPE",
-          payload: {
-            text: (p.text ?? e.text) as string,
-            speed: (p.speed ?? e.speed) as string | undefined,
-          },
-        } as DeviceRuntimeEvent,
-      ];
-
-    case "KEYBOARD_CLEAR":
-      return [
-        {
-          ...base,
-          type: "KEYBOARD_CLEAR",
-          payload: {},
-        } as DeviceRuntimeEvent,
-      ];
-
-    case "KEYBOARD_SET_SUGGESTIONS":
-      return [
-        {
-          ...base,
-          type: "KEYBOARD_SET_SUGGESTIONS",
-          payload: { suggestions: (p.suggestions ?? e.suggestions) as string[] },
-        } as DeviceRuntimeEvent,
-      ];
-
-    case "KEYBOARD_TAP_SUGGESTION":
-      return [
-        {
-          ...base,
-          type: "KEYBOARD_TAP_SUGGESTION",
-          payload: { index: Number(p.index ?? e.index ?? 0) },
-        } as DeviceRuntimeEvent,
-      ];
-
     default:
       throw new Error(`Unknown DEVICE event type: ${type}`);
   }
@@ -767,6 +602,10 @@ export function lowerTrackEvents(
 export function createLoweringContext(
   plugins: TokovoPlugin[],
   fps: number = 30,
+  notifications: {
+    intents: NotificationIntentIR[];
+    interactions: NotificationInteractionIR[];
+  } = { intents: [], interactions: [] },
 ): LoweringContext {
   const pluginLowerers = new Map<string, PluginLowering>();
 
@@ -786,7 +625,33 @@ export function createLoweringContext(
     }
   }
 
-  return { pluginLowerers, fps };
+  return {
+    pluginLowerers,
+    fps,
+    emitNotification(intent): void {
+      notifications.intents.push(intent);
+    },
+    emitNotificationInteraction(interaction): void {
+      notifications.interactions.push(interaction);
+    },
+  };
+}
+
+export function lowerEpisodeWithCapabilities(
+  ir: TrackEpisodeIR,
+  plugins: TokovoPlugin[],
+): LoweredEpisodeCapabilities {
+  const notificationIntents: NotificationIntentIR[] = [];
+  const notificationInteractions: NotificationInteractionIR[] = [];
+  const ctx = createLoweringContext(plugins, ir.fps, {
+    intents: notificationIntents,
+    interactions: notificationInteractions,
+  });
+  return {
+    events: lowerTrackEvents(ir.events, ctx),
+    notificationIntents,
+    notificationInteractions,
+  };
 }
 
 /**
@@ -796,6 +661,5 @@ export function lowerEpisode(
   ir: TrackEpisodeIR,
   plugins: TokovoPlugin[],
 ): RuntimeEvent[] {
-  const ctx = createLoweringContext(plugins, ir.fps);
-  return lowerTrackEvents(ir.events, ctx);
+  return lowerEpisodeWithCapabilities(ir, plugins).events;
 }

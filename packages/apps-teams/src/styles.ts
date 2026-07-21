@@ -1,4 +1,5 @@
 import type { CSSProperties } from "react";
+import { pulse } from "@tokovo/react";
 import type { TeamsDesignTokens } from "./config/theme.js";
 
 export const teamsFontFamily =
@@ -130,26 +131,6 @@ export function injectTeamsStyles(): void {
     .tokovo-teams > * {
       position: relative;
       z-index: 1;
-    }
-    @keyframes tokovoTeamsBlink {
-      0%, 49% { opacity: 1; }
-      50%, 100% { opacity: 0; }
-    }
-    @keyframes tokovoTeamsRiseIn {
-      from { opacity: 0; transform: translateY(8px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-    @keyframes tokovoTeamsMessageIn {
-      from { opacity: 0; transform: translateY(12px) scale(0.985); }
-      to { opacity: 1; transform: translateY(0) scale(1); }
-    }
-    @keyframes tokovoTeamsDotBounce {
-      0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
-      30% { transform: translateY(-4px); opacity: 1; }
-    }
-    @keyframes tokovoTeamsSpeakerPulse {
-      0%, 100% { box-shadow: 0 0 0 0 rgba(123,131,235,0.26); }
-      70% { box-shadow: 0 0 0 10px rgba(123,131,235,0); }
     }
   `;
   document.head.appendChild(style);
@@ -295,10 +276,7 @@ export const listSectionStyle: CSSProperties = {
   boxShadow: token("--teams-shadow-card"),
 };
 
-export const rowCardStyle = (
-  active = false,
-  emphasized = false,
-): CSSProperties => ({
+export const rowCardStyle = (active = false, emphasized = false): CSSProperties => ({
   display: "flex",
   alignItems: "center",
   gap: token("--teams-space-md"),
@@ -310,7 +288,6 @@ export const rowCardStyle = (
   boxShadow: "none",
   position: "relative",
   minHeight: emphasized ? 76 : 72,
-  animation: "tokovoTeamsRiseIn var(--teams-motion-normal) var(--teams-motion-easing) both",
 });
 
 export const rowMainStyle: CSSProperties = {
@@ -351,9 +328,7 @@ export const rowFooterStyle: CSSProperties = {
   marginTop: 4,
 };
 
-export const badgeStyle = (
-  tone: "unread" | "mention" | "muted",
-): CSSProperties => ({
+export const badgeStyle = (tone: "unread" | "mention" | "muted"): CSSProperties => ({
   minWidth: tone === "muted" ? 22 : 24,
   height: 24,
   borderRadius: token("--teams-radius-pill"),
@@ -429,7 +404,6 @@ export const unreadDividerStyle: CSSProperties = {
 export const messageClusterWrapStyle = (isMine: boolean): CSSProperties => ({
   display: "flex",
   justifyContent: isMine ? "flex-end" : "flex-start",
-  animation: "tokovoTeamsMessageIn var(--teams-motion-normal) var(--teams-motion-easing) both",
 });
 
 export const messageCardStyle = (isMine: boolean): CSSProperties => ({
@@ -546,13 +520,17 @@ export const typingDotsStyle: CSSProperties = {
   gap: 4,
 };
 
-export const typingDotStyle = (delayMs: number): CSSProperties => ({
-  width: 6,
-  height: 6,
-  borderRadius: 999,
-  background: token("--teams-brand"),
-  animation: `tokovoTeamsDotBounce 1.1s ease-in-out ${delayMs}ms infinite`,
-});
+export const typingDotStyle = (delayMs: number, frame: number, fps: number): CSSProperties => {
+  const progress = pulse(frame, fps, 1.1, delayMs / 1000);
+  return {
+    width: 6,
+    height: 6,
+    borderRadius: 999,
+    background: token("--teams-brand"),
+    opacity: 0.4 + progress * 0.6,
+    transform: `translateY(${-4 * progress}px)`,
+  };
+};
 
 export const composerWrapStyle: CSSProperties = {
   padding: `10px ${token("--teams-space-lg")} 14px`,
@@ -606,14 +584,14 @@ export const composerInputStyle = (hasText: boolean): CSSProperties => ({
   whiteSpace: "pre-wrap",
 });
 
-export const composerCursorStyle: CSSProperties = {
+export const composerCursorStyle = (frame: number, fps: number): CSSProperties => ({
   width: 1.5,
   height: 18,
   background: token("--teams-brand"),
   borderRadius: 999,
-  animation: "tokovoTeamsBlink 1s steps(1) infinite",
+  opacity: Math.floor((frame / Math.max(1, fps)) * 2) % 2 === 0 ? 1 : 0,
   flexShrink: 0,
-};
+});
 
 export const composerActionsRowStyle: CSSProperties = {
   display: "flex",
@@ -696,13 +674,22 @@ export const callTileStyle: CSSProperties = {
   backdropFilter: "blur(20px) saturate(120%)",
 };
 
-export const callSpeakerRingStyle = (active: boolean): CSSProperties => ({
-  display: "inline-flex",
-  borderRadius: 999,
-  padding: 4,
-  border: active ? `1px solid ${token("--teams-brand")}` : "1px solid transparent",
-  animation: active ? "tokovoTeamsSpeakerPulse 1.4s ease-out infinite" : "none",
-});
+export const callSpeakerRingStyle = (
+  active: boolean,
+  frame: number,
+  fps: number,
+): CSSProperties => {
+  const progress = active ? pulse(frame, fps, 1.4) : 0;
+  return {
+    display: "inline-flex",
+    borderRadius: 999,
+    padding: 4,
+    border: active ? `1px solid ${token("--teams-brand")}` : "1px solid transparent",
+    boxShadow: active
+      ? `0 0 0 ${progress * 10}px rgba(123,131,235,${0.26 * (1 - progress)})`
+      : "none",
+  };
+};
 
 export const callWaveformStyle = (active: boolean): CSSProperties => ({
   display: "flex",
@@ -712,13 +699,20 @@ export const callWaveformStyle = (active: boolean): CSSProperties => ({
   opacity: active ? 1 : 0.4,
 });
 
-export const callWaveBarStyle = (height: number, delayMs: number): CSSProperties => ({
-  width: 3,
-  height,
-  borderRadius: 999,
-  background: "rgba(255,255,255,0.88)",
-  animation: `tokovoTeamsDotBounce 1.1s ease-in-out ${delayMs}ms infinite`,
-});
+export const callWaveBarStyle = (
+  height: number,
+  delayMs: number,
+  frame: number,
+  fps: number,
+): CSSProperties => {
+  const progress = pulse(frame, fps, 1.1, delayMs / 1000);
+  return {
+    width: 3,
+    height: height * (0.55 + progress * 0.45),
+    borderRadius: 999,
+    background: "rgba(255,255,255,0.88)",
+  };
+};
 
 export const callControlsWrapStyle: CSSProperties = {
   display: "flex",

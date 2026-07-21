@@ -43,24 +43,27 @@ export default defineEpisode({
       })
       .background({ type: "image", src: "/backgrounds/cozy-bedroom.png" })
       .deviceTrack("phone", (d) => {
-        d.at("0.6s").notificationShow({
-          id: "n1",
-          appId: "app_whatsapp",
-          title: "Mina",
-          body: "Wake up. It started.",
-          mode: "lockscreen",
-          priority: "high",
-        });
         d.at("2.6s").unlock();
         d.at("3.4s").openApp("app_whatsapp", {
           transition: { durationFrames: 18, style: "iosZoom" },
+        });
+      })
+      .notificationTrack("phone", (notifications) => {
+        notifications.at("0.6s").deliver({
+          id: "n1",
+          appId: "app_whatsapp",
+          content: { title: "Mina", body: "Wake up. It started." },
+          category: "message",
+          interruption: "timeSensitive",
+          privacy: "private",
+          threadId: "dm_bait",
         });
       })
       .whatsapp("phone", "dm_bait", (wa) => {
         wa.switchTo("dm_bait", "0s");
         wa.at("4.2s").receive("Mina", "He posted a screenshot.");
         wa.at("5.3s").receive("Mina", "You're trending.");
-        wa.at("7.0s").send("Link.", { typed: true, charDelay: 2 });
+        wa.at("7.0s").send("Link.", {});
         wa.at("9.0s").receive("Mina", "Switching you to X.");
       })
       .deviceTrack("phone", (d) => {

@@ -22,21 +22,14 @@ afterEach(() => {
 });
 
 describe("built-in handlers", () => {
-  it("registers device and feature reducers", () => {
+  it("registers the device reducer", () => {
     const world = baseWorld();
     reducerRegistry.registerDeviceReducer((devices) => {
       return { ...devices, phone: { ...devices.phone, touched: true } } as any;
     });
-    reducerRegistry.registerFeatureReducer("NOTIFICATION", (draft) => {
-      (draft as any).notifHandled = true;
-    });
-    reducerRegistry.registerFeatureReducer("KEYBOARD", (draft) => {
-      (draft as any).keyboardHandled = true;
-    });
-
     const handler = getBuiltInHandler("DEVICE", reducerRegistry);
     expect(handler).toBeDefined();
-    handler?.(world, { kind: "DEVICE", type: "SHOW_NOTIFICATION" } as any, 0, {
+    handler?.(world, { kind: "DEVICE", type: "LOCK" } as any, 0, {
       frame: 0,
       eventIndex: 0,
       mode: "preview",
@@ -44,15 +37,6 @@ describe("built-in handlers", () => {
     });
 
     expect((world.devices as any).phone.touched).toBe(true);
-    expect((world as any).notifHandled).toBe(true);
-
-    handler?.(world, { kind: "DEVICE", type: "KEYBOARD_OPEN" } as any, 0, {
-      frame: 0,
-      eventIndex: 0,
-      mode: "preview",
-      fps: 30,
-    });
-    expect((world as any).keyboardHandled).toBe(true);
   });
 
   it("dispatches to handler modules", () => {
@@ -113,17 +97,6 @@ describe("built-in handlers", () => {
       fps: 30,
     });
     expect(voiceSpy).toHaveBeenCalled();
-
-    reducerRegistry.registerFeatureReducer("KEYBOARD", (draft) => {
-      (draft as any).keyboard = true;
-    });
-    getBuiltInHandler("KEYBOARD", reducerRegistry)?.(world, { kind: "KEYBOARD", type: "OPEN" } as any, 0, {
-      frame: 0,
-      eventIndex: 0,
-      mode: "preview",
-      fps: 30,
-    });
-    expect((world as any).keyboard).toBe(true);
 
     cameraSpy.mockRestore();
     audioSpy.mockRestore();

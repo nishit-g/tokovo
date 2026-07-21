@@ -44,8 +44,6 @@ export interface InstagramPostPayload {
   likeCount?: number;
   commentCount?: number;
   aspect?: "square" | "portrait" | "landscape";
-  typed?: boolean;
-  charDelay?: number;
 }
 
 export interface InstagramPostLikePayload {
@@ -93,8 +91,6 @@ export interface InstagramStoryReplyPayload {
   senderId: string;
   text: string;
   createdAt?: number;
-  typed?: boolean;
-  charDelay?: number;
 }
 
 export interface InstagramDMThreadPayload {
@@ -112,8 +108,6 @@ export interface InstagramDMMessagePayload {
   text: string;
   createdAt?: number;
   storyId?: string;
-  typed?: boolean;
-  charDelay?: number;
 }
 
 export interface InstagramThreadDraftPayload {

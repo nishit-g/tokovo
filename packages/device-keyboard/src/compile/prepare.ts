@@ -72,6 +72,7 @@ export interface InputSessionIntent {
   startFrame: number;
   endFrame?: number;
   submitAtFrame?: number;
+  clearOnSubmit?: boolean;
   initialValue?: string;
   text?: string;
   script?: readonly InputScriptStep[];
@@ -371,6 +372,7 @@ export function prepareInputSession(
     push({
       type: "submit",
       at: frame,
+      clearDraft: intent.clearOnSubmit ?? true,
       keyPressDurationFrames: defaultCadence.keyPressDurationFrames,
     });
     frame += Math.max(1, Math.round(intent.fps * 0.14));
@@ -406,6 +408,7 @@ export function prepareInputSession(
     startFrame: intent.startFrame,
     endFrame,
     submitAtFrame: intent.submitAtFrame,
+    clearOnSubmit: intent.clearOnSubmit ?? true,
     expectedFinalValue: intent.expectedFinalValue,
     operations,
   };
@@ -416,9 +419,10 @@ export function prepareInputSession(
       if (operation.type === "blur") break;
       state = applyPreparedInputOperation(state, operation, locale.tag);
     }
-    if (state.draft !== intent.expectedFinalValue) {
+    const finalValue = state.submittedValue ?? state.draft;
+    if (finalValue !== intent.expectedFinalValue) {
       throw new Error(
-        `INPUT_FINAL_VALUE_MISMATCH: prepared session produced ${JSON.stringify(state.draft)} ` +
+        `INPUT_FINAL_VALUE_MISMATCH: prepared session produced ${JSON.stringify(finalValue)} ` +
           `instead of ${JSON.stringify(intent.expectedFinalValue)}.`,
       );
     }

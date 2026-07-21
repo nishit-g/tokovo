@@ -12,7 +12,7 @@
 import type { EpisodeDefinition } from "../types/episode-definition.js";
 
 import testEpisode from "./test.episode.js";
-import keyboardPluginDemo from "./keyboard-plugin-demo.episode.js";
+import inputSessionDemo from "./input-session-demo.episode.js";
 import typingPluginDemo from "./typing-plugin-demo.episode.js";
 import renderServiceSmoke from "./render-service-smoke.episode.js";
 import newDxTest from "../test/new-dx-test.episode.js";
@@ -20,7 +20,7 @@ import newDxTest from "../test/new-dx-test.episode.js";
 
 export const testEpisodes: EpisodeDefinition[] = [
   testEpisode,
-  keyboardPluginDemo,
+  inputSessionDemo,
   typingPluginDemo,
   newDxTest,
   renderServiceSmoke,
@@ -31,7 +31,7 @@ export default testEpisodes;
 
 export {
   testEpisode,
-  keyboardPluginDemo,
+  inputSessionDemo,
   typingPluginDemo,
   newDxTest,
   renderServiceSmoke,

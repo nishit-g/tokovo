@@ -94,8 +94,6 @@ export interface PostBasePayload {
   linkPreview?: { url: string; domain: string; title: string; description?: string; imageUrl?: string };
   hashtags?: string[];
   mentions?: string[];
-  typed?: boolean;
-  charDelay?: number;
 }
 
 export type PostCreatePayload = PostBasePayload;
@@ -120,8 +118,6 @@ export interface PostCommentPayload {
   authorId: string;
   text: string;
   createdAt?: number;
-  typed?: boolean;
-  charDelay?: number;
 }
 
 export interface PostViewPayload {
@@ -173,8 +169,6 @@ export interface DMSendPayload {
   senderId: string;
   text: string;
   createdAt?: number;
-  typed?: boolean;
-  charDelay?: number;
 }
 
 export type LIEventPayloadMap = {

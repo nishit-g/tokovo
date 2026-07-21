@@ -15,9 +15,14 @@ export {
     lowerTrackEvent,
     lowerTrackEvents,
     lowerEpisode,
+    lowerEpisodeWithCapabilities,
     createLoweringContext,
 } from "./lowering.js";
-export type { PluginLowering, LoweringContext } from "./lowering.js";
+export type {
+  PluginLowering,
+  LoweringContext,
+  LoweredEpisodeCapabilities,
+} from "./lowering.js";
 
 export {
   CompilerError,

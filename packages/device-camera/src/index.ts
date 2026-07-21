@@ -41,7 +41,7 @@ export type {
   CameraEventPriority,
   CameraEventPayload,
   MessageEventPayload,
-  NotificationEventPayload,
+  InterruptionEventPayload,
   TypingEventPayload,
   CallEventPayload,
   CustomEventPayload,

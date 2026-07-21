@@ -98,8 +98,6 @@ export const MessageSentEventSchema = BaseEventSchema.extend({
       messageId: z.string().optional(),
       replyTo: ReplyToSchema.optional(),
       silent: z.boolean().optional(),
-      typed: z.boolean().optional(),
-      charDelay: z.number().optional(),
       callType: z.enum(["voice", "video"]).optional(),
       callDuration: z.number().optional(),
     }).strict(),

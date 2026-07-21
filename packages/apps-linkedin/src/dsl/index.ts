@@ -110,8 +110,6 @@ class LIPointBuilder {
       linkPreview: data.linkPreview,
       hashtags: data.hashtags,
       mentions: data.mentions,
-      typed: data.typed,
-      charDelay: data.charDelay,
     }));
   }
 
@@ -136,8 +134,6 @@ class LIPointBuilder {
       authorId: data.authorId,
       text: data.text,
       createdAt: data.createdAt,
-      typed: data.typed,
-      charDelay: data.charDelay,
     }));
   }
 
@@ -188,15 +184,13 @@ class LIPointBuilder {
     }));
   }
 
-  sendDM(params: { id?: string; threadId: string; senderId: string; text: string; createdAt?: number; typed?: boolean; charDelay?: number }): void {
+  sendDM(params: { id?: string; threadId: string; senderId: string; text: string; createdAt?: number }): void {
     this._push("DM_SEND", (order) => ({
       id: params.id ?? createMessageId(this._frame, order),
       threadId: params.threadId,
       senderId: params.senderId,
       text: params.text,
       createdAt: params.createdAt,
-      typed: params.typed,
-      charDelay: params.charDelay,
     }));
   }
 

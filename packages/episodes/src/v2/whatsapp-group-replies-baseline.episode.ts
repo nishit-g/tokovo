@@ -56,10 +56,8 @@ export default defineEpisode({
         wa.span("5.0s", "5.8s").typing("Rhea");
         wa.at("5.9s").receive("Rhea", "Caption is giving: 'I lie for sport'");
 
-        // Creator POV: typed send with auto keyboard
+        // Creator POV send.
         wa.at("7.4s").send("I'm not even mad. I'm impressed by the audacity.", {
-          typed: true,
-          charDelay: 2,
         });
 
         // Punchline beat: let it land

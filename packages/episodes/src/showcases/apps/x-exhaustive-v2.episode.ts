@@ -93,8 +93,6 @@ export default defineEpisode({
           replyToId: "tw_x_ex_1",
           text: "Comment sections are where strategy decks go to become honest.",
           createdAt: baseTs + 15000,
-          typed: true,
-          charDelay: 2,
         });
         x.at("8.8s").navigate("notifications");
         x.at("9.8s").setNotificationsTab("mentions");
@@ -107,8 +105,6 @@ export default defineEpisode({
           senderId: "u_me",
           text: "Post the screenshot only after we pin a better explanation.",
           createdAt: baseTs + 32000,
-          typed: true,
-          charDelay: 2,
         });
         x.at("19.6s").navigate("thread", { threadId: "dm_x_backchannel_v2" });
         x.at("21.0s").sendMessage({
@@ -126,8 +122,6 @@ export default defineEpisode({
           authorId: "u_me",
           text: "If your launch depends on nobody zooming into the screenshot, it depends on fiction.",
           createdAt: baseTs + 51000,
-          typed: true,
-          charDelay: 2,
         });
         x.at("34.0s").navigate("tweet", { tweetId: "tw_x_ex_compose_v2" });
       })

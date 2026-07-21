@@ -20,19 +20,19 @@ const STYLE_BEHAVIORS: Record<string, BehaviorConfig> = {
   ViralDramaV1: {
     MESSAGE_RECEIVED: "fluid-tennis-dramatic",
     MESSAGE_SENT: "fluid-tennis-energetic",
-    NOTIFICATION_SHOWN: "interrupt-focus",
+    INTERRUPTION: "interrupt-focus",
     TYPING_START: "drift-anticipation",
   },
   Cinematic: {
     MESSAGE_RECEIVED: "fluid-tennis-energetic",
     MESSAGE_SENT: "fluid-tennis-casual",
-    NOTIFICATION_SHOWN: "interrupt-focus",
+    INTERRUPTION: "interrupt-focus",
     TYPING_START: "drift-anticipation",
   },
   Documentary: {
     MESSAGE_RECEIVED: "fluid-tennis-casual",
     MESSAGE_SENT: "fluid-tennis-casual",
-    NOTIFICATION_SHOWN: "interrupt-focus",
+    INTERRUPTION: "interrupt-focus",
     TYPING_START: "static",
   },
 };
@@ -67,7 +67,6 @@ const TYPING_EVENT_TYPES = new Set([
 
 const APP_NOTIFICATION_EVENT_TYPES = new Set([
   "NOTIFICATION_ADD",
-  "TEAMS_NOTIFICATION_PUSH",
 ]);
 
 export class CameraDirectorPlugin implements CompilerPlugin {
@@ -155,36 +154,16 @@ export class CameraDirectorPlugin implements CompilerPlugin {
           },
         });
       } else if (
-        event.kind === "DEVICE" &&
-        event.type === "NOTIFICATION_SHOW"
-      ) {
-        cameraEvents.push({
-          id: `plugin-${eventId++}`,
-          type: "NOTIFICATION_SHOWN",
-          timestamp,
-          priority: "high",
-          payload: {
-            app: typeof payload?.appId === "string" ? payload.appId : "unknown",
-            title: typeof payload?.title === "string" ? payload.title : "",
-            body: typeof payload?.body === "string" ? payload.body : "",
-            anchor: "headsUpNotification",
-            duration: 1.5,
-          },
-        });
-      } else if (
         event.kind === "APP" &&
         APP_NOTIFICATION_EVENT_TYPES.has(event.type)
       ) {
         cameraEvents.push({
           id: `plugin-${eventId++}`,
-          type: "NOTIFICATION_SHOWN",
+          type: "INTERRUPTION",
           timestamp,
           priority: "high",
           payload: {
-            app: event.appId,
-            title: typeof payload?.title === "string" ? payload.title : "",
-            body: typeof payload?.body === "string" ? payload.body : "",
-            anchor: "notification_row",
+            anchor: "notification.banner",
             duration: 1.5,
           },
         });

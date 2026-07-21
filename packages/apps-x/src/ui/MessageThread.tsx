@@ -1,6 +1,6 @@
 import React from "react";
 import type { WorldState } from "@tokovo/core";
-import { getTypedTextProgress } from "@tokovo/device-keyboard";
+import { pulse, useFps, useInputField, useTime } from "@tokovo/react";
 import { useXTheme } from "./ThemeContext.js";
 import {
   getActiveThread,
@@ -19,31 +19,24 @@ interface MessageThreadProps {
   t?: number;
 }
 
-export const MessageThread: React.FC<MessageThreadProps> = ({
-  world,
-  deviceId,
-  t,
-}) => {
+export const MessageThread: React.FC<MessageThreadProps> = ({ world }) => {
   const theme = useXTheme();
+  const frame = useTime();
+  const fps = useFps();
   const state = getXState(world);
   const thread = getActiveThread(world);
   const messages = getThreadMessages(world, thread?.id ?? null);
   const users = state?.users ?? [];
-  const focusedDevice =
-    (deviceId && world.devices?.[deviceId]) ||
-    world.devices?.[Object.keys(world.devices ?? {})[0]];
-  const keyboard = focusedDevice?.keyboard;
+  const input = useInputField("composer");
   const storedDraft = getThreadDraft(world, thread?.id ?? null);
-  const typedDraft =
-    keyboard?.visible && keyboard.typingAnimation
-      ? getTypedTextProgress(keyboard, t ?? 0)
-      : storedDraft;
+  const typedDraft = input?.value ?? storedDraft;
   const nowMs = messages.reduce((max, message) => Math.max(max, message.createdAt), 0);
 
   if (!thread) {
     return (
       <AppShell>
         <div
+          lang={input?.locale.tag}
           style={{
             padding: theme.spacing.screenPadding,
             color: theme.colors.textSecondary,
@@ -60,10 +53,8 @@ export const MessageThread: React.FC<MessageThreadProps> = ({
   const title =
     thread.title ??
     (participants.length > 1
-      ? participants
-          .map((id) => users.find((user) => user.id === id)?.name ?? "Unknown")
-          .join(", ")
-      : mainParticipant?.name ?? "Unknown");
+      ? participants.map((id) => users.find((user) => user.id === id)?.name ?? "Unknown").join(", ")
+      : (mainParticipant?.name ?? "Unknown"));
   const subtitle =
     participants.length > 1
       ? `${participants.length} participants`
@@ -230,9 +221,21 @@ export const MessageThread: React.FC<MessageThreadProps> = ({
                     backgroundColor: theme.colors.surfaceRaised,
                   }}
                 >
-                  <div className="x-typing-dot" style={{ width: 6, height: 6, borderRadius: "50%", backgroundColor: theme.colors.textSecondary }} />
-                  <div className="x-typing-dot" style={{ width: 6, height: 6, borderRadius: "50%", backgroundColor: theme.colors.textSecondary, animationDelay: "0.15s" }} />
-                  <div className="x-typing-dot" style={{ width: 6, height: 6, borderRadius: "50%", backgroundColor: theme.colors.textSecondary, animationDelay: "0.3s" }} />
+                  {[0, 1, 2].map((index) => {
+                    const progress = pulse(frame, fps, 1.2, index * 0.15);
+                    return (
+                      <div
+                        key={index}
+                        style={{
+                          width: 6,
+                          height: 6,
+                          borderRadius: "50%",
+                          backgroundColor: theme.colors.textSecondary,
+                          opacity: 0.35 + progress * 0.65,
+                        }}
+                      />
+                    );
+                  })}
                 </div>
               </div>
             ) : null}
@@ -274,6 +277,8 @@ export const MessageThread: React.FC<MessageThreadProps> = ({
             border: `1px solid ${theme.colors.border}`,
             backgroundColor: theme.colors.surfaceRaised,
             color: typedDraft ? theme.colors.textPrimary : theme.colors.textSecondary,
+            direction: input?.direction,
+            unicodeBidi: "plaintext",
             fontSize: 15,
             display: "flex",
             alignItems: "center",

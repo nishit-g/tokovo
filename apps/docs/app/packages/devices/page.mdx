@@ -1,11 +1,15 @@
 # @tokovo/devices
 
-The device profile and device-shell layer for Tokovo.
+The device profile, chrome, and canonical OS-surface layer for Tokovo.
 
 ## Responsibilities
 
 - device profiles
 - device registry wiring
+- iOS and Android light/dark lockscreen and homescreen themes
+- deterministic system localization for English, Hindi, Arabic, and Japanese
+- RTL layout, wallpapers, app icons, badges, folders, docks, search, and gestures
+- semantic lock/home anchors used by camera direction
 - device shell support used by renderer and runtime apps
 
 ## Key Exports
@@ -15,3 +19,11 @@ The device profile and device-shell layer for Tokovo.
 - reducer: `deviceReducer`
 - plugin registration: `registerDevicesPlugin`
 - built-in profiles: `iPhone16Profile`, `PixelProfile`
+- projection: `projectLockscreen`, `projectHomeScreen`
+- themes: `getSystemSurfaceTheme`
+- UI: `SystemSurface`, `LockscreenSurface`, `HomeScreenSurface`
+
+The renderer hosts the projected system surface. It does not own a duplicate lockscreen
+or homescreen implementation. App appearance and OS appearance are separate inputs: app
+themes remain app-owned, while system chrome, notifications, and the keyboard inherit
+the authored OS appearance unless explicitly overridden.

@@ -1,4 +1,3 @@
-import { KeyboardPlugin } from "@tokovo/compiler";
 import { defineEpisode } from "../../types/episode-definition.js";
 import { episode } from "../../code-first-episode.js";
 
@@ -216,14 +215,12 @@ export default defineEpisode({
         wa.switchTo("dm_elm_v2", "1.8s");
         wa.at("3.0s").receive("Elm", "The sky finally stopped looking artificial.");
         wa.at("5.0s").send("Good. Let the grass breathe and don't sharpen the clouds.", {
-          typed: true,
-          charDelay: 2,
         });
         wa.openUpdates("8.8s");
         wa.openChatList("13.0s");
         wa.switchTo("group_hill_v2", "14.4s");
         wa.at("15.6s").receive("Ren", "Moonlit cut exported. It's absurdly pretty.");
-        wa.at("17.6s").send("Then we leave it alone.", { typed: true, charDelay: 2 });
+        wa.at("17.6s").send("Then we leave it alone.", {});
         wa.openUpdates("21.0s");
         wa.openCalls("25.0s");
         wa.openCommunities("29.0s");
@@ -240,6 +237,5 @@ export default defineEpisode({
         cam.at("29.1s").focus("communities_list", { scale: 1.05, duration: "0.35s" });
         cam.at("37.2s").focus("profile_hero", { scale: 1.06, duration: "0.35s" });
       })
-      .use(new KeyboardPlugin())
       .build(),
 });

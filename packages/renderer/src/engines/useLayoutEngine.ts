@@ -23,16 +23,32 @@ import {
   LayoutState,
   ViewKind,
   LayoutContext,
-  getKeyboardConfig,
   TokovoConfig,
   getAppStateForDevice,
   type TokovoConfigType,
   type LayoutCacheStore,
   createScopedLogger,
 } from "@tokovo/core";
-import { getKeyboardSlideProgress } from "@tokovo/device-keyboard";
+import {
+  findInputSessionForProjection,
+  projectInputSession,
+  resolveInputExperience,
+  type InputProjection,
+  type PreparedInputProgram,
+} from "@tokovo/device-keyboard";
+import {
+  projectNotifications,
+  type NotificationDeviceProjection,
+  type PreparedNotificationProgram,
+} from "@tokovo/device-notifications";
 import { computeLayout } from "../layout/index.js";
-import type { DeviceProfile, DeviceRegistries } from "@tokovo/devices";
+import {
+  projectHomeScreen,
+  projectLockscreen,
+  type DeviceProfile,
+  type DeviceRegistries,
+  type SystemSurfaceProjection,
+} from "@tokovo/devices";
 import { useRendererRegistries } from "../RegistryContext.js";
 
 const log = createScopedLogger("renderer");
@@ -49,6 +65,8 @@ export interface LayoutEngineInput {
   mode?: "preview" | "render";
   config?: TokovoConfigType;
   layoutCache?: LayoutCacheStore;
+  inputProgram?: PreparedInputProgram;
+  notificationProgram?: PreparedNotificationProgram;
 }
 
 export interface LayoutEngineOutput {
@@ -72,6 +90,12 @@ export interface LayoutEngineOutput {
   activeStoryId?: string;
   /** Viewport height after accounting for header/input */
   effectiveViewportHeight: number;
+  /** Canonical keyboard + app-field projection for this device/frame. */
+  inputProjection?: InputProjection;
+  /** Canonical OS-owned notification projection for this device/frame. */
+  notificationProjection?: NotificationDeviceProjection;
+  /** Canonical lock/home projection owned by the device package. */
+  systemSurfaceProjection?: SystemSurfaceProjection;
   /** Whether this is a fallback/error state */
   isError: boolean;
 }
@@ -84,7 +108,6 @@ const NULL_DEVICE: DeviceState = {
   id: "__null__",
   profileId: "iphone16",
   isLocked: true,
-  notifications: [],
 };
 
 const NULL_LAYOUT: LayoutState = {
@@ -161,8 +184,8 @@ function computeWorldSignature(
   world: WorldState,
   deviceId: string,
   appId: string | undefined,
-  frame: number,
-  fps: number,
+  _frame: number,
+  _fps: number,
 ): string {
   // Fast path: compute a lightweight signature from state that affects layout
   const device = world.devices[deviceId];
@@ -173,10 +196,18 @@ function computeWorldSignature(
     deviceId,
     device?.foregroundAppId ?? "",
     device?.isLocked ? "1" : "0",
-    device?.keyboard
-      ? String(Math.round(getKeyboardSlideProgress(device.keyboard, frame, fps) * 100))
-      : "0",
     appId ?? "",
+    device?.os?.locale ?? "",
+    device?.os?.appearance ?? "",
+    device?.os?.hourCycle ?? "",
+    String(device?.os?.clock ?? 0),
+    device?.os?.lockScreenWallpaper ?? "",
+    device?.homeScreen?.wallpaper ?? "",
+    device?.homeScreen
+      ? device.homeScreen.pages
+          .map((page) => page.apps.map((item) => "appId" in item ? `${item.appId}:${item.badge ?? 0}` : `folder:${item.name}:${item.apps.length}`).join(","))
+          .join("|")
+      : "",
     // For chat apps, include conversation and message count
     (appState as { conversationId?: string } | undefined)?.conversationId ?? "",
     // Include viewMode if present
@@ -241,10 +272,25 @@ export function useLayoutEngine(input: LayoutEngineInput): LayoutEngineOutput {
     }
 
     const appId = device.foregroundAppId;
-
+    const projectedInputSession = input.inputProgram
+      ? findInputSessionForProjection(
+          input.inputProgram,
+          deviceId,
+          t,
+          effectiveFps,
+        )
+      : undefined;
     // INCREMENTAL CACHE CHECK
     // If world signature hasn't changed for this frame, return cached result
-    const worldSignature = computeWorldSignature(world, deviceId, appId, t, effectiveFps);
+    const worldSignature = `${computeWorldSignature(
+      world,
+      deviceId,
+      appId,
+      t,
+      effectiveFps,
+    )}|${projectedInputSession ? `${projectedInputSession.id}:${t}` : "no-input"}|${
+      input.notificationProgram ? `notifications:${t}` : "no-notifications"
+    }`;
     const cached = cachedResult.current;
     if (
       cached &&
@@ -341,14 +387,48 @@ export function useLayoutEngine(input: LayoutEngineInput): LayoutEngineOutput {
 
     // 3. Get device profile
     const profile = resolveProfile(registries.devices, device.profileId);
+    const pointScale = profile.pixelDensity || 1;
+    const notificationProjection = input.notificationProgram
+      ? projectNotifications(input.notificationProgram, deviceId, t, {
+          viewportWidth: profile.dimensions.width,
+          viewportHeight: profile.dimensions.height,
+          pointScale,
+          safeAreaTop:
+            (profile.safeArea?.top ?? profile.camera?.safeAreaTop ?? 0) /
+            pointScale,
+        })
+      : undefined;
     const variant: "ios" | "android" = profile.platform;
+    const systemSurfaceProjection = device.isLocked
+      ? projectLockscreen({
+          profile,
+          os: device.os,
+          fallbackWallpaper: device.homeScreen?.wallpaper,
+        })
+      : !appId && device.homeScreen
+        ? projectHomeScreen({ profile, os: device.os, config: device.homeScreen })
+        : undefined;
 
     // 4. Compute keyboard height (for viewport shrink when typing)
-    const keyboardConfig = getKeyboardConfig(config, variant);
-    const keyboardSlideProgress = device.keyboard
-      ? getKeyboardSlideProgress(device.keyboard, t, effectiveFps)
-      : 0;
-    const keyboardHeight = keyboardConfig.height * keyboardSlideProgress;
+    const inputExperience = projectedInputSession
+      ? resolveInputExperience({
+          platform: projectedInputSession.keyboard.platform,
+          appearance: projectedInputSession.keyboard.appearance,
+          locale: projectedInputSession.keyboard.locale.tag,
+          themeId: projectedInputSession.keyboard.themeId,
+        })
+      : undefined;
+    const inputProjection = projectedInputSession && inputExperience
+      ? projectInputSession(projectedInputSession, t, {
+          fps: effectiveFps,
+          viewportWidth: profile.dimensions.width,
+          viewportHeight: profile.dimensions.height,
+          keyboardHeight:
+            inputExperience.theme.geometry.height *
+            (profile.pixelDensity || 1),
+        })
+      : undefined;
+    const keyboardHeight = inputProjection?.surface.viewportInset ?? 0;
 
     // 5. Compute effective viewport height (shrinks when keyboard visible)
     const effectiveViewportHeight =
@@ -387,6 +467,9 @@ export function useLayoutEngine(input: LayoutEngineInput): LayoutEngineOutput {
       activeConversationId,
       activeStoryId,
       effectiveViewportHeight,
+      inputProjection,
+      notificationProjection,
+      systemSurfaceProjection,
       isError: false,
     };
 
@@ -399,5 +482,16 @@ export function useLayoutEngine(input: LayoutEngineInput): LayoutEngineOutput {
     };
 
     return output;
-  }, [world, t, focusDeviceId, fps, registries, input.mode, input.config, input.layoutCache]);
+  }, [
+    world,
+    t,
+    focusDeviceId,
+    fps,
+    registries,
+    input.mode,
+    input.config,
+    input.layoutCache,
+    input.inputProgram,
+    input.notificationProgram,
+  ]);
 }

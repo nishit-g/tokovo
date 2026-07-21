@@ -63,8 +63,6 @@ export default defineEpisode({
           senderId: "ig_mira",
           text: "Good. Then we keep the sky soft and stop touching the grade.",
           createdAt: baseTs + 8000,
-          typed: true,
-          charDelay: 2,
         });
         ig.at("9.6s").navigate("profile", { profileId: "ig_mira" });
       })

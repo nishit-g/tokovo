@@ -5,7 +5,11 @@
  */
 import React from "react";
 import type { WorldState } from "@tokovo/core";
-import { KeyboardAwareView, ScrollableContent, useKeyboardState } from "@tokovo/react";
+import {
+  KeyboardAwareView,
+  ScrollableContent,
+  useInputField,
+} from "@tokovo/react";
 import { useLinkedInTheme } from "./ThemeContext.js";
 import { Header, LIAvatar, LIIcon } from "./components.js";
 import { PostCard } from "./PostCard.js";
@@ -22,7 +26,8 @@ import type { LIReactionType } from "../types/index.js";
 
 export const PostDetail: React.FC<{ world: WorldState }> = ({ world }) => {
   const theme = useLinkedInTheme();
-  const keyboardState = useKeyboardState();
+  const commentInput = useInputField("comment");
+  const commentText = commentInput?.value ?? "";
   const post = getActivePost(world);
   const comments = getCommentsForPost(world, post?.id ?? null);
   const author = getUserById(world, post?.authorId ?? null);
@@ -202,6 +207,8 @@ export const PostDetail: React.FC<{ world: WorldState }> = ({ world }) => {
         >
           <LIAvatar size="sm" src={currentUser?.avatarUrl} name={currentUser?.name} />
           <div
+            dir={commentInput?.direction}
+            lang={commentInput?.locale.tag}
             style={{
               flex: 1,
               height: theme.spacing.inputHeight,
@@ -210,12 +217,12 @@ export const PostDetail: React.FC<{ world: WorldState }> = ({ world }) => {
               display: "flex",
               alignItems: "center",
               padding: `0 ${theme.spacing.md}px`,
-              color: keyboardState.inputText ? theme.colors.textPrimary : theme.colors.textTertiary,
+              color: commentText ? theme.colors.textPrimary : theme.colors.textTertiary,
               fontSize: theme.typography.body.fontSize,
             }}
           >
-            {keyboardState.inputText || "Add a comment..."}
-            {keyboardState.isKeyboardVisible ? (
+            {commentText || "Add a comment..."}
+            {commentInput?.isKeyboardVisible ? (
               <span
                 style={{
                   display: "inline-block",

@@ -1,4 +1,3 @@
-import { KeyboardPlugin } from "@tokovo/compiler";
 import { dmTarget, threadTarget } from "@tokovo/apps-teams";
 import { defineEpisode } from "../../types/episode-definition.js";
 import { episode } from "../../code-first-episode.js";
@@ -65,7 +64,6 @@ export default defineEpisode({
         teams.at("4.0s").sendMessage({
           target: threadTarget("moonlit-cut-v2", "th_color_grade_v2"),
           text: "Then leave the sky. Only soften the highlights on the hill path.",
-          typed: true,
         });
         teams.openDm("dm_aki_v2", "8.2s");
         teams.at("8.8s").receiveMessage({
@@ -76,7 +74,6 @@ export default defineEpisode({
         teams.at("10.4s").sendMessage({
           target: dmTarget("dm_aki_v2"),
           text: "That is the correct reading.",
-          typed: true,
         });
       })
       .camera((cam) => {
@@ -84,6 +81,5 @@ export default defineEpisode({
         cam.at("1.5s").focus("thread_view", { scale: 1.08, duration: "0.35s" });
         cam.at("8.3s").focus("dm_thread", { scale: 1.08, duration: "0.35s" });
       })
-      .use(new KeyboardPlugin({ onlyForSentMessages: true, defaultCharDelay: 3 }))
       .build(),
 });

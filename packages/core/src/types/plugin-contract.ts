@@ -250,24 +250,6 @@ export interface PluginAnchorRegistry {
 }
 
 // =============================================================================
-// NOTIFICATION ADAPTER
-// =============================================================================
-
-export interface PluginFormattedNotification {
-  icon: string;
-  color: string;
-  title: string;
-  body: string;
-  subtitle?: string;
-}
-
-export interface PluginNotificationAdapter {
-  format: (
-    notification: import("../types/notification").Notification,
-  ) => PluginFormattedNotification;
-}
-
-// =============================================================================
 // AUDIO RULES
 // =============================================================================
 
@@ -355,8 +337,6 @@ export interface TokovoPluginContract<AppId extends string = string> {
    */
   anchorProvider?: AnchorProvider;
 
-  // === Notifications ===
-  notificationAdapter?: PluginNotificationAdapter;
 }
 
 // =============================================================================

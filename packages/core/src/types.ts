@@ -22,40 +22,16 @@ export type {
   HomeScreenPage,
   AppIcon,
   AppFolder,
-  KeyboardLayout,
-  KeyboardType,
-  ReturnKeyType,
-  KeyPressState,
-  KeyboardState,
-  TypingAnimation,
 } from "./types/device.js";
 
-export { DEFAULT_OS_STATE, DEFAULT_KEYBOARD_STATE } from "./types/device.js";
+export { DEFAULT_OS_STATE } from "./types/device.js";
 
 export type {
-  NotificationPriority,
-  NotificationState,
-  NotificationDeliverWhen,
-  NotificationIR,
-  NotificationInstance,
-  Notification,
-  NotificationIR_Alias,
-  NotificationGroup,
-  NotificationPolicyIR,
-  NotificationCenterState,
-  StatusBarIcon,
   DynamicIslandState,
   DynamicIslandMode,
   DynamicIslandContent,
-  NotificationQueueState,
-} from "./types/notification.js";
-
-export {
-  IOS_NOTIFICATION_POLICY,
-  ANDROID_NOTIFICATION_POLICY,
-  DEFAULT_NOTIFICATION_CENTER,
-  DEFAULT_DYNAMIC_ISLAND,
-} from "./types/notification.js";
+} from "./types/device.js";
+export { DEFAULT_DYNAMIC_ISLAND } from "./types/device.js";
 
 // =============================================================================
 // APP DATA - REMOVED FROM CORE
@@ -241,7 +217,6 @@ export type {
   StoryLayoutState,
   StoryItemLayout,
   LockscreenLayoutState,
-  NotificationLayout,
   LockscreenLayoutMeta,
   TransitionLayoutState,
   TransitionLayoutMeta,
@@ -265,7 +240,6 @@ export type {
   IncomingCallEvent,
   StartBackgroundAppEvent,
   StopBackgroundAppEvent,
-  ShowNotificationEvent,
   LockEvent,
   UnlockEvent,
   CloseAppEvent,
@@ -277,7 +251,6 @@ export type {
   SetDynamicIslandPayload,
   IncomingCallPayload,
   BackgroundAppPayload,
-  NotificationPayload as RuntimeNotificationPayload,
   // Voice runtime event types
   VoiceEventType,
   VoicePlaySegmentEvent,

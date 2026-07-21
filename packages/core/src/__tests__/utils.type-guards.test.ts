@@ -5,7 +5,6 @@ import {
   isLockEvent,
   isUnlockEvent,
   isOpenAppEvent,
-  isShowNotificationEvent,
   isIncomingCallEvent,
   isAppEvent,
   isMessageReceivedEvent,
@@ -37,9 +36,6 @@ describe("type guards", () => {
 
     const open = { kind: "DEVICE", type: "OPEN_APP", deviceId: "d1", appId: "app" } as TimelineEvent;
     expect(isOpenAppEvent(open)).toBe(true);
-
-    const notif = { kind: "DEVICE", type: "SHOW_NOTIFICATION", deviceId: "d1", appId: "app", title: "t", body: "b" } as TimelineEvent;
-    expect(isShowNotificationEvent(notif)).toBe(true);
 
     const call = { kind: "DEVICE", type: "INCOMING_CALL", deviceId: "d1", callerId: "c", callerName: "Caller" } as TimelineEvent;
     expect(isIncomingCallEvent(call)).toBe(true);

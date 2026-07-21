@@ -1,6 +1,6 @@
 import React from "react";
 import type { WorldState } from "@tokovo/core";
-import { getTypedTextProgress } from "@tokovo/device-keyboard";
+import { useInputField } from "@tokovo/react";
 import { useXTheme } from "./ThemeContext.js";
 import { getActiveTweet, getXState } from "../runtime/selectors.js";
 import { AppShell } from "./AppShell.js";
@@ -28,7 +28,7 @@ function formatCount(n: number): string {
   return n.toLocaleString("en-US");
 }
 
-export const TweetDetail: React.FC<TweetDetailProps> = ({ world, deviceId, t }) => {
+export const TweetDetail: React.FC<TweetDetailProps> = ({ world }) => {
   const theme = useXTheme();
   const state = getXState(world);
   const tweet = getActiveTweet(world);
@@ -37,13 +37,8 @@ export const TweetDetail: React.FC<TweetDetailProps> = ({ world, deviceId, t }) 
   const author = users.find((user) => user.id === tweet?.authorId);
   const replies =
     tweet?.replyIds.map((id) => state?.tweets.find((item) => item.id === id)).filter(Boolean) ?? [];
-  const focusedDevice =
-    (deviceId && world.devices?.[deviceId]) || world.devices?.[Object.keys(world.devices ?? {})[0]];
-  const keyboard = focusedDevice?.keyboard;
-  const typedReply =
-    keyboard?.visible && keyboard.typingAnimation
-      ? getTypedTextProgress(keyboard, t ?? 0)
-      : (state?.composeDraft ?? "");
+  const input = useInputField("comment");
+  const typedReply = input?.value ?? state?.composeDraft ?? "";
   const canReply = typedReply.length > 0 && typedReply.length <= 280;
   const nowMs = Math.max(tweet?.createdAt ?? 0, ...replies.map((reply) => reply?.createdAt ?? 0));
 
@@ -51,6 +46,7 @@ export const TweetDetail: React.FC<TweetDetailProps> = ({ world, deviceId, t }) 
     return (
       <AppShell>
         <div
+          lang={input?.locale.tag}
           style={{
             padding: theme.spacing.screenPadding,
             color: theme.colors.textSecondary,
@@ -293,6 +289,8 @@ export const TweetDetail: React.FC<TweetDetailProps> = ({ world, deviceId, t }) 
             border: `1px solid ${theme.colors.border}`,
             backgroundColor: theme.colors.surfaceRaised,
             color: typedReply ? theme.colors.textPrimary : theme.colors.textSecondary,
+            direction: input?.direction,
+            unicodeBidi: "plaintext",
             fontSize: 15,
             display: "flex",
             alignItems: "center",

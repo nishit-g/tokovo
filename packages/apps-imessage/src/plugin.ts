@@ -23,7 +23,6 @@ const iMessageViews: PluginViews = {
 
 const iMessageAssets = {
   sounds: {
-    "app_imessage.message_in": "plugins/imessage/received.wav",
     "app_imessage.message_out": "plugins/imessage/sent.wav",
     "app_imessage.typing_loop": "plugins/imessage/typing_loop.wav",
   },
@@ -37,13 +36,6 @@ const iMessageAudioRules: NonNullable<TokovoPluginContract["audioRules"]> = [
     match: { kind: "APP", appId: IMESSAGE_APP_ID, type: "IMESSAGE_MESSAGE_SEND" },
     action: "PLAY_ONE_SHOT",
     sound: "app_imessage.message_out",
-    bus: "ui",
-    duckMusic: true,
-  },
-  {
-    match: { kind: "APP", appId: IMESSAGE_APP_ID, type: "IMESSAGE_MESSAGE_RECEIVE" },
-    action: "PLAY_ONE_SHOT",
-    sound: "app_imessage.message_in",
     bus: "ui",
     duckMusic: true,
   },
@@ -64,6 +56,7 @@ const iMessageAudioRules: NonNullable<TokovoPluginContract["audioRules"]> = [
 
 export const IMessagePlugin: TokovoPluginContract<"app_imessage"> & {
   v2Lowering: typeof iMessageV2Lowering;
+  notificationAdapter: typeof iMessageNotificationAdapter;
 } = {
   id: IMESSAGE_APP_ID,
   version: IMESSAGE_VERSION,

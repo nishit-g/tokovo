@@ -5,11 +5,13 @@ import { getIOSChromeMetrics } from "../ios/chrome-metrics.js";
 interface FrameProps {
   children: React.ReactNode;
   statusBar?: React.ReactNode;
+  homeIndicatorTheme?: "light" | "dark" | "hidden";
 }
 
 export const iPhone16Frame: React.FC<FrameProps> = ({
   children,
   statusBar,
+  homeIndicatorTheme = "light",
 }) => {
   const { width, height } = iPhone16Profile.dimensions;
   const C = iPhone16Constants;
@@ -85,12 +87,15 @@ export const iPhone16Frame: React.FC<FrameProps> = ({
       transform: "translateX(-50%)",
       width: metrics.homeIndicator.width,
       height: metrics.homeIndicator.height,
-      backgroundColor: "rgba(0, 0, 0, 0.3)",
+      backgroundColor:
+        homeIndicatorTheme === "dark"
+          ? "rgba(255, 255, 255, 0.86)"
+          : "rgba(0, 0, 0, 0.48)",
       borderRadius: metrics.homeIndicator.radius,
       zIndex: 9999,
       pointerEvents: "none" as const,
     }),
-    [metrics.homeIndicator.bottom, metrics.homeIndicator.width, metrics.homeIndicator.height, metrics.homeIndicator.radius],
+    [homeIndicatorTheme, metrics.homeIndicator.bottom, metrics.homeIndicator.width, metrics.homeIndicator.height, metrics.homeIndicator.radius],
   );
 
   return (
@@ -99,7 +104,7 @@ export const iPhone16Frame: React.FC<FrameProps> = ({
       <div style={dynamicIslandStyle} />
       <div style={screenStyle}>
         {children}
-        <div style={homeIndicatorStyle} />
+        {homeIndicatorTheme !== "hidden" ? <div style={homeIndicatorStyle} /> : null}
       </div>
     </div>
   );

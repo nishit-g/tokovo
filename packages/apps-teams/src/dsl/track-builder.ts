@@ -87,8 +87,6 @@ export class TeamsPointBuilderV2 {
     messageId?: string;
     senderId?: string;
     senderName?: string;
-    typed?: boolean;
-    charDelay?: number;
     mentionedUserIds?: string[];
     replyToMessageId?: string;
   }): void {
@@ -107,8 +105,6 @@ export class TeamsPointBuilderV2 {
     senderName?: string;
     text: string;
     messageId?: string;
-    typed?: boolean;
-    charDelay?: number;
     mentionedUserIds?: string[];
     replyToMessageId?: string;
   }): void {
@@ -193,29 +189,6 @@ export class TeamsPointBuilderV2 {
     this.push("TEAMS_CALL_END", { callId: requireNonEmpty(callId, "callId") });
   }
 
-  pushNotification(
-    id: string,
-    title: string,
-    text: string,
-    ttlFrames?: number,
-    target?: { dmId?: string; channelId?: string; threadId?: string },
-    kind: "mention" | "message" | "system" = "system",
-  ): void {
-    this.push("TEAMS_NOTIFICATION_PUSH", {
-      id: requireNonEmpty(id, "notification.id"),
-      title: requireNonEmpty(title, "notification.title"),
-      text: requireNonEmpty(text, "notification.text"),
-      kind,
-      ttlFrames,
-      target,
-    });
-  }
-
-  dismissNotification(id: string): void {
-    this.push("TEAMS_NOTIFICATION_DISMISS", {
-      id: requireNonEmpty(id, "notification.id"),
-    });
-  }
 }
 
 export class TeamsTrackBuilderV2 {

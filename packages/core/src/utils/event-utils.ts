@@ -39,7 +39,6 @@ export const EVENT_KIND_PRIORITY: Record<string, number> = {
   APP: 2,
   CAMERA: 3,
   AUDIO: 4,
-  KEYBOARD: 5,
 };
 
 export function getEventKindPriority(kind: string): number {

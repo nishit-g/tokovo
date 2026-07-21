@@ -13,9 +13,6 @@ export const TIMING = {
   /** Default frames per second */
   FPS_DEFAULT: 30,
 
-  /** Duration of heads-up notification in frames (5 seconds at 30fps) */
-  HEADS_UP_DURATION: 150,
-
   /** Buffer frames to keep effects after they end (for smooth transitions) */
   EFFECT_CLEANUP_BUFFER: 30,
 
@@ -116,7 +113,6 @@ export const EVENT_KINDS = {
   APP: "APP",
   CAMERA: "CAMERA",
   AUDIO: "AUDIO",
-  KEYBOARD: "KEYBOARD",
   OS: "OS",
   CALL: "CALL",
 } as const;

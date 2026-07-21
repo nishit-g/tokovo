@@ -35,24 +35,11 @@ export const defaultLayoutConfig: LayoutConfig = {
     storyGap: 0,
     storyTransitionDuration: 15,
   },
-  lockscreen: {
-    topPadding: 150,
-    notificationGap: 10,
-    notificationWidth: 0.9,
-    baseNotificationHeight: 100,
-    charsPerLine: 40,
-    lineHeight: 30,
-    stackMaxNotifications: 5,
-    appearDuration: 15,
-  },
+  lockscreen: {},
   transition: {
     defaultScale: 1.0,
     zoomedScale: 1.2,
     panDuration: 30,
     zoomDuration: 30,
-    notifications: {
-      appearDuration: 15,
-      dismissDuration: 10,
-    },
   },
 };

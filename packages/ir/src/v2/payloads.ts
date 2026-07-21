@@ -200,6 +200,10 @@ export interface VoicePayloads {
 
 export interface OSPayloads {
   SET_STATE: {
+    locale?: string;
+    appearance?: "light" | "dark";
+    hourCycle?: "h12" | "h24";
+    lockScreenWallpaper?: string;
     time?: number;
     battery?: number;
     charging?: boolean;
@@ -222,18 +226,6 @@ export interface OSPayloads {
   SET_DND: {
     enabled: boolean;
   };
-  NOTIFICATION_SHOW: {
-    id: string;
-    appId: string;
-    title: string;
-    body: string;
-    icon?: string;
-    mode?: "headsup" | "lockscreen" | "both";
-  };
-  NOTIFICATION_DISMISS: {
-    id: string;
-  };
-  NOTIFICATION_DISMISS_ALL: Record<string, never>;
 }
 
 // =============================================================================
@@ -288,62 +280,6 @@ export interface DevicePayloads {
       originY?: number;
     };
   };
-  NOTIFICATION_SHOW: {
-    kind?: "show";
-    id: string;
-    appId: string;
-    title: string;
-    body: string;
-    icon?: string;
-    preview?: {
-      kind: "text" | "image" | "video";
-      value: string;
-      aspectRatio?: number;
-    };
-    mode?: "headsup" | "lockscreen" | "both";
-    priority?:
-      | "HIGH"
-      | "DEFAULT"
-      | "LOW"
-      | "high"
-      | "default"
-      | "low"
-      | "critical";
-    duration?: number;
-    groupKey?: string;
-    threadKey?: string;
-    actions?: Array<{ id: string; label: string; destructive?: boolean }>;
-    replyable?: boolean;
-    metadata?: Record<string, unknown>;
-  };
-  NOTIFICATION_DISMISS: {
-    kind?: "dismiss";
-    id: string;
-  };
-  NOTIFICATION_TAP: {
-    kind?: "tap";
-    id: string;
-    actionId?: string;
-  };
-  NOTIFICATION_SWIPE: {
-    kind?: "swipe";
-    id: string;
-    direction?: "left" | "right";
-  };
-  NOTIFICATION_REPLY: {
-    kind?: "reply";
-    id: string;
-    text: string;
-  };
-  NOTIFICATION_DYNAMIC_ISLAND: {
-    kind?: "dynamicIsland";
-    mode: "idle" | "minimal" | "compact" | "expanded";
-  };
-  NOTIFICATION_OPEN_PANEL: Record<string, never>;
-  NOTIFICATION_CLOSE_PANEL: Record<string, never>;
-  NOTIFICATION_CLEAR_ALL: {
-    kind?: "clearAll";
-  };
   SET_DYNAMIC_ISLAND: {
     visible: boolean;
     mode?: "idle" | "minimal" | "compact" | "expanded";
@@ -352,25 +288,6 @@ export interface DevicePayloads {
     appId: string;
     count: number;
   };
-  KEYBOARD_SHOW: {
-    returnKeyType?: "default" | "go" | "search" | "send" | "next" | "done";
-  };
-  KEYBOARD_HIDE: Record<string, never>;
-  KEYBOARD_KEY_PRESS: {
-    key: string;
-  };
-  KEYBOARD_TYPE: {
-    text: string;
-    speed?: "slow" | "natural" | "fast";
-  };
-  KEYBOARD_CLEAR: Record<string, never>;
-  KEYBOARD_SET_SUGGESTIONS: {
-    suggestions: string[];
-  };
-  KEYBOARD_TAP_SUGGESTION: {
-    index: number;
-  };
-
   SET_SCREEN_RECORDING: {
     enabled: boolean;
     mode?: "minimal" | "compact";

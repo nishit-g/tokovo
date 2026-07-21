@@ -1,6 +1,5 @@
 import { defineEpisode } from "../../types/episode-definition.js";
 import { episode } from "../../code-first-episode.js";
-import { KeyboardPlugin } from "@tokovo/compiler";
 
 export default defineEpisode({
   meta: {
@@ -70,28 +69,9 @@ export default defineEpisode({
         ],
       })
       .deviceTrack("phone", (d) => {
-        d.at("0.7s").notificationShow({
-          id: "notif_lock_wa",
-          appId: "app_whatsapp",
-          title: "Ops Lead",
-          body: "Wake up. Rollback decision in 4 min.",
-          mode: "lockscreen",
-          priority: "high",
-        });
         d.at("3.0s").unlock();
         d.at("3.7s").openApp("app_whatsapp", {
           transition: { durationFrames: 18, style: "iosZoom" },
-        });
-        d.at("9.8s").keyboardShow({ returnKeyType: "send" });
-        d.at("10.2s").keyboardType("On it. Give me sixty seconds.", { speed: "natural" });
-        d.at("12.6s").keyboardHide();
-        d.at("14.0s").notificationShow({
-          id: "notif_headsup_ig",
-          appId: "app_instagram",
-          title: "Noa Frames",
-          body: "Your teaser post is getting ratioed in comments.",
-          mode: "headsup",
-          priority: "default",
         });
         d.at("16.0s").openApp("app_instagram", {
           transition: { durationFrames: 18, style: "iosZoom" },
@@ -100,10 +80,39 @@ export default defineEpisode({
           transition: { durationFrames: 18, style: "iosZoom" },
         });
       })
+      .notificationTrack("phone", (notifications) => {
+        notifications.at("0.7s").deliver({
+          id: "notif_lock_wa",
+          appId: "app_whatsapp",
+          content: { title: "Ops Lead", body: "Wake up. Rollback decision in 4 min." },
+          category: "message",
+          interruption: "timeSensitive",
+          privacy: "private",
+          threadId: "rollback",
+        });
+        notifications.at("14.0s").deliver({
+          id: "notif_headsup_ig",
+          appId: "app_instagram",
+          content: { title: "Noa Frames", body: "Your teaser post is getting ratioed in comments." },
+          category: "social",
+          interruption: "active",
+          privacy: "public",
+          threadId: "teaser-post",
+        });
+      })
+      .input("phone", "composer", {
+        at: "9.8s",
+        until: "13.4s",
+        locale: "en-US",
+        text: "On it. Give me sixty seconds.",
+        expectedFinalValue: "On it. Give me sixty seconds.",
+        cadence: { style: "natural" },
+        keyboard: { returnKey: "send" },
+      })
       .whatsapp("phone", "dm_ops", (wa) => {
         wa.switchTo("dm_ops", "4.2s");
         wa.at("5.0s").receive("Ops Lead", "QA missed one screenshot in the deck.");
-        wa.at("6.4s").send("Patch is already exporting.", { typed: true, charDelay: 2 });
+        wa.at("6.4s").send("Patch is already exporting.", {});
         wa.at("8.2s").receive("Ops Lead", "Good. Move the team back into launch thread.");
       })
       .instagram("phone", (ig) => {
@@ -121,19 +130,16 @@ export default defineEpisode({
           replyToId: "tw_seed_1",
           text: "Panic is just pre-launch cardio.",
           createdAt: new Date("2026-04-10T08:49:00Z").getTime(),
-          typed: true,
-          charDelay: 2,
         });
         x.at("28.8s").navigate("notifications");
       })
       .camera((cam) => {
         cam.at("0s").focus("device", { scale: 1.02, duration: "0.3s" });
-        cam.at("0.8s").focus("notification_banner", { scale: 1.08, duration: "0.35s" });
+        cam.at("0.8s").focus("notification.banner", { scale: 1.08, duration: "0.35s" });
         cam.span("4.8s", "8.8s").trackCinematic("lastMessage", { scale: 1.14, smoothing: 0.18 });
         cam.at("10.0s").focus("keyboard", { scale: 1.12, duration: "0.25s" });
         cam.at("17.0s").focus("feed_post", { scale: 1.08, duration: "0.35s" });
         cam.at("25.2s").focus("tweet_card", { scale: 1.1, duration: "0.35s" });
       })
-      .use(new KeyboardPlugin())
       .build(),
 });

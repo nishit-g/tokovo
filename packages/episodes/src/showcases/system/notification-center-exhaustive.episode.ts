@@ -11,7 +11,13 @@ export default defineEpisode({
     catalogType: "system_showcase",
     visibility: "public",
     sortOrder: 115,
-    tags: ["system", "notifications", "notification-center", "panel", "stacking"],
+    tags: [
+      "system",
+      "notifications",
+      "notification-center",
+      "panel",
+      "stacking",
+    ],
   },
   config: {
     format: "1080x1920",
@@ -34,75 +40,102 @@ export default defineEpisode({
         },
       })
       .background({ type: "image", src: "/backgrounds/dark-studio.png" })
-      .deviceTrack("phone", (d) => {
-        d.at("0.9s").notificationShow({
+      .notificationTrack("phone", (notifications) => {
+        notifications.at("0.9s").deliver({
           id: "nc_wa_1",
           appId: "app_whatsapp",
-          title: "Ava",
-          body: "We need the revised exports before lunch.",
-          priority: "high",
-          threadKey: "ops_ava",
+          content: {
+            title: "Ava",
+            body: "We need the revised exports before lunch.",
+            avatar: { src: "/avatars/avatar-ava.jpg", alt: "Ava" },
+          },
+          interruption: "timeSensitive",
+          foregroundBehavior: "present",
+          privacy: "private",
+          threadId: "ops_ava",
+          groupId: "ops_ava",
         });
-        d.at("1.6s").notificationShow({
+        notifications.at("1.6s").deliver({
           id: "nc_wa_2",
           appId: "app_whatsapp",
-          title: "Launch Ops",
-          body: "Pushing another version right now.",
-          priority: "default",
-          threadKey: "ops_ava",
+          content: {
+            title: "Launch Ops",
+            body: "Pushing another version right now.",
+          },
+          interruption: "active",
+          privacy: "private",
+          threadId: "ops_ava",
+          groupId: "ops_ava",
         });
-        d.at("2.5s").notificationShow({
+        notifications.at("2.5s").deliver({
           id: "nc_ig_1",
           appId: "app_instagram",
-          title: "Instagram",
-          body: "39 new comments on How reels are actually made.",
-          priority: "high",
-          threadKey: "ig_post_banter",
+          content: {
+            title: "Instagram",
+            body: "39 new comments on How reels are actually made.",
+          },
+          interruption: "timeSensitive",
+          privacy: "public",
+          threadId: "ig_post_banter",
+          groupId: "ig_post_banter",
         });
-        d.at("3.2s").notificationShow({
+        notifications.at("3.2s").deliver({
           id: "nc_teams_1",
           appId: "app_teams",
-          title: "Exec Briefing",
-          body: "Review the launch narrative before 1 PM.",
-          priority: "default",
-          threadKey: "teams_exec",
+          content: {
+            title: "Exec Briefing",
+            body: "Review the launch narrative before 1 PM.",
+          },
+          interruption: "active",
+          privacy: "private",
+          threadId: "teams_exec",
+          groupId: "teams_exec",
         });
-        d.at("4.5s").notificationOpenPanel();
-        d.at("7.0s").notificationDismiss("nc_teams_1");
-        d.at("8.4s").notificationClosePanel();
-        d.at("10.8s").notificationShow({
+        notifications.at("4.5s").openCenter();
+        notifications.at("7.0s").dismiss("nc_teams_1");
+        notifications.at("8.4s").closeCenter();
+        notifications.at("10.8s").deliver({
           id: "nc_li_1",
           appId: "app_linkedin",
-          title: "Noor Ahmed",
-          body: "Sent you an InMail: Principal Design role.",
-          priority: "default",
-          threadKey: "li_role",
+          content: {
+            title: "Noor Ahmed",
+            body: "Sent you an InMail: Principal Design role.",
+          },
+          interruption: "active",
+          privacy: "private",
+          threadId: "li_role",
+          groupId: "li_role",
         });
-        d.at("12.0s").notificationOpenPanel();
-        d.at("14.4s").notificationTap("nc_ig_1");
-        d.at("17.5s").notificationShow({
+        notifications.at("12.0s").openCenter();
+        notifications.at("14.4s").tap("nc_ig_1");
+        notifications.at("17.5s").deliver({
           id: "nc_teams_2",
           appId: "app_teams",
-          title: "War Room",
-          body: "Call recording is ready to review.",
-          priority: "high",
-          threadKey: "teams_war_room",
+          content: {
+            title: "War Room",
+            body: "Call recording is ready to review.",
+          },
+          interruption: "timeSensitive",
+          privacy: "private",
+          threadId: "teams_war_room",
+          groupId: "teams_war_room",
         });
-        d.at("18.3s").notificationShow({
+        notifications.at("18.3s").deliver({
           id: "nc_wa_3",
           appId: "app_whatsapp",
-          title: "Maya",
-          body: "Panel looks real now. Ship it.",
-          priority: "default",
-          threadKey: "maya_thread",
+          content: { title: "Maya", body: "Panel looks real now. Ship it." },
+          interruption: "active",
+          privacy: "private",
+          threadId: "maya_thread",
+          groupId: "maya_thread",
         });
-        d.at("20.0s").notificationOpenPanel();
-        d.at("23.0s").notificationClearAll();
-        d.at("24.0s").notificationClosePanel();
+        notifications.at("20.0s").openCenter();
+        notifications.at("23.0s").clearAll();
+        notifications.at("24.0s").closeCenter();
       })
       .camera((cam) => {
         cam.at("0s").focus("device", { scale: 1.02, duration: "0.3s" });
-        cam.span("0.9s", "3.8s").trackCinematic("notification_banner", {
+        cam.span("0.9s", "3.8s").trackCinematic("notification.banner", {
           scale: 1.15,
           smoothing: 0.18,
         });

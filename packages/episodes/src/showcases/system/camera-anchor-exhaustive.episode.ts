@@ -57,26 +57,30 @@ export default defineEpisode({
         ],
       })
       .deviceTrack("phone", (d) => {
-        d.at("12.0s").notificationShow({
-          id: "anchor_notif",
-          appId: "app_whatsapp",
-          title: "Frame Notes",
-          body: "New thread mention from Aki.",
-          priority: "high",
-        });
         d.at("17.0s").openApp("app_x", {
           transition: { durationFrames: 18, style: "iosZoom" },
+        });
+      })
+      .notificationTrack("phone", (notifications) => {
+        notifications.at("12.0s").deliver({
+          id: "anchor_notif",
+          appId: "app_whatsapp",
+          content: { title: "Frame Notes", body: "New thread mention from Aki." },
+          category: "message",
+          interruption: "timeSensitive",
+          privacy: "private",
+          threadId: "frame-notes",
         });
       })
       .whatsapp("phone", "dm_mina", (wa) => {
         wa.openChatList("0s");
         wa.switchTo("dm_mina", "1.2s");
         wa.at("2.2s").receive("Mina", "Test the list anchor first.");
-        wa.at("3.6s").send("Now watch it stick to the bubble.", { typed: true, charDelay: 2 });
+        wa.at("3.6s").send("Now watch it stick to the bubble.", {});
         wa.openChatList("6.0s");
         wa.switchTo("group_frames", "7.2s");
         wa.at("8.4s").receive("Aki", "Thread card should be the next focus target.");
-        wa.at("10.0s").send("Then the notification banner.", { typed: true, charDelay: 2 });
+        wa.at("10.0s").send("Then the notification banner.", {});
       })
       .x("phone", (x) => {
         x.at("17.8s").navigate("timeline");
@@ -87,8 +91,6 @@ export default defineEpisode({
           replyToId: "tw_anchor_1",
           text: "Good anchors make cameras feel intentional instead of frantic.",
           createdAt: new Date("2026-04-10T18:23:00Z").getTime(),
-          typed: true,
-          charDelay: 2,
         });
         x.at("24.2s").navigate("compose");
         x.at("25.0s").setComposeDraft("Anchor choreography is part of product quality.");
@@ -98,7 +100,7 @@ export default defineEpisode({
         cam.at("0.8s").focus("chat_list", { scale: 1.04, duration: "0.35s" });
         cam.span("2.2s", "5.2s").trackCinematic("lastMessage", { scale: 1.14, smoothing: 0.16 });
         cam.at("7.3s").focus("chat_thread", { scale: 1.08, duration: "0.35s" });
-        cam.at("12.0s").focus("notification_banner", { scale: 1.12, duration: "0.28s" });
+        cam.at("12.0s").focus("notification.banner", { scale: 1.12, duration: "0.28s" });
         cam.at("19.3s").focus("tweet_card", { scale: 1.1, duration: "0.35s" });
         cam.span("21.0s", "24.0s").trackCinematic("keyboard", { scale: 1.12, smoothing: 0.18 });
       })

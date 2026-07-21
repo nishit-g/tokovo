@@ -27,8 +27,6 @@ describe("device-owned anchors", () => {
         phone: {
           profileId: "iphone16",
           isLocked: false,
-          notifications: [],
-          keyboard: { visible: false },
         },
       },
       appState: {},
@@ -49,4 +47,3 @@ describe("device-owned anchors", () => {
     expect(snapshot.anchors.lastMessage).toBeTruthy();
   });
 });
-

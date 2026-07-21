@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { prepareInputProgram } from "@tokovo/device-keyboard";
 import { actor, cast, episode } from "./code-first-episode.js";
 
 function buildCanonicalAppTracks() {
@@ -29,6 +30,54 @@ describe("canonical code-first app tracks", () => {
 
   it("allocates declaration order per episode build", () => {
     expect(buildCanonicalAppTracks()).toEqual(buildCanonicalAppTracks());
+  });
+
+  it("turns one semantic WhatsApp send into app data and a canonical input session", () => {
+    const ir = episode("whatsapp-semantic-input", {
+      fps: 30,
+      duration: "5s",
+    })
+      .device("phone", "iphone16", { app: "app_whatsapp" })
+      .whatsapp("phone", "dm", (whatsapp) => {
+        whatsapp.at("3s").send("I’ll fix it now.", {
+          input: {
+            duration: "2s",
+            style: "natural",
+            correction: {
+              typed: "I’ll fox it now.",
+              replace: "fox",
+              with: "fix",
+            },
+          },
+        });
+      })
+      .build();
+
+    expect(ir.events).toHaveLength(1);
+    expect(ir.events[0]).toMatchObject({
+      kind: "APP",
+      type: "MESSAGE_SENT",
+      at: 90,
+      payload: { text: "I’ll fix it now." },
+    });
+    expect(ir.events[0]?.payload).not.toHaveProperty("input");
+    expect(ir.inputSessions).toHaveLength(1);
+    expect(ir.inputSessions?.[0]).toMatchObject({
+      deviceId: "phone",
+      appInstanceId: "phone:app_whatsapp",
+      fieldId: "composer",
+      startFrame: 30,
+      submitAtFrame: 90,
+      expectedFinalValue: "I’ll fix it now.",
+      keyboard: { returnKey: "send" },
+    });
+
+    const program = prepareInputProgram(
+      (ir.inputSessions ?? []).map((session) => ({ ...session, fps: ir.fps })),
+    );
+    expect(program.sessions[0]?.operations.map((operation) => operation.type)).toEqual(
+      expect.arrayContaining(["focus", "insert", "setSelection", "replaceRange", "submit", "blur"]),
+    );
   });
 
   it("authors scene-local time, reusable cast identities, handles, and camera intent", () => {
@@ -64,7 +113,7 @@ describe("canonical code-first app tracks", () => {
                 hold: "1.5s",
               },
             );
-            chat.reply("That explains everything.", reveal, { typed: true });
+            chat.reply("That explains everything.", reveal, {});
             scene.focus(reveal, { scale: 1.08 });
           },
         );

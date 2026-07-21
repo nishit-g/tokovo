@@ -45,6 +45,7 @@ const xAudioRules: NonNullable<TokovoPluginContract["audioRules"]> = [
 
 export const XPlugin: TokovoPluginContract<"app_x"> & {
   v2Lowering: typeof xLowering;
+  notificationAdapter: typeof xNotificationAdapter;
 } = {
   id: "app_x",
   version: "0.0.0",

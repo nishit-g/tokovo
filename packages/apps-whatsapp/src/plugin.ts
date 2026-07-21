@@ -59,7 +59,6 @@ const whatsappViews: PluginViews = {
 
 const whatsappAssets = {
   sounds: {
-    "app_whatsapp.message_in": "plugins/whatsapp/received.wav",
     "app_whatsapp.message_out": "plugins/whatsapp/sent.wav",
     "app_whatsapp.typing_loop": "plugins/whatsapp/typing_loop.wav",
   },
@@ -76,6 +75,7 @@ const whatsappAssets = {
 export const WhatsAppPluginV2: TokovoPluginContract<"app_whatsapp"> & {
   v2Lowering: typeof whatsappV2Lowering;
   behaviors: typeof WhatsAppBehavior;
+  notificationAdapter: typeof whatsappNotificationAdapter;
 } = {
   // === TIER A: Identity ===
   id: WHATSAPP_APP_ID as "app_whatsapp",

@@ -16,9 +16,7 @@
     "lint": "eslint src/"
   },
   "dependencies": {
-    "@tokovo/core": "workspace:*",
-    "@tokovo/react": "workspace:*",
-    "immer": "^10.0.0"
+    "@tokovo/core": "workspace:*"
   },
   "devDependencies": {
     "typescript": "^5.0.0",
@@ -26,8 +24,6 @@
     "vitest": "^1.0.0"
   },
   "peerDependencies": {
-    "react": "18.3.1",
-    "react-dom": "18.3.1",
-    "remotion": "4.0.409"
+    "react": "18.3.1"
   }
 }

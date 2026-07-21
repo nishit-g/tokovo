@@ -2,7 +2,7 @@
 
 **Status:** Proposed architecture and migration plan
 **Audience:** maintainers, product engineers, app-package owners, rendering engineers, and contributors
-**Last reviewed:** 2026-07-20
+**Last reviewed:** 2026-07-21
 **Governs:** authoring, IR, compilation, runtime, device systems, app plugins, layout, rendering, audio, and deterministic enforcement
 **Specialist companion:** [Camera VNext Architecture](./CAMERA_VNEXT_ARCHITECTURE.md)
 
@@ -58,6 +58,29 @@ Tokovo will evolve toward a capability-oriented deterministic engine with:
 11. explicit legacy tombstones followed by deletion after catalog migration.
 
 This document is the whole-engine policy. The camera document describes the camera capability in greater detail and must obey the ownership, dependency, compilation, projection, and enforcement rules defined here.
+
+## Implementation Checkpoint: Canonical OS Surfaces
+
+The keyboard, notifications, lockscreen, and homescreen slices now implement this
+policy end to end:
+
+- keyboard intent is one field-scoped input-session IR, prepared and evaluated by
+  `@tokovo/device-keyboard`, then painted once by `InputKeyboard`;
+- notification intent and interaction data compile into one immutable notification
+  program, with random-access lifecycle evaluation, typed cross-capability action
+  effects, one projection layer, and one `NotificationSurface`;
+- lockscreen and homescreen contracts, deterministic localization, platform themes,
+  projection, and painting live in `@tokovo/devices`;
+- renderer only composes those projections and registers their semantic camera anchors;
+- app packages retain app semantics, theme, notification content adapters, and action
+  targets; core has no keyboard or notification state mirror;
+- superseded keyboard, notification, renderer lock/home, and core app-config paths were
+  deleted after catalog migration.
+
+The proof fixture is `os-surface-mega-exhaustive`: four devices spanning iOS/Android,
+light/dark, Hindi/Arabic/Japanese/English input, RTL, lock/home, notification privacy,
+grouping, DND/foreground policy, notification center, and a real quick reply that mutates
+WhatsApp state.
 
 ## Product and Engineering Verdict
 
@@ -604,9 +627,9 @@ Projection caching keys are content-addressed from complete canonical inputs. A 
 
 ## Keyboard and Text Input
 
-### Current assessment
+### Implementation status
 
-Keyboard behavior is distributed across core state/planning, compiler plugins, app lowerers, the device-keyboard reducer/UI, and app-level progressive text rendering. Multiple builders exist. Some timing uses JavaScript string length rather than grapheme segmentation.
+Keyboard and text input now use one explicit, prepared capability. Core has no keyboard state or keyboard event reducer. App lowerers never synthesize keyboard events, and app message/post payloads have no `typed` timing flags. All visual input comes from field-scoped `InputSession` projections.
 
 ### Canonical capability
 
@@ -618,13 +641,13 @@ interface InputSession {
   deviceId: DeviceId;
   appInstanceId: AppInstanceId;
   fieldId: string;
-  text: string;
-  graphemes: readonly string[];
   startFrame: number;
   endFrame: number;
   submitAtFrame?: number;
-  keyboardVariant: KeyboardVariant;
-  autocorrectPlan?: AutocorrectPlan;
+  locale: ResolvedInputLocale;
+  direction: "ltr" | "rtl" | "auto";
+  keyboard: InputKeyboardConfig;
+  operations: readonly PreparedInputOperation[];
 }
 ```
 
@@ -632,7 +655,7 @@ interface InputSession {
 
 - App declares the semantic field, draft, and submit result.
 - Input compiler expands intent into a deterministic session.
-- Keyboard runtime owns visibility, focused field, draft projection, key highlighting, and lifecycle.
+- Input evaluation owns visibility, focused field, draft projection, key highlighting, and lifecycle.
 - App reads the canonical draft projection for its composer.
 - App reducer receives a semantic submit event at the prepared frame.
 - Core only routes registered events.
@@ -643,13 +666,17 @@ interface InputSession {
 - Support explicit typing cadence and prepared deterministic variation.
 - Define interruption and replacement semantics.
 - Define hardware, software, voice, paste, and suggestion input variants if exposed.
-- Remove duplicate keyboards after all consumers use the canonical projection.
+- Keep the renderer on the single `InputKeyboard` painter; do not reintroduce app- or device-owned keyboard painters.
 
 ## Notifications
 
-### Current assessment
+### Implemented assessment
 
-Notifications currently have competing authoring surfaces, namespaces, priority vocabularies, state mirrors, presentation implementations, and platform strategies. A notification tap can directly mutate navigation state. Rich properties may be accepted and dropped.
+Notifications now have one authoring contract in `@tokovo/ir`, one DSL surface, one
+prepared program, one random-access evaluator, one projection layer, and one painter.
+Unsupported apps, invalid targets, duplicate actions, impossible interactions, and
+out-of-lifecycle actions fail during preparation. Rich authored properties are preserved
+or explicitly rejected.
 
 ### Canonical model
 
@@ -660,21 +687,22 @@ Separate four concerns:
 3. **Notification lifecycle:** scheduled, delivered, presented, dismissed, acted upon, expired.
 4. **Platform presentation:** iOS/Android/device-profile visual projection.
 
-### Canonical state
+### Canonical program and frame state
 
-One normalized store is authoritative:
+One immutable prepared program is authoritative. Runtime state is derived from that
+program, device ID, and frame rather than accumulated by render order:
 
 ```ts
-interface NotificationState {
+interface NotificationRuntimeState {
   records: Record<NotificationId, NotificationRecord>;
   orderedIds: readonly NotificationId[];
-  presentedBannerId?: NotificationId;
-  lockScreenIds: readonly NotificationId[];
-  centerIds: readonly NotificationId[];
+  centerOpen: boolean;
+  centerOpenedAtFrame?: number;
 }
 ```
 
-Groups, queues, and visible surfaces are selectors or projections unless independent state is semantically required. Mirrored arrays must not be separately mutated.
+Groups, visible surfaces, banners, lockscreen cards, status-bar badges, and audio cues are
+projections. They are not separately mutated state.
 
 ### Actions
 
@@ -686,11 +714,13 @@ notification action
     -> owning capability reducer
 ```
 
-Notification code does not set `foregroundAppId` directly.
+Notification code does not set `foregroundAppId` directly. Preparation lowers action
+effects into ordinary registered navigation and app events.
 
 ### Platform strategies
 
-If iOS and Android strategies are exported, profile resolution must select them. Otherwise remove the unsupported public claim. Generic presentation is a deliberate strategy, not a hidden fallback.
+iOS and Android light/dark theme resolution is explicit and fail-loudly. One painter
+consumes the resolved platform theme; there is no generic fallback renderer.
 
 ## Navigation and Transitions
 
@@ -1377,19 +1407,28 @@ The following files are important starting points for implementation review. Pat
 
 ### Keyboard
 
-- [`packages/core/src/utils/typed-keyboard.ts`](../packages/core/src/utils/typed-keyboard.ts)
-- [`packages/compiler/src/plugins/keyboard.plugin.ts`](../packages/compiler/src/plugins/keyboard.plugin.ts)
-- [`packages/compiler/src/plugins/typing-indicator.plugin.ts`](../packages/compiler/src/plugins/typing-indicator.plugin.ts)
-- [`packages/device-keyboard/src/runtime/reducer.ts`](../packages/device-keyboard/src/runtime/reducer.ts)
-- [`packages/device-keyboard/src/dsl/keyboard-builder.ts`](../packages/device-keyboard/src/dsl/keyboard-builder.ts)
-- [`packages/apps-whatsapp/src/lowering/v2/handler.ts`](../packages/apps-whatsapp/src/lowering/v2/handler.ts)
+- [`packages/ir/src/v2/input-session.ts`](../packages/ir/src/v2/input-session.ts)
+- [`packages/dsl/src/v2/episode.ts`](../packages/dsl/src/v2/episode.ts)
+- [`packages/device-keyboard/src/compile/prepare.ts`](../packages/device-keyboard/src/compile/prepare.ts)
+- [`packages/device-keyboard/src/runtime/evaluate.ts`](../packages/device-keyboard/src/runtime/evaluate.ts)
+- [`packages/device-keyboard/src/projection/project.ts`](../packages/device-keyboard/src/projection/project.ts)
+- [`packages/device-keyboard/src/ui/InputKeyboard.tsx`](../packages/device-keyboard/src/ui/InputKeyboard.tsx)
+- [`packages/react/src/KeyboardAware.tsx`](../packages/react/src/KeyboardAware.tsx)
 
 ### Notifications
 
-- [`packages/device-notifications/src/runtime/reducer.ts`](../packages/device-notifications/src/runtime/reducer.ts)
-- [`packages/device-notifications/src/strategies/index.ts`](../packages/device-notifications/src/strategies/index.ts)
-- [`packages/device-notifications/src/dsl/builder.ts`](../packages/device-notifications/src/dsl/builder.ts)
-- [`packages/core/src/notifications/scheduler.ts`](../packages/core/src/notifications/scheduler.ts)
+- [`packages/ir/src/v2/notification.ts`](../packages/ir/src/v2/notification.ts)
+- [`packages/device-notifications/src/compile/prepare.ts`](../packages/device-notifications/src/compile/prepare.ts)
+- [`packages/device-notifications/src/runtime/evaluate.ts`](../packages/device-notifications/src/runtime/evaluate.ts)
+- [`packages/device-notifications/src/projection/project.ts`](../packages/device-notifications/src/projection/project.ts)
+- [`packages/device-notifications/src/ui/NotificationSurface.tsx`](../packages/device-notifications/src/ui/NotificationSurface.tsx)
+
+### Lock and home surfaces
+
+- [`packages/devices/src/surfaces/contract.ts`](../packages/devices/src/surfaces/contract.ts)
+- [`packages/devices/src/surfaces/project.ts`](../packages/devices/src/surfaces/project.ts)
+- [`packages/devices/src/surfaces/theme.ts`](../packages/devices/src/surfaces/theme.ts)
+- [`packages/devices/src/surfaces/ui/SystemSurface.tsx`](../packages/devices/src/surfaces/ui/SystemSurface.tsx)
 
 ### Devices, navigation, and calls
 
@@ -1397,7 +1436,6 @@ The following files are important starting points for implementation review. Pat
 - [`packages/devices/src/reducer.ts`](../packages/devices/src/reducer.ts)
 - [`packages/core/src/engine/handlers/navigation.ts`](../packages/core/src/engine/handlers/navigation.ts)
 - [`packages/core/src/engine/handlers/call.ts`](../packages/core/src/engine/handlers/call.ts)
-- [`packages/devices/src/keyboards/IOSKeyboard.tsx`](../packages/devices/src/keyboards/IOSKeyboard.tsx)
 
 ### Renderer, layout, camera, and stage
 
@@ -1447,9 +1485,8 @@ Implementation owners must resolve these questions explicitly:
 3. Whether text measurement is compiled, deterministically emulated, or provided through a pinned projection service.
 4. Whether prepared camera trajectories are analytic, baked, or hybrid.
 5. Which device profiles are product-supported versus showcase-only.
-6. Which notification interruption levels form the public cross-platform contract.
-7. How public compatibility is versioned when legacy event names are removed.
-8. Which flagship episodes are mandatory golden and full-render fixtures.
+6. How public compatibility is versioned when superseded event names are removed.
+7. Which additional flagship episodes are mandatory golden and full-render fixtures.
 
 These choices may affect implementation shape but may not violate the non-negotiable invariants.
 

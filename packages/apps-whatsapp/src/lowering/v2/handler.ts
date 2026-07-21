@@ -1,13 +1,9 @@
-import type { TrackEvent } from "@tokovo/ir";
-import {
-  getLoweringScratchpad,
-  planTypedKeyboard,
-  type RuntimeEvent,
-} from "@tokovo/core";
+import type { NotificationIntentEmitter, TrackEvent } from "@tokovo/ir";
+import type { RuntimeEvent } from "@tokovo/core";
 import type { WhatsAppTrackEvent, WhatsAppEventType } from "../../types/events.js";
 
 export interface V2LoweringHandler {
-  lower: (event: TrackEvent, ctx?: unknown) => RuntimeEvent[];
+  lower: (event: TrackEvent, ctx: NotificationIntentEmitter) => RuntimeEvent[];
 }
 
 function isWhatsAppTrackEvent(event: TrackEvent): event is WhatsAppTrackEvent {
@@ -95,44 +91,102 @@ function createRuntimeEvent(event: WhatsAppTrackEvent, overrideType?: string): R
   } as RuntimeEvent;
 }
 
-function createKeyboardClearEvent(deviceId: string, at: number): RuntimeEvent {
-  return {
-    at,
-    kind: "DEVICE",
-    type: "KEYBOARD_CLEAR",
-    deviceId,
-    payload: {},
-  } as RuntimeEvent;
+const INCOMING_NOTIFICATION_TYPES = new Set<WhatsAppEventType>([
+  "MESSAGE_RECEIVED",
+  "IMAGE_RECEIVED",
+  "VIDEO_RECEIVED",
+  "VOICE_RECEIVED",
+  "GIF_RECEIVED",
+  "STICKER_RECEIVED",
+  "DOCUMENT_RECEIVED",
+  "CONTACT_RECEIVED",
+  "LOCATION_RECEIVED",
+]);
+
+function incomingBody(type: WhatsAppEventType, payload: Record<string, unknown>): string {
+  switch (type) {
+    case "MESSAGE_RECEIVED":
+      return typeof payload.text === "string" ? payload.text : "New message";
+    case "IMAGE_RECEIVED":
+      return typeof payload.caption === "string" ? payload.caption : "📷 Photo";
+    case "VIDEO_RECEIVED":
+      return typeof payload.caption === "string" ? payload.caption : "🎥 Video";
+    case "VOICE_RECEIVED":
+      return "🎤 Voice message";
+    case "GIF_RECEIVED":
+      return "GIF";
+    case "STICKER_RECEIVED":
+      return "Sticker";
+    case "DOCUMENT_RECEIVED":
+      return typeof payload.fileName === "string" ? `📄 ${payload.fileName}` : "📄 Document";
+    case "CONTACT_RECEIVED":
+      return "👤 Contact";
+    case "LOCATION_RECEIVED":
+      return "📍 Location";
+    default:
+      return "New message";
+  }
 }
 
-const TIMING_HELPER_EVENT_TYPES = new Set<WhatsAppEventType>(["TYPING_START", "TYPING_END"]);
-type AuthoredTypingSpan = { startAt: number; endAt?: number };
-type WhatsAppTypingScratchpad = {
-  lastEventAtByConversation: Map<string, number>;
-  activeMeTypingStartByConversation: Map<string, number>;
-  recentMeTypingSpanByConversation: Map<string, AuthoredTypingSpan>;
-};
-
-function computeNotBeforeFrame(prevAt: number, submitAt: number): number {
-  if (prevAt <= 0) return 0;
-  return Math.max(0, Math.min(prevAt + 1, submitAt - 1));
-}
-
-function shouldTrackConversationTiming(eventType: WhatsAppEventType): boolean {
-  return !TIMING_HELPER_EVENT_TYPES.has(eventType);
-}
-
-function getConversationKey(event: WhatsAppTrackEvent): string {
-  const conversationId = (event.payload as { conversationId?: string })?.conversationId;
-  return `${event.deviceId}::${conversationId ?? "unknown"}`;
-}
-
-function getTypingActor(event: WhatsAppTrackEvent): string | undefined {
-  return (event.payload as { actor?: string })?.actor;
+function emitIncomingNotification(
+  event: WhatsAppTrackEvent,
+  ctx: NotificationIntentEmitter,
+): void {
+  if (!event.deviceId) {
+    throw new Error("WhatsApp incoming events require deviceId");
+  }
+  const payload = (event.payload ?? {}) as unknown as Record<string, unknown>;
+  const conversationId = payload.conversationId;
+  const from = payload.from;
+  if (typeof conversationId !== "string" || typeof from !== "string") {
+    throw new Error(`${event.type} requires conversationId and from`);
+  }
+  const id =
+    typeof payload.messageId === "string"
+      ? payload.messageId
+      : `whatsapp_notification_${event.at}_${event._declarationOrder ?? 0}`;
+  const media =
+    event.type === "IMAGE_RECEIVED" && typeof payload.url === "string"
+      ? { kind: "image" as const, src: payload.url, alt: incomingBody(event.type, payload) }
+      : event.type === "VIDEO_RECEIVED" && typeof payload.url === "string"
+        ? { kind: "video" as const, src: payload.url, alt: incomingBody(event.type, payload) }
+        : undefined;
+  ctx.emitNotification({
+    id,
+    deviceId: event.deviceId,
+    appId: "app_whatsapp",
+    deliverAtFrame: event.at,
+    sequence: event._declarationOrder,
+    content: {
+      title: from,
+      body: incomingBody(event.type, payload),
+      media,
+    },
+    category: "message",
+    threadId: conversationId,
+    groupId: `conversation:${conversationId}`,
+    interruption: "active",
+    privacy: "private",
+    reply: {
+      actionId: "reply",
+      placeholder: `Reply to ${from}`,
+      textPayloadKey: "text",
+      target: {
+        appEvent: {
+          type: "MESSAGE_SENT",
+          payload: {
+            conversationId,
+            messageId: `notification-reply:${id}`,
+          },
+        },
+      },
+    },
+    metadata: { kind: event.type.toLowerCase() },
+  });
 }
 
 export const whatsappV2Lowering: V2LoweringHandler = {
-  lower(event: TrackEvent, ctx?: unknown): RuntimeEvent[] {
+  lower(event: TrackEvent, ctx: NotificationIntentEmitter): RuntimeEvent[] {
     if (!isWhatsAppTrackEvent(event)) {
       throw new Error(
         `WhatsApp lowering received an event for "${(event as { appId?: string }).appId ?? "unknown"}"`,
@@ -146,81 +200,11 @@ export const whatsappV2Lowering: V2LoweringHandler = {
       throw new Error(`Unknown WhatsApp event type "${eventType}"`);
     }
 
-    const scratchpad = getLoweringScratchpad<WhatsAppTypingScratchpad>(
-      ctx,
-      "app_whatsapp.lowering",
-      () => ({
-        lastEventAtByConversation: new Map(),
-        activeMeTypingStartByConversation: new Map(),
-        recentMeTypingSpanByConversation: new Map(),
-      }),
-    );
-    const key = getConversationKey(event);
-
-    if (eventType === "TYPING_START" && getTypingActor(event) === "me") {
-      scratchpad.activeMeTypingStartByConversation.set(key, event.at);
-    }
-
-    if (eventType === "TYPING_END" && getTypingActor(event) === "me") {
-      const activeStart = scratchpad.activeMeTypingStartByConversation.get(key) ?? event.at;
-      scratchpad.activeMeTypingStartByConversation.delete(key);
-      scratchpad.recentMeTypingSpanByConversation.set(key, {
-        startAt: activeStart,
-        endAt: event.at,
-      });
-    }
-
-    if (eventType === "MESSAGE_SENT" && event.payload?.typed) {
-      const prevAt = scratchpad.lastEventAtByConversation.get(key) ?? 0;
-      const activeTypingStart = scratchpad.activeMeTypingStartByConversation.get(key);
-      const recentTypingSpan = scratchpad.recentMeTypingSpanByConversation.get(key);
-      const authoredTypingStart =
-        recentTypingSpan?.endAt === event.at ? recentTypingSpan.startAt : activeTypingStart;
-      const notBeforeFrame =
-        authoredTypingStart !== undefined && authoredTypingStart < event.at
-          ? authoredTypingStart
-          : computeNotBeforeFrame(prevAt, event.at);
-      const payload = event.payload as { text?: string; charDelay?: number };
-      const text = payload?.text ?? "";
-
-      const plan = planTypedKeyboard({
-        deviceId: event.deviceId,
-        submitAt: event.at,
-        text,
-        requestedCharDelay: payload?.charDelay ?? 3,
-        notBeforeFrame,
-        allowCompressedCharDelay: authoredTypingStart !== undefined,
-        keyboardType: "default",
-        returnKeyType: "send",
-      });
-
-      scratchpad.lastEventAtByConversation.set(key, Math.max(prevAt, event.at));
-      scratchpad.activeMeTypingStartByConversation.delete(key);
-      if (recentTypingSpan?.endAt === event.at) {
-        scratchpad.recentMeTypingSpanByConversation.delete(key);
-      }
-
-      if (!plan.ok) {
-        // Not enough time to animate full typing after context start.
-        // Better to skip keyboard than to show it early or truncate the draft.
-        return [createRuntimeEvent(event)];
-      }
-
-      const [showEv, typeEv, pressEv, hideEv] = plan.events;
-      return [
-        showEv,
-        typeEv,
-        pressEv,
-        createRuntimeEvent(event),
-        createKeyboardClearEvent(event.deviceId, event.at),
-        hideEv,
-      ];
-    }
-
-    // Update last-seen timestamp for conversation-scoped timing heuristics.
-    if (shouldTrackConversationTiming(eventType)) {
-      const prevAt = scratchpad.lastEventAtByConversation.get(key) ?? 0;
-      scratchpad.lastEventAtByConversation.set(key, Math.max(prevAt, event.at));
+    if (
+      INCOMING_NOTIFICATION_TYPES.has(eventType) &&
+      !(event.payload as { silent?: boolean }).silent
+    ) {
+      emitIncomingNotification(event, ctx);
     }
 
     return [createRuntimeEvent(event)];

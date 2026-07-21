@@ -1,16 +1,8 @@
 /**
- * Device Types - Device state, OS, keyboard, call
+ * Device Types - Device state, OS, and call surfaces
  *
- * @description All device-level types including OS state, call, keyboard.
+ * @description Device-level types for OS state and call surfaces.
  */
-
-import type {
-  NotificationInstance,
-  NotificationCenterState,
-  DynamicIslandState,
-  StatusBarIcon,
-  NotificationQueueState,
-} from "./notification.js";
 
 // =============================================================================
 // EXTENSIBLE REGISTRIES
@@ -63,6 +55,30 @@ export interface ScreenRecordingState {
   stopFeedbackUntilFrame?: number;
 }
 
+export type DynamicIslandMode = "idle" | "minimal" | "compact" | "expanded";
+export type DynamicIslandContent =
+  | "music"
+  | "call"
+  | "timer"
+  | "recording"
+  | "location"
+  | null;
+
+export interface DynamicIslandState {
+  visible: boolean;
+  mode: DynamicIslandMode;
+  activeContent: DynamicIslandContent;
+  lockedUntil?: number;
+  appId?: string;
+  content?: { title?: string; subtitle?: string; icon?: string };
+}
+
+export const DEFAULT_DYNAMIC_ISLAND: DynamicIslandState = {
+  visible: true,
+  mode: "idle",
+  activeContent: null,
+};
+
 // =============================================================================
 // CALL STATE
 // =============================================================================
@@ -106,60 +122,6 @@ export interface CallState {
 }
 
 // =============================================================================
-// KEYBOARD STATE
-// =============================================================================
-
-export type KeyboardLayout = "qwerty" | "numbers" | "symbols" | "emoji";
-export type KeyboardType = "default" | "numeric" | "email" | "url" | "search";
-export type ReturnKeyType = "return" | "send" | "search" | "done" | "go";
-
-export interface KeyPressState {
-  key: string;
-  startFrame: number;
-  duration: number;
-}
-
-/**
- * Represents an ongoing typing animation for optimized event handling.
- * Instead of emitting N KEYBOARD_KEY_PRESS events for N characters,
- * we emit a single KEYBOARD_TYPE event and selectors compute the active key.
- */
-export interface TypingAnimation {
-  text: string;
-  startFrame: number;
-  charDelay: number;
-}
-
-export interface KeyboardState {
-  visible: boolean;
-  showFrame: number | null;
-  hideFrame: number | null;
-  inputText: string;
-  cursorPosition: number;
-  activeKeyPresses: KeyPressState[];
-  keyboardType: KeyboardType;
-  returnKeyType: ReturnKeyType;
-  suggestions: string[];
-  activeSuggestionIndex: number | null;
-  /** Active typing animation for optimized event count */
-  typingAnimation?: TypingAnimation;
-}
-
-export const DEFAULT_KEYBOARD_STATE: KeyboardState = {
-  visible: false,
-  showFrame: null,
-  hideFrame: null,
-  inputText: "",
-  cursorPosition: 0,
-  activeKeyPresses: [],
-  keyboardType: "default",
-  returnKeyType: "return",
-  suggestions: [],
-  activeSuggestionIndex: null,
-  typingAnimation: undefined,
-};
-
-// =============================================================================
 // DEVICE OS STATE
 // =============================================================================
 
@@ -173,6 +135,13 @@ export type NetworkType =
   | "no-service";
 
 export interface DeviceOSState {
+  locale: string;
+  /** OS-owned surface appearance. App appearance remains independent. */
+  appearance: "light" | "dark";
+  /** Optional explicit clock convention; locale rules apply when omitted. */
+  hourCycle?: "h12" | "h24";
+  /** Optional authored lockscreen wallpaper asset or CSS background. */
+  lockScreenWallpaper?: string;
   clock: number;
   battery: number;
   charging: boolean;
@@ -182,12 +151,12 @@ export interface DeviceOSState {
   dnd: boolean;
   lowPowerMode: boolean;
   airplaneMode: boolean;
-  notifications: NotificationInstance[];
-  notificationHistory: NotificationInstance[];
 }
 
 export const DEFAULT_OS_STATE: DeviceOSState = {
-  clock: 0,
+  locale: "en-US",
+  appearance: "light",
+  clock: 1704102060000,
   battery: 85,
   charging: false,
   network: "wifi",
@@ -196,8 +165,6 @@ export const DEFAULT_OS_STATE: DeviceOSState = {
   dnd: false,
   lowPowerMode: false,
   airplaneMode: false,
-  notifications: [],
-  notificationHistory: [],
 };
 
 // =============================================================================
@@ -260,11 +227,7 @@ export interface DeviceState {
   /** Screen dimensions copied from device profile at creation */
   screenDimensions?: DeviceScreenDimensions;
 
-  // Notifications
-  notifications: NotificationInstance[];
-  notificationCenter?: NotificationCenterState;
   dynamicIsland?: DynamicIslandState;
-  statusBarIcons?: StatusBarIcon[];
   screenRecording?: ScreenRecordingState;
 
   // Background apps
@@ -274,14 +237,8 @@ export interface DeviceState {
   sound?: { activeSoundId?: string };
   theme?: DeviceTheme;
 
-  // Keyboard
-  keyboard?: KeyboardState;
-
   // OS Layer
   os?: DeviceOSState;
-
-  // Scheduler State (V2)
-  notificationQueues?: NotificationQueueState;
 
   // App UI theme/strategy (e.g., "whatsapp-storybook")
   appTheme?: string;

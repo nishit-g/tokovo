@@ -8,7 +8,7 @@
  * @see docs/architecture/dsl-v2.md
  */
 
-import type { TrackEpisodeIR } from "@tokovo/ir";
+import type { TrackEpisodeIR, TrackEvent } from "@tokovo/ir";
 import { safeValidateTrackEpisodeIR } from "@tokovo/ir";
 import type {
   RuntimeEvent,
@@ -31,13 +31,24 @@ import {
   computeEventSignature,
   TokovoConfig,
 } from "@tokovo/core";
-import { lowerEpisode } from "./lowering.js";
+import { lowerEpisodeWithCapabilities } from "./lowering.js";
 import { validateV1RuntimeEpisode } from "./validation.js";
 import {
   CompilerSchemaValidationError,
   RuntimeValidationError,
 } from "./errors.js";
 import { collectEpisodeAssetRefs } from "./asset-refs.js";
+import {
+  prepareInputProgram,
+  type PreparedInputProgram,
+} from "@tokovo/device-keyboard";
+import {
+  prepareNotificationProgram,
+  type NotificationAppAdapter,
+  type NotificationDeviceContextOperation,
+  type PreparedNotificationActionEffect,
+  type PreparedNotificationProgram,
+} from "@tokovo/device-notifications";
 
 const log = createScopedLogger("compiler");
 
@@ -55,6 +66,10 @@ export interface PreparedTrackEpisode {
   keyframeInterval?: number;
   eventSignature?: string;
   initialWorld: WorldState;
+  /** Immutable random-access program for every app-owned input field. */
+  inputProgram: PreparedInputProgram;
+  /** Immutable delivery, lifecycle, interaction and presentation program. */
+  notificationProgram: PreparedNotificationProgram;
   plugins: TokovoPlugin[];
   assetRefs: import("@tokovo/core").EpisodeAssetRef[];
   metadata: {
@@ -101,14 +116,21 @@ export function prepareTrackEpisode(
     }
   }
 
-  const runtimeEvents = lowerEpisode(ir, plugins) as RuntimeEvent[];
+  const lowered = lowerEpisodeWithCapabilities(ir, plugins);
+
+  // Build initial world state from device configs before capability preparation.
+  const initialWorld = buildInitialWorld(ir, plugins);
+  const inputProgram = buildInputProgram(ir);
+  const notificationProgram = buildNotificationProgram(ir, plugins, lowered);
+  const runtimeEvents = [
+    ...lowered.events,
+    ...lowerNotificationActionEffects(notificationProgram.actionEffects),
+  ] as RuntimeEvent[];
   const sortedEvents = runtimeEvents
     .map((event, index) => ({ event, index }))
     .sort((a, b) => compareEvents(a.event, b.event, a.index, b.index))
     .map((entry) => entry.event);
 
-  // Build initial world state from device configs
-  const initialWorld = buildInitialWorld(ir, plugins);
   initialWorld.audio = {
     ...initialWorld.audio,
     autoSoundRules: [
@@ -192,10 +214,185 @@ export function prepareTrackEpisode(
     keyframeInterval,
     eventSignature,
     initialWorld,
+    inputProgram,
+    notificationProgram,
     plugins,
     assetRefs,
     metadata,
   };
+}
+
+function eventSequence(event: TrackEvent, index: number): number {
+  return event._declarationOrder ?? index;
+}
+
+function buildNotificationDeviceOperations(
+  ir: TrackEpisodeIR,
+): NotificationDeviceContextOperation[] {
+  const fallbackDeviceId = ir.devices[0]?.id;
+  const operations: NotificationDeviceContextOperation[] = [];
+  ir.events.forEach((event, index) => {
+    if (event.kind !== "DEVICE" && event.kind !== "OS") return;
+    const deviceId = event.deviceId ?? fallbackDeviceId;
+    if (!deviceId) return;
+    const base = { at: event.at, sequence: eventSequence(event, index), deviceId };
+    if (event.kind === "DEVICE") {
+      switch (event.type) {
+        case "LOCK":
+          operations.push({ ...base, type: "lock" });
+          return;
+        case "UNLOCK":
+          operations.push({ ...base, type: "unlock" });
+          return;
+        case "OPEN_APP":
+          operations.push({
+            ...base,
+            type: "openApp",
+            appId: event.payload.appId,
+          });
+          return;
+        case "CLOSE_APP":
+        case "GO_HOME":
+          operations.push({ ...base, type: "goHome" });
+          return;
+        default:
+          return;
+      }
+    }
+    if (event.type === "SET_DND") {
+      operations.push({ ...base, type: "setDnd", enabled: event.payload.enabled });
+    } else if (event.type === "SET_STATE" && event.payload.dnd !== undefined) {
+      operations.push({ ...base, type: "setDnd", enabled: event.payload.dnd });
+    }
+  });
+  return operations;
+}
+
+function buildNotificationProgram(
+  ir: TrackEpisodeIR,
+  plugins: TokovoPlugin[],
+  lowered: ReturnType<typeof lowerEpisodeWithCapabilities>,
+): PreparedNotificationProgram {
+  const adapters = new Map<string, NotificationAppAdapter>();
+  for (const plugin of plugins) {
+    const adapter = (plugin as TokovoPlugin & {
+      notificationAdapter?: NotificationAppAdapter;
+    }).notificationAdapter;
+    if (!adapter) continue;
+    if (adapter.appId !== plugin.id) {
+      throw new RuntimeValidationError(
+        `[prepareTrackEpisode] notification adapter ${JSON.stringify(adapter.appId)} ` +
+          `is attached to plugin ${JSON.stringify(plugin.id)}`,
+      );
+    }
+    adapters.set(adapter.appId, adapter);
+  }
+
+  try {
+    return prepareNotificationProgram({
+      fps: ir.fps,
+      durationInFrames: ir.durationInFrames,
+      intents: [
+        ...(ir.notificationIntents ?? []),
+        ...lowered.notificationIntents,
+      ],
+      interactions: [
+        ...(ir.notificationInteractions ?? []),
+        ...lowered.notificationInteractions,
+      ],
+      devices: ir.devices.map((device) => ({
+        id: device.id,
+        platform: device.profile.includes("pixel") ? "android" : "ios",
+        appearance: device.os?.appearance ?? device.appearance ?? "light",
+        locale: device.os?.locale ?? "en-US",
+        initialLocked: device.locked ?? false,
+        initialDnd: device.os?.dnd ?? false,
+        initialForegroundAppId: device.app,
+      })),
+      deviceOperations: buildNotificationDeviceOperations(ir),
+      adapters,
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    throw new RuntimeValidationError(
+      `[prepareTrackEpisode] notification preparation failed: ${message}`,
+    );
+  }
+}
+
+function lowerNotificationActionEffects(
+  effects: readonly PreparedNotificationActionEffect[],
+): RuntimeEvent[] {
+  return effects.flatMap((effect) => {
+    const events: RuntimeEvent[] = [];
+    if (effect.target.navigation) {
+      events.push({
+        at: effect.at,
+        kind: "DEVICE",
+        type: "OPEN_APP",
+        deviceId: effect.deviceId,
+        _declarationOrder: effect.sequence,
+        payload: {
+          appId: effect.target.navigation.appId,
+          route: effect.target.navigation.route,
+          params: effect.target.navigation.params,
+        },
+      } as RuntimeEvent);
+    }
+    if (effect.target.appEvent) {
+      const replyPayload =
+        effect.replyText !== undefined
+          ? { [effect.replyTextField ?? "replyText"]: effect.replyText }
+          : {};
+      events.push({
+        at: effect.at,
+        kind: "APP",
+        appId: effect.target.appEvent.appId,
+        deviceId: effect.deviceId,
+        type: effect.target.appEvent.type,
+        payload: {
+          ...(effect.target.appEvent.payload ?? {}),
+          ...replyPayload,
+        },
+      } as RuntimeEvent);
+    }
+    return events;
+  });
+}
+
+function buildInputProgram(ir: TrackEpisodeIR): PreparedInputProgram {
+  const intents = (ir.inputSessions ?? []).map((session) => {
+    const device = ir.devices.find((candidate) => candidate.id === session.deviceId);
+    if (!device) {
+      throw new RuntimeValidationError(
+        `[prepareTrackEpisode] input session ${JSON.stringify(session.id ?? session.fieldId)} ` +
+          `targets unknown device ${JSON.stringify(session.deviceId)}`,
+      );
+    }
+
+    const platform = device.profile.includes("pixel") ? "android" : "ios";
+    return {
+      ...session,
+      fps: ir.fps,
+      seed: session.seed ?? ir.seed,
+      keyboard: {
+        ...session.keyboard,
+        platform: session.keyboard?.platform ?? platform,
+        appearance:
+          session.keyboard?.appearance ?? device.os?.appearance ?? device.appearance ?? "light",
+        locale: session.keyboard?.locale ?? session.locale ?? "en-US",
+      },
+    };
+  });
+
+  try {
+    return prepareInputProgram(intents);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    throw new RuntimeValidationError(
+      `[prepareTrackEpisode] input preparation failed: ${message}`,
+    );
+  }
 }
 
 // =============================================================================
@@ -234,9 +431,13 @@ function buildInitialWorld(
       platform,
       appTheme: device.theme,
       appAppearance: device.appearance,
-      notifications: [],
       os: {
         ...DEFAULT_OS_STATE,
+        locale: device.os?.locale ?? DEFAULT_OS_STATE.locale,
+        appearance:
+          device.os?.appearance ?? device.appearance ?? DEFAULT_OS_STATE.appearance,
+        hourCycle: device.os?.hourCycle,
+        lockScreenWallpaper: device.os?.lockScreenWallpaper,
         clock,
         battery: device.os?.battery ?? DEFAULT_OS_STATE.battery,
         charging: device.os?.charging ?? DEFAULT_OS_STATE.charging,
@@ -250,20 +451,6 @@ function buildInitialWorld(
             ? strength
             : DEFAULT_OS_STATE.cellStrength,
         dnd: device.os?.dnd ?? DEFAULT_OS_STATE.dnd,
-        notifications: [],
-        notificationHistory: [],
-      },
-      keyboard: {
-        visible: false,
-        showFrame: null,
-        hideFrame: null,
-        inputText: "",
-        cursorPosition: 0,
-        activeKeyPresses: [],
-        keyboardType: "default",
-        returnKeyType: "return",
-        suggestions: [],
-        activeSuggestionIndex: null,
       },
       homeScreen: hasHomeScreen
         ? buildHomeScreenConfig({
@@ -676,17 +863,23 @@ function buildHomeScreenConfig(input: {
   const iconFor = (appId: string): { label: string; icon: string } => {
     switch (appId) {
       case "app_whatsapp":
-        return { label: "WhatsApp", icon: "💬" };
+        return { label: "WhatsApp", icon: "builtin" };
       case "app_x":
-        return { label: "X", icon: "𝕏" };
+        return { label: "X", icon: "builtin" };
       case "app_instagram":
-        return { label: "Instagram", icon: "◎" };
+        return { label: "Instagram", icon: "builtin" };
       case "app_imessage":
-        return { label: "Messages", icon: "💬" };
+        return { label: "Messages", icon: "builtin" };
+      case "app_linkedin":
+        return { label: "LinkedIn", icon: "builtin" };
+      case "app_snapchat":
+        return { label: "Snapchat", icon: "builtin" };
+      case "app_teams":
+        return { label: "Teams", icon: "builtin" };
       case "app_camera":
-        return { label: "Camera", icon: "📷" };
+        return { label: "Camera", icon: "builtin" };
       default:
-        return { label: appId.replace(/^app_/, ""), icon: "⬛️" };
+        return { label: appId.replace(/^app_/, ""), icon: "builtin" };
     }
   };
 

@@ -1,4 +1,3 @@
-import { KeyboardPlugin } from "@tokovo/compiler";
 import { defineEpisode } from "../types/episode-definition.js";
 import { actor, cast, episode } from "../code-first-episode.js";
 
@@ -90,8 +89,6 @@ export default defineEpisode({
             chat
               .at("6s")
               .send("Why does this sound like a hostage exchange?", {
-                typed: true,
-                charDelay: 2,
               });
           },
         );
@@ -115,8 +112,6 @@ export default defineEpisode({
             chat
               .at("4s")
               .reply("Delete this message from the universe.", reveal, {
-                typed: true,
-                charDelay: 2,
               });
             chat
               .at("6.4s")
@@ -150,8 +145,6 @@ export default defineEpisode({
             chat
               .at("3.8s")
               .send("Not me. I am a man of silence and mystery.", {
-                typed: true,
-                charDelay: 2,
               });
             chat
               .at("6.8s")
@@ -160,6 +153,5 @@ export default defineEpisode({
         );
       })
       .director("Cinematic")
-      .use(new KeyboardPlugin())
       .build(),
 });

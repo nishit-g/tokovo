@@ -20,7 +20,9 @@ export const HomeFeed: React.FC<{ world: WorldState }> = ({ world }) => {
   const currentUser = getCurrentUser(world);
   const focusedFeedPostId = getFocusedFeedPostId(world);
   const nowMs = posts.reduce((max, post) => Math.max(max, post.createdAt), 0);
-  const commentCounts = new Map(posts.map((post) => [post.id, getCommentsForPost(world, post.id).length]));
+  const commentCounts = new Map(
+    posts.map((post) => [post.id, getCommentsForPost(world, post.id).length]),
+  );
   const scrollY = computeInstagramFeedScrollY(posts, commentCounts, focusedFeedPostId);
 
   return (
@@ -49,7 +51,6 @@ export const HomeFeed: React.FC<{ world: WorldState }> = ({ world }) => {
         <div
           style={{
             transform: scrollY > 0 ? `translateY(-${scrollY}px)` : undefined,
-            transition: "transform 420ms cubic-bezier(0.22, 1, 0.36, 1)",
             willChange: "transform",
           }}
         >
@@ -82,7 +83,10 @@ export const HomeFeed: React.FC<{ world: WorldState }> = ({ world }) => {
             const isFocused = post.id === focusedFeedPostId;
             const comments = getCommentsForPost(world, post.id);
             const commentPreview = comments
-              .slice(isFocused ? Math.max(0, comments.length - 4) : 0, isFocused ? comments.length : 2)
+              .slice(
+                isFocused ? Math.max(0, comments.length - 4) : 0,
+                isFocused ? comments.length : 2,
+              )
               .map((comment) => {
                 const user = getUserById(world, comment.authorId);
                 return `${user?.username ?? "unknown"} ${comment.text}`;

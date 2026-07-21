@@ -18,6 +18,7 @@ const instagramViews: PluginViews = {
 
 export const InstagramPlugin: TokovoPluginContract<"app_instagram"> & {
   v2Lowering: typeof instagramLowering;
+  notificationAdapter: typeof instagramNotificationAdapter;
 } = {
   id: INSTAGRAM_APP_ID,
   version: INSTAGRAM_VERSION,

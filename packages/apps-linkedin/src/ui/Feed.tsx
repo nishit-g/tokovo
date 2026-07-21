@@ -16,7 +16,10 @@ import {
   getUserById,
 } from "../runtime/selectors.js";
 
-const HomeHeader: React.FC<{ avatarSrc?: string; unreadMessages: number }> = ({ avatarSrc, unreadMessages }) => {
+const HomeHeader: React.FC<{ avatarSrc?: string; unreadMessages: number }> = ({
+  avatarSrc,
+  unreadMessages,
+}) => {
   const theme = useLinkedInTheme();
 
   return (
@@ -234,7 +237,6 @@ export const Feed: React.FC<{ world: WorldState }> = ({ world }) => {
         <div
           style={{
             transform: scrollY > 0 ? `translateY(-${scrollY}px)` : undefined,
-            transition: "transform 420ms cubic-bezier(0.22, 1, 0.36, 1)",
             willChange: "transform",
             display: "flex",
             flexDirection: "column",
@@ -249,53 +251,64 @@ export const Feed: React.FC<{ world: WorldState }> = ({ world }) => {
             <FeedSortRow />
           </div>
 
-          {posts.length > 0 ? posts.map((post, index) => {
-            const author = getUserById(world, post.authorId);
-            const isFocused = post.id === focusedPostId;
-            const latestComments = getLatestCommentsForPost(world, post.id, isFocused ? 4 : 2).map((comment) => ({
-              authorName: getUserById(world, comment.authorId)?.name ?? "Member",
-              text: comment.text,
-            }));
+          {posts.length > 0 ? (
+            posts.map((post, index) => {
+              const author = getUserById(world, post.authorId);
+              const isFocused = post.id === focusedPostId;
+              const latestComments = getLatestCommentsForPost(
+                world,
+                post.id,
+                isFocused ? 4 : 2,
+              ).map((comment) => ({
+                authorName: getUserById(world, comment.authorId)?.name ?? "Member",
+                text: comment.text,
+              }));
 
-            return (
-              <div key={post.id} style={{ display: "flex", flexDirection: "column" }}>
-                {index > 0 ? (
-                  <div
-                    style={{
-                      height: 8,
-                      background: theme.colors.background,
-                      borderTop: `1px solid ${theme.colors.border}`,
-                      borderBottom: `1px solid ${theme.colors.border}`,
-                    }}
+              return (
+                <div key={post.id} style={{ display: "flex", flexDirection: "column" }}>
+                  {index > 0 ? (
+                    <div
+                      style={{
+                        height: 8,
+                        background: theme.colors.background,
+                        borderTop: `1px solid ${theme.colors.border}`,
+                        borderBottom: `1px solid ${theme.colors.border}`,
+                      }}
+                    />
+                  ) : null}
+                  <PostCard
+                    authorName={author?.name ?? "LinkedIn Member"}
+                    authorHeadline={author?.headline}
+                    authorAvatar={author?.avatarUrl}
+                    timeAgo={formatRelativeFrameTime(post.createdAt, referenceFrame)}
+                    content={post.text}
+                    image={post.media?.urls?.[0]}
+                    linkPreview={
+                      post.linkPreview
+                        ? {
+                            url: post.linkPreview.url,
+                            title: post.linkPreview.title,
+                            domain: post.linkPreview.domain,
+                            image: post.linkPreview.imageUrl,
+                          }
+                        : undefined
+                    }
+                    reactions={post.reactions}
+                    commentCount={post.commentIds.length}
+                    repostCount={getRepostCountForPost(world, post.id)}
+                    isLiked={Boolean(currentUser && post.reactedBy[currentUser.id])}
+                    showFollowButton={Boolean(
+                      currentUser &&
+                      author &&
+                      author.id !== currentUser.id &&
+                      !currentUser.connectionIds.includes(author.id),
+                    )}
+                    commentPreview={latestComments}
                   />
-                ) : null}
-                <PostCard
-                  authorName={author?.name ?? "LinkedIn Member"}
-                  authorHeadline={author?.headline}
-                  authorAvatar={author?.avatarUrl}
-                  timeAgo={formatRelativeFrameTime(post.createdAt, referenceFrame)}
-                  content={post.text}
-                  image={post.media?.urls?.[0]}
-                  linkPreview={
-                    post.linkPreview
-                      ? {
-                        url: post.linkPreview.url,
-                        title: post.linkPreview.title,
-                        domain: post.linkPreview.domain,
-                        image: post.linkPreview.imageUrl,
-                      }
-                      : undefined
-                  }
-                  reactions={post.reactions}
-                  commentCount={post.commentIds.length}
-                  repostCount={getRepostCountForPost(world, post.id)}
-                  isLiked={Boolean(currentUser && post.reactedBy[currentUser.id])}
-                  showFollowButton={Boolean(currentUser && author && author.id !== currentUser.id && !currentUser.connectionIds.includes(author.id))}
-                  commentPreview={latestComments}
-                />
-              </div>
-            );
-          }) : (
+                </div>
+              );
+            })
+          ) : (
             <div
               style={{
                 padding: `${theme.spacing.xxxl}px ${theme.spacing.xl}px`,

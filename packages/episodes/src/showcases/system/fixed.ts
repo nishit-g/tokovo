@@ -7,8 +7,10 @@ import multiDeviceExhaustive from "./multi-device-exhaustive.episode.js";
 import socialLaunchMultiDevice from "./social-launch-multi-device.episode.js";
 import screenRecordingExhaustive from "./screen-recording-exhaustive.episode.js";
 import callScreenExhaustive from "./call-screen-exhaustive.episode.js";
+import osSurfaceMegaExhaustive from "./os-surface-mega-exhaustive.episode.js";
 
 export const fixedSystemShowcaseEpisodes = [
+  osSurfaceMegaExhaustive,
   deviceRealismExhaustive,
   screenRecordingExhaustive,
   callScreenExhaustive,

@@ -37,8 +37,6 @@ export interface MessageSendPayload {
   replyTo?: MessageReference;
   mentions?: string[];
   effect?: IMessageBubbleEffect;
-  typed?: boolean;
-  charDelay?: number;
 }
 
 export interface MessageReceivePayload {

@@ -275,14 +275,15 @@ export default defineEpisode({
           transition: { durationFrames: 18, style: "iosZoom" },
         });
       })
-      .deviceTrack("audience_phone", (device) => {
-        device.at("10.8s").notificationShow({
+      .notificationTrack("audience_phone", (notifications) => {
+        notifications.at("10.8s").deliver({
           id: "x_velocity_alert",
           appId: "app_x",
-          title: "Launch Watch",
-          body: "84K views and climbing.",
-          mode: "headsup",
-          priority: "high",
+          content: { title: "Launch Watch", body: "84K views and climbing." },
+          category: "social",
+          interruption: "timeSensitive",
+          privacy: "public",
+          threadId: "launch-watch",
         });
       })
       .whatsapp("creator_phone", "launch_room", (whatsapp) => {
@@ -293,8 +294,6 @@ export default defineEpisode({
           .at("4.3s")
           .receive("Noa", "Do not open X unless you are ready.");
         whatsapp.at("9s").send("Nobody repost it. I am pulling the link now.", {
-          typed: true,
-          charDelay: 2,
         });
         whatsapp.at("10.8s").receive("Dev", "Too late. X is already at 84K.");
       })
@@ -317,8 +316,6 @@ export default defineEpisode({
           authorId: "x_viewer",
           text: "The clean cut is coming. The internet already chose act one.",
           createdAt: baseTs + 34_000,
-          typed: true,
-          charDelay: 2,
           viewCount: 4_900,
           shareCount: 180,
           bookmarkCount: 620,
@@ -356,8 +353,6 @@ export default defineEpisode({
           senderId: "ig_creator",
           text: "The clean cut. Everywhere. Right now.",
           createdAt: baseTs + 58_000,
-          typed: true,
-          charDelay: 2,
         });
       })
       .camera((camera) => {

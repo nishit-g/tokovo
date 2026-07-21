@@ -1,6 +1,6 @@
 import React from "react";
 import type { WorldState } from "@tokovo/core";
-import { getTypedTextProgress } from "@tokovo/device-keyboard";
+import { useInputField } from "@tokovo/react";
 import { useXTheme } from "./ThemeContext.js";
 import { getXState } from "../runtime/selectors.js";
 import { AppShell } from "./AppShell.js";
@@ -13,19 +13,13 @@ interface ComposeProps {
   t?: number;
 }
 
-export const Compose: React.FC<ComposeProps> = ({ world, deviceId, t }) => {
+export const Compose: React.FC<ComposeProps> = ({ world }) => {
   const theme = useXTheme();
   const state = getXState(world);
   const draft = state?.composeDraft ?? "";
   const currentUser = state?.users.find((u) => u.id === state?.currentUserId);
-  const focusedDevice =
-    (deviceId && world.devices?.[deviceId]) ||
-    world.devices?.[Object.keys(world.devices ?? {})[0]];
-  const keyboard = focusedDevice?.keyboard;
-  const typedDraft =
-    keyboard?.visible && keyboard.typingAnimation
-      ? getTypedTextProgress(keyboard, t ?? 0)
-      : draft;
+  const input = useInputField("post");
+  const typedDraft = input?.value ?? draft;
   const count = typedDraft.length;
   const canPost = count > 0 && count <= 280;
   const ctaBg = canPost ? theme.colors.textPrimary : theme.colors.surfaceRaised;
@@ -91,6 +85,7 @@ export const Compose: React.FC<ComposeProps> = ({ world, deviceId, t }) => {
             <Avatar size={42} src={currentUser?.avatarUrl} />
             <div style={{ flex: 1, minWidth: 0 }}>
               <div
+                lang={input?.locale.tag}
                 style={{
                   display: "inline-flex",
                   alignItems: "center",
@@ -115,6 +110,8 @@ export const Compose: React.FC<ComposeProps> = ({ world, deviceId, t }) => {
                   letterSpacing: -0.5,
                   color: typedDraft ? theme.colors.textPrimary : theme.colors.textSecondary,
                   whiteSpace: "pre-wrap",
+                  direction: input?.direction,
+                  unicodeBidi: "plaintext",
                   wordBreak: "break-word",
                 }}
               >

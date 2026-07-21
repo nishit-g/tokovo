@@ -149,21 +149,8 @@ describe("teams reducer", () => {
     expect(app.screen).toBe("dm_thread");
   });
 
-  it("handles notifications and call lifecycle", () => {
+  it("handles call lifecycle", () => {
     let world = run(createWorld(), {
-      at: 5,
-      kind: "APP",
-      appId: "app_teams",
-      type: "TEAMS_NOTIFICATION_PUSH",
-      payload: {
-        id: "n1",
-        title: "War room",
-        text: "New executive update",
-        kind: "message",
-      },
-      deviceId: "phone",
-    });
-    world = run(world, {
       at: 6,
       kind: "APP",
       appId: "app_teams",
@@ -187,7 +174,6 @@ describe("teams reducer", () => {
     });
 
     const app = getTeamsState(world);
-    expect(app.notifications.n1.title).toBe("War room");
     expect(app.calls.c1.status).toBe("ended");
     expect(app.screen).toBe("chat_list");
   });

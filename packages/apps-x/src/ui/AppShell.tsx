@@ -1,6 +1,5 @@
 import React from "react";
 import { useSafeAreaInsets } from "@tokovo/react";
-import { injectXStyles } from "../styles.js";
 import { useXTheme } from "./ThemeContext.js";
 
 interface AppShellProps {
@@ -11,10 +10,6 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
   const theme = useXTheme();
   const safeArea = useSafeAreaInsets();
   const isStorybook = theme.mode === "storybook";
-
-  React.useEffect(() => {
-    injectXStyles();
-  }, []);
 
   return (
     <div
@@ -41,10 +36,9 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
         style={{
           position: "absolute",
           inset: 0,
-          background:
-            isStorybook
-              ? "radial-gradient(circle at top, rgba(255,255,255,0.16), transparent 42%)"
-              : "linear-gradient(180deg, rgba(255,255,255,0.02), transparent 20%)",
+          background: isStorybook
+            ? "radial-gradient(circle at top, rgba(255,255,255,0.16), transparent 42%)"
+            : "linear-gradient(180deg, rgba(255,255,255,0.02), transparent 20%)",
           pointerEvents: "none",
         }}
       />

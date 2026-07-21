@@ -1,9 +1,15 @@
 import React from "react";
+import { DeterministicImage } from "@tokovo/react";
 import type { WorldState } from "@tokovo/core";
 import { AppShell } from "./AppShell.js";
 import { Avatar, BottomNav, Icon } from "./components.js";
 import { useInstagramTheme } from "./ThemeContext.js";
-import { getActiveProfile, getCurrentUser, getInstagramState, getProfilePosts } from "../runtime/selectors.js";
+import {
+  getActiveProfile,
+  getCurrentUser,
+  getInstagramState,
+  getProfilePosts,
+} from "../runtime/selectors.js";
 
 function formatCount(value: number): string {
   if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(1)}M`;
@@ -51,7 +57,14 @@ export const ProfileScreen: React.FC<{ world: WorldState }> = ({ world }) => {
 
       <div style={{ flex: 1, minHeight: 0, overflow: "auto" }}>
         <div style={{ padding: "18px 16px 12px" }}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 18 }}>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: 18,
+            }}
+          >
             <Avatar size={84} src={profile.avatarUrl} />
             {[
               ["Posts", posts.length],
@@ -60,7 +73,9 @@ export const ProfileScreen: React.FC<{ world: WorldState }> = ({ world }) => {
             ].map(([label, value]) => (
               <div key={label} style={{ textAlign: "center", flex: 1 }}>
                 <div style={{ fontSize: 18, fontWeight: 700 }}>{formatCount(Number(value))}</div>
-                <div style={{ marginTop: 4, fontSize: 13, color: theme.colors.textSecondary }}>{label}</div>
+                <div style={{ marginTop: 4, fontSize: 13, color: theme.colors.textSecondary }}>
+                  {label}
+                </div>
               </div>
             ))}
           </div>
@@ -68,9 +83,7 @@ export const ProfileScreen: React.FC<{ world: WorldState }> = ({ world }) => {
           <div style={{ marginTop: 14 }}>
             <div style={{ fontSize: 14, fontWeight: 700 }}>{profile.displayName}</div>
             {profile.bio ? (
-              <div style={{ marginTop: 6, fontSize: 14, lineHeight: 1.45 }}>
-                {profile.bio}
-              </div>
+              <div style={{ marginTop: 6, fontSize: 14, lineHeight: 1.45 }}>{profile.bio}</div>
             ) : null}
           </div>
 
@@ -110,7 +123,13 @@ export const ProfileScreen: React.FC<{ world: WorldState }> = ({ world }) => {
           </div>
         </div>
 
-        <div style={{ display: "flex", borderTop: `1px solid ${theme.colors.border}`, borderBottom: `1px solid ${theme.colors.border}` }}>
+        <div
+          style={{
+            display: "flex",
+            borderTop: `1px solid ${theme.colors.border}`,
+            borderBottom: `1px solid ${theme.colors.border}`,
+          }}
+        >
           {(["posts", "tagged"] as const).map((tab) => (
             <div
               key={tab}
@@ -126,7 +145,8 @@ export const ProfileScreen: React.FC<{ world: WorldState }> = ({ world }) => {
                     : "2px solid transparent",
                 fontSize: 13,
                 fontWeight: 700,
-                color: state?.profileTab === tab ? theme.colors.textPrimary : theme.colors.textSecondary,
+                color:
+                  state?.profileTab === tab ? theme.colors.textPrimary : theme.colors.textSecondary,
                 textTransform: "capitalize",
               }}
             >
@@ -152,7 +172,11 @@ export const ProfileScreen: React.FC<{ world: WorldState }> = ({ world }) => {
                 overflow: "hidden",
               }}
             >
-              <img src={post.imageUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+              <DeterministicImage
+                src={post.imageUrl}
+                alt=""
+                style={{ width: "100%", height: "100%", objectFit: "cover" }}
+              />
             </div>
           ))}
         </div>

@@ -13,10 +13,6 @@ import {
   handleOpenDm,
   handleOpenThread,
 } from "./navigation.js";
-import {
-  handleNotificationDismiss,
-  handleNotificationPush,
-} from "./notifications.js";
 import { handlePresenceSet } from "./presence.js";
 
 type TeamsEventHandler<T extends TeamsEventType = TeamsEventType> = (
@@ -43,10 +39,6 @@ export function createTeamsHandlers(): Readonly<TeamsHandlerMap> {
     TEAMS_TYPING_END: (state, event) => handleTypingEnd(state, event.payload),
     TEAMS_DRAFT_SET: (state, event) => handleDraftSet(state, event.payload, event.at),
     TEAMS_PRESENCE_SET: (state, event) => handlePresenceSet(state, event.payload),
-    TEAMS_NOTIFICATION_PUSH: (state, event) =>
-      handleNotificationPush(state, event.payload, event.at),
-    TEAMS_NOTIFICATION_DISMISS: (state, event) =>
-      handleNotificationDismiss(state, event.payload, event.at),
     TEAMS_CALL_START: (state, event) => handleCallStart(state, event.payload, event.at),
     TEAMS_CALL_UPDATE: (state, event) => handleCallUpdate(state, event.payload),
     TEAMS_CALL_END: (state, event) => handleCallEnd(state, event.payload, event.at),

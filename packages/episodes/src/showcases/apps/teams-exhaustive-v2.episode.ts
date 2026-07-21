@@ -1,4 +1,4 @@
-import { KeyboardPlugin, OSDirectorPlugin } from "@tokovo/compiler";
+import { OSDirectorPlugin } from "@tokovo/compiler";
 import { dmTarget, threadTarget } from "@tokovo/apps-teams";
 import { defineEpisode } from "../../types/episode-definition.js";
 import { episode } from "../../code-first-episode.js";
@@ -76,14 +76,6 @@ export default defineEpisode({
           senderId: "u_sre",
           text: "I can flush edge nodes once legal signs off the correction line.",
         });
-        teams.at("5.8s").pushNotification(
-          "teams_ex_v2_nt_1",
-          "Launch",
-          "@you mentioned in #launch",
-          180,
-          { channelId: "launch-v2", threadId: "th_launch_v2" },
-          "mention",
-        );
         teams.at("6.6s").setDraft(
           threadTarget("launch-v2", "th_launch_v2"),
           "Hold public rollout. I need legal wording and customer count before resume.",
@@ -91,7 +83,6 @@ export default defineEpisode({
         teams.at("7.8s").sendMessage({
           target: threadTarget("launch-v2", "th_launch_v2"),
           text: "Hold public rollout. I need legal wording and customer count before resume.",
-          typed: true,
         });
         teams.openDm("dm_legal_ex_v2", "12.0s");
         teams.at("12.6s").receiveMessage({
@@ -102,7 +93,6 @@ export default defineEpisode({
         teams.at("14.0s").sendMessage({
           target: dmTarget("dm_legal_ex_v2"),
           text: "Use 'display issue contained before broad exposure'. Avoid 'pricing bug' in customer text.",
-          typed: true,
         });
         teams.openThread("launch-v2", "th_customer_v2", "18.4s");
         teams.at("19.0s").receiveMessage({
@@ -113,7 +103,6 @@ export default defineEpisode({
         teams.at("20.8s").sendMessage({
           target: threadTarget("launch-v2", "th_customer_v2"),
           text: "Good. Draft outreach now but do not send until legal marks copy green.",
-          typed: true,
         });
         teams.openDm("dm_exec_ex_v2", "25.2s");
         teams.at("25.8s").receiveMessage({
@@ -128,7 +117,6 @@ export default defineEpisode({
         teams.at("28.6s").sendMessage({
           target: dmTarget("dm_exec_ex_v2"),
           text: "We caught a pricing display issue before broad exposure and are validating the corrected customer wording now.",
-          typed: true,
         });
         teams.at("32.4s").startCall({
           callId: "teams_ex_call_v2",
@@ -150,20 +138,18 @@ export default defineEpisode({
         teams.at("42.2s").sendMessage({
           target: threadTarget("launch-v2", "th_launch_v2"),
           text: "Resume controlled rollout. Sales owns outreach. Posting exec update now.",
-          typed: true,
         });
       })
       .camera((cam) => {
         cam.at("0s").focus("chat_list", { scale: 1.02, duration: "0.35s" });
         cam.at("1.9s").focus("thread_view", { scale: 1.08, duration: "0.35s" });
-        cam.at("5.9s").focus("notification_banner", { scale: 1.08, duration: "0.35s" });
+        cam.at("5.9s").focus("notification.banner", { scale: 1.08, duration: "0.35s" });
         cam.at("12.1s").focus("dm_thread", { scale: 1.08, duration: "0.35s" });
         cam.at("18.5s").focus("thread_view", { scale: 1.08, duration: "0.35s" });
         cam.at("25.3s").focus("dm_thread", { scale: 1.08, duration: "0.35s" });
         cam.at("32.5s").focus("call_surface", { scale: 1.08, duration: "0.35s" });
         cam.at("40.1s").focus("thread_view", { scale: 1.08, duration: "0.35s" });
       })
-      .use(new KeyboardPlugin({ onlyForSentMessages: true, defaultCharDelay: 3 }))
       .use(new OSDirectorPlugin())
       .build(),
 });

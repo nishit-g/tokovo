@@ -8,18 +8,14 @@
  * - Audio rules
  * - Platform-specific layouts
  * - Semantic Anchors (Framing)
- * - Notification adapters
  */
 
 import type { ReactElement } from "react";
 import type {
   WorldState,
   BackgroundAppState,
-  Notification,
   AppReducer,
   Platform,
-  NotificationAdapter,
-  PluginNotificationAdapter,
   PluginAnchorRegistry,
   AnchorProvider,
   TokovoPluginContract,
@@ -33,7 +29,6 @@ import type { PluginRegistries } from "./registries.js";
 
 const log = createScopedLogger("plugin");
 
-export type { NotificationAdapter };
 
 // =============================================================================
 // RE-EXPORT CANONICAL PLUGIN TYPES
@@ -69,7 +64,7 @@ export type ScreenComponent = AppViewComponent;
 // WIDGET TYPES
 // =============================================================================
 
-export type WidgetMode = "dynamicIsland" | "statusBar" | "lockscreen" | "notification";
+export type WidgetMode = "dynamicIsland" | "statusBar";
 
 export interface WidgetProps {
   appState: unknown;
@@ -277,23 +272,6 @@ export class PluginManagerClass {
         cleanups.push(() => this.registries.autoSounds.unregisterByAppId(plugin.id));
       }
 
-      if (plugin.notificationAdapter) {
-        const pluginAdapter = plugin.notificationAdapter as PluginNotificationAdapter;
-        this.registries.notifications.register({
-          appId: plugin.id,
-          format: (notification: Notification) => {
-            const formatted = pluginAdapter.format(notification);
-            return {
-              title: formatted.title,
-              body: formatted.body,
-              icon: formatted.icon,
-              accentColor: formatted.color,
-            };
-          },
-        });
-        cleanups.push(() => this.registries.notifications.unregister(plugin.id));
-      }
-
       this.cleanupFunctions.set(plugin.id, cleanups);
 
       log.debug(`Registered plugin: ${plugin.displayName} (${plugin.id})`, {
@@ -301,7 +279,6 @@ export class PluginManagerClass {
         hasViews: !!plugin.views?.AppRoot,
         hasLayouts: !!(plugin.layouts && plugin.layouts.length > 0),
         hasSounds: !!plugin.assets?.sounds,
-        hasNotificationAdapter: !!plugin.notificationAdapter,
       });
 
       return () => this.unregister(plugin.id);

@@ -112,18 +112,28 @@ describe("WhatsApp long-thread performance contract", () => {
     expect(layout.messageLayouts.size).toBe(MESSAGE_COUNT);
     expect(coldLayoutMs).toBeLessThan(COLD_LAYOUT_BUDGET_MS);
 
+    let projectionCacheStable = true;
     const hotProjectionStartedAt = performance.now();
     for (let index = 0; index < HOT_PROJECTION_ITERATIONS; index += 1) {
-      expect(projectWhatsAppThread(projectionInput)).toBe(projection);
+      if (projectWhatsAppThread(projectionInput) !== projection) {
+        projectionCacheStable = false;
+        break;
+      }
     }
     const hotProjectionMs = performance.now() - hotProjectionStartedAt;
+    expect(projectionCacheStable).toBe(true);
     expect(hotProjectionMs).toBeLessThan(HOT_PROJECTION_BUDGET_MS);
 
+    let layoutCacheStable = true;
     const hotLayoutStartedAt = performance.now();
     for (let index = 0; index < HOT_LAYOUT_ITERATIONS; index += 1) {
-      expect(computeConversationLayout(conversation, layoutOptions)).toBe(layout);
+      if (computeConversationLayout(conversation, layoutOptions) !== layout) {
+        layoutCacheStable = false;
+        break;
+      }
     }
     const hotLayoutMs = performance.now() - hotLayoutStartedAt;
+    expect(layoutCacheStable).toBe(true);
     expect(hotLayoutMs).toBeLessThan(HOT_LAYOUT_BUDGET_MS);
   });
 });

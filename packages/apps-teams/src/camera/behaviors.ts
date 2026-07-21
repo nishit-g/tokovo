@@ -8,7 +8,6 @@ export const TEAMS_INTENT_MAPPINGS: Record<string, CameraIntent> = {
   TEAMS_MESSAGE_SEND: { type: "FOCUS", anchor: "lastMessage", preset: "message" },
   TEAMS_MESSAGE_RECEIVE: { type: "FOCUS", anchor: "lastMessage", preset: "dramatic" },
   TEAMS_TYPING_START: { type: "FOCUS", anchor: "inputArea", preset: "subtle" },
-  TEAMS_NOTIFICATION_PUSH: { type: "FOCUS", anchor: "notification", preset: "snap" },
   TEAMS_CALL_START: { type: "FOCUS", anchor: "content", preset: "dramatic" },
   TEAMS_CALL_END: { type: "RESET", preset: "reset" },
 };

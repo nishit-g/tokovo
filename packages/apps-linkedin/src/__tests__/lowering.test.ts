@@ -2,7 +2,8 @@ import { describe, expect, it } from "vitest";
 import { linkedInLowering } from "../lowering/index.js";
 
 describe("LinkedIn lowering", () => {
-  it("emits a device notification when linkedin notifications are added", () => {
+  it("emits a semantic notification when linkedin notifications are added", () => {
+    const intents: unknown[] = [];
     const events = linkedInLowering.lower({
       at: 12,
       kind: "APP",
@@ -16,22 +17,21 @@ describe("LinkedIn lowering", () => {
       },
       deviceId: "device-1",
       _declarationOrder: 0,
-    } as any);
-
-    expect(events).toHaveLength(2);
-    expect(events[1]).toMatchObject({
-      kind: "DEVICE",
-      type: "SHOW_NOTIFICATION",
-      payload: {
-        id: "n1",
-        appId: "app_linkedin",
-        priority: "HIGH",
-        threadKey: "t1",
-      },
+    } as any, {
+      emitNotification: (intent) => intents.push(intent),
+      emitNotificationInteraction: () => undefined,
     });
+
+    expect(events).toHaveLength(1);
+    expect(intents).toEqual([expect.objectContaining({
+      id: "n1",
+      appId: "app_linkedin",
+      interruption: "timeSensitive",
+      threadId: "t1",
+    })]);
   });
 
-  it("clears and hides the keyboard when navigating back to passive surfaces", () => {
+  it("keeps navigation app-owned", () => {
     const events = linkedInLowering.lower({
       at: 30,
       kind: "APP",
@@ -42,13 +42,12 @@ describe("LinkedIn lowering", () => {
       },
       deviceId: "device-1",
       _declarationOrder: 0,
-    } as any);
+    } as any, {
+      emitNotification: () => undefined,
+      emitNotificationInteraction: () => undefined,
+    });
 
-    expect(events).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ kind: "DEVICE", type: "KEYBOARD_CLEAR" }),
-        expect.objectContaining({ kind: "DEVICE", type: "KEYBOARD_HIDE" }),
-      ]),
-    );
+    expect(events).toHaveLength(1);
+    expect(events[0]).toMatchObject({ kind: "APP", type: "LINKEDIN_SET_SCREEN" });
   });
 });

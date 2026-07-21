@@ -1,6 +1,6 @@
 import React from "react";
 import type { WorldState } from "@tokovo/core";
-import { getTypedTextProgress } from "@tokovo/device-keyboard";
+import { DeterministicImage, useInputField } from "@tokovo/react";
 import { AppShell } from "./AppShell.js";
 import { Icon } from "./components.js";
 import { useInstagramTheme } from "./ThemeContext.js";
@@ -10,15 +10,11 @@ export const ComposerScreen: React.FC<{
   world: WorldState;
   deviceId?: string;
   t?: number;
-}> = ({ world, deviceId, t }) => {
+}> = ({ world }) => {
   const theme = useInstagramTheme();
   const state = getInstagramState(world);
-  const device = deviceId ? world.devices?.[deviceId] : world.devices?.[Object.keys(world.devices ?? {})[0]];
-  const keyboard = device?.keyboard;
-  const typedCaption =
-    keyboard?.visible && keyboard.typingAnimation
-      ? getTypedTextProgress(keyboard, t ?? 0)
-      : state?.composerDraft.caption ?? "";
+  const input = useInputField("post");
+  const typedCaption = input?.value ?? state?.composerDraft.caption ?? "";
 
   return (
     <AppShell>
@@ -53,7 +49,11 @@ export const ComposerScreen: React.FC<{
           }}
         >
           {state?.composerDraft.imageUrl ? (
-            <img src={state.composerDraft.imageUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+            <DeterministicImage
+              src={state.composerDraft.imageUrl}
+              alt=""
+              style={{ width: "100%", height: "100%", objectFit: "cover" }}
+            />
           ) : null}
         </div>
 
@@ -66,7 +66,16 @@ export const ComposerScreen: React.FC<{
             padding: "14px",
           }}
         >
-          <div style={{ fontSize: 12, fontWeight: 700, color: theme.colors.textSecondary, textTransform: "uppercase", letterSpacing: 0.4 }}>
+          <div
+            lang={input?.locale.tag}
+            style={{
+              fontSize: 12,
+              fontWeight: 700,
+              color: theme.colors.textSecondary,
+              textTransform: "uppercase",
+              letterSpacing: 0.4,
+            }}
+          >
             Caption
           </div>
           <div
@@ -77,6 +86,8 @@ export const ComposerScreen: React.FC<{
               lineHeight: 1.5,
               color: typedCaption ? theme.colors.textPrimary : theme.colors.textSecondary,
               whiteSpace: "pre-wrap",
+              direction: input?.direction,
+              unicodeBidi: "plaintext",
             }}
           >
             {typedCaption || "Write a caption..."}

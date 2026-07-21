@@ -41,6 +41,14 @@ import {
   HandTypingMode,
   HandRigAssetsIR,
   HandPerformanceStageIR,
+  InputSessionIR,
+  InputScriptStepIR,
+  InputCadenceIR,
+  InputKeyboardIR,
+  InputSourceIR,
+  InputDirectionIR,
+  NotificationIntentIR,
+  NotificationInteractionIR,
 } from "@tokovo/ir";
 import {
   CameraDirectorPlugin,
@@ -104,6 +112,45 @@ export interface HandPerformanceOptions {
   stage?: HandPerformanceStageIR;
 }
 
+export interface InputSessionOptions {
+  /** Start time in frames or DSL time syntax. */
+  at: string | number;
+  /** Optional explicit end time. Omit to use the compiler's natural duration. */
+  until?: string | number;
+  /** Optional return-key submission time. */
+  submitAt?: string | number;
+  clearOnSubmit?: boolean;
+  id?: string;
+  appId?: string;
+  appInstanceId?: string;
+  initialValue?: string;
+  text?: string;
+  script?: InputScriptStepIR[];
+  expectedFinalValue?: string;
+  seed?: string | number;
+  source?: InputSourceIR;
+  locale?: string;
+  direction?: InputDirectionIR;
+  keyboard?: InputKeyboardIR;
+  cadence?: InputCadenceIR;
+}
+
+export type NotificationIntentOptions = Omit<
+  NotificationIntentIR,
+  "id" | "deviceId" | "appInstanceId" | "deliverAtFrame" | "sequence"
+> & {
+  at: string | number;
+  id?: string;
+  appInstanceId?: string;
+};
+
+export type NotificationInteractionOptions = Omit<
+  NotificationInteractionIR,
+  "deviceId" | "atFrame" | "sequence" | "notificationId"
+> & {
+  at: string | number;
+};
+
 // Track factory function type for app-specific builders.
 export type TrackFactory<T> = () => T;
 export type TrackFn<T> = (track: T) => void;
@@ -152,6 +199,98 @@ class VoiceTrackBuilderInternal<T extends string> {
   }
 }
 
+type NotificationDeliveryOptions = Omit<NotificationIntentOptions, "at">;
+
+export class NotificationPointBuilder {
+  constructor(
+    private readonly frame: number,
+    private readonly deviceId: string,
+    private readonly intents: NotificationIntentIR[],
+    private readonly interactions: NotificationInteractionIR[],
+    private readonly getOrder: () => number,
+  ) {}
+
+  deliver(options: NotificationDeliveryOptions): string {
+    const id =
+      options.id ??
+      `notification_${this.deviceId}_${this.frame}_${this.intents.length}`;
+    this.intents.push({
+      ...options,
+      id,
+      deviceId: this.deviceId,
+      appInstanceId:
+        options.appInstanceId ?? `${this.deviceId}:${options.appId}`,
+      deliverAtFrame: this.frame,
+      sequence: this.getOrder(),
+    });
+    return id;
+  }
+
+  tap(notificationId: string): void {
+    this.interact("tap", notificationId);
+  }
+
+  chooseAction(notificationId: string, actionId: string): void {
+    this.interact("chooseAction", notificationId, { actionId });
+  }
+
+  reply(notificationId: string, replyText: string): void {
+    this.interact("reply", notificationId, { replyText });
+  }
+
+  dismiss(notificationId: string): void {
+    this.interact("dismiss", notificationId);
+  }
+
+  clearAll(): void {
+    this.interact("clearAll");
+  }
+
+  openCenter(): void {
+    this.interact("openCenter");
+  }
+
+  closeCenter(): void {
+    this.interact("closeCenter");
+  }
+
+  private interact(
+    type: NotificationInteractionIR["type"],
+    notificationId?: string,
+    options: { actionId?: string; replyText?: string } = {},
+  ): void {
+    this.interactions.push({
+      deviceId: this.deviceId,
+      atFrame: this.frame,
+      type,
+      notificationId,
+      actionId: options.actionId,
+      replyText: options.replyText,
+      sequence: this.getOrder(),
+    });
+  }
+}
+
+export class NotificationTrackBuilder {
+  constructor(
+    private readonly fps: number,
+    private readonly deviceId: string,
+    private readonly intents: NotificationIntentIR[],
+    private readonly interactions: NotificationInteractionIR[],
+    private readonly getOrder: () => number,
+  ) {}
+
+  at(time: string | number): NotificationPointBuilder {
+    return new NotificationPointBuilder(
+      parseTimeToFrames(time, this.fps),
+      this.deviceId,
+      this.intents,
+      this.interactions,
+      this.getOrder,
+    );
+  }
+}
+
 // =============================================================================
 // EPISODE BUILDER
 // =============================================================================
@@ -170,6 +309,9 @@ export class EpisodeBuilder {
   private _appSnapshots: AppSnapshotEntry[] = [];
   private _initialViews: AppInitialViewEntry[] = [];
   private _events: TrackEvent[] = [];
+  private _inputSessions: InputSessionIR[] = [];
+  private _notificationIntents: NotificationIntentIR[] = [];
+  private _notificationInteractions: NotificationInteractionIR[] = [];
   private _markers: Marker[] = [];
   private _sections: Section[] = [];
   private _director?: DirectorStyle;
@@ -392,13 +534,151 @@ export class EpisodeBuilder {
     return this;
   }
 
+  /** Author OS-owned notification delivery and interaction data. */
+  notificationTrack(
+    deviceId: string,
+    fn: TrackFn<NotificationTrackBuilder>,
+  ): this {
+    if (!this._devices.some((device) => device.id === deviceId)) {
+      throw new Error(
+        `Cannot author notification track for unknown device "${deviceId}"`,
+      );
+    }
+    fn(
+      new NotificationTrackBuilder(
+        this._fps,
+        deviceId,
+        this._notificationIntents,
+        this._notificationInteractions,
+        () => this._declarationOrder++,
+      ),
+    );
+    return this;
+  }
+
+  /**
+   * Author a deterministic, field-scoped text input session.
+   *
+   * This is intentionally an input capability rather than a keyboard event:
+   * the same contract supports software/hardware keyboards, paste, voice and
+   * IME composition while keeping draft ownership with the app field.
+   */
+  input(
+    deviceId: string,
+    fieldId: string,
+    options: InputSessionOptions,
+  ): this {
+    const device = this._devices.find((candidate) => candidate.id === deviceId);
+    if (!device) {
+      throw new Error(`Cannot author input for unknown device "${deviceId}"`);
+    }
+    if (!fieldId.trim()) {
+      throw new Error("Input fieldId must not be empty");
+    }
+
+    const appId = options.appId ?? device.app;
+    const startFrame = parseTimeToFrames(options.at, this._fps);
+    const endFrame =
+      options.until === undefined
+        ? undefined
+        : parseTimeToFrames(options.until, this._fps);
+    const submitAtFrame =
+      options.submitAt === undefined
+        ? undefined
+        : parseTimeToFrames(options.submitAt, this._fps);
+
+    this._inputSessions.push({
+      id: options.id,
+      deviceId,
+      appInstanceId: options.appInstanceId ?? `${deviceId}:${appId}`,
+      fieldId,
+      startFrame,
+      endFrame,
+      submitAtFrame,
+      clearOnSubmit: options.clearOnSubmit,
+      initialValue: options.initialValue,
+      text: options.text,
+      script: options.script,
+      expectedFinalValue: options.expectedFinalValue,
+      seed: options.seed,
+      source: options.source,
+      locale: options.locale,
+      direction: options.direction,
+      keyboard: options.keyboard,
+      cadence: options.cadence,
+    });
+    return this;
+  }
+
+  /** Author one semantic notification delivery request. */
+  notify(deviceId: string, options: NotificationIntentOptions): string {
+    const device = this._devices.find((candidate) => candidate.id === deviceId);
+    if (!device) {
+      throw new Error(`Cannot author notification for unknown device "${deviceId}"`);
+    }
+    const { at, ...intent } = options;
+    const deliverAtFrame = parseTimeToFrames(at, this._fps);
+    const id =
+      options.id ??
+      `notification_${deviceId}_${deliverAtFrame}_${this._notificationIntents.length}`;
+    this._notificationIntents.push({
+      ...intent,
+      id,
+      deviceId,
+      appInstanceId: options.appInstanceId ?? `${deviceId}:${options.appId}`,
+      deliverAtFrame,
+      sequence: this._declarationOrder++,
+    });
+    return id;
+  }
+
+  /** Author a tap, action, reply, dismissal, or notification-center operation. */
+  interactWithNotification(
+    deviceId: string,
+    notificationId: string | undefined,
+    options: NotificationInteractionOptions,
+  ): this {
+    if (!this._devices.some((device) => device.id === deviceId)) {
+      throw new Error(
+        `Cannot author notification interaction for unknown device "${deviceId}"`,
+      );
+    }
+    const { at, ...interaction } = options;
+    this._notificationInteractions.push({
+      ...interaction,
+      deviceId,
+      notificationId,
+      atFrame: parseTimeToFrames(at, this._fps),
+      sequence: this._declarationOrder++,
+    });
+    return this;
+  }
+
+  setNotificationCenter(
+    deviceId: string,
+    open: boolean,
+    at: string | number,
+  ): this {
+    return this.interactWithNotification(deviceId, undefined, {
+      at,
+      type: open ? "openCenter" : "closeCenter",
+    });
+  }
+
+  clearNotifications(deviceId: string, at: string | number): this {
+    return this.interactWithNotification(deviceId, undefined, {
+      at,
+      type: "clearAll",
+    });
+  }
+
   /**
    * Add a generic track by ID.
    * Used for plugin tracks (e.g., "app_whatsapp").
    *
    * @param trackId - Track identifier (e.g., "app_whatsapp")
    * @param factory - Factory function that creates the track builder. The episode's
-   *                  declaration-order allocator is always supplied; legacy zero-argument
+   *                  declaration-order allocator is always supplied; zero-argument
    *                  factories safely ignore it.
    * @param fn - Function that configures the track
    */
@@ -409,8 +689,8 @@ export class EpisodeBuilder {
   ): this {
     const getOrder = () => this._declarationOrder++;
     // Do not inspect Function.length here: default/rest parameters and transformed
-    // functions make runtime arity unreliable. Extra arguments are safe for legacy
-    // JavaScript factories and keep every modern app track on the central counter.
+    // functions make runtime arity unreliable. Extra arguments are safe for
+    // JavaScript factories and keep every app track on the central counter.
     const builder = (factory as (getOrder: () => number) => T)(getOrder);
     fn(builder);
     this._events.push(...(builder._events as TrackEvent[]));
@@ -480,7 +760,7 @@ export class EpisodeBuilder {
       !plugins.some((plugin) => plugin.name === "camera-director")
     ) {
       // Auto-direction consumes authored events plus events generated by earlier
-      // plugins (for example keyboard typing), so it runs last by default.
+      // compile-time plugins, so it runs last by default.
       plugins.push(new CameraDirectorPlugin(this._director));
     }
 
@@ -518,6 +798,16 @@ export class EpisodeBuilder {
       appSnapshots: this._appSnapshots,
       initialViews: this._initialViews,
       events: sortedEvents,
+      inputSessions:
+        this._inputSessions.length > 0 ? [...this._inputSessions] : undefined,
+      notificationIntents:
+        this._notificationIntents.length > 0
+          ? [...this._notificationIntents]
+          : undefined,
+      notificationInteractions:
+        this._notificationInteractions.length > 0
+          ? [...this._notificationInteractions]
+          : undefined,
       markers: this._markers,
       sections: this._sections,
       director: this._director,

@@ -72,8 +72,6 @@ export default defineEpisode({
           authorId: "u3",
           text: "Hard agree. Escalation design is what separates a demo from a product.",
           createdAt: baseTs + 8000,
-          typed: true,
-          charDelay: 2,
         });
         li.at("12.6s").navigate("profile", { userId: "me" });
         li.at("16.8s").navigate("notifications");
@@ -85,8 +83,6 @@ export default defineEpisode({
           senderId: "me",
           text: "The brief is strong. Replace the vague culture sentence with actual expectations.",
           createdAt: baseTs + 22000,
-          typed: true,
-          charDelay: 2,
         });
         li.at("28.0s").navigate("thread", { threadId: "li_ex_dm_2" });
         li.at("29.6s").sendDM({
@@ -95,8 +91,6 @@ export default defineEpisode({
           senderId: "me",
           text: "Your comment line is right. I am stealing 'a demo from a product'.",
           createdAt: baseTs + 29000,
-          typed: true,
-          charDelay: 2,
         });
         li.at("33.4s").navigate("compose");
         li.at("34.0s").setComposeDraft("Good product systems remove panic without removing character.");
@@ -105,8 +99,6 @@ export default defineEpisode({
           authorId: "me",
           text: "Good product systems remove panic without removing character.",
           createdAt: baseTs + 42000,
-          typed: true,
-          charDelay: 2,
         });
         li.at("39.0s").navigate("feed", { postId: "li_ex_post_4" });
       })

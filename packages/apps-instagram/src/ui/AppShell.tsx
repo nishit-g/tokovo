@@ -1,6 +1,5 @@
 import React from "react";
 import { useSafeAreaInsets } from "@tokovo/react";
-import { injectInstagramStyles } from "../styles.js";
 import { useInstagramTheme } from "./ThemeContext.js";
 
 function useOptionalSafeAreaInsets() {
@@ -17,10 +16,6 @@ export const AppShell: React.FC<{
 }> = ({ children, immersive = false }) => {
   const theme = useInstagramTheme();
   const safeArea = useOptionalSafeAreaInsets();
-
-  React.useEffect(() => {
-    injectInstagramStyles();
-  }, []);
 
   return (
     <div

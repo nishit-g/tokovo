@@ -127,14 +127,6 @@ export interface TweetBasePayload {
   viewCount?: number;
   bookmarkCount?: number;
   shareCount?: number;
-  /**
-   * If true, lowerer may emit device keyboard events to make the post feel authored.
-   * Requires a prior NAVIGATE -> compose event on the same device for deterministic timing.
-   * UI should read keyboard typed progress while keyboard is visible for best effect.
-   */
-  typed?: boolean;
-  /** Frames per character for keyboard typing animation */
-  charDelay?: number;
 }
 
 export type TweetCreatePayload = TweetBasePayload;
@@ -240,8 +232,6 @@ export interface DMSendPayload {
   senderId: string;
   text: string;
   createdAt?: number;
-  typed?: boolean;
-  charDelay?: number;
 }
 
 export type XEventPayloadMap = {

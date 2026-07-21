@@ -5,7 +5,11 @@
  */
 import React from "react";
 import type { WorldState } from "@tokovo/core";
-import { KeyboardAwareView, ScrollableContent, useKeyboardState } from "@tokovo/react";
+import {
+  KeyboardAwareView,
+  ScrollableContent,
+  useInputField,
+} from "@tokovo/react";
 import { useLinkedInTheme } from "./ThemeContext.js";
 import { LIAvatar, LIIcon } from "./components.js";
 import { getCurrentUser } from "../runtime/selectors.js";
@@ -17,11 +21,9 @@ export const Compose: React.FC<{ world: WorldState; deviceId?: string; t?: numbe
 }) => {
   const theme = useLinkedInTheme();
   const currentUser = getCurrentUser(world);
-  const keyboardState = useKeyboardState();
+  const postInput = useInputField("post");
   const state = world.appState?.["app_linkedin"] as { composeDraft?: string } | undefined;
-  const draftText = keyboardState.isKeyboardVisible && keyboardState.inputText
-    ? keyboardState.inputText
-    : state?.composeDraft ?? "";
+  const draftText = postInput?.value ?? state?.composeDraft ?? "";
 
   return (
     <KeyboardAwareView style={{ flex: 1, minHeight: 0 }}>
@@ -102,8 +104,13 @@ export const Compose: React.FC<{ world: WorldState; deviceId?: string; t?: numbe
         </div>
 
         <div
+          dir={postInput?.direction}
+          lang={postInput?.locale.tag}
           style={{
-            minHeight: keyboardState.isKeyboardVisible ? 260 : 320,
+            minHeight:
+              (postInput?.isKeyboardVisible ?? false)
+                ? 260
+                : 320,
             fontSize: theme.typography.title.fontSize,
             lineHeight: 1.5,
             color: draftText ? theme.colors.textPrimary : theme.colors.textTertiary,
@@ -111,7 +118,7 @@ export const Compose: React.FC<{ world: WorldState; deviceId?: string; t?: numbe
           }}
         >
           {draftText || "What do you want to talk about?"}
-          {keyboardState.isKeyboardVisible ? (
+          {postInput?.isKeyboardVisible ? (
             <span
               style={{
                 display: "inline-block",

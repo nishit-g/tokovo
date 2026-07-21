@@ -9,7 +9,8 @@
     "references": [
         { "path": "../core" },
         { "path": "../ir" },
-        { "path": "../device-camera" }
+        { "path": "../device-camera" },
+        { "path": "../device-keyboard" }
     ],
     "include": [
         "src/**/*"

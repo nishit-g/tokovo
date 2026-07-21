@@ -64,22 +64,6 @@ export interface TeamsCall {
   endedAtFrame?: number;
 }
 
-export interface TeamsNotification {
-  id: string;
-  title: string;
-  text: string;
-  kind: "mention" | "message" | "system";
-  appId: "app_teams";
-  createdAtFrame: number;
-  expiresAtFrame: number;
-  target?: {
-    dmId?: string;
-    channelId?: string;
-    threadId?: string;
-  };
-  dismissedAtFrame?: number;
-}
-
 export interface TeamsDraft {
   key: string;
   text: string;
@@ -98,7 +82,6 @@ export type TeamsEntityMaps = {
   channels: Record<string, TeamsChannel>;
   threads: Record<string, TeamsThread>;
   messages: Record<string, TeamsMessage>;
-  notifications: Record<string, TeamsNotification>;
   calls: Record<string, TeamsCall>;
   drafts: Record<string, TeamsDraft>;
   typing: Record<string, TeamsTypingState>;

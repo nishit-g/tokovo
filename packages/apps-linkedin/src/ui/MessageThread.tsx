@@ -1,6 +1,10 @@
 import React from "react";
 import type { WorldState } from "@tokovo/core";
-import { KeyboardAwareView, ScrollableContent, useKeyboardState } from "@tokovo/react";
+import {
+  KeyboardAwareView,
+  ScrollableContent,
+  useInputField,
+} from "@tokovo/react";
 import { LIAvatar, LIIcon } from "./components.js";
 import { useLinkedInTheme } from "./ThemeContext.js";
 import {
@@ -25,11 +29,8 @@ export const MessageThread: React.FC<{ world: WorldState; deviceId?: string; t?:
   const otherUser = getUserById(world, otherUserId);
   const currentUser = getUserById(world, currentUserId);
   const referenceFrame = getReferenceFrame(world);
-  const keyboardState = useKeyboardState();
-  const liveDraft =
-    keyboardState.isKeyboardVisible && keyboardState.inputText
-      ? keyboardState.inputText
-      : thread?.draftText ?? "";
+  const composerInput = useInputField("composer");
+  const liveDraft = composerInput?.value ?? thread?.draftText ?? "";
   const isInMail = Boolean(
     currentUser &&
     otherUserId &&
@@ -227,6 +228,8 @@ export const MessageThread: React.FC<{ world: WorldState; deviceId?: string; t?:
             <LIIcon name="compose" size={16} color={theme.colors.textSecondary} />
           </div>
           <div
+            dir={composerInput?.direction}
+            lang={composerInput?.locale.tag}
             style={{
               flex: 1,
               minHeight: theme.spacing.inputHeight,
@@ -240,7 +243,7 @@ export const MessageThread: React.FC<{ world: WorldState; deviceId?: string; t?:
           }}
         >
             {liveDraft || "Write a message..."}
-            {keyboardState.isKeyboardVisible ? (
+            {composerInput?.isKeyboardVisible ? (
               <span
                 style={{
                   display: "inline-block",

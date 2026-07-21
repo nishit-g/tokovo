@@ -5,17 +5,6 @@ const TokovoConfigSchema = z.object({
   timing: z.object({
     effectCleanupBuffer: z.number().int().min(1),
     defaultTransitionDuration: z.number().int().min(1),
-    keyboardAnimationDuration: z.number().int().min(1),
-  }),
-  keyboard: z.object({
-    ios: z.object({
-      height: z.number().int().min(1),
-      animationDuration: z.number().int().min(1),
-    }),
-    android: z.object({
-      height: z.number().int().min(1),
-      animationDuration: z.number().int().min(1),
-    }),
   }),
   animation: z.object({
     defaultDuration: z.number().int().min(1),
@@ -34,9 +23,6 @@ const TokovoConfigSchema = z.object({
     defaultVolume: z.number().min(0).max(1),
     duckedVolume: z.number().min(0).max(1),
     fadeOutDuration: z.number().int().min(0),
-  }),
-  notifications: z.object({
-    cleanupDelayFrames: z.number().int().min(0),
   }),
   camera: z.object({
     defaultZoom: z.number().min(0.1),
@@ -73,18 +59,6 @@ export const TokovoConfig = deepFreeze({
   timing: {
     effectCleanupBuffer: 30,
     defaultTransitionDuration: 30,
-    keyboardAnimationDuration: 15,
-  },
-
-  keyboard: {
-    ios: {
-      height: 900,
-      animationDuration: 250,
-    },
-    android: {
-      height: 800,
-      animationDuration: 200,
-    },
   },
 
   animation: {
@@ -108,9 +82,6 @@ export const TokovoConfig = deepFreeze({
     fadeOutDuration: 500,
   },
 
-  notifications: {
-    cleanupDelayFrames: 45,
-  },
 
   camera: {
     defaultZoom: 1.0,
@@ -191,13 +162,6 @@ export function getTimingConfig(
   return config.timing;
 }
 
-export function getKeyboardConfig(
-  config: TokovoConfigType = TokovoConfig,
-  platform: "ios" | "android" = "ios",
-) {
-  return config.keyboard[platform];
-}
-
 export function getAnimationConfig(
   config: TokovoConfigType = TokovoConfig,
 ) {
@@ -214,12 +178,6 @@ export function getAudioConfig(
   config: TokovoConfigType = TokovoConfig,
 ) {
   return config.audio;
-}
-
-export function getNotificationsConfig(
-  config: TokovoConfigType = TokovoConfig,
-) {
-  return config.notifications;
 }
 
 export function getCameraConfig(

@@ -118,15 +118,6 @@ export type OSTrackEvent = TrackEventBase & {
     | { type: "SET_BATTERY"; payload: OSPayloads["SET_BATTERY"] }
     | { type: "SET_NETWORK"; payload: OSPayloads["SET_NETWORK"] }
     | { type: "SET_DND"; payload: OSPayloads["SET_DND"] }
-    | { type: "NOTIFICATION_SHOW"; payload: OSPayloads["NOTIFICATION_SHOW"] }
-    | {
-        type: "NOTIFICATION_DISMISS";
-        payload: OSPayloads["NOTIFICATION_DISMISS"];
-      }
-    | {
-        type: "NOTIFICATION_DISMISS_ALL";
-        payload: OSPayloads["NOTIFICATION_DISMISS_ALL"];
-      }
   );
 
 /**
@@ -167,59 +158,10 @@ export type DeviceTrackEvent = TrackEventBase & {
     | { type: "CLOSE_APP"; payload: DevicePayloads["CLOSE_APP"] }
     | { type: "GO_HOME"; payload: DevicePayloads["GO_HOME"] }
     | {
-        type: "NOTIFICATION_SHOW";
-        payload: DevicePayloads["NOTIFICATION_SHOW"];
-      }
-    | {
-        type: "NOTIFICATION_DISMISS";
-        payload: DevicePayloads["NOTIFICATION_DISMISS"];
-      }
-    | { type: "NOTIFICATION_TAP"; payload: DevicePayloads["NOTIFICATION_TAP"] }
-    | {
-        type: "NOTIFICATION_SWIPE";
-        payload: DevicePayloads["NOTIFICATION_SWIPE"];
-      }
-    | {
-        type: "NOTIFICATION_REPLY";
-        payload: DevicePayloads["NOTIFICATION_REPLY"];
-      }
-    | {
-        type: "NOTIFICATION_DYNAMIC_ISLAND";
-        payload: DevicePayloads["NOTIFICATION_DYNAMIC_ISLAND"];
-      }
-    | {
-        type: "NOTIFICATION_OPEN_PANEL";
-        payload: DevicePayloads["NOTIFICATION_OPEN_PANEL"];
-      }
-    | {
-        type: "NOTIFICATION_CLOSE_PANEL";
-        payload: DevicePayloads["NOTIFICATION_CLOSE_PANEL"];
-      }
-    | {
-        type: "NOTIFICATION_CLEAR_ALL";
-        payload: DevicePayloads["NOTIFICATION_CLEAR_ALL"];
-      }
-    | {
         type: "SET_DYNAMIC_ISLAND";
         payload: DevicePayloads["SET_DYNAMIC_ISLAND"];
       }
     | { type: "SET_BADGE"; payload: DevicePayloads["SET_BADGE"] }
-    | { type: "KEYBOARD_SHOW"; payload: DevicePayloads["KEYBOARD_SHOW"] }
-    | { type: "KEYBOARD_HIDE"; payload: DevicePayloads["KEYBOARD_HIDE"] }
-    | {
-        type: "KEYBOARD_KEY_PRESS";
-        payload: DevicePayloads["KEYBOARD_KEY_PRESS"];
-      }
-    | { type: "KEYBOARD_TYPE"; payload: DevicePayloads["KEYBOARD_TYPE"] }
-    | { type: "KEYBOARD_CLEAR"; payload: DevicePayloads["KEYBOARD_CLEAR"] }
-    | {
-        type: "KEYBOARD_SET_SUGGESTIONS";
-        payload: DevicePayloads["KEYBOARD_SET_SUGGESTIONS"];
-      }
-    | {
-        type: "KEYBOARD_TAP_SUGGESTION";
-        payload: DevicePayloads["KEYBOARD_TAP_SUGGESTION"];
-      }
     | {
         type: "SET_SCREEN_RECORDING";
         payload: DevicePayloads["SET_SCREEN_RECORDING"];

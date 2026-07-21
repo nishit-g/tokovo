@@ -135,8 +135,6 @@ class XPointBuilder {
       viewCount: data.viewCount,
       bookmarkCount: data.bookmarkCount,
       shareCount: data.shareCount,
-      typed: (data as { typed?: boolean }).typed,
-      charDelay: (data as { charDelay?: number }).charDelay,
     }));
   }
 
@@ -275,8 +273,6 @@ class XPointBuilder {
     senderId: string;
     text: string;
     createdAt?: number;
-    typed?: boolean;
-    charDelay?: number;
   }): void {
     this._push("DM_SEND", (order) => ({
       id: data.id ?? createMessageId(this._frame, order),
@@ -284,8 +280,6 @@ class XPointBuilder {
       senderId: data.senderId,
       text: data.text,
       createdAt: data.createdAt,
-      typed: data.typed,
-      charDelay: data.charDelay,
     }));
   }
 

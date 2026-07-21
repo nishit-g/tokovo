@@ -17,6 +17,7 @@ export {
   lowerTrackEvent,
   lowerTrackEvents,
   lowerEpisode,
+  lowerEpisodeWithCapabilities,
   createLoweringContext,
 } from "./v2/index.js";
 
@@ -24,6 +25,7 @@ export type {
   PreparedTrackEpisode,
   PluginLowering,
   LoweringContext,
+  LoweredEpisodeCapabilities,
 } from "./v2/index.js";
 
 export type {
@@ -50,8 +52,3 @@ export type {
   TypingIndicatorPluginOptions,
   CharacterTypingProfile,
 } from "./plugins/typing-indicator.plugin.js";
-export { KeyboardPlugin } from "./plugins/keyboard.plugin.js";
-export type {
-  KeyboardPluginOptions,
-  CharacterKeyboardProfile,
-} from "./plugins/keyboard.plugin.js";

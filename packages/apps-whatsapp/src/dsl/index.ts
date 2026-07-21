@@ -13,5 +13,8 @@ export {
     createWhatsAppTrackBuilder,
     type ReceiveOptions,
     type SendOptions,
+    type WhatsAppSendInputOptions,
+    type WhatsAppSendInputIntent,
+    type AddWhatsAppSendInputIntent,
     type ImageOptions,
 } from "./track-builder.js";

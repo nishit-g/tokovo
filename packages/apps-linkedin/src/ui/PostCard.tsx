@@ -1,4 +1,5 @@
 import React from "react";
+import { DeterministicImage } from "@tokovo/react";
 import { useLinkedInTheme } from "./ThemeContext.js";
 import { LIAvatar, LIIcon, ReactionStack, ActionBar } from "./components.js";
 import type { LIReactionType } from "../types/index.js";
@@ -48,9 +49,10 @@ export const PostCard: React.FC<PostCardProps> = ({
     .filter((reaction) => (reactions[reaction] ?? 0) > 0)
     .sort((a, b) => (reactions[b] ?? 0) - (reactions[a] ?? 0));
   const needsTruncation = content.length > CONTENT_PREVIEW_LIMIT;
-  const displayContent = needsTruncation && !isExpanded
-    ? `${content.slice(0, CONTENT_PREVIEW_LIMIT).trimEnd()}…`
-    : content;
+  const displayContent =
+    needsTruncation && !isExpanded
+      ? `${content.slice(0, CONTENT_PREVIEW_LIMIT).trimEnd()}…`
+      : content;
 
   return (
     <article
@@ -166,7 +168,8 @@ export const PostCard: React.FC<PostCardProps> = ({
                   fontWeight: 600,
                 }}
               >
-                {" "}see more
+                {" "}
+                see more
               </span>
             ) : null}
           </div>
@@ -174,11 +177,13 @@ export const PostCard: React.FC<PostCardProps> = ({
       </div>
 
       {image ? (
-        <div
+        <DeterministicImage
+          src={image}
+          alt=""
           style={{
             width: "100%",
             height: theme.spacing.postMediaHeight,
-            background: `url(${image}) center/cover`,
+            objectFit: "cover",
             backgroundColor: theme.colors.skeleton,
           }}
         />
@@ -195,11 +200,13 @@ export const PostCard: React.FC<PostCardProps> = ({
           }}
         >
           {linkPreview.image ? (
-            <div
+            <DeterministicImage
+              src={linkPreview.image}
+              alt=""
               style={{
                 width: "100%",
                 height: 140,
-                background: `url(${linkPreview.image}) center/cover`,
+                objectFit: "cover",
                 backgroundColor: theme.colors.skeleton,
               }}
             />
@@ -227,7 +234,7 @@ export const PostCard: React.FC<PostCardProps> = ({
         </div>
       ) : null}
 
-      {(totalReactions > 0 || commentCount > 0 || repostCount > 0) ? (
+      {totalReactions > 0 || commentCount > 0 || repostCount > 0 ? (
         <div
           style={{
             padding: `0 ${theme.spacing.cardPadding}px ${theme.spacing.sm}px`,
@@ -246,7 +253,9 @@ export const PostCard: React.FC<PostCardProps> = ({
               fontSize: theme.typography.caption.fontSize,
             }}
           >
-            {activeReactions.length > 0 ? <ReactionStack reactions={activeReactions} size={16} /> : null}
+            {activeReactions.length > 0 ? (
+              <ReactionStack reactions={activeReactions} size={16} />
+            ) : null}
             {totalReactions > 0 ? <span>{formatCompact(totalReactions)}</span> : null}
           </div>
           <div
@@ -295,7 +304,9 @@ export const PostCard: React.FC<PostCardProps> = ({
                 textOverflow: "ellipsis",
               }}
             >
-              <span style={{ color: theme.colors.textPrimary, fontWeight: 600 }}>{comment.authorName}</span>{" "}
+              <span style={{ color: theme.colors.textPrimary, fontWeight: 600 }}>
+                {comment.authorName}
+              </span>{" "}
               {comment.text}
             </div>
           ))}

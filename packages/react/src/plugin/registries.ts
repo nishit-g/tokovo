@@ -7,8 +7,6 @@ import {
   type AnchorRegistryClass,
   createAutoSoundRegistry,
   type AutoSoundRegistryClass,
-  createNotificationAdapterRegistry,
-  type NotificationAdapterRegistryClass,
   createBehaviorRegistry,
   type BehaviorRegistryAPI,
 } from "@tokovo/core";
@@ -33,7 +31,6 @@ export interface PluginRegistries {
   metadata: AppMetadataRegistryAPI;
   anchors: AnchorRegistryClass;
   autoSounds: AutoSoundRegistryClass;
-  notifications: NotificationAdapterRegistryClass;
   widgets: WidgetRegistryClass;
   icons: IconRegistryAPI;
   behaviors: BehaviorRegistryAPI;
@@ -50,8 +47,6 @@ export function createPluginRegistries(
     metadata: overrides.metadata ?? createAppMetadataRegistry(),
     anchors: overrides.anchors ?? createAnchorRegistry(),
     autoSounds: overrides.autoSounds ?? createAutoSoundRegistry(),
-    notifications:
-      overrides.notifications ?? createNotificationAdapterRegistry(),
     widgets: overrides.widgets ?? createWidgetRegistry(),
     icons: overrides.icons ?? createIconRegistry(),
     behaviors: overrides.behaviors ?? createBehaviorRegistry(),

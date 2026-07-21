@@ -311,9 +311,9 @@ importers:
       '@tokovo/core':
         specifier: workspace:*
         version: link:../core
-      '@tokovo/device-keyboard':
+      '@tokovo/device-notifications':
         specifier: workspace:*
-        version: link:../device-keyboard
+        version: link:../device-notifications
       '@tokovo/dsl':
         specifier: workspace:*
         version: link:../dsl
@@ -351,9 +351,9 @@ importers:
       '@tokovo/core':
         specifier: workspace:*
         version: link:../core
-      '@tokovo/device-keyboard':
+      '@tokovo/device-notifications':
         specifier: workspace:*
-        version: link:../device-keyboard
+        version: link:../device-notifications
       '@tokovo/dsl':
         specifier: workspace:*
         version: link:../dsl
@@ -397,9 +397,9 @@ importers:
       '@tokovo/core':
         specifier: workspace:*
         version: link:../core
-      '@tokovo/device-keyboard':
+      '@tokovo/device-notifications':
         specifier: workspace:*
-        version: link:../device-keyboard
+        version: link:../device-notifications
       '@tokovo/dsl':
         specifier: workspace:*
         version: link:../dsl
@@ -437,9 +437,9 @@ importers:
       '@tokovo/core':
         specifier: workspace:*
         version: link:../core
-      '@tokovo/device-keyboard':
+      '@tokovo/device-notifications':
         specifier: workspace:*
-        version: link:../device-keyboard
+        version: link:../device-notifications
       '@tokovo/dsl':
         specifier: workspace:*
         version: link:../dsl
@@ -477,9 +477,9 @@ importers:
       '@tokovo/core':
         specifier: workspace:*
         version: link:../core
-      '@tokovo/device-keyboard':
+      '@tokovo/device-notifications':
         specifier: workspace:*
-        version: link:../device-keyboard
+        version: link:../device-notifications
       '@tokovo/dsl':
         specifier: workspace:*
         version: link:../dsl
@@ -560,6 +560,9 @@ importers:
       '@tokovo/device-camera':
         specifier: workspace:*
         version: link:../device-camera
+      '@tokovo/device-notifications':
+        specifier: workspace:*
+        version: link:../device-notifications
       '@tokovo/ir':
         specifier: workspace:*
         version: link:../ir
@@ -603,9 +606,9 @@ importers:
       '@tokovo/core':
         specifier: workspace:*
         version: link:../core
-      '@tokovo/device-keyboard':
+      '@tokovo/device-notifications':
         specifier: workspace:*
-        version: link:../device-keyboard
+        version: link:../device-notifications
       '@tokovo/dsl':
         specifier: workspace:*
         version: link:../dsl
@@ -677,6 +680,12 @@ importers:
       '@tokovo/device-camera':
         specifier: workspace:*
         version: link:../device-camera
+      '@tokovo/device-keyboard':
+        specifier: workspace:*
+        version: link:../device-keyboard
+      '@tokovo/device-notifications':
+        specifier: workspace:*
+        version: link:../device-notifications
       '@tokovo/ir':
         specifier: workspace:*
         version: link:../ir
@@ -749,12 +758,28 @@ importers:
       '@tokovo/core':
         specifier: workspace:*
         version: link:../core
+      react:
+        specifier: 18.3.1
+        version: 18.3.1
+    devDependencies:
+      '@types/react':
+        specifier: 18.3.1
+        version: 18.3.1
+      typescript:
+        specifier: ^5.0.0
+        version: 5.9.3
+      vitest:
+        specifier: ^1.0.0
+        version: 1.6.1(@types/node@24.10.11)(happy-dom@20.8.9)(jsdom@24.1.3)(lightningcss@1.30.2)(sass@1.77.4)(terser@5.44.1)
+
+  packages/device-notifications:
+    dependencies:
+      '@tokovo/ir':
+        specifier: workspace:*
+        version: link:../ir
       '@tokovo/react':
         specifier: workspace:*
         version: link:../react
-      immer:
-        specifier: ^10.0.0
-        version: 10.2.0
       react:
         specifier: 18.3.1
         version: 18.3.1
@@ -775,34 +800,6 @@ importers:
         specifier: ^1.0.0
         version: 1.6.1(@types/node@24.10.11)(happy-dom@20.8.9)(jsdom@24.1.3)(lightningcss@1.30.2)(sass@1.77.4)(terser@5.44.1)
 
-  packages/device-notifications:
-    dependencies:
-      '@tokovo/core':
-        specifier: workspace:*
-        version: link:../core
-      '@tokovo/react':
-        specifier: workspace:*
-        version: link:../react
-      immer:
-        specifier: ^10.0.0
-        version: 10.2.0
-      react:
-        specifier: 18.3.1
-        version: 18.3.1
-      react-dom:
-        specifier: 18.3.1
-        version: 18.3.1(react@18.3.1)
-      remotion:
-        specifier: 4.0.409
-        version: 4.0.409(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
-    devDependencies:
-      '@types/react':
-        specifier: 18.3.1
-        version: 18.3.1
-      typescript:
-        specifier: ^5.0.0
-        version: 5.9.3
-
   packages/devices:
     dependencies:
       '@tokovo/core':
@@ -811,6 +808,9 @@ importers:
       '@tokovo/ir':
         specifier: workspace:*
         version: link:../ir
+      '@tokovo/react':
+        specifier: workspace:*
+        version: link:../react
       immer:
         specifier: ^10.0.0
         version: 10.2.0
@@ -903,9 +903,6 @@ importers:
       '@tokovo/device-keyboard':
         specifier: workspace:*
         version: link:../device-keyboard
-      '@tokovo/device-notifications':
-        specifier: workspace:*
-        version: link:../device-notifications
       '@tokovo/devices':
         specifier: workspace:*
         version: link:../devices
@@ -981,6 +978,9 @@ importers:
       '@tokovo/core':
         specifier: workspace:*
         version: link:../core
+      '@tokovo/device-keyboard':
+        specifier: workspace:*
+        version: link:../device-keyboard
       react:
         specifier: 18.3.1
         version: 18.3.1

@@ -3,6 +3,7 @@ import {
   inferTextDirection,
   type InputProjection,
   type PreparedInputOperation,
+  type PreparedInputProgram,
   type PreparedInputSession,
 } from "../contract/index.js";
 import { evaluateInputSession } from "../runtime/evaluate.js";
@@ -14,6 +15,29 @@ export interface InputProjectionConfig {
   viewportHeight: number;
   keyboardHeight: number;
   transitionDurationFrames?: number;
+}
+
+/** Resolve the session whose keyboard surface is active or deterministically exiting. */
+export function findInputSessionForProjection(
+  program: PreparedInputProgram,
+  deviceId: string,
+  frame: number,
+  fps: number,
+): PreparedInputSession | undefined {
+  return program.sessions.find((session) => {
+    if (session.deviceId !== deviceId || frame < session.startFrame) return false;
+    const experience = resolveInputExperience({
+      platform: session.keyboard.platform,
+      appearance: session.keyboard.appearance,
+      locale: session.keyboard.locale.tag,
+      themeId: session.keyboard.themeId,
+    });
+    const exitFrames = Math.max(
+      1,
+      Math.round(experience.theme.motion.exitDurationSeconds * fps),
+    );
+    return frame <= session.endFrame + exitFrames;
+  });
 }
 
 function easeOutCubic(value: number): number {

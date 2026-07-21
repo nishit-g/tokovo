@@ -1,17 +1,25 @@
 # @tokovo/device-notifications
 
-Notification runtime support and notification rendering strategies.
+Deterministic notification compilation, replay, projection, audio, and presentation.
 
 ## Responsibilities
 
-- notification event handling
-- heads-up and lockscreen strategies
-- notification authoring support
+- prepare immutable notification programs from semantic app intents
+- evaluate delivery, dismissal, expiry, grouping, and center state at any frame
+- enforce privacy, preview, foreground, DND, interruption, and delivery conditions
+- route typed actions and quick replies into normal navigation and app events
+- project localized iOS and Android light/dark surfaces
+- render banners, lockscreen cards, and notification center through one painter
 
 ## Key Exports
 
-- runtime state and reducer helpers
-- selectors and animation helpers
-- `NotificationTrackBuilder`
-- notification strategies
-- plugin registration: `registerNotificationPlugin`
+- `prepareNotificationProgram`
+- `evaluateNotificationProgram`
+- `projectNotifications`
+- `projectNotificationAudioCues`
+- `getNotificationTheme`
+- `NotificationSurface`
+
+Apps own notification content adapters and action targets. This package owns device
+policy and visual projection. There is no parallel notification store in core and no
+second notification renderer.

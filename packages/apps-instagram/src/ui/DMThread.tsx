@@ -1,27 +1,31 @@
 import React from "react";
 import type { WorldState } from "@tokovo/core";
-import { getTypedTextProgress } from "@tokovo/device-keyboard";
+import { pulse, useFps, useInputField, useTime } from "@tokovo/react";
 import { AppShell } from "./AppShell.js";
 import { Avatar, Icon, formatRelativeTime } from "./components.js";
 import { useInstagramTheme } from "./ThemeContext.js";
-import { getActiveThread, getCurrentUser, getThreadDraft, getUserById, getVisibleDMMessages } from "../runtime/selectors.js";
+import {
+  getActiveThread,
+  getCurrentUser,
+  getThreadDraft,
+  getUserById,
+  getVisibleDMMessages,
+} from "../runtime/selectors.js";
 
 export const DMThread: React.FC<{
   world: WorldState;
   deviceId?: string;
   t?: number;
-}> = ({ world, deviceId, t }) => {
+}> = ({ world }) => {
   const theme = useInstagramTheme();
+  const frame = useTime();
+  const fps = useFps();
   const currentUser = getCurrentUser(world);
   const thread = getActiveThread(world);
   const messages = getVisibleDMMessages(world, thread?.id ?? null);
-  const device = deviceId ? world.devices?.[deviceId] : world.devices?.[Object.keys(world.devices ?? {})[0]];
-  const keyboard = device?.keyboard;
+  const input = useInputField("composer");
   const storedDraft = getThreadDraft(world, thread?.id ?? null);
-  const typedDraft =
-    keyboard?.visible && keyboard.typingAnimation
-      ? getTypedTextProgress(keyboard, t ?? 0)
-      : storedDraft;
+  const typedDraft = input?.value ?? storedDraft;
   const nowMs = messages.reduce((max, message) => Math.max(max, message.createdAt), 0);
 
   if (!thread) {
@@ -54,7 +58,15 @@ export const DMThread: React.FC<{
         <Icon name="back" />
         <Avatar size={34} src={lead?.avatarUrl} ring />
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: 15, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+          <div
+            style={{
+              fontSize: 15,
+              fontWeight: 700,
+              whiteSpace: "nowrap",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+            }}
+          >
             {title}
           </div>
           <div style={{ fontSize: 12, color: theme.colors.textSecondary }}>
@@ -170,9 +182,22 @@ export const DMThread: React.FC<{
                 background: theme.colors.surfaceRaised,
               }}
             >
-              <div className="ig-typing-dot" style={{ width: 6, height: 6, borderRadius: "50%", background: theme.colors.textSecondary }} />
-              <div className="ig-typing-dot" style={{ width: 6, height: 6, borderRadius: "50%", background: theme.colors.textSecondary, animationDelay: "0.15s" }} />
-              <div className="ig-typing-dot" style={{ width: 6, height: 6, borderRadius: "50%", background: theme.colors.textSecondary, animationDelay: "0.3s" }} />
+              {[0, 1, 2].map((index) => {
+                const progress = pulse(frame, fps, 1.2, index * 0.15);
+                return (
+                  <div
+                    key={index}
+                    style={{
+                      width: 6,
+                      height: 6,
+                      borderRadius: "50%",
+                      background: theme.colors.textSecondary,
+                      opacity: 0.35 + progress * 0.65,
+                      transform: `scale(${0.95 + progress * 0.05})`,
+                    }}
+                  />
+                );
+              })}
             </div>
           </div>
         ) : null}
@@ -189,6 +214,7 @@ export const DMThread: React.FC<{
         }}
       >
         <div
+          lang={input?.locale.tag}
           style={{
             width: 34,
             height: 34,
@@ -212,6 +238,8 @@ export const DMThread: React.FC<{
             alignItems: "center",
             padding: "0 14px",
             color: typedDraft ? theme.colors.textPrimary : theme.colors.textSecondary,
+            direction: input?.direction,
+            unicodeBidi: "plaintext",
             fontSize: 14,
           }}
         >

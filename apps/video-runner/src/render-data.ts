@@ -28,6 +28,8 @@ type SerializablePreparedEpisode = Pick<
   | "keyframeInterval"
   | "eventSignature"
   | "initialWorld"
+  | "inputProgram"
+  | "notificationProgram"
   | "assetRefs"
   | "metadata"
 >;
@@ -172,6 +174,8 @@ function serializePreparedEpisode(
     keyframeInterval: prepared.keyframeInterval,
     eventSignature: prepared.eventSignature,
     initialWorld: prepared.initialWorld,
+    inputProgram: prepared.inputProgram,
+    notificationProgram: prepared.notificationProgram,
     assetRefs: prepared.assetRefs,
     metadata: prepared.metadata,
   };

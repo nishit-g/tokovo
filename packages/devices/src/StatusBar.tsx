@@ -35,7 +35,7 @@ interface StatusBarProps {
     /** Theme */
     theme?: "light" | "dark" | ResolvedStatusBarTheme;
     /** Notification icons (Android left side) */
-    notificationIcons?: StatusBarNotificationIcon[];
+    notificationIcons?: readonly StatusBarNotificationIcon[];
 }
 
 // =============================================================================

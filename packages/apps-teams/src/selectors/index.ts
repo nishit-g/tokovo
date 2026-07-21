@@ -3,7 +3,6 @@ import type {
   TeamsChannel,
   TeamsDm,
   TeamsMessage,
-  TeamsNotification,
   TeamsState,
   TeamsThread,
 } from "../types/index.js";
@@ -56,20 +55,6 @@ export function selectVisibleMessages(state: TeamsState): TeamsMessage[] {
   return Object.values(state.messages)
     .filter((message) => message.threadId === threadId)
     .sort((a, b) => a.createdAtFrame - b.createdAtFrame);
-}
-
-export function selectNotifications(
-  state: TeamsState,
-  frame = Number.POSITIVE_INFINITY,
-): TeamsNotification[] {
-  return state.ui.notificationIds
-    .map((id) => state.notifications[id])
-    .filter(
-      (notification): notification is TeamsNotification =>
-        Boolean(notification) &&
-        notification.dismissedAtFrame === undefined &&
-        notification.expiresAtFrame >= frame,
-    );
 }
 
 export function selectActiveDraftText(state: TeamsState): string {

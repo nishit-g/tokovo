@@ -26,8 +26,10 @@ Tokovo v1 does not use beat-based authoring. The authoring model is:
 - `view()` for explicit frame-0 app routing
 - named built-in app methods for app mutations after frame 0
 - `track()` as the low-level extension point for external app plugins
-- `camera()`, `audio()`, `overlay()`, and `deviceTrack()` for supporting direction
-- `.use(...)` for compiler plugins such as keyboard helpers
+- `camera()`, `audio()`, `overlay()`, `os()`, and `deviceTrack()` for supporting direction
+- `input()` for explicit field-scoped text sessions
+- `notificationTrack()` for notification delivery and interaction
+- `.use(...)` for optional compiler plugins such as automatic camera direction
 
 ## Bootstrap Rules
 

@@ -10,6 +10,12 @@
  * @see docs/architecture/dsl-v2.md
  */
 
+import type {
+  InputCadenceIR,
+  InputDirectionIR,
+  InputKeyboardIR,
+  InputSourceIR,
+} from "@tokovo/ir";
 import type { WhatsAppTrackEvent, WhatsAppEventType } from "../types/events.js";
 import type { WhatsAppLocale } from "../localization/index.js";
 import type { WhatsAppMessageGesture } from "../types/interactions.js";
@@ -31,10 +37,41 @@ export interface ReceiveOptions {
 export interface SendOptions {
   messageId?: string;
   silent?: boolean;
-  typed?: boolean;
-  charDelay?: number;
   replyTo?: MessageReference;
+  input?: WhatsAppSendInputOptions;
 }
+
+export interface WhatsAppSendInputOptions {
+  /** Exact authored typing window. Omit to use deterministic natural cadence. */
+  duration?: string | number;
+  style?: InputCadenceIR["style"];
+  id?: string;
+  locale?: string;
+  direction?: InputDirectionIR;
+  source?: InputSourceIR;
+  seed?: string | number;
+  cadence?: InputCadenceIR;
+  keyboard?: InputKeyboardIR;
+  correction?: {
+    typed: string;
+    replace: string;
+    with: string;
+    pauseFrames?: number;
+  };
+}
+
+export interface WhatsAppSendInputIntent {
+  deviceId: string;
+  conversationId: string;
+  fieldId: "composer";
+  sendFrame: number;
+  text: string;
+  input: WhatsAppSendInputOptions;
+}
+
+export type AddWhatsAppSendInputIntent = (
+  intent: WhatsAppSendInputIntent,
+) => void;
 
 export interface ImageOptions {
   messageId?: string;
@@ -60,6 +97,7 @@ export class WhatsAppPointBuilder {
     private _conversationId: string,
     private _events: WhatsAppTrackEvent[],
     private _getOrder: GetDeclarationOrder,
+    private _addInputIntent?: AddWhatsAppSendInputIntent,
   ) { }
 
   private _push<T extends WhatsAppEventType>(
@@ -103,12 +141,25 @@ export class WhatsAppPointBuilder {
   }
 
   send(text: string, options: SendOptions = {}): void {
+    if (options.input) {
+      if (!this._addInputIntent) {
+        throw new Error(
+          "WHATSAPP_INPUT_INTEGRATION_MISSING: structured input requires the canonical code-first episode builder.",
+        );
+      }
+      this._addInputIntent({
+        deviceId: this._deviceId,
+        conversationId: this._conversationId,
+        fieldId: "composer",
+        sendFrame: this._frame,
+        text,
+        input: options.input,
+      });
+    }
     this._push("MESSAGE_SENT", {
       text,
       messageId: options.messageId,
       silent: options.silent,
-      typed: options.typed,
-      charDelay: options.charDelay,
       replyTo: options.replyTo,
     });
   }
@@ -614,6 +665,7 @@ export class WhatsAppTrackBuilder {
     private _deviceId: string,
     private _conversationId: string = "",
     private _getOrder: GetDeclarationOrder,
+    private _addInputIntent?: AddWhatsAppSendInputIntent,
   ) {
     this._currentConversation = _conversationId || null;
   }
@@ -631,6 +683,7 @@ export class WhatsAppTrackBuilder {
       conversationId,
       this._events,
       this._getOrder,
+      this._addInputIntent,
     );
   }
 
@@ -793,6 +846,13 @@ export function createWhatsAppTrackBuilder(
   deviceId: string,
   conversationId: string,
   getOrder: GetDeclarationOrder,
+  addInputIntent?: AddWhatsAppSendInputIntent,
 ): WhatsAppTrackBuilder {
-  return new WhatsAppTrackBuilder(fps, deviceId, conversationId, getOrder);
+  return new WhatsAppTrackBuilder(
+    fps,
+    deviceId,
+    conversationId,
+    getOrder,
+    addInputIntent,
+  );
 }

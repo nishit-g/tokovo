@@ -7,7 +7,10 @@ import type {
   IMessageMessageStatus,
   IMessageState,
 } from "../types/index.js";
-import type { IMessageEventType, IMessageEventPayload } from "../types/events.js";
+import type {
+  IMessageEventType,
+  IMessageEventPayload,
+} from "../types/events.js";
 
 function syncViewMode(state: IMessageState): void {
   switch (state.currentScreen) {
@@ -77,7 +80,10 @@ function ensureConversation(
   return state.conversations[conversationId] as IMessageConversation;
 }
 
-function addMessage(conversation: IMessageConversation, message: IMessageMessage): void {
+function addMessage(
+  conversation: IMessageConversation,
+  message: IMessageMessage,
+): void {
   conversation.messages.push(message);
   if (!conversation.messagesById) {
     conversation.messagesById = {};
@@ -171,7 +177,11 @@ function createMessage(params: {
     senderId,
     senderName,
     fromMe,
-    kind: inferKind(text, attachments as Array<{ kind: string }> | undefined, isSystem),
+    kind: inferKind(
+      text,
+      attachments as Array<{ kind: string }> | undefined,
+      isSystem,
+    ),
     text,
     attachments,
     timestamp,
@@ -236,7 +246,8 @@ export function iMessageReducer(draft: WorldState, event: TimelineEvent): void {
 
   const payload = (appEvent.payload ?? {}) as Record<string, unknown>;
   const at = event.at ?? 0;
-  const conversationId = (payload as { conversationId?: string }).conversationId;
+  const conversationId = (payload as { conversationId?: string })
+    .conversationId;
 
   switch (type) {
     case "IMESSAGE_CONVERSATION_CREATE": {
@@ -502,12 +513,7 @@ export function iMessageReducer(draft: WorldState, event: TimelineEvent): void {
       const conv = ensureConversation(state, conversationId);
       const data = asPayload<"IMESSAGE_GROUP_AVATAR_CHANGE">(payload);
       conv.avatar = data.avatar;
-      addSystemMessage(
-        conv,
-        at,
-        "Group photo updated",
-        "group_avatar_changed",
-      );
+      addSystemMessage(conv, at, "Group photo updated", "group_avatar_changed");
       break;
     }
     case "IMESSAGE_SET_SCREEN": {
@@ -570,6 +576,7 @@ export function iMessageReducer(draft: WorldState, event: TimelineEvent): void {
     case "IMESSAGE_SCREEN_EFFECT": {
       const effect = asPayload<"IMESSAGE_SCREEN_EFFECT">(payload);
       state.activeScreenEffect = effect.effect;
+      state.activeScreenEffectStartedAtFrame = at;
       break;
     }
     default:

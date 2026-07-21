@@ -71,8 +71,6 @@ export default defineEpisode({
         x.at("14.0s").postTweet({
           authorId: "u_me",
           text: "He said 'remix' like honesty is a playlist.",
-          typed: true,
-          charDelay: 2,
           viewCount: 1200,
           shareCount: 24,
           bookmarkCount: 80,

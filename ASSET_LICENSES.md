@@ -28,6 +28,12 @@ This file tracks bundled assets that ship with the repository.
 - Purpose: local episode fixtures and visual placeholders for app simulation demos
 - Policy: keep only assets that are either referenced by registered episodes, used by docs, or intentionally kept as reusable fixtures for new examples. New third-party assets must include provenance and license notes in this file.
 
+## App Icons
+
+- Location: `apps/video-runner/public/icons/**`
+- Source: simplified vector fixtures authored in-repo for deterministic simulated UI
+- Purpose: app identity in home-screen, status-bar, and notification render surfaces
+
 ## Deterministic UI Fonts
 
 - Packages: `@fontsource-variable/noto-sans@5.3.0` and `@fontsource-variable/noto-sans-arabic@5.3.0`
@@ -35,3 +41,9 @@ This file tracks bundled assets that ship with the repository.
 - Source: Fontsource distributions of Noto Sans v42 and Noto Sans Arabic v33
 - License: SIL Open Font License 1.1 (`OFL-1.1`), included in each npm package
 - Purpose: pin Latin and Arabic glyph metrics so WhatsApp renders do not depend on host operating-system fonts
+
+## Reviewed Render Goldens
+
+- Location: `apps/video-runner/test-assets/render-goldens/**`
+- Source: generated in-repo from checked-in deterministic Tokovo episodes
+- Purpose: exact pixel regression coverage for reviewed UI states and system-surface lifecycles

@@ -11,7 +11,15 @@ export const InputArea: React.FC<{
   text?: string;
   showCursor?: boolean;
   safeAreaBottom?: number;
-}> = ({ text = "", showCursor = false, safeAreaBottom = 34 }) => {
+  inputDirection?: "ltr" | "rtl";
+  inputLanguage?: string;
+}> = ({
+  text = "",
+  showCursor = false,
+  safeAreaBottom = 34,
+  inputDirection,
+  inputLanguage,
+}) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
   const theme = useTheme();
@@ -20,7 +28,9 @@ export const InputArea: React.FC<{
 
   const hasContent = text.length > 0;
   const cursorVisible = Math.floor(frame / (fps * 0.5)) % 2 === 0;
-  const paddingBottom = Math.max(safeAreaBottom, 20);
+  const keyboardAttached = safeAreaBottom === 0;
+  const paddingBottom = keyboardAttached ? 7 : Math.max(safeAreaBottom, 14);
+  const controlBottomInset = keyboardAttached ? 3 : 8;
 
   return (
     <div
@@ -31,11 +41,11 @@ export const InputArea: React.FC<{
       style={{
         backgroundColor: theme.colors.inputBackground,
         borderTop: `1px solid ${theme.colors.divider}`,
-        paddingBlock: `8px ${paddingBottom}px`,
-        paddingInline: "10px 14px",
+        paddingBlock: `6px ${paddingBottom}px`,
+        paddingInline: "9px 10px",
         display: "flex",
         alignItems: "flex-end",
-        gap: 12,
+        gap: 9,
         position: "absolute",
         bottom: 0,
         insetInline: 0,
@@ -52,7 +62,7 @@ export const InputArea: React.FC<{
         style={{
           width: 30,
           height: 30,
-          marginBottom: 8,
+          marginBottom: controlBottomInset,
           borderRadius: "50%",
           border:
             presentation.conversation.composerLeadingAction === "add"
@@ -88,6 +98,8 @@ export const InputArea: React.FC<{
       <div
         data-anchor="typing"
         role="textbox"
+        dir={inputDirection ?? direction}
+        lang={inputLanguage}
         aria-label={t("composer.placeholder")}
         aria-multiline="true"
         aria-readonly="true"
@@ -98,15 +110,17 @@ export const InputArea: React.FC<{
           border: `1px solid ${theme.colors.divider}`,
           paddingBlock: 6,
           paddingInline: "12px 4px",
-          minHeight: 40,
+          minHeight: 38,
           display: "flex",
           alignItems: "center",
           gap: 8,
-          marginBottom: 3,
+          marginBottom: keyboardAttached ? 1 : 3,
         }}
       >
         <div style={{ flex: 1, padding: "5px 0" }}>
           <span
+            dir={inputDirection ?? direction}
+            lang={inputLanguage}
             style={{
               fontSize: 16,
               fontFamily: theme.typography.fontFamily,
@@ -160,7 +174,7 @@ export const InputArea: React.FC<{
           aria-label={t("action.send")}
           style={{
             padding: 0,
-            paddingBottom: 6,
+            paddingBottom: keyboardAttached ? 2 : 6,
             border: 0,
             color: "inherit",
             background: "transparent",
@@ -193,8 +207,8 @@ export const InputArea: React.FC<{
         <div
           style={{
             display: "flex",
-            gap: 16,
-            paddingBottom: 8,
+            gap: 14,
+            paddingBottom: controlBottomInset,
             alignItems: "center",
           }}
         >

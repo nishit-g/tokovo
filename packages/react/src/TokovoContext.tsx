@@ -5,6 +5,10 @@ import {
   type DeviceState,
   type LayoutState,
 } from "@tokovo/core";
+import type {
+  InputProjection,
+  PreparedInputProgram,
+} from "@tokovo/device-keyboard";
 
 interface TokovoContextValue {
   world: WorldState;
@@ -21,6 +25,8 @@ interface TokovoContextValue {
     right: number;
   };
   keyboardHeight: number;
+  inputProgram?: PreparedInputProgram;
+  inputProjection?: InputProjection;
 }
 
 const TokovoContext = createContext<TokovoContextValue | null>(null);
@@ -41,6 +47,8 @@ interface TokovoProviderProps {
     right: number;
   };
   keyboardHeight?: number;
+  inputProgram?: PreparedInputProgram;
+  inputProjection?: InputProjection;
 }
 
 export function TokovoProvider({
@@ -54,6 +62,8 @@ export function TokovoProvider({
   platform = "ios",
   safeAreaInsets = { top: 0, bottom: 0, left: 0, right: 0 },
   keyboardHeight = 0,
+  inputProgram,
+  inputProjection,
 }: TokovoProviderProps) {
   const value = useMemo(
     () => ({
@@ -66,8 +76,22 @@ export function TokovoProvider({
       platform,
       safeAreaInsets,
       keyboardHeight,
+      inputProgram,
+      inputProjection,
     }),
-    [world, deviceId, appId, t, fps, layout, platform, safeAreaInsets, keyboardHeight],
+    [
+      world,
+      deviceId,
+      appId,
+      t,
+      fps,
+      layout,
+      platform,
+      safeAreaInsets,
+      keyboardHeight,
+      inputProgram,
+      inputProjection,
+    ],
   );
 
   return <TokovoContext.Provider value={value}>{children}</TokovoContext.Provider>;
@@ -129,6 +153,14 @@ export function useSafeAreaInsets() {
 
 export function useKeyboardHeight() {
   return useTokovoContext().keyboardHeight;
+}
+
+export function useInputProgram(): PreparedInputProgram | undefined {
+  return useTokovoContext().inputProgram;
+}
+
+export function useInputProjection(): InputProjection | undefined {
+  return useTokovoContext().inputProjection;
 }
 
 export function useConversation<T extends { id: string } = { id: string }>(

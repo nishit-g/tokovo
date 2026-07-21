@@ -8,7 +8,6 @@ function baseDevice(): DeviceState {
     profileId: "iphone16",
     isLocked: false,
     foregroundAppId: "app_whatsapp",
-    notifications: [],
   };
 }
 

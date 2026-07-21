@@ -33,34 +33,9 @@ function createBuiltInHandlers(
     handlers.set(kind, handler);
   };
 
-  registerBuiltInHandler("DEVICE", (draft, event, index, _ctx) => {
+  registerBuiltInHandler("DEVICE", (draft, event, _index, _ctx) => {
     if (registry.deviceReducer) {
       draft.devices = registry.deviceReducer(draft.devices, event);
-    }
-    const devEvent = event as TimelineEvent & { type?: string };
-    const devType = devEvent.type;
-    if (devType) {
-      if (
-        devType.includes("NOTIFICATION") ||
-        devType.startsWith("SHOW_") ||
-        devType.startsWith("DISMISS_") ||
-        devType.startsWith("TAP_") ||
-        devType.startsWith("SWIPE_") ||
-        devType.startsWith("CLEAR_ALL") ||
-        devType.includes("DYNAMIC_ISLAND")
-      ) {
-        const notifReducer = registry.getFeatureReducer("NOTIFICATION");
-        if (notifReducer) {
-          notifReducer(draft, event, index, _ctx);
-        }
-      }
-
-      if (devType.startsWith("KEYBOARD_")) {
-        const kbReducer = registry.getFeatureReducer("KEYBOARD");
-        if (kbReducer) {
-          kbReducer(draft, event, index, _ctx);
-        }
-      }
     }
   });
 
@@ -79,13 +54,6 @@ function createBuiltInHandlers(
       event as Parameters<typeof processAudioEvent>[1],
       ctx,
     );
-  });
-
-  registerBuiltInHandler("KEYBOARD", (draft, event, index, _ctx) => {
-    const kbReducer = registry.getFeatureReducer("KEYBOARD");
-    if (kbReducer) {
-      kbReducer(draft, event, index, _ctx);
-    }
   });
 
   registerBuiltInHandler("OVERLAY", (draft, event, index, ctx) => {

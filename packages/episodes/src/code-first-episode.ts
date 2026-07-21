@@ -15,15 +15,26 @@ import { createTeamsTrackBuilder, TeamsTrackBuilder } from "@tokovo/apps-teams";
 import {
   createWhatsAppTrackBuilder,
   type WhatsAppTrackBuilder,
+  type WhatsAppSendInputIntent,
 } from "@tokovo/apps-whatsapp";
 import { XTrackBuilder } from "@tokovo/apps-x";
 import { TypewriterTrackBuilder } from "@tokovo/apps-typewriter";
 import {
   episode as baseEpisode,
+  parseTimeToFrames,
   type EpisodeBuilder,
+  type InputSessionOptions,
   type TrackFn,
 } from "@tokovo/dsl";
-import type { TrackEpisodeConfig } from "@tokovo/ir";
+import type {
+  InputCadenceIR,
+  InputScriptStepIR,
+  TrackEpisodeConfig,
+} from "@tokovo/ir";
+import {
+  estimateNaturalInputFrames,
+  splitGraphemes,
+} from "@tokovo/device-keyboard";
 import {
   createScene,
   type SceneBuilder,
@@ -59,6 +70,150 @@ type TeamsTrackBuilderInstance = InstanceType<typeof TeamsTrackBuilder>;
 type TypewriterTrackOptions = NonNullable<
   ConstructorParameters<typeof TypewriterTrackBuilder>[3]
 >;
+
+const INPUT_STYLE_VARIANCE_SECONDS: Record<
+  NonNullable<InputCadenceIR["style"]>,
+  number
+> = {
+  slow: 0.07,
+  natural: 0.045,
+  fast: 0.02,
+};
+
+function findGraphemeSequence(
+  haystack: readonly string[],
+  needle: readonly string[],
+): number {
+  if (needle.length === 0) return -1;
+  for (let start = 0; start <= haystack.length - needle.length; start++) {
+    if (needle.every((grapheme, index) => haystack[start + index] === grapheme)) {
+      return start;
+    }
+  }
+  return -1;
+}
+
+function addWhatsAppInputSession(
+  ep: EpisodeBuilder,
+  fps: number,
+  intent: WhatsAppSendInputIntent,
+): void {
+  const { input, sendFrame, text } = intent;
+  const locale = input.keyboard?.locale ?? input.locale ?? "en-US";
+  const typedText = input.correction?.typed ?? text;
+  const typedGraphemes = splitGraphemes(typedText, locale);
+  if (typedGraphemes.length === 0) {
+    throw new Error("WHATSAPP_INPUT_EMPTY: a structured input send requires text.");
+  }
+
+  const correctionPauseFrames = input.correction?.pauseFrames ?? Math.max(1, Math.round(fps * 0.2));
+  const cadenceStyle = input.style ?? input.cadence?.style ?? "natural";
+  let cadence: InputCadenceIR = {
+    ...input.cadence,
+    style: cadenceStyle,
+  };
+  let durationFrames: number;
+
+  if (input.duration !== undefined) {
+    durationFrames = parseTimeToFrames(input.duration, fps);
+    const focusLeadFrames = cadence.focusLeadFrames ?? Math.max(1, Math.round(fps * 0.25));
+    const correctionFixedFrames = input.correction
+      ? correctionPauseFrames + 1
+      : 0;
+    const pacedOperations = typedGraphemes.length + (input.correction ? 1 : 0);
+    const pacingBudget = durationFrames - focusLeadFrames - correctionFixedFrames;
+    if (pacingBudget < pacedOperations) {
+      throw new Error(
+        `WHATSAPP_INPUT_TIMING_OVERFLOW: ${durationFrames} frames cannot fit ` +
+          `${pacedOperations} edit operations before the send at frame ${sendFrame}.`,
+      );
+    }
+    cadence = {
+      ...cadence,
+      focusLeadFrames,
+      framesPerGrapheme: Math.max(1, Math.floor(pacingBudget / pacedOperations)),
+      varianceFrames: 0,
+      punctuationPauseFrames: 0,
+    };
+  } else {
+    const varianceFrames =
+      cadence.varianceFrames ??
+      Math.max(0, Math.round(INPUT_STYLE_VARIANCE_SECONDS[cadenceStyle] * fps));
+    durationFrames =
+      estimateNaturalInputFrames(typedText, fps, cadence, locale) +
+      typedGraphemes.length * varianceFrames +
+      (input.correction
+        ? correctionPauseFrames +
+          1 +
+          (cadence.framesPerGrapheme ?? Math.max(1, Math.round(0.115 * fps)))
+        : 0);
+  }
+
+  const startFrame = sendFrame - durationFrames;
+  if (startFrame < 0) {
+    throw new Error(
+      `WHATSAPP_INPUT_TIMING_OVERFLOW: input for the send at frame ${sendFrame} ` +
+        `would need to start at frame ${startFrame}. Move the send later or shorten the duration.`,
+    );
+  }
+
+  let script: InputScriptStepIR[] | undefined;
+  if (input.correction) {
+    const replaceGraphemes = splitGraphemes(input.correction.replace, locale);
+    const replacementStart = findGraphemeSequence(
+      typedGraphemes,
+      replaceGraphemes,
+    );
+    if (replacementStart < 0) {
+      throw new Error(
+        `WHATSAPP_INPUT_CORRECTION_MISMATCH: ${JSON.stringify(input.correction.replace)} ` +
+          `is not present in ${JSON.stringify(typedText)}.`,
+      );
+    }
+    const corrected = [...typedGraphemes];
+    corrected.splice(
+      replacementStart,
+      replaceGraphemes.length,
+      ...splitGraphemes(input.correction.with, locale),
+    );
+    if (corrected.join("") !== text) {
+      throw new Error(
+        `WHATSAPP_INPUT_CORRECTION_MISMATCH: correction produces ${JSON.stringify(corrected.join(""))} ` +
+          `instead of the sent text ${JSON.stringify(text)}.`,
+      );
+    }
+    const range = {
+      anchor: replacementStart,
+      focus: replacementStart + replaceGraphemes.length,
+    };
+    script = [
+      { type: "type", text: typedText, cadence },
+      { type: "pause", frames: correctionPauseFrames },
+      { type: "setSelection", selection: range },
+      { type: "replaceRange", range, text: input.correction.with },
+    ];
+  }
+
+  const options: InputSessionOptions = {
+    id: input.id,
+    appId: "app_whatsapp",
+    at: startFrame,
+    submitAt: sendFrame,
+    until: sendFrame + Math.max(5, Math.round(fps * 0.25)),
+    expectedFinalValue: text,
+    seed: input.seed,
+    source: input.source,
+    locale,
+    direction: input.direction,
+    keyboard: {
+      ...input.keyboard,
+      returnKey: "send",
+    },
+    cadence,
+    ...(script ? { script } : { text }),
+  };
+  ep.input(intent.deviceId, intent.fieldId, options);
+}
 
 export type CodeFirstEpisodeBuilder = EpisodeBuilder & {
   scene: (
@@ -128,6 +283,7 @@ export function episode(
           deviceId,
           conversationId,
           getOrder,
+          (intent) => addWhatsAppInputSession(ep, config.fps, intent),
         ),
       fn,
     ) as CodeFirstEpisodeBuilder;

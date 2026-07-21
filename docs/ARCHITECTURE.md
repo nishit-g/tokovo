@@ -128,11 +128,21 @@ consumers through the root barrel:
 
 System realism packages own:
 
-- devices and chrome metrics
-- keyboard
-- notifications
+- device profiles, chrome metrics, and deterministic lock/home projections
+- keyboard input-session preparation, evaluation, themes, and the single keyboard painter
+- notification preparation, lifecycle policy, typed actions, projection, audio, and the
+  single notification painter
 - camera direction
 - overlays and OS surfaces
+
+System capabilities follow the same boundary as apps: authored contract, compile-time
+preparation, pure frame evaluation, projection, then presentation. Core routes runtime
+events but does not mirror keyboard or notification state. Renderer hosts projected
+surfaces but does not choose device policy.
+
+OS appearance is distinct from app appearance. The authored device OS controls
+lockscreen, homescreen, status bar, notifications, and the default keyboard appearance;
+each app continues to own its internal theme.
 
 ## Episode Catalog Model
 
@@ -202,11 +212,14 @@ That includes:
 - status bar
 - Dynamic Island
 - lockscreen
+- homescreen
 - call overlays
 - notifications
 - keyboard lift and safe-area behavior
 
 These surfaces should scale from device logical metrics, not hardcoded render-pixel guesses.
+Camera direction targets semantic regions such as `lockscreen.clock`,
+`homescreen.grid`, `homescreen.dock`, `notification.center`, and `keyboard`.
 
 ## Recommended Local Workflow
 

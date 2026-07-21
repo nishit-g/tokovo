@@ -81,6 +81,38 @@ export type {
   HandPerformanceIR,
 } from "./episode-ir.js";
 
+export type {
+  InputSourceIR,
+  InputDirectionIR,
+  InputPlatformIR,
+  InputAppearanceIR,
+  InputLayoutIR,
+  InputReturnKeyIR,
+  InputSelectionIR,
+  InputCadenceIR,
+  InputKeyboardIR,
+  InputScriptStepIR,
+  InputSessionIR,
+} from "./input-session.js";
+
+export type {
+  NotificationInterruptionLevelIR,
+  NotificationPrivacyIR,
+  NotificationPreviewPolicyIR,
+  NotificationDeliveryConditionIR,
+  NotificationMediaIR,
+  NotificationContentIR,
+  NotificationNavigationTargetIR,
+  NotificationAppEventTargetIR,
+  NotificationActionTargetIR,
+  NotificationActionIR,
+  NotificationReplyIR,
+  NotificationIntentIR,
+  NotificationInteractionTypeIR,
+  NotificationInteractionIR,
+  NotificationIntentEmitter,
+} from "./notification.js";
+
 export {
   TrackEpisodeIRSchema,
   DeviceConfigSchema,
@@ -90,6 +122,9 @@ export {
   HandRigAssetsSchema,
   HandPerformanceCueSchema,
   HandPerformanceSchema,
+  InputSessionSchema,
+  NotificationIntentSchema,
+  NotificationInteractionSchema,
   validateTrackEpisodeIR,
   safeValidateTrackEpisodeIR,
 } from "./schemas.js";

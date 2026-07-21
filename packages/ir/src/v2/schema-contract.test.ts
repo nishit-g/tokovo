@@ -68,4 +68,55 @@ describe("IR contract matrix", () => {
       normalizeZodIssues(second.error.issues),
     );
   });
+
+  it("validates multilingual, IME-aware input sessions", () => {
+    const episode = createCanonicalTrackEpisodeIR({
+      inputSessions: [
+        {
+          id: "reply-ja",
+          deviceId: "phone",
+          appInstanceId: "phone:app_whatsapp",
+          fieldId: "composer",
+          startFrame: 30,
+          submitAtFrame: 120,
+          clearOnSubmit: true,
+          locale: "ja-JP",
+          direction: "auto",
+          script: [
+            {
+              type: "compose",
+              updates: ["k", "ko", "こん"],
+              commit: "こんにちは",
+              keys: ["k", "o", "n"],
+            },
+          ],
+          expectedFinalValue: "こんにちは",
+          keyboard: { appearance: "dark", returnKey: "send" },
+        },
+      ],
+    });
+
+    expect(TrackEpisodeIRSchema.parse(episode).inputSessions?.[0]).toMatchObject({
+      locale: "ja-JP",
+      fieldId: "composer",
+      clearOnSubmit: true,
+    });
+  });
+
+  it("rejects ambiguous input text plus script at the IR boundary", () => {
+    const episode = createCanonicalTrackEpisodeIR({
+      inputSessions: [
+        {
+          deviceId: "phone",
+          appInstanceId: "phone:app_whatsapp",
+          fieldId: "composer",
+          startFrame: 0,
+          text: "hello",
+          script: [{ type: "type", text: "world" }],
+        },
+      ],
+    });
+
+    expect(safeValidateTrackEpisodeIR(episode).success).toBe(false);
+  });
 });

@@ -6,7 +6,7 @@
         "declaration": true,
         "declarationMap": true
     },
-    "references": [{ "path": "../core" }, { "path": "../react" }],
+    "references": [{ "path": "../ir" }, { "path": "../react" }],
     "include": [
         "src/**/*"
     ],

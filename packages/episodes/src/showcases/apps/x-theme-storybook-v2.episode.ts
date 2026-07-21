@@ -70,8 +70,6 @@ export default defineEpisode({
           replyToId: "tw_storybook_v2_1",
           text: "Then don't rush it. Let the leaves keep their breathing room.",
           createdAt: baseTs + 12000,
-          typed: true,
-          charDelay: 2,
         });
         x.at("8.8s").addNotification({
           id: "nt_storybook_v2_1",
@@ -88,8 +86,6 @@ export default defineEpisode({
           senderId: "u_mira",
           text: "Good. Then the color script stays warm and the linework stays thin.",
           createdAt: baseTs + 25000,
-          typed: true,
-          charDelay: 2,
         });
       })
       .camera((cam) => {

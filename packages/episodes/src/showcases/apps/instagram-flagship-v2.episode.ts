@@ -75,8 +75,6 @@ export default defineEpisode({
           senderId: "ig_me",
           text: "This looks good. Please tell me the comments are exaggerating.",
           createdAt: baseTs + 10000,
-          typed: true,
-          charDelay: 2,
         });
         ig.at("9.2s").navigate("thread", { threadId: "ig_dm_flag_1" });
         ig.at("10.0s").addDMMessage({

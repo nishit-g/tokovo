@@ -2,7 +2,7 @@
  * OS Track Builder - Device state control
  *
  * @description Controls device-level state like time, battery,
- * network, notifications, DND mode.
+ * network and DND mode.
  *
  * @see docs/architecture/dsl-v2.md
  */
@@ -17,6 +17,10 @@ import { parseTimeToFrames } from "./utils/time.js";
 type GetDeclarationOrder = () => number;
 
 export interface OSStateOptions {
+  locale?: string;
+  appearance?: "light" | "dark";
+  hourCycle?: "h12" | "h24";
+  lockScreenWallpaper?: string;
   time?: Date | number;
   battery?: number;
   charging?: boolean;
@@ -32,14 +36,6 @@ export interface BatteryOptions {
 
 export interface NetworkOptions {
   strength?: number;
-}
-
-export interface NotificationOptions {
-  appId: string;
-  title: string;
-  body: string;
-  icon?: string;
-  mode?: "headsup" | "lockscreen" | "both";
 }
 
 // =============================================================================
@@ -66,6 +62,10 @@ export class OSPointBuilder {
       kind: "OS",
       type: "SET_STATE",
       payload: {
+        locale: options.locale,
+        appearance: options.appearance,
+        hourCycle: options.hourCycle,
+        lockScreenWallpaper: options.lockScreenWallpaper,
         time,
         battery: options.battery,
         charging: options.charging,
@@ -140,52 +140,6 @@ export class OSPointBuilder {
     });
   }
 
-  /**
-   * Show a notification.
-   */
-  notification(options: NotificationOptions): void {
-    const id = `notif_${this._frame}_${this._events.length}`;
-    this._events.push({
-      at: this._frame,
-      kind: "OS",
-      type: "NOTIFICATION_SHOW",
-      payload: {
-        id,
-        appId: options.appId,
-        title: options.title,
-        body: options.body,
-        icon: options.icon,
-        mode: options.mode,
-      },
-      _declarationOrder: this._getOrder(),
-    });
-  }
-
-  /**
-   * Dismiss a notification.
-   */
-  dismissNotification(id: string): void {
-    this._events.push({
-      at: this._frame,
-      kind: "OS",
-      type: "NOTIFICATION_DISMISS",
-      payload: { id },
-      _declarationOrder: this._getOrder(),
-    });
-  }
-
-  /**
-   * Dismiss all notifications.
-   */
-  dismissAllNotifications(): void {
-    this._events.push({
-      at: this._frame,
-      kind: "OS",
-      type: "NOTIFICATION_DISMISS_ALL",
-      payload: {},
-      _declarationOrder: this._getOrder(),
-    });
-  }
 }
 
 // =============================================================================

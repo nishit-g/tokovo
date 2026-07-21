@@ -6,7 +6,7 @@ export default defineEpisode({
     id: "v2-creator-friends-chat-no-overlay",
     title: "V2 Creator Group Chat (No Overlay): WhatsApp → X → WhatsApp",
     description:
-      "Creator room episode with WhatsApp group chat, X thread escalation, auto keyboard typing, notification banner, camera direction, and no overlays.",
+      "Creator room episode with WhatsApp group chat, X thread escalation, notification banner, camera direction, and no overlays.",
     category: "showcase",
     tags: ["v2", "creator", "chat", "whatsapp", "x", "no-overlay", "bgm", "keyboard", "camera"],
   },
@@ -115,22 +115,23 @@ export default defineEpisode({
       // DEVICE (banner bait + app switches)
       // ============================================
       .deviceTrack("phone", (d) => {
-        // Heads-up X banner while still in WhatsApp
-        d.at("6.6s").notificationShow({
-          id: "x_banter",
-          appId: "app_x",
-          title: "X",
-          body: "Your launch reply is moving fast.",
-          mode: "headsup",
-          priority: "high",
-        });
-
         d.at("9.0s").openApp("app_x", {
           transition: { durationFrames: 18, style: "iosZoom" },
         });
 
         d.at("22.0s").openApp("app_whatsapp", {
           transition: { durationFrames: 18, style: "iosZoom" },
+        });
+      })
+      .notificationTrack("phone", (notifications) => {
+        notifications.at("6.6s").deliver({
+          id: "x_banter",
+          appId: "app_x",
+          content: { title: "X", body: "Your launch reply is moving fast." },
+          category: "social",
+          interruption: "timeSensitive",
+          privacy: "public",
+          threadId: "launch-reply",
         });
       })
 
@@ -145,8 +146,6 @@ export default defineEpisode({
         wa.at("3.4s").receive("Tess", "If we reply, it has to sound intentional.");
 
         wa.at("4.8s").send("Call it pacing. The reveal needed tension.", {
-          typed: true,
-          charDelay: 2,
         });
 
         wa.at("7.2s").receive("Jay", "Pacing? The quote post is already the headline.");
@@ -164,8 +163,6 @@ export default defineEpisode({
         x.at("16.2s").postTweet({
           authorId: "u_me",
           text: "Launch-day timing was deliberate. The episode needed a second act.",
-          typed: true,
-          charDelay: 2,
           viewCount: 2400,
           shareCount: 70,
           bookmarkCount: 180,
@@ -183,8 +180,6 @@ export default defineEpisode({
         wa.at("26.2s").receive("Tess", "Next beat: controlled follow-up, not damage control.");
 
         wa.at("28.2s").send("One last line, then we let the clip breathe.", {
-          typed: true,
-          charDelay: 2,
         });
 
         wa.at("32.8s").receive("Jay", "Too late. This is already the next episode.");
@@ -197,7 +192,7 @@ export default defineEpisode({
         cam.at("0s").focus("device", { scale: 1.02, duration: "0.35s" });
         cam.span("1.0s", "6.4s").trackCinematic("lastMessage", { scale: 1.12, smoothing: 0.2 });
 
-        cam.at("6.65s").focus("notification_banner", { scale: 1.18, duration: "0.45s" });
+        cam.at("6.65s").focus("notification.banner", { scale: 1.18, duration: "0.45s" });
         cam.at("7.8s").focus("lastMessage", { scale: 1.12, duration: "0.35s" });
 
         cam.at("9.45s").focus("tweet_card", { scale: 1.1, duration: "0.45s" });

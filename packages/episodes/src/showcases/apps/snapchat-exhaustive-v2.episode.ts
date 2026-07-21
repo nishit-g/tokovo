@@ -47,21 +47,21 @@ export default defineEpisode({
           sc.at("5.0s").typingEnd("Bestie");
           sc.at("5.2s").receiveSnap("Bestie", { snapType: "photo", timer: 5 });
           sc.at("7.0s").openSnap("snap-156-0");
-          sc.at("9.0s").send("i am absolutely freaking out", { typed: true });
+          sc.at("9.0s").send("i am absolutely freaking out", {});
           sc.at("10.2s").openConversation("conv_room_v2");
-          sc.at("11.2s").send("nobody panic but panic", { typed: true });
+          sc.at("11.2s").send("nobody panic but panic", {});
           sc.at("13.0s").receive("Jay", "this is already the wrong energy");
           sc.at("14.8s").receive("Tara", "post the cropped version");
           sc.at("16.4s").sendSnap({ snapType: "photo" });
           sc.at("18.0s").openConversation("conv_crush_v2");
           sc.at("19.4s").receive("Ari", "why is the group louder than my notifications");
-          sc.at("21.0s").send("because bestie sent forbidden evidence", { typed: true });
+          sc.at("21.0s").send("because bestie sent forbidden evidence", {});
           sc.at("23.2s").receive("Ari", "please tell me you didn't screenshot");
-          sc.at("24.4s").send("that would be unethical", { typed: true });
+          sc.at("24.4s").send("that would be unethical", {});
           sc.at("25.0s").screenshot("snap-156-0");
           sc.at("27.0s").openConversation("conv_bestie_v2");
           sc.at("28.4s").receive("Bestie", "liar");
-          sc.at("30.0s").send("i prefer historian", { typed: true });
+          sc.at("30.0s").send("i prefer historian", {});
           sc.at("33.0s").updateStreak(513);
         },
       )

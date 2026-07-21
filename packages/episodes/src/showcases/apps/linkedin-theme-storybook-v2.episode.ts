@@ -65,8 +65,6 @@ export default defineEpisode({
           senderId: "me",
           text: "Good. The whole point is warmth without losing seriousness.",
           createdAt: baseTs + 10000,
-          typed: true,
-          charDelay: 2,
         });
       })
       .camera((cam) => {

@@ -17,7 +17,6 @@ export interface TeamsUiState {
   previousSurface?: TeamsScreen;
   activeListFilter: TeamsListFilter;
   activeTab: TeamsTab;
-  notificationIds: string[];
 }
 
 export interface TeamsState extends TeamsEntityMaps {

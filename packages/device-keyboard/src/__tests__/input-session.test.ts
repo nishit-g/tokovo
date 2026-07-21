@@ -8,6 +8,7 @@ import {
   normalizeInputLocale,
   prepareInputProgram,
   prepareInputSession,
+  projectInputAudioCues,
   projectInputSession,
   resolveInputExperience,
   type InputSessionIntent,
@@ -16,7 +17,10 @@ import {
 function intent(
   overrides: Partial<InputSessionIntent> = {},
 ): InputSessionIntent {
-  const hasTextOverride = Object.prototype.hasOwnProperty.call(overrides, "text");
+  const hasTextOverride = Object.prototype.hasOwnProperty.call(
+    overrides,
+    "text",
+  );
   const text = hasTextOverride ? overrides.text : "hello";
   const expectedFinalValue = Object.prototype.hasOwnProperty.call(
     overrides,
@@ -62,6 +66,7 @@ describe("canonical multilingual input sessions", () => {
     expect(evaluateInputSession(first, 500).submittedValue).toBe(
       "a reasonably long sentence",
     );
+    expect(evaluateInputSession(first, 500).draft).toBe("");
     expect(evaluateInputSession(second, 500).submittedValue).toBe(
       "a reasonably long sentence",
     );
@@ -88,7 +93,7 @@ describe("canonical multilingual input sessions", () => {
     );
     const state = evaluateInputSession(session, session.submitAtFrame ?? 0);
     expect(state.submittedValue).toBe(text);
-    expect(state.draft).toBe(text);
+    expect(state.draft).toBe("");
   });
 
   it("uses locale and first-strong text to resolve bidi direction", () => {
@@ -141,6 +146,29 @@ describe("canonical multilingual input sessions", () => {
         supportsImeComposition: true,
         supportsGraphemeEditing: true,
       });
+    },
+  );
+
+  it.each([
+    ["ios", "light"],
+    ["ios", "dark"],
+    ["android", "light"],
+    ["android", "dark"],
+  ] as const)(
+    "keeps every %s/%s key row above the system safe area",
+    (platform, appearance) => {
+      const { geometry } = resolveInputExperience({
+        platform,
+        appearance,
+        locale: "en-US",
+      }).theme;
+      const requiredHeight =
+        geometry.topPadding +
+        geometry.suggestionHeight +
+        geometry.keyHeight * 4 +
+        geometry.rowGap * 4 +
+        geometry.bottomPadding;
+      expect(requiredHeight).toBeLessThanOrEqual(geometry.height);
     },
   );
 
@@ -299,9 +327,36 @@ describe("canonical multilingual input sessions", () => {
     ).toThrow("INPUT_TIMING_OVERFLOW");
   });
 
+  it("projects key audio from prepared operations and skips paste and voice insertion", () => {
+    const program = prepareInputProgram([
+      intent({
+        text: undefined,
+        expectedFinalValue: undefined,
+        script: [
+          { type: "type", text: "a" },
+          { type: "paste", text: " pasted" },
+          { type: "voice", text: " spoken" },
+          { type: "switchLayout", layout: "emoji" },
+          { type: "deleteBackward" },
+          { type: "setSuggestions", suggestions: ["done"] },
+          { type: "chooseSuggestion", index: 0, text: "done" },
+        ],
+      }),
+    ]);
+
+    expect(projectInputAudioCues(program).map((cue) => cue.kind)).toEqual([
+      "key",
+      "layout",
+      "delete",
+      "suggestion",
+      "submit",
+    ]);
+  });
+
   it("rejects invalid locale tags with an actionable diagnostic", () => {
-    expect(() => normalizeInputLocale("not_a_locale!"))
-      .toThrow("INPUT_INVALID_LOCALE");
+    expect(() => normalizeInputLocale("not_a_locale!")).toThrow(
+      "INPUT_INVALID_LOCALE",
+    );
   });
 
   it("allows sessions on separate devices and rejects overlap on one device", () => {

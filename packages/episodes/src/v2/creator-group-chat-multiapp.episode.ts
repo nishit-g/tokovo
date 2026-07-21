@@ -169,16 +169,6 @@ export default defineEpisode({
       // DEVICE (heads-up bait + app switches)
       // ============================================
       .deviceTrack("phone", (d) => {
-        // Heads-up X banner while we're still in WhatsApp (camera target: notification_banner)
-        d.at("6.2s").notificationShow({
-          id: "x_banner",
-          appId: "app_x",
-          title: "X",
-          body: "Someone tagged you. Again.",
-          mode: "headsup",
-          priority: "high",
-        });
-
         // Switch to X
         d.at("16.0s").openApp("app_x", {
           transition: { durationFrames: 18, style: "iosZoom" },
@@ -187,6 +177,17 @@ export default defineEpisode({
         // Switch to iMessage for the producer follow-up.
         d.at("34.5s").openApp("app_imessage", {
           transition: { durationFrames: 18, style: "iosZoom" },
+        });
+      })
+      .notificationTrack("phone", (notifications) => {
+        notifications.at("6.2s").deliver({
+          id: "x_banner",
+          appId: "app_x",
+          content: { title: "X", body: "Someone tagged you. Again." },
+          category: "social",
+          interruption: "timeSensitive",
+          privacy: "public",
+          threadId: "tagged-thread",
         });
       })
 
@@ -216,12 +217,10 @@ export default defineEpisode({
             "The thread is calling it strategic timing. Lean into it.",
           );
 
-          // Typed reply (auto keyboard) for realism
+          // Reply beat.
           wa.at("7.8s").send(
             "It was pacing. We held the reveal for the second beat.",
             {
-              typed: true,
-              charDelay: 2,
             },
           );
 
@@ -249,8 +248,6 @@ export default defineEpisode({
           x.at("10s").postTweet({
             authorId: "u_me",
             text: "Strategic timing means the reveal lands when the audience is already watching.",
-            typed: true,
-            charDelay: 2,
             viewCount: 1900,
             shareCount: 40,
             bookmarkCount: 130,
@@ -279,8 +276,6 @@ export default defineEpisode({
             im.at("7.5s").send(
               "Give me five minutes. Turning the thread into act two.",
               {
-                typed: true,
-                charDelay: 2,
               },
             );
             im.at("11.5s").receive(
@@ -292,7 +287,7 @@ export default defineEpisode({
       )
 
       // ============================================
-      // CAMERA (anchors: device/app/keyboard/notification_banner + app semantics)
+      // CAMERA (anchors: device/app/keyboard/notification.banner + app semantics)
       // ============================================
       .camera((cam) => {
         cam.at("0s").focus("device", { scale: 1.02, duration: "0.35s" });
@@ -303,7 +298,7 @@ export default defineEpisode({
         // Heads-up banner focus (device-owned)
         cam
           .at("6.25s")
-          .focus("notification_banner", { scale: 1.18, duration: "0.45s" });
+          .focus("notification.banner", { scale: 1.18, duration: "0.45s" });
         cam.at("7.2s").focus("lastMessage", { scale: 1.12, duration: "0.35s" });
 
         // X: tweet card + keyboard (device-owned) during compose

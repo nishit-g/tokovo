@@ -67,8 +67,6 @@ export default defineEpisode({
           authorId: "u2",
           text: "Yes. Motion that explains structure is more useful than motion that just says 'premium'.",
           createdAt: baseTs + 12000,
-          typed: true,
-          charDelay: 2,
         });
         li.at("10.0s").navigate("profile", { userId: "me" });
         li.at("13.6s").navigate("notifications");
@@ -80,8 +78,6 @@ export default defineEpisode({
           senderId: "me",
           text: "Tone is strong. Cut the fake humility and keep the actual hiring criteria.",
           createdAt: baseTs + 24000,
-          typed: true,
-          charDelay: 2,
         });
       })
       .camera((cam) => {

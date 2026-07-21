@@ -100,8 +100,6 @@ export interface SceneOptions {
 
 export interface ConversationMessageOptions {
   id?: string;
-  typed?: boolean;
-  charDelay?: number;
   silent?: boolean;
   replyTo?: MessageHandle;
   hold?: string | number;
@@ -139,16 +137,12 @@ export interface SocialPostOptions {
   author?: ActorRef;
   createdAt?: number;
   mediaUrl?: string;
-  typed?: boolean;
-  charDelay?: number;
   hold?: string | number;
 }
 
 export interface SocialCommentOptions {
   id?: string;
   createdAt?: number;
-  typed?: boolean;
-  charDelay?: number;
   hold?: string | number;
 }
 
@@ -620,8 +614,6 @@ export class SceneBuilder {
                 track.at(frame).send(text, {
                   messageId: id,
                   silent: message.silent,
-                  typed: message.typed,
-                  charDelay: message.charDelay,
                   replyTo: message.replyTo
                     ? { messageId: message.replyTo.id }
                     : undefined,
@@ -705,8 +697,6 @@ export class SceneBuilder {
                 messageId: id,
                 senderId: currentIdentity.id,
                 senderName: currentIdentity.name,
-                typed: message.typed,
-                charDelay: message.charDelay,
                 replyToMessageId: message.replyTo?.id,
               }),
             receive: (frame, id, from, text, message) =>
@@ -716,8 +706,6 @@ export class SceneBuilder {
                 messageId: id,
                 senderId: from.id,
                 senderName: from.name,
-                typed: message.typed,
-                charDelay: message.charDelay,
                 replyToMessageId: message.replyTo?.id,
               }),
           }),
@@ -738,8 +726,6 @@ export class SceneBuilder {
                 threadId: options.conversationId,
                 senderId: currentIdentity.id,
                 text,
-                typed: message.typed,
-                charDelay: message.charDelay,
               }),
             receive: (frame, id, from, text, message) =>
               track.at(frame).addDMMessage({
@@ -747,8 +733,6 @@ export class SceneBuilder {
                 threadId: options.conversationId,
                 senderId: from.id,
                 text,
-                typed: message.typed,
-                charDelay: message.charDelay,
               }),
           }),
         );
@@ -768,8 +752,6 @@ export class SceneBuilder {
                 threadId: options.conversationId,
                 senderId: currentIdentity.id,
                 text,
-                typed: message.typed,
-                charDelay: message.charDelay,
               }),
             receive: (frame, id, from, text, message) =>
               track.at(frame).sendDM({
@@ -777,8 +759,6 @@ export class SceneBuilder {
                 threadId: options.conversationId,
                 senderId: from.id,
                 text,
-                typed: message.typed,
-                charDelay: message.charDelay,
               }),
           }),
         );
@@ -798,8 +778,6 @@ export class SceneBuilder {
                 threadId: options.conversationId,
                 senderId: currentIdentity.id,
                 text,
-                typed: message.typed,
-                charDelay: message.charDelay,
               }),
             receive: (frame, id, from, text, message) =>
               track.at(frame).sendMessage({
@@ -807,8 +785,6 @@ export class SceneBuilder {
                 threadId: options.conversationId,
                 senderId: from.id,
                 text,
-                typed: message.typed,
-                charDelay: message.charDelay,
               }),
           }),
         );
@@ -845,8 +821,6 @@ export class SceneBuilder {
                   caption: text,
                   imageUrl: post.mediaUrl ?? "/placeholders/media.svg",
                   createdAt: post.createdAt,
-                  typed: post.typed,
-                  charDelay: post.charDelay,
                 }),
               comment: (frame, id, post, authorRef, text, comment) =>
                 track.at(frame).commentOnPost({
@@ -876,8 +850,6 @@ export class SceneBuilder {
                   authorId: authorRef.id,
                   text,
                   createdAt: post.createdAt,
-                  typed: post.typed,
-                  charDelay: post.charDelay,
                 }),
               comment: (frame, id, post, authorRef, text, comment) =>
                 track.at(frame).comment({
@@ -886,8 +858,6 @@ export class SceneBuilder {
                   authorId: authorRef.id,
                   text,
                   createdAt: comment.createdAt,
-                  typed: comment.typed,
-                  charDelay: comment.charDelay,
                 }),
               open: (frame, post) =>
                 track.at(frame).navigate("post", { postId: post.id }),
@@ -909,8 +879,6 @@ export class SceneBuilder {
                   authorId: authorRef.id,
                   text,
                   createdAt: post.createdAt,
-                  typed: post.typed,
-                  charDelay: post.charDelay,
                 }),
               comment: (frame, id, post, authorRef, text, comment) =>
                 track.at(frame).replyTweet({
@@ -919,8 +887,6 @@ export class SceneBuilder {
                   authorId: authorRef.id,
                   text,
                   createdAt: comment.createdAt,
-                  typed: comment.typed,
-                  charDelay: comment.charDelay,
                 }),
               open: (frame, post) =>
                 track.at(frame).navigate("tweet", { tweetId: post.id }),

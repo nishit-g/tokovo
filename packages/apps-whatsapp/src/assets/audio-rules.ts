@@ -10,13 +10,6 @@ export const whatsappAudioRules: AutoSoundRule[] = [
     duckMusic: true,
   },
   {
-    match: { kind: "APP", appId: WHATSAPP_APP_ID, type: "MESSAGE_RECEIVED" },
-    action: "PLAY_ONE_SHOT",
-    sound: "app_whatsapp.message_in",
-    bus: "ui",
-    duckMusic: true,
-  },
-  {
     match: { kind: "APP", appId: WHATSAPP_APP_ID, type: "TYPING_START" },
     action: "START_LOOP",
     sound: "app_whatsapp.typing_loop",

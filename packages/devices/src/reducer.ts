@@ -2,7 +2,6 @@ import { produce } from "immer";
 import {
   TimelineEvent,
   DeviceState,
-  DEFAULT_NOTIFICATION_CENTER,
   DEFAULT_DYNAMIC_ISLAND,
   OpenAppEvent,
   SetBadgeEvent,
@@ -22,7 +21,7 @@ const SCREEN_RECORDING_STOP_FEEDBACK_FRAMES = 30;
 
 /**
  * Device Reducer
- * Handles all DEVICE events: lock/unlock, app open/close, notifications, calls
+ * Handles device navigation, chrome, recording, and call events.
  */
 export function deviceReducer(
   devices: Record<string, DeviceState>,
@@ -36,16 +35,6 @@ export function deviceReducer(
 
     const device = draft[deviceId];
     if (!device) return;
-
-    // Initialize notification center if needed with fresh mutable arrays
-    if (!device.notificationCenter) {
-      device.notificationCenter = {
-        ...DEFAULT_NOTIFICATION_CENTER,
-        items: [],
-        groups: [],
-        headsUpQueue: [],
-      };
-    }
 
     switch (event.type) {
       // --- Lock/Unlock ---
@@ -137,21 +126,6 @@ export function deviceReducer(
         }
         break;
       }
-
-      // =================================================================
-      // NOTIFICATION EVENTS - DELEGATED TO @tokovo/device-notifications
-      // The following cases are intentionally removed/commented out.
-      // See: packages/device-notifications/src/reducer.ts
-      // =================================================================
-
-      // case "SHOW_NOTIFICATION": - handled by device-notifications
-      // case "UPDATE_NOTIFICATION": - handled by device-notifications
-      // case "DISMISS_NOTIFICATION": - handled by device-notifications
-      // case "TAP_NOTIFICATION": - handled by device-notifications
-      // case "SWIPE_NOTIFICATION": - handled by device-notifications
-      // case "REPLY_NOTIFICATION": - handled by device-notifications
-      // case "TOGGLE_NOTIFICATION_PANEL": - handled by device-notifications
-      // case "CLEAR_ALL_NOTIFICATIONS": - handled by device-notifications
 
       case "SET_DYNAMIC_ISLAND": {
         const e = event as SetDynamicIslandEvent;

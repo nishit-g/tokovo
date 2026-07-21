@@ -38,7 +38,7 @@ export function createTokovoRegistries(
   });
 
   registerBuiltInSounds(plugins.sounds);
-  // Official device-owned anchors (device/app/keyboard/dynamicIsland/banner)
+  // Static device-owned anchors (device/app/dynamicIsland/banner).
   plugins.anchors.register(DeviceAnchorProvider);
 
   return { engine, plugins };

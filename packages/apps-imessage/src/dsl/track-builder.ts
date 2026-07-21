@@ -37,8 +37,6 @@ export interface SendMessageInput {
   replyTo?: MessageReference;
   mentions?: string[];
   effect?: IMessageBubbleEffect;
-  typed?: boolean;
-  charDelay?: number;
 }
 
 export interface ReceiveMessageInput {
@@ -169,8 +167,6 @@ export class IMessagePointBuilder {
       replyTo: input.replyTo,
       mentions: input.mentions,
       effect: input.effect,
-      typed: input.typed,
-      charDelay: input.charDelay,
     }));
   }
 

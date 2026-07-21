@@ -1,4 +1,5 @@
 import React from "react";
+import { useFps, useTime } from "@tokovo/react";
 import type { TeamsState } from "../../types/index.js";
 import {
   callGridStyle,
@@ -15,6 +16,8 @@ import { Avatar } from "../shared/Avatar.js";
 import { CallControls } from "../shared/CallControls.js";
 
 export const CallOverlayScreen: React.FC<{ state: TeamsState }> = ({ state }) => {
+  const frame = useTime();
+  const fps = useFps();
   const call = state.activeCallId ? state.calls[state.activeCallId] : undefined;
   const participants = (call?.participantIds ?? []).map((id) => ({
     id,
@@ -33,7 +36,9 @@ export const CallOverlayScreen: React.FC<{ state: TeamsState }> = ({ state }) =>
       <div style={callGridStyle}>
         {participants.slice(0, 6).map((participant, index) => (
           <div key={participant.id} style={callTileStyle}>
-            <div style={callSpeakerRingStyle(call?.dominantSpeakerId === participant.id)}>
+            <div
+              style={callSpeakerRingStyle(call?.dominantSpeakerId === participant.id, frame, fps)}
+            >
               <Avatar name={participant.name} size={48} presence={participant.presence} />
             </div>
             <div style={{ fontSize: 15, fontWeight: 700 }}>{participant.name}</div>
@@ -55,9 +60,9 @@ export const CallOverlayScreen: React.FC<{ state: TeamsState }> = ({ state }) =>
                     : "Listening"}
               </span>
               <div style={callWaveformStyle(call?.dominantSpeakerId === participant.id)}>
-                <span style={callWaveBarStyle(8, 0)} />
-                <span style={callWaveBarStyle(12, 120)} />
-                <span style={callWaveBarStyle(9, 240)} />
+                <span style={callWaveBarStyle(8, 0, frame, fps)} />
+                <span style={callWaveBarStyle(12, 120, frame, fps)} />
+                <span style={callWaveBarStyle(9, 240, frame, fps)} />
               </div>
             </div>
           </div>

@@ -1,5 +1,9 @@
 import React from "react";
-import { KeyboardAwareView, ScrollableContent, useKeyboardState } from "@tokovo/react";
+import {
+  KeyboardAwareView,
+  ScrollableContent,
+  useInputField,
+} from "@tokovo/react";
 import type { TeamsState } from "../../types/index.js";
 import {
   selectActiveDm,
@@ -31,7 +35,7 @@ function frameLabel(frame: number): string {
 }
 
 export const ThreadScreen: React.FC<{ state: TeamsState }> = ({ state }) => {
-  const keyboardState = useKeyboardState();
+  const composerInput = useInputField("composer");
   const dm = selectActiveDm(state);
   const thread = selectActiveThread(state);
   const messages = selectVisibleMessages(state);
@@ -47,10 +51,7 @@ export const ThreadScreen: React.FC<{ state: TeamsState }> = ({ state }) => {
         "offline"
       : `#${state.activeChannelId ?? "channel"} • ${thread?.participantIds.length ?? 0} people`;
 
-  const draftText =
-    keyboardState.isKeyboardVisible && keyboardState.inputText
-      ? keyboardState.inputText
-      : storedDraftText;
+  const draftText = composerInput?.value ?? storedDraftText;
   const typingIds = selectActiveTypingUserIds(state).filter(
     (userId) => userId !== TEAMS_SELF_USER_ID,
   );
@@ -127,7 +128,9 @@ export const ThreadScreen: React.FC<{ state: TeamsState }> = ({ state }) => {
       <Composer
         text={draftText}
         typingLabel={typingLabel}
-        liveTyping={keyboardState.isKeyboardVisible}
+        liveTyping={composerInput?.isKeyboardVisible ?? false}
+        direction={composerInput?.direction}
+        language={composerInput?.locale.tag}
       />
     </KeyboardAwareView>
   );

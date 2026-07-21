@@ -1,9 +1,10 @@
 /**
  * iMessage Typing Indicator Component
- * 
+ *
  * Animated three-dot typing bubble
  */
 import React from "react";
+import { pulse, useFps, useTime } from "@tokovo/react";
 import { useIMessageTheme } from "../ui/ThemeContext.js";
 import { iMessageSpacing, iMessageAnimations } from "../config/tokens.js";
 import type { IMessageTheme } from "../config/imessage-theme.js";
@@ -13,9 +14,13 @@ interface TypingIndicatorProps {
   theme?: IMessageTheme;
 }
 
-export const TypingIndicator: React.FC<TypingIndicatorProps> = ({ theme: propTheme }) => {
+export const TypingIndicator: React.FC<TypingIndicatorProps> = ({
+  theme: propTheme,
+}) => {
   const contextTheme = useIMessageTheme();
   const theme = propTheme ?? contextTheme;
+  const frame = useTime();
+  const fps = useFps();
 
   return (
     <div
@@ -29,20 +34,27 @@ export const TypingIndicator: React.FC<TypingIndicatorProps> = ({ theme: propThe
         marginBottom: iMessageSpacing.messageGapNormal,
       }}
     >
-      {[0, 1, 2].map((i) => (
-        <div
-          key={i}
-          className="imessage-typing-dot"
-          style={{
-            width: iMessageSpacing.typingDotSize,
-            height: iMessageSpacing.typingDotSize,
-            borderRadius: iMessageSpacing.typingDotSize / 2,
-            backgroundColor: theme.colors.system.timestamp,
-            animation: `imessage-typing-pulse ${iMessageAnimations.typingDotDuration}ms ease-in-out infinite`,
-            animationDelay: `${i * iMessageAnimations.typingDotDelay}ms`,
-          }}
-        />
-      ))}
+      {[0, 1, 2].map((i) => {
+        const progress = pulse(
+          frame,
+          fps,
+          iMessageAnimations.typingDotDuration / 1000,
+          (i * iMessageAnimations.typingDotDelay) / 1000,
+        );
+        return (
+          <div
+            key={i}
+            style={{
+              width: iMessageSpacing.typingDotSize,
+              height: iMessageSpacing.typingDotSize,
+              borderRadius: iMessageSpacing.typingDotSize / 2,
+              backgroundColor: theme.colors.system.timestamp,
+              opacity: 0.4 + progress * 0.6,
+              transform: `scale(${0.9 + progress * 0.2})`,
+            }}
+          />
+        );
+      })}
     </div>
   );
 };

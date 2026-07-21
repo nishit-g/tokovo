@@ -138,17 +138,3 @@ export function getDynamicIslandWidget(
   if (!result) return null;
   return { appId: result.appId, component: result.widget.component };
 }
-
-/**
- * Get notification widgets for display
- */
-export function getNotificationWidgets(
-  registry: WidgetRegistryClass,
-  platform: Platform,
-  appIds: string[],
-): Array<{ appId: string; component: WidgetComponent }> {
-  return registry.getAll("notification", platform, appIds).map((r) => ({
-    appId: r.appId,
-    component: r.widget.component,
-  }));
-}

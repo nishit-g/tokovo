@@ -12,6 +12,8 @@ export {
   useAppId,
   useSafeAreaInsets,
   useKeyboardHeight,
+  useInputProgram,
+  useInputProjection,
   useConversation,
   useActiveConversation,
 } from "./TokovoContext.js";
@@ -28,7 +30,7 @@ export {
 
 export {
   useKeyboardAwareContainer,
-  useKeyboardState,
+  useInputField,
   KeyboardAwareView,
   ScrollableContent,
 } from "./KeyboardAware.js";
@@ -36,7 +38,8 @@ export type {
   UseKeyboardAwareContainerOptions,
   KeyboardAwareContainerResult,
   KeyboardAwareViewProps,
-  KeyboardInputState,
+  InputFieldState,
+  UseInputFieldOptions,
   ScrollableContentProps,
 } from "./KeyboardAware.js";
 
@@ -64,15 +67,6 @@ export {
   type TokovoRegistries,
   type TokovoRegistriesOverrides,
 } from "./registries/runtime.js";
-
-// =============================================================================
-// NOTIFICATION VIEWS
-// =============================================================================
-export {
-  createNotificationViewRegistry,
-  NotificationViewRegistryClass,
-} from "./notifications/registry.js";
-export type { NotificationViewProps, NotificationViewComponent } from "./notifications/registry.js";
 
 // =============================================================================
 // PLUGIN VALIDATION UTILS

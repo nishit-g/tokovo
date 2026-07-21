@@ -1,11 +1,21 @@
-import React, { useEffect } from "react";
+import React from "react";
 import { Img } from "remotion";
 import type { PluginViewProps } from "@tokovo/core";
-import { useKeyboardState } from "@tokovo/react";
-import { Header, InputBar, MessageBubble, TypingIndicator, ScreenEffect, SearchBar } from "../components/index.js";
+import { useInputField } from "@tokovo/react";
+import {
+  Header,
+  InputBar,
+  MessageBubble,
+  TypingIndicator,
+  ScreenEffect,
+  SearchBar,
+} from "../components/index.js";
 import { computeMessageGap, iMessageSpacing } from "../config/index.js";
-import type { IMessageConversation, IMessageMessage, IMessageState } from "../types/index.js";
-import { injectIMessageStyles } from "../styles.js";
+import type {
+  IMessageConversation,
+  IMessageMessage,
+  IMessageState,
+} from "../types/index.js";
 import { IMessageThemeProvider, useIMessageTheme } from "./ThemeContext.js";
 import type { ScreenEffectType } from "../components/ScreenEffect.js";
 
@@ -20,10 +30,6 @@ type IMessageViewProps = PluginViewProps & {
 
 export const IMessageView: React.FC<IMessageViewProps> = (props) => {
   const world = props.world;
-
-  useEffect(() => {
-    injectIMessageStyles();
-  }, []);
 
   const state = world.appState?.app_imessage as IMessageState | undefined;
   const themeMode = state?.themeMode ?? "light";
@@ -75,7 +81,12 @@ export const IMessageView: React.FC<IMessageViewProps> = (props) => {
         conversation={state.conversations?.[activeConversationId]}
         safeAreaTop={props.safeAreaInsets?.top}
         safeAreaBottom={props.safeAreaInsets?.bottom}
-        activeScreenEffect={state.activeScreenEffect as ScreenEffectType | undefined}
+        activeScreenEffect={
+          state.activeScreenEffect as ScreenEffectType | undefined
+        }
+        activeScreenEffectStartedAtFrame={
+          state.activeScreenEffectStartedAtFrame
+        }
         searchQuery={state.searchQuery}
       />
     );
@@ -96,6 +107,7 @@ const ChatView: React.FC<{
   safeAreaTop?: number;
   safeAreaBottom?: number;
   activeScreenEffect?: ScreenEffectType;
+  activeScreenEffectStartedAtFrame?: number;
   searchQuery?: string;
 }> = ({
   world: _world,
@@ -105,6 +117,7 @@ const ChatView: React.FC<{
   safeAreaTop,
   safeAreaBottom,
   activeScreenEffect,
+  activeScreenEffectStartedAtFrame,
   searchQuery,
 }) => {
   const theme = useIMessageTheme();
@@ -113,11 +126,8 @@ const ChatView: React.FC<{
     return <EmptyState />;
   }
 
-  const keyboardState = useKeyboardState();
-  const draftText =
-    keyboardState.isKeyboardVisible && keyboardState.inputText
-      ? keyboardState.inputText
-      : (conversation.draft ?? "");
+  const composerInput = useInputField("composer");
+  const draftText = composerInput?.value ?? conversation.draft ?? "";
 
   const messages = conversation.messages ?? [];
   const lastOutgoingId = (() => {
@@ -142,7 +152,11 @@ const ChatView: React.FC<{
       }}
     >
       <Header
-        name={conversation.title || conversation.participants.map((p) => p.name).join(", ") || "Messages"}
+        name={
+          conversation.title ||
+          conversation.participants.map((p) => p.name).join(", ") ||
+          "Messages"
+        }
         avatar={conversation.avatar}
         isGroup={conversation.isGroup}
         participantCount={conversation.participants.length}
@@ -210,11 +224,18 @@ const ChatView: React.FC<{
         theme={theme}
         draft={draftText}
         safeAreaBottom={safeAreaBottom}
-        showCursor={keyboardState.isKeyboardVisible}
+        showCursor={composerInput?.isKeyboardVisible ?? false}
+        inputDirection={composerInput?.direction}
+        inputLanguage={composerInput?.locale.tag}
       />
 
       {/* Screen effect overlay */}
-      {activeScreenEffect && <ScreenEffect effect={activeScreenEffect} />}
+      {activeScreenEffect && activeScreenEffectStartedAtFrame !== undefined ? (
+        <ScreenEffect
+          effect={activeScreenEffect}
+          startFrame={activeScreenEffectStartedAtFrame}
+        />
+      ) : null}
     </div>
   );
 };
@@ -386,7 +407,12 @@ const InfoView: React.FC<{
         theme={theme}
         safeAreaTop={safeAreaTop}
       />
-      <div style={{ padding: iMessageSpacing.screenPaddingH, color: theme.colors.system.timestamp }}>
+      <div
+        style={{
+          padding: iMessageSpacing.screenPaddingH,
+          color: theme.colors.system.timestamp,
+        }}
+      >
         Group info, media, and member controls go here.
       </div>
     </div>
@@ -415,7 +441,12 @@ const MediaView: React.FC<{
         theme={theme}
         safeAreaTop={safeAreaTop}
       />
-      <div style={{ padding: iMessageSpacing.screenPaddingH, color: theme.colors.system.timestamp }}>
+      <div
+        style={{
+          padding: iMessageSpacing.screenPaddingH,
+          color: theme.colors.system.timestamp,
+        }}
+      >
         Media grid goes here.
       </div>
     </div>

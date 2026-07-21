@@ -40,8 +40,6 @@ describe("navigation reducer", () => {
 
     navigationReducer(world, { kind: "DEVICE", type: "UNKNOWN", deviceId: "phone" });
 
-    navigationReducer(world, { kind: "DEVICE", type: "SHOW_NOTIFICATION", deviceId: "phone" });
-
     navigationReducer(world, { kind: "DEVICE", type: "LOCK", deviceId: "missing" });
     expect(warnSpy).toHaveBeenCalled();
 

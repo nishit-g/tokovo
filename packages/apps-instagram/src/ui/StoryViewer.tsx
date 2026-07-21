@@ -1,8 +1,15 @@
 import React from "react";
 import type { WorldState } from "@tokovo/core";
+import { DeterministicImage } from "@tokovo/react";
 import { AppShell } from "./AppShell.js";
 import { Avatar, Icon, ProgressBars } from "./components.js";
-import { getActiveStory, getActiveStorySet, getStoriesForSet, getThreadDraft, getUserById } from "../runtime/selectors.js";
+import {
+  getActiveStory,
+  getActiveStorySet,
+  getStoriesForSet,
+  getThreadDraft,
+  getUserById,
+} from "../runtime/selectors.js";
 
 export const StoryViewer: React.FC<{ world: WorldState }> = ({ world }) => {
   const storySet = getActiveStorySet(world);
@@ -12,7 +19,7 @@ export const StoryViewer: React.FC<{ world: WorldState }> = ({ world }) => {
   const appState = world.appState?.app_instagram;
   const replyThread =
     appState && typeof appState === "object" && "activeThreadId" in appState
-      ? (appState as { activeThreadId?: string | null }).activeThreadId ?? null
+      ? ((appState as { activeThreadId?: string | null }).activeThreadId ?? null)
       : null;
   const replyDraft = getThreadDraft(world, replyThread);
 
@@ -20,21 +27,37 @@ export const StoryViewer: React.FC<{ world: WorldState }> = ({ world }) => {
     <AppShell immersive>
       <div style={{ position: "relative", flex: 1, minHeight: 0 }}>
         {story ? (
-          <img
+          <DeterministicImage
             src={story.mediaUrl}
             alt=""
-            style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }}
+            style={{
+              position: "absolute",
+              inset: 0,
+              width: "100%",
+              height: "100%",
+              objectFit: "cover",
+            }}
           />
         ) : null}
         <div
           style={{
             position: "absolute",
             inset: 0,
-            background: "linear-gradient(180deg, rgba(0,0,0,0.35), transparent 18%, transparent 72%, rgba(0,0,0,0.45))",
+            background:
+              "linear-gradient(180deg, rgba(0,0,0,0.35), transparent 18%, transparent 72%, rgba(0,0,0,0.45))",
           }}
         />
 
-        <div style={{ position: "relative", zIndex: 1, padding: 14, display: "flex", flexDirection: "column", height: "100%" }}>
+        <div
+          style={{
+            position: "relative",
+            zIndex: 1,
+            padding: 14,
+            display: "flex",
+            flexDirection: "column",
+            height: "100%",
+          }}
+        >
           <ProgressBars items={stories} activeStoryId={story?.id ?? null} />
           <div style={{ marginTop: 12, display: "flex", alignItems: "center", gap: 10 }}>
             <Avatar size={32} src={author?.avatarUrl} ring />

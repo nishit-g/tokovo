@@ -3,7 +3,6 @@ import {
   TokovoConfig,
   createConfig,
   getTimingConfig,
-  getKeyboardConfig,
   getAnimationConfig,
   getRenderingConfig,
   getAudioConfig,
@@ -22,7 +21,6 @@ describe("engine config", () => {
 
   it("exposes config getters", () => {
     expect(getTimingConfig().effectCleanupBuffer).toBeGreaterThan(0);
-    expect(getKeyboardConfig(undefined, "ios").height).toBeGreaterThan(0);
     expect(getAnimationConfig().defaultDuration).toBeGreaterThan(0);
     expect(getRenderingConfig().maxEventsPerFrame).toBeGreaterThan(0);
     expect(getAudioConfig().defaultVolume).toBeGreaterThan(0);

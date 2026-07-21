@@ -53,7 +53,7 @@ export default defineEpisode({
       .whatsapp("phone", "dm_record_v2", (wa) => {
         wa.switchTo("dm_record_v2", "0.8s");
         wa.at("1.6s").receive("Mina", "Does the recording chrome survive app switches?");
-        wa.at("3.0s").send("It should feel like iOS, not a watermark.", { typed: true, charDelay: 2 });
+        wa.at("3.0s").send("It should feel like iOS, not a watermark.", {});
       })
       .x("phone", (x) => {
         x.at("12.2s").navigate("timeline");
@@ -64,8 +64,6 @@ export default defineEpisode({
           replyToId: "tw_rec_1",
           text: "The tiniest OS details are the whole trick.",
           createdAt: new Date("2026-04-10T21:12:00Z").getTime(),
-          typed: true,
-          charDelay: 2,
         });
       })
       .deviceTrack("phone", (d) => {

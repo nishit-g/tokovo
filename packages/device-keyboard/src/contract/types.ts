@@ -205,6 +205,7 @@ export type PreparedInputOperation =
     })
   | (PreparedInputOperationBase & {
       type: "submit";
+      clearDraft: boolean;
       keyPressDurationFrames?: number;
     })
   | (PreparedInputOperationBase & {
@@ -224,6 +225,7 @@ export interface PreparedInputSession {
   startFrame: number;
   endFrame: number;
   submitAtFrame?: number;
+  clearOnSubmit: boolean;
   expectedFinalValue?: string;
   operations: readonly PreparedInputOperation[];
 }

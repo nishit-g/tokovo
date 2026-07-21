@@ -1,4 +1,4 @@
-import { KeyboardPlugin, OSDirectorPlugin } from "@tokovo/compiler";
+import { OSDirectorPlugin } from "@tokovo/compiler";
 import { dmTarget, threadTarget } from "@tokovo/apps-teams";
 import { defineEpisode } from "../../types/episode-definition.js";
 import { episode } from "../../code-first-episode.js";
@@ -74,7 +74,6 @@ export default defineEpisode({
         teams.at("5.8s").sendMessage({
           target: threadTarget("launch-core-v2", "th_pricing_v2"),
           text: "Hold the campaign. Give me the corrected copy and exact exposure count.",
-          typed: true,
         });
         teams.openDm("dm_exec_v2", "10.2s");
         teams.at("10.8s").receiveMessage({
@@ -85,7 +84,6 @@ export default defineEpisode({
         teams.at("12.2s").sendMessage({
           target: dmTarget("dm_exec_v2"),
           text: "Issue is contained. I need two minutes to confirm customer-facing wording.",
-          typed: true,
         });
         teams.at("15.4s").startCall({
           callId: "teams_flagship_call_v2",
@@ -109,7 +107,6 @@ export default defineEpisode({
         cam.at("10.3s").focus("dm_thread", { scale: 1.08, duration: "0.35s" });
         cam.at("15.5s").focus("call_surface", { scale: 1.08, duration: "0.35s" });
       })
-      .use(new KeyboardPlugin({ onlyForSentMessages: true, defaultCharDelay: 3 }))
       .use(new OSDirectorPlugin())
       .build(),
 });

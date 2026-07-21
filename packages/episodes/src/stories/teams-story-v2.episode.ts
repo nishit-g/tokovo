@@ -1,4 +1,3 @@
-import { KeyboardPlugin } from "@tokovo/compiler";
 import { dmTarget, threadTarget } from "@tokovo/apps-teams";
 import { defineEpisode } from "../types/episode-definition.js";
 import { episode } from "../code-first-episode.js";
@@ -50,7 +49,6 @@ export default defineEpisode({
         teams.at("4.0s").sendMessage({
           target: threadTarget("launch_story_v2", "th_story_v2"),
           text: "Then the homepage is both right and wrong, which is exactly the kind of problem I hate.",
-          typed: true,
         });
         teams.openDm("dm_exec_story_v2", "8.0s");
         teams.at("8.8s").receiveMessage({
@@ -61,13 +59,11 @@ export default defineEpisode({
         teams.at("10.4s").sendMessage({
           target: dmTarget("dm_exec_story_v2"),
           text: "Board version: the rollout is healthy, but mobile cache is lagging behind the intended design.",
-          typed: true,
         });
       })
       .camera((cam) => {
         cam.at("1.1s").focus("thread_view", { scale: 1.08, duration: "0.35s" });
         cam.at("8.1s").focus("dm_thread", { scale: 1.08, duration: "0.35s" });
       })
-      .use(new KeyboardPlugin({ onlyForSentMessages: true, defaultCharDelay: 3 }))
       .build(),
 });

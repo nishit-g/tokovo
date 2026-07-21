@@ -69,11 +69,19 @@ export type SemanticAnchorId =
   | "lastMessage"
   | "typingIndicator"
   | "notification"
+  | "notification.banner"
+  | "notification.lockScreen"
+  | "notification.center"
+  | "lockscreen.clock"
+  | "lockscreen.controls"
+  | "homescreen.grid"
+  | "homescreen.dock"
+  | "homescreen.search"
+  | `homescreen.icon:${string}`
   | `message:${string}`
   | "lastTweet"
   | "compose"
   | "keyboard"
-  | "headsUpNotification"
   | "dynamicIsland";
 
 export const DEFAULT_FRAMING: AnchorFraming = {

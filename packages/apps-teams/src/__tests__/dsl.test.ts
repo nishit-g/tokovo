@@ -16,7 +16,6 @@ describe("teams dsl v2", () => {
     builder.at("2s").sendMessage({
       target: dmTarget("dm_exec"),
       text: "hello",
-      typed: true,
     });
 
     expect(builder._events.map((event) => event.type)).toEqual([
@@ -51,7 +50,7 @@ describe("teams dsl v2", () => {
     });
   });
 
-  it("throws typed errors for invalid call input", () => {
+  it("throws domain errors for invalid call input", () => {
     let order = 0;
     const builder = createTeamsTrackBuilder(30, "phone", () => ++order);
 

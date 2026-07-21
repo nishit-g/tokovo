@@ -1,5 +1,6 @@
 import React from "react";
 import { AnimatedImage, Img } from "remotion";
+import { easeOutCubic, frameProgress, useFps, useTime } from "@tokovo/react";
 import type { IMessageMessage, IMessageTapbackType } from "../types/index.js";
 import { iOS_IMESSAGE_LIGHT, LAYOUT_CONSTANTS } from "../config/index.js";
 import { AudioMessage } from "./AudioMessage.js";
@@ -40,6 +41,8 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
   const { fromMe, text, attachments, effect, kind, isSystem } = message;
   const tapbacks = message.tapbacks ?? [];
   const { colors, typography, bubble } = theme;
+  const frame = useTime();
+  const fps = useFps();
 
   if (isSystem) {
     return (
@@ -74,7 +77,12 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
 
   const textColor = fromMe ? colors.bubble.myText : colors.bubble.otherText;
 
-  const effectStyle = getEffectStyle(effect?.bubble);
+  const effectStyle = getEffectStyle(
+    effect?.bubble,
+    frame,
+    message.timestamp,
+    fps,
+  );
 
   return (
     <div
@@ -386,18 +394,42 @@ const TapbackRow: React.FC<{
   );
 };
 
-function getEffectStyle(effect?: string) {
+function getEffectStyle(
+  effect: string | undefined,
+  frame: number,
+  startFrame: number,
+  fps: number,
+): React.CSSProperties {
   switch (effect) {
-    case "slam":
-      return { animation: "imessage-slam 0.3s ease-out" } as const;
-    case "loud":
-      return { animation: "imessage-loud 0.5s ease-in-out" } as const;
-    case "gentle":
-      return { animation: "imessage-gentle 0.8s ease-in-out" } as const;
+    case "slam": {
+      const progress = easeOutCubic(
+        frameProgress(frame, startFrame, 0.3 * fps),
+      );
+      const scale =
+        progress < 0.8
+          ? 0.8 + (progress / 0.8) * 0.25
+          : 1.05 - ((progress - 0.8) / 0.2) * 0.05;
+      return { transform: `scale(${scale})` };
+    }
+    case "loud": {
+      const progress = frameProgress(frame, startFrame, 0.5 * fps);
+      const scale =
+        progress < 0.5 ? 0.9 + progress * 0.44 : 1.12 - (progress - 0.5) * 0.24;
+      return { transform: `scale(${scale})` };
+    }
+    case "gentle": {
+      const progress = easeOutCubic(
+        frameProgress(frame, startFrame, 0.8 * fps),
+      );
+      return {
+        opacity: progress,
+        transform: `scale(${0.98 + progress * 0.02})`,
+      };
+    }
     case "ink":
-      return { filter: "blur(8px)", transition: "filter 0.3s ease" } as const;
+      return { filter: "blur(8px)" };
     default:
-      return {} as const;
+      return {};
   }
 }
 

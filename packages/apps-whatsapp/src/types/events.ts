@@ -33,8 +33,6 @@ export interface MessageSentPayload {
   messageId?: string;
   replyTo?: ReplyToPayload;
   silent?: boolean;
-  typed?: boolean;
-  charDelay?: number;
   messageType?: "text" | "call" | "call_missed";
   callType?: "voice" | "video";
   callDuration?: number;

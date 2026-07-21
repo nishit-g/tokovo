@@ -69,11 +69,6 @@ export type {
 } from "./registries/index.js";
 
 // =============================================================================
-// NOTIFICATIONS - Notification system
-// =============================================================================
-export * from "./notifications/index.js";
-
-// =============================================================================
 // PLUGIN - Plugin system
 // Named exports to avoid conflicts with ./registries
 // =============================================================================
@@ -85,7 +80,6 @@ export type {
   LoweringHandler,
   DslExtension,
   PluginAnchorRegistry,
-  PluginNotificationAdapter,
   PluginBootstrapContract,
   PluginBootstrapContext,
   PluginBootstrapMigrationResult,
@@ -175,11 +169,9 @@ export {
   TokovoConfig,
   createConfig,
   getTimingConfig,
-  getKeyboardConfig,
   getAnimationConfig,
   getRenderingConfig,
   getAudioConfig,
-  getNotificationsConfig,
   getCameraConfig,
   isDebugEnabled,
 } from "./config/index.js";

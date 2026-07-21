@@ -21,7 +21,6 @@ import type {
   TeamsDm,
   TeamsDraft,
   TeamsMessage,
-  TeamsNotification,
   TeamsPresence,
   TeamsState,
   TeamsThread,
@@ -34,14 +33,6 @@ import { syncViewMode, targetKey } from "./handlers/shared.js";
 
 type TeamsMessageInput = Omit<TeamsMessage, "createdAtFrame"> & {
   createdAtFrame?: number;
-};
-
-type TeamsNotificationInput = Omit<
-  TeamsNotification,
-  "appId" | "createdAtFrame" | "expiresAtFrame"
-> & {
-  createdAtFrame?: number;
-  expiresAtFrame?: number;
 };
 
 type TeamsDraftInput = Omit<TeamsDraft, "updatedAtFrame"> & {
@@ -63,7 +54,6 @@ export interface TeamsSnapshot {
   channels?: TeamsChannel[];
   threads?: TeamsThread[];
   messages?: TeamsMessageInput[];
-  notifications?: TeamsNotificationInput[];
   drafts?: TeamsDraftInput[];
   typing?: TeamsTypingInput[];
   presence?: Record<string, TeamsPresence>;
@@ -312,17 +302,6 @@ function cloneMessage(message: TeamsMessageInput): TeamsMessage {
   };
 }
 
-function cloneNotification(notification: TeamsNotificationInput): TeamsNotification {
-  return {
-    ...notification,
-    appId: "app_teams",
-    createdAtFrame: notification.createdAtFrame ?? 0,
-    expiresAtFrame:
-      notification.expiresAtFrame ??
-      (notification.createdAtFrame ?? 0) + 180,
-  };
-}
-
 function cloneDraft(draft: TeamsDraftInput): TeamsDraft {
   return {
     ...draft,
@@ -410,7 +389,6 @@ export const teamsBootstrap: PluginBootstrapContract<"app_teams"> = {
       ui: {
         ...createTeamsInitialState().ui,
         ...(baseState?.ui ?? {}),
-        notificationIds: [...(baseState?.ui?.notificationIds ?? [])],
       },
       users: {
         ...(baseState?.users ?? {}),
@@ -437,7 +415,6 @@ export const teamsBootstrap: PluginBootstrapContract<"app_teams"> = {
         ),
       },
       messages: { ...(baseState?.messages ?? {}) },
-      notifications: { ...(baseState?.notifications ?? {}) },
       drafts: { ...(baseState?.drafts ?? {}) },
       typing: { ...(baseState?.typing ?? {}) },
       presence: { ...(baseState?.presence ?? {}), ...(snapshot.presence ?? {}) },
@@ -519,17 +496,6 @@ export const teamsBootstrap: PluginBootstrapContract<"app_teams"> = {
         }
       }
     }
-
-    state.notifications = Object.fromEntries(
-      (snapshot.notifications ?? []).map((notification) => {
-        const cloned = cloneNotification(notification);
-        return [cloned.id, cloned];
-      }),
-    );
-    state.ui.notificationIds = Object.values(state.notifications)
-      .filter((notification) => notification.dismissedAtFrame === null || notification.dismissedAtFrame === undefined)
-      .sort((left, right) => left.createdAtFrame - right.createdAtFrame)
-      .map((notification) => notification.id);
 
     state.drafts = Object.fromEntries(
       (snapshot.drafts ?? []).map((draft) => {

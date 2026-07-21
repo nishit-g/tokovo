@@ -120,7 +120,7 @@ export class CameraDirector {
     const defaults: Record<string, string> = {
       MESSAGE_RECEIVED: "fluid-tennis-energetic",
       MESSAGE_SENT: "fluid-tennis-energetic",
-      NOTIFICATION_SHOWN: "interrupt-focus",
+      INTERRUPTION: "interrupt-focus",
       TYPING_START: "drift-anticipation",
     };
 

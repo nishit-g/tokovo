@@ -69,10 +69,6 @@ export interface IOSChromeMetrics {
     clockLetterSpacing: number;
     dateMarginTop: number;
     dateFontSize: number;
-    notificationSideInset: number;
-    notificationBottomPadding: number;
-    notificationStackOffset: number;
-    notificationOverlap: number;
     bottomControlsHeight: number;
     bottomControlsPaddingX: number;
     bottomButtonSize: number;
@@ -129,10 +125,6 @@ export function getIOSChromeMetrics(profile: DeviceProfile): IOSChromeMetrics {
       clockLetterSpacing: toPx(-2.7),
       dateMarginTop: toPx(5.5),
       dateFontSize: toPx(15),
-      notificationSideInset: toPx(14),
-      notificationBottomPadding: toPx(82),
-      notificationStackOffset: toPx(4),
-      notificationOverlap: toPx(36),
       bottomControlsHeight: toPx(90),
       bottomControlsPaddingX: toPx(20),
       bottomButtonSize: toPx(50),

@@ -10,6 +10,80 @@ function runtimeKinds(events: RuntimeEvent[]): string[] {
 }
 
 describe("compiler pipeline guarantees", () => {
+  it("prepares multilingual input as immutable random-access program data", () => {
+    const ir = createCanonicalTrackEpisodeIR({
+      devices: [
+        {
+          id: "phone",
+          profile: "pixel",
+          app: "app_whatsapp",
+          appearance: "dark",
+        },
+      ],
+      inputSessions: [
+        {
+          id: "composer-ar",
+          deviceId: "phone",
+          appInstanceId: "phone:app_whatsapp",
+          fieldId: "composer",
+          startFrame: 30,
+          submitAtFrame: 140,
+          locale: "ar-SA",
+          text: "مرحبًا بالعالم",
+          expectedFinalValue: "مرحبًا بالعالم",
+          keyboard: { returnKey: "send" },
+        },
+      ],
+    });
+
+    const prepared = prepareTrackEpisode(ir, [], {
+      log: false,
+      validate: true,
+    });
+
+    expect(prepared.inputProgram.sessions[0]).toMatchObject({
+      id: "composer-ar",
+      deviceId: "phone",
+      appInstanceId: "phone:app_whatsapp",
+      fieldId: "composer",
+      keyboard: {
+        platform: "android",
+        appearance: "dark",
+        returnKey: "send",
+        locale: { tag: "ar-SA", direction: "rtl", keyboardFamily: "arabic" },
+      },
+    });
+  });
+
+  it("fails loudly for overlapping input sessions on one device", () => {
+    const ir = createCanonicalTrackEpisodeIR({
+      inputSessions: [
+        {
+          id: "one",
+          deviceId: "phone",
+          appInstanceId: "phone:app_whatsapp",
+          fieldId: "composer",
+          startFrame: 0,
+          endFrame: 90,
+          text: "one",
+        },
+        {
+          id: "two",
+          deviceId: "phone",
+          appInstanceId: "phone:app_whatsapp",
+          fieldId: "search",
+          startFrame: 60,
+          endFrame: 120,
+          text: "two",
+        },
+      ],
+    });
+
+    expect(() =>
+      prepareTrackEpisode(ir, [], { log: false, validate: true }),
+    ).toThrow(/INPUT_SESSION_CONFLICT/);
+  });
+
   it("applies stable same-frame ordering policy", () => {
     const ir = createCanonicalTrackEpisodeIR({
       events: [
@@ -61,7 +135,12 @@ describe("compiler pipeline guarantees", () => {
     } as TrackEvent;
 
     expect(() =>
-      lowerTrackEvent(appEvent, { fps: 30, pluginLowerers: new Map() }),
+      lowerTrackEvent(appEvent, {
+        fps: 30,
+        pluginLowerers: new Map(),
+        emitNotification: () => undefined,
+        emitNotificationInteraction: () => undefined,
+      }),
     ).toThrow(/No plugin lowerer registered for appId: app_missing/);
   });
 
@@ -289,6 +368,7 @@ describe("compiler pipeline guarantees", () => {
         { id: "left", profile: "iphone16", app: "app_same" },
         { id: "right", profile: "iphone16", app: "app_same" },
       ],
+      events: [],
       appSnapshots: [
         {
           appId: "app_same",
@@ -755,5 +835,100 @@ describe("compiler pipeline guarantees", () => {
         }),
       ]),
     );
+  });
+
+  it("prepares notification actions as ordinary navigation and app events", () => {
+    const plugin = {
+      id: "app_chat",
+      version: "1.0.0",
+      displayName: "Chat",
+      reducer: (state: unknown) => state,
+      views: { AppRoot: () => null },
+      notificationAdapter: {
+        appId: "app_chat",
+        format: (intent: any) => ({
+          appName: "Chat",
+          icon: "/icons/chat.svg",
+          accentColor: "#22c55e",
+          title: intent.content.title,
+          body: intent.content.body,
+        }),
+        defaultAction: () => ({
+          navigation: { route: "thread" },
+        }),
+      },
+    } as unknown as TokovoPlugin;
+
+    const ir = createCanonicalTrackEpisodeIR({
+      devices: [
+        {
+          id: "phone",
+          profile: "iphone16",
+          app: "app_home",
+          os: { locale: "hi-IN" },
+        },
+      ],
+      notificationIntents: [
+        {
+          id: "message",
+          deviceId: "phone",
+          appId: "app_chat",
+          deliverAtFrame: 30,
+          content: { title: "रिया", body: "नमस्ते" },
+          privacy: "private",
+          reply: {
+            actionId: "reply",
+            textPayloadKey: "text",
+            target: {
+              navigation: { route: "thread", params: { id: "dm" } },
+              appEvent: { type: "MESSAGE_SEND", payload: { threadId: "dm" } },
+            },
+          },
+        },
+      ],
+      notificationInteractions: [
+        {
+          deviceId: "phone",
+          atFrame: 60,
+          type: "reply",
+          notificationId: "message",
+          replyText: "ज़रूर 👋🏽",
+          sequence: 0,
+        },
+      ],
+    });
+
+    const prepared = prepareTrackEpisode(ir, [plugin], {
+      log: false,
+      validate: true,
+    });
+
+    expect(prepared.notificationProgram.devices.phone.locale).toBe("hi-IN");
+    expect(prepared.events).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          kind: "DEVICE",
+          type: "OPEN_APP",
+          deviceId: "phone",
+          payload: expect.objectContaining({ appId: "app_chat", route: "thread" }),
+        }),
+        expect.objectContaining({
+          kind: "APP",
+          appId: "app_chat",
+          type: "MESSAGE_SEND",
+          payload: expect.objectContaining({ text: "ज़रूर 👋🏽", threadId: "dm" }),
+        }),
+      ]),
+    );
+    expect(prepared.events.filter((event) => event.at === 30 && event.kind === "DEVICE"))
+      .toEqual([]);
+    const replyEvent = prepared.events.find(
+      (event) => event.kind === "APP" && event.type === "MESSAGE_SEND",
+    );
+    expect(replyEvent).toBeDefined();
+    expect(replyEvent).not.toHaveProperty("_declarationOrder");
+    const replyPayload = (replyEvent as { payload?: Record<string, unknown> } | undefined)?.payload;
+    expect(replyPayload).not.toHaveProperty("notificationId");
+    expect(replyPayload).not.toHaveProperty("actionId");
   });
 });

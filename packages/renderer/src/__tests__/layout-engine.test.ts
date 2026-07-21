@@ -50,7 +50,6 @@ function createTestWorld(overrides: Partial<WorldState> = {}): WorldState {
         profileId: "iphone16",
         isLocked: false,
         foregroundAppId: "app_whatsapp",
-        notifications: [],
       },
     },
     appState: {
@@ -137,7 +136,6 @@ describe("LayoutEngine", () => {
             profileId: "iphone16",
             isLocked: true,
             foregroundAppId: undefined,
-            notifications: [],
           },
         },
       } as Partial<WorldState>);
@@ -190,13 +188,11 @@ describe("LayoutEngine", () => {
           id: "left",
           profileId: "iphone16",
           foregroundAppId: "app_same",
-          notifications: [],
         },
         right: {
           id: "right",
           profileId: "iphone16",
           foregroundAppId: "app_same",
-          notifications: [],
         },
       },
       appState: {},
@@ -250,7 +246,6 @@ function computeTestWorldSignature(
     deviceId,
     device?.foregroundAppId ?? "",
     device?.isLocked ? "1" : "0",
-    (device as { keyboard?: { visible?: boolean } })?.keyboard?.visible ? "1" : "0",
     appId ?? "",
     (appState as { conversationId?: string } | undefined)?.conversationId ?? "",
     (appState as { viewMode?: string } | undefined)?.viewMode ?? "",

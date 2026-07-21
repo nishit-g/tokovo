@@ -4,9 +4,7 @@ import {
   androidTokens,
   getTokens,
   getTypography,
-  getAppConfig,
   sharedStyles,
-  appConfigs,
 } from "../tokens.js";
 
 describe("tokens", () => {
@@ -22,13 +20,7 @@ describe("tokens", () => {
     expect(androidBody.fontSize).toBe(androidTokens.typography.bodyLarge.fontSize);
   });
 
-  it("exposes shared styles and app configs", () => {
+  it("exposes platform-neutral shared styles", () => {
     expect(sharedStyles.flexCenter.display).toBe("flex");
-    expect(appConfigs.whatsapp.ios.headerHeight).toBeGreaterThan(0);
-  });
-
-  it("falls back to ios app config when platform is missing", () => {
-    const fallback = getAppConfig("whatsapp", "web" as any);
-    expect(fallback).toBe(appConfigs.whatsapp.ios);
   });
 });

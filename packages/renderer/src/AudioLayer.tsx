@@ -12,6 +12,16 @@ import { getSoundPath } from "@tokovo/core";
 import { computeSoundVolume, computeBusStates, BusState } from "@tokovo/core";
 import { computeCrossfade } from "@tokovo/core";
 import { useRendererRegistries } from "./RegistryContext.js";
+import {
+  projectInputAudioCues,
+  type InputAudioCue,
+  type PreparedInputProgram,
+} from "@tokovo/device-keyboard";
+import {
+  projectNotificationAudio,
+  type NotificationAudioCue,
+  type PreparedNotificationProgram,
+} from "@tokovo/device-notifications";
 
 const VOLUME_THRESHOLD = 0.001;
 export const AUDIO_PREMOUNT_FRAMES = 30;
@@ -21,7 +31,78 @@ interface AudioLayerProps {
   readonly t: number;
   readonly focusDeviceId?: string;
   readonly musicDuckMultiplierOverride?: number;
+  readonly inputProgram?: PreparedInputProgram;
+  readonly notificationProgram?: PreparedNotificationProgram;
 }
+
+const INPUT_CUE_VOLUME: Record<InputAudioCue["kind"], number> = {
+  key: 0.24,
+  delete: 0.27,
+  layout: 0.2,
+  suggestion: 0.22,
+  submit: 0.32,
+};
+
+const InputSoundInstance: React.FC<{
+  cue: InputAudioCue;
+  world: WorldState;
+  volume: number;
+}> = React.memo(({ cue, world, volume }) => {
+  const registries = useRendererRegistries();
+  const device = world.devices?.[cue.deviceId];
+  const profile = device
+    ? registries.devices.devices.get(device.profileId)
+    : undefined;
+  const soundPath =
+    profile?.sounds?.["device.keyboard"] ??
+    "generated/core/keyboard-click.wav";
+
+  return (
+    <Sequence from={cue.at} premountFor={AUDIO_PREMOUNT_FRAMES}>
+      <Html5Audio
+        src={staticFile(`sounds/${soundPath.replace(/^\/+/, "")}`)}
+        volume={volume * INPUT_CUE_VOLUME[cue.kind]}
+        pauseWhenBuffering
+      />
+    </Sequence>
+  );
+});
+
+InputSoundInstance.displayName = "InputSoundInstance";
+
+const NotificationSoundInstance: React.FC<{
+  cue: NotificationAudioCue;
+  world: WorldState;
+  volume: number;
+}> = React.memo(({ cue, world, volume }) => {
+  const registries = useRendererRegistries();
+  const device = world.devices?.[cue.deviceId];
+  const profile = device
+    ? registries.devices.devices.get(device.profileId)
+    : undefined;
+  const src = cue.soundId
+    ? resolveStaticAssetSrc(
+        getSoundPath(cue.soundId, registries.plugins.sounds),
+        staticFile,
+      )
+    : staticFile(
+        `sounds/${(
+          profile?.sounds?.["device.notification"] ??
+          "generated/core/notification.wav"
+        ).replace(/^\/+/, "")}`,
+      );
+  return (
+    <Sequence from={cue.at} premountFor={AUDIO_PREMOUNT_FRAMES}>
+      <Html5Audio
+        src={src}
+        volume={volume * cue.volume * (cue.critical ? 1 : 0.78)}
+        pauseWhenBuffering
+      />
+    </Sequence>
+  );
+});
+
+NotificationSoundInstance.displayName = "NotificationSoundInstance";
 
 function ensureBuses(audio: NonNullable<WorldState["audio"]>) {
   if (!audio.buses) {
@@ -166,6 +247,8 @@ export const AudioLayer: React.FC<AudioLayerProps> = ({
   t,
   focusDeviceId,
   musicDuckMultiplierOverride,
+  inputProgram,
+  notificationProgram,
 }) => {
   const rawAudio = world.audio;
   if (!rawAudio) {
@@ -204,6 +287,28 @@ export const AudioLayer: React.FC<AudioLayerProps> = ({
     });
   }, [audio.activeSounds, focusDeviceId]);
 
+  const inputAudioCues = useMemo(
+    () =>
+      projectInputAudioCues(inputProgram).filter(
+        (cue) => !focusDeviceId || cue.deviceId === focusDeviceId,
+      ),
+    [inputProgram, focusDeviceId],
+  );
+  const notificationAudioCues = useMemo(
+    () =>
+      projectNotificationAudio(notificationProgram).filter(
+        (cue) => !focusDeviceId || cue.deviceId === focusDeviceId,
+      ),
+    [notificationProgram, focusDeviceId],
+  );
+  const uiBus = effectiveBusStates.ui;
+  const masterBus = effectiveBusStates.master;
+  const inputVolume =
+    (uiBus?.baseGain ?? 1) *
+    (uiBus?.duckMultiplier ?? 1) *
+    (masterBus?.baseGain ?? 1) *
+    (masterBus?.duckMultiplier ?? 1);
+
   return (
     <>
       {activeSounds.map(([instanceId, sound]) => (
@@ -213,6 +318,24 @@ export const AudioLayer: React.FC<AudioLayerProps> = ({
           sound={sound}
           compositionFrame={t}
           busStates={effectiveBusStates}
+        />
+      ))}
+
+      {inputAudioCues.map((cue) => (
+        <InputSoundInstance
+          key={cue.id}
+          cue={cue}
+          world={world}
+          volume={inputVolume}
+        />
+      ))}
+
+      {notificationAudioCues.map((cue) => (
+        <NotificationSoundInstance
+          key={cue.id}
+          cue={cue}
+          world={world}
+          volume={inputVolume}
         />
       ))}
 

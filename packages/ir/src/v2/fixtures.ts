@@ -5,6 +5,11 @@ import type {
   TrackEpisodeIR,
   VoiceConfig,
 } from "./episode-ir.js";
+import type { InputSessionIR } from "./input-session.js";
+import type {
+  NotificationIntentIR,
+  NotificationInteractionIR,
+} from "./notification.js";
 import type { TrackEvent } from "./track-event.js";
 
 export interface CanonicalTrackEpisodeFixtureOptions {
@@ -15,6 +20,9 @@ export interface CanonicalTrackEpisodeFixtureOptions {
   appSnapshots?: AppSnapshotEntry[];
   initialViews?: AppInitialViewEntry[];
   events?: TrackEvent[];
+  inputSessions?: InputSessionIR[];
+  notificationIntents?: NotificationIntentIR[];
+  notificationInteractions?: NotificationInteractionIR[];
   voice?: VoiceConfig;
 }
 
@@ -57,6 +65,9 @@ export function createCanonicalTrackEpisodeIR(
         _declarationOrder: 1,
       },
     ],
+    inputSessions: overrides.inputSessions,
+    notificationIntents: overrides.notificationIntents,
+    notificationInteractions: overrides.notificationInteractions,
     markers: [],
     sections: [],
     voice: overrides.voice,

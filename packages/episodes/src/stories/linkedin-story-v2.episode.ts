@@ -48,8 +48,6 @@ export default defineEpisode({
           senderId: "me",
           text: "Happy to chat. What's the actual role, not the charming version?",
           createdAt: baseTs + 6000,
-          typed: true,
-          charDelay: 2,
         });
         li.at("6.2s").sendDM({
           id: "li_story_msg_3",
@@ -64,8 +62,6 @@ export default defineEpisode({
           senderId: "me",
           text: "So you want judgment, not just output.",
           createdAt: baseTs + 18000,
-          typed: true,
-          charDelay: 2,
         });
       })
       .camera((cam) => {

@@ -1,5 +1,6 @@
 import React from "react";
 import type { WorldState } from "@tokovo/core";
+import { DeterministicImage } from "@tokovo/react";
 import { AppShell } from "./AppShell.js";
 import { Avatar, BottomNav, Icon, formatRelativeTime } from "./components.js";
 import { useInstagramTheme } from "./ThemeContext.js";
@@ -74,7 +75,11 @@ export const NotificationsScreen: React.FC<{ world: WorldState }> = ({ world }) 
                     background: theme.colors.backgroundAlt,
                   }}
                 >
-                  <img src={post.imageUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                  <DeterministicImage
+                    src={post.imageUrl}
+                    alt=""
+                    style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                  />
                 </div>
               ) : (
                 <Icon name="heart" size={18} color={theme.colors.accent} />

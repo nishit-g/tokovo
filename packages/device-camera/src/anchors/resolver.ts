@@ -26,9 +26,15 @@ const FALLBACK_CHAINS: Record<string, string[]> = {
   device: ["device"],
   keyboard: ["keyboard", "app", "device"],
   dynamicIsland: ["dynamicIsland", "header", "app", "device"],
-  headsUpNotification: ["headsUpNotification", "notification_banner", "header", "app", "device"],
-  notification_banner: ["notification_banner", "headsUpNotification", "header", "app", "device"],
-  notification: ["notification", "header", "app"],
+  "notification.banner": ["notification.banner", "notification", "app", "device"],
+  "notification.lockScreen": ["notification.lockScreen", "notification", "device"],
+  "notification.center": ["notification.center", "notification", "device"],
+  notification: ["notification", "app", "device"],
+  "lockscreen.clock": ["lockscreen.clock", "device"],
+  "lockscreen.controls": ["lockscreen.controls", "device"],
+  "homescreen.grid": ["homescreen.grid", "app", "device"],
+  "homescreen.dock": ["homescreen.dock", "app", "device"],
+  "homescreen.search": ["homescreen.search", "homescreen.dock", "device"],
 };
 
 export function isAnchorAvailable(

@@ -10,13 +10,20 @@ import type { OSEvent, HandlerContext } from "./types.js";
 
 interface OSEventPayload {
   deviceId?: string;
+  locale?: string;
+  appearance?: "light" | "dark";
+  hourCycle?: "h12" | "h24";
+  lockScreenWallpaper?: string;
   time?: number;
+  battery?: number;
   level?: number;
   charging?: boolean;
   rate?: number;
   network?: string;
   strength?: number;
   enabled?: boolean;
+  dnd?: boolean;
+  lowPowerMode?: boolean;
 }
 
 function normalizeNetworkType(network: string | undefined): NetworkType {
@@ -48,6 +55,31 @@ export function processOSEvent(
   }
 
   switch (event.type) {
+    case "SET_STATE": {
+      if (payload.locale !== undefined) device.os.locale = payload.locale;
+      if (payload.appearance !== undefined) device.os.appearance = payload.appearance;
+      if (payload.hourCycle !== undefined) device.os.hourCycle = payload.hourCycle;
+      if (payload.lockScreenWallpaper !== undefined) {
+        device.os.lockScreenWallpaper = payload.lockScreenWallpaper;
+      }
+      if (payload.time !== undefined) device.os.clock = payload.time;
+      if (payload.battery !== undefined) {
+        device.os.battery = Math.max(0, Math.min(100, payload.battery));
+      }
+      if (payload.charging !== undefined) device.os.charging = payload.charging;
+      if (payload.network !== undefined) {
+        const normalizedNetwork = normalizeNetworkType(payload.network);
+        device.os.network = normalizedNetwork;
+        if (payload.strength !== undefined) {
+          if (normalizedNetwork === "wifi") device.os.wifiStrength = payload.strength;
+          else device.os.cellStrength = payload.strength;
+        }
+      }
+      if (payload.dnd !== undefined) device.os.dnd = payload.dnd;
+      if (payload.lowPowerMode !== undefined) device.os.lowPowerMode = payload.lowPowerMode;
+      break;
+    }
+
     case "SET_TIME":
       device.os.clock = payload.time ?? device.os.clock ?? 0;
       break;

@@ -29,7 +29,8 @@ out/social-launch-multi-device.mp4
 | --- | --- | --- |
 | `social-launch-multi-device` | studio | iPhone + Android, WhatsApp + X + Instagram, split-screen, PIP, typed input, media, notifications |
 | `v2-creator-series-showcase` | release | multi-app story pacing, lockscreen, notifications, keyboard, camera direction |
-| `whatsapp-flagship-v2` | studio | WhatsApp chat list, group thread, updates, calls, typed replies |
+| `os-surface-mega-exhaustive` | studio | four devices, four OS themes, lock/home, multilingual input, notification policy, privacy, grouping, DND, and real quick reply |
+| `whatsapp-flagship-v2` | studio | WhatsApp chat list, group thread, updates, calls, and replies |
 | `whatsapp-anchor-cinema-v1` | studio | semantic-anchor camera direction, two-device handoffs, PIP, RTL, gestures, live media |
 | `whatsapp-interaction-matrix-v3` | studio | iPhone + Pixel, English + Arabic RTL, media lifecycle, viewer, gestures, privacy, Updates, Calls, Communities, Settings, and profile surfaces |
 | `instagram-flagship-v2` | studio | stories, DMs, profile navigation, creator content pacing |
@@ -55,6 +56,7 @@ out/social-launch-multi-device.mp4
 
 | Episode ID | Focus |
 | --- | --- |
+| `os-surface-mega-exhaustive` | canonical iOS/Android light/dark lockscreen and homescreen, Hindi/Arabic/Japanese/English input, notification center policy, and typed quick reply |
 | `social-launch-multi-device` | flagship multi-device story across WhatsApp, X, and Instagram with split-screen and PIP |
 | `device-realism-exhaustive` | lockscreen, unlock, app transitions, keyboard lift |
 | `camera-anchor-exhaustive` | semantic camera targets and fallback detection |
@@ -64,6 +66,12 @@ out/social-launch-multi-device.mp4
 | `notification-system-exhaustive` | heads-up, lockscreen, dismiss, tap flows |
 | `screen-recording-exhaustive` | recording indicator and OS chrome |
 | `call-screen-exhaustive` | incoming, outgoing, and active call states |
+
+Render the complete system proof directly:
+
+```bash
+EPISODE_ID=os-surface-mega-exhaustive pnpm --filter video-runner render:fast
+```
 
 ## Catalog Profiles
 

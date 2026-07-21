@@ -39,14 +39,14 @@ export interface StatusBarStrategyProps {
   time?: string;
   /**
    * Theme - can be:
-   * - "light" | "dark" (legacy presets)
+   * - "light" | "dark" semantic foreground presets
    * - Full ResolvedStatusBarTheme object with colors
    */
   theme?: "light" | "dark" | ResolvedStatusBarTheme;
   /** Battery percentage override */
   batteryPercentage?: number;
   /** Notification icons (Android) */
-  notificationIcons?: StatusBarNotificationIcon[];
+  notificationIcons?: readonly StatusBarNotificationIcon[];
   /** Device screen recording state */
   screenRecording?: ScreenRecordingState;
   /** Current frame for time-sensitive chrome like recording */

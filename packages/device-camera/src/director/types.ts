@@ -10,8 +10,7 @@ export type CameraEventType =
   | "MESSAGE_SENT"
   | "TYPING_START"
   | "TYPING_END"
-  | "NOTIFICATION_SHOWN"
-  | "NOTIFICATION_DISMISSED"
+  | "INTERRUPTION"
   | "CALL_INCOMING"
   | "CALL_ANSWERED"
   | "CALL_ENDED"
@@ -31,7 +30,7 @@ export interface CameraEvent {
 
 export type CameraEventPayload =
   | MessageEventPayload
-  | NotificationEventPayload
+  | InterruptionEventPayload
   | TypingEventPayload
   | CallEventPayload
   | CustomEventPayload;
@@ -44,10 +43,7 @@ export interface MessageEventPayload {
   readonly isKeyMessage?: boolean;
 }
 
-export interface NotificationEventPayload {
-  readonly app: string;
-  readonly title: string;
-  readonly body: string;
+export interface InterruptionEventPayload {
   readonly anchor: string;
   readonly duration?: number;
 }

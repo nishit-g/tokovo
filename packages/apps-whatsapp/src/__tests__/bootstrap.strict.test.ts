@@ -135,17 +135,23 @@ describe("WhatsApp strict bootstrap", () => {
 
   it("rejects invalid product entities and dangling references", () => {
     const snapshot = validSnapshot();
-    snapshot.statuses![0] = {
-      ...snapshot.statuses![0],
+    const status = snapshot.statuses?.[0];
+    const call = snapshot.callLog?.[0];
+    const community = snapshot.communities?.[0];
+    if (!status || !call || !community) {
+      throw new Error("validSnapshot fixture must include product entities");
+    }
+    snapshot.statuses[0] = {
+      ...status,
       media: { type: "video", src: "", duration: 0 },
     };
-    snapshot.callLog![0] = {
-      ...snapshot.callLog![0],
+    snapshot.callLog[0] = {
+      ...call,
       direction: "missed",
       mode: "voice",
       conversationId: "missing",
     };
-    snapshot.communities![0].groupConversationIds = ["missing"];
+    community.groupConversationIds = ["missing"];
 
     expect(validateSnapshot(snapshot)).toEqual(
       expect.arrayContaining([

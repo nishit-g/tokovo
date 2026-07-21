@@ -1,26 +1,9 @@
-import type { TrackEvent } from "@tokovo/ir";
-import { getLoweringScratchpad, planTypedKeyboard, type RuntimeEvent } from "@tokovo/core";
+import type { NotificationIntentEmitter, TrackEvent } from "@tokovo/ir";
+import type { RuntimeEvent } from "@tokovo/core";
 import type { SnapchatEventType, SnapchatTrackEvent } from "../types/index.js";
 
 export interface SnapchatLoweringHandler {
-  lower: (event: TrackEvent, ctx?: unknown) => RuntimeEvent[];
-}
-
-type SnapchatLoweringScratchpad = {
-  lastEventAtByConversation: Map<string, number>;
-};
-const TIMING_HELPER_EVENT_TYPES = new Set<SnapchatEventType>([
-  "SNAPCHAT_TYPING_START",
-  "SNAPCHAT_TYPING_END",
-]);
-
-function computeNotBeforeFrame(prevAt: number, submitAt: number): number {
-  if (prevAt <= 0) return 0;
-  return Math.max(0, Math.min(prevAt + 1, submitAt - 1));
-}
-
-function shouldTrackConversationTiming(eventType: SnapchatEventType): boolean {
-  return !TIMING_HELPER_EVENT_TYPES.has(eventType);
+  lower: (event: TrackEvent, ctx: NotificationIntentEmitter) => RuntimeEvent[];
 }
 
 const ALLOWED_TYPES: readonly SnapchatEventType[] = [
@@ -57,22 +40,16 @@ function createRuntimeEvent(event: SnapchatTrackEvent): RuntimeEvent {
   };
 }
 
-function createKeyboardClearEvent(deviceId: string, at: number): RuntimeEvent {
-  return {
-    at,
-    kind: "DEVICE",
-    type: "KEYBOARD_CLEAR",
-    deviceId,
-    payload: {},
-  } as RuntimeEvent;
-}
-
-function createNotificationEvents(
+function emitNotification(
   event: Extract<
     SnapchatTrackEvent,
     { type: "SNAPCHAT_MESSAGE_RECEIVE" | "SNAPCHAT_SNAP_RECEIVE" }
   >,
-): RuntimeEvent[] {
+  ctx: NotificationIntentEmitter,
+): void {
+  if (!event.deviceId) {
+    throw new Error("[snapchatV2Lowering] incoming events require deviceId");
+  }
   const title = event.payload.from;
   const body =
     event.type === "SNAPCHAT_SNAP_RECEIVE"
@@ -81,127 +58,51 @@ function createNotificationEvents(
         : "sent you a Snap"
       : event.payload.text ?? "sent you a chat";
 
-  return [
-    createRuntimeEvent(event),
-    {
-      at: event.at,
-      kind: "DEVICE",
-      type: "SHOW_NOTIFICATION",
-      deviceId: event.deviceId,
-      payload: {
-        id: event.payload.messageId ?? `snapchat_notification_${event.at}`,
-        appId: "app_snapchat",
-        title,
-        body,
-        threadKey: `conversation:${event.payload.conversationId}`,
-        priority: event.type === "SNAPCHAT_SNAP_RECEIVE" ? "HIGH" : "DEFAULT",
-      },
-    } as RuntimeEvent,
-  ];
-}
-
-function expandTypedSend(
-  event: Extract<SnapchatTrackEvent, { type: "SNAPCHAT_MESSAGE_SEND" }>,
-  ctx?: unknown,
-): RuntimeEvent[] {
-  const text = event.payload.text ?? "";
-  const deviceId = event.deviceId;
-  const sendAt = event.at;
-  const conversationId = event.payload.conversationId;
-
-  if (!text) {
-    return [createRuntimeEvent(event)];
-  }
-
-  const scratchpad = getLoweringScratchpad<SnapchatLoweringScratchpad>(
-    ctx,
-    "app_snapchat.lowering",
-    () => ({ lastEventAtByConversation: new Map() }),
-  );
-
-  const key = `${deviceId}::${conversationId ?? "unknown"}`;
-  const prevAt = scratchpad.lastEventAtByConversation.get(key) ?? 0;
-  const notBeforeFrame = computeNotBeforeFrame(prevAt, sendAt);
-
-  const plan = planTypedKeyboard({
-    deviceId,
-    submitAt: sendAt,
-    text,
-    requestedCharDelay: event.payload.charDelay ?? 3,
-    notBeforeFrame,
-    keyboardType: "default",
-    returnKeyType: "send",
+  ctx.emitNotification({
+    id: event.payload.messageId ?? `snapchat_notification_${event.at}`,
+    deviceId: event.deviceId,
+    appId: "app_snapchat",
+    deliverAtFrame: event.at,
+    sequence: event._declarationOrder,
+    content: { title, body },
+    category: "message",
+    threadId: event.payload.conversationId,
+    groupId: `conversation:${event.payload.conversationId}`,
+    interruption:
+      event.type === "SNAPCHAT_SNAP_RECEIVE" ? "timeSensitive" : "active",
+    privacy: "private",
+    metadata: {
+      kind: event.type === "SNAPCHAT_SNAP_RECEIVE" ? "snap" : "message",
+    },
+    reply:
+      event.type === "SNAPCHAT_MESSAGE_RECEIVE"
+        ? {
+            actionId: "reply",
+            placeholder: `Reply to ${title}`,
+            textPayloadKey: "text",
+            target: {
+              appEvent: {
+                type: "SNAPCHAT_MESSAGE_SEND",
+                payload: { conversationId: event.payload.conversationId },
+              },
+            },
+          }
+        : undefined,
   });
-
-  scratchpad.lastEventAtByConversation.set(key, Math.max(prevAt, sendAt));
-
-  if (!plan.ok) {
-    return [createRuntimeEvent(event)];
-  }
-
-  const [showEv, typeEv, pressEv, hideEv] = plan.events;
-  return [
-    showEv,
-    typeEv,
-    pressEv,
-    {
-      at: event.at,
-      kind: "APP",
-      appId: "app_snapchat",
-      type: "SNAPCHAT_SET_DRAFT",
-      payload: {
-        conversationId: event.payload.conversationId,
-        text,
-      },
-      deviceId,
-    } as RuntimeEvent,
-    createRuntimeEvent(event),
-    createKeyboardClearEvent(deviceId, sendAt),
-    {
-      at: hideEv.at,
-      kind: "APP",
-      appId: "app_snapchat",
-      type: "SNAPCHAT_SET_DRAFT",
-      payload: {
-        conversationId: event.payload.conversationId,
-        text: "",
-      },
-      deviceId,
-    } as RuntimeEvent,
-    hideEv,
-  ];
 }
 
 export const snapchatV2Lowering: SnapchatLoweringHandler = {
-  lower: (event: TrackEvent, ctx?: unknown): RuntimeEvent[] => {
+  lower: (event: TrackEvent, ctx: NotificationIntentEmitter): RuntimeEvent[] => {
     if (event.kind !== "APP" || event.appId !== "app_snapchat") return [];
 
     if (!isSnapchatTrackEvent(event)) {
       throw new Error("[snapchatV2Lowering] Unsupported SNAPCHAT event type");
     }
 
-    if (event.type === "SNAPCHAT_MESSAGE_SEND" && event.payload.typed) {
-      return expandTypedSend(event, ctx);
-    }
-
     if (event.type === "SNAPCHAT_MESSAGE_RECEIVE" || event.type === "SNAPCHAT_SNAP_RECEIVE") {
-      return createNotificationEvents(event);
-    }
-
-    const conversationId =
-      "conversationId" in event.payload
-        ? event.payload.conversationId
-        : event.conversationId;
-
-    if (conversationId && shouldTrackConversationTiming(event.type)) {
-      const scratchpad = getLoweringScratchpad<SnapchatLoweringScratchpad>(
-        ctx,
-        "app_snapchat.lowering",
-        () => ({ lastEventAtByConversation: new Map() }),
-      );
-      const key = `${event.deviceId}::${conversationId}`;
-      const prevAt = scratchpad.lastEventAtByConversation.get(key) ?? 0;
-      scratchpad.lastEventAtByConversation.set(key, Math.max(prevAt, event.at));
+      if (!(event.payload as { silent?: boolean }).silent) {
+        emitNotification(event, ctx);
+      }
     }
 
     return [createRuntimeEvent(event)];

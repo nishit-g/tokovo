@@ -4,7 +4,6 @@ import type {
   LayoutState,
   PluginReducer,
   PluginViews,
-  Notification,
   WorldState,
 } from "@tokovo/core";
 
@@ -37,18 +36,6 @@ export interface PluginAutoSoundRule {
   duckMusic?: boolean;
   loop?: boolean;
   priority?: number;
-}
-
-export interface PluginFormattedNotification {
-  icon: string;
-  color: string;
-  title: string;
-  body: string;
-  subtitle?: string;
-}
-
-export interface PluginNotificationAdapter {
-  format: (notification: Notification) => PluginFormattedNotification;
 }
 
 export interface ReducerCapability<AppId extends string = string> {
@@ -96,12 +83,6 @@ export interface AudioCapability<AppId extends string = string> {
   readonly sounds?: Record<string, string>;
 }
 
-export interface NotificationsCapability<AppId extends string = string> {
-  readonly _type: "notifications";
-  readonly appId: AppId;
-  readonly adapter: PluginNotificationAdapter;
-}
-
 export interface InitialStateCapability<
   AppId extends string = string,
   TState = unknown,
@@ -117,7 +98,6 @@ export type PluginCapability<AppId extends string = string> =
   | AnchorsCapability<AppId>
   | LayoutsCapability<AppId>
   | AudioCapability<AppId>
-  | NotificationsCapability<AppId>
   | InitialStateCapability<AppId>;
 
 export function defineReducer<AppId extends string>(
@@ -178,17 +158,6 @@ export function defineAudioRules<AppId extends string>(
     appId,
     rules,
     sounds,
-  };
-}
-
-export function defineNotificationAdapter<AppId extends string>(
-  appId: AppId,
-  format: (notification: Notification) => PluginFormattedNotification,
-): NotificationsCapability<AppId> {
-  return {
-    _type: "notifications",
-    appId,
-    adapter: { format },
   };
 }
 

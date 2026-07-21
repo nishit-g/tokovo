@@ -59,7 +59,7 @@ export default defineEpisode({
       .whatsapp("phone_left", "dm_left", (wa) => {
         wa.switchTo("dm_left", "1.0s");
         wa.at("2.0s").receive("Riya", "Please tell me you saw X.");
-        wa.at("4.0s").send("I am literally watching it spiral live.", { typed: true, charDelay: 2 });
+        wa.at("4.0s").send("I am literally watching it spiral live.", {});
         wa.at("8.0s").receive("Riya", "Then do not reply to anyone yet.");
       })
       .x("phone_right", (x) => {
@@ -71,8 +71,6 @@ export default defineEpisode({
           replyToId: "tw_parallel",
           text: "This is why founders should fear screenshots more than competitors.",
           createdAt: new Date("2026-04-10T21:31:00Z").getTime(),
-          typed: true,
-          charDelay: 2,
         });
         x.at("9.0s").navigate("notifications");
       })
@@ -81,12 +79,16 @@ export default defineEpisode({
       })
       .deviceTrack("phone_right", (d) => {
         d.at("0.0s").screenRecording(true, { mode: "compact" });
-        d.at("10.0s").notificationShow({
+      })
+      .notificationTrack("phone_right", (notifications) => {
+        notifications.at("10.0s").deliver({
           id: "parallel_notif",
           appId: "app_whatsapp",
-          title: "Riya",
-          body: "Delete your reply. Now.",
-          priority: "high",
+          content: { title: "Riya", body: "Delete your reply. Now." },
+          category: "message",
+          interruption: "timeSensitive",
+          privacy: "private",
+          threadId: "parallel",
         });
       })
       .camera((cam) => {
@@ -99,7 +101,7 @@ export default defineEpisode({
           { deviceId: "phone_right", anchorId: "tweet_card" },
           { scale: 1.06, smoothing: 0.16 },
         );
-        cam.at("10.0s").focus("notification_banner", { scale: 1.08, duration: "0.3s" });
+        cam.at("10.0s").focus("notification.banner", { scale: 1.08, duration: "0.3s" });
       })
       .build(),
 });

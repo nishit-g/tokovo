@@ -18,18 +18,28 @@ export interface IMessageState {
   activeConversationId?: string;
   themeMode?: IMessageThemeMode;
   statusBarTheme?:
-  | "light"
-  | "dark"
-  | {
-    backgroundColor?: string;
-    iconColor?: string;
-    timeColor?: string;
-  };
+    | "light"
+    | "dark"
+    | {
+        backgroundColor?: string;
+        iconColor?: string;
+        timeColor?: string;
+      };
   conversations?: Record<string, IMessageConversation>;
   /** Active search query */
   searchQuery?: string;
   /** Active screen effect (balloons, confetti, etc.) */
-  activeScreenEffect?: "balloons" | "confetti" | "lasers" | "fireworks" | "celebration" | "echo" | "spotlight" | "love";
+  activeScreenEffect?:
+    | "balloons"
+    | "confetti"
+    | "lasers"
+    | "fireworks"
+    | "celebration"
+    | "echo"
+    | "spotlight"
+    | "love";
+  /** Frame at which the active screen effect began. */
+  activeScreenEffectStartedAtFrame?: number;
 }
 
 export function asIMessageState(

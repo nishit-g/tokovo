@@ -2,7 +2,7 @@
  * DynamicIsland - iOS Dynamic Island Container
  *
  * Renders the Dynamic Island UI element at the top of iPhone screens.
- * Priority: HeadsUp Notification > Active Widget > Idle
+ * Priority: device activity > active app widget > idle
  */
 
 import React from "react";
@@ -237,12 +237,6 @@ export const DynamicIsland: React.FC<DynamicIslandProps> = ({
       );
     }
   }
-
-  // Find the notification that should be displayed as headsUp at current frame
-  // A notification is visible in headsUp if: t >= at AND t < (at + duration)
-  // 4. CHECK NOTIFICATIONS
-  // (Notifications are now handled exclusively by HeadsUpNotification.tsx)
-  // Legacy logic removed.
 
   // Get active background app IDs
   const activeAppIds = device.backgroundApps?.map((a) => a.appId) || [];
