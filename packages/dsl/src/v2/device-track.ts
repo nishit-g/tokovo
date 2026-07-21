@@ -48,6 +48,17 @@ export interface IncomingCallOptions extends DeviceEventMetaOptions {
   callerMetadata?: Record<string, unknown>;
 }
 
+export interface ScreenRecordingOptions extends DeviceEventMetaOptions {
+  /** Compact red indicator, expanded stop control, or user-dismissed indicator. */
+  presentation?: "compact" | "expanded" | "hidden";
+  /** Capture microphone audio in addition to system audio. */
+  microphoneEnabled?: boolean;
+  /** Countdown duration. Strings use normal Tokovo time syntax; numbers are frames. */
+  countdown?: string | number;
+  /** Post-stop system feedback duration. Strings use time syntax; numbers are frames. */
+  feedback?: string | number;
+}
+
 // =============================================================================
 // POINT BUILDER
 // =============================================================================
@@ -55,6 +66,7 @@ export interface IncomingCallOptions extends DeviceEventMetaOptions {
 export class DevicePointBuilderV2 {
   constructor(
     private _frame: number,
+    private _fps: number,
     private _deviceId: string,
     private _events: TrackEvent[],
     private _getOrder: GetDeclarationOrder,
@@ -128,11 +140,30 @@ export class DevicePointBuilderV2 {
 
   screenRecording(
     enabled: boolean,
-    options?: DeviceEventMetaOptions & { mode?: "minimal" | "compact" },
+    options?: ScreenRecordingOptions,
   ): void {
+    const toDurationFrames = (
+      value: string | number | undefined,
+      fallbackSeconds: number,
+    ): number => {
+      if (value === undefined) return Math.round(this._fps * fallbackSeconds);
+      return typeof value === "number"
+        ? Math.max(0, Math.round(value))
+        : Math.max(0, parseTimeToFrames(value, this._fps));
+    };
     this.emitDevice(
       "SET_SCREEN_RECORDING",
-      { enabled, mode: options?.mode },
+      {
+        enabled,
+        presentation: options?.presentation,
+        microphoneEnabled: options?.microphoneEnabled,
+        countdownFrames: enabled
+          ? toDurationFrames(options?.countdown, 3)
+          : undefined,
+        feedbackFrames: !enabled
+          ? toDurationFrames(options?.feedback, 2.4)
+          : undefined,
+      },
       options,
     );
   }
@@ -180,6 +211,7 @@ export class DeviceTrackBuilderV2 {
       typeof time === "number" ? time : parseTimeToFrames(time, this._fps);
     return new DevicePointBuilderV2(
       frame,
+      this._fps,
       this._deviceId,
       this._events,
       this._getOrder,

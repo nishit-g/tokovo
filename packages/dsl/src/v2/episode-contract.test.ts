@@ -78,6 +78,57 @@ describe("DSL contract + determinism", () => {
     });
   });
 
+  it("authors the full screen-recording lifecycle in frames", () => {
+    const ir = episode("screen-recording", { fps: 30, duration: "8s" })
+      .device("phone", "iphone16", {
+        app: "app_whatsapp",
+        screenRecording: {
+          presentation: "compact",
+          microphoneEnabled: false,
+        },
+      })
+      .deviceTrack("phone", (device) => {
+        device.at("1s").screenRecording(true, {
+          presentation: "compact",
+          microphoneEnabled: true,
+          countdown: "3s",
+        });
+        device.at("5s").screenRecording(true, { presentation: "expanded" });
+        device.at("7s").screenRecording(false, { feedback: "0.8s" });
+      })
+      .build();
+
+    expect(ir.devices[0]?.screenRecording).toEqual({
+      presentation: "compact",
+      microphoneEnabled: false,
+    });
+    expect(ir.events).toMatchObject([
+      {
+        at: 30,
+        kind: "DEVICE",
+        type: "SET_SCREEN_RECORDING",
+        payload: {
+          enabled: true,
+          presentation: "compact",
+          microphoneEnabled: true,
+          countdownFrames: 90,
+        },
+      },
+      {
+        at: 150,
+        kind: "DEVICE",
+        type: "SET_SCREEN_RECORDING",
+        payload: { enabled: true, presentation: "expanded" },
+      },
+      {
+        at: 210,
+        kind: "DEVICE",
+        type: "SET_SCREEN_RECORDING",
+        payload: { enabled: false, feedbackFrames: 24 },
+      },
+    ]);
+  });
+
   it("uses an overlay span as the default visible duration", () => {
     const ir = episode("overlay-span", { fps: 30, duration: "3s" })
       .overlay((overlay) => {

@@ -10,20 +10,30 @@ The device profile, chrome, and canonical OS-surface layer for Tokovo.
 - deterministic system localization for English, Hindi, Arabic, and Japanese
 - RTL layout, wallpapers, app icons, badges, folders, docks, search, and gestures
 - semantic lock/home anchors used by camera direction
+- deterministic Dynamic Island activities and screen-recording lifecycle
 - device shell support used by renderer and runtime apps
 
 ## Key Exports
 
 - registries: `createDeviceRegistries`, `DeviceRegistryClass`
-- DSL: `DeviceTrackBuilder`
 - reducer: `deviceReducer`
 - plugin registration: `registerDevicesPlugin`
 - built-in profiles: `iPhone16Profile`, `PixelProfile`
 - projection: `projectLockscreen`, `projectHomeScreen`
 - themes: `getSystemSurfaceTheme`
 - UI: `SystemSurface`, `LockscreenSurface`, `HomeScreenSurface`
+- Dynamic Island: `projectDynamicIsland`, `DynamicIslandSurface`
 
 The renderer hosts the projected system surface. It does not own a duplicate lockscreen
 or homescreen implementation. App appearance and OS appearance are separate inputs: app
 themes remain app-owned, while system chrome, notifications, and the keyboard inherit
 the authored OS appearance unless explicitly overridden.
+
+Episode authoring belongs to the canonical `@tokovo/dsl` device track, and lowering
+belongs to `@tokovo/compiler`. This package intentionally does not expose a second
+device-event builder or IR format.
+
+Screen recording is a lifecycle, not a permanently expanded badge. The canonical iOS
+projection moves through countdown, compact recording, optional explicitly expanded
+controls, optional dismissed/hidden presentation, and a short Photos save banner after
+capture stops. Timing and morphs are derived entirely from the episode frame.

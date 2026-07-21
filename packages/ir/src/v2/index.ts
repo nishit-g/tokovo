@@ -58,6 +58,7 @@ export {
 // Episode IR
 export type {
   OSConfig,
+  ScreenRecordingBootConfig,
   DeviceConfig,
   AppSnapshotEntry,
   AppInitialViewEntry,

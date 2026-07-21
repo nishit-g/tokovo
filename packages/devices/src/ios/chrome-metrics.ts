@@ -52,16 +52,17 @@ export interface IOSChromeMetrics {
   dynamicIsland?: DynamicIslandConfig & {
     minimalWidth: number;
     compactWidth: number;
-    savedWidth: number;
+    recordingCompactWidth: number;
+    countdownWidth: number;
+    recordingExpandedWidth: number;
+    recordingExpandedHeight: number;
+    recordingExpandedCornerRadius: number;
     compactHeight: number;
-    savedHeight: number;
-    compactFontSize: number;
-    savedFontSize: number;
-    countdownFontSize: number;
-    dotSize: number;
-    savedDotSize: number;
-    gap: number;
-    horizontalPadding: number;
+    expandedCornerRadius: number;
+    sensorPillWidth: number;
+    sensorPillHeight: number;
+    cameraLensSize: number;
+    morphFrames: number;
   };
   lockscreen: {
     clockTop: number;
@@ -89,18 +90,20 @@ export function getIOSChromeMetrics(profile: DeviceProfile): IOSChromeMetrics {
   const dynamicIsland = profile.dynamicIsland
     ? {
         ...profile.dynamicIsland,
-        minimalWidth: profile.dynamicIsland.collapsedWidth * 0.74,
-        compactWidth: profile.dynamicIsland.collapsedWidth * 1.12,
-        savedWidth: profile.dynamicIsland.collapsedWidth * 1.22,
-        compactHeight: profile.dynamicIsland.collapsedHeight * 0.94,
-        savedHeight: profile.dynamicIsland.collapsedHeight * 0.9,
-        compactFontSize: toPx(14.25),
-        savedFontSize: toPx(13),
-        countdownFontSize: toPx(17),
-        dotSize: toPx(7.75),
-        savedDotSize: toPx(6.2),
-        gap: toPx(6),
-        horizontalPadding: toPx(12),
+        minimalWidth: toPx(52),
+        compactWidth: toPx(Math.min(250, logical.width - 24)),
+        recordingCompactWidth: toPx(166),
+        countdownWidth: toPx(190),
+        recordingExpandedWidth: toPx(Math.min(340, logical.width - 48)),
+        recordingExpandedHeight: toPx(78),
+        recordingExpandedCornerRadius: toPx(39),
+        compactHeight: profile.dynamicIsland.collapsedHeight,
+        expandedCornerRadius:
+          profile.dynamicIsland.expandedCornerRadius ?? toPx(44),
+        sensorPillWidth: toPx(74),
+        sensorPillHeight: toPx(27),
+        cameraLensSize: toPx(21),
+        morphFrames: 12,
       }
     : undefined;
 

@@ -40,12 +40,6 @@ import { StatusBar } from "./StatusBar.js";
 // Strategies
 import { IOSStatusBarStrategy, AndroidStatusBarStrategy } from "./strategies/index.js";
 
-// DSL
-import { DeviceTrackBuilder } from "./dsl/index.js";
-
-// Lowering
-import { deviceV2Lowering } from "./lowering/index.js";
-
 // Profiles
 import { iPhone16Profile } from "./iphone16/profile.js";
 import { iPhone16Frame } from "./iphone16/Frame.js";
@@ -82,11 +76,6 @@ export interface DevicesPluginContract {
     IOSStatusBarStrategy: typeof IOSStatusBarStrategy;
     AndroidStatusBarStrategy: typeof AndroidStatusBarStrategy;
 
-    // DSL
-    TrackBuilder: typeof DeviceTrackBuilder;
-
-    // Lowering
-    v2Lowering: typeof deviceV2Lowering;
 }
 
 export const DevicesPlugin: DevicesPluginContract = {
@@ -116,11 +105,6 @@ export const DevicesPlugin: DevicesPluginContract = {
     IOSStatusBarStrategy,
     AndroidStatusBarStrategy,
 
-    // DSL
-    TrackBuilder: DeviceTrackBuilder,
-
-    // Lowering
-    v2Lowering: deviceV2Lowering,
 };
 
 // =============================================================================

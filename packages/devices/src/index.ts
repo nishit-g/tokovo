@@ -5,17 +5,12 @@
  *
  * @example
  * ```typescript
- * import { createDeviceRegistries, DeviceTrackBuilder, StatusBar } from "@tokovo/devices";
+ * import { createDeviceRegistries, StatusBar } from "@tokovo/devices";
  *
  * // Use registered profile
  * const registries = createDeviceRegistries();
  * const profile = registries.devices.get("iphone16");
  *
- * // Use DSL for OS events
- * const device = new DeviceTrackBuilder(30, "phone", getOrder);
- * device.at("2s").lock();
- * device.at("5s").unlock();
- * device.at("10s").openApp("app_whatsapp");
  * ```
  */
 
@@ -30,8 +25,6 @@ export type {
   StatusBarStrategyComponent,
   StatusBarNotificationIcon,
 } from "./registries/index.js";
-export type { DeviceTrackEvent, DeviceEventType } from "./ir/index.js";
-
 // =============================================================================
 // REGISTRIES
 // =============================================================================
@@ -57,25 +50,6 @@ export {
   DeviceShellRegistryClass,
 } from "./registry.js";
 
-// =============================================================================
-// DSL
-// =============================================================================
-
-export { DeviceTrackBuilder, DevicePointBuilder } from "./dsl/index.js";
-
-// =============================================================================
-// IR
-// =============================================================================
-
-export { isDeviceEvent } from "./ir/index.js";
-
-// =============================================================================
-// LOWERING
-// =============================================================================
-
-export { deviceV2Lowering, DEVICE_EVENT_TYPES } from "./lowering/index.js";
-
-// =============================================================================
 // REDUCER
 // =============================================================================
 
@@ -87,6 +61,7 @@ export { deviceReducer } from "./reducer.js";
 
 export { StatusBar, DarkStatusBar, LightStatusBar } from "./StatusBar.js";
 export * from "./surfaces/index.js";
+export * from "./dynamic-island/index.js";
 
 // =============================================================================
 // STRATEGIES

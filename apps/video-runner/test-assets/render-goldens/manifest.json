@@ -134,6 +134,72 @@
       "channelTolerance": 0
     },
     {
+      "episodeId": "screen-recording-exhaustive",
+      "frame": 30,
+      "file": "system/screen-recording-compact-frame-30.png",
+      "channelTolerance": 0
+    },
+    {
+      "episodeId": "screen-recording-exhaustive",
+      "frame": 216,
+      "file": "system/screen-recording-countdown-morph-frame-216.png",
+      "channelTolerance": 0
+    },
+    {
+      "episodeId": "screen-recording-exhaustive",
+      "frame": 225,
+      "file": "system/screen-recording-countdown-frame-225.png",
+      "channelTolerance": 0
+    },
+    {
+      "episodeId": "screen-recording-exhaustive",
+      "frame": 336,
+      "file": "system/screen-recording-expanded-morph-frame-336.png",
+      "channelTolerance": 0
+    },
+    {
+      "episodeId": "screen-recording-exhaustive",
+      "frame": 345,
+      "file": "system/screen-recording-expanded-frame-345.png",
+      "channelTolerance": 0
+    },
+    {
+      "episodeId": "screen-recording-exhaustive",
+      "frame": 402,
+      "file": "system/screen-recording-collapse-morph-frame-402.png",
+      "channelTolerance": 0
+    },
+    {
+      "episodeId": "screen-recording-exhaustive",
+      "frame": 408,
+      "file": "system/screen-recording-collapse-frame-408.png",
+      "channelTolerance": 0
+    },
+    {
+      "episodeId": "screen-recording-exhaustive",
+      "frame": 546,
+      "file": "system/screen-recording-hidden-morph-frame-546.png",
+      "channelTolerance": 0
+    },
+    {
+      "episodeId": "screen-recording-exhaustive",
+      "frame": 555,
+      "file": "system/screen-recording-hidden-frame-555.png",
+      "channelTolerance": 0
+    },
+    {
+      "episodeId": "screen-recording-exhaustive",
+      "frame": 660,
+      "file": "system/screen-recording-lockscreen-frame-660.png",
+      "channelTolerance": 0
+    },
+    {
+      "episodeId": "screen-recording-exhaustive",
+      "frame": 910,
+      "file": "system/screen-recording-saved-frame-910.png",
+      "channelTolerance": 0
+    },
+    {
       "episodeId": "os-surface-mega-exhaustive",
       "frame": 60,
       "file": "system/os-surface-mega-lock-notifications-frame-60.png",

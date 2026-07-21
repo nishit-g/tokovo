@@ -32,6 +32,7 @@ import {
 } from "@tokovo/device-keyboard";
 
 import {
+  projectDynamicIsland,
   SystemSurface,
   projectLockscreen,
   useDeviceRegistries,
@@ -194,6 +195,31 @@ const TokovoRendererInner: React.FC<TokovoRendererProps> = ({
   }, [debug, onCameraDebugFrame, t, appId, deviceId, transform, debugInfo]);
 
   const hasActiveCall = device.call && device.call.status !== "ended";
+  const dynamicIslandProjection = React.useMemo(
+    () =>
+      profile.dynamicIsland && !hasActiveCall
+        ? projectDynamicIsland({
+            profile,
+            dynamicIsland: device.dynamicIsland,
+            screenRecording: device.screenRecording,
+            currentFrame: t,
+            fps,
+            locale: device.os?.locale,
+            appearance: device.os?.appearance,
+          })
+        : null,
+    [
+      device.dynamicIsland,
+      device.os?.appearance,
+      device.os?.locale,
+      device.screenRecording,
+      fps,
+      hasActiveCall,
+      profile,
+      t,
+    ],
+  );
+  const hidesStatusBar = dynamicIslandProjection?.suppressesStatusBar === true;
   const keyboardHeightForLayout =
     inputProjection?.surface.viewportInset ?? 0;
 
@@ -285,14 +311,23 @@ const TokovoRendererInner: React.FC<TokovoRendererProps> = ({
             variant={variant}
             homeIndicatorTheme={statusBarTheme}
             statusBar={
-              StatusBarStrategy ? (
+              StatusBarStrategy && !hidesStatusBar ? (
                 <StatusBarStrategy
                   os={device.os}
                   theme={statusBarTheme}
                   notificationIcons={notificationProjection?.statusBarIcons}
-                  screenRecording={device.screenRecording}
-                  currentFrame={t}
                   deviceProfile={profile}
+                />
+              ) : null
+            }
+            dynamicIsland={
+              profile.dynamicIsland && dynamicIslandProjection ? (
+                <DynamicIsland
+                  device={device}
+                  deviceProfile={profile}
+                  world={renderWorld}
+                  t={t}
+                  projection={dynamicIslandProjection}
                 />
               ) : null
             }
@@ -448,15 +483,6 @@ const TokovoRendererInner: React.FC<TokovoRendererProps> = ({
             )}
           </FrameComponent>
 
-          {profile.dynamicIsland && !device.isLocked && !hasActiveCall && (
-            <DynamicIsland
-              device={device}
-              deviceProfile={profile}
-              world={renderWorld}
-              t={t}
-              fps={fps}
-            />
-          )}
         </div>
       </div>
 

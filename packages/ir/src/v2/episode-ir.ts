@@ -35,6 +35,13 @@ export interface OSConfig {
   dnd?: boolean;
 }
 
+export interface ScreenRecordingBootConfig {
+  /** Persistent compact indicator, explicit expanded stop control, or dismissed indicator. */
+  presentation?: "compact" | "expanded" | "hidden";
+  /** Whether microphone audio is included in the capture. */
+  microphoneEnabled?: boolean;
+}
+
 export interface DeviceConfig {
   id: string;
   profile: string;
@@ -55,8 +62,8 @@ export interface DeviceConfig {
     pages?: string[][];
     wallpaper?: string;
   };
-  /** Start with screen recording indicator enabled */
-  screenRecording?: boolean;
+  /** Start with an already-active screen recording session. */
+  screenRecording?: boolean | ScreenRecordingBootConfig;
 }
 
 export interface AppSnapshotEntry<AppId extends string = string> {

@@ -91,6 +91,31 @@ episode("system-demo", { fps: 30, duration: "12s" })
 Use `lockscreen.clock`, `lockscreen.controls`, `homescreen.grid`,
 `homescreen.dock`, `homescreen.search`, or `homescreen.icon:<appId>` as camera targets.
 
+## Screen recording and Dynamic Island presentation
+
+Use the device track for the recording lifecycle. A new recording defaults to the iOS
+three-second countdown and compact presentation. Expanding the island is a separate,
+explicit presentation change; it does not restart capture. `hidden` dismisses the
+indicator while capture continues, and stopping presents brief system feedback.
+
+```ts
+episode("recording-demo", { fps: 30, duration: "12s" })
+  .device("phone", "iphone16", { app: "app_whatsapp" })
+  .deviceTrack("phone", (device) => {
+    device.at("1s").screenRecording(true, {
+      presentation: "compact",
+      microphoneEnabled: true,
+      countdown: "3s",
+    });
+    device.at("5s").screenRecording(true, { presentation: "expanded" });
+    device.at("7s").screenRecording(true, { presentation: "compact" });
+    device.at("10s").screenRecording(false, { feedback: "2.4s" });
+  });
+```
+
+Use `dynamicIsland` as the semantic camera target. Episode code should never guess the
+island's pixel geometry or draw a duplicate overlay.
+
 ## Input sessions
 
 The explicit input capability is field-scoped and random-access safe. It supports

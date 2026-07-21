@@ -75,10 +75,10 @@ export default defineEpisode({
         x.at("9.0s").navigate("notifications");
       })
       .deviceTrack("phone_left", (d) => {
-        d.at("0.0s").screenRecording(true, { mode: "compact" });
+        d.at("0.0s").screenRecording(true, { presentation: "compact" });
       })
       .deviceTrack("phone_right", (d) => {
-        d.at("0.0s").screenRecording(true, { mode: "compact" });
+        d.at("0.0s").screenRecording(true, { presentation: "compact" });
       })
       .notificationTrack("phone_right", (notifications) => {
         notifications.at("10.0s").deliver({

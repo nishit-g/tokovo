@@ -499,7 +499,10 @@ function lowerDeviceEvent(event: TrackEvent): RuntimeEvent[] {
           type: "SET_DYNAMIC_ISLAND",
           payload: {
             visible: Boolean(p.visible ?? e.visible ?? false),
-            mode: (p.mode ?? e.mode ?? "idle") as string,
+            presentation: (p.presentation ?? e.presentation ?? "idle") as string,
+            activity: (p.activity ?? e.activity ?? null) as string | null,
+            appId: (p.appId ?? e.appId) as string | undefined,
+            content: (p.content ?? e.content) as Record<string, unknown> | undefined,
           },
         } as DeviceRuntimeEvent,
       ];
@@ -511,7 +514,20 @@ function lowerDeviceEvent(event: TrackEvent): RuntimeEvent[] {
           type: "SET_SCREEN_RECORDING",
           payload: {
             enabled: Boolean(p.enabled ?? e.enabled ?? false),
-            mode: (p.mode ?? e.mode) as "minimal" | "compact" | undefined,
+            presentation: (p.presentation ?? e.presentation) as
+              | "compact"
+              | "expanded"
+              | "hidden"
+              | undefined,
+            microphoneEnabled: (p.microphoneEnabled ?? e.microphoneEnabled) as
+              | boolean
+              | undefined,
+            countdownFrames: (p.countdownFrames ?? e.countdownFrames) as
+              | number
+              | undefined,
+            feedbackFrames: (p.feedbackFrames ?? e.feedbackFrames) as
+              | number
+              | undefined,
           },
         } as DeviceRuntimeEvent,
       ];

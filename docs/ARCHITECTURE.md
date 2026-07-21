@@ -221,6 +221,13 @@ These surfaces should scale from device logical metrics, not hardcoded render-pi
 Camera direction targets semantic regions such as `lockscreen.clock`,
 `homescreen.grid`, `homescreen.dock`, `notification.center`, and `keyboard`.
 
+Dynamic Island and screen-recording chrome are device-owned projections. The runtime
+stores lifecycle and presentation intent, `@tokovo/devices` resolves frame-derived
+geometry/content, and the renderer hosts the result inside the registered frame. Active
+recording remains compact unless an episode explicitly authors the expanded controls;
+dismissing the indicator does not stop capture. Completion feedback is a system banner,
+not content embedded in the island.
+
 ## Recommended Local Workflow
 
 1. Author or edit the episode in TypeScript.

@@ -6,14 +6,15 @@ import {
   OpenAppEvent,
   SetBadgeEvent,
   SetDynamicIslandEvent,
+  SetScreenRecordingEvent,
   IncomingCallEvent,
   StartBackgroundAppEvent,
   StopBackgroundAppEvent,
 } from "@tokovo/core";
 import type { EngineRegistries } from "@tokovo/core";
 
-const SCREEN_RECORDING_COUNTDOWN_FRAMES = 45;
-const SCREEN_RECORDING_STOP_FEEDBACK_FRAMES = 30;
+const DEFAULT_SCREEN_RECORDING_COUNTDOWN_FRAMES = 90;
+const DEFAULT_SCREEN_RECORDING_FEEDBACK_FRAMES = 72;
 
 // =============================================================================
 // DEVICE REDUCER
@@ -132,45 +133,90 @@ export function deviceReducer(
         if (!device.dynamicIsland)
           device.dynamicIsland = { ...DEFAULT_DYNAMIC_ISLAND };
         device.dynamicIsland.visible = e.payload?.visible ?? true;
-        if (e.payload?.mode) device.dynamicIsland.mode = e.payload.mode;
+        if (e.payload?.presentation) {
+          device.dynamicIsland.presentation = e.payload.presentation;
+        }
+        if (e.payload && "activity" in e.payload) {
+          device.dynamicIsland.activity = e.payload.activity ?? null;
+        }
+        if (e.payload?.appId !== undefined) {
+          device.dynamicIsland.appId = e.payload.appId;
+        }
+        if (e.payload?.content !== undefined) {
+          device.dynamicIsland.content = e.payload.content;
+        }
+        device.dynamicIsland.updatedAtFrame = event.at;
         break;
       }
 
       case "SET_SCREEN_RECORDING": {
-        const enabled = Boolean(
-          (event as unknown as { payload?: { enabled?: unknown } }).payload
-            ?.enabled ?? false,
-        );
-        const mode = (event as unknown as { payload?: { mode?: unknown } })
-          .payload?.mode as "minimal" | "compact" | undefined;
+        const e = event as SetScreenRecordingEvent;
+        const enabled = e.payload?.enabled ?? false;
+        const presentation = e.payload?.presentation;
+        const microphoneEnabled = e.payload?.microphoneEnabled;
         if (enabled) {
-          if (device.screenRecording?.enabled) {
-            device.screenRecording.mode = mode ?? device.screenRecording.mode;
-            device.screenRecording.stopFeedbackUntilFrame = undefined;
-            device.screenRecording.stoppedAtFrame = undefined;
+          if (device.screenRecording?.isCapturing) {
+            if (
+              presentation &&
+              presentation !== device.screenRecording.presentation
+            ) {
+              device.screenRecording.previousPresentation =
+                device.screenRecording.presentation;
+              device.screenRecording.presentation = presentation;
+              device.screenRecording.presentationChangedAtFrame = event.at;
+            }
+            if (microphoneEnabled !== undefined) {
+              device.screenRecording.microphoneEnabled = microphoneEnabled;
+            }
+            device.screenRecording.captureStoppedAtFrame = undefined;
+            device.screenRecording.feedbackEndsAtFrame = undefined;
+            device.screenRecording.completion = undefined;
             break;
           }
+          const countdownFrames = Math.max(
+            0,
+            Math.round(
+              e.payload?.countdownFrames ??
+                DEFAULT_SCREEN_RECORDING_COUNTDOWN_FRAMES,
+            ),
+          );
           device.screenRecording = {
-            enabled: true,
-            mode: mode ?? "compact",
-            startedAtFrame: event.at,
-            activeSinceFrame: event.at + SCREEN_RECORDING_COUNTDOWN_FRAMES,
-            stoppedAtFrame: undefined,
-            stopFeedbackUntilFrame: undefined,
+            isCapturing: true,
+            presentation: presentation ?? "compact",
+            microphoneEnabled: microphoneEnabled ?? false,
+            requestedAtFrame: event.at,
+            captureStartedAtFrame: event.at + countdownFrames,
+            previousPresentation: "idle",
+            presentationChangedAtFrame: event.at,
           };
         } else {
+          if (!device.screenRecording?.isCapturing) break;
+          const previousPresentation =
+            event.at < device.screenRecording.captureStartedAtFrame
+              ? "countdown"
+              : device.screenRecording.presentation;
+          const feedbackFrames = Math.max(
+            0,
+            Math.round(
+              e.payload?.feedbackFrames ?? DEFAULT_SCREEN_RECORDING_FEEDBACK_FRAMES,
+            ),
+          );
           device.screenRecording = {
-            enabled: false,
-            mode: device.screenRecording?.mode ?? mode ?? "compact",
-            startedAtFrame: device.screenRecording?.startedAtFrame,
-            activeSinceFrame: device.screenRecording?.activeSinceFrame,
-            stoppedAtFrame: event.at,
-            stopFeedbackUntilFrame:
-              event.at + SCREEN_RECORDING_STOP_FEEDBACK_FRAMES,
+            ...device.screenRecording,
+            isCapturing: false,
+            captureStoppedAtFrame: event.at,
+            feedbackEndsAtFrame: event.at + feedbackFrames,
+            completion:
+              event.at < device.screenRecording.captureStartedAtFrame
+                ? "cancelled"
+                : "saved",
+            previousPresentation,
+            presentationChangedAtFrame: event.at,
           };
-          if (device.dynamicIsland?.activeContent === "recording") {
-            device.dynamicIsland.activeContent = null;
-            device.dynamicIsland.mode = "idle";
+          if (device.dynamicIsland?.activity === "recording") {
+            device.dynamicIsland.activity = null;
+            device.dynamicIsland.presentation = "idle";
+            device.dynamicIsland.updatedAtFrame = event.at;
           }
         }
         break;
@@ -232,8 +278,13 @@ export function deviceReducer(
         });
         if (!device.dynamicIsland)
           device.dynamicIsland = { ...DEFAULT_DYNAMIC_ISLAND };
-        device.dynamicIsland.activeContent = e.payload?.indicator || "music";
-        device.dynamicIsland.mode = "compact";
+        device.dynamicIsland.activity = e.payload?.indicator || "music";
+        device.dynamicIsland.presentation = "compact";
+        device.dynamicIsland.updatedAtFrame = event.at;
+        device.dynamicIsland.appId = appId;
+        device.dynamicIsland.content = {
+          title: e.payload?.label,
+        };
         break;
       }
 
@@ -246,8 +297,11 @@ export function deviceReducer(
           );
         }
         if (device.dynamicIsland && device.backgroundApps?.length === 0) {
-          device.dynamicIsland.activeContent = null;
-          device.dynamicIsland.mode = "idle";
+          device.dynamicIsland.activity = null;
+          device.dynamicIsland.presentation = "idle";
+          device.dynamicIsland.updatedAtFrame = event.at;
+          device.dynamicIsland.appId = undefined;
+          device.dynamicIsland.content = undefined;
         }
         break;
       }

@@ -30,7 +30,15 @@ export const DeviceConfigSchema = z.object({
       wallpaper: z.string().optional(),
     })
     .optional(),
-  screenRecording: z.boolean().optional(),
+  screenRecording: z
+    .union([
+      z.boolean(),
+      z.object({
+        presentation: z.enum(["compact", "expanded", "hidden"]).optional(),
+        microphoneEnabled: z.boolean().optional(),
+      }),
+    ])
+    .optional(),
 });
 
 export const AppSnapshotEntrySchema = z.object({

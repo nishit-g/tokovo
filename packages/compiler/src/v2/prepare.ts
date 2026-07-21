@@ -464,10 +464,19 @@ function buildInitialWorld(
         : undefined,
       screenRecording: device.screenRecording
         ? {
-            enabled: true,
-            mode: "compact",
-            startedAtFrame: 0,
-            activeSinceFrame: 0,
+            isCapturing: true,
+            presentation:
+              typeof device.screenRecording === "object"
+                ? (device.screenRecording.presentation ?? "compact")
+                : "compact",
+            microphoneEnabled:
+              typeof device.screenRecording === "object"
+                ? (device.screenRecording.microphoneEnabled ?? false)
+                : false,
+            requestedAtFrame: 0,
+            captureStartedAtFrame: 0,
+            previousPresentation: "idle",
+            presentationChangedAtFrame: 0,
           }
         : undefined,
     } as DeviceState;

@@ -326,7 +326,7 @@ export default defineEpisode({
         });
       })
       .deviceTrack("creator_ios", (device) => {
-        device.at("0s").screenRecording(true, { mode: "compact" });
+        device.at("0s").screenRecording(true, { presentation: "compact" });
       })
       .notificationTrack("launch_android", (notifications) => {
         notifications.at("18.35s").deliver({

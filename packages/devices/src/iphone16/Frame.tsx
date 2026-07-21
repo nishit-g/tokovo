@@ -5,12 +5,14 @@ import { getIOSChromeMetrics } from "../ios/chrome-metrics.js";
 interface FrameProps {
   children: React.ReactNode;
   statusBar?: React.ReactNode;
+  dynamicIsland?: React.ReactNode;
   homeIndicatorTheme?: "light" | "dark" | "hidden";
 }
 
 export const iPhone16Frame: React.FC<FrameProps> = ({
   children,
   statusBar,
+  dynamicIsland,
   homeIndicatorTheme = "light",
 }) => {
   const { width, height } = iPhone16Profile.dimensions;
@@ -101,7 +103,7 @@ export const iPhone16Frame: React.FC<FrameProps> = ({
   return (
     <div style={containerStyle}>
       <div style={statusBarAreaStyle}>{statusBar}</div>
-      <div style={dynamicIslandStyle} />
+      {dynamicIsland ?? <div style={dynamicIslandStyle} />}
       <div style={screenStyle}>
         {children}
         {homeIndicatorTheme !== "hidden" ? <div style={homeIndicatorStyle} /> : null}

@@ -110,12 +110,24 @@ export interface SetBadgePayload {
 
 export interface SetDynamicIslandPayload {
   visible: boolean;
-  mode?: "idle" | "minimal" | "compact" | "expanded";
+  presentation?: "idle" | "minimal" | "compact" | "expanded";
+  activity?: "music" | "call" | "timer" | "recording" | "location" | null;
+  appId?: string;
+  content?: {
+    title?: string;
+    subtitle?: string;
+    icon?: string;
+    tint?: string;
+    elapsedLabel?: string;
+  };
 }
 
 export interface SetScreenRecordingPayload {
   enabled: boolean;
-  mode?: "minimal" | "compact";
+  presentation?: "compact" | "expanded" | "hidden";
+  microphoneEnabled?: boolean;
+  countdownFrames?: number;
+  feedbackFrames?: number;
 }
 
 export interface IncomingCallPayload {

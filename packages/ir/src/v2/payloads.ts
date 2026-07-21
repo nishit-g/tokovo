@@ -282,7 +282,16 @@ export interface DevicePayloads {
   };
   SET_DYNAMIC_ISLAND: {
     visible: boolean;
-    mode?: "idle" | "minimal" | "compact" | "expanded";
+    presentation?: "idle" | "minimal" | "compact" | "expanded";
+    activity?: "music" | "call" | "timer" | "recording" | "location" | null;
+    appId?: string;
+    content?: {
+      title?: string;
+      subtitle?: string;
+      icon?: string;
+      tint?: string;
+      elapsedLabel?: string;
+    };
   };
   SET_BADGE: {
     appId: string;
@@ -290,7 +299,10 @@ export interface DevicePayloads {
   };
   SET_SCREEN_RECORDING: {
     enabled: boolean;
-    mode?: "minimal" | "compact";
+    presentation?: "compact" | "expanded" | "hidden";
+    microphoneEnabled?: boolean;
+    countdownFrames?: number;
+    feedbackFrames?: number;
   };
   INCOMING_CALL: {
     callerId: string;

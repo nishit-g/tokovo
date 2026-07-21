@@ -82,6 +82,8 @@ export interface DynamicIslandConfig {
   expandedHeight: number;
   /** Corner radius for pill shape */
   cornerRadius: number;
+  /** Expanded presentation corner radius */
+  expandedCornerRadius?: number;
 }
 
 /**

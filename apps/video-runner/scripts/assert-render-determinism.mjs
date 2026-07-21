@@ -48,6 +48,20 @@ const defaultProbes = [
   // Canonical iOS notification anatomy: live banner and grouped center stack.
   { episodeId: "notification-center-exhaustive", frame: 42 },
   { episodeId: "notification-center-exhaustive", frame: 150 },
+  // Current iOS screen-capture lifecycle: persistent compact dot, three-second
+  // countdown, explicit expanded stop control, collapse, dismiss and save banner.
+  // Intermediate probes lock the frame-derived morphs, not only resting states.
+  { episodeId: "screen-recording-exhaustive", frame: 30 },
+  { episodeId: "screen-recording-exhaustive", frame: 216 },
+  { episodeId: "screen-recording-exhaustive", frame: 225 },
+  { episodeId: "screen-recording-exhaustive", frame: 336 },
+  { episodeId: "screen-recording-exhaustive", frame: 345 },
+  { episodeId: "screen-recording-exhaustive", frame: 402 },
+  { episodeId: "screen-recording-exhaustive", frame: 408 },
+  { episodeId: "screen-recording-exhaustive", frame: 546 },
+  { episodeId: "screen-recording-exhaustive", frame: 555 },
+  { episodeId: "screen-recording-exhaustive", frame: 660 },
+  { episodeId: "screen-recording-exhaustive", frame: 910 },
 ];
 
 function parseProbes(raw) {

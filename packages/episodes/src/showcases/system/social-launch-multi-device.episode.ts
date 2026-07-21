@@ -270,7 +270,7 @@ export default defineEpisode({
         });
       })
       .deviceTrack("creator_phone", (device) => {
-        device.at("0s").screenRecording(true, { mode: "compact" });
+        device.at("0s").screenRecording(true, { presentation: "compact" });
         device.at("22.5s").openApp("app_instagram", {
           transition: { durationFrames: 18, style: "iosZoom" },
         });

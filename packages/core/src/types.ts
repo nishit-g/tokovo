@@ -7,7 +7,8 @@ export type {
   AppCallTypes,
   BaseAppState,
   BackgroundAppState,
-  ScreenRecordingMode,
+  ScreenRecordingPresentation,
+  ScreenRecordingCompletion,
   ScreenRecordingState,
   CallDisplayMode,
   CallType,
@@ -28,8 +29,8 @@ export { DEFAULT_OS_STATE } from "./types/device.js";
 
 export type {
   DynamicIslandState,
-  DynamicIslandMode,
-  DynamicIslandContent,
+  DynamicIslandPresentation,
+  DynamicIslandActivity,
 } from "./types/device.js";
 export { DEFAULT_DYNAMIC_ISLAND } from "./types/device.js";
 
@@ -249,6 +250,8 @@ export type {
   OpenAppPayload,
   SetBadgePayload,
   SetDynamicIslandPayload,
+  SetScreenRecordingPayload,
+  SetScreenRecordingEvent,
   IncomingCallPayload,
   BackgroundAppPayload,
   // Voice runtime event types

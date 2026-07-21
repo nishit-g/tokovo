@@ -64,9 +64,10 @@ export const iPhone16Profile: DeviceProfile = {
     topY: 36, // Top padding
     collapsedWidth: 370, // Pill width
     collapsedHeight: 110, // Pill height
-    expandedWidth: 900, // Expanded for Now Playing
-    expandedHeight: 220, // Expanded height
+    expandedWidth: 408 * SCALE,
+    expandedHeight: 96 * SCALE,
     cornerRadius: 55, // Pill corners
+    expandedCornerRadius: 44 * SCALE,
   },
 
   // Device OS sounds

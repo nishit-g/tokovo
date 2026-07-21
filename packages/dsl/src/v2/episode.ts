@@ -49,6 +49,7 @@ import {
   InputDirectionIR,
   NotificationIntentIR,
   NotificationInteractionIR,
+  ScreenRecordingBootConfig,
 } from "@tokovo/ir";
 import {
   CameraDirectorPlugin,
@@ -85,8 +86,8 @@ export interface DeviceOptions {
     pages?: string[][];
     wallpaper?: string;
   };
-  /** Start with screen recording indicator enabled */
-  screenRecording?: boolean;
+  /** Start with an already-active screen recording session. */
+  screenRecording?: boolean | ScreenRecordingBootConfig;
 }
 
 export interface TrackBuilder {

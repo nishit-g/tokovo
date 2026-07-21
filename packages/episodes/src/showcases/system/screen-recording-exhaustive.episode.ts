@@ -6,7 +6,7 @@ export default defineEpisode({
     id: "screen-recording-exhaustive",
     title: "Screen Recording Exhaustive",
     description:
-      "Recording realism pass covering active capture chrome, stop feedback, restart countdown, and app switching continuity.",
+      "Current iOS recording lifecycle covering countdown, compact indicator, expanded stop control, dismissed activity, save banner, and app-switch continuity.",
     category: "showcase",
     catalogType: "system_showcase",
     visibility: "public",
@@ -26,7 +26,10 @@ export default defineEpisode({
     })
       .device("phone", "iphone16", {
         app: "app_whatsapp",
-        screenRecording: true,
+        screenRecording: {
+          presentation: "compact",
+          microphoneEnabled: false,
+        },
         installedApps: ["app_whatsapp", "app_x"],
         os: {
           time: new Date("2026-04-10T21:10:00Z"),
@@ -67,28 +70,40 @@ export default defineEpisode({
         });
       })
       .deviceTrack("phone", (d) => {
-        d.at("5.5s").screenRecording(false, { mode: "compact" });
-        d.at("7.0s").screenRecording(true, { mode: "compact" });
+        d.at("5.5s").screenRecording(false, { feedback: "2.4s" });
+        d.at("7.0s").screenRecording(true, {
+          presentation: "compact",
+          microphoneEnabled: true,
+          countdown: "3s",
+        });
         d.at("10.8s").openApp("app_x", {
           transition: { durationFrames: 18, style: "iosZoom" },
         });
+        d.at("11.0s").screenRecording(true, { presentation: "expanded" });
+        d.at("13.2s").screenRecording(true, { presentation: "compact" });
+        d.at("18.0s").screenRecording(true, { presentation: "hidden" });
         d.at("19.5s").goHome({
           transition: { durationFrames: 18, style: "iosZoom" },
         });
+        d.at("20.0s").screenRecording(true, { presentation: "compact" });
         d.at("21.0s").lock();
         d.at("23.0s").unlock();
         d.at("24.2s").openApp("app_whatsapp", {
           transition: { durationFrames: 18, style: "iosZoom" },
         });
+        d.at("24.4s").screenRecording(true, { presentation: "expanded" });
+        d.at("27.0s").screenRecording(true, { presentation: "compact" });
+        d.at("30.0s").screenRecording(false, { feedback: "2.4s" });
       })
       .camera((cam) => {
         cam.at("0s").focus("device", { scale: 1.01, duration: "0.35s" });
-        cam.at("5.6s").focus("dynamicIsland", { scale: 1.2, duration: "0.25s" });
+        cam.at("5.6s").focus("device", { scale: 1.04, duration: "0.25s" });
         cam.at("7.1s").focus("dynamicIsland", { scale: 1.2, duration: "0.25s" });
-        cam.at("11.0s").focus("dynamicIsland", { scale: 1.16, duration: "0.3s" });
+        cam.at("11.1s").focus("dynamicIsland", { scale: 1.16, duration: "0.3s" });
         cam.at("13.9s").focus("tweet_card", { scale: 1.08, duration: "0.35s" });
         cam.at("21.2s").focus("device", { scale: 1.02, duration: "0.35s" });
-        cam.at("24.4s").focus("dynamicIsland", { scale: 1.18, duration: "0.3s" });
+        cam.at("24.5s").focus("dynamicIsland", { scale: 1.18, duration: "0.3s" });
+        cam.at("30.1s").focus("device", { scale: 1.03, duration: "0.3s" });
       })
       .build(),
 });

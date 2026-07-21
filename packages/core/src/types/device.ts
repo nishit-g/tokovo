@@ -44,19 +44,35 @@ export interface BackgroundAppState {
 // SCREEN RECORDING
 // =============================================================================
 
-export type ScreenRecordingMode = "minimal" | "compact";
+export type ScreenRecordingPresentation = "compact" | "expanded" | "hidden";
+
+export type ScreenRecordingCompletion = "saved" | "cancelled";
 
 export interface ScreenRecordingState {
-  enabled: boolean;
-  mode: ScreenRecordingMode;
-  startedAtFrame?: number;
-  activeSinceFrame?: number;
-  stoppedAtFrame?: number;
-  stopFeedbackUntilFrame?: number;
+  /** True through the authored countdown and active capture. */
+  isCapturing: boolean;
+  /** Persistent compact indicator, explicit expanded control, or user-dismissed state. */
+  presentation: ScreenRecordingPresentation;
+  /** Whether microphone audio is included in the capture. */
+  microphoneEnabled: boolean;
+  /** Frame at which the capture request was made. */
+  requestedAtFrame: number;
+  /** Frame at which the three-second countdown completes. */
+  captureStartedAtFrame: number;
+  /** Frame at which capture stopped, if it has stopped. */
+  captureStoppedAtFrame?: number;
+  /** End of the deterministic system completion banner. */
+  feedbackEndsAtFrame?: number;
+  /** Whether the request produced a saved video or was cancelled during countdown. */
+  completion?: ScreenRecordingCompletion;
+  /** Presentation immediately before the most recent morph. */
+  previousPresentation?: ScreenRecordingPresentation | "idle" | "countdown";
+  /** Frame used to derive the current morph without browser-time animation. */
+  presentationChangedAtFrame: number;
 }
 
-export type DynamicIslandMode = "idle" | "minimal" | "compact" | "expanded";
-export type DynamicIslandContent =
+export type DynamicIslandPresentation = "idle" | "minimal" | "compact" | "expanded";
+export type DynamicIslandActivity =
   | "music"
   | "call"
   | "timer"
@@ -66,17 +82,24 @@ export type DynamicIslandContent =
 
 export interface DynamicIslandState {
   visible: boolean;
-  mode: DynamicIslandMode;
-  activeContent: DynamicIslandContent;
+  presentation: DynamicIslandPresentation;
+  activity: DynamicIslandActivity;
+  updatedAtFrame?: number;
   lockedUntil?: number;
   appId?: string;
-  content?: { title?: string; subtitle?: string; icon?: string };
+  content?: {
+    title?: string;
+    subtitle?: string;
+    icon?: string;
+    tint?: string;
+    elapsedLabel?: string;
+  };
 }
 
 export const DEFAULT_DYNAMIC_ISLAND: DynamicIslandState = {
   visible: true,
-  mode: "idle",
-  activeContent: null,
+  presentation: "idle",
+  activity: null,
 };
 
 // =============================================================================
