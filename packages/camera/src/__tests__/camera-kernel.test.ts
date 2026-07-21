@@ -216,6 +216,48 @@ describe("camera composer", () => {
   });
 });
 
+describe("camera projection backend routing", () => {
+  it("declares texture requirements during preparation", () => {
+    const registries = createBuiltinCameraRegistries();
+    const textureProgram = prepareCameraPlan(createPlan(), registries);
+    const compositedPlan = createPlan();
+    compositedPlan.rigs = compositedPlan.rigs.map(({ lensId: _lensId, ...rig }) => rig);
+    compositedPlan.lenses = [];
+    const compositedProgram = prepareCameraPlan(compositedPlan, registries);
+
+    expect(textureProgram.projectionBackendRequirement).toBe("texture");
+    expect(compositedProgram.projectionBackendRequirement).toBe("composited");
+  });
+
+  it("routes whip transitions through the texture compositor", () => {
+    const registries = createBuiltinCameraRegistries();
+    const plan = createPlan();
+    plan.rigs = plan.rigs.map(({ lensId: _lensId, ...rig }) => ({
+      ...rig,
+      ...(rig.id === "message-close"
+        ? {
+            motion: {
+              type: "whip" as const,
+              durationFrames: 12,
+              direction: "left" as const,
+            },
+          }
+        : {}),
+    }));
+    plan.lenses = [];
+
+    expect(prepareCameraPlan(plan, registries).projectionBackendRequirement).toBe("texture");
+  });
+
+  it("does not route unused texture definitions through the compositor", () => {
+    const registries = createBuiltinCameraRegistries();
+    const plan = createPlan();
+    plan.rigs = plan.rigs.map(({ lensId: _lensId, ...rig }) => rig);
+
+    expect(prepareCameraPlan(plan, registries).projectionBackendRequirement).toBe("composited");
+  });
+});
+
 describe("camera program preparation", () => {
   it("produces the same signature regardless of declaration array ordering", () => {
     const registries = createBuiltinCameraRegistries();
@@ -252,16 +294,14 @@ describe("camera program preparation", () => {
       ],
     };
 
-    expect(() =>
-      prepareCameraPlan(invalid, createBuiltinCameraRegistries()),
-    ).toThrow(CameraPreparationError);
+    expect(() => prepareCameraPlan(invalid, createBuiltinCameraRegistries())).toThrow(
+      CameraPreparationError,
+    );
     try {
       prepareCameraPlan(invalid, createBuiltinCameraRegistries());
     } catch (error) {
       expect(error).toBeInstanceOf(CameraPreparationError);
-      const codes = (error as CameraPreparationError).diagnostics.map(
-        (entry) => entry.code,
-      );
+      const codes = (error as CameraPreparationError).diagnostics.map((entry) => entry.code);
       expect(codes).toContain("CAM_LENS_MODEL_MISSING");
       expect(codes).toContain("CAM_SHOT_OVERLAP_AMBIGUOUS");
     }
@@ -277,9 +317,9 @@ describe("camera program preparation", () => {
       })),
     };
 
-    expect(() =>
-      prepareCameraPlan(invalid, createBuiltinCameraRegistries()),
-    ).toThrowError(/unknown parameter "strenght"/);
+    expect(() => prepareCameraPlan(invalid, createBuiltinCameraRegistries())).toThrowError(
+      /unknown parameter "strenght"/,
+    );
   });
 });
 
@@ -306,9 +346,7 @@ describe("camera output evaluation", () => {
       expect.objectContaining({ kind: "fisheye-warp", strength: 0.22 }),
     ]);
     expect(evaluated.pose.scale).toBeGreaterThan(1);
-    expect(JSON.parse(JSON.stringify(evaluated.trace))).toEqual(
-      evaluated.trace,
-    );
+    expect(JSON.parse(JSON.stringify(evaluated.trace))).toEqual(evaluated.trace);
     expect(evaluated.trace).toEqual(
       expect.objectContaining({
         selection: "shot",
@@ -354,9 +392,7 @@ describe("camera output evaluation", () => {
     const frame = createSubjectFrame(90);
     const withoutMessage: CinematicSubjectFrame = {
       frame: 90,
-      subjects: frame.subjects.filter(
-        (subject) => subject.ref !== messageSubject,
-      ),
+      subjects: frame.subjects.filter((subject) => subject.ref !== messageSubject),
     };
 
     expect(() =>
@@ -442,12 +478,8 @@ describe("camera output evaluation", () => {
     expect(settled.projectionPasses).toEqual([
       expect.objectContaining({ kind: "fisheye-warp", strength: 0.22 }),
     ]);
-    expect(middle.pose.scale).toBeGreaterThan(
-      Math.min(start.pose.scale, settled.pose.scale),
-    );
-    expect(middle.pose.scale).toBeLessThan(
-      Math.max(start.pose.scale, settled.pose.scale),
-    );
+    expect(middle.pose.scale).toBeGreaterThan(Math.min(start.pose.scale, settled.pose.scale));
+    expect(middle.pose.scale).toBeLessThan(Math.max(start.pose.scale, settled.pose.scale));
     expect(reverseMiddle).toEqual(middle);
   });
 
@@ -493,9 +525,7 @@ describe("camera output evaluation", () => {
 
     const peak = evaluate(75);
     expect(peak.projectionPasses).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ kind: "directional-smear" }),
-      ]),
+      expect.arrayContaining([expect.objectContaining({ kind: "directional-smear" })]),
     );
     expect(peak.trace.transition).toEqual(
       expect.objectContaining({
@@ -504,11 +534,9 @@ describe("camera output evaluation", () => {
         whipActive: true,
       }),
     );
-    expect(
-      evaluate(90).projectionPasses.some(
-        (pass) => pass.kind === "directional-smear",
-      ),
-    ).toBe(false);
+    expect(evaluate(90).projectionPasses.some((pass) => pass.kind === "directional-smear")).toBe(
+      false,
+    );
     expect(evaluate(105)).toEqual(evaluate(105));
   });
 });

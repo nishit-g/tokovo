@@ -6,10 +6,7 @@ import {
   writeRenderMetadata,
   type RenderArtifactMetadata,
 } from "./artifacts";
-import {
-  createR2ArtifactUploadTargets,
-  uploadRenderArtifactsToR2,
-} from "./storage";
+import { createR2ArtifactUploadTargets, uploadRenderArtifactsToR2 } from "./storage";
 import { releaseCompositionId } from "./constants";
 import {
   createRenderServiceError,
@@ -25,6 +22,7 @@ export type RenderEpisodeOptions = {
   episodeId: string;
   jobId: string;
   profile: RenderProfileId;
+  cameraPlanId?: string;
 };
 
 export type RenderEpisodeResult = {
@@ -104,6 +102,7 @@ export async function renderEpisodeArtifact(
 
     const renderOutput = await renderEpisodeMedia({
       episodeId: options.episodeId,
+      cameraPlanId: options.cameraPlanId,
       profile,
       outputLocation: paths.videoPath,
       posterLocation: paths.posterPath,
@@ -122,6 +121,7 @@ export async function renderEpisodeArtifact(
       episodeId: options.episodeId,
       jobId: options.jobId,
       profile: profile.id,
+      cameraPlanId: options.cameraPlanId,
       compositionId: releaseCompositionId,
       fps: renderOutput.composition.fps,
       width: renderOutput.composition.width,
@@ -158,14 +158,10 @@ export async function renderEpisodeArtifact(
     });
 
     if (uploadTargets) {
-      await logger.info(
-        "storage.upload.start",
-        "Uploading render artifacts to R2",
-        {
-          bucket: uploadTargets.bucket,
-          keyPrefix: uploadTargets.keyPrefix,
-        },
-      );
+      await logger.info("storage.upload.start", "Uploading render artifacts to R2", {
+        bucket: uploadTargets.bucket,
+        keyPrefix: uploadTargets.keyPrefix,
+      });
       await uploadRenderArtifactsToR2({
         videoFilePath: paths.videoPath,
         posterFilePath: paths.posterPath,
@@ -173,17 +169,13 @@ export async function renderEpisodeArtifact(
         logsFilePath: paths.logsPath,
         targets: uploadTargets,
       });
-      await logger.info(
-        "storage.upload.done",
-        "Uploaded render artifacts to R2",
-        {
-          bucket: uploadTargets.bucket,
-          keyPrefix: uploadTargets.keyPrefix,
-          videoUrl: uploadTargets.video.publicUrl,
-          posterUrl: uploadTargets.poster.publicUrl,
-          metadataUrl: uploadTargets.metadata.publicUrl,
-        },
-      );
+      await logger.info("storage.upload.done", "Uploaded render artifacts to R2", {
+        bucket: uploadTargets.bucket,
+        keyPrefix: uploadTargets.keyPrefix,
+        videoUrl: uploadTargets.video.publicUrl,
+        posterUrl: uploadTargets.poster.publicUrl,
+        metadataUrl: uploadTargets.metadata.publicUrl,
+      });
     }
 
     await logger.info("render.done", "Render completed", {
@@ -220,6 +212,7 @@ export async function renderEpisodeArtifact(
     await logger.error("render.failed", renderError.message, {
       ...getRenderServiceErrorData(renderError),
       episodeId: options.episodeId,
+      cameraPlanId: options.cameraPlanId,
       jobId: options.jobId,
       profile: profile.id,
     });

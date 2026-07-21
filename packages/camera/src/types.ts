@@ -1,10 +1,4 @@
-import type {
-  CameraPlanIR,
-  CameraRectIR,
-  CameraRigIR,
-  CameraShotIR,
-  JsonObject,
-} from "@tokovo/ir";
+import type { CameraPlanIR, CameraRectIR, CameraRigIR, CameraShotIR, JsonObject } from "@tokovo/ir";
 import type { StageProjectedCinematicSubject } from "@tokovo/stage";
 
 /** Row-major 3x3 projective matrix. */
@@ -90,6 +84,8 @@ export interface PreparedCameraProgram {
   version: 1;
   plan: CameraPlanIR;
   shotsByOutput: Readonly<Record<string, readonly CameraShotIR[]>>;
+  /** Highest-fidelity backend required by any reachable rig or transition. */
+  projectionBackendRequirement: "composited" | "texture";
   signature: string;
   diagnostics: readonly CameraDiagnostic[];
 }
@@ -155,6 +151,8 @@ export interface CameraModifierContext extends LensModelContext {
 export interface CameraModifierModel {
   id: string;
   version: number;
+  /** Declared capability keeps render routing explicit for third-party models. */
+  projectionBackendRequirement: "composited" | "texture";
   validate(parameters: JsonObject): readonly string[];
   evaluate(context: CameraModifierContext): CameraModifierResult;
 }
@@ -162,6 +160,8 @@ export interface CameraModifierModel {
 export interface CameraLensModel {
   id: string;
   version: number;
+  /** Declared capability keeps render routing explicit for third-party models. */
+  projectionBackendRequirement: "composited" | "texture";
   validate(parameters: JsonObject): readonly string[];
   evaluate(context: LensModelContext): readonly CameraProjectionPass[];
 }

@@ -10,7 +10,6 @@
 
 import React from "react";
 import { Composition, Folder } from "remotion";
-import { z } from "zod";
 import {
   getFormat,
   resolveCatalogProfile,
@@ -19,22 +18,13 @@ import {
 } from "@tokovo/episodes";
 import { EpisodeRenderer } from "./EpisodeRenderer";
 import { calculateEpisodeMetadata } from "./episode-metadata";
+import { episodeRendererSchema } from "./episode-renderer-contract";
 import { VideoRunnerRuntimeProvider } from "./RuntimeContext";
 import { useVideoRunnerRuntime } from "./RuntimeSharedContext";
 
 export const RELEASE_COMPOSITION_ID = "episode-render";
-const catalogProfile = resolveCatalogProfile(
-  process.env.TOKOVO_EPISODE_CATALOG_PROFILE,
-  "studio",
-);
+const catalogProfile = resolveCatalogProfile(process.env.TOKOVO_EPISODE_CATALOG_PROFILE, "studio");
 const INCLUDE_EPISODE_CATALOG = catalogProfile !== "release";
-const episodeRendererSchema = z.object({
-  episodeId: z.string(),
-  renderDataKey: z.string().optional(),
-  renderData: z.unknown().optional(),
-  cameraPlanId: z.string().optional(),
-});
-
 // =============================================================================
 // MAIN COMPONENT
 // =============================================================================
@@ -51,11 +41,7 @@ const RemotionRootInner: React.FC = () => {
   const { episodeRegistry } = useVideoRunnerRuntime();
   const stories = episodeRegistry.filter({ catalogType: "story" });
   const appShowcases = episodeRegistry.filter({
-    catalogType: [
-      "app_showcase_flagship",
-      "app_showcase_exhaustive",
-      "app_showcase_theme",
-    ],
+    catalogType: ["app_showcase_flagship", "app_showcase_exhaustive", "app_showcase_theme"],
   });
   const systemShowcases = episodeRegistry.filter({
     catalogType: "system_showcase",
@@ -107,9 +93,7 @@ const RemotionRootInner: React.FC = () => {
   );
 };
 
-function groupByApp(
-  episodes: EpisodeDefinition[],
-): Map<string, EpisodeDefinition[]> {
+function groupByApp(episodes: EpisodeDefinition[]): Map<string, EpisodeDefinition[]> {
   const groups = new Map<string, EpisodeDefinition[]>();
 
   for (const episode of episodes) {
@@ -119,11 +103,7 @@ function groupByApp(
     groups.set(label, current);
   }
 
-  return new Map(
-    Array.from(groups.entries()).sort(([left], [right]) =>
-      left.localeCompare(right),
-    ),
-  );
+  return new Map(Array.from(groups.entries()).sort(([left], [right]) => left.localeCompare(right)));
 }
 
 function getAppLabel(appId: string | undefined): string {

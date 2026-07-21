@@ -25,13 +25,28 @@ export const iPhone16Frame: React.FC<FrameProps> = ({
       height,
       backgroundColor: "black",
       borderRadius: C.CORNER_RADIUS,
-      boxShadow: `0 0 0 ${C.BEZEL_WIDTH}px #3a3a3a, 0 0 0 ${C.BEZEL_WIDTH + 6}px #000`,
+      filter:
+        "drop-shadow(0 2px 2px rgba(255, 255, 255, 0.14)) drop-shadow(0 24px 34px rgba(0, 0, 0, 0.58))",
       position: "relative" as const,
       overflow: "hidden" as const,
       display: "flex" as const,
       flexDirection: "column" as const,
     }),
     [width, height],
+  );
+
+  const physicalFrameStyle = useMemo(
+    () => ({
+      position: "absolute" as const,
+      inset: 0,
+      border: `${C.BEZEL_WIDTH}px solid #171719`,
+      borderRadius: C.CORNER_RADIUS,
+      boxShadow: "inset 0 0 0 3px rgba(255, 255, 255, 0.2), inset 0 0 0 7px rgba(0, 0, 0, 0.72)",
+      boxSizing: "border-box" as const,
+      pointerEvents: "none" as const,
+      zIndex: 9998,
+    }),
+    [C.BEZEL_WIDTH, C.CORNER_RADIUS],
   );
 
   const statusBarAreaStyle = useMemo(
@@ -90,14 +105,18 @@ export const iPhone16Frame: React.FC<FrameProps> = ({
       width: metrics.homeIndicator.width,
       height: metrics.homeIndicator.height,
       backgroundColor:
-        homeIndicatorTheme === "dark"
-          ? "rgba(255, 255, 255, 0.86)"
-          : "rgba(0, 0, 0, 0.48)",
+        homeIndicatorTheme === "dark" ? "rgba(255, 255, 255, 0.86)" : "rgba(0, 0, 0, 0.48)",
       borderRadius: metrics.homeIndicator.radius,
       zIndex: 9999,
       pointerEvents: "none" as const,
     }),
-    [homeIndicatorTheme, metrics.homeIndicator.bottom, metrics.homeIndicator.width, metrics.homeIndicator.height, metrics.homeIndicator.radius],
+    [
+      homeIndicatorTheme,
+      metrics.homeIndicator.bottom,
+      metrics.homeIndicator.width,
+      metrics.homeIndicator.height,
+      metrics.homeIndicator.radius,
+    ],
   );
 
   return (
@@ -108,6 +127,7 @@ export const iPhone16Frame: React.FC<FrameProps> = ({
         {children}
         {homeIndicatorTheme !== "hidden" ? <div style={homeIndicatorStyle} /> : null}
       </div>
+      <div aria-hidden style={physicalFrameStyle} />
     </div>
   );
 };

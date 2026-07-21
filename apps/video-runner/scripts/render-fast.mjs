@@ -33,6 +33,7 @@ const rootConfigFiles = [
 ];
 
 const episodeId = process.env.EPISODE_ID ?? "v2-creator-series-showcase";
+const cameraPlanId = process.env.CAMERA_PLAN_ID;
 const outDir = process.env.OUT_DIR ?? path.join(repoRoot, "out");
 const outFile = process.env.OUT_FILE ?? path.join(outDir, `${episodeId}.mp4`);
 
@@ -250,7 +251,7 @@ async function getServeUrl() {
 async function main() {
   fs.mkdirSync(outDir, { recursive: true });
 
-  const inputProps = { episodeId };
+  const inputProps = { episodeId, ...(cameraPlanId ? { cameraPlanId } : {}) };
   const publicAssetBaseUrl = process.env.TOKOVO_PUBLIC_ASSET_BASE_URL?.trim();
   const serveUrl = await getServeUrl();
   const composition = await selectComposition({
@@ -263,6 +264,7 @@ async function main() {
   });
 
   console.log(`[render:fast] episode=${episodeId}`);
+  if (cameraPlanId) console.log(`[render:fast] camera-plan=${cameraPlanId}`);
   console.log(`[render:fast] out=${outFile}`);
   console.log(`[render:fast] concurrency=${concurrency}`);
 

@@ -42,11 +42,13 @@ async function runRender(): Promise<void> {
     (process.env.PROFILE as "fast-preview" | "review" | "release" | undefined) ??
     "review";
   const jobId = argValue("--job") ?? process.env.JOB_ID ?? `manual-${Date.now()}`;
+  const cameraPlanId = argValue("--camera-plan") ?? process.env.CAMERA_PLAN_ID ?? undefined;
 
   const result = await renderEpisodeArtifact({
     episodeId,
     jobId,
     profile,
+    cameraPlanId,
   });
 
   console.log(
@@ -55,6 +57,7 @@ async function runRender(): Promise<void> {
         ok: true,
         episodeId,
         profile,
+        cameraPlanId: cameraPlanId ?? null,
         videoPath: result.videoPath,
         posterPath: result.posterPath,
         metadataPath: result.metadataPath,

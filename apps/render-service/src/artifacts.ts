@@ -22,6 +22,7 @@ export type RenderArtifactMetadata = {
   episodeId: string;
   jobId: string;
   profile: RenderProfileId;
+  cameraPlanId?: string;
   compositionId: string;
   fps: number;
   width: number;

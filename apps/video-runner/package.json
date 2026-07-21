@@ -15,6 +15,9 @@
     },
     "./episode-registry": {
       "default": "./src/episode-registry.ts"
+    },
+    "./camera-texture-contract": {
+      "default": "./src/camera-texture-contract.ts"
     }
   },
   "scripts": {

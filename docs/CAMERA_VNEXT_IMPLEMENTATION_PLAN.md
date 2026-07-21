@@ -390,6 +390,52 @@ hard cut. Multi-device stage painting, the offline texture compositor, remaining
 and deletion of the event-camera packages are still open. The historical optical probe evidence
 above remains as benchmark provenance; the probe source itself no longer exists.
 
+### Texture-compositor checkpoint — 2026-07-22
+
+The nonlinear release path is now connected to the normal render service and the real WhatsApp
+flagship episode:
+
+- every prepared lens and modifier declares whether it requires the composited or texture backend;
+- the video composition exposes explicit `underlay`, `camera-plate`, and `foreground-plate` layers;
+- camera plates contain the real app, keyboard, notifications, OS surfaces, and device chrome with
+  alpha; backgrounds/audio and final story overlays stay independently attached;
+- camera projection captures are versioned, frame-addressed, identity-checked data containing the
+  story, stage, camera, plan, output viewport, and ordered projection passes;
+- the render service emits deterministic 512x512 displacement-map sequences, hard-links repeated
+  maps, drives named FFmpeg smear filters with per-frame commands, preserves RGB and alpha through
+  separate warp paths, and recomposes underlay, optical camera, and foreground;
+- projective homography is evaluated by the offline map whenever a texture plan is selected. The
+  browser plate keeps only affine framing and crop scale, avoiding Chromium `foreignObject` corner
+  artifacts;
+- capture completion is range-aware and map filenames/timestamps are local to the rendered segment,
+  establishing the seam required for deterministic chunking and retry;
+- direct render paths still fail with `CAM_TEXTURE_COMPOSITOR_REQUIRED`; there is no SVG release
+  fallback and no second optical implementation in the fast renderer;
+- the iPhone physical shell no longer uses large spread shadows. A rounded in-bounds bezel and
+  silhouette-following shadow produce a clean alpha plate at oblique and distorted angles.
+
+Evidence at this checkpoint:
+
+- a 51-frame 1080x1920 real-episode render across source frames 540–590 completed all three layers,
+  optical maps, directional whip smear, transition settlement, anamorphic edge stretch, H.264/AAC
+  output, and poster extraction;
+- all 51 captures shared story signature `17:40166d16`, stage signature `c58b7ce3`, camera signature
+  `b1734279`, and plan `whatsapp-expressive-lenses`;
+- displacement-map generation for the 51-frame span took 466ms; the complete deterministic
+  software-GL plate/render/composite path took 95.45s, so full-episode performance and plate reuse
+  remain open gates rather than being misreported as complete;
+- a post-fix three-frame projective render completed in 9.49s with clean rounded device alpha and no
+  rectangular plate leakage;
+- repeating that projective render produced identical MP4 SHA-256
+  `14da5530739b631f28b932f3dc0da27c0bb8e99f02f23f2ca5462c687337feeb` and poster SHA-256
+  `071c3b3caed3ccf37823675f288598cc0d71f25c8d49bc2fe8e2c9904588b08e`;
+- camera kernel: 15 tests passing; render-service compositor/profile suite: 11 tests passing;
+  camera, renderer, devices, render-service, and video-runner focused typechecks passing.
+
+This checkpoint proves production routing and pixel feasibility for one output. It does not yet
+prove multi-output composition, plan-independent reusable stage plates, chunk scheduling, a complete
+full-episode performance budget, or repository-wide legacy deletion.
+
 ### Phase 0: Architecture lock and renderer feasibility
 
 Status: In progress
@@ -402,7 +448,7 @@ Status: In progress
 - [x] Render representative stills.
 - [x] Render and inspect a short encoded motion probe.
 - [x] Record the preview-backend rejection and measured overhead.
-- [ ] Implement and benchmark the production texture-compositor path.
+- [x] Implement and benchmark the first production texture-compositor path.
 
 Exit gate:
 
@@ -548,7 +594,7 @@ Status: In progress
 - [x] Add barrel/fisheye painter.
 - [x] Add anamorphic edge painter.
 - [x] Add directional-smear painter.
-- [ ] Add layer attachment rules for stage, device screen, output, and final HUD.
+- [x] Add first-output attachment rules for underlay, camera plate, and final foreground HUD.
 - [ ] Delete `useCameraEngine` after cutover.
 - [ ] Replace hardcoded multi-device layout components with stage/output projection.
 

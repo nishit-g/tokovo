@@ -1550,8 +1550,11 @@ For each output:
 
 ### Projection backends
 
-Affine pose and projective tilt remain on the composited CSS matrix path and must be generated from
-CameraPose2D. The renderer uses one stable matrix representation rather than independently composing
+Affine pose remains on the composited CSS matrix path and must be generated from CameraPose2D.
+Projective tilt may use that path for an affine-only output. When a texture plan is selected, the
+offline compositor owns projective homography together with the nonlinear passes; applying CSS 3D
+projection to an SVG `foreignObject` plate leaks rectangular planes through rounded device chrome
+in Chromium. The renderer uses one stable matrix representation rather than independently composing
 translate, scale, origin, and rotation strings in multiple wrappers.
 
 Non-linear optics require a raster texture. Release rendering therefore uses a two-stage path:
@@ -1580,16 +1583,22 @@ Both optical implementations failed the performance gate despite producing the i
 Release mode must route a non-linear pass to the texture compositor or fail with
 `CAM_TEXTURE_COMPOSITOR_REQUIRED`; it may not silently use the SVG path.
 
-An FFmpeg texture-plate microbenchmark using a crisp source plus horizontal Gaussian trail took
-0.83 seconds for the same 60 frames. Combined with the 4.59-second plate render, that is an estimated
-5.42 seconds, or roughly 18 percent end-to-end overhead. This validates the backend direction, not
-the finished compositor: dynamic per-frame pass commands, all lens models, alpha/layer attachments,
-and final pipeline integration still require implementation and determinism tests.
+The initial microbenchmark used a crisp source plus horizontal Gaussian trail and took 0.83 seconds
+for the same 60 frames. The integrated compositor now supplies dynamic per-frame commands,
+projective/radial/fisheye/anamorphic maps, independent RGB/alpha warping, and explicit underlay,
+camera, and foreground attachment. A real 51-frame WhatsApp span took 95.45 seconds end to end under
+deterministic software GL, including three browser plate renders; map generation itself took 466ms.
+The backend is pixel-feasible and release-connected, but plan-independent plate reuse, chunked
+scheduling, multi-output composition, and the full performance budget remain required work.
 
 Plate identity includes story signature, stage signature, frame, output/layer attachment, dimensions,
 pixel format, and renderer version. CameraPlan identity is deliberately excluded from reusable stage
 plates so restrained and kinetic CameraPlans can share the same story render. Final-output cache keys
 include the selected camera signature and texture-compositor version.
+
+The first integrated vertical slice still paints affine framing and crop scale into its camera
+plate, so those plates are plan-attached and are not yet eligible for the target cross-plan cache.
+This is an explicit incomplete optimization seam, not a relaxation of the cache identity above.
 
 ### Camera spaces
 

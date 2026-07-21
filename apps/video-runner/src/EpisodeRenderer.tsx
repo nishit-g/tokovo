@@ -12,13 +12,7 @@
  * @see docs/architecture/episodes.md
  */
 
-import React, {
-  useMemo,
-  useState,
-  useRef,
-  useCallback,
-  useEffect,
-} from "react";
+import React, { useMemo, useState, useRef, useCallback, useEffect } from "react";
 import {
   AbsoluteFill,
   useCurrentFrame,
@@ -41,6 +35,7 @@ import {
   RendererRegistryProvider,
   type CameraDebugFrame,
   type CinematicCameraDebugFrame,
+  type CinematicTextureProjectionFrame,
 } from "@tokovo/renderer";
 import {
   SimpleVoiceLayer,
@@ -59,6 +54,7 @@ import {
 } from "./render-data";
 import { computeVoiceDuckMultiplierAtFrame } from "./voice-ducking";
 import { useEpisodeAssetPrefetch } from "./asset-prefetch";
+import { encodeCameraTextureProjectionCapture } from "./camera-texture-contract";
 
 const CAMERA_DEBUG_ENABLED = process.env.TOKOVO_CAMERA_DEBUG === "1";
 const MAX_DEBUG_TRACE_FRAMES = 5000;
@@ -75,6 +71,7 @@ export const EpisodeRenderer: React.FC<EpisodeRendererProps> = ({
   renderDataKey,
   renderData,
   cameraPlanId,
+  cameraRenderLayer = "final",
 }) => {
   const env = useRemotionEnvironment();
   const renderer = (
@@ -84,6 +81,7 @@ export const EpisodeRenderer: React.FC<EpisodeRendererProps> = ({
       renderDataKey={renderDataKey}
       renderData={renderData}
       cameraPlanId={cameraPlanId}
+      cameraRenderLayer={cameraRenderLayer}
     />
   );
   return env.isRendering ? renderer : <ErrorBoundary>{renderer}</ErrorBoundary>;
@@ -95,9 +93,9 @@ const EpisodeRendererInner: React.FC<EpisodeRendererProps> = ({
   renderDataKey,
   renderData: renderDataProp,
   cameraPlanId,
+  cameraRenderLayer = "final",
 }) => {
-  const { pluginManager, rendererRegistries, tokovoRegistries } =
-    useVideoRunnerRuntime();
+  const { pluginManager, rendererRegistries, tokovoRegistries } = useVideoRunnerRuntime();
   const { delayRender, continueRender, cancelRender } = useDelayRender();
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
@@ -108,10 +106,10 @@ const EpisodeRendererInner: React.FC<EpisodeRendererProps> = ({
   );
   const [renderDataError, setRenderDataError] = useState<Error | null>(null);
   const loadingHandleRef = useRef<number | null>(null);
-  const [cameraDebugFrame, setCameraDebugFrame] =
-    useState<CameraDebugFrame | null>(null);
-  const [cinematicDebugFrame, setCinematicDebugFrame] =
-    useState<CinematicCameraDebugFrame | null>(null);
+  const [cameraDebugFrame, setCameraDebugFrame] = useState<CameraDebugFrame | null>(null);
+  const [cinematicDebugFrame, setCinematicDebugFrame] = useState<CinematicCameraDebugFrame | null>(
+    null,
+  );
   const debugFromUrl = useMemo(() => {
     if (typeof window === "undefined") return false;
     const raw = new URLSearchParams(window.location.search).get("cameraDebug");
@@ -119,8 +117,7 @@ const EpisodeRendererInner: React.FC<EpisodeRendererProps> = ({
     const value = raw.toLowerCase();
     return value === "1" || value === "true" || value === "yes";
   }, []);
-  const cameraDebugEnabled =
-    !env.isRendering && (CAMERA_DEBUG_ENABLED || debugFromUrl);
+  const cameraDebugEnabled = !env.isRendering && (CAMERA_DEBUG_ENABLED || debugFromUrl);
   const [showCameraPanel, setShowCameraPanel] = useState(cameraDebugEnabled);
   const [showAllAnchors, setShowAllAnchors] = useState(false);
   const [debugActionMessage, setDebugActionMessage] = useState<string>("");
@@ -170,8 +167,7 @@ const EpisodeRendererInner: React.FC<EpisodeRendererProps> = ({
         if (cancelled) {
           return;
         }
-        const nextError =
-          error instanceof Error ? error : new Error(String(error));
+        const nextError = error instanceof Error ? error : new Error(String(error));
         setRenderDataError(nextError);
         if (env.isRendering) {
           cancelRender(nextError);
@@ -217,6 +213,28 @@ const EpisodeRendererInner: React.FC<EpisodeRendererProps> = ({
     }
     setTraceVersion((v) => v + 1);
   }, []);
+
+  const handleCameraTextureProjectionFrame = useCallback(
+    (entry: CinematicTextureProjectionFrame) => {
+      // eslint-disable-next-line no-console -- Browser-log IPC is Remotion's deterministic plate metadata channel.
+      console.info(
+        encodeCameraTextureProjectionCapture({
+          version: 1,
+          frame: entry.t,
+          storySignature: entry.storySignature,
+          stageSignature: entry.stageSignature,
+          cameraSignature: entry.cameraSignature,
+          planId: entry.planId,
+          outputs: entry.outputs.map((output) => ({
+            outputId: output.outputId,
+            viewport: output.pose.clipRect,
+            projectionPasses: output.projectionPasses,
+          })),
+        }),
+      );
+    },
+    [],
+  );
 
   const sortedTrace = useMemo(() => {
     return Array.from(traceRef.current.entries())
@@ -270,16 +288,14 @@ const EpisodeRendererInner: React.FC<EpisodeRendererProps> = ({
     if (!renderData) return null;
     return createKeyframedEventIndex(
       renderData.prepared.events,
-      renderData.prepared.keyframeInterval ??
-        config.rendering.cacheKeyframeInterval,
+      renderData.prepared.keyframeInterval ?? config.rendering.cacheKeyframeInterval,
     );
   }, [renderData, config.rendering.cacheKeyframeInterval]);
 
   const stateCache = useMemo(() => {
     if (!renderData) return null;
     return createStateCache(
-      renderData.prepared.keyframeInterval ??
-        config.rendering.cacheKeyframeInterval,
+      renderData.prepared.keyframeInterval ?? config.rendering.cacheKeyframeInterval,
     );
   }, [renderData, config.rendering.cacheKeyframeInterval]);
 
@@ -345,9 +361,7 @@ const EpisodeRendererInner: React.FC<EpisodeRendererProps> = ({
   const backgroundUsesTimeline = useMemo(() => {
     const backgroundConfig = renderData?.backgroundConfig;
     const type =
-      backgroundConfig && typeof backgroundConfig === "object"
-        ? backgroundConfig.type
-        : null;
+      backgroundConfig && typeof backgroundConfig === "object" ? backgroundConfig.type : null;
     return type === "particles" || type === "ambient";
   }, [renderData?.backgroundConfig]);
 
@@ -359,10 +373,8 @@ const EpisodeRendererInner: React.FC<EpisodeRendererProps> = ({
 
   const { scale } = useMemo(() => {
     if (!renderData) return { scale: 1 };
-    const deviceId =
-      world?.camera?.activeDeviceId || Object.keys(world?.devices ?? {})[0];
-    const profileId =
-      (deviceId && world?.devices?.[deviceId]?.profileId) || "iphone16";
+    const deviceId = world?.camera?.activeDeviceId || Object.keys(world?.devices ?? {})[0];
+    const profileId = (deviceId && world?.devices?.[deviceId]?.profileId) || "iphone16";
     const profile = getDeviceProfile(rendererRegistries.devices, profileId);
     // Scale device to fit in canvas with some margin for background visibility
     const fitScale = Math.min(
@@ -380,16 +392,12 @@ const EpisodeRendererInner: React.FC<EpisodeRendererProps> = ({
     return (
       <AbsoluteFill style={errorStyle}>
         <div style={{ fontSize: 80, marginBottom: 24 }}>⚠️</div>
-        <h1 style={{ color: "#FF6B6B", fontSize: 32, marginBottom: 16 }}>
-          Episode Render Failed
-        </h1>
+        <h1 style={{ color: "#FF6B6B", fontSize: 32, marginBottom: 16 }}>Episode Render Failed</h1>
         <div style={{ color: "#8892B0", fontSize: 18, marginBottom: 32 }}>
           Episode: <code>{episodeId}</code>
         </div>
         <div style={errorBoxStyle}>
-          <code
-            style={{ color: "#FF6B6B", fontSize: 14, whiteSpace: "pre-wrap" }}
-          >
+          <code style={{ color: "#FF6B6B", fontSize: 14, whiteSpace: "pre-wrap" }}>
             {renderDataError.message}
           </code>
         </div>
@@ -402,9 +410,7 @@ const EpisodeRendererInner: React.FC<EpisodeRendererProps> = ({
     return (
       <AbsoluteFill style={loadingStyle}>
         <div style={{ fontSize: 48, marginBottom: 16 }}>🎬</div>
-        <div style={{ fontSize: 20, color: "#8696A0", opacity }}>
-          Preparing {episodeId}...
-        </div>
+        <div style={{ fontSize: 20, color: "#8696A0", opacity }}>Preparing {episodeId}...</div>
       </AbsoluteFill>
     );
   }
@@ -414,57 +420,66 @@ const EpisodeRendererInner: React.FC<EpisodeRendererProps> = ({
     return (
       <AbsoluteFill style={loadingStyle}>
         <div style={{ fontSize: 48, marginBottom: 16 }}>🎬</div>
-        <div style={{ fontSize: 20, color: "#8696A0", opacity }}>
-          Loading {episodeId}...
-        </div>
+        <div style={{ fontSize: 20, color: "#8696A0", opacity }}>Loading {episodeId}...</div>
       </AbsoluteFill>
     );
   }
 
   const hasDevices = Object.keys(world.devices ?? {}).length > 0;
   const hasCinematics = Boolean(renderData.prepared.cinematics);
+  if (cameraRenderLayer !== "final" && !hasCinematics) {
+    throw new Error(
+      `CAM_TEXTURE_LAYER_WITHOUT_VNEXT: Layer "${cameraRenderLayer}" requires Camera VNext cinematics.`,
+    );
+  }
   if (hasCinematics && Object.keys(world.devices ?? {}).length > 1) {
     throw new Error(
       "CAM_VNEXT_MULTI_DEVICE_NOT_CONNECTED: VNext episodes must not fall back to the legacy multi-device renderer.",
     );
   }
   const usesMultiDeviceLayout =
-    Object.keys(world.devices ?? {}).length > 1 &&
-    world.camera.layout?.mode !== "SINGLE";
+    Object.keys(world.devices ?? {}).length > 1 && world.camera.layout?.mode !== "SINGLE";
+  const rendersUnderlay = cameraRenderLayer === "final" || cameraRenderLayer === "underlay";
+  const rendersCamera = cameraRenderLayer === "final" || cameraRenderLayer === "camera-plate";
+  const rendersForeground =
+    cameraRenderLayer === "final" || cameraRenderLayer === "foreground-plate";
 
   // Log which audio path is being used (only on first few frames to avoid spam)
   // === RENDER ===
   return (
     <AbsoluteFill
       style={{
-        backgroundColor: "#0a0a0f",
+        backgroundColor: rendersUnderlay ? "#0a0a0f" : "transparent",
         justifyContent: "center",
         alignItems: "center",
       }}
     >
       {/* === BACKGROUND LAYER === */}
-      <BackgroundLayer
-        config={
-          (renderData.backgroundConfig as Parameters<
-            typeof BackgroundLayer
-          >[0]["config"]) ?? "ambient-night"
-        }
-        frame={backgroundUsesTimeline ? frame : undefined}
-        fps={backgroundUsesTimeline ? fps : undefined}
-      />
+      {rendersUnderlay && (
+        <BackgroundLayer
+          config={
+            (renderData.backgroundConfig as Parameters<typeof BackgroundLayer>[0]["config"]) ??
+            "ambient-night"
+          }
+          frame={backgroundUsesTimeline ? frame : undefined}
+          fps={backgroundUsesTimeline ? fps : undefined}
+        />
+      )}
 
       <RendererRegistryProvider registries={rendererRegistries}>
-        <AudioLayer
-          world={world}
-          t={frame}
-          musicDuckMultiplierOverride={musicDuckMultiplier}
-          inputProgram={renderData.prepared.inputProgram}
-          notificationProgram={renderData.prepared.notificationProgram}
-        />
-        {renderData.voiceManifest &&
+        {rendersUnderlay && (
+          <AudioLayer
+            world={world}
+            t={frame}
+            musicDuckMultiplierOverride={musicDuckMultiplier}
+            inputProgram={renderData.prepared.inputProgram}
+            notificationProgram={renderData.prepared.notificationProgram}
+          />
+        )}
+        {rendersUnderlay &&
+          renderData.voiceManifest &&
           renderData.voiceConfig?.audioPath &&
-          (renderData.voiceConfig.usePerSegmentControl &&
-          voiceEvents.length > 0 ? (
+          (renderData.voiceConfig.usePerSegmentControl && voiceEvents.length > 0 ? (
             <VoiceLayer
               manifest={renderData.voiceManifest}
               audioUrl={renderData.voiceConfig.audioPath}
@@ -479,7 +494,7 @@ const EpisodeRendererInner: React.FC<EpisodeRendererProps> = ({
               volume={renderData.voiceConfig.volume ?? 1}
             />
           ))}
-        {hasDevices && usesMultiDeviceLayout ? (
+        {rendersCamera && hasDevices && usesMultiDeviceLayout ? (
           <MultiDeviceRenderer
             world={world}
             t={frame}
@@ -494,7 +509,7 @@ const EpisodeRendererInner: React.FC<EpisodeRendererProps> = ({
             inputProgram={renderData.prepared.inputProgram}
             notificationProgram={renderData.prepared.notificationProgram}
           />
-        ) : hasDevices ? (
+        ) : rendersCamera && hasDevices ? (
           <div
             style={
               hasCinematics
@@ -520,25 +535,27 @@ const EpisodeRendererInner: React.FC<EpisodeRendererProps> = ({
               notificationProgram={renderData.prepared.notificationProgram}
               cinematics={renderData.prepared.cinematics}
               cameraPlanId={cameraPlanId}
+              cameraProjectionBackend={
+                cameraRenderLayer === "camera-plate" ? "texture-plate" : "final"
+              }
               onCameraDebugFrame={handleCameraDebugFrame}
               onCinematicCameraDebugFrame={setCinematicDebugFrame}
+              onCameraTextureProjectionFrame={
+                cameraRenderLayer === "camera-plate"
+                  ? handleCameraTextureProjectionFrame
+                  : undefined
+              }
               cameraDebugShowAllAnchors={showAllAnchors}
             />
           </div>
         ) : null}
-        <StoryOverlay
-          world={world}
-          t={frame}
-          width={fmt.width}
-          height={fmt.height}
-        />
+        {rendersForeground && (
+          <StoryOverlay world={world} t={frame} width={fmt.width} height={fmt.height} />
+        )}
       </RendererRegistryProvider>
       {cameraDebugEnabled && (
         <>
-          <button
-            onClick={() => setShowCameraPanel((v) => !v)}
-            style={cameraPanelToggleStyle}
-          >
+          <button onClick={() => setShowCameraPanel((v) => !v)} style={cameraPanelToggleStyle}>
             {showCameraPanel ? "Hide Camera Panel" : "Show Camera Panel"}
           </button>
           {showCameraPanel && cinematicDebugFrame ? (
@@ -554,9 +571,7 @@ const EpisodeRendererInner: React.FC<EpisodeRendererProps> = ({
                   <div>plan: {output.trace.planId}</div>
                   <div>shot: {output.trace.shotId ?? "default"}</div>
                   <div>rig: {output.trace.rigId}</div>
-                  <div>
-                    passes: {output.trace.projectionPassKinds.join(", ") || "affine"}
-                  </div>
+                  <div>passes: {output.trace.projectionPassKinds.join(", ") || "affine"}</div>
                   <div>subjects: {output.trace.subjects.length}</div>
                 </React.Fragment>
               ))}
@@ -571,16 +586,10 @@ const EpisodeRendererInner: React.FC<EpisodeRendererProps> = ({
                 >
                   {showAllAnchors ? "Hide All Anchors" : "Show All Anchors"}
                 </button>
-                <button
-                  onClick={exportTraceJson}
-                  style={cameraActionButtonStyle}
-                >
+                <button onClick={exportTraceJson} style={cameraActionButtonStyle}>
                   Export Trace JSON
                 </button>
-                <button
-                  onClick={copyReproPacket}
-                  style={cameraActionButtonStyle}
-                >
+                <button onClick={copyReproPacket} style={cameraActionButtonStyle}>
                   Copy Repro Packet
                 </button>
               </div>
@@ -591,22 +600,11 @@ const EpisodeRendererInner: React.FC<EpisodeRendererProps> = ({
               <div>frame: {cameraDebugFrame.t}</div>
               <div>app: {cameraDebugFrame.appId ?? "-"}</div>
               <div>device: {cameraDebugFrame.deviceId}</div>
-              <div>
-                effect: {cameraDebugFrame.debugInfo?.activeEffectType ?? "-"}
-              </div>
-              <div>
-                effectId: {cameraDebugFrame.debugInfo?.activeEffectId ?? "-"}
-              </div>
-              <div>
-                target: {cameraDebugFrame.debugInfo?.requestedAnchor ?? "-"}
-              </div>
-              <div>
-                resolved: {cameraDebugFrame.debugInfo?.resolvedAnchor ?? "-"}
-              </div>
-              <div>
-                fallback:{" "}
-                {cameraDebugFrame.debugInfo?.fallbackUsed ? "yes" : "no"}
-              </div>
+              <div>effect: {cameraDebugFrame.debugInfo?.activeEffectType ?? "-"}</div>
+              <div>effectId: {cameraDebugFrame.debugInfo?.activeEffectId ?? "-"}</div>
+              <div>target: {cameraDebugFrame.debugInfo?.requestedAnchor ?? "-"}</div>
+              <div>resolved: {cameraDebugFrame.debugInfo?.resolvedAnchor ?? "-"}</div>
+              <div>fallback: {cameraDebugFrame.debugInfo?.fallbackUsed ? "yes" : "no"}</div>
               <div>traceFrames: {sortedTrace.length}</div>
               {cameraDebugFrame.debugInfo?.warnings &&
                 cameraDebugFrame.debugInfo.warnings.length > 0 && (
@@ -627,32 +625,21 @@ const EpisodeRendererInner: React.FC<EpisodeRendererProps> = ({
                 translate: {cameraDebugFrame.transform.translateX.toFixed(2)},{" "}
                 {cameraDebugFrame.transform.translateY.toFixed(2)}
               </div>
-              <div>
-                rotation: {cameraDebugFrame.transform.rotation.toFixed(2)}
-              </div>
+              <div>rotation: {cameraDebugFrame.transform.rotation.toFixed(2)}</div>
               <div>
                 shake: {cameraDebugFrame.transform.shakeX.toFixed(2)},{" "}
                 {cameraDebugFrame.transform.shakeY.toFixed(2)}
               </div>
               {cameraDebugFrame.debugInfo?.trackDiagnostics && (
                 <>
-                  <div>
-                    deadZonePx:{" "}
-                    {cameraDebugFrame.debugInfo.trackDiagnostics.deadZonePx}
-                  </div>
+                  <div>deadZonePx: {cameraDebugFrame.debugInfo.trackDiagnostics.deadZonePx}</div>
                   <div>
                     maxVelocityPxPerSec:{" "}
-                    {
-                      cameraDebugFrame.debugInfo.trackDiagnostics
-                        .maxVelocityPxPerSec
-                    }
+                    {cameraDebugFrame.debugInfo.trackDiagnostics.maxVelocityPxPerSec}
                   </div>
                   <div>
                     predictiveLookaheadFrames:{" "}
-                    {
-                      cameraDebugFrame.debugInfo.trackDiagnostics
-                        .predictiveLookaheadFrames
-                    }
+                    {cameraDebugFrame.debugInfo.trackDiagnostics.predictiveLookaheadFrames}
                   </div>
                 </>
               )}
@@ -661,13 +648,10 @@ const EpisodeRendererInner: React.FC<EpisodeRendererProps> = ({
                   <div style={cameraTimelineHeaderStyle}>Effect Timeline</div>
                   <div style={cameraTimelineStyle}>
                     {cameraDebugFrame.debugInfo.effectTimeline.map((effect) => {
-                      const left =
-                        (effect.startFrame / timelineDurationInFrames) * 100;
+                      const left = (effect.startFrame / timelineDurationInFrames) * 100;
                       const width = Math.max(
                         1,
-                        ((effect.endFrame - effect.startFrame) /
-                          timelineDurationInFrames) *
-                          100,
+                        ((effect.endFrame - effect.startFrame) / timelineDurationInFrames) * 100,
                       );
                       const isActive =
                         cameraDebugFrame.t >= effect.startFrame &&

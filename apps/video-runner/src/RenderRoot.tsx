@@ -1,19 +1,13 @@
 import React from "react";
 import { Composition, Folder } from "remotion";
-import { z } from "zod";
 
 import { EpisodeRenderer } from "./EpisodeRenderer";
 import { calculateEpisodeMetadata } from "./episode-metadata";
+import { episodeRendererSchema } from "./episode-renderer-contract";
 import { RenderRuntimeProvider } from "./RenderRuntimeContext";
 import { RELEASE_COMPOSITION_ID } from "./Root";
 
 const DEFAULT_RELEASE_EPISODE_ID = "v2-creator-series-showcase";
-
-const episodeRendererSchema = z.object({
-  episodeId: z.string(),
-  renderDataKey: z.string().optional(),
-  renderData: z.unknown().optional(),
-});
 
 export const RenderRemotionRoot: React.FC = () => {
   return (

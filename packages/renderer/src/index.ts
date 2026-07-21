@@ -12,6 +12,7 @@ export { TokovoRenderer } from "./TokovoRenderer.js";
 export type {
   CameraDebugFrame,
   CinematicCameraDebugFrame,
+  CinematicTextureProjectionFrame,
   TokovoRendererProps,
 } from "./TokovoRenderer.js";
 export { MultiDeviceRenderer } from "./MultiDeviceRenderer.js";
@@ -39,11 +40,7 @@ export { DynamicIsland } from "./os/index.js";
 // LAYOUT SYSTEM
 // ===========================================================================
 export { computeLayout } from "./layout/index.js";
-export type {
-  LayoutState,
-  ChatLayoutState,
-  ChatMessageLayout,
-} from "./layout/types.js";
+export type { LayoutState, ChatLayoutState, ChatMessageLayout } from "./layout/types.js";
 export * from "./layout/index.js";
 
 // ===========================================================================

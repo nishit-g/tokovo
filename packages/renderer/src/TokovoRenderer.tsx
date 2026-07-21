@@ -11,10 +11,7 @@
 
 import React from "react";
 import { evaluateCameraOutput, type EvaluatedCameraOutput } from "@tokovo/camera";
-import {
-  selectPreparedCameraProgram,
-  type PreparedCinematicPrograms,
-} from "@tokovo/compiler";
+import { selectPreparedCameraProgram, type PreparedCinematicPrograms } from "@tokovo/compiler";
 import { evaluateStageFrame, type EvaluatedStageFrame } from "@tokovo/stage";
 import {
   WorldState,
@@ -32,10 +29,7 @@ import {
   NotificationSurface,
   type PreparedNotificationProgram,
 } from "@tokovo/device-notifications";
-import {
-  InputKeyboard,
-  type PreparedInputProgram,
-} from "@tokovo/device-keyboard";
+import { InputKeyboard, type PreparedInputProgram } from "@tokovo/device-keyboard";
 
 import {
   projectDynamicIsland,
@@ -52,10 +46,7 @@ import type { CameraEngineOutput } from "./engines/useCameraEngine.js";
 import { AppErrorBoundary } from "./ErrorBoundary.js";
 import { RendererRegistryProvider, type RendererRegistries } from "./RegistryContext.js";
 import { AppTransition, UnlockTransition } from "./AppTransition.js";
-import {
-  CameraProjectionSurface,
-  projectCinematicFrame,
-} from "./camera/index.js";
+import { CameraProjectionSurface, projectCinematicFrame } from "./camera/index.js";
 
 const log = createScopedLogger("renderer");
 
@@ -81,6 +72,8 @@ export interface TokovoRendererProps {
   cinematics?: PreparedCinematicPrograms;
   /** Selects cinematography without changing story replay or app state. */
   cameraPlanId?: string;
+  /** Paints a clean affine plate for the offline projection/optics backend. */
+  cameraProjectionBackend?: "final" | "texture-plate";
   /**
    * In multi-device layouts, only the active device should apply camera transforms.
    * Non-active devices must render with an identity transform to avoid flakiness.
@@ -88,6 +81,7 @@ export interface TokovoRendererProps {
   disableCamera?: boolean;
   onCameraDebugFrame?: (frame: CameraDebugFrame) => void;
   onCinematicCameraDebugFrame?: (frame: CinematicCameraDebugFrame) => void;
+  onCameraTextureProjectionFrame?: (frame: CinematicTextureProjectionFrame) => void;
   cameraDebugShowAllAnchors?: boolean;
 }
 
@@ -103,6 +97,15 @@ export interface CinematicCameraDebugFrame {
   t: number;
   storySignature: string;
   stageSignature: string;
+  outputs: readonly EvaluatedCameraOutput[];
+}
+
+export interface CinematicTextureProjectionFrame {
+  t: number;
+  storySignature: string;
+  stageSignature: string;
+  cameraSignature: string;
+  planId: string;
   outputs: readonly EvaluatedCameraOutput[];
 }
 
@@ -142,9 +145,11 @@ const TokovoRendererInner: React.FC<TokovoRendererProps> = ({
   notificationProgram,
   cinematics,
   cameraPlanId,
+  cameraProjectionBackend = "final",
   disableCamera = false,
   onCameraDebugFrame,
   onCinematicCameraDebugFrame,
+  onCameraTextureProjectionFrame,
   cameraDebugShowAllAnchors,
 }) => {
   const pm = pluginManager;
@@ -273,6 +278,31 @@ const TokovoRendererInner: React.FC<TokovoRendererProps> = ({
     });
   }, [cinematicFrame, cinematics, debug, onCinematicCameraDebugFrame, t]);
 
+  React.useEffect(() => {
+    if (
+      cameraProjectionBackend !== "texture-plate" ||
+      !onCameraTextureProjectionFrame ||
+      !cinematicFrame ||
+      !cinematics
+    ) {
+      return;
+    }
+    const planId = cinematicFrame.outputs[0]?.trace.planId;
+    if (!planId) return;
+    const cameraSignature = cinematics.cameraSignatures[planId];
+    if (!cameraSignature) {
+      throw new Error(`Camera signature for plan "${planId}" is missing.`);
+    }
+    onCameraTextureProjectionFrame({
+      t,
+      storySignature: cinematics.storySignature,
+      stageSignature: cinematics.stageSignature,
+      cameraSignature,
+      planId,
+      outputs: cinematicFrame.outputs,
+    });
+  }, [cameraProjectionBackend, cinematicFrame, cinematics, onCameraTextureProjectionFrame, t]);
+
   const hasActiveCall = device.call && device.call.status !== "ended";
   const dynamicIslandProjection = React.useMemo(
     () =>
@@ -299,8 +329,7 @@ const TokovoRendererInner: React.FC<TokovoRendererProps> = ({
     ],
   );
   const hidesStatusBar = dynamicIslandProjection?.suppressesStatusBar === true;
-  const keyboardHeightForLayout =
-    inputProjection?.surface.viewportInset ?? 0;
+  const keyboardHeightForLayout = inputProjection?.surface.viewportInset ?? 0;
 
   const transition = (device as unknown as { transition?: unknown }).transition as
     | {
@@ -359,9 +388,7 @@ const TokovoRendererInner: React.FC<TokovoRendererProps> = ({
   const statusBarTheme = (() => {
     if (systemSurfaceProjection) return systemSurfaceProjection.theme.statusBarTheme;
     const fallbackTheme =
-      device.appAppearance === "dark" ||
-      variant === "android" ||
-      device.isLocked
+      device.appAppearance === "dark" || variant === "android" || device.isLocked
         ? "dark"
         : "light";
     if (!appId) return fallbackTheme;
@@ -477,14 +504,18 @@ const TokovoRendererInner: React.FC<TokovoRendererProps> = ({
                 }
               } else if (!device.isLocked && device.homeScreen) {
                 // System: Home
-                baseContent = systemSurfaceProjection
-                  ? <SystemSurface projection={systemSurfaceProjection} />
-                  : <div style={{ flex: 1, backgroundColor: "black" }} />;
+                baseContent = systemSurfaceProjection ? (
+                  <SystemSurface projection={systemSurfaceProjection} />
+                ) : (
+                  <div style={{ flex: 1, backgroundColor: "black" }} />
+                );
               } else if (device.isLocked) {
                 // System: Lockscreen
-                baseContent = systemSurfaceProjection
-                  ? <SystemSurface projection={systemSurfaceProjection} />
-                  : <div style={{ flex: 1, backgroundColor: "black" }} />;
+                baseContent = systemSurfaceProjection ? (
+                  <SystemSurface projection={systemSurfaceProjection} />
+                ) : (
+                  <div style={{ flex: 1, backgroundColor: "black" }} />
+                );
               } else {
                 baseContent = <div style={{ flex: 1, backgroundColor: "black" }} />;
               }
@@ -555,13 +586,9 @@ const TokovoRendererInner: React.FC<TokovoRendererProps> = ({
 
             {/* Keyboard - Device Level */}
             {inputProjection?.surface.visible && (
-              <InputKeyboard
-                projection={inputProjection}
-                scale={profile.pixelDensity || 1}
-              />
+              <InputKeyboard projection={inputProjection} scale={profile.pixelDensity || 1} />
             )}
           </FrameComponent>
-
         </div>
       </div>
 
@@ -585,13 +612,10 @@ const TokovoRendererInner: React.FC<TokovoRendererProps> = ({
     (node) => node.id === cinematicFrame.stage.rootNodeId,
   );
   const deviceStageNode = cinematicFrame.stage.nodes.find(
-    (node) =>
-      node.source.kind === "device" && node.source.deviceId === deviceId,
+    (node) => node.source.kind === "device" && node.source.deviceId === deviceId,
   );
   if (!stageRoot || !deviceStageNode) {
-    throw new Error(
-      `Camera VNext stage cannot paint device ${JSON.stringify(deviceId)}.`,
-    );
+    throw new Error(`Camera VNext stage cannot paint device ${JSON.stringify(deviceId)}.`);
   }
   const stageWidth = stageRoot.localBounds.width;
   const stageHeight = stageRoot.localBounds.height;
@@ -627,6 +651,7 @@ const TokovoRendererInner: React.FC<TokovoRendererProps> = ({
           output={output}
           stageWidth={stageWidth}
           stageHeight={stageHeight}
+          backendMode={cameraProjectionBackend}
         >
           {stageDevice}
         </CameraProjectionSurface>

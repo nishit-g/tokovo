@@ -7,6 +7,8 @@ export type RenderStage =
   | "composition"
   | "render-media"
   | "render-poster"
+  | "camera-texture-render"
+  | "camera-texture-compositor"
   | "storage"
   | "artifacts"
   | "render";
@@ -20,6 +22,10 @@ export type RenderServiceErrorCode =
   | "BUNDLE_FAILED"
   | "BROWSER_LAUNCH_FAILED"
   | "COMPOSITION_SELECT_FAILED"
+  | "RENDER_FRAME_RANGE_INVALID"
+  | "CAMERA_PLAN_NOT_FOUND"
+  | "CAM_TEXTURE_RENDER_FAILED"
+  | "CAM_TEXTURE_COMPOSITOR_FAILED"
   | "MEDIA_RENDER_FAILED"
   | "POSTER_RENDER_FAILED"
   | "STORAGE_CONFIG_INVALID"
@@ -86,9 +92,7 @@ export function toRenderServiceError(
   });
 }
 
-export function getRenderServiceErrorData(
-  error: RenderServiceError,
-): Record<string, unknown> {
+export function getRenderServiceErrorData(error: RenderServiceError): Record<string, unknown> {
   return {
     errorCode: error.code,
     errorStage: error.stage,

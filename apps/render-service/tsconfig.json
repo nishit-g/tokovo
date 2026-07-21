@@ -11,7 +11,9 @@
     "noEmit": true,
     "baseUrl": ".",
     "paths": {
-      "video-runner/render-data": ["../video-runner/src/render-data.ts"]
+      "video-runner/render-data": ["../video-runner/src/render-data.ts"],
+      "video-runner/camera-texture-contract": ["../video-runner/src/camera-texture-contract.ts"],
+      "@tokovo/camera": ["../../packages/camera/src/index.ts"]
     },
     "types": ["node"]
   },

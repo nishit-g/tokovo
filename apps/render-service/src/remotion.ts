@@ -5,6 +5,7 @@ import path from "node:path";
 import { bundle } from "@remotion/bundler";
 import { openBrowser, renderMedia, renderStill, selectComposition } from "@remotion/renderer";
 import { getEpisodeAssetRefs, getEpisodeRenderData } from "video-runner/render-data";
+import type { EpisodeRenderData } from "video-runner/render-data";
 
 import {
   releaseCompositionId,
@@ -18,6 +19,11 @@ import { createRenderServiceError } from "./errors";
 import { type RenderLogger } from "./logger";
 import { type RenderProfile } from "./profiles";
 import { createPresignedAssetUrlMap } from "./storage";
+import {
+  CameraTextureCaptureCollector,
+  compositeCameraTexture,
+  renderPosterFromVideo,
+} from "./camera-texture-compositor";
 
 let serveUrlPromise: Promise<string> | null = null;
 let serveUrlSignature = "";
@@ -33,12 +39,9 @@ function getEpisodeAssetSources(episodeId: string): string[] {
 async function getPreparedRenderData(input: {
   episodeId: string;
   assetUrlMap: Record<string, string>;
-}): Promise<Record<string, unknown>> {
+}): Promise<EpisodeRenderData> {
   try {
-    return (await getEpisodeRenderData(input.episodeId, input.assetUrlMap)) as unknown as Record<
-      string,
-      unknown
-    >;
+    return await getEpisodeRenderData(input.episodeId, input.assetUrlMap);
   } catch (error) {
     throw createRenderServiceError({
       code: "RENDER_DATA_FAILED",
@@ -159,6 +162,9 @@ export async function closeBrowser(): Promise<void> {
 
 export async function renderEpisodeMedia(input: {
   episodeId: string;
+  cameraPlanId?: string;
+  /** Internal verification/chunking seam. Values are inclusive source frames. */
+  frameRange?: [number, number];
   profile: RenderProfile;
   outputLocation: string;
   posterLocation: string;
@@ -178,6 +184,7 @@ export async function renderEpisodeMedia(input: {
   const inputProps = {
     episodeId: input.episodeId,
     renderData,
+    cameraPlanId: input.cameraPlanId,
   };
   const renderEnvVariables = {
     TOKOVO_RENDER_PROFILE: input.profile.id,
@@ -229,6 +236,183 @@ export async function renderEpisodeMedia(input: {
     durationMs: selectCompositionMs,
   });
 
+  const sourceFrameRange = input.frameRange ?? [0, composition.durationInFrames - 1];
+  if (
+    !Number.isInteger(sourceFrameRange[0]) ||
+    !Number.isInteger(sourceFrameRange[1]) ||
+    sourceFrameRange[0] < 0 ||
+    sourceFrameRange[1] < sourceFrameRange[0] ||
+    sourceFrameRange[1] >= composition.durationInFrames
+  ) {
+    throw createRenderServiceError({
+      code: "RENDER_FRAME_RANGE_INVALID",
+      stage: "composition",
+      message: `Invalid inclusive frame range ${sourceFrameRange[0]}-${sourceFrameRange[1]} for ${composition.durationInFrames} frames.`,
+      details: {
+        episodeId: input.episodeId,
+        frameRange: sourceFrameRange,
+        durationInFrames: composition.durationInFrames,
+      },
+    });
+  }
+
+  const cinematicPrograms = renderData.prepared.cinematics;
+  const selectedCameraProgram = cinematicPrograms?.cameraPrograms.find(
+    (program) => program.plan.id === (input.cameraPlanId ?? cinematicPrograms.defaultCameraPlanId),
+  );
+  if ((cinematicPrograms && !selectedCameraProgram) || (!cinematicPrograms && input.cameraPlanId)) {
+    throw createRenderServiceError({
+      code: "CAMERA_PLAN_NOT_FOUND",
+      stage: "composition",
+      message: `CameraPlan "${input.cameraPlanId}" is not prepared for episode "${input.episodeId}".`,
+      details: {
+        episodeId: input.episodeId,
+        cameraPlanId: input.cameraPlanId,
+      },
+    });
+  }
+  if (selectedCameraProgram?.projectionBackendRequirement === "texture") {
+    const textureStartedAt = Date.now();
+    const workingDirectory = await fs.promises.mkdtemp(
+      path.join(os.tmpdir(), "tokovo-camera-texture-"),
+    );
+    const underlayPath = path.join(workingDirectory, "underlay.mov");
+    const cameraPlatePath = path.join(workingDirectory, "camera.mov");
+    const foregroundPlatePath = path.join(workingDirectory, "foreground.mov");
+    const collector = new CameraTextureCaptureCollector();
+    try {
+      await input.logger.info(
+        "camera.texture.render.start",
+        "Rendering layer-attached camera texture plates",
+        {
+          cameraPlanId: selectedCameraProgram.plan.id,
+          cameraSignature: selectedCameraProgram.signature,
+          workingDirectory,
+        },
+      );
+      const sharedLayerOptions = {
+        serveUrl,
+        concurrency: Math.max(1, Math.min(input.profile.concurrency, os.cpus().length)),
+        browserExecutable: getBrowserExecutable(),
+        puppeteerInstance: browser,
+        timeoutInMilliseconds: input.profile.timeoutInMilliseconds,
+        imageFormat: "png" as const,
+        chromiumOptions: { gl: input.profile.chromiumGl },
+        envVariables: renderEnvVariables,
+        overwrite: true,
+        logLevel: "error" as const,
+        frameRange: sourceFrameRange,
+      };
+      const selectLayer = async (
+        cameraRenderLayer: "underlay" | "camera-plate" | "foreground-plate",
+      ) => {
+        const layerInputProps = { ...inputProps, cameraRenderLayer };
+        const layerComposition = await selectComposition({
+          serveUrl,
+          id: releaseCompositionId,
+          inputProps: layerInputProps,
+          browserExecutable: getBrowserExecutable(),
+          puppeteerInstance: browser,
+          timeoutInMilliseconds: input.profile.timeoutInMilliseconds,
+          envVariables: renderEnvVariables,
+          logLevel: "error",
+        });
+        return { layerInputProps, layerComposition };
+      };
+      const underlay = await selectLayer("underlay");
+      await renderMedia({
+        ...sharedLayerOptions,
+        composition: underlay.layerComposition,
+        inputProps: underlay.layerInputProps,
+        outputLocation: underlayPath,
+        codec: "prores",
+        proResProfile: "standard",
+        pixelFormat: "yuv422p10le",
+        audioCodec: "pcm-16",
+      });
+      const cameraPlate = await selectLayer("camera-plate");
+      await renderMedia({
+        ...sharedLayerOptions,
+        composition: cameraPlate.layerComposition,
+        inputProps: cameraPlate.layerInputProps,
+        outputLocation: cameraPlatePath,
+        codec: "prores",
+        proResProfile: "4444",
+        pixelFormat: "yuva444p10le",
+        muted: true,
+        onBrowserLog: (log) => collector.acceptBrowserLog(log.text),
+      });
+      const foreground = await selectLayer("foreground-plate");
+      await renderMedia({
+        ...sharedLayerOptions,
+        composition: foreground.layerComposition,
+        inputProps: foreground.layerInputProps,
+        outputLocation: foregroundPlatePath,
+        codec: "prores",
+        proResProfile: "4444",
+        pixelFormat: "yuva444p10le",
+        muted: true,
+      });
+      const captures = collector.completeRange(sourceFrameRange[0], sourceFrameRange[1]);
+      await compositeCameraTexture({
+        captures,
+        underlayPath,
+        cameraPlatePath,
+        foregroundPlatePath,
+        outputPath: input.outputLocation,
+        workingDirectory,
+        width: composition.width,
+        height: composition.height,
+        fps: composition.fps,
+        profile: input.profile,
+        logger: input.logger,
+      });
+      const renderMediaMs = Date.now() - textureStartedAt;
+      await input.logger.info(
+        "camera.texture.render.done",
+        "Rendered and composited camera texture plates",
+        {
+          outputLocation: input.outputLocation,
+          durationMs: renderMediaMs,
+          frameCount: captures.length,
+        },
+      );
+
+      const stillStartedAt = Date.now();
+      await renderPosterFromVideo({
+        videoPath: input.outputLocation,
+        posterPath: input.posterLocation,
+        frame: Math.floor(captures.length / 2),
+        fps: composition.fps,
+      });
+      const renderStillMs = Date.now() - stillStartedAt;
+      return {
+        sourceSignature,
+        composition,
+        timingMs: {
+          bundle: bundleMs,
+          selectComposition: selectCompositionMs,
+          renderMedia: renderMediaMs,
+          renderStill: renderStillMs,
+        },
+      };
+    } catch (error) {
+      throw createRenderServiceError({
+        code: "CAM_TEXTURE_RENDER_FAILED",
+        stage: "camera-texture-render",
+        message: `Texture camera render failed for plan "${selectedCameraProgram.plan.id}"`,
+        details: {
+          episodeId: input.episodeId,
+          cameraPlanId: selectedCameraProgram.plan.id,
+          cameraSignature: selectedCameraProgram.signature,
+        },
+        cause: error instanceof Error ? error : undefined,
+      });
+    } finally {
+      await fs.promises.rm(workingDirectory, { recursive: true, force: true });
+    }
+  }
+
   const renderStartedAt = Date.now();
   await input.logger.info("render.media.start", "Rendering video artifact", {
     outputLocation: input.outputLocation,
@@ -255,6 +439,7 @@ export async function renderEpisodeMedia(input: {
     envVariables: renderEnvVariables,
     overwrite: true,
     logLevel: "error",
+    ...(input.frameRange ? { frameRange: sourceFrameRange } : {}),
   }).catch((error) => {
     throw createRenderServiceError({
       code: "MEDIA_RENDER_FAILED",
@@ -285,7 +470,7 @@ export async function renderEpisodeMedia(input: {
     inputProps,
     output: input.posterLocation,
     imageFormat: "png",
-    frame: Math.max(0, Math.floor(composition.durationInFrames / 2)),
+    frame: Math.floor((sourceFrameRange[0] + sourceFrameRange[1]) / 2),
     browserExecutable: getBrowserExecutable(),
     puppeteerInstance: browser,
     timeoutInMilliseconds: input.profile.timeoutInMilliseconds,

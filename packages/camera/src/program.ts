@@ -1,9 +1,4 @@
-import type {
-  CameraLensIR,
-  CameraPlanIR,
-  CameraRigIR,
-  CameraShotIR,
-} from "@tokovo/ir";
+import type { CameraLensIR, CameraPlanIR, CameraRigIR, CameraShotIR } from "@tokovo/ir";
 import { CameraPlanSchema } from "@tokovo/ir";
 import type { CameraRegistries } from "./lenses.js";
 import type { CameraDiagnostic, PreparedCameraProgram } from "./types.js";
@@ -44,11 +39,7 @@ function hashString(value: string): string {
 }
 
 function isJsonSafe(value: unknown, seen = new Set<object>()): boolean {
-  if (
-    value === null ||
-    typeof value === "string" ||
-    typeof value === "boolean"
-  ) {
+  if (value === null || typeof value === "string" || typeof value === "boolean") {
     return true;
   }
   if (typeof value === "number") return Number.isFinite(value);
@@ -62,9 +53,7 @@ function isJsonSafe(value: unknown, seen = new Set<object>()): boolean {
   return safe;
 }
 
-function duplicateIds<T extends { id: string }>(
-  items: readonly T[],
-): readonly string[] {
+function duplicateIds<T extends { id: string }>(items: readonly T[]): readonly string[] {
   const seen = new Set<string>();
   const duplicates = new Set<string>();
   for (const item of items) {
@@ -168,11 +157,7 @@ export function prepareCameraPlan(
   }
   if (!Number.isFinite(plan.fps) || plan.fps <= 0) {
     diagnostics.push(
-      diagnostic(
-        plan.id,
-        "CAM_PLAN_FPS_INVALID",
-        "CameraPlan fps must be positive.",
-      ),
+      diagnostic(plan.id, "CAM_PLAN_FPS_INVALID", "CameraPlan fps must be positive."),
     );
   }
   if (!Number.isInteger(plan.durationInFrames) || plan.durationInFrames <= 0) {
@@ -185,9 +170,7 @@ export function prepareCameraPlan(
     );
   }
 
-  const categories: ReadonlyArray<
-    readonly [string, readonly { id: string }[]]
-  > = [
+  const categories: ReadonlyArray<readonly [string, readonly { id: string }[]]> = [
     ["output", plan.outputs],
     ["rig", plan.rigs],
     ["shot", plan.shots],
@@ -197,11 +180,7 @@ export function prepareCameraPlan(
   for (const [category, items] of categories) {
     for (const id of duplicateIds(items)) {
       diagnostics.push(
-        diagnostic(
-          plan.id,
-          "CAM_ID_DUPLICATE",
-          `Duplicate ${category} id "${id}".`,
-        ),
+        diagnostic(plan.id, "CAM_ID_DUPLICATE", `Duplicate ${category} id "${id}".`),
       );
     }
   }
@@ -237,8 +216,7 @@ export function prepareCameraPlan(
     }
     if (
       output.clipRadiusPx !== undefined &&
-      output.clipRadiusPx >
-        Math.min(output.viewport.width, output.viewport.height) / 2
+      output.clipRadiusPx > Math.min(output.viewport.width, output.viewport.height) / 2
     ) {
       diagnostics.push(
         diagnostic(
@@ -311,10 +289,7 @@ export function prepareCameraPlan(
   }
 
   for (const modifier of plan.modifiers) {
-    const model = registries.modifiers.get(
-      modifier.modelId,
-      modifier.modelVersion,
-    );
+    const model = registries.modifiers.get(modifier.modelId, modifier.modelVersion);
     if (!model) {
       diagnostics.push(
         diagnostic(
@@ -326,9 +301,7 @@ export function prepareCameraPlan(
       continue;
     }
     for (const message of model.validate(modifier.parameters)) {
-      diagnostics.push(
-        diagnostic(plan.id, "CAM_MODIFIER_PARAMETERS_INVALID", message),
-      );
+      diagnostics.push(diagnostic(plan.id, "CAM_MODIFIER_PARAMETERS_INVALID", message));
     }
   }
 
@@ -396,11 +369,7 @@ export function prepareCameraPlan(
   for (const output of plan.outputs) {
     const shots = plan.shots.filter((shot) => shot.outputId === output.id);
     for (let leftIndex = 0; leftIndex < shots.length; leftIndex += 1) {
-      for (
-        let rightIndex = leftIndex + 1;
-        rightIndex < shots.length;
-        rightIndex += 1
-      ) {
+      for (let rightIndex = leftIndex + 1; rightIndex < shots.length; rightIndex += 1) {
         const left = shots[leftIndex];
         const right = shots[rightIndex];
         if (left.priority === right.priority && intervalsOverlap(left, right)) {
@@ -427,19 +396,44 @@ export function prepareCameraPlan(
       plan.shots.filter((shot) => shot.outputId === output.id),
     ]),
   );
+  const projectionBackendRequirement = ((): "composited" | "texture" => {
+    const reachableRigIds = new Set([
+      ...plan.outputs.map((output) => output.defaultRigId),
+      ...plan.shots.map((shot) => shot.rigId),
+    ]);
+    const reachableRigs = plan.rigs.filter((rig) => reachableRigIds.has(rig.id));
+    if (reachableRigs.some((rig) => rig.motion?.type === "whip")) {
+      return "texture";
+    }
+    const reachableLensIds = new Set(
+      reachableRigs.flatMap((rig) => (rig.lensId ? [rig.lensId] : [])),
+    );
+    for (const lens of plan.lenses.filter((entry) => reachableLensIds.has(entry.id))) {
+      const model = registries.lenses.get(lens.modelId, lens.modelVersion);
+      if (model?.projectionBackendRequirement === "texture") {
+        return "texture";
+      }
+    }
+    const reachableModifierIds = new Set(reachableRigs.flatMap((rig) => rig.modifierIds ?? []));
+    for (const modifier of plan.modifiers.filter((entry) => reachableModifierIds.has(entry.id))) {
+      const model = registries.modifiers.get(modifier.modelId, modifier.modelVersion);
+      if (model?.projectionBackendRequirement === "texture") {
+        return "texture";
+      }
+    }
+    return "composited";
+  })();
   const signature = hashString(stableSerialize(plan));
   return {
     version: 1,
     plan,
     shotsByOutput,
+    projectionBackendRequirement,
     signature,
     diagnostics,
   };
 }
 
-export function getRigById(
-  program: PreparedCameraProgram,
-  rigId: string,
-): CameraRigIR | undefined {
+export function getRigById(program: PreparedCameraProgram, rigId: string): CameraRigIR | undefined {
   return program.plan.rigs.find((rig) => rig.id === rigId);
 }

@@ -2,9 +2,11 @@ import type { CalculateMetadataFunction } from "remotion";
 import type { EpisodeRendererProps } from "./episode-renderer-contract";
 import { getEpisodeRenderData, primeEpisodeRenderData } from "./render-data";
 
-export const calculateEpisodeMetadata: CalculateMetadataFunction<
-  EpisodeRendererProps
-> = async ({ props, abortSignal, isRendering }) => {
+export const calculateEpisodeMetadata: CalculateMetadataFunction<EpisodeRendererProps> = async ({
+  props,
+  abortSignal,
+  isRendering,
+}) => {
   if (props.renderData) {
     return {
       durationInFrames: props.renderData.durationInFrames,
@@ -28,6 +30,7 @@ export const calculateEpisodeMetadata: CalculateMetadataFunction<
         episodeId: props.episodeId,
         renderData,
         cameraPlanId: props.cameraPlanId,
+        cameraRenderLayer: props.cameraRenderLayer,
       },
     };
   }
@@ -44,6 +47,7 @@ export const calculateEpisodeMetadata: CalculateMetadataFunction<
       episodeId: props.episodeId,
       renderDataKey: renderData.cacheKey,
       cameraPlanId: props.cameraPlanId,
+      cameraRenderLayer: props.cameraRenderLayer,
     },
   };
 };

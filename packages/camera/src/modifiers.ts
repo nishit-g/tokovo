@@ -6,11 +6,7 @@ import type {
   CameraProjectionPass,
 } from "./types.js";
 
-function numberParameter(
-  parameters: JsonObject,
-  key: string,
-  fallback: number,
-): number {
+function numberParameter(parameters: JsonObject, key: string, fallback: number): number {
   const value = parameters[key];
   return typeof value === "number" && Number.isFinite(value) ? value : fallback;
 }
@@ -31,10 +27,7 @@ function requireRange(
     : [];
 }
 
-function rejectUnknownParameters(
-  parameters: JsonObject,
-  allowed: readonly string[],
-): string[] {
+function rejectUnknownParameters(parameters: JsonObject, allowed: readonly string[]): string[] {
   const known = new Set(allowed);
   return Object.keys(parameters)
     .filter((key) => !known.has(key))
@@ -73,24 +66,19 @@ export class CameraModifierRegistry {
 const lensBreathing: CameraModifierModel = {
   id: "lens-breathing",
   version: 1,
+  projectionBackendRequirement: "composited",
   validate: (parameters) => [
     ...rejectUnknownParameters(parameters, ["amount", "periodFrames", "phase"]),
     ...requireRange(parameters, "amount", 0, 0.12),
     ...requireRange(parameters, "periodFrames", 2, 10000),
     ...requireRange(parameters, "phase", -Math.PI * 2, Math.PI * 2),
   ],
-  evaluate: ({
-    frame,
-    parameters,
-    pose,
-    projectionPasses,
-  }): CameraModifierResult => {
+  evaluate: ({ frame, parameters, pose, projectionPasses }): CameraModifierResult => {
     const amount = numberParameter(parameters, "amount", 0.012);
     const periodFrames = numberParameter(parameters, "periodFrames", 180);
     const phase = numberParameter(parameters, "phase", 0);
     const scale =
-      pose.scale *
-      (1 + Math.sin((frame / periodFrames) * Math.PI * 2 + phase) * amount);
+      pose.scale * (1 + Math.sin((frame / periodFrames) * Math.PI * 2 + phase) * amount);
     return { pose: { ...pose, scale }, projectionPasses };
   },
 };
@@ -98,6 +86,7 @@ const lensBreathing: CameraModifierModel = {
 const handheldDrift: CameraModifierModel = {
   id: "handheld-drift",
   version: 1,
+  projectionBackendRequirement: "composited",
   validate: (parameters) => [
     ...rejectUnknownParameters(parameters, [
       "amplitudeX",
@@ -112,13 +101,7 @@ const handheldDrift: CameraModifierModel = {
     ...requireRange(parameters, "frequencyHz", 0.01, 8),
     ...requireRange(parameters, "seed", 0, 2147483647),
   ],
-  evaluate: ({
-    frame,
-    fps,
-    parameters,
-    pose,
-    projectionPasses,
-  }): CameraModifierResult => {
+  evaluate: ({ frame, fps, parameters, pose, projectionPasses }): CameraModifierResult => {
     const frequencyHz = numberParameter(parameters, "frequencyHz", 0.35);
     const time = (frame / fps) * frequencyHz * Math.PI * 2;
     const seed = numberParameter(parameters, "seed", 1);
@@ -129,11 +112,8 @@ const handheldDrift: CameraModifierModel = {
       pose: {
         ...pose,
         centerX: pose.centerX + continuousNoise(time, seed) * amplitudeX,
-        centerY:
-          pose.centerY + continuousNoise(time + 17.3, seed + 97) * amplitudeY,
-        rotationDeg:
-          pose.rotationDeg +
-          continuousNoise(time + 31.7, seed + 211) * rotationDeg,
+        centerY: pose.centerY + continuousNoise(time + 17.3, seed + 97) * amplitudeY,
+        rotationDeg: pose.rotationDeg + continuousNoise(time + 31.7, seed + 211) * rotationDeg,
       },
       projectionPasses,
     };

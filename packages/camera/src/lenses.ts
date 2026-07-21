@@ -1,15 +1,8 @@
 import type { JsonObject, JsonValue } from "@tokovo/ir";
 import type { CameraLensModel, CameraProjectionPass } from "./types.js";
-import {
-  CameraModifierRegistry,
-  createBuiltinCameraModifierRegistry,
-} from "./modifiers.js";
+import { CameraModifierRegistry, createBuiltinCameraModifierRegistry } from "./modifiers.js";
 
-function numberParameter(
-  parameters: JsonObject,
-  key: string,
-  fallback: number,
-): number {
+function numberParameter(parameters: JsonObject, key: string, fallback: number): number {
   const value = parameters[key];
   return typeof value === "number" && Number.isFinite(value) ? value : fallback;
 }
@@ -21,9 +14,7 @@ function stringParameter<T extends string>(
   fallback: T,
 ): T {
   const value = parameters[key];
-  return typeof value === "string" && allowed.includes(value as T)
-    ? (value as T)
-    : fallback;
+  return typeof value === "string" && allowed.includes(value as T) ? (value as T) : fallback;
 }
 
 function tupleParameter(
@@ -59,10 +50,7 @@ function requireRange(
     : [];
 }
 
-function rejectUnknownParameters(
-  parameters: JsonObject,
-  allowed: readonly string[],
-): string[] {
+function rejectUnknownParameters(parameters: JsonObject, allowed: readonly string[]): string[] {
   const known = new Set(allowed);
   return Object.keys(parameters)
     .filter((key) => !known.has(key))
@@ -88,20 +76,14 @@ function requireTuple2(
   if (
     minimum !== undefined &&
     maximum !== undefined &&
-    value.some(
-      (entry) => (entry as number) < minimum || (entry as number) > maximum,
-    )
+    value.some((entry) => (entry as number) < minimum || (entry as number) > maximum)
   ) {
     return [`${key} entries must be between ${minimum} and ${maximum}`];
   }
   return [];
 }
 
-function requireEnum(
-  parameters: JsonObject,
-  key: string,
-  allowed: readonly string[],
-): string[] {
+function requireEnum(parameters: JsonObject, key: string, allowed: readonly string[]): string[] {
   const value = parameters[key];
   if (value === undefined) return [];
   return typeof value === "string" && allowed.includes(value)
@@ -141,13 +123,9 @@ export interface CameraRegistries {
 const wideAngleBarrel: CameraLensModel = {
   id: "wide-angle-barrel",
   version: 1,
+  projectionBackendRequirement: "texture",
   validate: (parameters) => [
-    ...rejectUnknownParameters(parameters, [
-      "center",
-      "strength",
-      "radius",
-      "cropCompensation",
-    ]),
+    ...rejectUnknownParameters(parameters, ["center", "strength", "radius", "cropCompensation"]),
     ...requireTuple2(parameters, "center", 0, 1),
     ...requireRange(parameters, "strength", 0, 1),
     ...requireRange(parameters, "radius", 0.1, 2),
@@ -168,13 +146,9 @@ const wideAngleBarrel: CameraLensModel = {
 const fisheye: CameraLensModel = {
   id: "fisheye",
   version: 1,
+  projectionBackendRequirement: "texture",
   validate: (parameters) => [
-    ...rejectUnknownParameters(parameters, [
-      "center",
-      "strength",
-      "radius",
-      "cropCompensation",
-    ]),
+    ...rejectUnknownParameters(parameters, ["center", "strength", "radius", "cropCompensation"]),
     ...requireTuple2(parameters, "center", 0, 1),
     ...requireRange(parameters, "strength", 0, 1),
     ...requireRange(parameters, "radius", 0.1, 2),
@@ -194,6 +168,7 @@ const fisheye: CameraLensModel = {
 const perspectiveTilt: CameraLensModel = {
   id: "perspective-tilt",
   version: 1,
+  projectionBackendRequirement: "composited",
   validate: (parameters) => [
     ...rejectUnknownParameters(parameters, [
       "tiltXDeg",
@@ -220,13 +195,9 @@ const perspectiveTilt: CameraLensModel = {
 const anamorphicEdgeStretch: CameraLensModel = {
   id: "anamorphic-edge-stretch",
   version: 1,
+  projectionBackendRequirement: "texture",
   validate: (parameters) => [
-    ...rejectUnknownParameters(parameters, [
-      "axis",
-      "strength",
-      "edgeStart",
-      "cropCompensation",
-    ]),
+    ...rejectUnknownParameters(parameters, ["axis", "strength", "edgeStart", "cropCompensation"]),
     ...requireEnum(parameters, "axis", ["horizontal", "vertical"]),
     ...requireRange(parameters, "strength", 0, 1),
     ...requireRange(parameters, "edgeStart", 0, 1),
@@ -235,12 +206,7 @@ const anamorphicEdgeStretch: CameraLensModel = {
   evaluate: ({ parameters }): readonly CameraProjectionPass[] => [
     {
       kind: "anamorphic-edge-stretch",
-      axis: stringParameter(
-        parameters,
-        "axis",
-        ["horizontal", "vertical"] as const,
-        "horizontal",
-      ),
+      axis: stringParameter(parameters, "axis", ["horizontal", "vertical"] as const, "horizontal"),
       strength: numberParameter(parameters, "strength", 0.14),
       edgeStart: numberParameter(parameters, "edgeStart", 0.68),
       cropCompensation: numberParameter(parameters, "cropCompensation", 1.04),
@@ -251,19 +217,14 @@ const anamorphicEdgeStretch: CameraLensModel = {
 const directionalSmear: CameraLensModel = {
   id: "directional-smear",
   version: 1,
+  projectionBackendRequirement: "texture",
   validate: (parameters) => [
-    ...rejectUnknownParameters(parameters, [
-      "direction",
-      "spreadPx",
-      "samples",
-      "decay",
-    ]),
+    ...rejectUnknownParameters(parameters, ["direction", "spreadPx", "samples", "decay"]),
     ...requireTuple2(parameters, "direction", -1, 1),
     ...requireRange(parameters, "spreadPx", 0, 240),
     ...requireRange(parameters, "samples", 2, 32),
     ...requireRange(parameters, "decay", 0, 1),
-    ...(typeof parameters.samples === "number" &&
-    !Number.isInteger(parameters.samples)
+    ...(typeof parameters.samples === "number" && !Number.isInteger(parameters.samples)
       ? ["samples must be an integer"]
       : []),
     ...(Array.isArray(parameters.direction) &&
