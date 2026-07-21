@@ -1,6 +1,7 @@
 import { createTokovoRegistries, PluginManagerClass, type TokovoRegistries } from "@tokovo/react";
 import { createDeviceRegistries, type DeviceRegistries } from "@tokovo/devices";
 import { createScopedLogger, registerRuntimeObservability } from "@tokovo/core";
+import { createBuiltinCameraRegistries, type CameraRegistries } from "@tokovo/camera";
 
 import { createEpisodeRegistry, type EpisodeRegistry } from "./registry/index.js";
 import type { EpisodeDefinition } from "./types/index.js";
@@ -21,6 +22,7 @@ export type TokovoRuntime = {
   rendererRegistries: {
     plugins: TokovoRegistries["plugins"];
     devices: DeviceRegistries;
+    camera: CameraRegistries;
   };
   episodeRegistry: EpisodeRegistry;
   catalogProfile: TokovoCatalogProfile;
@@ -109,9 +111,11 @@ export function createTokovoRuntime(profile: TokovoCatalogProfile = "release"): 
   const tokovoRegistries = createTokovoRegistries();
   const deviceRegistries = createDeviceRegistries();
   const pluginManager = new PluginManagerClass(tokovoRegistries.plugins);
+  const cameraRegistries = createBuiltinCameraRegistries();
   const rendererRegistries = {
     plugins: tokovoRegistries.plugins,
     devices: deviceRegistries,
+    camera: cameraRegistries,
   };
 
   registerTokovoPlugins({

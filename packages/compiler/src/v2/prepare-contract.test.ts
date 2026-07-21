@@ -1,7 +1,12 @@
 import { describe, expect, it } from "vitest";
 import type { RuntimeEvent } from "@tokovo/core";
 import type { TokovoPlugin } from "@tokovo/core";
-import { createCanonicalTrackEpisodeIR, type TrackEvent } from "@tokovo/ir";
+import {
+  createCanonicalTrackEpisodeIR,
+  type CameraPlanIR,
+  type StageProgramIR,
+  type TrackEvent,
+} from "@tokovo/ir";
 import { lowerTrackEvent } from "./lowering.js";
 import { prepareTrackEpisode } from "./prepare.js";
 
@@ -10,6 +15,122 @@ function runtimeKinds(events: RuntimeEvent[]): string[] {
 }
 
 describe("compiler pipeline guarantees", () => {
+  it("prepares episode-owned cinematics against the story event signature", () => {
+    const stageProgram: StageProgramIR = {
+      version: 1,
+      rootNodeId: "root",
+      nodes: [
+        {
+          id: "root",
+          source: { kind: "group" },
+          localBounds: { x: 0, y: 0, width: 1080, height: 1920 },
+          initialTransform: { a: 1, b: 0, c: 0, d: 1, tx: 0, ty: 0 },
+          zIndex: 0,
+        },
+      ],
+      transformKeyframes: [],
+    };
+    const cameraPlan: CameraPlanIR = {
+      version: 1,
+      id: "editorial",
+      fps: 30,
+      durationInFrames: 300,
+      outputs: [
+        {
+          id: "main",
+          viewport: { x: 0, y: 0, width: 1080, height: 1920 },
+          sourceStageNodeId: "root",
+          zIndex: 0,
+          defaultRigId: "device",
+        },
+      ],
+      rigs: [
+        {
+          id: "device",
+          outputId: "main",
+          subject: { kind: "device", deviceId: "phone", subjectId: "screen" },
+          composer: {
+            screenPosition: [0.5, 0.5],
+            targetFill: 0.8,
+            fillMode: "contain",
+          },
+        },
+      ],
+      shots: [],
+      lenses: [],
+      modifiers: [],
+    };
+    const ir = createCanonicalTrackEpisodeIR();
+    ir.cinematics = {
+      stageProgram,
+      cameraPlans: [cameraPlan],
+      defaultCameraPlanId: cameraPlan.id,
+    };
+
+    const prepared = prepareTrackEpisode(ir, [], { log: false, validate: true });
+
+    expect(prepared.cinematics?.storySignature).toBe(prepared.eventSignature);
+    expect(prepared.cinematics?.defaultCameraPlanId).toBe("editorial");
+    expect(prepared.cinematics?.cameraPrograms[0]?.plan.id).toBe("editorial");
+  });
+
+  it("rejects stage devices that are absent from the episode", () => {
+    const ir = createCanonicalTrackEpisodeIR();
+    ir.cinematics = {
+      stageProgram: {
+        version: 1,
+        rootNodeId: "ghost-node",
+        nodes: [
+          {
+            id: "ghost-node",
+            source: { kind: "device", deviceId: "ghost" },
+            localBounds: { x: 0, y: 0, width: 393, height: 852 },
+            initialTransform: { a: 1, b: 0, c: 0, d: 1, tx: 0, ty: 0 },
+            zIndex: 0,
+          },
+        ],
+        transformKeyframes: [],
+      },
+      cameraPlans: [
+        {
+          version: 1,
+          id: "ghost-plan",
+          fps: 30,
+          durationInFrames: 300,
+          outputs: [
+            {
+              id: "main",
+              viewport: { x: 0, y: 0, width: 1080, height: 1920 },
+              sourceStageNodeId: "ghost-node",
+              zIndex: 0,
+              defaultRigId: "ghost-rig",
+            },
+          ],
+          rigs: [
+            {
+              id: "ghost-rig",
+              outputId: "main",
+              subject: { kind: "device", deviceId: "ghost", subjectId: "screen" },
+              composer: {
+                screenPosition: [0.5, 0.5],
+                targetFill: 0.8,
+                fillMode: "contain",
+              },
+            },
+          ],
+          shots: [],
+          lenses: [],
+          modifiers: [],
+        },
+      ],
+      defaultCameraPlanId: "ghost-plan",
+    };
+
+    expect(() =>
+      prepareTrackEpisode(ir, [], { log: false, validate: true }),
+    ).toThrow(/CINEMATIC_STAGE_DEVICE_MISSING.*ghost/);
+  });
+
   it("prepares multilingual input as immutable random-access program data", () => {
     const ir = createCanonicalTrackEpisodeIR({
       devices: [

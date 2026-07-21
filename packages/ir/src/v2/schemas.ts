@@ -262,6 +262,29 @@ export const StageProgramSchema: z.ZodType<
   })
   .strict();
 
+export const EpisodeCinematicsSchema: z.ZodType<
+  import("./episode-ir.js").EpisodeCinematicsIR
+> = z
+  .object({
+    stageProgram: StageProgramSchema,
+    cameraPlans: z.array(CameraPlanSchema).min(1),
+    defaultCameraPlanId: z.string().min(1),
+  })
+  .strict()
+  .superRefine((cinematics, context) => {
+    if (
+      !cinematics.cameraPlans.some(
+        (plan) => plan.id === cinematics.defaultCameraPlanId,
+      )
+    ) {
+      context.addIssue({
+        code: "custom",
+        path: ["defaultCameraPlanId"],
+        message: "Default CameraPlan must be present in cameraPlans",
+      });
+    }
+  });
+
 export const OSConfigSchema = z.object({
   locale: z.string().min(1).optional(),
   appearance: z.enum(["light", "dark"]).optional(),
@@ -694,6 +717,7 @@ export const TrackEpisodeIRSchema = z.object({
   director: DirectorStyleSchema.optional(),
   voice: VoiceConfigSchema.optional(),
   handPerformances: z.array(HandPerformanceSchema).optional(),
+  cinematics: EpisodeCinematicsSchema.optional(),
 });
 
 export type ValidatedTrackEpisodeIR = z.infer<typeof TrackEpisodeIRSchema>;

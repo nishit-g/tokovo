@@ -49,6 +49,14 @@ import {
   type PreparedNotificationActionEffect,
   type PreparedNotificationProgram,
 } from "@tokovo/device-notifications";
+import {
+  createBuiltinCameraRegistries,
+  type CameraRegistries,
+} from "@tokovo/camera";
+import {
+  prepareCinematicPrograms,
+  type PreparedCinematicPrograms,
+} from "../vnext/prepare-cinematic-programs.js";
 
 const log = createScopedLogger("compiler");
 
@@ -70,6 +78,8 @@ export interface PreparedTrackEpisode {
   inputProgram: PreparedInputProgram;
   /** Immutable delivery, lifecycle, interaction and presentation program. */
   notificationProgram: PreparedNotificationProgram;
+  /** Prepared separately from story replay so plans can be swapped safely. */
+  cinematics?: PreparedCinematicPrograms;
   plugins: TokovoPlugin[];
   assetRefs: import("@tokovo/core").EpisodeAssetRef[];
   metadata: {
@@ -98,6 +108,7 @@ export function prepareTrackEpisode(
     config?: TokovoConfigType;
     validate?: boolean;
     log?: boolean;
+    cameraRegistries?: CameraRegistries;
   } = {},
 ): PreparedTrackEpisode {
   const config = options.config ?? TokovoConfig;
@@ -193,6 +204,35 @@ export function prepareTrackEpisode(
   }
 
   const eventSignature = computeEventSignature(sortedEvents);
+  if (ir.cinematics) {
+    const configuredDeviceIds = new Set(ir.devices.map((device) => device.id));
+    const missingStageDeviceIds = [
+      ...new Set(
+        ir.cinematics.stageProgram.nodes.flatMap((node) =>
+          node.source.kind === "device" &&
+          !configuredDeviceIds.has(node.source.deviceId)
+            ? [node.source.deviceId]
+            : [],
+        ),
+      ),
+    ].sort();
+    if (missingStageDeviceIds.length > 0) {
+      throw new CompilerSchemaValidationError(
+        `CINEMATIC_STAGE_DEVICE_MISSING: StageProgram references unconfigured device(s): ${missingStageDeviceIds.join(", ")}.`,
+      );
+    }
+  }
+  const cinematics = ir.cinematics
+    ? prepareCinematicPrograms(
+        {
+          fps: ir.fps,
+          durationInFrames: ir.durationInFrames,
+          storySignature: eventSignature,
+          ...ir.cinematics,
+        },
+        options.cameraRegistries ?? createBuiltinCameraRegistries(),
+      )
+    : undefined;
   const keyframeInterval = config.rendering.cacheKeyframeInterval;
   const assetRefs = collectEpisodeAssetRefs({
     ir,
@@ -216,6 +256,7 @@ export function prepareTrackEpisode(
     initialWorld,
     inputProgram,
     notificationProgram,
+    cinematics,
     plugins,
     assetRefs,
     metadata,

@@ -94,6 +94,15 @@ function collectDeviceSubjects(
   return projections;
 }
 
+function scaleRect(rect: LayoutRect, scale: number): LayoutRect {
+  return {
+    x: rect.x * scale,
+    y: rect.y * scale,
+    width: rect.width * scale,
+    height: rect.height * scale,
+  };
+}
+
 /** Bridges exact per-device layout projections into stage/world subjects. */
 export function projectCinematicFrame(input: {
   frame: number;
@@ -128,17 +137,21 @@ export function projectCinematicFrame(input: {
   const projections = [...collectDeviceSubjects(input.layout), ...appSubjects];
   const localSubjects: LocalCinematicSubject[] = projections.map(
     (projection) => {
-      if (projection.coordinateSpace !== "device-screen") {
-        throw new Error(
-          `Subject "${projection.provenance.regionId}" uses unsupported ${projection.coordinateSpace} geometry without an explicit transform.`,
-        );
-      }
+      const localRect =
+        projection.coordinateSpace === "app-logical"
+          ? scaleRect(projection.rect, input.layout.appLogicalScale)
+          : projection.rect;
+      const clippedLocalRect = projection.clippedRect
+        ? projection.coordinateSpace === "app-logical"
+          ? scaleRect(projection.clippedRect, input.layout.appLogicalScale)
+          : projection.clippedRect
+        : undefined;
       return {
         ref: projection.ref,
-        localRect: projection.rect,
+        localRect,
         nodeId: stageNode.id,
         visible: projection.visible,
-        clippedLocalRect: projection.clippedRect,
+        clippedLocalRect,
         sourceVersion: projection.sourceVersion,
         provenance: projection.provenance,
       };

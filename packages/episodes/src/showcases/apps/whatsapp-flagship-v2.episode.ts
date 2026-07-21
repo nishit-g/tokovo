@@ -1,5 +1,6 @@
 import { defineEpisode } from "../../types/episode-definition.js";
 import { episode } from "../../code-first-episode.js";
+import { whatsappFlagshipCinematics } from "./whatsapp-flagship-vnext-camera.js";
 
 export default defineEpisode({
   meta: {
@@ -35,6 +36,7 @@ export default defineEpisode({
         },
       })
       .background({ type: "image", src: "/backgrounds/soft-gradient.png" })
+      .cinematics(whatsappFlagshipCinematics)
       .snapshot("app_whatsapp", "phone", {
         conversations: [
           {
@@ -261,6 +263,7 @@ export default defineEpisode({
           "Teaser is in export. Sound mix still rendering.",
         );
         wa.at("4.8s").send("Ship picture first. Audio can trail by a minute.", {
+          input: { duration: "2.6s", style: "fast" },
         });
         wa.at("7.8s").receive(
           "Rhea",
@@ -275,6 +278,7 @@ export default defineEpisode({
           "Driver is downstairs with 12 launch kits.",
         );
         wa.at("22.0s").send("Lobby desk has clearance. Send them up.", {
+          input: { duration: "3s", style: "natural" },
         });
         wa.openChatList("25.8s");
         wa.switchTo("dm_studio_ops", "27.5s");
@@ -283,20 +287,10 @@ export default defineEpisode({
           "Post is live. Watching comments.",
         );
         wa.at("30.6s").send("Good. Keep one eye on X and one on invoices.", {
+          input: { duration: "3s", style: "fast" },
         });
         wa.openUpdates("34.8s");
         wa.openCalls("37.0s");
-      })
-      .camera((cam) => {
-        cam.at("0s").focus("device", { scale: 1.02, duration: "0.35s" });
-        cam.at("2.1s").focus("header", { scale: 1.05, duration: "0.35s" });
-        cam
-          .span("3.0s", "8.5s")
-          .trackCinematic("lastMessage", { scale: 1.12, smoothing: 0.16 });
-        cam.at("10.6s").focus("updates_status_strip", { scale: 1.08, duration: "0.35s" });
-        cam.at("14.1s").focus("calls_list", { scale: 1.08, duration: "0.35s" });
-        cam.at("20.1s").focus("lastMessage", { scale: 1.1, duration: "0.35s" });
-        cam.at("28.9s").focus("lastMessage", { scale: 1.1, duration: "0.35s" });
       })
       .build(),
 });

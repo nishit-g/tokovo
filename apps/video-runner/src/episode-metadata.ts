@@ -27,6 +27,7 @@ export const calculateEpisodeMetadata: CalculateMetadataFunction<
       props: {
         episodeId: props.episodeId,
         renderData,
+        cameraPlanId: props.cameraPlanId,
       },
     };
   }
@@ -42,6 +43,7 @@ export const calculateEpisodeMetadata: CalculateMetadataFunction<
     props: {
       episodeId: props.episodeId,
       renderDataKey: renderData.cacheKey,
+      cameraPlanId: props.cameraPlanId,
     },
   };
 };

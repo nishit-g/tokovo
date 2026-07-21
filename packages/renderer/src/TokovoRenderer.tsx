@@ -10,6 +10,12 @@
  */
 
 import React from "react";
+import { evaluateCameraOutput, type EvaluatedCameraOutput } from "@tokovo/camera";
+import {
+  selectPreparedCameraProgram,
+  type PreparedCinematicPrograms,
+} from "@tokovo/compiler";
+import { evaluateStageFrame, type EvaluatedStageFrame } from "@tokovo/stage";
 import {
   WorldState,
   EventIndex,
@@ -46,6 +52,10 @@ import type { CameraEngineOutput } from "./engines/useCameraEngine.js";
 import { AppErrorBoundary } from "./ErrorBoundary.js";
 import { RendererRegistryProvider, type RendererRegistries } from "./RegistryContext.js";
 import { AppTransition, UnlockTransition } from "./AppTransition.js";
+import {
+  CameraProjectionSurface,
+  projectCinematicFrame,
+} from "./camera/index.js";
 
 const log = createScopedLogger("renderer");
 
@@ -53,7 +63,7 @@ const log = createScopedLogger("renderer");
 // TYPES
 // =============================================================================
 
-interface TokovoRendererProps {
+export interface TokovoRendererProps {
   world: WorldState;
   t: number;
   fps?: number;
@@ -67,12 +77,17 @@ interface TokovoRendererProps {
   registries: RendererRegistries;
   inputProgram?: PreparedInputProgram;
   notificationProgram?: PreparedNotificationProgram;
+  /** Camera-independent VNext stage plus selectable prepared camera plans. */
+  cinematics?: PreparedCinematicPrograms;
+  /** Selects cinematography without changing story replay or app state. */
+  cameraPlanId?: string;
   /**
    * In multi-device layouts, only the active device should apply camera transforms.
    * Non-active devices must render with an identity transform to avoid flakiness.
    */
   disableCamera?: boolean;
   onCameraDebugFrame?: (frame: CameraDebugFrame) => void;
+  onCinematicCameraDebugFrame?: (frame: CinematicCameraDebugFrame) => void;
   cameraDebugShowAllAnchors?: boolean;
 }
 
@@ -82,6 +97,13 @@ export interface CameraDebugFrame {
   deviceId: string;
   transform: CameraTransform;
   debugInfo?: CameraEngineOutput["debugInfo"];
+}
+
+export interface CinematicCameraDebugFrame {
+  t: number;
+  storySignature: string;
+  stageSignature: string;
+  outputs: readonly EvaluatedCameraOutput[];
 }
 
 function createLayoutCacheStore(scopeKey: string): LayoutCacheStore {
@@ -115,10 +137,14 @@ const TokovoRendererInner: React.FC<TokovoRendererProps> = ({
   focusDeviceId,
   eventIndex,
   pluginManager,
+  registries,
   inputProgram,
   notificationProgram,
+  cinematics,
+  cameraPlanId,
   disableCamera = false,
   onCameraDebugFrame,
+  onCinematicCameraDebugFrame,
   cameraDebugShowAllAnchors,
 }) => {
   const pm = pluginManager;
@@ -127,6 +153,13 @@ const TokovoRendererInner: React.FC<TokovoRendererProps> = ({
     () => createLayoutCacheStore(layoutCacheKey ?? "tokovo:layout-cache:default"),
     [layoutCacheKey],
   );
+  const cinematicStageDevice = cinematics?.stageProgram.program.nodes.find(
+    (node) => node.source.kind === "device",
+  );
+  const cinematicDeviceId =
+    cinematicStageDevice?.source.kind === "device"
+      ? cinematicStageDevice.source.deviceId
+      : undefined;
 
   // ==========================================================================
   // 1. LAYOUT ENGINE — Get layout blueprint
@@ -135,7 +168,7 @@ const TokovoRendererInner: React.FC<TokovoRendererProps> = ({
     world,
     t,
     fps,
-    focusDeviceId,
+    focusDeviceId: focusDeviceId ?? cinematicDeviceId,
     mode,
     config,
     layoutCache,
@@ -177,14 +210,48 @@ const TokovoRendererInner: React.FC<TokovoRendererProps> = ({
     fps,
     layoutOutput,
     eventIndex,
-    disabled: disableCamera,
+    disabled: disableCamera || Boolean(cinematics),
     debug,
   });
 
   const { cameraStyle, deviceStyle, transform, debugInfo } = cameraOutput;
 
+  const cinematicFrame = React.useMemo<
+    | {
+        stage: EvaluatedStageFrame;
+        outputs: readonly EvaluatedCameraOutput[];
+      }
+    | undefined
+  >(() => {
+    if (!cinematics) return undefined;
+    const stage = evaluateStageFrame(cinematics.stageProgram, t);
+    const subjectFrame = projectCinematicFrame({
+      frame: t,
+      world: renderWorld,
+      layout: layoutOutput,
+      stage,
+      registry: registries.plugins.cinematicSubjects,
+    });
+    const program = selectPreparedCameraProgram(cinematics, cameraPlanId);
+    return {
+      stage,
+      outputs: program.plan.outputs.map((output) =>
+        evaluateCameraOutput(
+          {
+            program,
+            outputId: output.id,
+            frame: t,
+            subjectFrame,
+            mode,
+          },
+          registries.camera,
+        ),
+      ),
+    };
+  }, [cameraPlanId, cinematics, layoutOutput, mode, registries, renderWorld, t]);
+
   React.useEffect(() => {
-    if (!debug || !onCameraDebugFrame) return;
+    if (cinematics || !debug || !onCameraDebugFrame) return;
     onCameraDebugFrame({
       t,
       appId: appId ?? undefined,
@@ -192,7 +259,19 @@ const TokovoRendererInner: React.FC<TokovoRendererProps> = ({
       transform,
       debugInfo,
     });
-  }, [debug, onCameraDebugFrame, t, appId, deviceId, transform, debugInfo]);
+  }, [cinematics, debug, onCameraDebugFrame, t, appId, deviceId, transform, debugInfo]);
+
+  React.useEffect(() => {
+    if (!debug || !onCinematicCameraDebugFrame || !cinematicFrame || !cinematics) {
+      return;
+    }
+    onCinematicCameraDebugFrame({
+      t,
+      storySignature: cinematics.storySignature,
+      stageSignature: cinematics.stageSignature,
+      outputs: cinematicFrame.outputs,
+    });
+  }, [cinematicFrame, cinematics, debug, onCinematicCameraDebugFrame, t]);
 
   const hasActiveCall = device.call && device.call.status !== "ended";
   const dynamicIslandProjection = React.useMemo(
@@ -294,7 +373,7 @@ const TokovoRendererInner: React.FC<TokovoRendererProps> = ({
 
   const StatusBarStrategy = deviceRegistries.statusBars.getWithFallback(variant, "ios");
 
-  return (
+  const deviceSurface = (
     <div
       style={{
         width: profile.dimensions.width,
@@ -486,7 +565,7 @@ const TokovoRendererInner: React.FC<TokovoRendererProps> = ({
         </div>
       </div>
 
-      {debug && (
+      {debug && !cinematics && (
         <VisualDebugger
           world={renderWorld}
           t={t}
@@ -495,6 +574,63 @@ const TokovoRendererInner: React.FC<TokovoRendererProps> = ({
           showAllAnchors={cameraDebugShowAllAnchors}
         />
       )}
+    </div>
+  );
+
+  if (!cinematics || !cinematicFrame) {
+    return deviceSurface;
+  }
+
+  const stageRoot = cinematicFrame.stage.nodes.find(
+    (node) => node.id === cinematicFrame.stage.rootNodeId,
+  );
+  const deviceStageNode = cinematicFrame.stage.nodes.find(
+    (node) =>
+      node.source.kind === "device" && node.source.deviceId === deviceId,
+  );
+  if (!stageRoot || !deviceStageNode) {
+    throw new Error(
+      `Camera VNext stage cannot paint device ${JSON.stringify(deviceId)}.`,
+    );
+  }
+  const stageWidth = stageRoot.localBounds.width;
+  const stageHeight = stageRoot.localBounds.height;
+  const matrix = deviceStageNode.worldTransform;
+  const stageDevice = (
+    <div
+      style={{
+        position: "absolute",
+        left: deviceStageNode.localBounds.x,
+        top: deviceStageNode.localBounds.y,
+        width: deviceStageNode.localBounds.width,
+        height: deviceStageNode.localBounds.height,
+        transformOrigin: "0 0",
+        transform: `matrix(${matrix.a}, ${matrix.b}, ${matrix.c}, ${matrix.d}, ${matrix.tx}, ${matrix.ty})`,
+      }}
+    >
+      {deviceSurface}
+    </div>
+  );
+
+  return (
+    <div
+      style={{
+        width: stageWidth,
+        height: stageHeight,
+        position: "relative",
+      }}
+    >
+      {cinematicFrame.outputs.map((output) => (
+        <CameraProjectionSurface
+          key={output.outputId}
+          id={`${output.trace.planId}-${output.outputId}`}
+          output={output}
+          stageWidth={stageWidth}
+          stageHeight={stageHeight}
+        >
+          {stageDevice}
+        </CameraProjectionSurface>
+      ))}
     </div>
   );
 };

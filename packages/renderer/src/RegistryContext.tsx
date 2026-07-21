@@ -1,11 +1,13 @@
 import React from "react";
 import type { PluginRegistries } from "@tokovo/react";
 import type { DeviceRegistries } from "@tokovo/devices";
+import type { CameraRegistries } from "@tokovo/camera";
 import { DeviceRegistryProvider } from "@tokovo/devices";
 
 export interface RendererRegistries {
   plugins: PluginRegistries;
   devices: DeviceRegistries;
+  camera: CameraRegistries;
 }
 
 const RegistryContext = React.createContext<RendererRegistries | null>(null);

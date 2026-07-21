@@ -919,6 +919,9 @@ importers:
       '@tokovo/apps-x':
         specifier: workspace:*
         version: link:../apps-x
+      '@tokovo/camera':
+        specifier: workspace:*
+        version: link:../camera
       '@tokovo/compiler':
         specifier: workspace:*
         version: link:../compiler

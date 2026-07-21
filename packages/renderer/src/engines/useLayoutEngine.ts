@@ -19,7 +19,6 @@ import { useMemo, useRef } from "react";
 import {
   WorldState,
   DeviceState,
-  LAYOUT,
   LayoutState,
   ViewKind,
   LayoutContext,
@@ -84,6 +83,10 @@ export interface LayoutEngineOutput {
   profile: DeviceProfile;
   /** Platform variant */
   variant: "ios" | "android";
+  /** App design width before AppSurface maps it onto the physical device. */
+  appDesignWidth?: number;
+  /** Exact app-logical to device-screen scale used by AppSurface. */
+  appLogicalScale: number;
   /** Active conversation (for chat views) */
   activeConversationId?: string;
   /** Active story (for story views) */
@@ -160,6 +163,7 @@ function buildNullLayoutOutput(profile: DeviceProfile): LayoutEngineOutput {
     layout: NULL_LAYOUT,
     profile,
     variant: profile.platform,
+    appLogicalScale: 1,
     effectiveViewportHeight: profile.dimensions.height,
     isError: true,
   };
@@ -388,6 +392,12 @@ export function useLayoutEngine(input: LayoutEngineInput): LayoutEngineOutput {
     // 3. Get device profile
     const profile = resolveProfile(registries.devices, device.profileId);
     const pointScale = profile.pixelDensity || 1;
+    const appDesignWidth = appId
+      ? (registries.plugins.metadata.get(appId).designWidth ?? 393)
+      : undefined;
+    const appLogicalScale = appDesignWidth
+      ? profile.dimensions.width / appDesignWidth
+      : 1;
     const notificationProjection = input.notificationProgram
       ? projectNotifications(input.notificationProgram, deviceId, t, {
           viewportWidth: profile.dimensions.width,
@@ -432,12 +442,14 @@ export function useLayoutEngine(input: LayoutEngineInput): LayoutEngineOutput {
 
     // 5. Compute effective viewport height (shrinks when keyboard visible)
     const effectiveViewportHeight =
-      viewKind === "CHAT"
-        ? profile.dimensions.height -
-          LAYOUT.CHAT_HEADER_HEIGHT -
-          LAYOUT.CHAT_INPUT_HEIGHT -
-          keyboardHeight
-        : profile.dimensions.height;
+      profile.dimensions.height / appLogicalScale -
+      keyboardHeight / appLogicalScale;
+    const logicalSafeAreaInsets = {
+      top: (profile.safeArea?.top ?? 0) / appLogicalScale,
+      bottom: (profile.safeArea?.bottom ?? 0) / appLogicalScale,
+      left: (profile.safeArea?.left ?? 0) / appLogicalScale,
+      right: (profile.safeArea?.right ?? 0) / appLogicalScale,
+    };
 
     // 5. Build layout context and compute layout
     const layoutContext: LayoutContext = {
@@ -448,9 +460,9 @@ export function useLayoutEngine(input: LayoutEngineInput): LayoutEngineOutput {
       viewKind,
       activeConversationId,
       activeStoryId,
-      viewportWidth: profile.dimensions.width,
+      viewportWidth: profile.dimensions.width / appLogicalScale,
       viewportHeight: effectiveViewportHeight,
-      safeAreaInsets: profile.safeArea,
+      safeAreaInsets: logicalSafeAreaInsets,
       layoutCache: input.layoutCache,
     };
 
@@ -464,6 +476,8 @@ export function useLayoutEngine(input: LayoutEngineInput): LayoutEngineOutput {
       layout,
       profile,
       variant,
+      appDesignWidth,
+      appLogicalScale,
       activeConversationId,
       activeStoryId,
       effectiveViewportHeight,

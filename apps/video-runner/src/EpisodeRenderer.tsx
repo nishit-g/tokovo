@@ -40,6 +40,7 @@ import {
   StoryOverlay,
   RendererRegistryProvider,
   type CameraDebugFrame,
+  type CinematicCameraDebugFrame,
 } from "@tokovo/renderer";
 import {
   SimpleVoiceLayer,
@@ -73,17 +74,19 @@ export const EpisodeRenderer: React.FC<EpisodeRendererProps> = ({
   episodeId,
   renderDataKey,
   renderData,
+  cameraPlanId,
 }) => {
-  return (
-    <ErrorBoundary>
-      <EpisodeRendererInner
-        key={episodeId}
-        episodeId={episodeId}
-        renderDataKey={renderDataKey}
-        renderData={renderData}
-      />
-    </ErrorBoundary>
+  const env = useRemotionEnvironment();
+  const renderer = (
+    <EpisodeRendererInner
+      key={episodeId}
+      episodeId={episodeId}
+      renderDataKey={renderDataKey}
+      renderData={renderData}
+      cameraPlanId={cameraPlanId}
+    />
   );
+  return env.isRendering ? renderer : <ErrorBoundary>{renderer}</ErrorBoundary>;
 };
 
 // Inner component that does the actual rendering
@@ -91,6 +94,7 @@ const EpisodeRendererInner: React.FC<EpisodeRendererProps> = ({
   episodeId,
   renderDataKey,
   renderData: renderDataProp,
+  cameraPlanId,
 }) => {
   const { pluginManager, rendererRegistries, tokovoRegistries } =
     useVideoRunnerRuntime();
@@ -106,6 +110,8 @@ const EpisodeRendererInner: React.FC<EpisodeRendererProps> = ({
   const loadingHandleRef = useRef<number | null>(null);
   const [cameraDebugFrame, setCameraDebugFrame] =
     useState<CameraDebugFrame | null>(null);
+  const [cinematicDebugFrame, setCinematicDebugFrame] =
+    useState<CinematicCameraDebugFrame | null>(null);
   const debugFromUrl = useMemo(() => {
     if (typeof window === "undefined") return false;
     const raw = new URLSearchParams(window.location.search).get("cameraDebug");
@@ -416,6 +422,12 @@ const EpisodeRendererInner: React.FC<EpisodeRendererProps> = ({
   }
 
   const hasDevices = Object.keys(world.devices ?? {}).length > 0;
+  const hasCinematics = Boolean(renderData.prepared.cinematics);
+  if (hasCinematics && Object.keys(world.devices ?? {}).length > 1) {
+    throw new Error(
+      "CAM_VNEXT_MULTI_DEVICE_NOT_CONNECTED: VNext episodes must not fall back to the legacy multi-device renderer.",
+    );
+  }
   const usesMultiDeviceLayout =
     Object.keys(world.devices ?? {}).length > 1 &&
     world.camera.layout?.mode !== "SINGLE";
@@ -484,10 +496,14 @@ const EpisodeRendererInner: React.FC<EpisodeRendererProps> = ({
           />
         ) : hasDevices ? (
           <div
-            style={{
-              transform: `scale(${scale})`,
-              transformOrigin: "center center",
-            }}
+            style={
+              hasCinematics
+                ? { width: fmt.width, height: fmt.height, position: "relative" }
+                : {
+                    transform: `scale(${scale})`,
+                    transformOrigin: "center center",
+                  }
+            }
           >
             <TokovoRenderer
               world={world}
@@ -502,7 +518,10 @@ const EpisodeRendererInner: React.FC<EpisodeRendererProps> = ({
               registries={rendererRegistries}
               inputProgram={renderData.prepared.inputProgram}
               notificationProgram={renderData.prepared.notificationProgram}
+              cinematics={renderData.prepared.cinematics}
+              cameraPlanId={cameraPlanId}
               onCameraDebugFrame={handleCameraDebugFrame}
+              onCinematicCameraDebugFrame={setCinematicDebugFrame}
               cameraDebugShowAllAnchors={showAllAnchors}
             />
           </div>
@@ -522,7 +541,27 @@ const EpisodeRendererInner: React.FC<EpisodeRendererProps> = ({
           >
             {showCameraPanel ? "Hide Camera Panel" : "Show Camera Panel"}
           </button>
-          {showCameraPanel && cameraDebugFrame && (
+          {showCameraPanel && cinematicDebugFrame ? (
+            <div style={cameraPanelStyle}>
+              <div style={cameraPanelTitleStyle}>Camera VNext Debug</div>
+              <div>episode: {episodeId}</div>
+              <div>frame: {cinematicDebugFrame.t}</div>
+              <div>story: {cinematicDebugFrame.storySignature}</div>
+              <div>stage: {cinematicDebugFrame.stageSignature}</div>
+              {cinematicDebugFrame.outputs.map((output) => (
+                <React.Fragment key={output.outputId}>
+                  <div>output: {output.outputId}</div>
+                  <div>plan: {output.trace.planId}</div>
+                  <div>shot: {output.trace.shotId ?? "default"}</div>
+                  <div>rig: {output.trace.rigId}</div>
+                  <div>
+                    passes: {output.trace.projectionPassKinds.join(", ") || "affine"}
+                  </div>
+                  <div>subjects: {output.trace.subjects.length}</div>
+                </React.Fragment>
+              ))}
+            </div>
+          ) : showCameraPanel && cameraDebugFrame ? (
             <div style={cameraPanelStyle}>
               <div style={cameraPanelTitleStyle}>Camera Debug</div>
               <div style={cameraActionsRowStyle}>
@@ -658,7 +697,7 @@ const EpisodeRendererInner: React.FC<EpisodeRendererProps> = ({
                 </div>
               )}
             </div>
-          )}
+          ) : null}
         </>
       )}
     </AbsoluteFill>

@@ -58,6 +58,7 @@
   },
   "dependencies": {
     "@tokovo/core": "workspace:*",
+    "@tokovo/camera": "workspace:*",
     "@tokovo/dsl": "workspace:*",
     "@tokovo/ir": "workspace:*",
     "@tokovo/compiler": "workspace:*",

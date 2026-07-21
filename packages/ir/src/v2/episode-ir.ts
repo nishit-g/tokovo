@@ -13,6 +13,8 @@ import type {
 } from "./notification.js";
 
 import type { TrackEvent } from "./track-event.js";
+import type { CameraPlanIR } from "./camera-vnext.js";
+import type { StageProgramIR } from "./stage-vnext.js";
 
 // =============================================================================
 // DEVICE + APP BOOTSTRAP CONFIG
@@ -262,6 +264,16 @@ export interface HandPerformanceIR {
   cues: HandPerformanceCueIR[];
 }
 
+/**
+ * Camera-independent stage placement plus one or more interchangeable camera
+ * plans. Story events remain the sole source of app and device state.
+ */
+export interface EpisodeCinematicsIR {
+  stageProgram: StageProgramIR;
+  cameraPlans: readonly CameraPlanIR[];
+  defaultCameraPlanId: string;
+}
+
 // =============================================================================
 // TRACK EPISODE IR
 // =============================================================================
@@ -329,6 +341,9 @@ export interface TrackEpisodeIR {
 
   /** Optional physical hand rigs composited around authored devices. */
   handPerformances?: HandPerformanceIR[];
+
+  /** Deterministic VNext stage and camera programs, prepared independently. */
+  cinematics?: EpisodeCinematicsIR;
 }
 
 // =============================================================================

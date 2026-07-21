@@ -345,6 +345,51 @@ This checkpoint does **not** claim cutover. The current event camera remains in 
 episodes and the main render pipeline are migrated, after which it must be deleted in one hard-cut
 phase. No compatibility compiler or old-to-new translation layer has been added.
 
+### Implementation checkpoint — 2026-07-22
+
+The first real-product vertical slice now runs through Tokovo's normal episode composition rather
+than a duplicated visual probe:
+
+- `TrackEpisodeIR.cinematics` owns one StageProgram, multiple replaceable CameraPlans, and an
+  explicit default plan; the DSL carries this data directly without producing CAMERA events;
+- `prepareTrackEpisode` prepares and serializes the cinematic envelope against the story event
+  signature, using the runtime's explicit camera registries;
+- the main `TokovoRenderer` disables the event camera for VNext episodes, evaluates the prepared
+  stage and selected plan, projects subjects from the same layout used to paint the app, and applies
+  the result around the real device tree;
+- `cameraPlanId` is a preview/render prop, so cinematography changes without story replay changes;
+- the synthetic `CameraLensProbe` composition and its duplicate phone, WhatsApp, messages, and
+  keyboard JSX were deleted;
+- `whatsapp-flagship-v2` is the first directly migrated episode: its old `.camera(...)` block is
+  gone, its three sends use canonical input sessions, and it ships `whatsapp-editorial` plus
+  `whatsapp-expressive-lenses` plans;
+- the real WhatsApp provider emits app-logical subjects, which are mapped through the exact
+  plugin-declared AppSurface scale before stage projection;
+- the real keyboard, notifications, system surfaces, device screen, and device body are projected
+  as device-owned subjects from canonical layout output;
+- preview debug data now exposes story/stage signatures, selected plan/shot/rig, projection passes,
+  and exact subject provenance; release errors bypass the visual error boundary and fail the render
+  process.
+
+Evidence at this checkpoint:
+
+- the 91-frame, 1080x1920 keyboard-entry and typing transition rendered successfully through the
+  normal WhatsApp composition at 30fps;
+- two independent renders of keyboard frame 120 produced the identical SHA-256
+  `24b404e7c63029a0ec5d3d1b86e13554aa52e21af5e70ed03f9d4a882c8479c5`;
+- inspected frames cover the full-device chat list, keyboard attached to the WhatsApp composer,
+  and a semantic latest-message composition;
+- the expressive nonlinear plan fails the release renderer with
+  `CAM_TEXTURE_COMPOSITOR_REQUIRED` instead of emitting an SVG fallback or error-card video;
+- compiler tests: 26 passing; renderer tests: 12 passing; WhatsApp tests: 86 passing;
+  React registry tests: 6 passing; episode tests: 16 passing; video-runner tests: 21 passing;
+- focused public-package and video-runner typechecks pass.
+
+This is a real renderer cutover for one single-device episode, not completion of the repository
+hard cut. Multi-device stage painting, the offline texture compositor, remaining episode migration,
+and deletion of the event-camera packages are still open. The historical optical probe evidence
+above remains as benchmark provenance; the probe source itself no longer exists.
+
 ### Phase 0: Architecture lock and renderer feasibility
 
 Status: In progress
@@ -395,12 +440,12 @@ Focused verification:
 
 Status: In progress
 
-- [ ] Split story, stage, and camera data in top-level episode IR.
+- [x] Split story, stage, and camera data in top-level episode IR.
 - [x] Add independent story, stage, and camera signatures in the prepared VNext envelope.
 - [x] Add explicit default CameraPlan selection.
-- [ ] Add preview/render override for CameraPlan ID.
-- [ ] Keep camera out of runtime-event lowering.
-- [ ] Keep stage clips out of camera state.
+- [x] Add preview/render override for CameraPlan ID.
+- [x] Keep Camera VNext data out of runtime-event lowering.
+- [x] Keep StageProgram clips out of camera state.
 - [x] Add separate preparation signatures; render-service cache-key integration remains open.
 
 Focused verification:
@@ -436,11 +481,12 @@ First vertical slice:
 
 - [x] WhatsApp chat cinematic-subject provider from canonical layout projection;
 - [x] exact message-bubble, reply, media, and reaction-region subjects;
-- [ ] canonical composer/input projection;
-- [ ] canonical keyboard subjects;
-- [ ] canonical notification subjects;
-- [ ] device screen/chrome/Dynamic Island subjects;
-- [ ] iPhone and Android profiles;
+- [x] canonical composer/input projection;
+- [x] canonical keyboard subjects;
+- [x] canonical notification subjects;
+- [x] device screen and OS-surface subjects;
+- [x] iPhone profile vertical slice;
+- [ ] Android profile visual verification;
 - [ ] RTL and long-thread fixtures.
 
 Then migrate:
@@ -516,7 +562,7 @@ Focused verification:
 
 ### Phase 7: Direct episode migration
 
-Status: Pending
+Status: In progress
 
 - [ ] Replace all 198 focus calls with shots/rigs.
 - [ ] Replace all 57 `trackCinematic` calls with subject-follow shots.
@@ -526,6 +572,8 @@ Status: Pending
 - [ ] Introduce stable entity handles from app/device authoring where needed.
 - [ ] Replace ambiguous latest-item aliases with exact handles or explicit queries.
 - [ ] Prepare every episode and snapshot CameraPlan manifests.
+
+First direct migration completed: `whatsapp-flagship-v2` no longer authors event-camera effects.
 
 No compatibility compiler or old-to-new translation layer will be written.
 

@@ -193,6 +193,7 @@ export class PluginManagerClass {
         displayName: plugin.displayName,
         themeColor: plugin.themeColor ?? "#000000",
         icon: plugin.icon ?? "📱",
+        designWidth: plugin.assets?.designWidth,
       };
       this.registries.metadata.register(plugin.id, meta);
       cleanups.push(() => this.registries.metadata.unregister(plugin.id));

@@ -50,6 +50,7 @@ import {
   NotificationIntentIR,
   NotificationInteractionIR,
   ScreenRecordingBootConfig,
+  EpisodeCinematicsIR,
 } from "@tokovo/ir";
 import {
   CameraDirectorPlugin,
@@ -326,6 +327,7 @@ export class EpisodeBuilder {
     | undefined;
   private _background?: BackgroundConfigIR;
   private _handPerformances: HandPerformanceIR[] = [];
+  private _cinematics?: EpisodeCinematicsIR;
 
   constructor(id: string, config: TrackEpisodeConfig) {
     this._id = id;
@@ -334,6 +336,15 @@ export class EpisodeBuilder {
     this._title = config.title;
     this._description = config.description;
     this._seed = config.seed;
+  }
+
+  /**
+   * Attach the camera-independent stage and selectable Camera VNext plans.
+   * This is replacement authoring data, not a translation into camera events.
+   */
+  cinematics(programs: EpisodeCinematicsIR): this {
+    this._cinematics = programs;
+    return this;
   }
 
   voice<T extends string>(
@@ -817,6 +828,7 @@ export class EpisodeBuilder {
         this._handPerformances.length > 0
           ? this._handPerformances
           : undefined,
+      cinematics: this._cinematics,
       voice: this._voiceConfig
         ? {
             manifestPath: this._voiceConfig.script.manifestPath,

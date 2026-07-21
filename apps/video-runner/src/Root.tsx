@@ -21,7 +21,6 @@ import { EpisodeRenderer } from "./EpisodeRenderer";
 import { calculateEpisodeMetadata } from "./episode-metadata";
 import { VideoRunnerRuntimeProvider } from "./RuntimeContext";
 import { useVideoRunnerRuntime } from "./RuntimeSharedContext";
-import { CameraLensProbe } from "./CameraLensProbe";
 
 export const RELEASE_COMPOSITION_ID = "episode-render";
 const catalogProfile = resolveCatalogProfile(
@@ -33,6 +32,7 @@ const episodeRendererSchema = z.object({
   episodeId: z.string(),
   renderDataKey: z.string().optional(),
   renderData: z.unknown().optional(),
+  cameraPlanId: z.string().optional(),
 });
 
 // =============================================================================
@@ -85,18 +85,6 @@ const RemotionRootInner: React.FC = () => {
           schema={episodeRendererSchema}
         />
       </Folder>
-      {INCLUDE_EPISODE_CATALOG && (
-        <Folder name="VNext">
-          <Composition
-            id="Camera-VNext-Lens-Probe"
-            component={CameraLensProbe}
-            durationInFrames={420}
-            fps={60}
-            width={1080}
-            height={1920}
-          />
-        </Folder>
-      )}
       {INCLUDE_EPISODE_CATALOG && appShowcases.length > 0 && (
         <Folder name="Apps">
           {Array.from(appFolders.entries()).map(([label, episodes]) => (

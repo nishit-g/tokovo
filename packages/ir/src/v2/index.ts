@@ -130,6 +130,7 @@ export {
   CinematicSubjectRefSchema,
   CameraPlanSchema,
   StageProgramSchema,
+  EpisodeCinematicsSchema,
   validateTrackEpisodeIR,
   safeValidateTrackEpisodeIR,
 } from "./schemas.js";
@@ -171,5 +172,7 @@ export type {
   StageTransformKeyframeIR,
   StageProgramIR,
 } from "./stage-vnext.js";
+
+export type { EpisodeCinematicsIR } from "./episode-ir.js";
 
 export { normalizeTrackEpisodeIR, normalizeZodIssues } from "./normalize.js";

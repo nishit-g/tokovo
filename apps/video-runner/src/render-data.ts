@@ -30,6 +30,7 @@ type SerializablePreparedEpisode = Pick<
   | "initialWorld"
   | "inputProgram"
   | "notificationProgram"
+  | "cinematics"
   | "assetRefs"
   | "metadata"
 >;
@@ -176,6 +177,7 @@ function serializePreparedEpisode(
     initialWorld: prepared.initialWorld,
     inputProgram: prepared.inputProgram,
     notificationProgram: prepared.notificationProgram,
+    cinematics: prepared.cinematics,
     assetRefs: prepared.assetRefs,
     metadata: prepared.metadata,
   };
@@ -329,6 +331,7 @@ function preparePreparedEpisode(
     config: METADATA_CONFIG,
     validate: true,
     log: false,
+    cameraRegistries: getMetadataRuntime().rendererRegistries.camera,
   });
 
   return prepared;
