@@ -10,6 +10,8 @@ const renderArtifactManifestSchema = z.object({
   episodeId: z.string(),
   sourceHash: z.string(),
   videoPath: z.string(),
+  cameraPlanId: z.string().optional(),
+  cameraProjectionMode: z.literal("preview").optional(),
   thumbnailPath: z.string().optional(),
   durationMs: z.number().int().nonnegative(),
   createdAt: z.string(),
@@ -18,14 +20,26 @@ const renderArtifactManifestSchema = z.object({
 interface CliArgs {
   episodeId: string;
   outFile: string;
+  cameraPlanId?: string;
+  cameraProjectionMode?: "preview";
 }
 
 function parseArgs(): CliArgs {
-  const [, , episodeId, outFile] = process.argv;
+  const [, , episodeId, outFile, cameraPlanId, cameraProjectionMode] = process.argv;
   if (!episodeId || !outFile) {
-    throw new Error("Usage: write-artifact-manifest.ts <episodeId> <outFile>");
+    throw new Error(
+      "Usage: write-artifact-manifest.ts <episodeId> <outFile> [cameraPlanId] [preview]",
+    );
   }
-  return { episodeId, outFile: path.resolve(outFile) };
+  if (cameraProjectionMode && cameraProjectionMode !== "preview") {
+    throw new Error(`Unsupported camera projection mode: ${cameraProjectionMode}`);
+  }
+  return {
+    episodeId,
+    outFile: path.resolve(outFile),
+    cameraPlanId: cameraPlanId || undefined,
+    cameraProjectionMode: cameraProjectionMode || undefined,
+  };
 }
 
 function getDurationMs(episode: EpisodeDefinition): number {
@@ -52,7 +66,7 @@ function deriveArtifactId(episode: EpisodeDefinition, outFile: string, sourceHas
 }
 
 async function main() {
-  const { episodeId, outFile } = parseArgs();
+  const { episodeId, outFile, cameraPlanId, cameraProjectionMode } = parseArgs();
   if (!fs.existsSync(outFile)) {
     throw new Error(`Rendered file does not exist: ${outFile}`);
   }
@@ -69,6 +83,8 @@ async function main() {
     episodeId: episode.meta.id,
     sourceHash,
     videoPath: outFile,
+    cameraPlanId,
+    cameraProjectionMode,
     durationMs: getDurationMs(episode),
     createdAt: new Date().toISOString(),
   });

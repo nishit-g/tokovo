@@ -251,7 +251,11 @@ async function getServeUrl() {
 async function main() {
   fs.mkdirSync(outDir, { recursive: true });
 
-  const inputProps = { episodeId, ...(cameraPlanId ? { cameraPlanId } : {}) };
+  const inputProps = {
+    episodeId,
+    ...(cameraPlanId ? { cameraPlanId } : {}),
+    cameraProjectionMode: "preview",
+  };
   const publicAssetBaseUrl = process.env.TOKOVO_PUBLIC_ASSET_BASE_URL?.trim();
   const serveUrl = await getServeUrl();
   const composition = await selectComposition({

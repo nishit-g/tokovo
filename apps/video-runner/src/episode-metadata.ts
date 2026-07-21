@@ -65,6 +65,7 @@ export const calculateEpisodeMetadata: CalculateMetadataFunction<EpisodeRenderer
         episodeId: props.episodeId,
         renderData,
         cameraPlanId: props.cameraPlanId,
+        cameraProjectionMode: props.cameraProjectionMode,
         cameraRenderLayer: props.cameraRenderLayer,
       },
     };
@@ -96,6 +97,7 @@ export const calculateEpisodeMetadata: CalculateMetadataFunction<EpisodeRenderer
       episodeId: props.episodeId,
       renderDataKey: renderData.cacheKey,
       cameraPlanId: props.cameraPlanId,
+      cameraProjectionMode: props.cameraProjectionMode,
       cameraRenderLayer: props.cameraRenderLayer,
     },
   };

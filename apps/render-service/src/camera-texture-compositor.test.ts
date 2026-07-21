@@ -181,8 +181,8 @@ describe("camera smear and FFmpeg graph", () => {
       30,
     );
     expect(commands).toContain("0.033333333 [enter]");
-    expect(commands).toContain("perspective@tokovo_camera_rgb x0");
-    expect(commands).toContain("perspective@tokovo_camera_alpha y3");
+    expect(commands).toContain("perspective@tokovo_camera x0");
+    expect(commands).toContain("perspective@tokovo_camera y3");
     expect(commands).toContain("gblur@tokovo_smear sigma");
     expect(commands).toContain("colorchannelmixer@tokovo_camera_opacity aa");
     expect(commands).toContain("colorchannelmixer@tokovo_smear_alpha aa");
@@ -207,11 +207,13 @@ describe("camera smear and FFmpeg graph", () => {
     expect(graph).toContain("[underlay][optical]overlay");
     expect(graph).toContain("[4:v]format=rgba[foreground]");
     expect(graph).toContain("[with_camera][foreground]overlay");
-    expect(graph).toContain("perspective@tokovo_camera_rgb");
-    expect(graph).toContain("perspective@tokovo_camera_alpha");
+    expect(graph).toContain("perspective@tokovo_camera");
     expect(graph).toContain("interpolation=cubic");
-    expect(graph).toContain("[framed_rgb][xmap_rgb][ymap_rgb]displace");
-    expect(graph).toContain("[framed_alpha][xmap_alpha][ymap_alpha]displace");
+    expect(graph).toContain("crop=1080:1920:0:0,format=rgba[framed]");
+    expect(graph).toContain("[framed][xmap][ymap]displace");
+    expect(graph).toContain("format=rgba[optical]");
+    expect(graph).not.toContain("alphamerge");
+    expect(graph).not.toContain("alphaextract");
     expect(graph).not.toContain("remap");
   });
 });

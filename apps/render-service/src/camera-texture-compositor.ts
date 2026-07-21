@@ -327,8 +327,7 @@ export function createCameraCommandFile(
       const timestamp = (sequenceIndex / fps).toFixed(9);
       const corners = createPerspectiveCorners(capture);
       return `${timestamp} [enter] ${[
-        ...perspectiveCommands("perspective@tokovo_camera_rgb", corners),
-        ...perspectiveCommands("perspective@tokovo_camera_alpha", corners),
+        ...perspectiveCommands("perspective@tokovo_camera", corners),
         `gblur@tokovo_smear sigma ${commandNumber(sigmaX)}`,
         `gblur@tokovo_smear sigmaV ${commandNumber(sigmaY)}`,
         `colorchannelmixer@tokovo_camera_opacity aa ${commandNumber(cameraOpacity)}`,
@@ -463,24 +462,16 @@ export function createTextureFilterGraph(input: {
 }): string {
   const commandFile = escapeFilterPath(input.commandFile);
   const initialCorners = createPerspectiveCorners(input.initialCapture);
+  // Keep this RGBA constraint after perspective. Without it, FFmpeg can
+  // negotiate the camera stream down to gray to match displace's map inputs.
   return [
-    `[1:v]format=rgba,sendcmd=f='${commandFile}',split=2[camera_rgb_source][camera_alpha_source]`,
-    `[camera_rgb_source]format=rgb24,${perspectiveFilter("tokovo_camera_rgb", initialCorners)},crop=${input.width}:${input.height}:0:0[framed_rgb]`,
-    `[camera_alpha_source]alphaextract,${perspectiveFilter("tokovo_camera_alpha", initialCorners)},crop=${input.width}:${input.height}:0:0[framed_alpha]`,
-    `[2:v]scale=${input.width}:${input.height}:flags=bicubic,setsar=1,format=gray,split=2[xmap_rgb][xmap_alpha]`,
-    `[3:v]scale=${input.width}:${input.height}:flags=bicubic,setsar=1,format=gray,split=2[ymap_rgb][ymap_alpha]`,
-    `[framed_rgb][xmap_rgb][ymap_rgb]displace=edge=blank[warped_rgb]`,
-    `[framed_alpha][xmap_alpha][ymap_alpha]displace=edge=blank[warped_alpha]`,
-    `[warped_rgb][warped_alpha]alphamerge,format=rgba,colorchannelmixer@tokovo_camera_opacity=aa=1[warped]`,
+    `[1:v]format=rgba,sendcmd=f='${commandFile}',${perspectiveFilter("tokovo_camera", initialCorners)},crop=${input.width}:${input.height}:0:0,format=rgba[framed]`,
+    `[2:v]scale=${input.width}:${input.height}:flags=bicubic,setsar=1,format=gray[xmap]`,
+    `[3:v]scale=${input.width}:${input.height}:flags=bicubic,setsar=1,format=gray[ymap]`,
+    `[framed][xmap][ymap]displace=edge=blank,format=rgba,colorchannelmixer@tokovo_camera_opacity=aa=1[warped]`,
     `[warped]split=2[crisp_source][smear_source]`,
     `[smear_source]gblur@tokovo_smear=sigma=0.2:sigmaV=0.2:steps=2:planes=15,colorchannelmixer@tokovo_smear_alpha=aa=0[smear]`,
-    `[crisp_source]split=2[crisp_rgb][crisp_alpha_source]`,
-    `[smear]split=2[smear_rgb][smear_alpha_source]`,
-    `[crisp_rgb][smear_rgb]overlay@tokovo_smear_overlay=x=0:y=0:format=auto:alpha=straight,format=rgb24[optical_rgb]`,
-    `[crisp_alpha_source]format=rgba,alphaextract[crisp_alpha]`,
-    `[smear_alpha_source]format=rgba,alphaextract[smear_alpha]`,
-    `[crisp_alpha][smear_alpha]blend=all_mode=lighten[optical_alpha]`,
-    `[optical_rgb][optical_alpha]alphamerge,format=rgba[optical]`,
+    `[crisp_source][smear]overlay@tokovo_smear_overlay=x=0:y=0:format=auto:alpha=straight,format=rgba[optical]`,
     `[0:v]format=rgba[underlay]`,
     `[underlay][optical]overlay=x=0:y=0:format=auto:alpha=straight,format=rgba[with_camera]`,
     `[4:v]format=rgba[foreground]`,

@@ -717,7 +717,9 @@ No compatibility compiler or old-to-new translation layer will be written.
 
 ### Phase 8: Flagship mega episode
 
-Status: Pending
+Status: In progress — the watchable single-output vertical slice is complete; the two-device/PIP
+expansion remains gated on Phase 3 stage/output projection rather than being faked through the old
+camera layout path.
 
 Create `camera-vnext-cinematic-flagship` at 1080x1920, 60fps, approximately 24 seconds.
 
@@ -743,6 +745,33 @@ Camera requirements:
 
 The same story ships with `restrained` and `kinetic` CameraPlans. Their story/replay hashes must be
 identical and camera signatures different.
+
+Landed vertical slice:
+
+- `camera-vnext-cinematic-flagship` is a 24-second, 1080x1920, 60fps episode painted by the real
+  WhatsApp package on the canonical iOS device, input, notification, screen-recording, overlay, and
+  audio surfaces;
+- one immutable story supplies exact sent-message/media entities, semantic header/input/last-message
+  subjects, the canonical keyboard, a foreground notification banner, app navigation, and a grouped
+  conversation settle;
+- selectable `restrained` and `kinetic` plans have different camera signatures while the prepared
+  story signature stays equal to the episode event signature;
+- the kinetic cut covers perspective tilt, barrel, fisheye, horizontal and vertical anamorphic edge
+  stretch, directional smear, and lens breathing before a fully neutral final shot;
+- a full 1440-frame local kinetic preview and restrained comparison cut completed at 1080x1920/60;
+- a 641-frame kinetic proof completed through the actual offline texture compositor while reusing the
+  camera-independent 1290x2796 stage plate; the single RGBA optical path preserves chroma and alpha
+  across perspective, displacement, and smear;
+- fast-preview manifests now record the selected CameraPlan and explicit preview projection mode;
+  release jobs still fail closed unless nonlinear passes use the texture compositor.
+
+Remaining before Phase 8 is complete:
+
+- stage-authored second-device placement;
+- independent main/PIP outputs and tracking;
+- cross-device notification handoff;
+- a texture-compositor release render of the completed two-output episode and repeated pixel/hash
+  comparison.
 
 ### Phase 9: Diagnostics and render artifacts
 

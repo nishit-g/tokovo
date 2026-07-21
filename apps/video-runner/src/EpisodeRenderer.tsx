@@ -71,6 +71,7 @@ export const EpisodeRenderer: React.FC<EpisodeRendererProps> = ({
   renderDataKey,
   renderData,
   cameraPlanId,
+  cameraProjectionMode,
   cameraRenderLayer = "final",
 }) => {
   const env = useRemotionEnvironment();
@@ -81,6 +82,7 @@ export const EpisodeRenderer: React.FC<EpisodeRendererProps> = ({
       renderDataKey={renderDataKey}
       renderData={renderData}
       cameraPlanId={cameraPlanId}
+      cameraProjectionMode={cameraProjectionMode}
       cameraRenderLayer={cameraRenderLayer}
     />
   );
@@ -93,6 +95,7 @@ const EpisodeRendererInner: React.FC<EpisodeRendererProps> = ({
   renderDataKey,
   renderData: renderDataProp,
   cameraPlanId,
+  cameraProjectionMode,
   cameraRenderLayer = "final",
 }) => {
   const { pluginManager, rendererRegistries, tokovoRegistries } = useVideoRunnerRuntime();
@@ -100,7 +103,7 @@ const EpisodeRendererInner: React.FC<EpisodeRendererProps> = ({
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
   const env = useRemotionEnvironment();
-  const renderMode = env.isRendering ? "render" : "preview";
+  const renderMode = !env.isRendering || cameraProjectionMode === "preview" ? "preview" : "render";
   const [renderData, setRenderData] = useState<EpisodeRenderData | null>(
     () => renderDataProp ?? getCachedEpisodeRenderData(renderDataKey),
   );

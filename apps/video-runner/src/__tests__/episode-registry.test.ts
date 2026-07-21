@@ -36,7 +36,7 @@ describe("video-runner release episode registry", () => {
     const registry = createEpisodeRegistryForProfiles(["studio"]);
     const ids = new Set(registry.all().map((episode) => episode.meta.id));
 
-    expect(appShowcaseEpisodes).toHaveLength(22);
+    expect(appShowcaseEpisodes).toHaveLength(23);
     expect(systemShowcaseEpisodes).toHaveLength(10);
     expect(storyEpisodes).toHaveLength(8);
 
@@ -44,6 +44,7 @@ describe("video-runner release episode registry", () => {
       expect(ids.has(episode.meta.id)).toBe(true);
     }
 
+    expect(ids.has("camera-vnext-cinematic-flagship")).toBe(true);
     expect(ids.has("render-service-smoke")).toBe(true);
   });
 });

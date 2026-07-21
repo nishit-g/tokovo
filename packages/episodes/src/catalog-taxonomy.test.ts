@@ -3,10 +3,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { EpisodeRegistry } from "./registry/episode-registry.js";
-import {
-  resolveEpisodeCatalogType,
-  resolveEpisodeCategory,
-} from "./types/episode-definition.js";
+import { resolveEpisodeCatalogType, resolveEpisodeCategory } from "./types/episode-definition.js";
 import appShowcaseEpisodes from "./showcases/apps/index.js";
 import systemShowcaseEpisodes from "./showcases/system/index.js";
 import storyEpisodes from "./stories/index.js";
@@ -33,26 +30,16 @@ function listTypeScriptFiles(dir: string): string[] {
 
 describe("release episode taxonomy", () => {
   it("resolves explicit curated catalog types correctly", () => {
-    expect(resolveEpisodeCatalogType(appShowcaseEpisodes[0].meta)).toBe(
-      "app_showcase_flagship",
-    );
-    expect(resolveEpisodeCatalogType(systemShowcaseEpisodes[0].meta)).toBe(
-      "system_showcase",
-    );
+    expect(resolveEpisodeCatalogType(appShowcaseEpisodes[0].meta)).toBe("app_showcase_flagship");
+    expect(resolveEpisodeCatalogType(systemShowcaseEpisodes[0].meta)).toBe("system_showcase");
     expect(resolveEpisodeCatalogType(storyEpisodes[0].meta)).toBe("story");
     expect(resolveEpisodeCategory(storyEpisodes[0].meta)).toBe("production");
-    expect(resolveEpisodeCategory(appShowcaseEpisodes[0].meta)).toBe(
-      "showcase",
-    );
+    expect(resolveEpisodeCategory(appShowcaseEpisodes[0].meta)).toBe("showcase");
   });
 
   it("filters registry entries by catalog type and app", () => {
     const registry = new EpisodeRegistry();
-    for (const episode of [
-      ...appShowcaseEpisodes,
-      ...systemShowcaseEpisodes,
-      ...storyEpisodes,
-    ]) {
+    for (const episode of [...appShowcaseEpisodes, ...systemShowcaseEpisodes, ...storyEpisodes]) {
       registry.register(episode);
     }
 
@@ -61,23 +48,17 @@ describe("release episode taxonomy", () => {
     ).toHaveLength(1);
     expect(
       registry.filter({
-        catalogType: [
-          "app_showcase_flagship",
-          "app_showcase_exhaustive",
-          "app_showcase_theme",
-        ],
+        catalogType: ["app_showcase_flagship", "app_showcase_exhaustive", "app_showcase_theme"],
       }).length,
     ).toBe(appShowcaseEpisodes.length);
     expect(registry.filter({ catalogType: "system_showcase" }).length).toBe(
       systemShowcaseEpisodes.length,
     );
-    expect(registry.filter({ catalogType: "story" }).length).toBe(
-      storyEpisodes.length,
-    );
+    expect(registry.filter({ catalogType: "story" }).length).toBe(storyEpisodes.length);
   });
 
   it("ships the full new-only curated wave", () => {
-    expect(appShowcaseEpisodes).toHaveLength(22);
+    expect(appShowcaseEpisodes).toHaveLength(23);
     expect(systemShowcaseEpisodes).toHaveLength(10);
     expect(storyEpisodes).toHaveLength(8);
   });
