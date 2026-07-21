@@ -1604,8 +1604,15 @@ projective tilt, or lens passes. Two different CameraPlans produced the identica
 stage PNG SHA-256 while retaining different camera signatures. Affine framing, crop compensation,
 and projective tilt are applied as a per-frame cubic FFmpeg homography; only the bounded optical
 residual uses 8-bit displacement maps. The pixels are therefore eligible for the cross-plan cache.
-Persistent cache storage and scheduling are separate implementation work and must not add the camera
-signature back into the stage-plate key.
+The render service persists those plates under `.remotion/camera-stage-plates` using a versioned key
+over episode, stage-painter source, story, stage, frame range, dimensions, fps, pixel format, and
+codec. The stage-painter source signature covers the built app, device, renderer, stage, and relevant
+runtime modules that actually enter the bundle, but deliberately excludes episode CameraPlan
+output. The key cannot accept a CameraPlan ID or camera signature. A size and SHA-256 manifest
+validates every hit, writes are atomic, and a 2x2
+projection-data pass evaluates the selected CameraPlan without repainting the app/device tree. Chunk
+reuse, eviction, and distributed cache storage remain separate work and must not add camera identity
+back into the stage-plate key.
 
 ### Camera spaces
 

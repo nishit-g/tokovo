@@ -13,7 +13,7 @@ import {
   videoRunnerEntryPoint,
   videoRunnerRoot,
 } from "./constants";
-import { createBundleSourceSignature } from "./bundle-manifest";
+import { createBundleSourceSignature, createStagePainterSourceSignature } from "./bundle-manifest";
 import { getBrowserExecutable, getPublicAssetBaseUrl } from "./env";
 import { createRenderServiceError } from "./errors";
 import { type RenderLogger } from "./logger";
@@ -24,6 +24,11 @@ import {
   compositeCameraTexture,
   renderPosterFromVideo,
 } from "./camera-texture-compositor";
+import {
+  lookupCameraStagePlate,
+  storeCameraStagePlate,
+  type CameraStagePlateIdentity,
+} from "./camera-stage-plate-cache";
 
 let serveUrlPromise: Promise<string> | null = null;
 let serveUrlSignature = "";
@@ -272,12 +277,33 @@ export async function renderEpisodeMedia(input: {
     });
   }
   if (selectedCameraProgram?.projectionBackendRequirement === "texture") {
+    const stageProgram = cinematicPrograms?.stageProgram.program;
+    const stageRoot = stageProgram?.nodes.find((node) => node.id === stageProgram.rootNodeId);
+    if (!cinematicPrograms || !stageRoot) {
+      throw createRenderServiceError({
+        code: "CAM_TEXTURE_RENDER_FAILED",
+        stage: "camera-texture-render",
+        message: "Texture camera rendering requires a prepared stage root",
+        details: { episodeId: input.episodeId },
+      });
+    }
+    const stagePlateIdentity: CameraStagePlateIdentity = {
+      episodeId: input.episodeId,
+      stagePainterSignature: createStagePainterSourceSignature(),
+      storySignature: cinematicPrograms.storySignature,
+      stageSignature: cinematicPrograms.stageSignature,
+      frameRange: [sourceFrameRange[0], sourceFrameRange[1]],
+      fps: composition.fps,
+      width: stageRoot.localBounds.width,
+      height: stageRoot.localBounds.height,
+    };
     const textureStartedAt = Date.now();
     const workingDirectory = await fs.promises.mkdtemp(
       path.join(os.tmpdir(), "tokovo-camera-texture-"),
     );
     const underlayPath = path.join(workingDirectory, "underlay.mov");
     const cameraPlatePath = path.join(workingDirectory, "camera.mov");
+    const projectionDataPath = path.join(workingDirectory, "camera-projection-data.mp4");
     const foregroundPlatePath = path.join(workingDirectory, "foreground.mov");
     const collector = new CameraTextureCaptureCollector();
     try {
@@ -304,7 +330,11 @@ export async function renderEpisodeMedia(input: {
         frameRange: sourceFrameRange,
       };
       const selectLayer = async (
-        cameraRenderLayer: "underlay" | "camera-plate" | "foreground-plate",
+        cameraRenderLayer:
+          | "underlay"
+          | "camera-plate"
+          | "camera-projection-data"
+          | "foreground-plate",
       ) => {
         const layerInputProps = { ...inputProps, cameraRenderLayer };
         const layerComposition = await selectComposition({
@@ -330,18 +360,98 @@ export async function renderEpisodeMedia(input: {
         pixelFormat: "yuv422p10le",
         audioCodec: "pcm-16",
       });
-      const cameraPlate = await selectLayer("camera-plate");
-      await renderMedia({
-        ...sharedLayerOptions,
-        composition: cameraPlate.layerComposition,
-        inputProps: cameraPlate.layerInputProps,
-        outputLocation: cameraPlatePath,
-        codec: "prores",
-        proResProfile: "4444",
-        pixelFormat: "yuva444p10le",
-        muted: true,
-        onBrowserLog: (log) => collector.acceptBrowserLog(log.text),
-      });
+      const cacheEnabled = process.env.TOKOVO_CAMERA_STAGE_PLATE_CACHE !== "off";
+      const stagePlateLookup = cacheEnabled
+        ? await lookupCameraStagePlate(stagePlateIdentity)
+        : null;
+      let resolvedCameraPlatePath = cameraPlatePath;
+      if (stagePlateLookup?.status === "hit") {
+        const cachedStagePlate = stagePlateLookup;
+        resolvedCameraPlatePath = cachedStagePlate.platePath;
+        await input.logger.info(
+          "camera.stage-plate.cache.hit",
+          "Reusing camera-independent stage plate",
+          {
+            cacheKey: cachedStagePlate.key,
+            platePath: cachedStagePlate.platePath,
+            sha256: cachedStagePlate.sha256,
+            sizeBytes: cachedStagePlate.sizeBytes,
+            stagePainterSignature: stagePlateIdentity.stagePainterSignature,
+            storySignature: stagePlateIdentity.storySignature,
+            stageSignature: stagePlateIdentity.stageSignature,
+          },
+        );
+        const projectionData = await selectLayer("camera-projection-data");
+        await renderMedia({
+          ...sharedLayerOptions,
+          composition: projectionData.layerComposition,
+          inputProps: projectionData.layerInputProps,
+          outputLocation: projectionDataPath,
+          codec: "h264",
+          pixelFormat: "yuv420p",
+          muted: true,
+          onBrowserLog: (log) => collector.acceptBrowserLog(log.text),
+        });
+      } else {
+        await input.logger.info(
+          cacheEnabled ? "camera.stage-plate.cache.miss" : "camera.stage-plate.cache.disabled",
+          cacheEnabled
+            ? "Rendering uncached camera-independent stage plate"
+            : "Stage-plate cache disabled for this render",
+          {
+            storySignature: cinematicPrograms.storySignature,
+            stageSignature: cinematicPrograms.stageSignature,
+            stagePainterSignature: stagePlateIdentity.stagePainterSignature,
+            ...(stagePlateLookup?.status === "miss"
+              ? {
+                  cacheKey: stagePlateLookup.key,
+                  missReason: stagePlateLookup.reason,
+                  cacheError: stagePlateLookup.error,
+                }
+              : {}),
+          },
+        );
+        const cameraPlate = await selectLayer("camera-plate");
+        await renderMedia({
+          ...sharedLayerOptions,
+          composition: cameraPlate.layerComposition,
+          inputProps: cameraPlate.layerInputProps,
+          outputLocation: cameraPlatePath,
+          codec: "prores",
+          proResProfile: "4444",
+          pixelFormat: "yuva444p10le",
+          muted: true,
+          onBrowserLog: (log) => collector.acceptBrowserLog(log.text),
+        });
+        if (cacheEnabled) {
+          try {
+            const stored = await storeCameraStagePlate({
+              identity: stagePlateIdentity,
+              sourcePath: cameraPlatePath,
+            });
+            resolvedCameraPlatePath = stored.platePath;
+            await input.logger.info(
+              "camera.stage-plate.cache.store",
+              "Stored camera-independent stage plate",
+              {
+                cacheKey: stored.key,
+                platePath: stored.platePath,
+                sha256: stored.sha256,
+                sizeBytes: stored.sizeBytes,
+                stagePainterSignature: stagePlateIdentity.stagePainterSignature,
+                storySignature: stagePlateIdentity.storySignature,
+                stageSignature: stagePlateIdentity.stageSignature,
+              },
+            );
+          } catch (error) {
+            await input.logger.warn(
+              "camera.stage-plate.cache.store-failed",
+              "Stage-plate cache write failed; continuing with the freshly rendered plate",
+              { error: error instanceof Error ? error.message : String(error) },
+            );
+          }
+        }
+      }
       const foreground = await selectLayer("foreground-plate");
       await renderMedia({
         ...sharedLayerOptions,
@@ -357,7 +467,7 @@ export async function renderEpisodeMedia(input: {
       await compositeCameraTexture({
         captures,
         underlayPath,
-        cameraPlatePath,
+        cameraPlatePath: resolvedCameraPlatePath,
         foregroundPlatePath,
         outputPath: input.outputLocation,
         workingDirectory,

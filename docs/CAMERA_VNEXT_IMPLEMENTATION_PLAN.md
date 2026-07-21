@@ -477,6 +477,53 @@ This checkpoint proves plan-independent pixels and a high-quality recut path. It
 the render service has persistent plate storage yet, or that multi-output and full-episode
 performance gates are complete.
 
+### Persistent stage-plate cache checkpoint — 2026-07-22
+
+Camera-independent pixels are now reused by the normal render service:
+
+- `.remotion/camera-stage-plates` stores versioned ProRes 4444 stage plates outside git;
+- the cache key includes episode, stage-painter source, story, stage, exact frame range, dimensions,
+  fps, image format, and codec, and its API has no CameraPlan or camera-signature input;
+- the stage-painter signature covers built modules capable of changing app/device pixels while
+  excluding episode CameraPlan output, so a built cinematography edit does not invalidate reusable
+  pixels;
+- each plate has a size and SHA-256 integrity manifest; malformed, truncated, or checksum-mismatched
+  entries become diagnosed misses rather than trusted pixels;
+- the manifest records the complete reusable identity for inspection and intentionally contains no
+  CameraPlan ID or camera signature;
+- stores use temporary files plus atomic renames, and a failed store never fails an otherwise valid
+  render;
+- cache hits run a 2x2 `camera-projection-data` composition that evaluates the selected plan and
+  emits the versioned per-frame capture without repainting the full app/device stage;
+- `TOKOVO_CAMERA_STAGE_PLATE_CACHE=off` provides a direct fresh-versus-cached verification path.
+- root `render:episode` workflows synchronize the video-runner dependency build through Turbo before
+  preparing data, preventing a source edit from silently rendering stale workspace `dist` output;
+
+Evidence at this checkpoint:
+
+- a real three-frame WhatsApp cache miss stored a 3,237,842-byte plate with SHA-256
+  `a1d657ba33410cd29d275ad66e4391bd699b31bb8c27e1cedacdba0ae8b23326`;
+- an authored recut changed perspective tilt from 3.5 to 4 degrees and rebuilt the episode package;
+  story signature `17:40166d16` and stage signature `8cd79bff` stayed fixed, camera signature changed
+  from `b1734279` to `0a958369`, and the bundle signature changed from
+  `079f4fa84ba5bf4329807a3d06348e58` to `df455612fabaa1d1ccae84fe6d5c72d3`;
+- despite that real source/build/camera change, both renders used stage-plate cache key
+  `22dec9d6e24d7a0f7119155302ac937befac2b13222ba15c09d6498cade2995a` and plate SHA-256
+  `a1d657ba33410cd29d275ad66e4391bd699b31bb8c27e1cedacdba0ae8b23326`;
+- the authored recut reduced texture-stage time from 15.14s on the baseline miss to 3.21s on the
+  verified hit, approximately 78.8%;
+- fresh and cached outputs retained identical MP4 SHA-256
+  `cce412402511b4eb0604654b309392d3d1632abb11c7c1b6dc54b0769b10c2d6` and poster
+  SHA-256 `c5d660022886bdd204ca45b57cc96a6198a7c079bf6f5d13ec3d616176658a08`;
+- the recut intentionally produced different final MP4 SHA-256
+  `f5df69b664ad819496d8e410b0814838f3a6748c193f498c88e891188d80a98e` and poster SHA-256
+  `86909e3378ca2c3faa8264a6e8a7a3c97b1c651ed13dac19d89ec2f3227b1b0f`, proving that
+  cached stage pixels do not freeze cinematography;
+- cache key/integrity tests cover stable identity changes, verified hits, and corrupt-entry misses.
+
+Persistent single-range reuse is complete. Chunk/subrange reuse, bounded eviction, shared remote
+storage, underlay/foreground caching, and full-episode performance measurement remain open.
+
 ### Phase 0: Architecture lock and renderer feasibility
 
 Status: In progress
@@ -533,7 +580,7 @@ Status: In progress
 - [x] Add preview/render override for CameraPlan ID.
 - [x] Keep Camera VNext data out of runtime-event lowering.
 - [x] Keep StageProgram clips out of camera state.
-- [x] Add separate preparation signatures; render-service cache-key integration remains open.
+- [x] Add separate preparation signatures and CameraPlan-independent stage-plate cache keys.
 
 Focused verification:
 
@@ -638,6 +685,8 @@ Status: In progress
 - [x] Add first-output attachment rules for underlay, camera plate, and final foreground HUD.
 - [x] Make full-stage camera plates independent from the selected CameraPlan.
 - [x] Apply affine/projective framing with a cubic release homography before optical residuals.
+- [x] Persist and integrity-check reusable stage plates across render jobs.
+- [x] Evaluate new CameraPlans through a projection-data-only cache-hit path.
 - [ ] Delete `useCameraEngine` after cutover.
 - [ ] Replace hardcoded multi-device layout components with stage/output projection.
 

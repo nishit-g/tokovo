@@ -72,8 +72,8 @@ export interface TokovoRendererProps {
   cinematics?: PreparedCinematicPrograms;
   /** Selects cinematography without changing story replay or app state. */
   cameraPlanId?: string;
-  /** Paints a camera-independent stage plate for the offline projection backend. */
-  cameraProjectionBackend?: "final" | "texture-stage-plate";
+  /** Paints a camera-independent stage plate or projection-only metadata pass. */
+  cameraProjectionBackend?: "final" | "texture-stage-plate" | "texture-projection-data";
   /**
    * In multi-device layouts, only the active device should apply camera transforms.
    * Non-active devices must render with an identity transform to avoid flakiness.
@@ -281,7 +281,8 @@ const TokovoRendererInner: React.FC<TokovoRendererProps> = ({
 
   React.useEffect(() => {
     if (
-      cameraProjectionBackend !== "texture-stage-plate" ||
+      (cameraProjectionBackend !== "texture-stage-plate" &&
+        cameraProjectionBackend !== "texture-projection-data") ||
       !onCameraTextureProjectionFrame ||
       !cinematicFrame ||
       !cinematics
@@ -365,6 +366,10 @@ const TokovoRendererInner: React.FC<TokovoRendererProps> = ({
     (transition?.kind === "openApp" || transition?.kind === "goHome") &&
     transitionProgress !== undefined &&
     transitionProgress < 1;
+
+  if (cameraProjectionBackend === "texture-projection-data") {
+    return null;
+  }
 
   if (debug && device.call) {
     log.debug(`Frame ${t} CALL STATE`, { call: device.call });

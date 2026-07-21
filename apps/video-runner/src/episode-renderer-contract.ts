@@ -17,5 +17,7 @@ export const episodeRendererSchema = z.object({
   renderDataKey: z.string().optional(),
   renderData: z.unknown().optional(),
   cameraPlanId: z.string().optional(),
-  cameraRenderLayer: z.enum(["final", "underlay", "camera-plate", "foreground-plate"]).optional(),
+  cameraRenderLayer: z
+    .enum(["final", "underlay", "camera-plate", "camera-projection-data", "foreground-plate"])
+    .optional(),
 });

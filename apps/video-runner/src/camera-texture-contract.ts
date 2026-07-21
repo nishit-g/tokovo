@@ -2,7 +2,12 @@ import type { CameraProjectionPass, Matrix3 } from "@tokovo/camera";
 
 export const CAMERA_TEXTURE_CAPTURE_PREFIX = "TOKOVO_CAMERA_TEXTURE_FRAME:";
 
-export type CameraRenderLayer = "final" | "underlay" | "camera-plate" | "foreground-plate";
+export type CameraRenderLayer =
+  | "final"
+  | "underlay"
+  | "camera-plate"
+  | "camera-projection-data"
+  | "foreground-plate";
 
 export interface CameraTextureProjectionCapture {
   version: 2;

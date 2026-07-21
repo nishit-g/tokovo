@@ -11,6 +11,9 @@ function compositionDimensions(
   renderData: EpisodeRenderData,
   cameraRenderLayer: EpisodeRendererProps["cameraRenderLayer"],
 ): { width: number; height: number } {
+  if (cameraRenderLayer === "camera-projection-data") {
+    return { width: 2, height: 2 };
+  }
   if (cameraRenderLayer !== "camera-plate") {
     return renderData.format;
   }
@@ -69,11 +72,17 @@ export const calculateEpisodeMetadata: CalculateMetadataFunction<EpisodeRenderer
 
   const renderData = await primeEpisodeRenderData(props.episodeId, abortSignal);
   const cachedRenderData = getCachedEpisodeRenderData(renderData.cacheKey);
-  if (props.cameraRenderLayer === "camera-plate" && !cachedRenderData) {
-    throw new Error("CAM_TEXTURE_RENDER_DATA_MISSING: Primed camera-plate data was not cached.");
+  if (
+    (props.cameraRenderLayer === "camera-plate" ||
+      props.cameraRenderLayer === "camera-projection-data") &&
+    !cachedRenderData
+  ) {
+    throw new Error("CAM_TEXTURE_RENDER_DATA_MISSING: Primed camera render data was not cached.");
   }
   const dimensions =
-    cachedRenderData && props.cameraRenderLayer === "camera-plate"
+    cachedRenderData &&
+    (props.cameraRenderLayer === "camera-plate" ||
+      props.cameraRenderLayer === "camera-projection-data")
       ? compositionDimensions(cachedRenderData, props.cameraRenderLayer)
       : renderData.format;
 

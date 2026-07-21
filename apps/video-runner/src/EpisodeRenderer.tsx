@@ -372,6 +372,9 @@ const EpisodeRendererInner: React.FC<EpisodeRendererProps> = ({
   // === CALCULATE FORMAT AND SCALE ===
   const fmt = useMemo((): { width: number; height: number; fps: number } => {
     if (!renderData) return { width: 1080, height: 1920, fps: 30 };
+    if (cameraRenderLayer === "camera-projection-data") {
+      return { width: 2, height: 2, fps: renderData.format.fps };
+    }
     if (cameraRenderLayer === "camera-plate") {
       const stage = renderData.prepared.cinematics?.stageProgram.program;
       const root = stage?.nodes.find((node) => node.id === stage.rootNodeId);
@@ -458,7 +461,10 @@ const EpisodeRendererInner: React.FC<EpisodeRendererProps> = ({
   const usesMultiDeviceLayout =
     Object.keys(world.devices ?? {}).length > 1 && world.camera.layout?.mode !== "SINGLE";
   const rendersUnderlay = cameraRenderLayer === "final" || cameraRenderLayer === "underlay";
-  const rendersCamera = cameraRenderLayer === "final" || cameraRenderLayer === "camera-plate";
+  const rendersCamera =
+    cameraRenderLayer === "final" ||
+    cameraRenderLayer === "camera-plate" ||
+    cameraRenderLayer === "camera-projection-data";
   const rendersForeground =
     cameraRenderLayer === "final" || cameraRenderLayer === "foreground-plate";
 
@@ -554,12 +560,17 @@ const EpisodeRendererInner: React.FC<EpisodeRendererProps> = ({
               cinematics={renderData.prepared.cinematics}
               cameraPlanId={cameraPlanId}
               cameraProjectionBackend={
-                cameraRenderLayer === "camera-plate" ? "texture-stage-plate" : "final"
+                cameraRenderLayer === "camera-plate"
+                  ? "texture-stage-plate"
+                  : cameraRenderLayer === "camera-projection-data"
+                    ? "texture-projection-data"
+                    : "final"
               }
               onCameraDebugFrame={handleCameraDebugFrame}
               onCinematicCameraDebugFrame={setCinematicDebugFrame}
               onCameraTextureProjectionFrame={
-                cameraRenderLayer === "camera-plate"
+                cameraRenderLayer === "camera-plate" ||
+                cameraRenderLayer === "camera-projection-data"
                   ? handleCameraTextureProjectionFrame
                   : undefined
               }
