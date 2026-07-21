@@ -193,9 +193,7 @@ const expressiveRigs = baseRigs().map((rig): CameraRigIR => {
   return {
     ...rig,
     ...(lensId ? { lensId } : {}),
-    ...(rig.id === "device-master"
-      ? { modifierIds: ["breathing"] }
-      : {}),
+    ...(rig.id === "device-master" ? { modifierIds: ["breathing"] } : {}),
   };
 });
 expressiveRigs.push({
@@ -290,7 +288,7 @@ export const whatsappFlagshipCinematics: EpisodeCinematicsIR = {
       {
         id: "stage.root",
         source: { kind: "group" },
-        localBounds: { x: 0, y: 0, width: 1080, height: 1920 },
+        localBounds: { x: 0, y: 0, width: 1290, height: 2796 },
         initialTransform: { a: 1, b: 0, c: 0, d: 1, tx: 0, ty: 0 },
         zIndex: 0,
       },
@@ -299,7 +297,7 @@ export const whatsappFlagshipCinematics: EpisodeCinematicsIR = {
         parentId: "stage.root",
         source: { kind: "device", deviceId: DEVICE_ID },
         localBounds: { x: 0, y: 0, width: 1290, height: 2796 },
-        initialTransform: { a: 1, b: 0, c: 0, d: 1, tx: -105, ty: -438 },
+        initialTransform: { a: 1, b: 0, c: 0, d: 1, tx: 0, ty: 0 },
         zIndex: 10,
       },
     ],

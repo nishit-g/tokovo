@@ -1,19 +1,23 @@
-import type { CameraProjectionPass } from "@tokovo/camera";
+import type { CameraProjectionPass, Matrix3 } from "@tokovo/camera";
 
 export const CAMERA_TEXTURE_CAPTURE_PREFIX = "TOKOVO_CAMERA_TEXTURE_FRAME:";
 
 export type CameraRenderLayer = "final" | "underlay" | "camera-plate" | "foreground-plate";
 
 export interface CameraTextureProjectionCapture {
-  version: 1;
+  version: 2;
   frame: number;
   storySignature: string;
   stageSignature: string;
   cameraSignature: string;
   planId: string;
+  stage: { width: number; height: number };
   outputs: readonly {
     outputId: string;
     viewport: { x: number; y: number; width: number; height: number };
+    viewMatrix: Matrix3;
+    opacity: number;
+    clipRadiusPx: number;
     projectionPasses: readonly CameraProjectionPass[];
   }[];
 }
@@ -33,7 +37,7 @@ export function parseCameraTextureProjectionCapture(
     const value = JSON.parse(
       text.slice(index + CAMERA_TEXTURE_CAPTURE_PREFIX.length),
     ) as CameraTextureProjectionCapture;
-    if (value.version !== 1 || !Number.isInteger(value.frame) || !Array.isArray(value.outputs)) {
+    if (value.version !== 2 || !Number.isInteger(value.frame) || !Array.isArray(value.outputs)) {
       return null;
     }
     return value;

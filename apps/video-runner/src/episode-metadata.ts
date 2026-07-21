@@ -1,6 +1,36 @@
 import type { CalculateMetadataFunction } from "remotion";
 import type { EpisodeRendererProps } from "./episode-renderer-contract";
-import { getEpisodeRenderData, primeEpisodeRenderData } from "./render-data";
+import type { EpisodeRenderData } from "./render-data";
+import {
+  getCachedEpisodeRenderData,
+  getEpisodeRenderData,
+  primeEpisodeRenderData,
+} from "./render-data";
+
+function compositionDimensions(
+  renderData: EpisodeRenderData,
+  cameraRenderLayer: EpisodeRendererProps["cameraRenderLayer"],
+): { width: number; height: number } {
+  if (cameraRenderLayer !== "camera-plate") {
+    return renderData.format;
+  }
+  const stageProgram = renderData.prepared.cinematics?.stageProgram.program;
+  const root = stageProgram?.nodes.find((node) => node.id === stageProgram.rootNodeId);
+  if (!root) {
+    throw new Error(
+      "CAM_TEXTURE_STAGE_ROOT_MISSING: A camera plate requires a prepared VNext stage root.",
+    );
+  }
+  if (root.localBounds.x !== 0 || root.localBounds.y !== 0) {
+    throw new Error(
+      `CAM_TEXTURE_STAGE_ORIGIN_INVALID: Camera plate stage roots must begin at 0,0; received ${root.localBounds.x},${root.localBounds.y}.`,
+    );
+  }
+  return {
+    width: root.localBounds.width,
+    height: root.localBounds.height,
+  };
+}
 
 export const calculateEpisodeMetadata: CalculateMetadataFunction<EpisodeRendererProps> = async ({
   props,
@@ -8,11 +38,12 @@ export const calculateEpisodeMetadata: CalculateMetadataFunction<EpisodeRenderer
   isRendering,
 }) => {
   if (props.renderData) {
+    const dimensions = compositionDimensions(props.renderData, props.cameraRenderLayer);
     return {
       durationInFrames: props.renderData.durationInFrames,
       fps: props.renderData.format.fps,
-      width: props.renderData.format.width,
-      height: props.renderData.format.height,
+      width: dimensions.width,
+      height: dimensions.height,
       defaultOutName: props.episodeId,
       props,
     };
@@ -20,11 +51,12 @@ export const calculateEpisodeMetadata: CalculateMetadataFunction<EpisodeRenderer
 
   if (isRendering) {
     const renderData = await getEpisodeRenderData(props.episodeId, abortSignal);
+    const dimensions = compositionDimensions(renderData, props.cameraRenderLayer);
     return {
       durationInFrames: renderData.durationInFrames,
       fps: renderData.format.fps,
-      width: renderData.format.width,
-      height: renderData.format.height,
+      width: dimensions.width,
+      height: dimensions.height,
       defaultOutName: props.episodeId,
       props: {
         episodeId: props.episodeId,
@@ -36,12 +68,20 @@ export const calculateEpisodeMetadata: CalculateMetadataFunction<EpisodeRenderer
   }
 
   const renderData = await primeEpisodeRenderData(props.episodeId, abortSignal);
+  const cachedRenderData = getCachedEpisodeRenderData(renderData.cacheKey);
+  if (props.cameraRenderLayer === "camera-plate" && !cachedRenderData) {
+    throw new Error("CAM_TEXTURE_RENDER_DATA_MISSING: Primed camera-plate data was not cached.");
+  }
+  const dimensions =
+    cachedRenderData && props.cameraRenderLayer === "camera-plate"
+      ? compositionDimensions(cachedRenderData, props.cameraRenderLayer)
+      : renderData.format;
 
   return {
     durationInFrames: renderData.durationInFrames,
     fps: renderData.format.fps,
-    width: renderData.format.width,
-    height: renderData.format.height,
+    width: dimensions.width,
+    height: dimensions.height,
     defaultOutName: props.episodeId,
     props: {
       episodeId: props.episodeId,

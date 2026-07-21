@@ -219,15 +219,19 @@ const EpisodeRendererInner: React.FC<EpisodeRendererProps> = ({
       // eslint-disable-next-line no-console -- Browser-log IPC is Remotion's deterministic plate metadata channel.
       console.info(
         encodeCameraTextureProjectionCapture({
-          version: 1,
+          version: 2,
           frame: entry.t,
           storySignature: entry.storySignature,
           stageSignature: entry.stageSignature,
           cameraSignature: entry.cameraSignature,
           planId: entry.planId,
+          stage: entry.stage,
           outputs: entry.outputs.map((output) => ({
             outputId: output.outputId,
             viewport: output.pose.clipRect,
+            viewMatrix: output.viewMatrix,
+            opacity: output.pose.opacity,
+            clipRadiusPx: output.clipRadiusPx,
             projectionPasses: output.projectionPasses,
           })),
         }),
@@ -368,8 +372,22 @@ const EpisodeRendererInner: React.FC<EpisodeRendererProps> = ({
   // === CALCULATE FORMAT AND SCALE ===
   const fmt = useMemo((): { width: number; height: number; fps: number } => {
     if (!renderData) return { width: 1080, height: 1920, fps: 30 };
+    if (cameraRenderLayer === "camera-plate") {
+      const stage = renderData.prepared.cinematics?.stageProgram.program;
+      const root = stage?.nodes.find((node) => node.id === stage.rootNodeId);
+      if (!root) {
+        throw new Error(
+          "CAM_TEXTURE_STAGE_ROOT_MISSING: Camera plate rendering requires a VNext stage root.",
+        );
+      }
+      return {
+        width: root.localBounds.width,
+        height: root.localBounds.height,
+        fps: renderData.format.fps,
+      };
+    }
     return renderData.format;
-  }, [renderData]);
+  }, [cameraRenderLayer, renderData]);
 
   const { scale } = useMemo(() => {
     if (!renderData) return { scale: 1 };
@@ -536,7 +554,7 @@ const EpisodeRendererInner: React.FC<EpisodeRendererProps> = ({
               cinematics={renderData.prepared.cinematics}
               cameraPlanId={cameraPlanId}
               cameraProjectionBackend={
-                cameraRenderLayer === "camera-plate" ? "texture-plate" : "final"
+                cameraRenderLayer === "camera-plate" ? "texture-stage-plate" : "final"
               }
               onCameraDebugFrame={handleCameraDebugFrame}
               onCinematicCameraDebugFrame={setCinematicDebugFrame}

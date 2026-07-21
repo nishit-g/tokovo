@@ -7,8 +7,9 @@ import type { CameraTextureProjectionCapture } from "video-runner/camera-texture
 import {
   CameraTextureCaptureCollector,
   composeWarpDisplacement,
-  createDisplacementMapPlanes,
-  createSmearCommandFile,
+  createCameraCommandFile,
+  createOpticalDisplacementMapPlanes,
+  createPerspectiveCorners,
   createTextureFilterGraph,
   encodeGrayscalePng,
 } from "./camera-texture-compositor";
@@ -18,16 +19,20 @@ function capture(
   projectionPasses: CameraTextureProjectionCapture["outputs"][number]["projectionPasses"] = [],
 ): CameraTextureProjectionCapture {
   return {
-    version: 1,
+    version: 2,
     frame,
     storySignature: "story-a",
     stageSignature: "stage-a",
     cameraSignature: "camera-a",
     planId: "expressive",
+    stage: { width: 1080, height: 1920 },
     outputs: [
       {
         outputId: "main",
         viewport: { x: 0, y: 0, width: 1080, height: 1920 },
+        viewMatrix: [1, 0, 0, 0, 1, 0, 0, 0, 1],
+        opacity: 1,
+        clipRadiusPx: 0,
         projectionPasses,
       },
     ],
@@ -69,7 +74,7 @@ describe("camera texture capture", () => {
   });
 });
 
-describe("camera displacement maps", () => {
+describe("camera perspective and optical maps", () => {
   const radial = {
     kind: "radial-warp" as const,
     model: "barrel" as const,
@@ -98,7 +103,26 @@ describe("camera displacement maps", () => {
     expect(displaced[1]).toBe(0);
   });
 
-  it("inverts projective tilt offline while keeping the optical center fixed", () => {
+  it("maps reusable stage corners through affine framing", () => {
+    const neutral = createPerspectiveCorners(capture(0));
+    expect(neutral).toEqual({
+      topLeft: { x: 0, y: 0 },
+      topRight: { x: 1080, y: 0 },
+      bottomLeft: { x: 0, y: 1920 },
+      bottomRight: { x: 1080, y: 1920 },
+    });
+
+    const framed = capture(0);
+    framed.outputs[0].viewMatrix = [2, 0, 0, 0, 2, 0, 0, 0, 1];
+    expect(createPerspectiveCorners(framed)).toEqual({
+      topLeft: { x: 0, y: 0 },
+      topRight: { x: 2160, y: 0 },
+      bottomLeft: { x: 0, y: 3840 },
+      bottomRight: { x: 2160, y: 3840 },
+    });
+  });
+
+  it("moves projective tilt into the high-quality corner homography", () => {
     const projective = {
       kind: "projective-warp" as const,
       tiltXDeg: 3.5,
@@ -106,26 +130,14 @@ describe("camera displacement maps", () => {
       perspectivePx: 1800,
       cropCompensation: 1.025,
     };
-    expect(
-      composeWarpDisplacement({
-        x: 0.5,
-        y: 0.5,
-        viewport: { width: 1080, height: 1920 },
-        passes: [projective],
-      }),
-    ).toEqual([0, 0]);
-    expect(
-      composeWarpDisplacement({
-        x: 0.1,
-        y: 0.1,
-        viewport: { width: 1080, height: 1920 },
-        passes: [projective],
-      }),
-    ).not.toEqual([0, 0]);
+    const corners = createPerspectiveCorners(capture(0, [projective]));
+    expect(corners.topLeft.x).not.toBe(0);
+    expect(corners.topRight.y).not.toBe(0);
+    expect(corners.bottomRight.x).not.toBe(1080);
   });
 
   it("produces deterministic neutral and warped raster planes", () => {
-    const neutral = createDisplacementMapPlanes({
+    const neutral = createOpticalDisplacementMapPlanes({
       capture: capture(0),
       compositionWidth: 1080,
       compositionHeight: 1920,
@@ -135,7 +147,7 @@ describe("camera displacement maps", () => {
     expect([...neutral.x]).toEqual(new Array(64).fill(128));
     expect([...neutral.y]).toEqual(new Array(64).fill(128));
 
-    const warped = createDisplacementMapPlanes({
+    const warped = createOpticalDisplacementMapPlanes({
       capture: capture(0, [radial]),
       compositionWidth: 1080,
       compositionHeight: 1920,
@@ -153,7 +165,7 @@ describe("camera displacement maps", () => {
 
 describe("camera smear and FFmpeg graph", () => {
   it("emits frame-addressed commands and named filter targets", () => {
-    const commands = createSmearCommandFile(
+    const commands = createCameraCommandFile(
       [
         capture(0),
         capture(1, [
@@ -169,13 +181,16 @@ describe("camera smear and FFmpeg graph", () => {
       30,
     );
     expect(commands).toContain("0.033333333 [enter]");
+    expect(commands).toContain("perspective@tokovo_camera_rgb x0");
+    expect(commands).toContain("perspective@tokovo_camera_alpha y3");
     expect(commands).toContain("gblur@tokovo_smear sigma");
+    expect(commands).toContain("colorchannelmixer@tokovo_camera_opacity aa");
     expect(commands).toContain("colorchannelmixer@tokovo_smear_alpha aa");
     expect(commands).toContain("overlay@tokovo_smear_overlay x");
   });
 
   it("timestamps a focused source range from local zero", () => {
-    const commands = createSmearCommandFile([capture(100), capture(101)], 30);
+    const commands = createCameraCommandFile([capture(100), capture(101)], 30);
     expect(commands).toContain("0.000000000 [enter]");
     expect(commands).toContain("0.033333333 [enter]");
     expect(commands).not.toContain("3.333333333 [enter]");
@@ -184,6 +199,7 @@ describe("camera smear and FFmpeg graph", () => {
   it("keeps camera and foreground as separately attached layers", () => {
     const graph = createTextureFilterGraph({
       commandFile: "/tmp/tokovo/smear.sendcmd",
+      initialCapture: capture(0),
       width: 1080,
       height: 1920,
     });
@@ -191,7 +207,11 @@ describe("camera smear and FFmpeg graph", () => {
     expect(graph).toContain("[underlay][optical]overlay");
     expect(graph).toContain("[4:v]format=rgba[foreground]");
     expect(graph).toContain("[with_camera][foreground]overlay");
-    expect(graph).toContain("[camera_rgb][xmap_rgb][ymap_rgb]displace");
-    expect(graph).toContain("[camera_alpha][xmap_alpha][ymap_alpha]displace");
+    expect(graph).toContain("perspective@tokovo_camera_rgb");
+    expect(graph).toContain("perspective@tokovo_camera_alpha");
+    expect(graph).toContain("interpolation=cubic");
+    expect(graph).toContain("[framed_rgb][xmap_rgb][ymap_rgb]displace");
+    expect(graph).toContain("[framed_alpha][xmap_alpha][ymap_alpha]displace");
+    expect(graph).not.toContain("remap");
   });
 });

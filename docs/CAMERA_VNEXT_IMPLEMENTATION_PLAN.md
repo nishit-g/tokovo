@@ -436,6 +436,47 @@ This checkpoint proves production routing and pixel feasibility for one output. 
 prove multi-output composition, plan-independent reusable stage plates, chunk scheduling, a complete
 full-episode performance budget, or repository-wide legacy deletion.
 
+### Camera-independent stage-plate checkpoint — 2026-07-22
+
+The first compositor slice has been replaced by a genuinely re-cuttable stage-plate contract:
+
+- camera capture contract v2 records the full normalized stage domain, view matrix, output opacity,
+  clip radius, viewport, ordered projection passes, and independent story/stage/camera identities;
+- the camera plate paints the raw full-stage device/app/OS tree. It contains no CameraPlan framing,
+  crop compensation, projective transform, or lens displacement;
+- the WhatsApp flagship stage root is normalized to the complete 1290x2796 iPhone plate while the
+  final output remains 1080x1920;
+- affine framing, crop compensation, and projective tilt are composed into one per-frame destination
+  homography and sampled by FFmpeg's cubic perspective filter on independent RGB and alpha paths;
+- bounded radial, fisheye, and anamorphic residuals remain deterministic 512x512 8-bit displacement
+  maps, and directional smear remains a named per-frame filter command;
+- the attempted absolute 16-bit remap path was rejected before landing because its integer source
+  sampling produced visible stair-stepping. No remap code or compatibility path remains;
+- one-output/full-frame restrictions fail explicitly until multi-output masks are connected.
+
+Evidence at this checkpoint:
+
+- editorial and expressive plans produced the exact same real-WhatsApp stage frame SHA-256
+  `7f591dc225c9b4eec9acbeee28fb4239be6e2b4d29db0dc65f618faa85a869ca`, while their
+  camera signatures and projection-pass programs differed;
+- repeated three-frame projective release renders produced identical MP4 SHA-256
+  `cce412402511b4eb0604654b309392d3d1632abb11c7c1b6dc54b0769b10c2d6` and poster
+  SHA-256 `c5d660022886bdd204ca45b57cc96a6198a7c079bf6f5d13ec3d616176658a08`;
+- the projective proof retained crisp WhatsApp typography, smooth phone silhouette alpha, and no
+  rectangular browser-transform leakage;
+- a 15-frame release proof across source frames 552–566 exercised continuously changing projective
+  corners, two overlapping directional-smear passes, the app transition into the real Parcel
+  Partner chat, and clean transition settlement;
+- homography command plus optical-map generation took 35ms for three frames and 153ms for 15 frames;
+  complete deterministic software-GL layer rendering still took 21.32s and 78.57s respectively, so
+  persistent stage-plate caching and render scheduling remain performance gates;
+- render-service compositor/profile suite: 12 tests passing; renderer, video-runner, and
+  render-service focused typechecks passing.
+
+This checkpoint proves plan-independent pixels and a high-quality recut path. It does not claim that
+the render service has persistent plate storage yet, or that multi-output and full-episode
+performance gates are complete.
+
 ### Phase 0: Architecture lock and renderer feasibility
 
 Status: In progress
@@ -570,7 +611,7 @@ Status: In progress
 - [ ] Bake compact curves for moving subjects.
 - [x] Interpolate lens projection strength with pose state.
 - [ ] Produce program manifests and stable diagnostics (evaluation trace and preparation diagnostics
-  exist; artifact writers and full stable code catalog remain).
+      exist; artifact writers and full stable code catalog remain).
 
 Focused verification:
 
@@ -595,6 +636,8 @@ Status: In progress
 - [x] Add anamorphic edge painter.
 - [x] Add directional-smear painter.
 - [x] Add first-output attachment rules for underlay, camera plate, and final foreground HUD.
+- [x] Make full-stage camera plates independent from the selected CameraPlan.
+- [x] Apply affine/projective framing with a cubic release homography before optical residuals.
 - [ ] Delete `useCameraEngine` after cutover.
 - [ ] Replace hardcoded multi-device layout components with stage/output projection.
 
@@ -660,7 +703,7 @@ Status: Pending
 - [ ] `camera diff` command;
 - [ ] `camera subjects` command;
 - [ ] preview overlay for stage nodes, subjects, safe/soft/dead zones, desired pose, final pose, and
-  projection passes;
+      projection passes;
 - [ ] `camera-program.json` render artifact;
 - [ ] `camera-diagnostics.json` render artifact;
 - [ ] `projection-hashes.json` render artifact;

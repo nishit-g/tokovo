@@ -72,8 +72,8 @@ export interface TokovoRendererProps {
   cinematics?: PreparedCinematicPrograms;
   /** Selects cinematography without changing story replay or app state. */
   cameraPlanId?: string;
-  /** Paints a clean affine plate for the offline projection/optics backend. */
-  cameraProjectionBackend?: "final" | "texture-plate";
+  /** Paints a camera-independent stage plate for the offline projection backend. */
+  cameraProjectionBackend?: "final" | "texture-stage-plate";
   /**
    * In multi-device layouts, only the active device should apply camera transforms.
    * Non-active devices must render with an identity transform to avoid flakiness.
@@ -106,6 +106,7 @@ export interface CinematicTextureProjectionFrame {
   stageSignature: string;
   cameraSignature: string;
   planId: string;
+  stage: { width: number; height: number };
   outputs: readonly EvaluatedCameraOutput[];
 }
 
@@ -280,7 +281,7 @@ const TokovoRendererInner: React.FC<TokovoRendererProps> = ({
 
   React.useEffect(() => {
     if (
-      cameraProjectionBackend !== "texture-plate" ||
+      cameraProjectionBackend !== "texture-stage-plate" ||
       !onCameraTextureProjectionFrame ||
       !cinematicFrame ||
       !cinematics
@@ -293,12 +294,22 @@ const TokovoRendererInner: React.FC<TokovoRendererProps> = ({
     if (!cameraSignature) {
       throw new Error(`Camera signature for plan "${planId}" is missing.`);
     }
+    const stageRoot = cinematicFrame.stage.nodes.find(
+      (node) => node.id === cinematicFrame.stage.rootNodeId,
+    );
+    if (!stageRoot) {
+      throw new Error(`Camera VNext stage root "${cinematicFrame.stage.rootNodeId}" is missing.`);
+    }
     onCameraTextureProjectionFrame({
       t,
       storySignature: cinematics.storySignature,
       stageSignature: cinematics.stageSignature,
       cameraSignature,
       planId,
+      stage: {
+        width: stageRoot.localBounds.width,
+        height: stageRoot.localBounds.height,
+      },
       outputs: cinematicFrame.outputs,
     });
   }, [cameraProjectionBackend, cinematicFrame, cinematics, onCameraTextureProjectionFrame, t]);
@@ -544,7 +555,13 @@ const TokovoRendererInner: React.FC<TokovoRendererProps> = ({
                     : (transitionProgress - 0.7) / 0.3;
 
                 baseContent = (
-                  <div style={{ position: "relative", width: "100%", height: "100%" }}>
+                  <div
+                    style={{
+                      position: "relative",
+                      width: "100%",
+                      height: "100%",
+                    }}
+                  >
                     <SystemSurface
                       projection={projectLockscreen({
                         profile,
@@ -636,6 +653,20 @@ const TokovoRendererInner: React.FC<TokovoRendererProps> = ({
     </div>
   );
 
+  if (cameraProjectionBackend === "texture-stage-plate") {
+    return (
+      <div
+        style={{
+          width: stageWidth,
+          height: stageHeight,
+          position: "relative",
+        }}
+      >
+        {stageDevice}
+      </div>
+    );
+  }
+
   return (
     <div
       style={{
@@ -651,7 +682,6 @@ const TokovoRendererInner: React.FC<TokovoRendererProps> = ({
           output={output}
           stageWidth={stageWidth}
           stageHeight={stageHeight}
-          backendMode={cameraProjectionBackend}
         >
           {stageDevice}
         </CameraProjectionSurface>

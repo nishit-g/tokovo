@@ -382,8 +382,6 @@ export interface CameraProjectionSurfaceProps {
   stageWidth: number;
   stageHeight: number;
   children: React.ReactNode;
-  /** Paint affine/projective pixels but leave nonlinear optics to the raster pass. */
-  backendMode?: "final" | "texture-plate";
 }
 
 /**
@@ -397,25 +395,21 @@ export const CameraProjectionSurface: React.FC<CameraProjectionSurfaceProps> = (
   stageWidth,
   stageHeight,
   children,
-  backendMode = "final",
 }) => {
   const viewport = output.pose.clipRect;
   const backend = selectCameraProjectionBackend({
     mode: output.trace.mode,
     passes: output.projectionPasses,
   });
-  if (backend === "texture-compositor" && backendMode !== "texture-plate") {
+  if (backend === "texture-compositor") {
     throw new CameraProjectionBackendError(output.outputId, output.frame);
   }
   const safeId = sanitizeSvgId(id);
   const filterId = `${safeId}-projection-filter`;
   const clipId = `${safeId}-output-clip`;
-  const hasFilter =
-    backendMode !== "texture-plate" &&
-    output.projectionPasses.some((pass) => pass.kind !== "projective-warp");
+  const hasFilter = output.projectionPasses.some((pass) => pass.kind !== "projective-warp");
   const cropCompensation = maxCropCompensation(output.projectionPasses);
-  const projective =
-    backendMode === "texture-plate" ? undefined : projectiveTransform(output.projectionPasses);
+  const projective = projectiveTransform(output.projectionPasses);
 
   return (
     <svg
@@ -443,14 +437,12 @@ export const CameraProjectionSurface: React.FC<CameraProjectionSurfaceProps> = (
             ry={output.clipRadiusPx}
           />
         </clipPath>
-        {backendMode !== "texture-plate" && (
-          <ProjectionFilterDefinition
-            id={filterId}
-            width={viewport.width}
-            height={viewport.height}
-            passes={output.projectionPasses}
-          />
-        )}
+        <ProjectionFilterDefinition
+          id={filterId}
+          width={viewport.width}
+          height={viewport.height}
+          passes={output.projectionPasses}
+        />
       </defs>
       <g clipPath={`url(#${clipId})`}>
         <foreignObject

@@ -1563,10 +1563,12 @@ Non-linear optics require a raster texture. Release rendering therefore uses a t
 deterministic story + stage projection
             |
             v
-layer-attached raster plates at frame t
+camera-independent stage plate at frame t
+  + underlay and foreground attachments
             |
             v
 offline texture compositor
+  - cubic camera/view homography
   - radial/fisheye displacement
   - anamorphic edge displacement
   - velocity smear
@@ -1584,21 +1586,26 @@ Release mode must route a non-linear pass to the texture compositor or fail with
 `CAM_TEXTURE_COMPOSITOR_REQUIRED`; it may not silently use the SVG path.
 
 The initial microbenchmark used a crisp source plus horizontal Gaussian trail and took 0.83 seconds
-for the same 60 frames. The integrated compositor now supplies dynamic per-frame commands,
-projective/radial/fisheye/anamorphic maps, independent RGB/alpha warping, and explicit underlay,
-camera, and foreground attachment. A real 51-frame WhatsApp span took 95.45 seconds end to end under
-deterministic software GL, including three browser plate renders; map generation itself took 466ms.
-The backend is pixel-feasible and release-connected, but plan-independent plate reuse, chunked
-scheduling, multi-output composition, and the full performance budget remain required work.
+for the same 60 frames. The integrated compositor now supplies dynamic per-frame cubic homography
+commands, radial/fisheye/anamorphic displacement maps, independent RGB/alpha warping, and explicit
+underlay, camera, and foreground attachment. A real 51-frame WhatsApp span on the first integrated
+path took 95.45 seconds end to end under deterministic software GL, including three browser plate
+renders; map generation itself took 466ms. The backend is pixel-feasible and release-connected, but
+persistent plate storage, chunked scheduling, multi-output composition, and the full performance
+budget remain required work.
 
 Plate identity includes story signature, stage signature, frame, output/layer attachment, dimensions,
 pixel format, and renderer version. CameraPlan identity is deliberately excluded from reusable stage
 plates so restrained and kinetic CameraPlans can share the same story render. Final-output cache keys
 include the selected camera signature and texture-compositor version.
 
-The first integrated vertical slice still paints affine framing and crop scale into its camera
-plate, so those plates are plan-attached and are not yet eligible for the target cross-plan cache.
-This is an explicit incomplete optimization seam, not a relaxation of the cache identity above.
+The stage plate now paints the full normalized stage domain without affine framing, crop scale,
+projective tilt, or lens passes. Two different CameraPlans produced the identical real-WhatsApp
+stage PNG SHA-256 while retaining different camera signatures. Affine framing, crop compensation,
+and projective tilt are applied as a per-frame cubic FFmpeg homography; only the bounded optical
+residual uses 8-bit displacement maps. The pixels are therefore eligible for the cross-plan cache.
+Persistent cache storage and scheduling are separate implementation work and must not add the camera
+signature back into the stage-plate key.
 
 ### Camera spaces
 
@@ -2141,7 +2148,7 @@ Exit criteria:
 
 | Current path                                            | Planned action                                                              |
 | ------------------------------------------------------- | --------------------------------------------------------------------------- |
-| packages/dsl/src/v2/camera-track.ts                     | replace with shot/rig/output CameraPlan builder; delete old exports          |
+| packages/dsl/src/v2/camera-track.ts                     | replace with shot/rig/output CameraPlan builder; delete old exports         |
 | packages/ir/src/v2/payloads.ts                          | replace effect payloads with camera-program IR                              |
 | packages/core/src/types/camera.ts                       | remove mutable render transform; retain or move stage-layout contracts      |
 | packages/core/src/types/runtime-event.ts                | remove duplicate camera effect runtime events                               |
