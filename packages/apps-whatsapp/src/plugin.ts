@@ -35,6 +35,7 @@ import { whatsappAudioRules } from "./assets/audio-rules.js";
 
 // Camera
 import { WhatsAppBehavior } from "./camera/index.js";
+import { WhatsAppCinematicSubjects } from "./camera/subjects.js";
 import { WhatsAppAnchorProvider } from "./anchors/provider.js";
 import { collectWhatsAppAssetRefs } from "./asset-refs.js";
 import { whatsappBootstrap } from "./bootstrap.js";
@@ -179,6 +180,7 @@ export const WhatsAppPluginV2: TokovoPluginContract<"app_whatsapp"> & {
 
   // === Anchors ===
   anchorProvider: WhatsAppAnchorProvider,
+  cinematicSubjects: WhatsAppCinematicSubjects,
 };
 
 // =============================================================================

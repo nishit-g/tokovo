@@ -1,0 +1,13 @@
+{
+  "extends": "../../tsconfig.lib.json",
+  "compilerOptions": {
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "declaration": true,
+    "declarationMap": true,
+    "composite": true
+  },
+  "references": [{ "path": "../ir" }, { "path": "../stage" }],
+  "include": ["src/**/*"],
+  "exclude": ["src/__tests__/**", "**/*.test.ts", "**/*.spec.ts"]
+}

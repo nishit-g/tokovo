@@ -126,6 +126,10 @@ export {
   InputSessionSchema,
   NotificationIntentSchema,
   NotificationInteractionSchema,
+  CameraRectSchema,
+  CinematicSubjectRefSchema,
+  CameraPlanSchema,
+  StageProgramSchema,
   validateTrackEpisodeIR,
   safeValidateTrackEpisodeIR,
 } from "./schemas.js";
@@ -138,7 +142,34 @@ export {
 } from "./fixtures.js";
 export type { CanonicalTrackEpisodeFixtureOptions } from "./fixtures.js";
 
-export {
-  normalizeTrackEpisodeIR,
-  normalizeZodIssues,
-} from "./normalize.js";
+export type {
+  JsonPrimitive,
+  JsonValue,
+  JsonObject,
+  CameraCoordinateSpaceIR,
+  CameraPointIR,
+  CameraRectIR,
+  CinematicSubjectRefIR,
+  CameraMissingSubjectPolicyIR,
+  CameraFillModeIR,
+  CameraComposerIR,
+  CameraMotionProfileIR,
+  CameraBlendIR,
+  CameraLensIR,
+  CameraModifierIR,
+  CameraOutputIR,
+  CameraRigIR,
+  CameraShotIR,
+  CameraPlanIR,
+  CinematicSubjectSchemaIR,
+} from "./camera-vnext.js";
+
+export type {
+  StageMatrix2DIR,
+  StageNodeSourceIR,
+  StageNodeIR,
+  StageTransformKeyframeIR,
+  StageProgramIR,
+} from "./stage-vnext.js";
+
+export { normalizeTrackEpisodeIR, normalizeZodIssues } from "./normalize.js";

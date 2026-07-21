@@ -1,6 +1,6 @@
 /**
  * Types Index - Production Types
- * 
+ *
  * @description Central export for all core types.
  * Domain-organized type files for maintainability.
  */
@@ -8,7 +8,6 @@
 // =============================================================================
 // DOMAIN TYPES (New - Split from types.ts)
 // =============================================================================
-
 
 // Device, OS, Call
 export * from "./device.js";
@@ -41,6 +40,7 @@ export * from "./asset-ref.js";
 
 // Anchor types - V2 camera positioning
 export * from "./anchor.js";
+export * from "./cinematic-subject.js";
 
 // StatusBar theming
 export * from "./statusbar-theme.js";

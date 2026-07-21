@@ -9,6 +9,8 @@ import {
   type AutoSoundRegistryClass,
   createBehaviorRegistry,
   type BehaviorRegistryAPI,
+  createCinematicSubjectRegistry,
+  type CinematicSubjectRegistryClass,
 } from "@tokovo/core";
 import {
   createAppRegistry,
@@ -34,6 +36,7 @@ export interface PluginRegistries {
   widgets: WidgetRegistryClass;
   icons: IconRegistryAPI;
   behaviors: BehaviorRegistryAPI;
+  cinematicSubjects: CinematicSubjectRegistryClass;
 }
 
 export function createPluginRegistries(
@@ -50,5 +53,7 @@ export function createPluginRegistries(
     widgets: overrides.widgets ?? createWidgetRegistry(),
     icons: overrides.icons ?? createIconRegistry(),
     behaviors: overrides.behaviors ?? createBehaviorRegistry(),
+    cinematicSubjects:
+      overrides.cinematicSubjects ?? createCinematicSubjectRegistry(),
   };
 }

@@ -29,7 +29,6 @@ import type { PluginRegistries } from "./registries.js";
 
 const log = createScopedLogger("plugin");
 
-
 // =============================================================================
 // RE-EXPORT CANONICAL PLUGIN TYPES
 // =============================================================================
@@ -116,7 +115,9 @@ export class PluginManagerClass {
     this.registries = registries;
   }
 
-  register<AppId extends string>(plugin: TokovoPluginContract<AppId>): () => void {
+  register<AppId extends string>(
+    plugin: TokovoPluginContract<AppId>,
+  ): () => void {
     try {
       validatePlugin(plugin);
     } catch (e: unknown) {
@@ -151,17 +152,30 @@ export class PluginManagerClass {
       this.plugins.set(plugin.id, storedPlugin);
 
       if (plugin.reducer) {
-        this.registries.reducers.registerAppReducer(plugin.id, plugin.reducer as AppReducer);
-        cleanups.push(() => this.registries.reducers.unregisterAppReducer(plugin.id));
+        this.registries.reducers.registerAppReducer(
+          plugin.id,
+          plugin.reducer as AppReducer,
+        );
+        cleanups.push(() =>
+          this.registries.reducers.unregisterAppReducer(plugin.id),
+        );
       }
 
       if (plugin.eventKinds && plugin.eventKinds.length > 0) {
-        this.registries.reducers.registerEventKinds(plugin.id, plugin.eventKinds);
-        cleanups.push(() => this.registries.reducers.unregisterEventKinds(plugin.id));
+        this.registries.reducers.registerEventKinds(
+          plugin.id,
+          plugin.eventKinds,
+        );
+        cleanups.push(() =>
+          this.registries.reducers.unregisterEventKinds(plugin.id),
+        );
       }
 
       if (plugin.createInitialState) {
-        this.initialStateCreators.set(plugin.id, plugin.createInitialState as () => unknown);
+        this.initialStateCreators.set(
+          plugin.id,
+          plugin.createInitialState as () => unknown,
+        );
         cleanups.push(() => this.initialStateCreators.delete(plugin.id));
       }
 
@@ -185,7 +199,9 @@ export class PluginManagerClass {
 
       if (plugin.anchorProvider) {
         // Prefer full layout-aware anchor providers when available.
-        this.registries.anchors.register(plugin.anchorProvider as unknown as AnchorProvider);
+        this.registries.anchors.register(
+          plugin.anchorProvider as unknown as AnchorProvider,
+        );
         cleanups.push(() => this.registries.anchors.unregister(plugin.id));
       } else if (plugin.anchors && "providers" in plugin.anchors) {
         const anchorRegistry = plugin.anchors as PluginAnchorRegistry;
@@ -209,18 +225,29 @@ export class PluginManagerClass {
         this.registries.anchors.register({
           appId: plugin.id,
           framing: mergedFraming,
-          getAnchors: (world: WorldState, _layout: unknown, deviceId: string, context) => {
+          getAnchors: (
+            world: WorldState,
+            _layout: unknown,
+            deviceId: string,
+            context,
+          ) => {
             const device = world.devices?.[deviceId];
-            const profileDims = context?.getDeviceProfile?.(device?.profileId)?.dimensions;
+            const profileDims = context?.getDeviceProfile?.(
+              device?.profileId,
+            )?.dimensions;
             const dims = profileDims ??
               device?.screenDimensions ?? {
                 width: 430,
                 height: 932,
               };
 
-            const anchors: Record<string, { x: number; y: number; width: number; height: number }> =
-              {};
-            for (const [anchorName, provider] of Object.entries(anchorRegistry.providers)) {
+            const anchors: Record<
+              string,
+              { x: number; y: number; width: number; height: number }
+            > = {};
+            for (const [anchorName, provider] of Object.entries(
+              anchorRegistry.providers,
+            )) {
               const bounds = provider(world, deviceId);
               if (!bounds) continue;
               anchors[anchorName] = {
@@ -241,6 +268,13 @@ export class PluginManagerClass {
         cleanups.push(() => this.registries.anchors.unregister(plugin.id));
       }
 
+      if (plugin.cinematicSubjects) {
+        this.registries.cinematicSubjects.register(plugin.cinematicSubjects);
+        cleanups.push(() =>
+          this.registries.cinematicSubjects.unregister(plugin.id),
+        );
+      }
+
       const layouts = plugin.layouts ?? [];
       if (layouts.length > 0) {
         for (const layout of layouts) {
@@ -259,8 +293,13 @@ export class PluginManagerClass {
       }
 
       if (plugin.assets?.sounds) {
-        this.registries.sounds.registerNamespaced(plugin.id, plugin.assets.sounds);
-        cleanups.push(() => this.registries.sounds.unregisterNamespaced(plugin.id));
+        this.registries.sounds.registerNamespaced(
+          plugin.id,
+          plugin.assets.sounds,
+        );
+        cleanups.push(() =>
+          this.registries.sounds.unregisterNamespaced(plugin.id),
+        );
       }
 
       if (plugin.audioRules) {
@@ -269,7 +308,9 @@ export class PluginManagerClass {
           match: { ...rule.match, appId: rule.match.appId ?? plugin.id },
         }));
         this.registries.autoSounds.register(rulesWithAppId);
-        cleanups.push(() => this.registries.autoSounds.unregisterByAppId(plugin.id));
+        cleanups.push(() =>
+          this.registries.autoSounds.unregisterByAppId(plugin.id),
+        );
       }
 
       this.cleanupFunctions.set(plugin.id, cleanups);
@@ -344,7 +385,9 @@ export class PluginManagerClass {
     return this.plugins.has(id);
   }
 
-  getMetadata(id: string): { name: string; icon?: string; color?: string } | undefined {
+  getMetadata(
+    id: string,
+  ): { name: string; icon?: string; color?: string } | undefined {
     const plugin = this.plugins.get(id);
     if (!plugin) return undefined;
     return {

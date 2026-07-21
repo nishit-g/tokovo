@@ -9,6 +9,7 @@
     },
     "references": [
         { "path": "../../packages/background" },
+        { "path": "../../packages/camera" },
         { "path": "../../packages/compiler" },
         { "path": "../../packages/apps-instagram" },
         { "path": "../../packages/apps-imessage" },
@@ -29,6 +30,7 @@
         { "path": "../../packages/ir" },
         { "path": "../../packages/react" },
         { "path": "../../packages/renderer" },
+        { "path": "../../packages/stage" },
         { "path": "../../packages/voice" }
     ],
     "include": [

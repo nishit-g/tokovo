@@ -12,6 +12,13 @@ export { TokovoRenderer } from "./TokovoRenderer.js";
 export type { CameraDebugFrame } from "./TokovoRenderer.js";
 export { MultiDeviceRenderer } from "./MultiDeviceRenderer.js";
 export { AudioLayer } from "./AudioLayer.js";
+export {
+  CameraProjectionSurface,
+  createDisplacementMapDataUri,
+  matrix3ToCssMatrix,
+  projectCinematicFrame,
+  type CameraProjectionSurfaceProps,
+} from "./camera/index.js";
 
 // ===========================================================================
 // OVERLAYS
@@ -73,6 +80,4 @@ export type {
 // ===========================================================================
 // Note: getAnchorsForApp is in @tokovo/device-camera now.
 // Only export renderer-specific anchors:
-export {
-  getAllAnchors,
-} from "./anchor-providers/index.js";
+export { getAllAnchors } from "./anchor-providers/index.js";

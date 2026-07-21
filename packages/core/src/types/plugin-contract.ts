@@ -14,6 +14,7 @@ import type { Platform } from "../tokens.js";
 import type { AnchorFraming } from "./anchor.js";
 import type { LayoutContext, LayoutState, ViewKind } from "./layout.js";
 import type { AnchorProvider } from "./anchor.js";
+import type { CinematicSubjectProvider } from "./cinematic-subject.js";
 import type { PluginAssetCollector } from "./asset-ref.js";
 
 export interface PluginBootstrapValidationResult {
@@ -337,6 +338,8 @@ export interface TokovoPluginContract<AppId extends string = string> {
    */
   anchorProvider?: AnchorProvider;
 
+  /** Exact, schema-versioned camera subjects from the app's canonical layout. */
+  cinematicSubjects?: CinematicSubjectProvider;
 }
 
 // =============================================================================

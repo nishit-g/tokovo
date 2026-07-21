@@ -73,6 +73,19 @@ const AnchorProviderSchema = z
   })
   .passthrough();
 
+const CinematicSubjectProviderSchema = z
+  .object({
+    ownerId: z.string(),
+    schema: z.object({
+      version: z.number().int().positive(),
+      ownerId: z.string(),
+      semanticSubjectIds: z.array(z.string()),
+      entityRegions: z.record(z.string(), z.array(z.string())),
+    }),
+    project: z.function(),
+  })
+  .passthrough();
+
 export const TokovoPluginSchema = z.object({
   id: z.string().min(3),
   version: z.string(),
@@ -81,7 +94,9 @@ export const TokovoPluginSchema = z.object({
   views: z
     .object({
       AppRoot: z.function().optional(),
-      strategies: z.record(z.string(), z.record(z.string(), z.function())).optional(),
+      strategies: z
+        .record(z.string(), z.record(z.string(), z.function()))
+        .optional(),
     })
     .optional(),
   assets: z
@@ -92,6 +107,7 @@ export const TokovoPluginSchema = z.object({
     .optional(),
   anchors: z.record(z.string(), z.unknown()).optional(),
   anchorProvider: AnchorProviderSchema.optional(),
+  cinematicSubjects: CinematicSubjectProviderSchema.optional(),
   layouts: z.array(PluginLayoutStrategySchema).optional(),
   audioRules: z.array(PluginAutoSoundRuleSchema).optional(),
 });
@@ -108,7 +124,9 @@ export interface ValidationResult {
   warnings: ValidationError[];
 }
 
-export function validatePlugin<AppId extends string>(plugin: TokovoPluginContract<AppId>): void {
+export function validatePlugin<AppId extends string>(
+  plugin: TokovoPluginContract<AppId>,
+): void {
   const result = validatePluginDetailed(plugin);
 
   if (!result.valid) {
@@ -227,7 +245,9 @@ export function validatePluginDetailed<AppId extends string>(
         suggestion: "Use readonly string array: ['EventA', 'EventB'] as const",
       });
     } else {
-      const invalidKinds = plugin.eventKinds.filter((k) => typeof k !== "string" || k.length === 0);
+      const invalidKinds = plugin.eventKinds.filter(
+        (k) => typeof k !== "string" || k.length === 0,
+      );
       if (invalidKinds.length > 0) {
         errors.push({
           field: "eventKinds",
@@ -264,10 +284,14 @@ export function validatePluginDetailed<AppId extends string>(
   }
 
   if (plugin.anchors) {
-    if (!plugin.anchors.providers || typeof plugin.anchors.providers !== "object") {
+    if (
+      !plugin.anchors.providers ||
+      typeof plugin.anchors.providers !== "object"
+    ) {
       warnings.push({
         field: "anchors.providers",
-        message: "Anchor providers should be an object mapping anchor IDs to provider functions",
+        message:
+          "Anchor providers should be an object mapping anchor IDs to provider functions",
       });
     }
   }
@@ -287,7 +311,23 @@ export function validatePluginDetailed<AppId extends string>(
     if (typeof provider.getAnchors !== "function") {
       errors.push({
         field: "anchorProvider.getAnchors",
-        message: "Anchor provider must implement getAnchors(world, layout, deviceId, context?)",
+        message:
+          "Anchor provider must implement getAnchors(world, layout, deviceId, context?)",
+      });
+    }
+  }
+
+  if (plugin.cinematicSubjects) {
+    if (plugin.cinematicSubjects.ownerId !== plugin.id) {
+      errors.push({
+        field: "cinematicSubjects.ownerId",
+        message: "Cinematic subject provider ownerId must match plugin.id",
+      });
+    }
+    if (plugin.cinematicSubjects.schema.ownerId !== plugin.id) {
+      errors.push({
+        field: "cinematicSubjects.schema.ownerId",
+        message: "Cinematic subject schema ownerId must match plugin.id",
       });
     }
   }
@@ -366,7 +406,9 @@ function getZodSuggestion(issue: z.ZodIssue): string | undefined {
 
 function formatZodPath(path: Array<string | number | symbol>): string {
   if (path.length === 0) return "root";
-  return path.map((part) => (typeof part === "symbol" ? part.toString() : String(part))).join(".");
+  return path
+    .map((part) => (typeof part === "symbol" ? part.toString() : String(part)))
+    .join(".");
 }
 
 export const __test__ = {
@@ -381,10 +423,14 @@ export function assertPluginValid<AppId extends string>(
   const result = validatePluginDetailed(plugin);
 
   if (!result.valid) {
-    throw new Error(`Plugin validation failed: ${result.errors.map((e) => e.message).join("; ")}`);
+    throw new Error(
+      `Plugin validation failed: ${result.errors.map((e) => e.message).join("; ")}`,
+    );
   }
 
   if (options?.throwOnWarning && result.warnings.length > 0) {
-    throw new Error(`Plugin has warnings: ${result.warnings.map((w) => w.message).join("; ")}`);
+    throw new Error(
+      `Plugin has warnings: ${result.warnings.map((w) => w.message).join("; ")}`,
+    );
   }
 }

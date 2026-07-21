@@ -1,5 +1,267 @@
 import { z } from "zod";
 
+export const CameraRectSchema = z
+  .object({
+    x: z.number().finite(),
+    y: z.number().finite(),
+    width: z.number().finite().positive(),
+    height: z.number().finite().positive(),
+  })
+  .strict();
+
+export const CinematicSubjectRefSchema: z.ZodType<
+  import("./camera-vnext.js").CinematicSubjectRefIR
+> = z.lazy(() =>
+  z.discriminatedUnion("kind", [
+    z
+      .object({
+        kind: z.literal("semantic"),
+        deviceId: z.string().min(1),
+        appId: z.string().min(1),
+        subjectId: z.string().min(1),
+      })
+      .strict(),
+    z
+      .object({
+        kind: z.literal("entity"),
+        deviceId: z.string().min(1),
+        appId: z.string().min(1),
+        entityType: z.string().min(1),
+        entityId: z.string().min(1),
+        region: z.string().min(1),
+      })
+      .strict(),
+    z
+      .object({
+        kind: z.literal("device"),
+        deviceId: z.string().min(1),
+        subjectId: z.string().min(1),
+      })
+      .strict(),
+    z
+      .object({
+        kind: z.literal("group"),
+        members: z.array(CinematicSubjectRefSchema).min(1),
+      })
+      .strict(),
+  ]),
+);
+
+const CameraMissingSubjectPolicySchema = z.discriminatedUnion("type", [
+  z.object({ type: z.literal("error") }).strict(),
+  z.object({ type: z.literal("skip-shot") }).strict(),
+  z
+    .object({
+      type: z.literal("use-explicit"),
+      fallback: CinematicSubjectRefSchema,
+    })
+    .strict(),
+]);
+
+const CameraComposerSchema = z
+  .object({
+    screenPosition: z.tuple([
+      z.number().finite().min(0).max(1),
+      z.number().finite().min(0).max(1),
+    ]),
+    targetFill: z.number().finite().positive().max(2),
+    fillMode: z.enum(["contain", "cover", "width", "height"]),
+    paddingPx: z.number().finite().nonnegative().optional(),
+    minScale: z.number().finite().positive().optional(),
+    maxScale: z.number().finite().positive().optional(),
+    bias: z.tuple([z.number().finite(), z.number().finite()]).optional(),
+  })
+  .strict();
+
+const CameraMotionProfileSchema = z.discriminatedUnion("type", [
+  z.object({ type: z.literal("cut") }).strict(),
+  z
+    .object({
+      type: z.literal("minimum-jerk"),
+      durationFrames: z.number().int().positive(),
+    })
+    .strict(),
+  z
+    .object({
+      type: z.literal("critically-damped"),
+      responseFrames: z.number().int().positive(),
+    })
+    .strict(),
+  z
+    .object({
+      type: z.literal("whip"),
+      durationFrames: z.number().int().positive(),
+      direction: z.union([
+        z.enum(["left", "right", "up", "down"]),
+        z.tuple([z.number().finite(), z.number().finite()]),
+      ]),
+    })
+    .strict(),
+]);
+
+const CameraBlendSchema = z
+  .object({
+    durationFrames: z.number().int().positive(),
+    curve: z.enum(["linear", "smoothstep", "minimum-jerk"]),
+  })
+  .strict();
+
+export const CameraPlanSchema: z.ZodType<
+  import("./camera-vnext.js").CameraPlanIR
+> = z
+  .object({
+    version: z.literal(1),
+    id: z.string().min(1),
+    fps: z.number().int().positive(),
+    durationInFrames: z.number().int().positive(),
+    outputs: z
+      .array(
+        z
+          .object({
+            id: z.string().min(1),
+            viewport: CameraRectSchema,
+            sourceStageNodeId: z.string().min(1),
+            zIndex: z.number().int(),
+            clipRadiusPx: z.number().finite().nonnegative().optional(),
+            defaultRigId: z.string().min(1),
+          })
+          .strict(),
+      )
+      .min(1),
+    rigs: z
+      .array(
+        z
+          .object({
+            id: z.string().min(1),
+            outputId: z.string().min(1),
+            subject: CinematicSubjectRefSchema,
+            composer: CameraComposerSchema,
+            rotationDeg: z.number().finite().optional(),
+            opacity: z.number().finite().min(0).max(1).optional(),
+            lensId: z.string().min(1).optional(),
+            modifierIds: z.array(z.string().min(1)).optional(),
+            motion: CameraMotionProfileSchema.optional(),
+          })
+          .strict(),
+      )
+      .min(1),
+    shots: z.array(
+      z
+        .object({
+          id: z.string().min(1),
+          outputId: z.string().min(1),
+          startFrame: z.number().int().nonnegative(),
+          endFrame: z.number().int().positive(),
+          rigId: z.string().min(1),
+          priority: z.number().int(),
+          declarationOrder: z.number().int().nonnegative(),
+          blendIn: CameraBlendSchema.optional(),
+          missingSubjectPolicy: CameraMissingSubjectPolicySchema,
+          source: z.enum(["authored", "automatic"]),
+        })
+        .strict(),
+    ),
+    lenses: z.array(
+      z
+        .object({
+          id: z.string().min(1),
+          modelId: z.string().min(1),
+          modelVersion: z.number().int().positive(),
+          parameters: z.record(z.string(), z.json()),
+        })
+        .strict(),
+    ),
+    modifiers: z.array(
+      z
+        .object({
+          id: z.string().min(1),
+          modelId: z.string().min(1),
+          modelVersion: z.number().int().positive(),
+          parameters: z.record(z.string(), z.json()),
+        })
+        .strict(),
+    ),
+  })
+  .strict()
+  .superRefine((plan, context) => {
+    plan.shots.forEach((shot, index) => {
+      if (shot.endFrame <= shot.startFrame) {
+        context.addIssue({
+          code: "custom",
+          path: ["shots", index, "endFrame"],
+          message: "Shot endFrame must be greater than startFrame",
+        });
+      }
+      if (shot.endFrame > plan.durationInFrames) {
+        context.addIssue({
+          code: "custom",
+          path: ["shots", index, "endFrame"],
+          message: "Shot must end within CameraPlan duration",
+        });
+      }
+    });
+  });
+
+const StageMatrixSchema = z
+  .object({
+    a: z.number().finite(),
+    b: z.number().finite(),
+    c: z.number().finite(),
+    d: z.number().finite(),
+    tx: z.number().finite(),
+    ty: z.number().finite(),
+  })
+  .strict();
+
+export const StageProgramSchema: z.ZodType<
+  import("./stage-vnext.js").StageProgramIR
+> = z
+  .object({
+    version: z.literal(1),
+    rootNodeId: z.string().min(1),
+    nodes: z
+      .array(
+        z
+          .object({
+            id: z.string().min(1),
+            parentId: z.string().min(1).optional(),
+            source: z.discriminatedUnion("kind", [
+              z
+                .object({
+                  kind: z.literal("device"),
+                  deviceId: z.string().min(1),
+                })
+                .strict(),
+              z.object({ kind: z.literal("background") }).strict(),
+              z
+                .object({
+                  kind: z.literal("overlay"),
+                  overlayId: z.string().min(1),
+                })
+                .strict(),
+              z.object({ kind: z.literal("group") }).strict(),
+            ]),
+            localBounds: CameraRectSchema,
+            initialTransform: StageMatrixSchema,
+            zIndex: z.number().int(),
+            clip: CameraRectSchema.optional(),
+          })
+          .strict(),
+      )
+      .min(1),
+    transformKeyframes: z.array(
+      z
+        .object({
+          frame: z.number().int().nonnegative(),
+          nodeId: z.string().min(1),
+          transform: StageMatrixSchema,
+          interpolation: z.enum(["hold", "linear", "minimum-jerk"]),
+        })
+        .strict(),
+    ),
+  })
+  .strict();
+
 export const OSConfigSchema = z.object({
   locale: z.string().min(1).optional(),
   appearance: z.enum(["light", "dark"]).optional(),
@@ -197,7 +459,10 @@ const InputScriptStepSchema = z.discriminatedUnion("type", [
     count: z.number().int().nonnegative().optional(),
     intervalFrames: z.number().int().positive().optional(),
   }),
-  z.object({ type: z.literal("setSelection"), selection: InputSelectionSchema }),
+  z.object({
+    type: z.literal("setSelection"),
+    selection: InputSelectionSchema,
+  }),
   z.object({
     type: z.literal("moveCursor"),
     position: z.number().int().nonnegative(),
@@ -266,29 +531,39 @@ export const InputSessionSchema = z
       .optional(),
     cadence: InputCadenceSchema.optional(),
   })
-  .refine((session) => !(session.text !== undefined && session.script !== undefined), {
-    message: "Input session must provide either text or script, not both",
-    path: ["script"],
-  });
+  .refine(
+    (session) => !(session.text !== undefined && session.script !== undefined),
+    {
+      message: "Input session must provide either text or script, not both",
+      path: ["script"],
+    },
+  );
 
-const NotificationActionTargetSchema = z.object({
-  navigation: z
-    .object({
-      appId: z.string().min(1).optional(),
-      route: z.string().min(1).optional(),
-      params: z.record(z.string(), z.unknown()).optional(),
-    })
-    .optional(),
-  appEvent: z
-    .object({
-      appId: z.string().min(1).optional(),
-      type: z.string().min(1),
-      payload: z.record(z.string(), z.unknown()).optional(),
-    })
-    .optional(),
-}).refine((target) => target.navigation !== undefined || target.appEvent !== undefined, {
-  message: "Notification action target must declare navigation and/or appEvent",
-});
+const NotificationActionTargetSchema = z
+  .object({
+    navigation: z
+      .object({
+        appId: z.string().min(1).optional(),
+        route: z.string().min(1).optional(),
+        params: z.record(z.string(), z.unknown()).optional(),
+      })
+      .optional(),
+    appEvent: z
+      .object({
+        appId: z.string().min(1).optional(),
+        type: z.string().min(1),
+        payload: z.record(z.string(), z.unknown()).optional(),
+      })
+      .optional(),
+  })
+  .refine(
+    (target) =>
+      target.navigation !== undefined || target.appEvent !== undefined,
+    {
+      message:
+        "Notification action target must declare navigation and/or appEvent",
+    },
+  );
 
 const NotificationActionSchema = z.object({
   id: z.string().min(1),
@@ -317,10 +592,14 @@ export const NotificationIntentSchema = z.object({
       })
       .optional(),
   }),
-  category: z.enum(["message", "social", "work", "system", "reminder"]).optional(),
+  category: z
+    .enum(["message", "social", "work", "system", "reminder"])
+    .optional(),
   threadId: z.string().min(1).optional(),
   groupId: z.string().min(1).optional(),
-  interruption: z.enum(["passive", "active", "timeSensitive", "critical"]).optional(),
+  interruption: z
+    .enum(["passive", "active", "timeSensitive", "critical"])
+    .optional(),
   privacy: z.enum(["public", "private", "sensitive"]).optional(),
   previewPolicy: z.enum(["always", "whenUnlocked", "never"]).optional(),
   deliveryCondition: z

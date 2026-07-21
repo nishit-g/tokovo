@@ -16,6 +16,8 @@
     "lint": "eslint . --ext .ts,.tsx"
   },
   "dependencies": {
+    "@tokovo/camera": "workspace:*",
+    "@tokovo/stage": "workspace:*",
     "@tokovo/core": "workspace:*",
     "@tokovo/compiler": "workspace:*",
     "@tokovo/device-camera": "workspace:*",

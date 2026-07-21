@@ -5,3 +5,4 @@
  */
 
 export * from "./behaviors.js";
+export { WhatsAppCinematicSubjects } from "./subjects.js";

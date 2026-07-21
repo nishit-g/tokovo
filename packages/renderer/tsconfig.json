@@ -6,6 +6,8 @@
         "jsx": "react-jsx"
     },
     "references": [
+        { "path": "../camera" },
+        { "path": "../stage" },
         { "path": "../core" },
         { "path": "../compiler" },
         { "path": "../device-camera" },

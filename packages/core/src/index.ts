@@ -46,9 +46,22 @@ export { EngineConfig } from "./engine/config.js";
 // =============================================================================
 // ANCHOR REGISTRY - Anchor registration and resolution
 // =============================================================================
-export { AnchorRegistryClass, createAnchorRegistry } from "./anchors/registry.js";
+export {
+  AnchorRegistryClass,
+  createAnchorRegistry,
+} from "./anchors/registry.js";
 
-export type { AnchorProvider, AnchorSnapshot, AnchorFraming, Rect } from "./anchors/registry.js";
+export {
+  CinematicSubjectRegistryClass,
+  createCinematicSubjectRegistry,
+} from "./cinematic-subjects/index.js";
+
+export type {
+  AnchorProvider,
+  AnchorSnapshot,
+  AnchorFraming,
+  Rect,
+} from "./anchors/registry.js";
 
 // =============================================================================
 // AUDIO - Sound system
@@ -59,7 +72,11 @@ export * from "./audio/index.js";
 // REGISTRIES - All registration systems
 // Named exports to avoid conflicts with ./plugin
 // =============================================================================
-export { createRegistry, createSoundRegistry, createBehaviorRegistry } from "./registries/index.js";
+export {
+  createRegistry,
+  createSoundRegistry,
+  createBehaviorRegistry,
+} from "./registries/index.js";
 export type {
   Registry,
   SoundRegistryAPI,
@@ -96,7 +113,8 @@ export type {
 } from "./types/plugin-contract.js";
 
 /** TokovoPlugin is an alias for TokovoPluginContract<string> for convenience */
-export type TokovoPlugin = import("./types/plugin-contract").TokovoPluginContract<string>;
+export type TokovoPlugin =
+  import("./types/plugin-contract").TokovoPluginContract<string>;
 
 // =============================================================================
 // UTILS - Utilities

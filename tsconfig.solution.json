@@ -2,6 +2,8 @@
   "files": [],
   "references": [
     { "path": "./packages/ir" },
+    { "path": "./packages/camera" },
+    { "path": "./packages/stage" },
     { "path": "./packages/core" },
     { "path": "./packages/react" },
     { "path": "./packages/devices" },

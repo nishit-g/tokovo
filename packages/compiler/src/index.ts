@@ -28,6 +28,16 @@ export type {
   LoweredEpisodeCapabilities,
 } from "./v2/index.js";
 
+export {
+  CinematicProgramPreparationError,
+  prepareCinematicPrograms,
+  selectPreparedCameraProgram,
+} from "./vnext/index.js";
+export type {
+  CinematicProgramsIR,
+  PreparedCinematicPrograms,
+} from "./vnext/index.js";
+
 export type {
   CompilerPlugin,
   CompilerContext,

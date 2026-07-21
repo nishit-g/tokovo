@@ -8,6 +8,8 @@
     },
     "references": [
         { "path": "../core" },
+        { "path": "../camera" },
+        { "path": "../stage" },
         { "path": "../ir" },
         { "path": "../device-camera" },
         { "path": "../device-keyboard" }

@@ -1,10 +1,11 @@
 # Camera VNext Architecture
 
-Status: Proposed
+Status: Accepted; hard-cut implementation in progress
 Audience: engine, compiler, renderer, app-plugin, episode-authoring, and tooling maintainers
 Scope: deterministic 2D cinematography across one or more simulated devices
-Supersedes: the architectural direction in docs/CAMERA_V1_REFERENCE.md after migration
-Does not supersede: current public APIs until the compatibility and deletion phases are complete
+Supersedes: the current effect-oriented camera architecture and docs/CAMERA_V1_REFERENCE.md at the
+hard cutover
+Implementation plan: docs/CAMERA_VNEXT_IMPLEMENTATION_PLAN.md
 
 ## Executive Summary
 
@@ -38,6 +39,8 @@ Camera VNext replaces that model with:
 8. post-pose modifiers for shake, impulse, tilt, blur, and flash
 9. compile-time validation and render-time diagnostics
 10. pixel-level tests that prove anchor geometry, transitions, and replay determinism
+11. independently replaceable CameraPlans over an unchanged story and stage
+12. ordered renderer projection passes for real non-linear lens treatments
 
 This is not a literal Unity or Cinemachine port. Tokovo is a deterministic offline 2D engine and
 should borrow the useful abstractions while exploiting information unavailable to a real-time game
@@ -52,8 +55,9 @@ Raw persistent camera effects will not be the primary state model. Layout will n
 camera targeting. Semantic anchors will remain first-class, but they will be projected through a
 shared scene graph and must derive from the same solved geometry used to render the UI.
 
-The existing camera system will be frozen, adapted temporarily, migrated, and deleted. It will not
-be repaired feature by feature into the new architecture.
+The existing camera system will receive no new features. Repository episodes migrate directly to
+CameraPlan authoring and the old implementation is then deleted. No adapter, compatibility
+compiler, dual runtime, or deprecated export layer will ship.
 
 ## Why This Document Exists
 
@@ -89,7 +93,7 @@ Camera VNext must:
 - let the renderer consume a complete camera pose instead of recreating camera semantics
 - let automatic direction create a visible, editable, deterministic shot program
 - make rendered geometry and anchor geometry agree at pixel level
-- provide a migration path for existing episodes
+- provide a direct repository migration sequence for existing episodes without a compatibility API
 - remove obsolete camera state, event types, processors, registries, and tooling
 
 ## Non-Goals
@@ -515,7 +519,6 @@ Owns ergonomic builders that produce camera IR:
 - shot clips
 - cuts and blends
 - modifier references
-- compatibility lowering for legacy focus and track calls during migration
 
 ### packages/compiler
 
@@ -932,10 +935,9 @@ export interface CameraShotClip {
   rigId: string;
   priority: number;
   blendIn?: CameraBlendDefinition;
-  blendOut?: CameraBlendDefinition;
   missingAnchorPolicy?: MissingAnchorPolicy;
   activation?: ShotActivationRule;
-  source: "authored" | "automatic" | "compatibility";
+  source: "authored" | "automatic";
 }
 ```
 
@@ -953,16 +955,17 @@ export interface CameraShotClip {
 ```ts
 export interface CameraProgram {
   version: number;
-  outputs: ReadonlyMap<string, CameraOutputDefinition>;
-  rigs: ReadonlyMap<string, CameraRigDefinition>;
-  shotsByOutput: ReadonlyMap<string, readonly CameraShotClip[]>;
-  modifiers: ReadonlyMap<string, CameraModifierDefinition>;
+  outputs: readonly CameraOutputDefinition[];
+  rigs: readonly CameraRigDefinition[];
+  shotsByOutput: Readonly<Record<string, readonly CameraShotClip[]>>;
+  modifiers: readonly CameraModifierDefinition[];
   diagnostics: readonly CameraCompileDiagnostic[];
 }
 ```
 
-The prepared episode owns the program. It should not be reconstructed from runtime effects during
-rendering.
+Serialized program contracts use sorted arrays and records, not Maps. Preparation may build private
+in-memory maps and interval indexes. The prepared episode owns the program; it is never reconstructed
+from runtime effects during rendering.
 
 ### Shot selection
 
@@ -1545,12 +1548,48 @@ For each output:
 8. render visual transition layers
 9. render debug guides when enabled
 
-### CSS implementation
+### Projection backends
 
-CSS transforms may remain the final mechanism, but they must be generated from CameraPose2D.
-
-The renderer should prefer one stable matrix representation rather than independently composing
+Affine pose and projective tilt remain on the composited CSS matrix path and must be generated from
+CameraPose2D. The renderer uses one stable matrix representation rather than independently composing
 translate, scale, origin, and rotation strings in multiple wrappers.
+
+Non-linear optics require a raster texture. Release rendering therefore uses a two-stage path:
+
+```text
+deterministic story + stage projection
+            |
+            v
+layer-attached raster plates at frame t
+            |
+            v
+offline texture compositor
+  - radial/fisheye displacement
+  - anamorphic edge displacement
+  - velocity smear
+  - output clip/crop
+            |
+            v
+final encoded output
+```
+
+SVG `foreignObject` filters are a preview and reference backend only. The 1080x1920 feasibility
+probe measured 60 neutral frames at 4.59 seconds, the original eight-sample SVG smear at 16.18
+seconds, and the optimized single-convolution SVG smear at 12.19 seconds on the development machine.
+Both optical implementations failed the performance gate despite producing the intended pixels.
+Release mode must route a non-linear pass to the texture compositor or fail with
+`CAM_TEXTURE_COMPOSITOR_REQUIRED`; it may not silently use the SVG path.
+
+An FFmpeg texture-plate microbenchmark using a crisp source plus horizontal Gaussian trail took
+0.83 seconds for the same 60 frames. Combined with the 4.59-second plate render, that is an estimated
+5.42 seconds, or roughly 18 percent end-to-end overhead. This validates the backend direction, not
+the finished compositor: dynamic per-frame pass commands, all lens models, alpha/layer attachments,
+and final pipeline integration still require implementation and determinism tests.
+
+Plate identity includes story signature, stage signature, frame, output/layer attachment, dimensions,
+pixel format, and renderer version. CameraPlan identity is deliberately excluded from reusable stage
+plates so restrained and kinetic CameraPlans can share the same story render. Final-output cache keys
+include the selected camera signature and texture-compositor version.
 
 ### Camera spaces
 
@@ -1612,7 +1651,7 @@ Lint rules should include:
 - unsafe framing
 - repeated near-identical cut
 - unsupported modifier
-- compatibility API remaining in curated episodes
+- old effect-oriented camera API remaining anywhere in repository episodes
 
 ## Diagnostics and Error Policy
 
@@ -1788,10 +1827,9 @@ normalization. Frame-level hashes should be compared even when MP4 container byt
 
 - app anchor schema registration
 - device anchor schema registration
-- solved layout version compatibility
+- solved layout schema/version validation
 - rig and modifier registration
 - camera-program serialization
-- compatibility DSL lowering
 
 ### Integration tests
 
@@ -1910,19 +1948,9 @@ the render.
 
 ### Breaking-change policy
 
-Deleting the old effect APIs is a breaking change. It should happen in a declared migration:
-
-1. mark legacy authoring deprecated
-2. ship compatibility compilation
-3. migrate repository episodes
-4. reject new compatibility calls in curated catalogs
-5. remove legacy exports
-6. remove compatibility compilation
-
-### No permanent compatibility runtime
-
-Compatibility belongs in DSL/compiler lowering and produces a normal CameraProgram. The new runtime
-must not retain both effect and shot engines.
+Deleting the old effect APIs is an intentional hard breaking change. Repository episodes migrate
+directly to CameraPlan authoring on an isolated branch. The completed tree does not ship a
+compatibility compiler, compatibility runtime, deprecated export layer, or dual authoring surface.
 
 ## Legacy Keep, Replace, and Delete Map
 
@@ -1990,45 +2018,6 @@ Unless a real VNext implementation is independently justified:
 - dutch tilt as persistent camera state
 
 Equivalent visible behavior may return later as complete shots, modifiers, or transitions.
-
-## Compatibility Mapping
-
-The temporary compatibility compiler may translate:
-
-### focus
-
-```text
-legacy focus(anchor, scale, duration)
-  -> generated one-off rig
-  -> generated shot beginning at the focus frame
-  -> shot holds until the next compatibility camera instruction
-```
-
-### tracking span
-
-```text
-legacy span(start, end).track(anchor, options)
-  -> generated tracked rig
-  -> explicit shot clip [start, end)
-```
-
-### reset
-
-```text
-legacy reset(duration)
-  -> generated shot using the output default rig
-  -> explicit blend of duration frames
-```
-
-### layout
-
-Legacy layout instructions move to the stage-layout track. They must not compile into camera shot
-selection.
-
-### Unsupported legacy helpers
-
-The compatibility compiler should emit errors for helpers whose current behavior was never complete,
-rather than claiming exact compatibility.
 
 ## Migration Plan
 
@@ -2099,18 +2088,17 @@ Exit criteria:
 - renderer consumes only CameraPose2D
 - no camera semantics are reconstructed in React
 
-### Phase 5: compatibility and episode migration
+### Phase 5: direct episode migration
 
-- add temporary legacy-to-program compiler
 - migrate flagship and system camera showcases first
 - migrate stories and remaining curated episodes
-- migrate test and legacy catalogs only when retained
-- reject compatibility calls in new curated episodes
+- migrate retained test catalogs directly
+- replace effect calls with shots, rigs, subjects, and stage declarations
 
 Exit criteria:
 
 - repository camera calls use shot-level authoring
-- compatibility usage count is zero outside explicit migration fixtures
+- no old camera authoring or translation fixture remains
 
 ### Phase 6: automatic director
 
@@ -2132,7 +2120,6 @@ Exit criteria:
 - remove old lowering
 - remove old director
 - remove hardcoded camera CLI behavior
-- remove compatibility compiler
 - rename package if approved
 - update public docs and examples
 
@@ -2145,7 +2132,7 @@ Exit criteria:
 
 | Current path                                            | Planned action                                                              |
 | ------------------------------------------------------- | --------------------------------------------------------------------------- |
-| packages/dsl/src/v2/camera-track.ts                     | replace with shot/rig/output builder; temporary compatibility adapter       |
+| packages/dsl/src/v2/camera-track.ts                     | replace with shot/rig/output CameraPlan builder; delete old exports          |
 | packages/ir/src/v2/payloads.ts                          | replace effect payloads with camera-program IR                              |
 | packages/core/src/types/camera.ts                       | remove mutable render transform; retain or move stage-layout contracts      |
 | packages/core/src/types/runtime-event.ts                | remove duplicate camera effect runtime events                               |
@@ -2238,10 +2225,10 @@ Risk: existing episodes contain many focus and tracking calls.
 
 Mitigation:
 
-- temporary compatibility compilation
-- migrate curated episodes first
-- automated inventory and linting
-- delete compatibility only after usage reaches zero
+- migrate repository episodes directly on the isolated implementation branch
+- use automated inventory and mechanical rewrites where semantics are unambiguous
+- require explicit shot review where old effect accumulation hid intent
+- keep the branch unmergeable until old authoring usage reaches zero
 
 ### Scene graph complexity
 
@@ -2439,12 +2426,12 @@ manifests and cache keys.
 
 When VNext becomes the current implementation:
 
-- rewrite docs/CAMERA_V1_REFERENCE.md or archive it as legacy
+- delete docs/CAMERA_V1_REFERENCE.md
 - update docs/ARCHITECTURE.md
 - update docs/V1_STABILITY.md
 - update apps/docs/app/guides/cinematic-camera/page.mdx
 - update apps/docs/app/concepts/anchors/page.mdx
-- update apps/docs/app/packages/device-camera/page.mdx
+- replace apps/docs/app/packages/device-camera/page.mdx with the @tokovo/camera package reference
 - update DSL examples and first-episode documentation
 - update README package and feature descriptions
 - remove claims about current CLI or director behavior that no longer apply
@@ -2489,7 +2476,6 @@ Documentation must change in the same release as public authoring syntax and pac
 - [ ] program manifest
 - [ ] semantic event contract
 - [ ] shot planner
-- [ ] compatibility compiler
 
 ### Renderer
 
@@ -2535,7 +2521,6 @@ Documentation must change in the same release as public authoring syntax and pac
 - [ ] duplicate behavior registries removed
 - [ ] old lowering removed
 - [ ] hardcoded anchor CLI list removed
-- [ ] compatibility compiler removed
 
 ## Definition of Done
 

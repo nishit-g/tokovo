@@ -25,6 +25,8 @@
   "dependencies": {
     "@tokovo/ir": "workspace:*",
     "@tokovo/core": "workspace:*",
+    "@tokovo/camera": "workspace:*",
+    "@tokovo/stage": "workspace:*",
     "@tokovo/device-camera": "workspace:*",
     "@tokovo/device-keyboard": "workspace:*",
     "@tokovo/device-notifications": "workspace:*"
