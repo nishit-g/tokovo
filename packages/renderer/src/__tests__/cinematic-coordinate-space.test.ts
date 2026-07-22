@@ -81,7 +81,11 @@ describe("cinematic coordinate-space bridge", () => {
 
     const projected = projectCinematicFrame({
       frame: 12,
-      world: { devices: {}, appState: {} } as WorldState,
+      world: {
+        devices: {},
+        appInstances: {},
+        capabilityState: {},
+      } as WorldState,
       layouts: [layout],
       stage,
       registry,
@@ -176,7 +180,11 @@ describe("cinematic coordinate-space bridge", () => {
 
     const projected = projectCinematicFrame({
       frame: 4,
-      world: { devices: {}, appState: {} } as WorldState,
+      world: {
+        devices: {},
+        appInstances: {},
+        capabilityState: {},
+      } as WorldState,
       layouts,
       stage,
       registry,

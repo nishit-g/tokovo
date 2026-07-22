@@ -1,34 +1,27 @@
 import React, { useMemo } from "react";
-import type { FullscreenLayoutState } from "@tokovo/core";
+import {
+  requireAppStateForDevice,
+  type FullscreenLayoutState,
+} from "@tokovo/core";
 import type { AppViewProps } from "@tokovo/react";
 import { TOKOVO_MONO_UI_FONT_FAMILY } from "@tokovo/visual-system";
 import { Easing, interpolate } from "remotion";
 
 import { TYPEWRITER_APP_ID } from "../constants.js";
-import type { TypewriterGlyph, TypewriterPage, TypewriterState } from "../runtime/state.js";
+import type { TypewriterGlyph, TypewriterState } from "../runtime/state.js";
 import { resolveTypewriterTheme } from "../theme/resolve.js";
 import { computeTypewriterGeometry } from "../layout/geometry.js";
 import { TYPEWRITER_KEYBOARD_ROWS, type TypewriterKeyId } from "../keyboard/index.js";
 import { hashStringToU32, mulberry32 } from "../utils/prng.js";
 
-function useTypewriterState(world: AppViewProps["world"]): TypewriterState {
-  const raw = world.appState?.[TYPEWRITER_APP_ID] as TypewriterState | undefined;
-  return (
-    raw ?? {
-      viewMode: "FULLSCREEN",
-      meta: {},
-      pages: [{ index: 0, cells: [] }],
-      cursor: { page: 0, row: 0, col: 0 },
-      settings: {
-        maxCols: 44,
-        maxRows: 26,
-        wrap: "word",
-        bellColsFromRight: 5,
-      },
-      seed: 1337,
-      theme: { preset: "classic" },
-      fx: { pressedKeys: {} },
-    }
+function useTypewriterState(
+  world: AppViewProps["world"],
+  deviceId: string,
+): TypewriterState {
+  return requireAppStateForDevice<TypewriterState>(
+    world,
+    TYPEWRITER_APP_ID,
+    deviceId,
   );
 }
 
@@ -45,8 +38,13 @@ function hotProgress(frame: number | undefined, t: number, windowFrames: number)
   return 1 - Math.pow(1 - p, 3);
 }
 
-export const TypewriterView: React.FC<AppViewProps> = ({ world, t = 0, layout }) => {
-  const s = useTypewriterState(world);
+export const TypewriterView: React.FC<AppViewProps> = ({
+  world,
+  deviceId,
+  t = 0,
+  layout,
+}) => {
+  const s = useTypewriterState(world, deviceId);
   const fullscreenLayout = layout as FullscreenLayoutState | undefined;
   const viewportWidth = fullscreenLayout?.meta?.viewportWidth;
   const viewportHeight = fullscreenLayout?.meta?.viewportHeight;
@@ -79,12 +77,13 @@ export const TypewriterView: React.FC<AppViewProps> = ({ world, t = 0, layout })
   const rows = Math.max(1, Math.floor(theme.layout.maxRows));
   const cols = Math.max(1, Math.floor(theme.layout.maxCols));
   const total = rows * cols;
-  const fallbackPage: TypewriterPage = { index: pageIndex, cells: [] };
-  const page = s.pages?.[pageIndex] ?? fallbackPage;
-  const cells: Array<TypewriterGlyph | null> =
-    Array.isArray(page.cells) && page.cells.length === total
-      ? page.cells
-      : new Array<TypewriterGlyph | null>(total).fill(null);
+  const page = s.pages[pageIndex];
+  if (!page || !Array.isArray(page.cells) || page.cells.length !== total) {
+    throw new Error(
+      `TYPEWRITER_PAGE_INVALID: page ${pageIndex} must contain exactly ${total} cells`,
+    );
+  }
+  const cells: Array<TypewriterGlyph | null> = page.cells;
 
   const cursorRow = Math.max(0, Math.min(rows - 1, Math.floor(s.cursor.row ?? 0)));
   const cursorCol = Math.max(0, Math.min(cols - 1, Math.floor(s.cursor.col ?? 0)));

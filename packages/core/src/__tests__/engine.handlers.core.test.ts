@@ -8,7 +8,6 @@ import {
 import { processCallEvent } from "../engine/handlers/call.js";
 import { processOSEvent } from "../engine/handlers/os.js";
 import { processVoiceEvent } from "../engine/handlers/voice.js";
-import { navigationReducer } from "../engine/handlers/navigation.js";
 import * as autoSound from "../audio/auto-sound.js";
 import {
   createReducerRegistry,
@@ -20,7 +19,8 @@ const baseWorld = (): WorldState =>
     devices: {
       phone: { id: "phone", screenDimensions: { width: 100, height: 200 } },
     },
-    appState: {},
+    appInstances: {},
+    capabilityState: {},
     audio: {
       activeSounds: {},
       buses: {},
@@ -42,13 +42,12 @@ afterEach(() => {
 describe("engine handlers", () => {
   it("processes audio events", () => {
     const world = baseWorld();
-    (world as any).audio = undefined;
 
     processAudioEvent(
       world,
       {
         kind: "AUDIO",
-        type: "PLAY_SOUND",
+        type: "PLAY",
         soundId: "ding",
         bus: "sfx",
         at: 1,
@@ -76,7 +75,7 @@ describe("engine handlers", () => {
       world,
       {
         kind: "AUDIO",
-        type: "STOP_SOUND",
+        type: "STOP",
         instanceId,
         at: 3,
       } as any,
@@ -88,7 +87,7 @@ describe("engine handlers", () => {
       world,
       {
         kind: "AUDIO",
-        type: "PLAY_SOUND",
+        type: "PLAY",
         soundId: "sfx",
         bus: "sfx",
         at: 4,
@@ -114,7 +113,7 @@ describe("engine handlers", () => {
       world,
       {
         kind: "AUDIO",
-        type: "STOP_SOUND",
+        type: "STOP",
         soundId: "sfx",
         at: 5,
       } as any,
@@ -183,23 +182,24 @@ describe("engine handlers", () => {
       {
         kind: "AUDIO",
         type: "PLAY",
+        soundId: "music",
         bus: "music",
         fadeIn: 12,
         at: 1,
       } as any,
       ctx,
     );
-    expect(musicWorld.audio.musicBed?.soundId).toBe("");
+    expect(musicWorld.audio.musicBed?.soundId).toBe("music");
     expect(musicWorld.audio.musicBed?.crossfadeCurve).toBe("easeInOut");
 
     const sfxWorld = baseWorld();
     processAudioEvent(
       sfxWorld,
-      { kind: "AUDIO", type: "PLAY_SOUND", at: 1 } as any,
+      { kind: "AUDIO", type: "PLAY", soundId: "sfx", at: 1 } as any,
       ctx,
     );
     const added = Object.values(sfxWorld.audio.activeSounds)[0] as any;
-    expect(added.soundId).toBe("");
+    expect(added.soundId).toBe("sfx");
     expect(added.bus).toBe("sfx");
 
     const policyWorld = baseWorld();
@@ -218,7 +218,7 @@ describe("engine handlers", () => {
       policyWorld,
       {
         kind: "AUDIO",
-        type: "PLAY_SOUND",
+        type: "PLAY",
         soundId: "new",
         bus: "sfx",
         at: 5,
@@ -233,6 +233,27 @@ describe("engine handlers", () => {
     ).toBe(true);
   });
 
+  it("rejects audio events without their required sound identity", () => {
+    const world = baseWorld();
+    const ctx = { frame: 1, eventIndex: 0, mode: "preview" as const, fps: 30 };
+
+    expect(() =>
+      processAudioEvent(
+        world,
+        { kind: "AUDIO", type: "PLAY", at: 1 } as any,
+        ctx,
+      ),
+    ).toThrowError("AUDIO_PLAY_SOUND_ID_REQUIRED");
+
+    expect(() =>
+      processAudioEvent(
+        world,
+        { kind: "AUDIO", type: "CROSSFADE", at: 2 } as any,
+        ctx,
+      ),
+    ).toThrowError("AUDIO_CROSSFADE_SOUND_ID_REQUIRED");
+  });
+
   it("handles stop events and music bed removal", () => {
     const world = baseWorld();
     const ctx = { frame: 1, eventIndex: 0, mode: "preview" as const, fps: 30 };
@@ -241,7 +262,7 @@ describe("engine handlers", () => {
       world,
       {
         kind: "AUDIO",
-        type: "PLAY_SOUND",
+        type: "PLAY",
         soundId: "tone",
         bus: "sfx",
         at: 0,
@@ -279,7 +300,7 @@ describe("engine handlers", () => {
       world,
       {
         kind: "AUDIO",
-        type: "STOP_SOUND",
+        type: "STOP",
         soundId: "theme",
         at: 2,
       } as any,
@@ -430,7 +451,7 @@ describe("engine handlers", () => {
     expect(Object.keys(world.audio.activeSounds)).toHaveLength(0);
   });
 
-  it("respects concurrency limits and ignores unknown audio events", () => {
+  it("respects concurrency limits and rejects unknown audio events", () => {
     const world = baseWorld();
     world.audio.activeSounds = {
       a: { soundId: "a", bus: "sfx", priority: 70, startFrame: 0 } as any,
@@ -443,7 +464,7 @@ describe("engine handlers", () => {
       world,
       {
         kind: "AUDIO",
-        type: "PLAY_SOUND",
+        type: "PLAY",
         soundId: "e",
         bus: "sfx",
         at: 10,
@@ -453,35 +474,36 @@ describe("engine handlers", () => {
 
     expect(Object.keys(world.audio.activeSounds)).toHaveLength(4);
 
-    processAudioEvent(
-      world,
-      {
-        kind: "AUDIO",
-        type: "UNKNOWN",
-        at: 11,
-      } as any,
-      { frame: 11, eventIndex: 0, mode: "preview", fps: 30 },
-    );
+    expect(() =>
+      processAudioEvent(
+        world,
+        {
+          kind: "AUDIO",
+          type: "UNKNOWN",
+          at: 11,
+        } as any,
+        { frame: 11, eventIndex: 0, mode: "preview", fps: 30 },
+      ),
+    ).toThrowError("AUDIO_EVENT_UNSUPPORTED");
   });
 
-  it("initializes missing audio policy state", () => {
+  it("rejects malformed audio state", () => {
     const world = baseWorld();
     (world.audio as any).policyState = undefined;
     delete (world.audio as any).activeSounds;
     delete (world.audio as any).buses;
-    processAudioEvent(
-      world,
-      { kind: "AUDIO", type: "PLAY_SOUND", soundId: "ding", at: 1 } as any,
-      {
-        frame: 1,
-        eventIndex: 0,
-        mode: "preview",
-        fps: 30,
-      },
-    );
-    expect(world.audio.policyState).toBeDefined();
-    expect(world.audio.activeSounds).toBeDefined();
-    expect(world.audio.buses).toBeDefined();
+    expect(() =>
+      processAudioEvent(
+        world,
+        { kind: "AUDIO", type: "PLAY", soundId: "ding", at: 1 } as any,
+        {
+          frame: 1,
+          eventIndex: 0,
+          mode: "preview",
+          fps: 30,
+        },
+      ),
+    ).toThrowError("AUDIO_STATE_INVALID");
   });
 
   it("cleans up expired sounds and outgoing music", () => {
@@ -525,11 +547,12 @@ describe("engine handlers", () => {
     expect(Object.keys(world.audio.activeSounds)).toHaveLength(0);
   });
 
-  it("handles cleanup with missing audio state", () => {
+  it("rejects cleanup with missing audio state", () => {
     const world = baseWorld();
     (world as any).audio = undefined;
-    cleanupExpiredSounds(world, 0);
-    expect((world as any).audio).toBeUndefined();
+    expect(() => cleanupExpiredSounds(world, 0)).toThrowError(
+      "AUDIO_STATE_INVALID",
+    );
   });
 
   it("applies auto sound instructions", () => {
@@ -1138,21 +1161,6 @@ describe("engine handlers", () => {
       mode: "preview",
       fps: 30,
     });
-  });
-
-  it("initializes app state for navigation events", () => {
-    const world = baseWorld();
-    (world as any).appState = undefined;
-
-    navigationReducer(world, {
-      kind: "APP",
-      type: "NAVIGATE_SCREEN",
-      appId: "app",
-      payload: { screen: "chat" },
-    } as any);
-
-    const appState = (world.appState as any).app;
-    expect(appState.currentScreen).toBe("chat");
   });
 
   it("processes voice events", () => {

@@ -41,6 +41,7 @@ export function ensureCanvasProfile(
   dim: CanvasDimensions,
 ): void {
   registerHardwareVisualIdentity(canvasProfileId, {
+    platform: "ios",
     platformProfileId: "ios:liquid-glass@1",
     systemSurfaces: false,
   });
@@ -52,19 +53,6 @@ export function ensureCanvasProfile(
 
   if (!deviceRegistries.frames.has(canvasProfileId)) {
     deviceRegistries.frames.register(canvasProfileId, CanvasFrame);
-  }
-
-  if (!deviceRegistries.shells.has(canvasProfileId)) {
-    deviceRegistries.shells.register({
-      id: canvasProfileId,
-      FrameComponent: CanvasFrame,
-      // No system UI for canvas by default. Renderer will still provide a
-      // StatusBar node, but CanvasFrame ignores it.
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      StatusBarComponent: (() => null) as any,
-      cornerRadius: 0,
-      hasDynamicIsland: false,
-    });
   }
 }
 

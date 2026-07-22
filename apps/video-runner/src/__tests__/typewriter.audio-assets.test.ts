@@ -13,10 +13,7 @@ import {
 } from "@tokovo/core";
 import type { RuntimeEvent } from "@tokovo/core";
 
-import {
-  ensureCanvasProfile,
-  resolveCanvasProfileId,
-} from "@tokovo/devices";
+import { ensureCanvasProfile, resolveCanvasProfileId } from "@tokovo/devices";
 import {
   createEpisodeRegistryForProfiles,
   createTokovoRuntime,
@@ -26,10 +23,7 @@ import {
 
 function publicSoundPath(relFromSoundsFolder: string): string {
   // `getSoundPath()` returns something like `sounds/plugins/typewriter/key.wav`.
-  const videoRunnerDir = path.resolve(
-    path.dirname(fileURLToPath(import.meta.url)),
-    "../..",
-  );
+  const videoRunnerDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
   return path.resolve(videoRunnerDir, "public", relFromSoundsFolder);
 }
 
@@ -79,18 +73,14 @@ describe("typewriter audio", () => {
 
     const keyframed =
       prepared.keyframedEventIndex ??
-      createKeyframedEventIndex(
-        prepared.events,
-        prepared.keyframeInterval ?? 60,
-      );
+      createKeyframedEventIndex(prepared.events, prepared.keyframeInterval ?? 60);
     const stateCache = createStateCache(prepared.keyframeInterval ?? 60);
 
     const seenSoundIds = new Set<string>();
     const maxFrames = Math.min(prepared.durationInFrames, 300);
 
     for (let t = 0; t < maxFrames; t++) {
-      const errors: Array<{ frame: number; error: unknown; event: unknown }> =
-        [];
+      const errors: Array<{ frame: number; error: unknown; event: unknown }> = [];
       const world = replayIncremental(
         prepared.initialWorld,
         prepared.events as RuntimeEvent[],
@@ -113,19 +103,12 @@ describe("typewriter audio", () => {
         if (seenSoundIds.has(cue.soundId)) continue;
         seenSoundIds.add(cue.soundId);
 
-        // If this ever fails, we regress to the exact silent timeline bars shown in the screenshot:
-        // fallback path becomes `sounds/<soundId>.wav` which doesn't exist.
-        const rel = getSoundPath(
-          cue.soundId,
-          runtime.tokovoRegistries.plugins.sounds,
-        );
+        // Every authored sound must resolve through the explicit runtime registry.
+        const rel = getSoundPath(cue.soundId, runtime.tokovoRegistries.plugins.sounds);
         expect(rel.startsWith("sounds/")).toBe(true);
 
         const abs = publicSoundPath(rel);
-        expect(
-          fs.existsSync(abs),
-          `missing audio asset: ${cue.soundId} -> ${rel}`,
-        ).toBe(true);
+        expect(fs.existsSync(abs), `missing audio asset: ${cue.soundId} -> ${rel}`).toBe(true);
 
         // Typewriter one-shots should always be bounded. Unbounded durations render as huge
         // bars in the Remotion timeline and can starve concurrency policies.

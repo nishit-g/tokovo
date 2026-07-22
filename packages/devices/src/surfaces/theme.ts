@@ -1,6 +1,7 @@
 import type { DeviceProfile } from "../types.js";
 import { resolveDevicePlatformVisuals } from "../visual-system.js";
 import type { SystemAppearance, SystemSurfaceDesign, SystemSurfaceLayout } from "./contract.js";
+import type { VisualPreferences } from "@tokovo/visual-system";
 
 function px(profile: DeviceProfile, points: number): number {
   return points * profile.pointScale;
@@ -86,8 +87,9 @@ export function resolveSystemSurfaceDesign(
   profile: DeviceProfile,
   appearance: SystemAppearance,
   locale = "en-US",
+  preferences: Partial<VisualPreferences> = {},
 ): SystemSurfaceDesign {
-  const visuals = resolveDevicePlatformVisuals(profile, appearance, locale);
+  const visuals = resolveDevicePlatformVisuals(profile, appearance, locale, preferences);
   const ios = profile.platform === "ios";
   const light = appearance === "light";
   const palette = visuals.palette;

@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import type { WorldState } from "@tokovo/core";
+import { requireAppStateForDevice, type WorldState } from "@tokovo/core";
 import { DeterministicImage } from "@tokovo/react";
 import {
   Bell,
@@ -25,6 +25,7 @@ import { AppScaffold, SectionHeader, SettingsGroup, SettingsRow } from "../surfa
 
 export interface GroupInfoScreenProps {
   world: WorldState;
+  deviceId: string;
   conversationId: string;
   contentInsets: {
     top: number;
@@ -153,14 +154,14 @@ function MemberRow({
   );
 }
 
-export function GroupInfoScreen({ world, conversationId, contentInsets }: GroupInfoScreenProps) {
+export function GroupInfoScreen({ world, deviceId, conversationId, contentInsets }: GroupInfoScreenProps) {
   const theme = useTheme();
   const { direction, locale, t } = useWhatsAppLocale();
   const { uiTypography: typography } = theme;
   const contentInsetTop = contentInsets.top;
   const contentInsetBottom = contentInsets.bottom;
-  const state = world.appState?.app_whatsapp as WhatsAppState | undefined;
-  const conversation: WhatsAppConversation | undefined = state?.conversations[conversationId];
+  const state = requireAppStateForDevice<WhatsAppState>(world, "app_whatsapp", deviceId);
+  const conversation: WhatsAppConversation | undefined = state.conversations[conversationId];
   if (!conversation || conversation.type !== "group") {
     throw new Error(`WhatsApp group info requires group conversation "${conversationId}"`);
   }

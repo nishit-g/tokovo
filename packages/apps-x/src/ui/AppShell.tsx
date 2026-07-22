@@ -8,7 +8,7 @@ interface AppShellProps {
 
 export const AppShell: React.FC<AppShellProps> = ({ children }) => {
   const theme = useXTheme();
-  const { contentInsets } = useAppViewport();
+  const { interactiveInsets: contentInsets } = useAppViewport();
   const isStorybook = theme.mode === "storybook";
 
   return (

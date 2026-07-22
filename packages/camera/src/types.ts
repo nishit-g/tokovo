@@ -147,6 +147,7 @@ export interface CameraEvaluationTrace {
   selection: "shot" | "default-rig";
   shotId: string | null;
   rigId: string;
+  subjectResolution: "direct" | "explicit-fallback";
   desiredPose: CameraPose2D;
   finalPose: CameraPose2D;
   transition: CameraTransitionTrace | null;
@@ -191,6 +192,12 @@ export interface CameraEvaluationTrace {
     progress: number;
   } | null;
   projectionPassKinds: readonly CameraProjectionPass["kind"][];
+  quality: {
+    /** Dominant linear subject extent relative to the effective output viewport. */
+    subjectFillRatio: number;
+    /** Largest crop compensation requested by an active lens pass. */
+    cropCompensation: number;
+  };
 }
 
 export interface EvaluatedCameraOutput {
@@ -265,4 +272,46 @@ export interface CameraRigEvaluation {
   rig: CameraRigIR;
   subjects: readonly ResolvedCinematicSubject[];
   framingGuardSubjects: readonly ResolvedCinematicSubject[];
+  subjectResolution: "direct" | "explicit-fallback";
+}
+
+export interface CameraQualitySample {
+  frame: number;
+  outputId: string;
+  viewport: CameraRectIR;
+  pose: Pick<CameraPose2D, "centerX" | "centerY" | "scale" | "rotationDeg">;
+  subjectResolution: "direct" | "explicit-fallback";
+  subjectFillRatio: number;
+  cropCompensation: number;
+  intentionalDiscontinuity: boolean;
+}
+
+export interface CameraTemporalQualityReport {
+  version: 1;
+  passed: boolean;
+  sampleCount: number;
+  outputs: readonly {
+    outputId: string;
+    frameRange: readonly [number, number];
+    maximumPositionVelocity: number;
+    maximumScaleVelocity: number;
+    maximumRotationVelocityDeg: number;
+    maximumPositionAcceleration: number;
+    maximumPositionJerk: number;
+    minimumSubjectFillRatio: number;
+    maximumSubjectFillRatio: number;
+    fallbackFrameCount: number;
+    cropCompensationChangeCount: number;
+    discontinuityFrames: readonly number[];
+    missingFrameRanges: readonly (readonly [number, number])[];
+  }[];
+  violations: readonly {
+    code:
+      | "CAM_QUALITY_FRAME_GAP"
+      | "CAM_QUALITY_POSE_DISCONTINUITY"
+      | "CAM_QUALITY_FILL_INVALID";
+    outputId: string;
+    frame?: number;
+    message: string;
+  }[];
 }

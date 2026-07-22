@@ -791,14 +791,6 @@ export function logAudioPolicyDrop(event: PolicyDropEvent): void {
   });
 }
 
-export function logAudioSoundPathFallback(soundId: string, resolvedPath: string): void {
-  runtimeAudioLog.warn(`Unregistered sound "${soundId}" used fallback path`, {
-    event: "audio.sound_path_fallback",
-    soundId,
-    resolvedPath,
-  });
-}
-
 export function logAudioPlay(soundId: string, bus: string, frame: number): void {
   runtimeAudioLog.atFrame(frame, "debug", `Playing ${soundId} on ${bus}`, {
     event: "audio.play",

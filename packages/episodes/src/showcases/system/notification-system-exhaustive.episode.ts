@@ -40,7 +40,7 @@ export default defineEpisode({
         device.at("10.0s").lock();
         device.at("15.5s").unlock();
       })
-      .os((os) => {
+      .os("phone", (os) => {
         os.at("18.0s").dnd(true);
         os.at("23.0s").dnd(false);
       })

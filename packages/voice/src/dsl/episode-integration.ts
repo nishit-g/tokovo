@@ -1,7 +1,7 @@
 import type {
   VoiceScriptDefinition,
   VoiceScheduleItem,
-} from "../types/script-definition.js";
+} from "@tokovo/ir";
 import type { VoicePlayEvent } from "./voice-track.js";
 
 export class VoiceEpisodeTrackBuilder<T extends string = string> {

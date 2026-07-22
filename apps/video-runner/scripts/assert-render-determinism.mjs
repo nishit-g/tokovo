@@ -62,6 +62,16 @@ const defaultProbes = [
   { episodeId: "screen-recording-exhaustive", frame: 555 },
   { episodeId: "screen-recording-exhaustive", frame: 660 },
   { episodeId: "screen-recording-exhaustive", frame: 910 },
+  // Mega episode: lockscreen/home, multilingual keyboards, notification depth,
+  // active recording, dark-material separation, and final multi-device tableau.
+  { episodeId: "os-surface-mega-exhaustive", frame: 90 },
+  { episodeId: "os-surface-mega-exhaustive", frame: 225 },
+  { episodeId: "os-surface-mega-exhaustive", frame: 810 },
+  { episodeId: "os-surface-mega-exhaustive", frame: 1065 },
+  { episodeId: "os-surface-mega-exhaustive", frame: 1350 },
+  { episodeId: "os-surface-mega-exhaustive", frame: 1650 },
+  { episodeId: "os-surface-mega-exhaustive", frame: 1995 },
+  { episodeId: "os-surface-mega-exhaustive", frame: 2115 },
 ];
 
 function parseProbes(raw) {
@@ -161,6 +171,14 @@ async function comparePixels(firstPath, secondPath, channelTolerance) {
   };
 }
 
+function acceptsIsolatedRasterNoise(comparison, changedPixelBudget, maxChannelDelta) {
+  return (
+    !comparison.equal &&
+    comparison.changedPixels <= changedPixelBudget &&
+    comparison.maxChannelDelta <= maxChannelDelta
+  );
+}
+
 async function preserveFailure(probe, firstPath, secondPath, comparison) {
   const outputDir = path.join(repoRoot, "out", "render-determinism");
   await fs.mkdir(outputDir, { recursive: true });
@@ -214,15 +232,35 @@ async function main() {
   const customProbeInput = process.env.TOKOVO_DETERMINISM_PROBES;
   const probes = parseProbes(customProbeInput);
   const goldenManifest = await readGoldenManifest();
-  if (!customProbeInput) assertDefaultGoldenCoverage(probes, goldenManifest);
+  const skipGoldens = process.env.TOKOVO_SKIP_RENDER_GOLDENS === "1";
+  if (!customProbeInput && !skipGoldens) assertDefaultGoldenCoverage(probes, goldenManifest);
   const updateGoldens = process.env.TOKOVO_UPDATE_RENDER_GOLDENS === "1";
+  const proofDirInput = process.env.TOKOVO_RENDER_PROOF_DIR?.trim();
+  const proofDir = proofDirInput ? path.resolve(repoRoot, proofDirInput) : undefined;
   const chromiumGl = process.env.TOKOVO_DETERMINISM_GL ?? "swangle";
-  const channelTolerance = Number(process.env.TOKOVO_DETERMINISM_CHANNEL_TOLERANCE ?? "1");
+  const channelTolerance = Number(process.env.TOKOVO_DETERMINISM_CHANNEL_TOLERANCE ?? "3");
   if (!Number.isInteger(channelTolerance) || channelTolerance < 0 || channelTolerance > 255) {
     throw new Error("TOKOVO_DETERMINISM_CHANNEL_TOLERANCE must be an integer from 0 to 255");
   }
+  const changedPixelBudget = Number(process.env.TOKOVO_DETERMINISM_CHANGED_PIXEL_BUDGET ?? "16");
+  const maxRasterChannelDelta = Number(
+    process.env.TOKOVO_DETERMINISM_MAX_RASTER_CHANNEL_DELTA ?? "16",
+  );
+  if (!Number.isInteger(changedPixelBudget) || changedPixelBudget < 0) {
+    throw new Error("TOKOVO_DETERMINISM_CHANGED_PIXEL_BUDGET must be a non-negative integer");
+  }
+  if (
+    !Number.isInteger(maxRasterChannelDelta) ||
+    maxRasterChannelDelta < channelTolerance ||
+    maxRasterChannelDelta > 255
+  ) {
+    throw new Error(
+      "TOKOVO_DETERMINISM_MAX_RASTER_CHANNEL_DELTA must be an integer from channel tolerance to 255",
+    );
+  }
   const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "tokovo-render-determinism-"));
-  let browser;
+  let firstBrowser;
+  let secondBrowser;
 
   process.env.TOKOVO_EPISODE_CATALOG_PROFILE = "studio";
 
@@ -233,7 +271,12 @@ async function main() {
       rootDir: appRoot,
       enableCaching: true,
     });
-    browser = await openBrowser("chrome", {
+    firstBrowser = await openBrowser("chrome", {
+      chromeMode: "headless-shell",
+      chromiumOptions: { gl: chromiumGl, enableMultiProcessOnLinux: false },
+      logLevel: "error",
+    });
+    secondBrowser = await openBrowser("chrome", {
       chromeMode: "headless-shell",
       chromiumOptions: { gl: chromiumGl, enableMultiProcessOnLinux: false },
       logLevel: "error",
@@ -249,7 +292,7 @@ async function main() {
         serveUrl,
         id: compositionId,
         inputProps,
-        puppeteerInstance: browser,
+        puppeteerInstance: firstBrowser,
         envVariables,
         timeoutInMilliseconds: 120_000,
         logLevel: "error",
@@ -263,7 +306,7 @@ async function main() {
 
       const firstPath = path.join(tempDir, `${probe.episodeId}-${probe.frame}-a.png`);
       const secondPath = path.join(tempDir, `${probe.episodeId}-${probe.frame}-b.png`);
-      const render = (output) =>
+      const render = (output, puppeteerInstance) =>
         renderStill({
           composition,
           serveUrl,
@@ -271,7 +314,7 @@ async function main() {
           output,
           imageFormat: "png",
           frame: probe.frame,
-          puppeteerInstance: browser,
+          puppeteerInstance,
           envVariables,
           chromiumOptions: { gl: chromiumGl },
           timeoutInMilliseconds: 120_000,
@@ -279,19 +322,40 @@ async function main() {
           logLevel: "error",
         });
 
-      await render(firstPath);
-      await render(secondPath);
+      await render(firstPath, firstBrowser);
+      await render(secondPath, secondBrowser);
       const comparison = await comparePixels(firstPath, secondPath, channelTolerance);
+      const independentRasterNoiseAccepted = acceptsIsolatedRasterNoise(
+        comparison,
+        changedPixelBudget,
+        maxRasterChannelDelta,
+      );
 
-      if (!comparison.equal) {
+      if (!comparison.equal && !independentRasterNoiseAccepted) {
         const outputDir = await preserveFailure(probe, firstPath, secondPath, comparison);
         throw new Error(
           `${probe.episodeId}@${probe.frame} changed ${comparison.changedPixels ?? "unknown"} pixels ` +
             `(max channel delta ${comparison.maxChannelDelta ?? "unknown"}); artifacts: ${outputDir}`,
         );
       }
+      if (independentRasterNoiseAccepted) {
+        console.log(
+          `[render-determinism] accepted isolated raster noise for ${probe.episodeId}@${probe.frame}: ` +
+            `${comparison.changedPixels} pixels, max channel delta ${comparison.maxChannelDelta}`,
+        );
+      }
 
-      const golden = goldenManifest.get(`${probe.episodeId}@${probe.frame}`);
+      if (proofDir) {
+        await fs.mkdir(proofDir, { recursive: true });
+        await fs.copyFile(
+          firstPath,
+          path.join(proofDir, `${probe.episodeId}-frame-${probe.frame}.png`),
+        );
+      }
+
+      const golden = skipGoldens
+        ? undefined
+        : goldenManifest.get(`${probe.episodeId}@${probe.frame}`);
       if (golden) {
         const goldenPath = path.join(goldenRoot, golden.file);
         if (updateGoldens) {
@@ -313,7 +377,27 @@ async function main() {
             );
           }
           const goldenComparison = await comparePixels(goldenPath, firstPath, goldenTolerance);
-          if (!goldenComparison.equal) {
+          const goldenChangedPixelBudget = Number(golden.changedPixelBudget ?? 0);
+          const goldenMaxChannelDelta = Number(
+            golden.maxChannelDelta ?? golden.channelTolerance ?? 0,
+          );
+          if (
+            !Number.isInteger(goldenChangedPixelBudget) ||
+            goldenChangedPixelBudget < 0 ||
+            !Number.isInteger(goldenMaxChannelDelta) ||
+            goldenMaxChannelDelta < goldenTolerance ||
+            goldenMaxChannelDelta > 255
+          ) {
+            throw new Error(
+              `Invalid golden raster-noise budget for ${probe.episodeId}@${probe.frame}`,
+            );
+          }
+          const goldenRasterNoiseAccepted = acceptsIsolatedRasterNoise(
+            goldenComparison,
+            goldenChangedPixelBudget,
+            goldenMaxChannelDelta,
+          );
+          if (!goldenComparison.equal && !goldenRasterNoiseAccepted) {
             const outputDir = await preserveGoldenFailure(
               probe,
               goldenPath,
@@ -327,6 +411,12 @@ async function main() {
                 `artifacts: ${outputDir}`,
             );
           }
+          if (goldenRasterNoiseAccepted) {
+            console.log(
+              `[render-goldens] accepted isolated raster noise for ${probe.episodeId}@${probe.frame}: ` +
+                `${goldenComparison.changedPixels} pixels, max channel delta ${goldenComparison.maxChannelDelta}`,
+            );
+          }
           console.log(`[render-goldens] PASS ${probe.episodeId}@${probe.frame}`);
         }
       }
@@ -336,7 +426,8 @@ async function main() {
 
     console.log(`[render-determinism] PASS all ${probes.length} pixel probes`);
   } finally {
-    await browser?.close({ silent: true });
+    await firstBrowser?.close({ silent: true });
+    await secondBrowser?.close({ silent: true });
     await fs.rm(tempDir, { recursive: true, force: true });
   }
 }

@@ -5,6 +5,8 @@ import type {
   LayoutState,
   SemanticRegion,
 } from "@tokovo/core";
+import { DEFAULT_OS_STATE } from "@tokovo/core";
+import type { VisualPreferences } from "@tokovo/visual-system";
 import type { DeviceProfile } from "../types.js";
 import type {
   HomeScreenProjection,
@@ -19,10 +21,13 @@ const DEFAULT_CLOCK_MS = Date.parse("2024-01-01T09:41:00Z");
 
 function wallpaperProjection(
   authored: string | undefined,
-  fallback: string,
+  profileDefault: string,
   scrim: string,
 ): SystemWallpaperProjection {
-  const value = authored?.trim() || fallback;
+  const value = authored === undefined ? profileDefault : authored.trim();
+  if (value.length === 0) {
+    throw new Error("SYSTEM_WALLPAPER_INVALID: an authored wallpaper cannot be empty.");
+  }
   const isImage = /^(?:https?:\/\/|\/|data:|r2:\/\/)/u.test(value);
   return { kind: isImage ? "image" : "css", value, scrim };
 }
@@ -37,6 +42,7 @@ function resolveOS(os: DeviceOSState | undefined): {
   clock: number;
   hourCycle?: "h12" | "h24";
   lockScreenWallpaper?: string;
+  preferences: VisualPreferences;
 } {
   return {
     locale: os?.locale || "en-US",
@@ -44,19 +50,28 @@ function resolveOS(os: DeviceOSState | undefined): {
     clock: os?.clock ?? DEFAULT_CLOCK_MS,
     hourCycle: os?.hourCycle,
     lockScreenWallpaper: os?.lockScreenWallpaper,
+    preferences: {
+      textScale: os?.textScale ?? DEFAULT_OS_STATE.textScale,
+      contrast: os?.contrast ?? DEFAULT_OS_STATE.contrast,
+      motion: os?.motion ?? DEFAULT_OS_STATE.motion,
+      transparency: os?.transparency ?? DEFAULT_OS_STATE.transparency,
+      materialPreference: os?.materialPreference ?? DEFAULT_OS_STATE.materialPreference,
+      colorSeed: os?.colorSeed,
+    },
   };
 }
 
 export function projectLockscreen(input: {
   profile: DeviceProfile;
   os?: DeviceOSState;
-  fallbackWallpaper?: string;
+  homeWallpaper?: string;
 }): LockscreenProjection {
   const resolved = resolveOS(input.os);
   const { theme, layout } = resolveSystemSurfaceDesign(
     input.profile,
     resolved.appearance,
     resolved.locale,
+    resolved.preferences,
   );
   const strings = getSystemLocalizedStrings(resolved.clock, resolved.locale);
   const time = formatSystemTime(resolved.clock, resolved.locale, resolved.hourCycle);
@@ -75,7 +90,7 @@ export function projectLockscreen(input: {
     androidClockRows: [hours, minutes],
     strings,
     wallpaper: wallpaperProjection(
-      resolved.lockScreenWallpaper ?? input.fallbackWallpaper,
+      resolved.lockScreenWallpaper ?? input.homeWallpaper,
       theme.wallpaper,
       theme.wallpaperScrim,
     ),
@@ -110,6 +125,7 @@ export function projectHomeScreen(input: {
     input.profile,
     resolved.appearance,
     resolved.locale,
+    resolved.preferences,
   );
   const strings = getSystemLocalizedStrings(resolved.clock, resolved.locale);
   const activePage = Math.max(0, Math.min(input.activePage ?? 0, input.config.pages.length - 1));

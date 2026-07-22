@@ -1,4 +1,8 @@
-import type { EpisodeAssetRef, PluginAssetCollector } from "@tokovo/core";
+import {
+  getAppStateForDevice,
+  type EpisodeAssetRef,
+  type PluginAssetCollector,
+} from "@tokovo/core";
 import type { TeamsState } from "./types/index.js";
 
 function createRef(
@@ -21,8 +25,13 @@ function createRef(
 
 export const collectTeamsAssetRefs: PluginAssetCollector<"app_teams"> = ({
   initialWorld,
+  deviceId,
 }) => {
-  const state = initialWorld.appState?.app_teams as TeamsState | undefined;
+  const state = getAppStateForDevice<TeamsState>(
+    initialWorld,
+    "app_teams",
+    deviceId,
+  );
   if (!state) return [];
 
   const refs: EpisodeAssetRef[] = [];

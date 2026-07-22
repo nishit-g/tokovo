@@ -4,7 +4,7 @@ import { useLinkedInTheme } from "./ThemeContext.js";
 
 export const LinkedInAppShell: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const theme = useLinkedInTheme();
-  const { contentInsets } = useAppViewport();
+  const { interactiveInsets: contentInsets } = useAppViewport();
 
   return (
     <div

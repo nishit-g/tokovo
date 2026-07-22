@@ -241,6 +241,7 @@ export type InstagramEventPayloadMap = {
 export type InstagramTrackEventFor<T extends InstagramEventType> = TrackEventBase & {
   kind: "APP";
   appId: "app_instagram";
+  deviceId: string;
   type: T;
   payload: InstagramEventPayloadMap[T];
 };

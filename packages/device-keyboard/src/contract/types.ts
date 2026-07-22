@@ -1,4 +1,8 @@
-import type { MaterialRecipe, PlatformDesignProfileId } from "@tokovo/visual-system";
+import type {
+  MaterialRecipe,
+  PlatformDesignProfileId,
+  VisualPreferences,
+} from "@tokovo/visual-system";
 
 export type InputSessionId = string;
 export type InputFieldId = string;
@@ -59,6 +63,7 @@ export interface InputKeyboardConfig {
   returnKey: InputReturnKey;
   appearance: InputAppearance;
   platformProfileId: PlatformDesignProfileId;
+  visualPreferences: VisualPreferences;
   autocapitalization: "none" | "sentences" | "words" | "characters";
   autocorrection: boolean;
 }

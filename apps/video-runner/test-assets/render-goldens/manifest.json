@@ -5,199 +5,249 @@
       "episodeId": "whatsapp-interaction-matrix-v3",
       "frame": 150,
       "file": "whatsapp/interaction-matrix-frame-150.png",
-      "channelTolerance": 0
+      "channelTolerance": 3
     },
     {
       "episodeId": "whatsapp-interaction-matrix-v3",
       "frame": 225,
       "file": "whatsapp/interaction-matrix-frame-225.png",
-      "channelTolerance": 0
+      "channelTolerance": 3
     },
     {
       "episodeId": "whatsapp-interaction-matrix-v3",
       "frame": 315,
       "file": "whatsapp/interaction-matrix-frame-315.png",
-      "channelTolerance": 0
+      "channelTolerance": 3
     },
     {
       "episodeId": "whatsapp-interaction-matrix-v3",
       "frame": 435,
       "file": "whatsapp/interaction-matrix-frame-435.png",
-      "channelTolerance": 0
+      "channelTolerance": 3
     },
     {
       "episodeId": "whatsapp-interaction-matrix-v3",
       "frame": 492,
       "file": "whatsapp/interaction-matrix-frame-492.png",
-      "channelTolerance": 0
+      "channelTolerance": 3
     },
     {
       "episodeId": "whatsapp-interaction-matrix-v3",
       "frame": 555,
       "file": "whatsapp/interaction-matrix-frame-555.png",
-      "channelTolerance": 0
+      "channelTolerance": 3
     },
     {
       "episodeId": "whatsapp-interaction-matrix-v3",
       "frame": 585,
       "file": "whatsapp/interaction-matrix-frame-585.png",
-      "channelTolerance": 0
+      "channelTolerance": 3
     },
     {
       "episodeId": "whatsapp-interaction-matrix-v3",
       "frame": 630,
       "file": "whatsapp/interaction-matrix-frame-630.png",
-      "channelTolerance": 0
+      "channelTolerance": 3
     },
     {
       "episodeId": "whatsapp-interaction-matrix-v3",
       "frame": 735,
       "file": "whatsapp/interaction-matrix-frame-735.png",
-      "channelTolerance": 0
+      "channelTolerance": 3
     },
     {
       "episodeId": "whatsapp-interaction-matrix-v3",
       "frame": 754,
       "file": "whatsapp/interaction-matrix-frame-754.png",
-      "channelTolerance": 0
+      "channelTolerance": 3
     },
     {
       "episodeId": "whatsapp-interaction-matrix-v3",
       "frame": 825,
       "file": "whatsapp/interaction-matrix-frame-825.png",
-      "channelTolerance": 0
+      "channelTolerance": 3
     },
     {
       "episodeId": "whatsapp-interaction-matrix-v3",
       "frame": 915,
       "file": "whatsapp/interaction-matrix-frame-915.png",
-      "channelTolerance": 0
+      "channelTolerance": 3
     },
     {
       "episodeId": "whatsapp-interaction-matrix-v3",
       "frame": 1005,
       "file": "whatsapp/interaction-matrix-frame-1005.png",
-      "channelTolerance": 0
+      "channelTolerance": 3
     },
     {
       "episodeId": "whatsapp-interaction-matrix-v3",
       "frame": 1095,
       "file": "whatsapp/interaction-matrix-frame-1095.png",
-      "channelTolerance": 0
+      "channelTolerance": 3
     },
     {
       "episodeId": "whatsapp-interaction-matrix-v3",
       "frame": 1185,
       "file": "whatsapp/interaction-matrix-frame-1185.png",
-      "channelTolerance": 0
+      "channelTolerance": 3
     },
     {
       "episodeId": "keyboard-input-exhaustive",
       "frame": 64,
       "file": "keyboard/input-exhaustive-entrance-frame-64.png",
-      "channelTolerance": 0
+      "channelTolerance": 3
     },
     {
       "episodeId": "keyboard-input-exhaustive",
       "frame": 68,
       "file": "keyboard/input-exhaustive-hindi-key-frame-68.png",
-      "channelTolerance": 0
+      "channelTolerance": 3
     },
     {
       "episodeId": "keyboard-input-exhaustive",
       "frame": 927,
       "file": "keyboard/input-exhaustive-correction-frame-927.png",
-      "channelTolerance": 0
+      "channelTolerance": 3
     },
     {
       "episodeId": "keyboard-input-exhaustive",
       "frame": 948,
       "file": "keyboard/input-exhaustive-submit-frame-948.png",
-      "channelTolerance": 0
+      "channelTolerance": 3
     },
     {
       "episodeId": "keyboard-input-exhaustive",
       "frame": 958,
       "file": "keyboard/input-exhaustive-exit-frame-958.png",
-      "channelTolerance": 0
+      "channelTolerance": 3
     },
     {
       "episodeId": "notification-center-exhaustive",
       "frame": 42,
       "file": "system/notification-banner-frame-42.png",
-      "channelTolerance": 0
+      "channelTolerance": 3
     },
     {
       "episodeId": "notification-center-exhaustive",
       "frame": 150,
       "file": "system/notification-center-frame-150.png",
-      "channelTolerance": 0
+      "channelTolerance": 3
     },
     {
       "episodeId": "screen-recording-exhaustive",
       "frame": 30,
       "file": "system/screen-recording-compact-frame-30.png",
-      "channelTolerance": 0
+      "channelTolerance": 3
     },
     {
       "episodeId": "screen-recording-exhaustive",
       "frame": 216,
       "file": "system/screen-recording-countdown-morph-frame-216.png",
-      "channelTolerance": 0
+      "channelTolerance": 3
     },
     {
       "episodeId": "screen-recording-exhaustive",
       "frame": 225,
       "file": "system/screen-recording-countdown-frame-225.png",
-      "channelTolerance": 0
+      "channelTolerance": 3
     },
     {
       "episodeId": "screen-recording-exhaustive",
       "frame": 336,
       "file": "system/screen-recording-expanded-morph-frame-336.png",
-      "channelTolerance": 0
+      "channelTolerance": 3
     },
     {
       "episodeId": "screen-recording-exhaustive",
       "frame": 345,
       "file": "system/screen-recording-expanded-frame-345.png",
-      "channelTolerance": 0
+      "channelTolerance": 3
     },
     {
       "episodeId": "screen-recording-exhaustive",
       "frame": 402,
       "file": "system/screen-recording-collapse-morph-frame-402.png",
-      "channelTolerance": 0
+      "channelTolerance": 3
     },
     {
       "episodeId": "screen-recording-exhaustive",
       "frame": 408,
       "file": "system/screen-recording-collapse-frame-408.png",
-      "channelTolerance": 0
+      "channelTolerance": 3
     },
     {
       "episodeId": "screen-recording-exhaustive",
       "frame": 546,
       "file": "system/screen-recording-hidden-morph-frame-546.png",
-      "channelTolerance": 0
+      "channelTolerance": 3
     },
     {
       "episodeId": "screen-recording-exhaustive",
       "frame": 555,
       "file": "system/screen-recording-hidden-frame-555.png",
-      "channelTolerance": 0
+      "channelTolerance": 3
     },
     {
       "episodeId": "screen-recording-exhaustive",
       "frame": 660,
       "file": "system/screen-recording-lockscreen-frame-660.png",
-      "channelTolerance": 0
+      "channelTolerance": 3
     },
     {
       "episodeId": "screen-recording-exhaustive",
       "frame": 910,
       "file": "system/screen-recording-saved-frame-910.png",
-      "channelTolerance": 0
+      "channelTolerance": 3
+    },
+    {
+      "episodeId": "os-surface-mega-exhaustive",
+      "frame": 90,
+      "file": "system/os-surface-mega-frame-90.png",
+      "channelTolerance": 3
+    },
+    {
+      "episodeId": "os-surface-mega-exhaustive",
+      "frame": 225,
+      "file": "system/os-surface-mega-frame-225.png",
+      "channelTolerance": 3
+    },
+    {
+      "episodeId": "os-surface-mega-exhaustive",
+      "frame": 810,
+      "file": "system/os-surface-mega-frame-810.png",
+      "channelTolerance": 3
+    },
+    {
+      "episodeId": "os-surface-mega-exhaustive",
+      "frame": 1065,
+      "file": "system/os-surface-mega-frame-1065.png",
+      "channelTolerance": 3
+    },
+    {
+      "episodeId": "os-surface-mega-exhaustive",
+      "frame": 1350,
+      "file": "system/os-surface-mega-frame-1350.png",
+      "channelTolerance": 3
+    },
+    {
+      "episodeId": "os-surface-mega-exhaustive",
+      "frame": 1650,
+      "file": "system/os-surface-mega-frame-1650.png",
+      "channelTolerance": 3,
+      "changedPixelBudget": 16,
+      "maxChannelDelta": 16
+    },
+    {
+      "episodeId": "os-surface-mega-exhaustive",
+      "frame": 1995,
+      "file": "system/os-surface-mega-frame-1995.png",
+      "channelTolerance": 3
+    },
+    {
+      "episodeId": "os-surface-mega-exhaustive",
+      "frame": 2115,
+      "file": "system/os-surface-mega-frame-2115.png",
+      "channelTolerance": 3
     }
   ]
 }

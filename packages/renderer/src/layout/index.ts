@@ -6,7 +6,6 @@
 
 import type { LayoutRegistryClass } from "@tokovo/react";
 import { LayoutContext, LayoutState } from "./types.js";
-import { projectWorldForDevice } from "@tokovo/core";
 
 export * from "./types.js";
 
@@ -18,21 +17,16 @@ export * from "./types.js";
  * 2. Generic viewKind layout from LayoutRegistry
  */
 export function computeLayout(ctx: LayoutContext, registry: LayoutRegistryClass): LayoutState {
-  const fullCtx = {
-    ...ctx,
-    world: projectWorldForDevice(ctx.world, ctx.activeDeviceId),
-  };
-
   // 1. Try app-specific layout from registry
   const appStrategy = registry.get(ctx.activeAppId, ctx.viewKind);
   if (appStrategy) {
-    return appStrategy.computeLayout(fullCtx);
+    return appStrategy.computeLayout(ctx);
   }
 
   // 2. Try generic viewKind layout from registry
   const viewStrategy = registry.getByViewKind(ctx.viewKind);
   if (viewStrategy) {
-    return viewStrategy.computeLayout(fullCtx);
+    return viewStrategy.computeLayout(ctx);
   }
 
   throw new Error(

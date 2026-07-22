@@ -7,10 +7,7 @@
  */
 
 import type { InputSessionIR } from "./input-session.js";
-import type {
-  NotificationIntentIR,
-  NotificationInteractionIR,
-} from "./notification.js";
+import type { NotificationIntentIR, NotificationInteractionIR } from "./notification.js";
 
 import type { TrackEvent } from "./track-event.js";
 import type { CameraPlanIR } from "./camera-vnext.js";
@@ -29,6 +26,12 @@ export interface OSConfig {
   hourCycle?: "h12" | "h24";
   /** Lockscreen wallpaper asset path, URL, data URI, or CSS background. */
   lockScreenWallpaper?: string;
+  textScale?: number;
+  contrast?: "standard" | "increased";
+  motion?: "full" | "reduced";
+  transparency?: "standard" | "reduced";
+  materialPreference?: "automatic" | "regular" | "clear";
+  colorSeed?: string;
   time?: Date | number;
   battery?: number;
   charging?: boolean;

@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import type { LayoutContext, ViewKind, WorldState } from "@tokovo/core";
-import { createAppViewportFrame, DEFAULT_AUDIO_STATE } from "@tokovo/core";
+import { createAppViewportFrame, createDefaultAudioState } from "@tokovo/core";
 import { linkedInLayoutStrategies } from "../layout/index.js";
 import { createLinkedInInitialState, type LinkedInState } from "../runtime/state.js";
 
@@ -15,23 +15,25 @@ function computeLayoutFor(screen: LinkedInState["currentScreen"], viewKind: View
     (appState as any).conversationId = "t1";
   }
   const world = {
-    appState: { app_linkedin: appState },
+    appInstances: { "phone:app_linkedin": appState },
+    capabilityState: {},
     devices: {},
-    audio: DEFAULT_AUDIO_STATE,
+    audio: createDefaultAudioState(),
   } as WorldState;
 
   const ctx: LayoutContext = {
     world,
     t: 0,
-    activeDeviceId: "d1",
+    activeDeviceId: "phone",
     activeAppId: "app_linkedin",
+    platform: "ios",
     viewKind,
     viewportWidth: 393,
     viewportHeight: 852,
     appViewport: createAppViewportFrame({
       width: 393,
       height: 852,
-      contentInsets: { top: 47, bottom: 34 },
+      interactiveInsets: { top: 47, bottom: 34 },
     }),
     layoutCache: undefined,
   };

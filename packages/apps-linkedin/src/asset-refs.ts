@@ -1,4 +1,8 @@
-import type { EpisodeAssetRef, PluginAssetCollector } from "@tokovo/core";
+import {
+  getAppStateForDevice,
+  type EpisodeAssetRef,
+  type PluginAssetCollector,
+} from "@tokovo/core";
 import type { LinkedInState, LIPost, LIUser } from "./runtime/state.js";
 
 const MAX_FEED_POSTS = 4;
@@ -73,8 +77,13 @@ function pushPostAssets(
 
 export const collectLinkedInAssetRefs: PluginAssetCollector<"app_linkedin"> = ({
   initialWorld,
+  deviceId,
 }) => {
-  const state = initialWorld.appState?.app_linkedin as LinkedInState | undefined;
+  const state = getAppStateForDevice<LinkedInState>(
+    initialWorld,
+    "app_linkedin",
+    deviceId,
+  );
   if (!state) {
     return [];
   }

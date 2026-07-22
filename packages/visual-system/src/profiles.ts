@@ -362,6 +362,7 @@ export const BUILT_IN_PLATFORM_PROFILES = [
 ] as const;
 
 export interface HardwareVisualIdentity {
+  platform: "ios" | "android";
   platformProfileId: PlatformDesignProfileId;
   systemSurfaces: boolean;
 }
@@ -370,6 +371,7 @@ const HARDWARE_VISUAL_IDENTITIES = new Map<string, HardwareVisualIdentity>([
   [
     "iphone16",
     {
+      platform: "ios",
       platformProfileId: "ios:liquid-glass@1",
       systemSurfaces: true,
     },
@@ -377,6 +379,7 @@ const HARDWARE_VISUAL_IDENTITIES = new Map<string, HardwareVisualIdentity>([
   [
     "pixel",
     {
+      platform: "android",
       platformProfileId: "android:material3@1",
       systemSurfaces: true,
     },
@@ -384,6 +387,7 @@ const HARDWARE_VISUAL_IDENTITIES = new Map<string, HardwareVisualIdentity>([
   [
     "canvas",
     {
+      platform: "ios",
       platformProfileId: "ios:liquid-glass@1",
       systemSurfaces: false,
     },
@@ -398,6 +402,7 @@ export function registerHardwareVisualIdentity(
   if (existing) {
     if (
       existing.platformProfileId === identity.platformProfileId &&
+      existing.platform === identity.platform &&
       existing.systemSurfaces === identity.systemSurfaces
     ) {
       return;
@@ -432,10 +437,9 @@ export function resolveHardwareVisualIdentity(hardwareProfileId: string): {
       `VISUAL_HARDWARE_PROFILE_MISSING: hardware profile "${hardwareProfileId}" has no registered platform design profile.`,
     );
   }
-  const { platformProfileId } = identity;
   return {
-    platform: platformProfileId === "android:material3@1" ? "android" : "ios",
-    platformProfileId,
+    platform: identity.platform,
+    platformProfileId: identity.platformProfileId,
     systemSurfaces: identity.systemSurfaces,
   };
 }

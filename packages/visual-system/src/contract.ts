@@ -1,6 +1,10 @@
 export type VisualPlatform = "ios" | "android";
 export type VisualAppearance = "light" | "dark";
 export type VisualDirection = "ltr" | "rtl";
+export type VisualContrast = "standard" | "increased";
+export type VisualMotion = "full" | "reduced";
+export type VisualTransparency = "standard" | "reduced";
+export type VisualMaterialPreference = "automatic" | "regular" | "clear";
 
 export interface VisualPoint {
   x: number;
@@ -28,11 +32,7 @@ export type VisualCoordinateSpace =
   | "stage-world"
   | "output-pixel";
 
-export type HardwareRegionKind =
-  | "sensor-housing"
-  | "camera-cutout"
-  | "display-curve"
-  | "hinge";
+export type HardwareRegionKind = "sensor-housing" | "camera-cutout" | "display-curve" | "hinge";
 
 export interface HardwareRegion {
   id: string;
@@ -182,9 +182,7 @@ export interface PlatformMotionProfile {
   islandMorphFramesAt30: number;
 }
 
-export type PlatformDesignProfileId =
-  | "ios:liquid-glass@1"
-  | "android:material3@1";
+export type PlatformDesignProfileId = `${VisualPlatform}:${string}@${number}`;
 
 export interface PlatformDesignProfile {
   id: PlatformDesignProfileId;
@@ -216,16 +214,21 @@ export interface PlatformDesignProfile {
   >;
 }
 
-export interface VisualEnvironmentIR {
+export interface VisualPreferences {
+  textScale: number;
+  contrast: VisualContrast;
+  motion: VisualMotion;
+  transparency: VisualTransparency;
+  materialPreference: VisualMaterialPreference;
+  /** Deterministic color seed for platform profiles that support environment color. */
+  colorSeed?: string;
+}
+
+export interface VisualEnvironmentIR extends VisualPreferences {
   platformProfileId: PlatformDesignProfileId;
   appearance: VisualAppearance;
   locale: string;
   direction: VisualDirection;
-  textScale: number;
-  contrast: "standard" | "increased";
-  motion: "full" | "reduced";
-  /** Deterministic color seed for platform profiles that support environment color. */
-  colorSeed?: string;
 }
 
 export interface ResolvedPlatformVisuals {
@@ -236,8 +239,11 @@ export interface ResolvedPlatformVisuals {
   locale: string;
   direction: VisualDirection;
   textScale: number;
-  contrast: "standard" | "increased";
-  motion: "full" | "reduced";
+  contrast: VisualContrast;
+  motion: VisualMotion;
+  transparency: VisualTransparency;
+  materialPreference: VisualMaterialPreference;
+  colorSeed?: string;
   typography: PlatformTypographyProfile;
   geometry: PlatformGeometryProfile;
   palette: PlatformPalette;
@@ -258,7 +264,7 @@ export interface SystemRegion {
   id: string;
   kind: SystemRegionKind;
   rect: VisualRect;
-  behavior: "blocks-content" | "overlays-content" | "protects-editorial";
+  behavior: "blocks-interaction" | "overlays-content" | "protects-editorial";
   zIndex: number;
 }
 
@@ -280,9 +286,11 @@ export interface SystemGeometryState {
 
 export interface AppViewportFrame {
   coordinateSpace: "platform-logical";
+  /** Full edge-to-edge paint area. System bars do not shrink this rectangle. */
   viewport: VisualRect;
-  contentRect: VisualRect;
-  contentInsets: VisualInsets;
+  /** Area where app controls and essential content are safe to place. */
+  interactiveRect: VisualRect;
+  interactiveInsets: VisualInsets;
   occlusions: readonly SystemRegion[];
   signature: string;
 }
@@ -311,12 +319,7 @@ export interface EditorialCompositionProfile {
   editorialInsets: VisualInsets;
   preferredPosition: readonly [number, number];
   protectedRegionPadding: number;
-  negativeSpacePreference:
-    | "none"
-    | "left"
-    | "right"
-    | "top"
-    | "bottom";
+  negativeSpacePreference: "none" | "left" | "right" | "top" | "bottom";
 }
 
 export type BackdropProfileId =
@@ -333,7 +336,5 @@ export interface BackdropProfile {
   minimumSubjectContrast: number;
   permitsTextOrSignage: boolean;
   parallaxDepth: number;
-  paint:
-    | { kind: "solid"; color: string }
-    | { kind: "gradient"; gradient: string };
+  paint: { kind: "solid"; color: string } | { kind: "gradient"; gradient: string };
 }

@@ -13,10 +13,7 @@ function createPlugin(): TokovoPluginContract<"app_test"> {
     displayName: "Test Plugin",
     themeColor: "#123456",
     icon: "T",
-    reducer: (draft: WorldState) => {
-      draft.appState ??= {};
-      draft.appState.app_test ??= { viewMode: "FEED" };
-    },
+    reducer: (_draft: WorldState) => {},
     views: {
       AppRoot: () => null,
     },
@@ -45,10 +42,7 @@ describe("plugin registration", () => {
       themeColor: "#123456",
       icon: "T",
     })
-      .withReducer((draft: WorldState) => {
-        draft.appState ??= {};
-        draft.appState.app_test ??= { viewMode: "FEED" };
-      })
+      .withReducer((_draft: WorldState) => {})
       .withViews({ AppRoot: () => null })
       .register(pluginManager, registries.engine);
 

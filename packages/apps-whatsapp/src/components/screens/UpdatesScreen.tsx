@@ -1,5 +1,5 @@
 import { Camera, Plus, Radio, Search } from "lucide-react";
-import type { WorldState } from "@tokovo/core";
+import { requireAppStateForDevice, type WorldState } from "@tokovo/core";
 import { DeterministicImage } from "@tokovo/react";
 import { useTheme, useWhatsAppLocale } from "../../experience/ExperienceContext.js";
 import type { WhatsAppChannel, WhatsAppState, WhatsAppStatusUpdate } from "../../types/index.js";
@@ -11,6 +11,7 @@ import { formatWhatsAppNumber } from "../../localization/index.js";
 
 export interface UpdatesScreenProps {
   world: WorldState;
+  deviceId: string;
   contentInsets: {
     top: number;
     bottom: number;
@@ -274,15 +275,14 @@ function ChannelRow({ channel, baseTime }: { channel: WhatsAppChannel; baseTime:
   );
 }
 
-export function UpdatesScreen({ world, contentInsets }: UpdatesScreenProps) {
+export function UpdatesScreen({ world, deviceId, contentInsets }: UpdatesScreenProps) {
   const theme = useTheme();
   const { t } = useWhatsAppLocale();
   const { uiTypography: typography } = theme;
   const contentInsetTop = contentInsets.top;
   const contentInsetBottom = contentInsets.bottom;
-  const state = (world.appState?.app_whatsapp ?? {}) as Partial<WhatsAppState>;
-  const deviceId = Object.keys(world.devices ?? {})[0];
-  const device = deviceId ? world.devices[deviceId] : undefined;
+  const state = requireAppStateForDevice<WhatsAppState>(world, "app_whatsapp", deviceId);
+  const device = world.devices[deviceId];
   const profile = state.profile;
   const statusAuthors = collectStatusAuthors(state.statuses ?? []).slice(0, 4);
   const channels = [...(state.channels ?? [])]

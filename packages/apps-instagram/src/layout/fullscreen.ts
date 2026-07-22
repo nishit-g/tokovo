@@ -1,10 +1,19 @@
-import type { FullscreenLayoutState, LayoutContext, SemanticRegion } from "@tokovo/core";
+import {
+  requireAppStateForDevice,
+  type FullscreenLayoutState,
+  type LayoutContext,
+  type SemanticRegion,
+} from "@tokovo/core";
 import type { InstagramState } from "../runtime/state.js";
 import { buildSemantic, rect } from "./shared.js";
 
 export function computeInstagramFullscreenLayout(ctx: LayoutContext): FullscreenLayoutState {
   const { viewportWidth: w, viewportHeight: h, world } = ctx;
-  const state = (world.appState?.app_instagram ?? {}) as Partial<InstagramState>;
+  const state = requireAppStateForDevice<InstagramState>(
+    world,
+    "app_instagram",
+    ctx.activeDeviceId,
+  );
   const regions: Record<string, SemanticRegion> = {
     device: { id: "device", rect: rect(0, 0, w, h), tags: ["device"] },
     app: { id: "app", rect: rect(0, 0, w, h), tags: ["app"] },

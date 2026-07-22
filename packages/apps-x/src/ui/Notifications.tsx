@@ -12,6 +12,7 @@ import { BottomNav } from "./BottomNav.js";
 
 interface NotificationsProps {
   world: WorldState;
+  deviceId: string;
 }
 
 function iconNameForType(type: string) {
@@ -21,10 +22,10 @@ function iconNameForType(type: string) {
   return "reply";
 }
 
-export const Notifications: React.FC<NotificationsProps> = ({ world }) => {
+export const Notifications: React.FC<NotificationsProps> = ({ world, deviceId }) => {
   const theme = useXTheme();
-  const state = getXState(world);
-  const notifications = getVisibleNotifications(world);
+  const state = getXState(world, deviceId);
+  const notifications = getVisibleNotifications(world, deviceId);
   const users = state?.users ?? [];
   const tweets = state?.tweets ?? [];
   const tab = state?.notificationsTab ?? "all";

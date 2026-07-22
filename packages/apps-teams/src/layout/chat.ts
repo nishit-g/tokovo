@@ -25,11 +25,11 @@ function estimateBubbleHeight(text: string, hasReply: boolean): number {
 }
 
 export function computeTeamsChatLayout(ctx: LayoutContext): ChatLayoutState {
-  const state = selectTeamsState(ctx.world);
+  const state = selectTeamsState(ctx.world, ctx.activeDeviceId);
   const { viewportWidth: width, viewportHeight: height, appViewport } = ctx;
   const messages = state ? selectVisibleMessages(state) : [];
-  const headerHeight = appViewport.contentInsets.top + 56;
-  const composerHeight = 76 + appViewport.contentInsets.bottom;
+  const headerHeight = appViewport.interactiveInsets.top + 56;
+  const composerHeight = 76 + appViewport.interactiveInsets.bottom;
   const contentTop = headerHeight + 8;
   const contentBottom = composerHeight;
   const messageLayouts: Record<string, ChatMessageLayout> = {};

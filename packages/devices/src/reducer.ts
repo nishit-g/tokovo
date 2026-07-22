@@ -10,11 +10,24 @@ import {
   IncomingCallEvent,
   StartBackgroundAppEvent,
   StopBackgroundAppEvent,
+  type DeviceTransitionStyle,
 } from "@tokovo/core";
 import type { EngineRegistries } from "@tokovo/core";
 
 const DEFAULT_SCREEN_RECORDING_COUNTDOWN_FRAMES = 90;
 const DEFAULT_SCREEN_RECORDING_FEEDBACK_FRAMES = 72;
+
+function resolveAuthoredTransitionStyle(value: unknown): DeviceTransitionStyle {
+  if (
+    value === undefined ||
+    value === "platform-default" ||
+    value === "ios-container-zoom" ||
+    value === "android-container-transform"
+  ) {
+    return value ?? "platform-default";
+  }
+  throw new Error(`DEVICE_TRANSITION_STYLE_UNKNOWN: "${String(value)}".`);
+}
 
 // =============================================================================
 // DEVICE REDUCER
@@ -49,7 +62,7 @@ export function deviceReducer(
           kind: "unlock",
           startFrame: event.at,
           durationFrames: 45, // 1.5s @ 30fps (deterministic default)
-          style: "faceIdSwipe",
+          style: "platform-unlock",
         };
         break;
 
@@ -57,8 +70,7 @@ export function deviceReducer(
       case "OPEN_APP": {
         const e = event as OpenAppEvent;
         device.foregroundAppId = e.payload?.appId;
-        const transition = (e.payload as unknown as { transition?: unknown })
-          ?.transition as
+        const transition = (e.payload as unknown as { transition?: unknown })?.transition as
           | {
               durationFrames?: number;
               style?: string;
@@ -71,7 +83,7 @@ export function deviceReducer(
             kind: "openApp",
             startFrame: event.at,
             durationFrames: transition.durationFrames ?? 18,
-            style: (transition.style ?? "iosZoom") as "iosZoom",
+            style: resolveAuthoredTransitionStyle(transition.style),
             originX: transition.originX,
             originY: transition.originY,
           };
@@ -84,9 +96,11 @@ export function deviceReducer(
       case "GO_HOME":
         device.foregroundAppId = undefined;
         {
-          const transition = (event as unknown as {
-            payload?: { transition?: unknown };
-          }).payload?.transition as
+          const transition = (
+            event as unknown as {
+              payload?: { transition?: unknown };
+            }
+          ).payload?.transition as
             | {
                 durationFrames?: number;
                 style?: string;
@@ -99,7 +113,7 @@ export function deviceReducer(
               kind: "goHome",
               startFrame: event.at,
               durationFrames: transition.durationFrames ?? 18,
-              style: (transition.style ?? "iosZoom") as "iosZoom",
+              style: resolveAuthoredTransitionStyle(transition.style),
               originX: transition.originX,
               originY: transition.originY,
             };
@@ -113,9 +127,7 @@ export function deviceReducer(
         const appId = e.payload?.appId;
         const count = e.payload?.count ?? 0;
         if (device.homeScreen && appId) {
-          const dockIcon = device.homeScreen.dock.find(
-            (a) => a.appId === appId,
-          );
+          const dockIcon = device.homeScreen.dock.find((a) => a.appId === appId);
           if (dockIcon) dockIcon.badge = count > 0 ? count : undefined;
           device.homeScreen.pages.forEach((page) => {
             page.apps.forEach((item) => {
@@ -130,8 +142,7 @@ export function deviceReducer(
 
       case "SET_DYNAMIC_ISLAND": {
         const e = event as SetDynamicIslandEvent;
-        if (!device.dynamicIsland)
-          device.dynamicIsland = { ...DEFAULT_DYNAMIC_ISLAND };
+        if (!device.dynamicIsland) device.dynamicIsland = { ...DEFAULT_DYNAMIC_ISLAND };
         device.dynamicIsland.visible = e.payload?.visible ?? true;
         if (e.payload?.presentation) {
           device.dynamicIsland.presentation = e.payload.presentation;
@@ -156,12 +167,8 @@ export function deviceReducer(
         const microphoneEnabled = e.payload?.microphoneEnabled;
         if (enabled) {
           if (device.screenRecording?.isCapturing) {
-            if (
-              presentation &&
-              presentation !== device.screenRecording.presentation
-            ) {
-              device.screenRecording.previousPresentation =
-                device.screenRecording.presentation;
+            if (presentation && presentation !== device.screenRecording.presentation) {
+              device.screenRecording.previousPresentation = device.screenRecording.presentation;
               device.screenRecording.presentation = presentation;
               device.screenRecording.presentationChangedAtFrame = event.at;
             }
@@ -175,10 +182,7 @@ export function deviceReducer(
           }
           const countdownFrames = Math.max(
             0,
-            Math.round(
-              e.payload?.countdownFrames ??
-                DEFAULT_SCREEN_RECORDING_COUNTDOWN_FRAMES,
-            ),
+            Math.round(e.payload?.countdownFrames ?? DEFAULT_SCREEN_RECORDING_COUNTDOWN_FRAMES),
           );
           device.screenRecording = {
             isCapturing: true,
@@ -197,9 +201,7 @@ export function deviceReducer(
               : device.screenRecording.presentation;
           const feedbackFrames = Math.max(
             0,
-            Math.round(
-              e.payload?.feedbackFrames ?? DEFAULT_SCREEN_RECORDING_FEEDBACK_FRAMES,
-            ),
+            Math.round(e.payload?.feedbackFrames ?? DEFAULT_SCREEN_RECORDING_FEEDBACK_FRAMES),
           );
           device.screenRecording = {
             ...device.screenRecording,
@@ -207,9 +209,7 @@ export function deviceReducer(
             captureStoppedAtFrame: event.at,
             feedbackEndsAtFrame: event.at + feedbackFrames,
             completion:
-              event.at < device.screenRecording.captureStartedAtFrame
-                ? "cancelled"
-                : "saved",
+              event.at < device.screenRecording.captureStartedAtFrame ? "cancelled" : "saved",
             previousPresentation,
             presentationChangedAtFrame: event.at,
           };
@@ -240,8 +240,9 @@ export function deviceReducer(
               | "fullscreen"
               | string
               | undefined) ?? "fullscreen",
-          callerMetadata: (e.payload as unknown as { callerMetadata?: unknown })
-            ?.callerMetadata as Record<string, unknown> | undefined,
+          callerMetadata: (e.payload as unknown as { callerMetadata?: unknown })?.callerMetadata as
+            | Record<string, unknown>
+            | undefined,
           startedAt: e.at,
         };
         break;
@@ -267,17 +268,14 @@ export function deviceReducer(
         const appId = e.payload?.appId;
         if (!appId) break;
         if (!device.backgroundApps) device.backgroundApps = [];
-        device.backgroundApps = device.backgroundApps.filter(
-          (a) => a.appId !== appId,
-        );
+        device.backgroundApps = device.backgroundApps.filter((a) => a.appId !== appId);
         device.backgroundApps.push({
           appId,
           startedAt: e.at,
           indicator: e.payload?.indicator || "music",
           label: e.payload?.label,
         });
-        if (!device.dynamicIsland)
-          device.dynamicIsland = { ...DEFAULT_DYNAMIC_ISLAND };
+        if (!device.dynamicIsland) device.dynamicIsland = { ...DEFAULT_DYNAMIC_ISLAND };
         device.dynamicIsland.activity = e.payload?.indicator || "music";
         device.dynamicIsland.presentation = "compact";
         device.dynamicIsland.updatedAtFrame = event.at;
@@ -292,9 +290,7 @@ export function deviceReducer(
         const e = event as StopBackgroundAppEvent;
         const appId = e.payload?.appId;
         if (device.backgroundApps && appId) {
-          device.backgroundApps = device.backgroundApps.filter(
-            (a) => a.appId !== appId,
-          );
+          device.backgroundApps = device.backgroundApps.filter((a) => a.appId !== appId);
         }
         if (device.dynamicIsland && device.backgroundApps?.length === 0) {
           device.dynamicIsland.activity = null;

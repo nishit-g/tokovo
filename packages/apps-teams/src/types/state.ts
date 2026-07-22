@@ -29,12 +29,3 @@ export interface TeamsState extends TeamsEntityMaps {
   activeCallId?: string;
   presence: Record<string, TeamsPresence>;
 }
-
-export function asTeamsState(
-  appState: Record<string, unknown>,
-): TeamsState | undefined {
-  const raw = appState?.app_teams;
-  if (!raw || typeof raw !== "object") return undefined;
-  if (!("screen" in raw) || !("viewMode" in raw)) return undefined;
-  return raw as TeamsState;
-}

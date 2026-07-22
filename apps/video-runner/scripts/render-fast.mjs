@@ -35,7 +35,7 @@ const rootConfigFiles = [
 const episodeId = process.env.EPISODE_ID ?? "v2-creator-series-showcase";
 const cameraPlanId = process.env.CAMERA_PLAN_ID;
 const outDir = process.env.OUT_DIR ?? path.join(repoRoot, "out");
-const outFile = process.env.OUT_FILE ?? path.join(outDir, `${episodeId}.mp4`);
+const outFile = process.env.OUT_FILE ?? path.join(outDir, `${episodeId}-preview.mp4`);
 
 function parseConcurrency(rawValue) {
   if (!rawValue) {
@@ -250,6 +250,11 @@ async function getServeUrl() {
 
 async function main() {
   fs.mkdirSync(outDir, { recursive: true });
+  if (!path.basename(outFile).toLowerCase().includes("preview")) {
+    throw new Error(
+      `render:fast is preview optics; OUT_FILE must include "preview" (received ${outFile}). Use the render service for final artifacts.`,
+    );
+  }
 
   const inputProps = {
     episodeId,
@@ -290,6 +295,25 @@ async function main() {
       ...(publicAssetBaseUrl ? { TOKOVO_PUBLIC_ASSET_BASE_URL: publicAssetBaseUrl } : {}),
     },
   });
+  const metadataFile = outFile.replace(/\.mp4$/iu, ".metadata.json");
+  fs.writeFileSync(
+    metadataFile,
+    `${JSON.stringify(
+      {
+        version: 1,
+        episodeId,
+        cameraPlanId: cameraPlanId ?? null,
+        projectionMode: "preview",
+        renderProfile: "fast",
+        sourceRevision: getGitScalar(["rev-parse", "HEAD"], "unknown"),
+        createdAt: new Date().toISOString(),
+      },
+      null,
+      2,
+    )}\n`,
+    "utf8",
+  );
+  console.log(`[render:fast] metadata=${metadataFile}`);
 }
 
 main().catch((error) => {

@@ -63,7 +63,7 @@ export default defineEpisode({
           {
             id: "ig_storybook_1",
             authorId: "ig_mira",
-            imageUrl: "/placeholders/media.svg",
+            imageUrl: "/media/launch-board.svg",
             caption: "Golden-hour notes from the hill sequence.",
             createdAt: baseTs - 90000,
             likeCount: 4320,
@@ -79,13 +79,13 @@ export default defineEpisode({
               {
                 id: "ig_storybook_story_1",
                 authorId: "ig_mira",
-                mediaUrl: "/placeholders/media.svg",
+                mediaUrl: "/media/launch-board.svg",
                 createdAt: baseTs - 50000,
               },
               {
                 id: "ig_storybook_story_2",
                 authorId: "ig_mira",
-                mediaUrl: "/placeholders/media.svg",
+                mediaUrl: "/media/launch-board.svg",
                 createdAt: baseTs - 46000,
               },
             ],
@@ -111,10 +111,7 @@ export default defineEpisode({
       })
       .instagram("phone", (ig) => {
         ig.at("0.6s").setThemeMode("storybook");
-        ig.at("1.6s").openStory(
-          "ig_storybook_storyset",
-          "ig_storybook_story_1",
-        );
+        ig.at("1.6s").openStory("ig_storybook_storyset", "ig_storybook_story_1");
         ig.at("3.4s").advanceStory("ig_storybook_storyset");
         ig.at("5.0s").navigate("thread", { threadId: "ig_storybook_thread" });
         ig.at("6.2s").addDMMessage({

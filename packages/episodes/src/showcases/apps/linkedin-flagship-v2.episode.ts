@@ -12,14 +12,7 @@ export default defineEpisode({
     appId: "app_linkedin",
     visibility: "public",
     sortOrder: 300,
-    tags: [
-      "linkedin",
-      "flagship",
-      "feed",
-      "profile",
-      "notifications",
-      "messages",
-    ],
+    tags: ["linkedin", "flagship", "feed", "profile", "notifications", "messages"],
   },
   config: {
     format: "1080x1920",
@@ -97,7 +90,7 @@ export default defineEpisode({
             createdAt: baseTs - 90000,
             media: {
               type: "image",
-              urls: ["/placeholders/media.svg"],
+              urls: ["/media/founder-whiteboard.jpg"],
               aspect: "wide",
             },
             hashtags: ["productdesign", "motion"],

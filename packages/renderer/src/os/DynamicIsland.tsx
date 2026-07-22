@@ -1,5 +1,9 @@
 import React from "react";
-import type { DeviceState, WorldState } from "@tokovo/core";
+import {
+  requireAppStateForDevice,
+  type DeviceState,
+  type WorldState,
+} from "@tokovo/core";
 import type { WidgetProps } from "@tokovo/react";
 import {
   DynamicIslandSurface,
@@ -9,6 +13,7 @@ import {
 import { useRendererRegistries } from "../RegistryContext.js";
 
 interface DynamicIslandProps {
+  deviceId: string;
   device: DeviceState;
   deviceProfile: DeviceProfile;
   world: WorldState;
@@ -23,6 +28,7 @@ interface DynamicIslandProps {
  * plugin Live Activity > physical idle island.
  */
 export const DynamicIsland = React.memo(function DynamicIsland({
+  deviceId,
   device,
   deviceProfile,
   world,
@@ -52,7 +58,7 @@ export const DynamicIsland = React.memo(function DynamicIsland({
     (activity) => activity.appId === resolved.appId,
   );
   const widgetProps: WidgetProps = {
-    appState: world.appState[resolved.appId] || {},
+    appState: requireAppStateForDevice(world, resolved.appId, deviceId),
     backgroundApp,
     deviceProfile: { dynamicIsland: deviceProfile.dynamicIsland },
     currentFrame: t,

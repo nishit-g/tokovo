@@ -11,7 +11,7 @@ import { resolveWhatsAppScreenId, type WhatsAppScreenId } from "./strategy.js";
 
 export interface WhatsAppScreenStrategyProps {
   world: WorldState;
-  deviceId?: string;
+  deviceId: string;
   width: number;
   height: number;
   contentInsets: {

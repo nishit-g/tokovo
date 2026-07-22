@@ -19,12 +19,12 @@ import type { AppViewportFrame } from "@tokovo/visual-system";
  */
 export interface AppViewProps {
   world: WorldState;
-  t?: number;
+  t: number;
   layout?: LayoutState;
-  platform?: "ios" | "android";
-  deviceId?: string;
-  width?: number;
-  height?: number;
+  platform: "ios" | "android";
+  deviceId: string;
+  width: number;
+  height: number;
   appViewport: AppViewportFrame;
 }
 

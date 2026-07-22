@@ -7,7 +7,8 @@ import {
 
 const world = {
   devices: {},
-  appState: {},
+  appInstances: {},
+    capabilityState: {},
   audio: {
     activeSounds: {},
     buses: {},

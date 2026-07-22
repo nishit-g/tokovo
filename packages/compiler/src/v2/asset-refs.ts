@@ -1,5 +1,9 @@
 import type { TrackEpisodeIR } from "@tokovo/ir";
-import { projectWorldForDevice } from "@tokovo/core";
+import {
+  appInstanceId,
+  getDeviceIdsForAppState,
+  parseAppInstanceId,
+} from "@tokovo/core";
 import type {
   EpisodeAssetPrefetchStrategy,
   EpisodeAssetRef,
@@ -61,7 +65,8 @@ export function collectEpisodeAssetRefs(input: {
     refs,
   );
 
-  for (const [appId, appState] of Object.entries(input.initialWorld.appState ?? {})) {
+  for (const [instanceId, appState] of Object.entries(input.initialWorld.appInstances)) {
+    const { deviceId, appId } = parseAppInstanceId(instanceId as import("@tokovo/core").AppInstanceId);
     walkAssetValue(
       appState,
       {
@@ -69,26 +74,10 @@ export function collectEpisodeAssetRefs(input: {
         source: "initial-world",
         appId,
         fromFrame: 0,
-        path: ["appState", appId],
+        path: ["appInstances", deviceId, appId],
       },
       refs,
     );
-  }
-
-  for (const [deviceId, appStates] of Object.entries(input.initialWorld.appStateByDevice ?? {})) {
-    for (const [appId, appState] of Object.entries(appStates)) {
-      walkAssetValue(
-        appState,
-        {
-          owner: "app",
-          source: "initial-world",
-          appId,
-          fromFrame: 0,
-          path: ["appStateByDevice", deviceId, appId],
-        },
-        refs,
-      );
-    }
   }
 
   for (const event of input.events) {
@@ -110,19 +99,16 @@ export function collectEpisodeAssetRefs(input: {
   }
 
   for (const plugin of input.plugins) {
-    const scopedDeviceIds = Object.entries(input.initialWorld.appStateByDevice ?? {})
-      .filter(([, appStates]) => Object.hasOwn(appStates, plugin.id))
-      .map(([deviceId]) => deviceId);
-    const worlds =
-      scopedDeviceIds.length > 0
-        ? scopedDeviceIds.map((deviceId) => projectWorldForDevice(input.initialWorld, deviceId))
-        : [input.initialWorld];
-
-    for (const initialWorld of worlds) {
+    const deviceIds = getDeviceIdsForAppState(input.initialWorld, plugin.id);
+    for (const deviceId of deviceIds) {
       const pluginRefs = plugin.collectAssetRefs?.({
         appId: plugin.id,
+        deviceId,
+        appState: input.initialWorld.appInstances[
+          appInstanceId(deviceId, plugin.id)
+        ],
         ir: input.ir,
-        initialWorld,
+        initialWorld: input.initialWorld,
         events: input.events,
       });
 

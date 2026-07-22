@@ -6,7 +6,7 @@ import {
   type InputThemeProjection,
   type ResolvedInputLocale,
 } from "../contract/index.js";
-import type { PlatformDesignProfileId } from "@tokovo/visual-system";
+import type { PlatformDesignProfileId, VisualPreferences } from "@tokovo/visual-system";
 import { getInputPresentationStrategy } from "../presentation/index.js";
 import { getInputTheme } from "../theme/index.js";
 
@@ -15,6 +15,7 @@ export interface InputExperienceInput {
   appearance: InputAppearance;
   locale: string;
   platformProfileId?: PlatformDesignProfileId;
+  preferences?: Partial<VisualPreferences>;
 }
 
 export interface InputExperience {
@@ -44,7 +45,13 @@ export function resolveInputExperience(input: InputExperienceInput): InputExperi
     appearance: input.appearance,
     locale,
     platformProfileId,
-    theme: getInputTheme(input.platform, input.appearance, platformProfileId, input.locale),
+    theme: getInputTheme(
+      input.platform,
+      input.appearance,
+      platformProfileId,
+      input.locale,
+      input.preferences,
+    ),
     presentation: getInputPresentationStrategy(input.platform),
     capabilities: {
       supportsDarkMode: true,

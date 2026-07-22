@@ -1,4 +1,8 @@
-import { resolvePlatformVisuals, type PlatformDesignProfileId } from "@tokovo/visual-system";
+import {
+  resolvePlatformVisuals,
+  type PlatformDesignProfileId,
+  type VisualPreferences,
+} from "@tokovo/visual-system";
 import type {
   NotificationAppearance,
   NotificationPlatform,
@@ -17,15 +21,19 @@ export function getNotificationTheme(
   appearance: NotificationAppearance,
   platformProfileId: PlatformDesignProfileId,
   locale = "en-US",
+  preferences: Partial<VisualPreferences> = {},
 ): NotificationThemeProjection {
   const visuals = resolvePlatformVisuals({
     platformProfileId,
     appearance,
     locale,
     direction: directionForLocale(locale),
-    textScale: 1,
-    contrast: "standard",
-    motion: "full",
+    textScale: preferences.textScale ?? 1,
+    contrast: preferences.contrast ?? "standard",
+    motion: preferences.motion ?? "full",
+    transparency: preferences.transparency ?? "standard",
+    materialPreference: preferences.materialPreference ?? "automatic",
+    colorSeed: preferences.colorSeed,
   });
   if (visuals.platform !== platform) {
     throw new Error(

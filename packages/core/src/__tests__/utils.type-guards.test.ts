@@ -16,8 +16,6 @@ import {
   isGroupMemberAddedEvent,
   isGroupMemberRemovedEvent,
   isAudioEvent,
-  isPlaySoundEvent,
-  isBackgroundMusicEvent,
   isEventForApp,
   isEventForDevice,
 } from "../utils/type-guards.js";
@@ -127,18 +125,10 @@ describe("type guards", () => {
   it("detects audio events", () => {
     const audio = {
       kind: "AUDIO",
-      type: "PLAY_SOUND",
+      type: "PLAY",
       soundId: "ding",
     } as TimelineEvent;
     expect(isAudioEvent(audio)).toBe(true);
-    expect(isPlaySoundEvent(audio)).toBe(true);
-
-    const music = {
-      kind: "AUDIO",
-      type: "BACKGROUND_MUSIC",
-      soundId: "song",
-    } as TimelineEvent;
-    expect(isBackgroundMusicEvent(music)).toBe(true);
   });
 
   it("checks event ownership", () => {

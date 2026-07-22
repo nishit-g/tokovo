@@ -89,7 +89,7 @@ export default defineEpisode({
       })
       .deviceTrack("phone", (d) => {
         d.at("17.0s").openApp("app_x", {
-          transition: { durationFrames: 18, style: "iosZoom" },
+          transition: { durationFrames: 18, style: "platform-default" },
         });
       })
       .notificationTrack("phone", (notifications) => {
@@ -113,10 +113,7 @@ export default defineEpisode({
         wa.at("3.6s").send("Now watch it stick to the bubble.", {});
         wa.openChatList("6.0s");
         wa.switchTo("group_frames", "7.2s");
-        wa.at("8.4s").receive(
-          "Aki",
-          "Thread card should be the next focus target.",
-        );
+        wa.at("8.4s").receive("Aki", "Thread card should be the next focus target.");
         wa.at("10.0s").send("Then the notification banner.", {});
       })
       .x("phone", (x) => {
@@ -130,9 +127,7 @@ export default defineEpisode({
           createdAt: new Date("2026-04-10T18:23:00Z").getTime(),
         });
         x.at("24.2s").navigate("compose");
-        x.at("25.0s").setComposeDraft(
-          "Subject choreography is part of product quality.",
-        );
+        x.at("25.0s").setComposeDraft("Subject choreography is part of product quality.");
       })
       .build(),
 });

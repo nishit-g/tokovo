@@ -79,7 +79,8 @@ function buildArabicWorld(conversationId = "dm"): WorldState {
   };
 
   return {
-    appState: { app_whatsapp: state },
+    appInstances: { "d1:app_whatsapp": state },
+    capabilityState: {},
     devices: {
       d1: {
         id: "d1",
@@ -166,6 +167,7 @@ describe("WhatsApp localization and accessibility contract", () => {
       <CallsScreen
         key="calls"
         world={directWorld}
+        deviceId="d1"
         width={393}
         height={852}
         contentInsets={contentInsets}
@@ -173,6 +175,7 @@ describe("WhatsApp localization and accessibility contract", () => {
       <CommunitiesScreen
         key="communities"
         world={directWorld}
+        deviceId="d1"
         width={393}
         height={852}
         contentInsets={contentInsets}
@@ -180,6 +183,7 @@ describe("WhatsApp localization and accessibility contract", () => {
       <SettingsScreen
         key="settings"
         world={directWorld}
+        deviceId="d1"
         width={393}
         height={852}
         contentInsets={contentInsets}
@@ -187,6 +191,7 @@ describe("WhatsApp localization and accessibility contract", () => {
       <ProfileScreen
         key="profile"
         world={directWorld}
+        deviceId="d1"
         width={393}
         height={852}
         contentInsets={contentInsets}
@@ -194,6 +199,7 @@ describe("WhatsApp localization and accessibility contract", () => {
       <GroupInfoScreen
         key="group"
         world={groupWorld}
+        deviceId="d1"
         conversationId="team"
         width={393}
         height={852}

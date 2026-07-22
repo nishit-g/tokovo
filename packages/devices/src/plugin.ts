@@ -16,9 +16,6 @@ interface TokovoRegistries {
       registerDeviceReducer: (reducer: typeof deviceReducer) => void;
     };
   };
-  plugins: {
-    sounds: any; // eslint-disable-line @typescript-eslint/no-explicit-any
-  };
 }
 
 // Registries
@@ -32,8 +29,6 @@ import {
   FrameRegistryClass,
   StatusBarStrategyRegistryClass,
 } from "./registries/index.js";
-import { createDeviceShellRegistry, DeviceShellRegistryClass } from "./registry.js";
-
 // Views
 import { StatusBar } from "./StatusBar.js";
 
@@ -63,11 +58,9 @@ export interface DevicesPluginContract {
   createDeviceRegistry: typeof createDeviceRegistry;
   createFrameRegistry: typeof createFrameRegistry;
   createStatusBarStrategyRegistry: typeof createStatusBarStrategyRegistry;
-  createDeviceShellRegistry: typeof createDeviceShellRegistry;
   DeviceRegistryClass: typeof DeviceRegistryClass;
   FrameRegistryClass: typeof FrameRegistryClass;
   StatusBarStrategyRegistryClass: typeof StatusBarStrategyRegistryClass;
-  DeviceShellRegistryClass: typeof DeviceShellRegistryClass;
 
   // Views
   StatusBar: typeof StatusBar;
@@ -91,11 +84,9 @@ export const DevicesPlugin: DevicesPluginContract = {
   createDeviceRegistry,
   createFrameRegistry,
   createStatusBarStrategyRegistry,
-  createDeviceShellRegistry,
   DeviceRegistryClass,
   FrameRegistryClass,
   StatusBarStrategyRegistryClass,
-  DeviceShellRegistryClass,
 
   // Views
   StatusBar,
@@ -126,38 +117,18 @@ export function registerDevicesPlugin(
 
   // Register default device profiles
   if (!deviceRegistries.devices.has("iphone16")) {
-    deviceRegistries.devices.register("iphone16", iPhone16Profile, {
-      soundRegistry: tokovoRegistries.plugins.sounds,
-    });
+    deviceRegistries.devices.register("iphone16", iPhone16Profile);
   }
   if (!deviceRegistries.devices.has("pixel")) {
-    deviceRegistries.devices.register("pixel", PixelProfile, {
-      soundRegistry: tokovoRegistries.plugins.sounds,
-    });
+    deviceRegistries.devices.register("pixel", PixelProfile);
   }
-  if (!deviceRegistries.devices.has("pixel9")) {
-    deviceRegistries.devices.register("pixel9", PixelProfile, {
-      soundRegistry: tokovoRegistries.plugins.sounds,
-    });
-  }
-
   // Register default frames
   deviceRegistries.frames.register("iphone16", iPhone16Frame);
   deviceRegistries.frames.register("pixel", PixelFrame);
-  deviceRegistries.frames.register("pixel9", PixelFrame);
 
   // Register default StatusBar strategies
   deviceRegistries.statusBars.register("ios", IOSStatusBarStrategy);
   deviceRegistries.statusBars.register("android", AndroidStatusBarStrategy);
-
-  // Register default shell
-  deviceRegistries.shells.register({
-    id: "iphone16",
-    FrameComponent: iPhone16Frame,
-    StatusBarComponent: StatusBar,
-    cornerRadius: iPhone16Profile.display.cornerRadius,
-    hasDynamicIsland: true,
-  });
 }
 
 export const devicesRuntimeEntry = {

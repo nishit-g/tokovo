@@ -66,7 +66,7 @@ export default defineEpisode({
             id: "group_launch_bridge",
             name: "Launch Bridge",
             type: "group",
-            avatar: "/placeholders/app-icon.svg",
+            avatar: "/avatars/group-design.jpg",
             unreadCount: 5,
             isPinned: true,
             members: [
@@ -93,7 +93,7 @@ export default defineEpisode({
           {
             id: "dm_vendor",
             name: "Parcel Partner",
-            avatar: "/placeholders/app-icon.svg",
+            avatar: "/avatars/avatar-marcus.jpg",
             unreadCount: 1,
             contact: {
               phone: "+91 90000 22002",
@@ -173,7 +173,7 @@ export default defineEpisode({
           {
             id: "channel_motion_daily",
             name: "Motion Daily",
-            avatar: "/placeholders/app-icon.svg",
+            avatar: "/avatars/netrunner.jpg",
             description: "Frame studies, animation notes, and calm camera decisions.",
             followersLabel: "142K followers",
             category: "Design",
@@ -234,7 +234,7 @@ export default defineEpisode({
           {
             id: "community_launch",
             name: "Creator Launch",
-            avatar: "/placeholders/app-icon.svg",
+            avatar: "/avatars/group-design.jpg",
             description: "The groups shipping tonight's release",
             announcementConversationId: "group_launch_bridge",
             groupConversationIds: ["group_launch_bridge"],
@@ -250,7 +250,11 @@ export default defineEpisode({
         settings: {
           linkedDevicesCount: 3,
           privacy: { lastSeen: "contacts", profilePhoto: "contacts", readReceipts: true },
-          chats: { theme: "system", backupLabel: "Today, 7:40 PM", defaultDisappearingMessages: "Off" },
+          chats: {
+            theme: "system",
+            backupLabel: "Today, 7:40 PM",
+            defaultDisappearingMessages: "Off",
+          },
           notifications: { messageTone: "Note", groupTone: "Aurora", mutedChats: 2 },
           storage: { usedLabel: "3.8 GB used", autoDownloadLabel: "Wi-Fi only" },
         },
@@ -258,34 +262,22 @@ export default defineEpisode({
       .whatsapp("phone", "group_launch_bridge", (wa) => {
         wa.openChatList("0s");
         wa.switchTo("group_launch_bridge", "2.0s");
-        wa.at("3.0s").receive(
-          "Noor",
-          "Teaser is in export. Sound mix still rendering.",
-        );
+        wa.at("3.0s").receive("Noor", "Teaser is in export. Sound mix still rendering.");
         wa.at("4.8s").send("Ship picture first. Audio can trail by a minute.", {
           input: { duration: "2.6s", style: "fast" },
         });
-        wa.at("7.8s").receive(
-          "Rhea",
-          "Need client-facing caption signoff too.",
-        );
+        wa.at("7.8s").receive("Rhea", "Need client-facing caption signoff too.");
         wa.openUpdates("10.5s");
         wa.openCalls("14.0s");
         wa.openChatList("17.0s");
         wa.switchTo("dm_vendor", "18.8s");
-        wa.at("20.0s").receive(
-          "Parcel Partner",
-          "Driver is downstairs with 12 launch kits.",
-        );
+        wa.at("20.0s").receive("Parcel Partner", "Driver is downstairs with 12 launch kits.");
         wa.at("22.0s").send("Lobby desk has clearance. Send them up.", {
           input: { duration: "3s", style: "natural" },
         });
         wa.openChatList("25.8s");
         wa.switchTo("dm_studio_ops", "27.5s");
-        wa.at("28.8s").receive(
-          "Studio Ops",
-          "Post is live. Watching comments.",
-        );
+        wa.at("28.8s").receive("Studio Ops", "Post is live. Watching comments.");
         wa.at("30.6s").send("Good. Keep one eye on X and one on invoices.", {
           input: { duration: "3s", style: "fast" },
         });

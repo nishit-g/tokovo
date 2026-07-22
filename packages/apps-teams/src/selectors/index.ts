@@ -1,4 +1,4 @@
-import type { WorldState } from "@tokovo/core";
+import { getAppStateForDevice, type WorldState } from "@tokovo/core";
 import type {
   TeamsChannel,
   TeamsDm,
@@ -15,8 +15,8 @@ function frameToListLabel(frame?: number): string | undefined {
   return `${Math.floor(seconds / 3600)}h`;
 }
 
-export function selectTeamsState(world: Pick<WorldState, "appState">): TeamsState | undefined {
-  const raw = world.appState?.app_teams;
+export function selectTeamsState(world: WorldState, deviceId: string): TeamsState | undefined {
+  const raw = getAppStateForDevice(world, "app_teams", deviceId);
   if (!raw || typeof raw !== "object") return undefined;
   return raw as TeamsState;
 }

@@ -1,5 +1,8 @@
 import React from "react";
-import type { PluginViewProps } from "@tokovo/core";
+import {
+  requireAppStateForDevice,
+  type PluginViewProps,
+} from "@tokovo/core";
 import { getThemeMode } from "../runtime/selectors.js";
 import { InstagramThemeProvider } from "./ThemeContext.js";
 import { HomeFeed } from "./HomeFeed.js";
@@ -11,27 +14,30 @@ import { ProfileScreen } from "./Profile.js";
 import { ComposerScreen } from "./Composer.js";
 
 export const InstagramView: React.FC<PluginViewProps> = ({ world, deviceId, t }) => {
-  const screen =
-    (world.appState?.app_instagram as { currentScreen?: string } | undefined)?.currentScreen ??
-    "home";
-  const themeMode = getThemeMode(world);
+  const state = requireAppStateForDevice<import("../runtime/state.js").InstagramState>(
+    world,
+    "app_instagram",
+    deviceId,
+  );
+  const screen = state.currentScreen;
+  const themeMode = getThemeMode(world, deviceId);
 
   return (
     <InstagramThemeProvider mode={themeMode}>
       {screen === "story" ? (
-        <StoryViewer world={world} />
+        <StoryViewer world={world} deviceId={deviceId} />
       ) : screen === "notifications" ? (
-        <NotificationsScreen world={world} />
+        <NotificationsScreen world={world} deviceId={deviceId} />
       ) : screen === "inbox" ? (
-        <Inbox world={world} />
+        <Inbox world={world} deviceId={deviceId} />
       ) : screen === "thread" ? (
         <DMThread world={world} deviceId={deviceId} t={t} />
       ) : screen === "profile" ? (
-        <ProfileScreen world={world} />
+        <ProfileScreen world={world} deviceId={deviceId} />
       ) : screen === "composer" ? (
         <ComposerScreen world={world} deviceId={deviceId} t={t} />
       ) : (
-        <HomeFeed world={world} />
+        <HomeFeed world={world} deviceId={deviceId} />
       )}
     </InstagramThemeProvider>
   );

@@ -5,11 +5,14 @@ import { Avatar, Icon, formatRelativeTime } from "./components.js";
 import { useInstagramTheme } from "./ThemeContext.js";
 import { getCurrentUser, getInboxThreads, getInstagramState, getThreadDraft, getUserById } from "../runtime/selectors.js";
 
-export const Inbox: React.FC<{ world: WorldState }> = ({ world }) => {
+export const Inbox: React.FC<{ world: WorldState; deviceId: string }> = ({
+  world,
+  deviceId,
+}) => {
   const theme = useInstagramTheme();
-  const state = getInstagramState(world);
-  const currentUser = getCurrentUser(world);
-  const threads = getInboxThreads(world);
+  const state = getInstagramState(world, deviceId);
+  const currentUser = getCurrentUser(world, deviceId);
+  const threads = getInboxThreads(world, deviceId);
   const nowMs = (state?.dmMessages ?? []).reduce((max, message) => Math.max(max, message.createdAt), 0);
 
   return (
@@ -57,16 +60,18 @@ export const Inbox: React.FC<{ world: WorldState }> = ({ world }) => {
       <div style={{ flex: 1, minHeight: 0, overflow: "auto" }}>
         {threads.map((thread) => {
           const otherIds = thread.participantIds.filter((id) => id !== currentUser?.id);
-          const lead = getUserById(world, otherIds[0]) ?? undefined;
+          const lead = getUserById(world, deviceId, otherIds[0]) ?? undefined;
           const previewMessageId = thread.messageIds[thread.messageIds.length - 1];
           const previewMessage = state?.dmMessages.find((message) => message.id === previewMessageId);
-          const draft = getThreadDraft(world, thread.id);
+          const draft = getThreadDraft(world, deviceId, thread.id);
           const title =
             thread.title ??
-            otherIds.map((id) => getUserById(world, id)?.displayName ?? "Unknown").join(", ");
+            otherIds
+              .map((id) => getUserById(world, deviceId, id)?.displayName ?? "Unknown")
+              .join(", ");
           const preview =
             thread.typingUserId
-              ? `${getUserById(world, thread.typingUserId)?.displayName ?? "Someone"} is typing…`
+              ? `${getUserById(world, deviceId, thread.typingUserId)?.displayName ?? "Someone"} is typing…`
               : draft
                 ? `Draft: ${draft}`
                 : previewMessage?.text ?? "No messages yet";

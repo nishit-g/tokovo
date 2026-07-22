@@ -1,14 +1,15 @@
-import type { WorldState } from "@tokovo/core";
+import { getAppStateForDevice, type WorldState } from "@tokovo/core";
 import type { IMessageConversation, IMessageMessage, IMessageState } from "../types/index.js";
 
-export function selectIMessageState(world: WorldState) {
-  return world.appState?.app_imessage as IMessageState | undefined;
+export function selectIMessageState(world: WorldState, deviceId: string) {
+  return getAppStateForDevice<IMessageState>(world, "app_imessage", deviceId);
 }
 
 export function selectConversations(
   world: WorldState,
+  deviceId: string,
 ): Record<string, IMessageConversation> {
-  const state = world.appState?.app_imessage as IMessageState | undefined;
+  const state = selectIMessageState(world, deviceId);
   return (state?.conversations ?? {}) as Record<
     string,
     IMessageConversation
@@ -17,30 +18,30 @@ export function selectConversations(
 
 export function selectActiveConversation(
   world: WorldState,
+  deviceId: string,
 ): IMessageConversation | undefined {
-  const state = world.appState?.app_imessage as IMessageState | undefined;
+  const state = selectIMessageState(world, deviceId);
   if (!state?.activeConversationId) return undefined;
   return state.conversations?.[state.activeConversationId];
 }
 
 export function selectMessages(
   world: WorldState,
+  deviceId: string,
   conversationId?: string,
 ): IMessageMessage[] {
   if (!conversationId) return [];
-  const conversations =
-    (world.appState?.app_imessage as IMessageState | undefined)?.conversations ??
-    {};
+  const conversations = selectIMessageState(world, deviceId)?.conversations ?? {};
   return conversations[conversationId]?.messages ?? [];
 }
 
 export function selectTypingUsers(
   world: WorldState,
+  deviceId: string,
   conversationId?: string,
 ): string[] {
   if (!conversationId) return [];
-  const conv = (world.appState?.app_imessage as IMessageState | undefined)
-    ?.conversations?.[conversationId];
+  const conv = selectIMessageState(world, deviceId)?.conversations?.[conversationId];
   if (!conv) return [];
   return Object.entries(conv.typing)
     .filter(([, isTyping]) => isTyping)

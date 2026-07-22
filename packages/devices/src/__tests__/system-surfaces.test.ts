@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { DeviceOSState, HomeScreenConfig } from "@tokovo/core";
+import { DEFAULT_OS_STATE } from "@tokovo/core";
 import { iPhone16Profile } from "../iphone16/profile.js";
 import { PixelProfile } from "../pixel/profile.js";
 import { getSystemLocalizedStrings } from "../surfaces/localization.js";
@@ -7,6 +8,7 @@ import { projectHomeScreen, projectLockscreen } from "../surfaces/project.js";
 import { resolveSystemSurfaceDesign } from "../surfaces/theme.js";
 
 const os = (overrides: Partial<DeviceOSState> = {}): DeviceOSState => ({
+  ...DEFAULT_OS_STATE,
   locale: "en-US",
   appearance: "light",
   clock: Date.parse("2026-07-21T09:41:00Z"),
@@ -16,8 +18,6 @@ const os = (overrides: Partial<DeviceOSState> = {}): DeviceOSState => ({
   wifiStrength: 3,
   cellStrength: 4,
   dnd: false,
-  lowPowerMode: false,
-  airplaneMode: false,
   ...overrides,
 });
 
@@ -120,5 +120,21 @@ describe("canonical system surfaces", () => {
         config: { pages: [], dock: [] },
       }),
     ).toThrow("SYSTEM_HOME_INVALID");
+  });
+
+  it("rejects empty authored wallpapers instead of substituting the profile default", () => {
+    expect(() =>
+      projectLockscreen({
+        profile: iPhone16Profile,
+        os: os({ lockScreenWallpaper: "   " }),
+      }),
+    ).toThrow("SYSTEM_WALLPAPER_INVALID");
+    expect(() =>
+      projectHomeScreen({
+        profile: PixelProfile,
+        os: os(),
+        config: { ...home, wallpaper: "" },
+      }),
+    ).toThrow("SYSTEM_WALLPAPER_INVALID");
   });
 });

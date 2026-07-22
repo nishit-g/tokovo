@@ -1,10 +1,15 @@
 import type { WorldState } from "@tokovo/core";
-import type { WhatsAppConversation, WhatsAppMessage } from "../types/index.js";
+import type {
+  WhatsAppConversation,
+  WhatsAppMessage,
+  WhatsAppState,
+} from "../types/index.js";
 import type { AnyWhatsAppEvent } from "../schemas/index.js";
 
 export type HandlerContext = {
   draft: WorldState;
   event: AnyWhatsAppEvent;
+  state: WhatsAppState;
   conversation: WhatsAppConversation;
   addMessage: (msg: WhatsAppMessage) => void;
   getMessageById: (id: string) => WhatsAppMessage | undefined;

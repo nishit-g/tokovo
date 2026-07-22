@@ -120,13 +120,8 @@ export const iPhone16Frame: React.FC<FrameProps> = ({
       display: "flex" as const,
       flexDirection: "column" as const,
       position: "relative" as const,
-      overflow: "hidden" as const,
-      borderRadius: display.cornerRadius,
-      clipPath: `inset(0px round ${display.cornerRadius}px)`,
-      transform: "translateZ(0)",
-      willChange: "transform" as const,
     }),
-    [display.cornerRadius],
+    [],
   );
 
   const homeIndicatorStyle = useMemo(

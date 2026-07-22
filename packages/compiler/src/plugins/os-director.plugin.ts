@@ -2,6 +2,7 @@ import type { CompilerPlugin, CompilerContext } from "./types.js";
 import type { TrackEvent } from "@tokovo/ir";
 
 export interface OSDirectorPluginOptions {
+  deviceId: string;
   startTime?: Date | string;
   startBattery?: number;
   batteryDrainRate?: number;
@@ -15,14 +16,16 @@ export class OSDirectorPlugin implements CompilerPlugin {
   subscribesTo = ["*"];
   emits = ["OS"];
 
-  private readonly config: Required<
-    Omit<OSDirectorPluginOptions, "startTime">
-  > & {
+  private readonly config: Required<Omit<OSDirectorPluginOptions, "startTime">> & {
     startTime: Date;
   };
 
-  constructor(options: OSDirectorPluginOptions = {}) {
+  constructor(options: OSDirectorPluginOptions) {
+    if (!options?.deviceId?.trim()) {
+      throw new Error("OSDirectorPlugin: deviceId is required");
+    }
     this.config = {
+      deviceId: options.deviceId,
       startTime: this.parseStartTime(options.startTime),
       startBattery: options.startBattery ?? 85,
       batteryDrainRate: options.batteryDrainRate ?? 1,
@@ -44,15 +47,12 @@ export class OSDirectorPlugin implements CompilerPlugin {
   }
 
   process(events: TrackEvent[], context: CompilerContext): TrackEvent[] {
-    const maxFrame = Math.max(
-      context.durationInFrames,
-      ...events.map((e) => e.at),
-    );
+    const maxFrame = Math.max(context.durationInFrames, ...events.map((e) => e.at));
 
-    const intervalFrames = this.parseDurationToFrames(
-      this.config.updateInterval,
-      context,
-    );
+    const intervalFrames = this.parseDurationToFrames(this.config.updateInterval, context);
+    if (!context.devices.some((device) => device.id === this.config.deviceId)) {
+      throw new Error(`OSDirectorPlugin: unknown deviceId "${this.config.deviceId}"`);
+    }
 
     const osEvents: TrackEvent[] = [];
 
@@ -62,6 +62,7 @@ export class OSDirectorPlugin implements CompilerPlugin {
     for (let frame = 0; frame <= maxFrame; frame += intervalFrames) {
       const timeEvent: TrackEvent = {
         at: frame,
+        deviceId: this.config.deviceId,
         kind: "OS",
         type: "SET_TIME",
         payload: { time: currentTimeMs },
@@ -71,6 +72,7 @@ export class OSDirectorPlugin implements CompilerPlugin {
 
       const batteryEvent: TrackEvent = {
         at: frame,
+        deviceId: this.config.deviceId,
         kind: "OS",
         type: "SET_BATTERY",
         payload: { level: Math.max(0, Math.floor(currentBattery)) },
@@ -87,6 +89,7 @@ export class OSDirectorPlugin implements CompilerPlugin {
       const midFrame = Math.floor(maxFrame / 2);
       osEvents.push({
         at: midFrame,
+        deviceId: this.config.deviceId,
         kind: "OS",
         type: "SET_NETWORK",
         payload: { type: "none" },
@@ -95,6 +98,7 @@ export class OSDirectorPlugin implements CompilerPlugin {
 
       osEvents.push({
         at: midFrame + 30 * context.fps,
+        deviceId: this.config.deviceId,
         kind: "OS",
         type: "SET_NETWORK",
         payload: { type: "wifi" },
@@ -106,31 +110,23 @@ export class OSDirectorPlugin implements CompilerPlugin {
   }
 
   private parseStartTime(time: Date | string | undefined): Date {
-    const parsed =
-      !time
-        ? new Date("2024-01-01T09:41:00Z")
-        : typeof time === "string"
-          ? new Date(time)
-          : time;
+    const parsed = !time
+      ? new Date("2024-01-01T09:41:00Z")
+      : typeof time === "string"
+        ? new Date(time)
+        : time;
 
     if (!Number.isFinite(parsed.getTime())) {
-      throw new Error(
-        `OSDirectorPlugin: Invalid startTime "${String(time)}"`,
-      );
+      throw new Error(`OSDirectorPlugin: Invalid startTime "${String(time)}"`);
     }
 
     return parsed;
   }
 
-  private parseDurationToFrames(
-    timeStr: string,
-    context: CompilerContext,
-  ): number {
+  private parseDurationToFrames(timeStr: string, context: CompilerContext): number {
     const match = timeStr.match(/^(\d+(?:\.\d+)?)s$/);
     if (!match) {
-      throw new Error(
-        `OSDirectorPlugin: Invalid duration format "${timeStr}" (expected "15s")`,
-      );
+      throw new Error(`OSDirectorPlugin: Invalid duration format "${timeStr}" (expected "15s")`);
     }
     const seconds = parseFloat(match[1]);
     const frames = Math.floor(seconds * context.fps);

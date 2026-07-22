@@ -1,6 +1,10 @@
-// NOTE: DeviceId, AppId, ConversationId, Platform are now in ./types/device.ts
-// Re-export for backward compatibility
-export type { DeviceId, AppId, ConversationId, Platform } from "./types/device.js";
+export type {
+  DeviceId,
+  AppId,
+  ConversationId,
+  Platform,
+  DeviceTransitionStyle,
+} from "./types/device.js";
 
 export type {
   AppScreens,
@@ -48,7 +52,7 @@ export { DEFAULT_DYNAMIC_ISLAND } from "./types/device.js";
 //
 // These are app-specific concepts. Each plugin defines its own types.
 // WorldState.conversations is now Record<string, unknown>.
-// WorldState.appState is Record<string, unknown>.
+// App instances are keyed by canonical `${deviceId}:${appId}` identifiers.
 //
 // Apps cast to their own types when accessing this data.
 // =============================================================================
@@ -114,13 +118,22 @@ export type {
   VideoConfig,
 } from "./types/audio.js";
 
-export { DEFAULT_BUS_CONFIG, DEFAULT_AUDIO_STATE, DEFAULT_VIDEO_CONFIG } from "./types/audio.js";
+export {
+  DEFAULT_BUS_CONFIG,
+  DEFAULT_VIDEO_CONFIG,
+  createDefaultAudioState,
+} from "./types/audio.js";
 
 // =============================================================================
 // TOUCH STATE (for gesture visualization)
 // =============================================================================
 
-export type { WorldState, TouchState } from "./types/world-state.js";
+export { appInstanceId, parseAppInstanceId } from "./types/world-state.js";
+export type {
+  AppInstanceId,
+  WorldState,
+  TouchState,
+} from "./types/world-state.js";
 export type {
   EpisodeAssetKind,
   EpisodeAssetOwner,

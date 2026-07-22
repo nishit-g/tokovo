@@ -65,7 +65,7 @@ export default defineEpisode({
           {
             id: "ig_flag_1",
             authorId: "ig_me",
-            imageUrl: "/placeholders/media.svg",
+            imageUrl: "/media/founder-whiteboard.jpg",
             caption: "Teaser frame. No context. Just pressure.",
             createdAt: baseTs - 150000,
             location: "Bengaluru",
@@ -82,14 +82,14 @@ export default defineEpisode({
               {
                 id: "ig_story_flag_1",
                 authorId: "ig_noa",
-                mediaUrl: "/placeholders/media.svg",
+                mediaUrl: "/media/founder-whiteboard.jpg",
                 createdAt: baseTs - 90000,
                 accentColor: "#ff8246",
               },
               {
                 id: "ig_story_flag_2",
                 authorId: "ig_noa",
-                mediaUrl: "/placeholders/media.svg",
+                mediaUrl: "/media/founder-whiteboard.jpg",
                 createdAt: baseTs - 85000,
                 accentColor: "#f7b267",
               },
@@ -149,13 +149,13 @@ export default defineEpisode({
         ig.at("18.8s").navigate("composer");
         ig.at("19.4s").setComposerDraft({
           caption: "Second still. Calmer caption. Same launch-night pulse.",
-          imageUrl: "/placeholders/media.svg",
+          imageUrl: "/media/founder-whiteboard.jpg",
           location: "Bengaluru",
         });
         ig.at("21.4s").addPost({
           id: "ig_flag_2",
           authorId: "ig_me",
-          imageUrl: "/placeholders/media.svg",
+          imageUrl: "/media/founder-whiteboard.jpg",
           caption: "Second still. Calmer caption. Same launch-night pulse.",
           createdAt: baseTs + 34000,
           location: "Bengaluru",

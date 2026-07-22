@@ -52,9 +52,7 @@ function buildMediaMessageId(
 
 function bumpUnread(ctx: HandlerContext, from: string): void {
   if (from === "me" || from === "system") return;
-  const appState = (ctx.draft as { appState?: { app_whatsapp?: { conversationId?: string } } })
-    .appState?.app_whatsapp;
-  if (appState?.conversationId && appState.conversationId === ctx.conversation.id) {
+  if (ctx.state.conversationId === ctx.conversation.id) {
     return;
   }
   ctx.conversation.unreadCount = (ctx.conversation.unreadCount ?? 0) + 1;
@@ -66,15 +64,7 @@ function markUnreadBoundary(
   messageId: string,
 ): void {
   if (from === "me" || from === "system") return;
-  const appState = (
-    ctx.draft as {
-      appState?: { app_whatsapp?: { conversationId?: string } };
-    }
-  ).appState?.app_whatsapp;
-  if (
-    appState?.conversationId &&
-    appState.conversationId === ctx.conversation.id
-  ) {
+  if (ctx.state.conversationId === ctx.conversation.id) {
     return;
   }
   if ((ctx.conversation.unreadCount ?? 0) === 0) {
@@ -128,11 +118,7 @@ function requireMediaMessage(
 }
 
 function getWhatsAppState(ctx: HandlerContext): WhatsAppState {
-  const state = ctx.draft.appState?.app_whatsapp as WhatsAppState | undefined;
-  if (!state) {
-    throw new Error("WhatsApp media lifecycle requires app state");
-  }
-  return state;
+  return ctx.state;
 }
 
 export function registerMediaHandlers(

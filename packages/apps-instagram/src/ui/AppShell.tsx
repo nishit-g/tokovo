@@ -7,7 +7,7 @@ export const AppShell: React.FC<{
   immersive?: boolean;
 }> = ({ children, immersive = false }) => {
   const theme = useInstagramTheme();
-  const { contentInsets } = useAppViewport();
+  const { interactiveInsets: contentInsets } = useAppViewport();
 
   return (
     <div

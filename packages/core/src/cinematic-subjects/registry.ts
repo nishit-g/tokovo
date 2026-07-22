@@ -3,7 +3,6 @@ import type {
   CinematicSubjectProvider,
 } from "../types/cinematic-subject.js";
 import type { WorldState } from "../types/world-state.js";
-import { projectWorldForDevice } from "../utils/app-state.js";
 
 export class CinematicSubjectRegistryClass {
   readonly #providers = new Map<string, CinematicSubjectProvider>();
@@ -41,11 +40,7 @@ export class CinematicSubjectRegistryClass {
         `Cinematic subject provider "${ownerId}" is not registered.`,
       );
     }
-    return provider.project(
-      projectWorldForDevice(world, deviceId),
-      layout,
-      deviceId,
-    );
+    return provider.project(world, layout, deviceId);
   }
 }
 

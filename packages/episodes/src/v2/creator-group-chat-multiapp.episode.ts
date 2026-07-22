@@ -8,16 +8,7 @@ export default defineEpisode({
     description:
       "Multi-app creator operations episode with group chat pressure, heads-up banner bait, X thread escalation, iMessage follow-up, overlays, BGM, keyboard, and camera direction.",
     category: "showcase",
-    tags: [
-      "v2",
-      "creator",
-      "chat",
-      "whatsapp",
-      "x",
-      "imessage",
-      "overlay",
-      "bgm",
-    ],
+    tags: ["v2", "creator", "chat", "whatsapp", "x", "imessage", "overlay", "bgm"],
   },
   config: {
     format: "1080x1920",
@@ -171,12 +162,12 @@ export default defineEpisode({
       .deviceTrack("phone", (d) => {
         // Switch to X
         d.at("16.0s").openApp("app_x", {
-          transition: { durationFrames: 18, style: "iosZoom" },
+          transition: { durationFrames: 18, style: "platform-default" },
         });
 
         // Switch to iMessage for the producer follow-up.
         d.at("34.5s").openApp("app_imessage", {
-          transition: { durationFrames: 18, style: "iosZoom" },
+          transition: { durationFrames: 18, style: "platform-default" },
         });
       })
       .notificationTrack("phone", (notifications) => {
@@ -198,39 +189,21 @@ export default defineEpisode({
         scene.whatsapp("phone", "grp_chat", (wa) => {
           wa.switchTo("grp_chat", "0s");
 
-          wa.at("1.2s").receive(
-            "Mina",
-            "The teaser is out and the timing comment is everywhere.",
-          );
-          wa.at("2.2s").receive(
-            "Omar",
-            "Caption team says the audience made their own hook.",
-          );
+          wa.at("1.2s").receive("Mina", "The teaser is out and the timing comment is everywhere.");
+          wa.at("2.2s").receive("Omar", "Caption team says the audience made their own hook.");
           wa.at("3.1s").receive(
             "Tess",
             "We need one controlled reply before this becomes the whole launch.",
           );
 
           wa.span("3.9s", "4.6s").typing("Jay");
-          wa.at("4.7s").receive(
-            "Jay",
-            "The thread is calling it strategic timing. Lean into it.",
-          );
+          wa.at("4.7s").receive("Jay", "The thread is calling it strategic timing. Lean into it.");
 
           // Reply beat.
-          wa.at("7.8s").send(
-            "It was pacing. We held the reveal for the second beat.",
-            {},
-          );
+          wa.at("7.8s").send("It was pacing. We held the reveal for the second beat.", {});
 
-          wa.at("10.8s").receive(
-            "Omar",
-            "That line is either brilliant or a screenshot forever.",
-          );
-          wa.at("12.6s").receive(
-            "Mina",
-            "Open X. The thread is moving faster than the edit.",
-          );
+          wa.at("10.8s").receive("Omar", "That line is either brilliant or a screenshot forever.");
+          wa.at("12.6s").receive("Mina", "Open X. The thread is moving faster than the edit.");
         });
       })
 
@@ -258,30 +231,14 @@ export default defineEpisode({
       // ============================================
       // iMessage (producer reality check)
       // ============================================
-      .scene(
-        "producer reality check",
-        { at: "34.5s", duration: "12.5s" },
-        (scene) => {
-          scene.imessage("phone", "im_producer", (im) => {
-            im.at("0.9s").openConversation("im_producer");
-            im.at("2.5s").receive(
-              "Producer",
-              "I saw the reply. Is this planned?",
-            );
-            im.at("4.5s").receive(
-              "Producer",
-              "If it is planned, send the next beat now.",
-            );
-            im.at("7.5s").send(
-              "Give me five minutes. Turning the thread into act two.",
-              {},
-            );
-            im.at("11.5s").receive(
-              "Producer",
-              "Good. Make it look intentional.",
-            );
-          });
-        },
-      )
+      .scene("producer reality check", { at: "34.5s", duration: "12.5s" }, (scene) => {
+        scene.imessage("phone", "im_producer", (im) => {
+          im.at("0.9s").openConversation("im_producer");
+          im.at("2.5s").receive("Producer", "I saw the reply. Is this planned?");
+          im.at("4.5s").receive("Producer", "If it is planned, send the next beat now.");
+          im.at("7.5s").send("Give me five minutes. Turning the thread into act two.", {});
+          im.at("11.5s").receive("Producer", "Good. Make it look intentional.");
+        });
+      })
       .build(),
 });

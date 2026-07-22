@@ -8,15 +8,7 @@ export default defineEpisode({
     description:
       "Baseline episode for future authoring: lockscreen notification, deterministic unlock, screen recording indicator, app open transition, and keyboard typing.",
     category: "showcase",
-    tags: [
-      "v2",
-      "device",
-      "lockscreen",
-      "unlock",
-      "recording",
-      "keyboard",
-      "transition",
-    ],
+    tags: ["v2", "device", "lockscreen", "unlock", "recording", "keyboard", "transition"],
   },
   config: {
     format: "1080x1920",
@@ -37,15 +29,13 @@ export default defineEpisode({
         },
       })
       .snapshot("app_whatsapp", "phone", {
-        conversations: [
-          { id: "dm_bait", name: "Mina", avatar: "/avatars/avatar-maya.jpg" },
-        ],
+        conversations: [{ id: "dm_bait", name: "Mina", avatar: "/avatars/avatar-maya.jpg" }],
       })
       .background({ type: "image", src: "/backgrounds/cozy-bedroom.png" })
       .deviceTrack("phone", (d) => {
         d.at("2.6s").unlock();
         d.at("3.4s").openApp("app_whatsapp", {
-          transition: { durationFrames: 18, style: "iosZoom" },
+          transition: { durationFrames: 18, style: "platform-default" },
         });
       })
       .notificationTrack("phone", (notifications) => {
@@ -68,7 +58,7 @@ export default defineEpisode({
       })
       .deviceTrack("phone", (d) => {
         d.at("11.2s").openApp("app_x", {
-          transition: { durationFrames: 18, style: "iosZoom" },
+          transition: { durationFrames: 18, style: "platform-default" },
         });
       })
       .snapshot("app_x", "phone", {

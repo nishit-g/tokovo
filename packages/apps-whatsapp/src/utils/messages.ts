@@ -1,8 +1,5 @@
 import type { WorldState } from "@tokovo/core";
-import type {
-  WhatsAppMediaLifecycle,
-  WhatsAppMessage,
-} from "../types/index.js";
+import type { WhatsAppMediaLifecycle, WhatsAppMessage } from "../types/index.js";
 import type { WhatsAppLocale } from "../localization/index.js";
 import { translateWhatsApp } from "../localization/index.js";
 import { formatFileSize } from "./file-size.js";
@@ -18,15 +15,10 @@ function formatTime(date: Date): string {
 }
 
 function startOfDay(date: Date): Date {
-  return new Date(
-    Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()),
-  );
+  return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
 }
 
-function resolveRelativeDate(
-  value: unknown,
-  baseTime: Date | undefined,
-): Date | undefined {
+function resolveRelativeDate(value: unknown, baseTime: Date | undefined): Date | undefined {
   if (!(baseTime instanceof Date) || Number.isNaN(baseTime.getTime())) {
     return undefined;
   }
@@ -42,21 +34,15 @@ function resolveRelativeDate(
   return new Date(baseTime.getTime() + value * 1000);
 }
 
-function resolveBaseTime(world: WorldState, deviceId?: string): Date {
-  const resolvedDeviceId = deviceId ?? Object.keys(world.devices || {})[0];
-  const clock = resolvedDeviceId
-    ? world.devices?.[resolvedDeviceId]?.os?.clock
-    : undefined;
-  if (typeof clock === "number") {
-    return new Date(clock);
+function resolveBaseTime(world: WorldState, deviceId: string): Date {
+  const device = world.devices[deviceId];
+  if (!device) {
+    throw new Error(`WHATSAPP_DEVICE_MISSING: "${deviceId}" is not in world state.`);
   }
-  return new Date(0);
+  return new Date(device.os.clock);
 }
 
-function formatTimestamp(
-  value: unknown,
-  baseTime: Date | undefined,
-): string | undefined {
+function formatTimestamp(value: unknown, baseTime: Date | undefined): string | undefined {
   if (typeof value === "string") return value;
   if (typeof value !== "number") return undefined;
 
@@ -75,15 +61,7 @@ function formatTimestamp(
 }
 
 function isLifecycleMediaType(type: WhatsAppMessage["type"]): boolean {
-  return [
-    "image",
-    "video",
-    "voice",
-    "gif",
-    "sticker",
-    "document",
-    "location",
-  ].includes(type);
+  return ["image", "video", "voice", "gif", "sticker", "document", "location"].includes(type);
 }
 
 function hydrateMediaLifecycle(
@@ -94,8 +72,7 @@ function hydrateMediaLifecycle(
   const transferState = media?.transferState ?? (hasSource ? "ready" : "remote");
   return {
     transferState,
-    transferProgress:
-      media?.transferProgress ?? (transferState === "ready" ? 1 : 0),
+    transferProgress: media?.transferProgress ?? (transferState === "ready" ? 1 : 0),
     playbackState: media?.playbackState ?? "idle",
     playbackProgress: media?.playbackProgress ?? 0,
     failureReason: media?.failureReason,
@@ -158,12 +135,12 @@ export function hydrateSnapshotMessage(
       break;
     case "poll":
       base.pollQuestion = (raw.pollQuestion as string) ?? "";
-      base.options = (
-        (raw.options as Array<{ text: string; votes?: number }>) ?? []
-      ).map((option) => ({
-        text: option.text,
-        votes: option.votes,
-      }));
+      base.options = ((raw.options as Array<{ text: string; votes?: number }>) ?? []).map(
+        (option) => ({
+          text: option.text,
+          votes: option.votes,
+        }),
+      );
       base.totalVotes = raw.totalVotes as number | undefined;
       base.pollStatus = raw.pollStatus as string | undefined;
       break;
@@ -196,8 +173,7 @@ export function hydrateSnapshotMessage(
       break;
     case "call": {
       base.callType = raw.callType as WhatsAppMessage["callType"];
-      base.duration =
-        (raw.callDuration as number) ?? (raw.duration as number) ?? undefined;
+      base.duration = (raw.callDuration as number) ?? (raw.duration as number) ?? undefined;
       base.text = raw.text as string | undefined;
       break;
     }
@@ -222,13 +198,13 @@ export function hydrateSnapshotMessage(
   if (isLifecycleMediaType(base.type)) {
     const hasSource = Boolean(
       base.imageUrl ??
-        base.videoUrl ??
-        base.thumbnailUrl ??
-        base.gifUrl ??
-        base.stickerUrl ??
-        base.documentUrl ??
-        base.mapThumbnailUrl ??
-        (base.type === "voice"),
+      base.videoUrl ??
+      base.thumbnailUrl ??
+      base.gifUrl ??
+      base.stickerUrl ??
+      base.documentUrl ??
+      base.mapThumbnailUrl ??
+      base.type === "voice",
     );
     base.media = hydrateMediaLifecycle(raw, hasSource);
   }
@@ -236,7 +212,7 @@ export function hydrateSnapshotMessage(
   return base;
 }
 
-export function getBaseTime(world: WorldState, deviceId?: string): Date {
+export function getBaseTime(world: WorldState, deviceId: string): Date {
   return resolveBaseTime(world, deviceId);
 }
 

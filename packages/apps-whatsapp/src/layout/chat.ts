@@ -1,5 +1,5 @@
 import {
-  getAppStateForDevice,
+  requireAppStateForDevice,
   LayoutContext,
   ChatLayoutState,
   ChatMessageLayout,
@@ -51,19 +51,17 @@ export function computeChatLayout(
   // Physical-pixel scaling happens above the app surface in the renderer.
   const px = (value: number) => value;
 
-  const appState = (getAppStateForDevice(world, "app_whatsapp", ctx.activeDeviceId) ||
-    {}) as Partial<WhatsAppState>;
+  const appState = requireAppStateForDevice<WhatsAppState>(
+    world,
+    "app_whatsapp",
+    ctx.activeDeviceId,
+  );
   const conversations = (appState.conversations || {}) as Record<string, WhatsAppConversation>;
 
   if (!activeConversationId || !conversations[activeConversationId]) {
-    return {
-      kind: "CHAT",
-      scrollY: 0,
-      contentHeight: 0,
-      isAtBottom: true,
-      messageLayouts: {},
-      meta: {},
-    };
+    throw new Error(
+      `WHATSAPP_CHAT_CONTEXT_MISSING: device "${ctx.activeDeviceId}" requires an active conversation`,
+    );
   }
 
   const conversation = conversations[activeConversationId];
@@ -110,8 +108,8 @@ export function computeChatLayout(
     reactions: [],
   };
 
-  const contentTop = ctx.appViewport.contentInsets.top;
-  const contentBottom = ctx.appViewport.contentInsets.bottom;
+  const contentTop = ctx.appViewport.interactiveInsets.top;
+  const contentBottom = ctx.appViewport.interactiveInsets.bottom;
   const chromeGeometry = getChatChromeGeometry({
     top: contentTop,
     bottom: contentBottom,

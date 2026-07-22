@@ -4,7 +4,10 @@
  * LinkedIn post creation interface.
  */
 import React from "react";
-import type { WorldState } from "@tokovo/core";
+import {
+  requireAppStateForDevice,
+  type WorldState,
+} from "@tokovo/core";
 import {
   KeyboardAwareView,
   ScrollableContent,
@@ -13,17 +16,22 @@ import {
 import { useLinkedInTheme } from "./ThemeContext.js";
 import { LIAvatar, LIIcon } from "./components.js";
 import { getCurrentUser } from "../runtime/selectors.js";
+import type { LinkedInState } from "../runtime/state.js";
 
-export const Compose: React.FC<{ world: WorldState; deviceId?: string; t?: number }> = ({
+export const Compose: React.FC<{ world: WorldState; deviceId: string; t: number }> = ({
   world,
-  deviceId: _deviceId,
+  deviceId,
   t: _t,
 }) => {
   const theme = useLinkedInTheme();
-  const currentUser = getCurrentUser(world);
+  const currentUser = getCurrentUser(world, deviceId);
   const postInput = useInputField("post");
-  const state = world.appState?.["app_linkedin"] as { composeDraft?: string } | undefined;
-  const draftText = postInput?.value ?? state?.composeDraft ?? "";
+  const state = requireAppStateForDevice<LinkedInState>(
+    world,
+    "app_linkedin",
+    deviceId,
+  );
+  const draftText = postInput?.value ?? state.composeDraft;
 
   return (
     <KeyboardAwareView style={{ flex: 1, minHeight: 0 }}>

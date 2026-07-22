@@ -72,7 +72,7 @@ export default defineEpisode({
           {
             id: "ig_ex_1",
             authorId: "ig_sam",
-            imageUrl: "/placeholders/media.svg",
+            imageUrl: "/media/office-meme.png",
             caption: "The frame everyone saved and nobody understood.",
             createdAt: baseTs - 190000,
             likeCount: 12400,
@@ -82,9 +82,8 @@ export default defineEpisode({
           {
             id: "ig_ex_2",
             authorId: "ig_arya",
-            imageUrl: "/placeholders/media.svg",
-            caption:
-              "How reels are made when your editor is powered by caffeine and regret.",
+            imageUrl: "/media/office-meme.png",
+            caption: "How reels are made when your editor is powered by caffeine and regret.",
             createdAt: baseTs - 140000,
             likeCount: 24100,
             commentCount: 840,
@@ -93,7 +92,7 @@ export default defineEpisode({
           {
             id: "ig_ex_3",
             authorId: "ig_kai",
-            imageUrl: "/placeholders/media.svg",
+            imageUrl: "/media/office-meme.png",
             caption: "Soft launch, sharp comments.",
             createdAt: baseTs - 100000,
             likeCount: 9300,
@@ -109,13 +108,13 @@ export default defineEpisode({
               {
                 id: "ig_ex_story_1",
                 authorId: "ig_sam",
-                mediaUrl: "/placeholders/media.svg",
+                mediaUrl: "/media/office-meme.png",
                 createdAt: baseTs - 80000,
               },
               {
                 id: "ig_ex_story_2",
                 authorId: "ig_sam",
-                mediaUrl: "/placeholders/media.svg",
+                mediaUrl: "/media/office-meme.png",
                 createdAt: baseTs - 76000,
               },
             ],
@@ -189,13 +188,13 @@ export default defineEpisode({
         ig.at("21.8s").navigate("composer");
         ig.at("22.4s").setComposerDraft({
           caption: "Okay, calmer caption. Less caffeine confession. Same cut.",
-          imageUrl: "/placeholders/media.svg",
+          imageUrl: "/media/office-meme.png",
           location: "Mumbai",
         });
         ig.at("24.8s").addPost({
           id: "ig_ex_4",
           authorId: "ig_arya",
-          imageUrl: "/placeholders/media.svg",
+          imageUrl: "/media/office-meme.png",
           caption: "Okay, calmer caption. Less caffeine confession. Same cut.",
           createdAt: baseTs + 38000,
           location: "Mumbai",

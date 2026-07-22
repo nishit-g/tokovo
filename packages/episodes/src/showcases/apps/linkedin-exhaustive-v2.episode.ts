@@ -12,14 +12,7 @@ export default defineEpisode({
     appId: "app_linkedin",
     visibility: "public",
     sortOrder: 310,
-    tags: [
-      "linkedin",
-      "exhaustive",
-      "feed",
-      "messages",
-      "compose",
-      "notifications",
-    ],
+    tags: ["linkedin", "exhaustive", "feed", "messages", "compose", "notifications"],
   },
   config: {
     format: "1080x1920",
@@ -108,7 +101,7 @@ export default defineEpisode({
             createdAt: baseTs - 120000,
             media: {
               type: "image",
-              urls: ["/placeholders/media.svg"],
+              urls: ["/media/office-meme.png"],
               aspect: "wide",
             },
           },

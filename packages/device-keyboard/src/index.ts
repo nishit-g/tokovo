@@ -1,5 +1,10 @@
-export { InputKeyboard, resolveInputKeyboardLayout } from "./ui/index.js";
-export type { InputKeyboardProps } from "./ui/index.js";
+export {
+  InputKeyboard,
+  resolveInputKeyboardLayout,
+  registerInputKeyboardPainter,
+  requireInputKeyboardPainter,
+} from "./ui/index.js";
+export type { InputKeyboardPainter, InputKeyboardProps } from "./ui/index.js";
 export * from "./contract/index.js";
 export * from "./compile/index.js";
 export * from "./runtime/evaluate.js";

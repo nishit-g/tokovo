@@ -1,4 +1,8 @@
-import { resolvePlatformVisuals, type PlatformDesignProfileId } from "@tokovo/visual-system";
+import {
+  resolvePlatformVisuals,
+  type PlatformDesignProfileId,
+  type VisualPreferences,
+} from "@tokovo/visual-system";
 import type { InputAppearance, InputPlatform, InputThemeProjection } from "../contract/index.js";
 
 function directionForLocale(locale: string): "ltr" | "rtl" {
@@ -13,15 +17,19 @@ export function getInputTheme(
   appearance: InputAppearance,
   platformProfileId: PlatformDesignProfileId,
   locale = "en-US",
+  preferences: Partial<VisualPreferences> = {},
 ): InputThemeProjection {
   const visuals = resolvePlatformVisuals({
     platformProfileId,
     appearance,
     locale,
     direction: directionForLocale(locale),
-    textScale: 1,
-    contrast: "standard",
-    motion: "full",
+    textScale: preferences.textScale ?? 1,
+    contrast: preferences.contrast ?? "standard",
+    motion: preferences.motion ?? "full",
+    transparency: preferences.transparency ?? "standard",
+    materialPreference: preferences.materialPreference ?? "automatic",
+    colorSeed: preferences.colorSeed,
   });
   if (visuals.platform !== platform) {
     throw new Error(

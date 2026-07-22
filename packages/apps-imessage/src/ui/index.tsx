@@ -1,6 +1,9 @@
 import React from "react";
 import { Img } from "remotion";
-import type { PluginViewProps } from "@tokovo/core";
+import {
+  requireAppStateForDevice,
+  type PluginViewProps,
+} from "@tokovo/core";
 import { useInputField } from "@tokovo/react";
 import {
   Header,
@@ -20,16 +23,12 @@ type IMessageViewProps = PluginViewProps;
 export const IMessageView: React.FC<IMessageViewProps> = (props) => {
   const world = props.world;
 
-  const state = world.appState?.app_imessage as IMessageState | undefined;
-  const themeMode = state?.themeMode ?? "light";
-
-  if (!state) {
-    return (
-      <IMessageThemeProvider mode={themeMode}>
-        <EmptyState />
-      </IMessageThemeProvider>
-    );
-  }
+  const state = requireAppStateForDevice<IMessageState>(
+    world,
+    "app_imessage",
+    props.deviceId,
+  );
+  const themeMode = state.themeMode ?? "light";
 
   const screen = state.currentScreen ?? "list";
   const activeConversationId = state.activeConversationId;
@@ -39,7 +38,7 @@ export const IMessageView: React.FC<IMessageViewProps> = (props) => {
       return (
         <ConversationListView
           conversations={state.conversations ?? {}}
-          contentInsetTop={props.appViewport.contentInsets.top}
+          contentInsetTop={props.appViewport.interactiveInsets.top}
         />
       );
     }
@@ -48,7 +47,7 @@ export const IMessageView: React.FC<IMessageViewProps> = (props) => {
       return (
         <InfoView
           conversation={state.conversations?.[activeConversationId]}
-          contentInsetTop={props.appViewport.contentInsets.top}
+          contentInsetTop={props.appViewport.interactiveInsets.top}
         />
       );
     }
@@ -57,7 +56,7 @@ export const IMessageView: React.FC<IMessageViewProps> = (props) => {
       return (
         <MediaView
           conversation={state.conversations?.[activeConversationId]}
-          contentInsetTop={props.appViewport.contentInsets.top}
+          contentInsetTop={props.appViewport.interactiveInsets.top}
         />
       );
     }
@@ -68,8 +67,8 @@ export const IMessageView: React.FC<IMessageViewProps> = (props) => {
         deviceId={props.deviceId}
         t={props.t}
         conversation={state.conversations?.[activeConversationId]}
-        contentInsetTop={props.appViewport.contentInsets.top}
-        contentInsetBottom={props.appViewport.contentInsets.bottom}
+        contentInsetTop={props.appViewport.interactiveInsets.top}
+        contentInsetBottom={props.appViewport.interactiveInsets.bottom}
         activeScreenEffect={state.activeScreenEffect as ScreenEffectType | undefined}
         activeScreenEffectStartedAtFrame={state.activeScreenEffectStartedAtFrame}
         searchQuery={state.searchQuery}
@@ -82,8 +81,8 @@ export const IMessageView: React.FC<IMessageViewProps> = (props) => {
 
 const ChatView: React.FC<{
   world: PluginViewProps["world"];
-  deviceId?: string;
-  t?: number;
+  deviceId: string;
+  t: number;
   conversation?: IMessageConversation;
   contentInsetTop: number;
   contentInsetBottom: number;

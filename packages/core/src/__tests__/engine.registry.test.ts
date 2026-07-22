@@ -1,7 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import type { TimelineEvent, WorldState } from "../types.js";
 import { createReducerRegistry } from "../engine/registry.js";
-import { getLogger, LogCollector } from "../logger/index.js";
 
 describe("ReducerRegistry", () => {
   it("registers and retrieves device reducer", () => {
@@ -13,42 +11,17 @@ describe("ReducerRegistry", () => {
     registry.reset();
   });
 
-  it("registers app reducer and warns on overwrite", () => {
-    const collector = new LogCollector();
-    const logger = getLogger();
-    logger.configure({ consoleOutput: false, minLevel: "debug", components: [] });
-    logger.clearSinks();
-    logger.addSink(collector);
+  it("rejects duplicate app reducers", () => {
     const registry = createReducerRegistry();
 
     const reducer = vi.fn();
     const reducer2 = vi.fn();
     registry.registerAppReducer("app", reducer);
-    registry.registerAppReducer("app", reducer2);
-
-    expect(registry.getAppReducer("app")).toBe(reducer2);
-    expect(collector.peek().some((entry) => entry.event === "engine.warn")).toBe(true);
-    registry.reset();
-  });
-
-  it("registers scoped app reducer with initial state", () => {
-    const registry = createReducerRegistry();
-    registry.registerScopedAppReducer(
-      "scoped",
-      (state: { count: number }, event: TimelineEvent) => {
-        if (event.kind === "APP") {
-          state.count += 1;
-        }
-      },
-      () => ({ count: 0 }),
+    expect(() => registry.registerAppReducer("app", reducer2)).toThrow(
+      'App reducer "app" is already registered',
     );
 
-    const reducer = registry.getAppReducer("scoped");
-    const draft = {} as WorldState;
-    reducer?.(draft, { kind: "APP" } as TimelineEvent);
-
-    expect((draft.appState as { scoped: { count: number } }).scoped.count).toBe(1);
-
+    expect(registry.getAppReducer("app")).toBe(reducer);
     registry.reset();
   });
 
@@ -85,7 +58,7 @@ describe("ReducerRegistry", () => {
     registry.registerAppReducer("app", vi.fn());
     expect(registry.hasAppReducer("app")).toBe(true);
     expect(registry.getRegisteredApps()).toContain("app");
-    expect(registry.appReducers.app).toBeDefined();
+    expect(registry.getAppReducer("app")).toBeDefined();
 
     registry.unregisterAppReducer("app");
     expect(registry.hasAppReducer("app")).toBe(false);

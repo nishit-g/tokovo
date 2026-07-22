@@ -53,6 +53,8 @@ describe("visual system", () => {
       textScale: 1,
       contrast: "standard",
       motion: "full",
+      transparency: "standard",
+      materialPreference: "automatic",
     });
     const first = resolveSystemGeometry(hardware, visuals, {
       keyboard: { visible: true, progress: 1 },
@@ -64,7 +66,7 @@ describe("visual system", () => {
     });
 
     expect(first.viewport).toEqual({ x: 0, y: 0, width: 440, height: 956 });
-    expect(first.appViewport.contentInsets).toEqual({
+    expect(first.appViewport.interactiveInsets).toEqual({
       top: 62,
       right: 0,
       bottom: 336,
@@ -109,6 +111,7 @@ describe("visual system", () => {
       systemSurfaces: false,
     });
     registerHardwareVisualIdentity("canvas-1080x1920", {
+      platform: "ios",
       platformProfileId: "ios:liquid-glass@1",
       systemSurfaces: false,
     });

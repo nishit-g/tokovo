@@ -1,4 +1,4 @@
-import { DEFAULT_AUDIO_STATE, type WorldState } from "@tokovo/core";
+import { createDefaultAudioState, type WorldState } from "@tokovo/core";
 import { produce } from "immer";
 import { describe, expect, it } from "vitest";
 
@@ -16,9 +16,10 @@ function world(): WorldState {
   const appState = createWhatsAppInitialState();
   appState.conversations.dm = { id: "dm", messages: [] };
   return {
+    capabilityState: {},
     devices: {},
-    appState: { app_whatsapp: appState },
-    audio: DEFAULT_AUDIO_STATE,
+    appInstances: { "phone:app_whatsapp": appState },
+    audio: createDefaultAudioState(),
   } as WorldState;
 }
 
@@ -58,13 +59,14 @@ describe("WhatsApp canonical authoring contract", () => {
     expect(() =>
       reduce(
         {
+          capabilityState: {},
           devices: {},
-          appState: {},
-          audio: DEFAULT_AUDIO_STATE,
+          appInstances: {},
+          audio: createDefaultAudioState(),
         } as WorldState,
         event,
       ),
-    ).toThrow("requires bootstrapped app_whatsapp state");
+    ).toThrow('APP_INSTANCE_MISSING: app "app_whatsapp" is not mounted on device "phone"');
     expect(() => reduce(world(), event)).toThrow(
       'unknown conversation "missing"',
     );
@@ -225,7 +227,7 @@ describe("WhatsApp canonical authoring contract", () => {
     track.at(7).deleteMessage("forward-1");
 
     const next = reduceTrack(world(), track);
-    const conversation = selectAppState(next)?.conversations.dm;
+    const conversation = selectAppState(next, "phone")?.conversations.dm;
     expect(
       conversation?.messages.find((message) => message.id === "message-1"),
     ).toMatchObject({
@@ -269,7 +271,7 @@ describe("WhatsApp canonical authoring contract", () => {
     track.at(8).completeGesture("text-1");
 
     const actionMenuState = reduceTrack(world(), track);
-    expect(selectAppState(actionMenuState)).toMatchObject({
+    expect(selectAppState(actionMenuState, "phone")).toMatchObject({
       mediaViewer: null,
       activeGesture: {
         messageId: "text-1",
@@ -278,7 +280,7 @@ describe("WhatsApp canonical authoring contract", () => {
       },
     });
     expect(
-      selectAppState(actionMenuState)?.conversations.dm.messages.find(
+      selectAppState(actionMenuState, "phone")?.conversations.dm.messages.find(
         (message) => message.id === "document-1",
       )?.media,
     ).toMatchObject({ transferState: "ready", transferProgress: 1 });
@@ -290,7 +292,7 @@ describe("WhatsApp canonical authoring contract", () => {
     swipe.at(12).completeGesture("text-1");
     swipe.at(13).setLocale("ar");
     const replyState = reduceTrack(actionMenuState, swipe);
-    expect(selectAppState(replyState)).toMatchObject({
+    expect(selectAppState(replyState, "phone")).toMatchObject({
       locale: "ar",
       activeGesture: null,
       replyComposer: { conversationId: "dm", messageId: "text-1" },
@@ -315,7 +317,7 @@ describe("WhatsApp canonical authoring contract", () => {
 
   it("uses typed group events and keeps membership invariants", () => {
     const initial = world();
-    const appState = selectAppState(initial);
+    const appState = selectAppState(initial, "phone");
     if (!appState) throw new Error("missing test app state");
     appState.conversations.group = {
       id: "group",
@@ -332,7 +334,7 @@ describe("WhatsApp canonical authoring contract", () => {
     track.at(4).removeGroupMember("naina", "Naina");
 
     const next = reduceTrack(initial, track);
-    const conversation = selectAppState(next)?.conversations.group;
+    const conversation = selectAppState(next, "phone")?.conversations.group;
     expect(conversation?.description).toBe("Launch room");
     expect(conversation?.members).toEqual([]);
     expect(conversation?.admins).toEqual([]);
@@ -356,7 +358,7 @@ describe("WhatsApp canonical authoring contract", () => {
       payload: { screen: "updates" },
     });
     expect(
-      (next.appState?.app_whatsapp as { layoutRevision: number })
+      (next.appInstances?.["phone:app_whatsapp"] as { layoutRevision: number })
         .layoutRevision,
     ).toBe(1);
   });
@@ -371,10 +373,8 @@ describe("WhatsApp canonical authoring contract", () => {
       currentScreen: "updates" as const,
     };
     const state = world();
-    state.appStateByDevice = {
-      left: { app_whatsapp: left },
-      right: { app_whatsapp: right },
-    };
+    state.appInstances["left:app_whatsapp"] = left;
+    state.appInstances["right:app_whatsapp"] = right;
 
     expect(selectAppState(state, "left")).toBe(left);
     expect(selectAppState(state, "right")).toBe(right);

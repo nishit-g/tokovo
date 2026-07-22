@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { replay, createInitialWorld } from "../engine.js";
+import { replayIncremental, createInitialWorld } from "../engine.js";
 import { createEngineRegistries } from "../engine/registries.js";
 import { createConfig } from "../config/index.js";
-import { projectWorldForDevice } from "../utils/app-state.js";
+import { appInstanceId } from "../types/world-state.js";
 
 describe("replay APP event routing", () => {
   it("routes APP events by appId to the registered reducer", () => {
@@ -12,18 +12,16 @@ describe("replay APP event routing", () => {
       if (event.appId !== "app_test") return;
 
       const payload = (event.payload ?? {}) as { delta?: number };
-      const current = (draft.appState as { app_test?: { value: number } }).app_test?.value;
+      const key = appInstanceId(event.deviceId, event.appId);
+      const current = (draft.appInstances[key] as { value: number }).value;
       const next = (current ?? 0) + (payload.delta ?? 1);
 
-      (draft.appState as { app_test?: { value: number } }).app_test = {
-        value: next,
-      };
+      draft.appInstances[key] = { value: next };
     });
 
     const initial = createInitialWorld({
-      appState: {
-        app_test: { value: 0 },
-      },
+      devices: { phone: { id: "phone" } as never },
+      appInstances: { "phone:app_test": { value: 0 } },
     });
 
     const events = [
@@ -31,24 +29,28 @@ describe("replay APP event routing", () => {
         at: 10,
         kind: "APP" as const,
         appId: "app_test",
+        deviceId: "phone",
         type: "TEST",
         payload: { delta: 2 },
       },
     ];
 
-    const state = replay(initial, events, 10, {
+    const state = replayIncremental(initial, events, 10, {
       mode: "preview",
       registries,
       config: createConfig(),
     });
-    expect((state.appState as { app_test?: { value: number } }).app_test?.value).toBe(2);
+    expect(state.appInstances["phone:app_test"]).toEqual({ value: 2 });
   });
 
   it("routes same-app events to independent device instances", () => {
     const registries = createEngineRegistries();
     registries.reducers.registerAppReducer("app_test", (draft, event) => {
       const payload = (event.payload ?? {}) as { delta?: number };
-      const state = draft.appState.app_test as { value: number };
+      if (event.kind !== "APP") throw new Error("expected APP event");
+      const state = draft.appInstances[appInstanceId(event.deviceId, event.appId)] as {
+        value: number;
+      };
       state.value += payload.delta ?? 1;
     });
 
@@ -57,14 +59,13 @@ describe("replay APP event routing", () => {
         left: { id: "left" },
         right: { id: "right" },
       } as any,
-      appState: {},
-      appStateByDevice: {
-        left: { app_test: { value: 1 } },
-        right: { app_test: { value: 10 } },
+      appInstances: {
+        "left:app_test": { value: 1 },
+        "right:app_test": { value: 10 },
       },
     });
 
-    const state = replay(
+    const state = replayIncremental(
       initial,
       [
         {
@@ -92,14 +93,7 @@ describe("replay APP event routing", () => {
       },
     );
 
-    expect(state.appState.app_test).toBeUndefined();
-    expect(state.appStateByDevice?.left?.app_test).toEqual({ value: 3 });
-    expect(state.appStateByDevice?.right?.app_test).toEqual({ value: 15 });
-
-    const leftWorld = projectWorldForDevice(state, "left");
-    const rightWorld = projectWorldForDevice(state, "right");
-    expect(leftWorld.appState.app_test).toEqual({ value: 3 });
-    expect(rightWorld.appState.app_test).toEqual({ value: 15 });
-    expect(state.appState.app_test).toBeUndefined();
+    expect(state.appInstances["left:app_test"]).toEqual({ value: 3 });
+    expect(state.appInstances["right:app_test"]).toEqual({ value: 15 });
   });
 });

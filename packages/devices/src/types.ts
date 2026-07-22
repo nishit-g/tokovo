@@ -1,7 +1,4 @@
-import type { ComponentType } from "react";
 import type { VisualHardwareProfile } from "@tokovo/visual-system";
-import type { FrameComponent } from "./registries/frame-registry.js";
-import type { StatusBarStrategyComponent } from "./registries/statusbar-registry.js";
 
 /**
  * Dynamic Island configuration (iOS 14+ iPhones)
@@ -37,27 +34,6 @@ export interface StatusBarWidgetConfig {
   maxWidth: number;
   /** Height of indicator area */
   height: number;
-}
-
-/**
- * Device profile defining physical characteristics and camera behavior
- */
-export interface DeviceShell {
-  /** Unique ID (e.g. "iphone16", "pixel6") */
-  id: string;
-
-  /** The outer frame component (bezel + screen container) */
-  FrameComponent: FrameComponent;
-
-  /** The System UI (Status Bar) */
-  StatusBarComponent: StatusBarStrategyComponent;
-
-  /** The Home Indicator (Bottom bar) */
-  HomeIndicatorComponent?: ComponentType<Record<string, unknown>>;
-
-  /** Physical config */
-  cornerRadius: number;
-  hasDynamicIsland: boolean;
 }
 
 export interface DeviceProfile extends VisualHardwareProfile {

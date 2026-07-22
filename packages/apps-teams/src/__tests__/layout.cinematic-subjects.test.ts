@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { LayoutContext, WorldState } from "@tokovo/core";
-import { createAppViewportFrame, DEFAULT_AUDIO_STATE } from "@tokovo/core";
+import { createAppViewportFrame, createDefaultAudioState } from "@tokovo/core";
 import { createTeamsInitialState } from "../runtime/initial-state.js";
 import { computeTeamsChatLayout, computeTeamsFeedLayout } from "../layout/index.js";
 import { TeamsCinematicSubjects } from "../camera/subjects.js";
@@ -11,7 +11,8 @@ import { teamsBootstrap } from "../bootstrap.js";
 
 function createWorld(): WorldState {
   return {
-    appState: { app_teams: createTeamsInitialState() },
+    appInstances: { "phone:app_teams": createTeamsInitialState() },
+    capabilityState: {},
     devices: {
       phone: {
         screenDimensions: {
@@ -22,7 +23,7 @@ function createWorld(): WorldState {
         },
       },
     },
-    audio: DEFAULT_AUDIO_STATE,
+    audio: createDefaultAudioState(),
   } as unknown as WorldState;
 }
 
@@ -36,13 +37,14 @@ function baseCtx(world: WorldState, viewKind: LayoutContext["viewKind"]): Layout
     t: 30,
     activeDeviceId: "phone",
     activeAppId: "app_teams",
+    platform: "ios",
     viewKind,
     viewportWidth: 393,
     viewportHeight: 852,
     appViewport: createAppViewportFrame({
       width: 393,
       height: 852,
-      contentInsets: { top: 44, bottom: 34 },
+      interactiveInsets: { top: 44, bottom: 34 },
     }),
   };
 }
@@ -69,7 +71,7 @@ function createBootstrapContext(
 describe("teams layout semantic subjects", () => {
   it("emits semantic feed subjects for chat list", () => {
     const world = createWorld();
-    world.appState.app_teams = teamsBootstrap.hydrate(
+    world.appInstances["phone:app_teams"] = teamsBootstrap.hydrate(
       createBootstrapContext(createTeamsInitialState(), {
         dms: [
           {
@@ -97,7 +99,7 @@ describe("teams layout semantic subjects", () => {
 
   it("emits semantic chat subjects for last message and composer", () => {
     let world = createWorld();
-    world.appState.app_teams = teamsBootstrap.hydrate(
+    world.appInstances["phone:app_teams"] = teamsBootstrap.hydrate(
       createBootstrapContext(createTeamsInitialState(), {
         channels: [
           {

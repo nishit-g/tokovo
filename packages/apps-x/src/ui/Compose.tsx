@@ -9,13 +9,13 @@ import { ScreenTransition } from "./ScreenTransition.js";
 
 interface ComposeProps {
   world: WorldState;
-  deviceId?: string;
-  t?: number;
+  deviceId: string;
+  t: number;
 }
 
-export const Compose: React.FC<ComposeProps> = ({ world }) => {
+export const Compose: React.FC<ComposeProps> = ({ world, deviceId }) => {
   const theme = useXTheme();
-  const state = getXState(world);
+  const state = getXState(world, deviceId);
   const draft = state?.composeDraft ?? "";
   const currentUser = state?.users.find((u) => u.id === state?.currentUserId);
   const input = useInputField("post");

@@ -178,28 +178,6 @@ export function isAudioEvent(
   return e.kind === "AUDIO";
 }
 
-export function isPlaySoundEvent(e: TimelineEvent): e is TimelineEvent & {
-  kind: "AUDIO";
-  type: "PLAY_SOUND";
-  soundId: string;
-  instanceId?: string;
-  volume?: number;
-  loop?: boolean;
-  deviceId?: string;
-} {
-  return e.kind === "AUDIO" && e.type === "PLAY_SOUND";
-}
-
-export function isBackgroundMusicEvent(e: TimelineEvent): e is TimelineEvent & {
-  kind: "AUDIO";
-  type: "BACKGROUND_MUSIC";
-  soundId: string;
-  volume?: number;
-  loop?: boolean;
-} {
-  return e.kind === "AUDIO" && e.type === "BACKGROUND_MUSIC";
-}
-
 // =============================================================================
 // UTILITY GUARDS
 // =============================================================================

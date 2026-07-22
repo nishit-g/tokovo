@@ -9,7 +9,7 @@ import {
 } from "../runtime/selectors.js";
 import { createXInitialState, type XTweet } from "../runtime/state.js";
 import type { WorldState } from "@tokovo/core";
-import { DEFAULT_AUDIO_STATE } from "@tokovo/core";
+import { createDefaultAudioState } from "@tokovo/core";
 
 const baseTweet = (override: Partial<XTweet>): XTweet => ({
   id: "tw-1",
@@ -31,57 +31,60 @@ const baseTweet = (override: Partial<XTweet>): XTweet => ({
 describe("X Selectors", () => {
   it("getXState returns plugin state", () => {
     const world: WorldState = {
-      appState: {
-        app_x: createXInitialState(),
+      appInstances: {
+        "phone:app_x": createXInitialState(),
       },
+      capabilityState: {},
       devices: {},
-      audio: DEFAULT_AUDIO_STATE,
+      audio: createDefaultAudioState(),
     } as WorldState;
 
-    const state = getXState(world);
+    const state = getXState(world, "phone");
     expect(state).toBeDefined();
     expect(state?.tweets).toEqual([]);
   });
 
   it("getTimelineTweets returns tweets ordered by timeline", () => {
     const world: WorldState = {
-      appState: {
-        app_x: {
+      appInstances: {
+        "phone:app_x": {
           ...createXInitialState(),
           tweets: [baseTweet({ id: "tw-1" })],
           timeline: ["tw-1"],
         },
       },
+      capabilityState: {},
       devices: {},
-      audio: DEFAULT_AUDIO_STATE,
+      audio: createDefaultAudioState(),
     } as WorldState;
 
-    const tweets = getTimelineTweets(world);
+    const tweets = getTimelineTweets(world, "phone");
     expect(tweets).toHaveLength(1);
     expect(tweets[0].id).toBe("tw-1");
   });
 
   it("getActiveTweet returns active tweet", () => {
     const world: WorldState = {
-      appState: {
-        app_x: {
+      appInstances: {
+        "phone:app_x": {
           ...createXInitialState(),
           tweets: [baseTweet({ id: "tw-2" })],
           activeTweetId: "tw-2",
         },
       },
+      capabilityState: {},
       devices: {},
-      audio: DEFAULT_AUDIO_STATE,
+      audio: createDefaultAudioState(),
     } as WorldState;
 
-    const tweet = getActiveTweet(world);
+    const tweet = getActiveTweet(world, "phone");
     expect(tweet?.id).toBe("tw-2");
   });
 
   it("getTweetsByAuthor returns authored tweets sorted by createdAt desc", () => {
     const world: WorldState = {
-      appState: {
-        app_x: {
+      appInstances: {
+        "phone:app_x": {
           ...createXInitialState(),
           tweets: [
             baseTweet({ id: "tw-1", authorId: "u1", createdAt: 100 }),
@@ -91,18 +94,19 @@ describe("X Selectors", () => {
           timeline: ["tw-2"],
         },
       },
+      capabilityState: {},
       devices: {},
-      audio: DEFAULT_AUDIO_STATE,
+      audio: createDefaultAudioState(),
     } as WorldState;
 
-    const tweets = getTweetsByAuthor(world, "u1");
+    const tweets = getTweetsByAuthor(world, "phone", "u1");
     expect(tweets.map((tweet) => tweet.id)).toEqual(["tw-3", "tw-1"]);
   });
 
   it("getTimelineTweets respects following tab", () => {
     const world: WorldState = {
-      appState: {
-        app_x: {
+      appInstances: {
+        "phone:app_x": {
           ...createXInitialState(),
           currentUserId: "u1",
           timelineTab: "following",
@@ -145,17 +149,18 @@ describe("X Selectors", () => {
           timeline: ["tw-1", "tw-2"],
         },
       },
+      capabilityState: {},
       devices: {},
-      audio: DEFAULT_AUDIO_STATE,
+      audio: createDefaultAudioState(),
     } as WorldState;
 
-    expect(getTimelineTweets(world).map((tweet) => tweet.id)).toEqual(["tw-1"]);
+    expect(getTimelineTweets(world, "phone").map((tweet) => tweet.id)).toEqual(["tw-1"]);
   });
 
   it("derives notification badge and unread thread totals", () => {
     const world: WorldState = {
-      appState: {
-        app_x: {
+      appInstances: {
+        "phone:app_x": {
           ...createXInitialState(),
           notifications: [
             {
@@ -195,11 +200,12 @@ describe("X Selectors", () => {
           ],
         },
       },
+      capabilityState: {},
       devices: {},
-      audio: DEFAULT_AUDIO_STATE,
+      audio: createDefaultAudioState(),
     } as WorldState;
 
-    expect(getNotificationBadgeCount(world)).toBe(1);
-    expect(getUnreadThreadCount(world)).toBe(3);
+    expect(getNotificationBadgeCount(world, "phone")).toBe(1);
+    expect(getUnreadThreadCount(world, "phone")).toBe(3);
   });
 });

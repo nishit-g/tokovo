@@ -26,12 +26,30 @@ export interface AppStateMap {
   // Plugins augment this interface
 }
 
-type AppStateKeys = keyof AppStateMap;
-type HasAppStateKeys = AppStateKeys extends never ? false : true;
+export type AppInstanceId = `${DeviceId}:${string}`;
 
-type ResolvedAppState = HasAppStateKeys extends true
-  ? { [K in AppStateKeys]: AppStateMap[K] } & Record<string, unknown>
-  : Record<string, unknown>;
+export function appInstanceId(deviceId: DeviceId, appId: string): AppInstanceId {
+  if (!deviceId || !appId) {
+    throw new Error("APP_INSTANCE_ID_INVALID: deviceId and appId are required");
+  }
+  if (deviceId.includes(":") || appId.includes(":")) {
+    throw new Error(
+      `APP_INSTANCE_ID_INVALID: deviceId and appId cannot contain ":" (${deviceId}, ${appId})`,
+    );
+  }
+  return `${deviceId}:${appId}`;
+}
+
+export function parseAppInstanceId(id: AppInstanceId): {
+  deviceId: DeviceId;
+  appId: string;
+} {
+  const separator = id.indexOf(":");
+  if (separator <= 0 || separator === id.length - 1 || id.indexOf(":", separator + 1) >= 0) {
+    throw new Error(`APP_INSTANCE_ID_INVALID: malformed app instance id "${id}"`);
+  }
+  return { deviceId: id.slice(0, separator), appId: id.slice(separator + 1) };
+}
 
 // =============================================================================
 // WORLD STATE
@@ -41,18 +59,16 @@ export interface WorldState {
   devices: Record<DeviceId, DeviceState>;
 
   /**
-   * Per-app state buckets. Type-safe when plugins augment AppStateMap.
+   * Canonical app state, keyed by stable device/app instance identity.
+   * The shape is identical for single-device and multi-device episodes.
    */
-  appState: ResolvedAppState;
+  appInstances: Record<AppInstanceId, unknown>;
 
   /**
-   * Device-scoped app instances for apps mounted on more than one device.
-   *
-   * Single-instance apps remain in `appState` for backward compatibility.
-   * Consumers should resolve state through `getAppStateForDevice()` so the
-   * same app can be rendered independently on multiple devices.
+   * State owned by registered non-app capabilities such as editorial overlays.
+   * Capability packages namespace their entries and register exact reducers.
    */
-  appStateByDevice?: Record<DeviceId, Record<string, unknown>>;
+  capabilityState: Record<string, unknown>;
 
   // Engine primitives
   audio: AudioState;

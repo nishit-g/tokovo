@@ -40,6 +40,13 @@ function device(
     platformProfileId: "ios:liquid-glass@1",
     appearance: "light",
     locale: "en-US",
+    visualPreferences: {
+      textScale: 1,
+      contrast: "standard",
+      motion: "full",
+      transparency: "standard",
+      materialPreference: "automatic",
+    },
     initialLocked: false,
     initialDnd: false,
     initialForegroundAppId: "app_home",
@@ -80,6 +87,7 @@ const projectionConfig = {
   viewportWidth: 1179,
   viewportHeight: 2556,
   pointScale: 3,
+  clockMs: Date.parse("2026-07-22T09:41:00Z"),
 } as const;
 
 describe("canonical notification program", () => {

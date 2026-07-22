@@ -21,7 +21,7 @@ function normalizeEventsForDeterminism(events: unknown[]): unknown[] {
     };
     if (
       typed.kind === "AUDIO" &&
-      typed.type === "PLAY_SOUND" &&
+      typed.type === "PLAY" &&
       typeof typed.soundId === "string" &&
       typed.soundId.startsWith("app_typewriter.")
     ) {

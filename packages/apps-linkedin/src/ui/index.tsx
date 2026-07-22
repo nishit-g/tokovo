@@ -1,5 +1,8 @@
 import React from "react";
-import type { PluginViewProps } from "@tokovo/core";
+import {
+  requireAppStateForDevice,
+  type PluginViewProps,
+} from "@tokovo/core";
 import type { LinkedInState } from "../runtime/state.js";
 import { getThemeMode } from "../runtime/selectors.js";
 import { LinkedInThemeProvider } from "./ThemeContext.js";
@@ -14,9 +17,13 @@ import { MessageThread } from "./MessageThread.js";
 import { BottomNav } from "./components.js";
 
 export const LinkedInView: React.FC<PluginViewProps> = ({ world, deviceId, t }) => {
-  const appState = world.appState?.["app_linkedin"] as LinkedInState | undefined;
-  const screen = appState?.currentScreen ?? "feed";
-  const themeMode = getThemeMode(world);
+  const appState = requireAppStateForDevice<LinkedInState>(
+    world,
+    "app_linkedin",
+    deviceId,
+  );
+  const screen = appState.currentScreen;
+  const themeMode = getThemeMode(world, deviceId);
   const showNav =
     screen === "feed" ||
     screen === "profile" ||
@@ -26,20 +33,20 @@ export const LinkedInView: React.FC<PluginViewProps> = ({ world, deviceId, t }) 
   const renderScreen = () => {
     switch (screen) {
       case "post":
-        return <PostDetail world={world} />;
+        return <PostDetail world={world} deviceId={deviceId} />;
       case "compose":
         return <Compose world={world} deviceId={deviceId} t={t} />;
       case "profile":
-        return <Profile world={world} />;
+        return <Profile world={world} deviceId={deviceId} />;
       case "notifications":
-        return <Notifications world={world} />;
+        return <Notifications world={world} deviceId={deviceId} />;
       case "messages":
-        return <Messages world={world} />;
+        return <Messages world={world} deviceId={deviceId} />;
       case "thread":
         return <MessageThread world={world} deviceId={deviceId} t={t} />;
       case "feed":
       default:
-        return <Feed world={world} />;
+        return <Feed world={world} deviceId={deviceId} />;
     }
   };
 

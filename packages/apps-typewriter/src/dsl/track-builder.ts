@@ -111,10 +111,6 @@ class TypewriterPointBuilder {
     this._push("TYPEWRITER_SET_CURSOR", { row, col });
   }
 
-  scroll(deltaLines: number): void {
-    this._push("TYPEWRITER_SCROLL", { deltaLines });
-  }
-
   /**
    * Deterministic typed text. Lowering expands to KEY/NEWLINE events.
    */

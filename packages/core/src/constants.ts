@@ -64,9 +64,6 @@ export const DEFAULTS = {
   /** Default audio volume (0-1) */
   VOLUME: 1,
 
-  /** Default background music volume */
-  BACKGROUND_MUSIC_VOLUME: 0.5,
-
   /** Default video background color */
   BACKGROUND_COLOR: "#0a0a1a",
 } as const;

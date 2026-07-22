@@ -8,7 +8,6 @@ export * from "./type-guards.js";
 
 export * from "./event-utils.js";
 
-export * from "./lowering-scratchpad.js";
 
 export * from "./app-state.js";
 

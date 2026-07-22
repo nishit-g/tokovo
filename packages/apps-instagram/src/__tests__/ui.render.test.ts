@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import type { WorldState } from "@tokovo/core";
-import { createAppViewportFrame, DEFAULT_AUDIO_STATE } from "@tokovo/core";
+import { createAppViewportFrame, createDefaultAudioState, resolvePlatformVisuals } from "@tokovo/core";
 import { TokovoProvider } from "@tokovo/react";
 import { createInstagramInitialState } from "../runtime/state.js";
 import { InstagramView } from "../ui/index.js";
@@ -10,8 +10,8 @@ import { InstagramView } from "../ui/index.js";
 describe("instagram ui render", () => {
   it("renders feed chrome and post caption", () => {
     const world = {
-      appState: {
-        app_instagram: {
+      appInstances: {
+        "phone:app_instagram": {
           ...createInstagramInitialState(),
           currentScreen: "home",
           users: [
@@ -42,14 +42,26 @@ describe("instagram ui render", () => {
           ],
         },
       },
+      capabilityState: {},
       devices: { phone: { id: "phone", keyboard: { visible: false } } },
-      audio: DEFAULT_AUDIO_STATE,
+      audio: createDefaultAudioState(),
     } as unknown as WorldState;
 
     const appViewport = createAppViewportFrame({
       width: 393,
       height: 852,
-      contentInsets: { top: 47, bottom: 34 },
+      interactiveInsets: { top: 47, bottom: 34 },
+    });
+    const platformVisuals = resolvePlatformVisuals({
+      platformProfileId: "ios:liquid-glass@1",
+      appearance: "light",
+      locale: "en-US",
+      direction: "ltr",
+      textScale: 1,
+      contrast: "standard",
+      motion: "full",
+      transparency: "standard",
+      materialPreference: "automatic",
     });
     const html = renderToStaticMarkup(
       React.createElement(TokovoProvider, {
@@ -57,11 +69,17 @@ describe("instagram ui render", () => {
         deviceId: "phone",
         appId: "app_instagram",
         t: 0,
+        fps: 30,
+        platform: "ios",
         appViewport,
+        platformVisuals,
         children: React.createElement(InstagramView, {
           world,
           deviceId: "phone",
           t: 0,
+          platform: "ios",
+          width: 393,
+          height: 852,
           appViewport,
         }),
       }),

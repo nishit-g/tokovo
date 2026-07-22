@@ -14,17 +14,17 @@ import {
 
 export const DMThread: React.FC<{
   world: WorldState;
-  deviceId?: string;
-  t?: number;
-}> = ({ world }) => {
+  deviceId: string;
+  t: number;
+}> = ({ world, deviceId }) => {
   const theme = useInstagramTheme();
   const frame = useTime();
   const fps = useFps();
-  const currentUser = getCurrentUser(world);
-  const thread = getActiveThread(world);
-  const messages = getVisibleDMMessages(world, thread?.id ?? null);
+  const currentUser = getCurrentUser(world, deviceId);
+  const thread = getActiveThread(world, deviceId);
+  const messages = getVisibleDMMessages(world, deviceId, thread?.id ?? null);
   const input = useInputField("composer");
-  const storedDraft = getThreadDraft(world, thread?.id ?? null);
+  const storedDraft = getThreadDraft(world, deviceId, thread?.id ?? null);
   const typedDraft = input?.value ?? storedDraft;
   const nowMs = messages.reduce((max, message) => Math.max(max, message.createdAt), 0);
 
@@ -37,10 +37,12 @@ export const DMThread: React.FC<{
   }
 
   const participants = thread.participantIds.filter((id) => id !== currentUser?.id);
-  const lead = getUserById(world, participants[0]) ?? undefined;
+  const lead = getUserById(world, deviceId, participants[0]) ?? undefined;
   const title =
     thread.title ??
-    participants.map((id) => getUserById(world, id)?.displayName ?? "Unknown").join(", ");
+    participants
+      .map((id) => getUserById(world, deviceId, id)?.displayName ?? "Unknown")
+      .join(", ");
 
   return (
     <AppShell>
@@ -71,7 +73,7 @@ export const DMThread: React.FC<{
           </div>
           <div style={{ fontSize: 12, color: theme.colors.textSecondary }}>
             {thread.typingUserId
-              ? `${getUserById(world, thread.typingUserId)?.displayName ?? "Someone"} is typing…`
+              ? `${getUserById(world, deviceId, thread.typingUserId)?.displayName ?? "Someone"} is typing…`
               : participants.length > 1
                 ? `${participants.length} people`
                 : `@${lead?.username ?? "unknown"}`}
@@ -93,7 +95,7 @@ export const DMThread: React.FC<{
         }}
       >
         {messages.map((message, index) => {
-          const sender = getUserById(world, message.senderId);
+          const sender = getUserById(world, deviceId, message.senderId);
           const isSelf = message.senderId === currentUser?.id;
           const previous = messages[index - 1];
           const showTime = !previous || message.createdAt - previous.createdAt > 45 * 60 * 1000;
@@ -172,7 +174,10 @@ export const DMThread: React.FC<{
 
         {thread.typingUserId ? (
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <Avatar size={28} src={getUserById(world, thread.typingUserId)?.avatarUrl} />
+            <Avatar
+              size={28}
+              src={getUserById(world, deviceId, thread.typingUserId)?.avatarUrl}
+            />
             <div
               style={{
                 display: "inline-flex",

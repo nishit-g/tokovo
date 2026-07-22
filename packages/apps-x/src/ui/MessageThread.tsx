@@ -15,20 +15,20 @@ import { BottomNav } from "./BottomNav.js";
 
 interface MessageThreadProps {
   world: WorldState;
-  deviceId?: string;
-  t?: number;
+  deviceId: string;
+  t: number;
 }
 
-export const MessageThread: React.FC<MessageThreadProps> = ({ world }) => {
+export const MessageThread: React.FC<MessageThreadProps> = ({ world, deviceId }) => {
   const theme = useXTheme();
   const frame = useTime();
   const fps = useFps();
-  const state = getXState(world);
-  const thread = getActiveThread(world);
-  const messages = getThreadMessages(world, thread?.id ?? null);
+  const state = getXState(world, deviceId);
+  const thread = getActiveThread(world, deviceId);
+  const messages = getThreadMessages(world, deviceId, thread?.id ?? null);
   const users = state?.users ?? [];
   const input = useInputField("composer");
-  const storedDraft = getThreadDraft(world, thread?.id ?? null);
+  const storedDraft = getThreadDraft(world, deviceId, thread?.id ?? null);
   const typedDraft = input?.value ?? storedDraft;
   const nowMs = messages.reduce((max, message) => Math.max(max, message.createdAt), 0);
 

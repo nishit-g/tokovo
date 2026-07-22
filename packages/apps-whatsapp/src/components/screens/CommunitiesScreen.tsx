@@ -1,4 +1,4 @@
-import type { WorldState } from "@tokovo/core";
+import { requireAppStateForDevice, type WorldState } from "@tokovo/core";
 import { DeterministicImage } from "@tokovo/react";
 import { BellRing, ChevronRight, Megaphone, Plus, Users } from "lucide-react";
 import { useTheme, useWhatsAppLocale } from "../../experience/ExperienceContext.js";
@@ -9,6 +9,7 @@ import { AppScaffold, EmptyState, SectionHeader } from "../surfaces/index.js";
 
 export interface CommunitiesScreenProps {
   world: WorldState;
+  deviceId: string;
   contentInsets: {
     top: number;
     bottom: number;
@@ -240,13 +241,13 @@ function CommunityCard({
   );
 }
 
-export function CommunitiesScreen({ world, contentInsets }: CommunitiesScreenProps) {
+export function CommunitiesScreen({ world, deviceId, contentInsets }: CommunitiesScreenProps) {
   const theme = useTheme();
   const { direction, t } = useWhatsAppLocale();
   const { uiTypography: typography } = theme;
   const contentInsetTop = contentInsets.top;
   const contentInsetBottom = contentInsets.bottom;
-  const state = (world.appState?.app_whatsapp ?? {}) as Partial<WhatsAppState>;
+  const state = requireAppStateForDevice<WhatsAppState>(world, "app_whatsapp", deviceId);
   const conversations = state.conversations ?? {};
   const communities = state.communities ?? [];
 

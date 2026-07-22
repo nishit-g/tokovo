@@ -1,4 +1,8 @@
-import { TimelineEvent, WorldState } from "@tokovo/core";
+import {
+  requireAppStateForDevice,
+  TimelineEvent,
+  WorldState,
+} from "@tokovo/core";
 import {
   WhatsAppMessage,
   WhatsAppConversation,
@@ -47,6 +51,7 @@ function getEventConversationId(event: {
 function createGlobalHandlerContext(
   draft: WorldState,
   event: ReturnType<typeof parseWhatsAppEventStrict>,
+  state: WhatsAppState,
 ): HandlerContext {
   const fail = (operation: string): never => {
     throw new Error(
@@ -56,6 +61,7 @@ function createGlobalHandlerContext(
   const context = {
     draft,
     event,
+    state,
     conversation: undefined as never,
     addMessage: () => fail("add a message"),
     getMessageById: () => fail("read a message"),
@@ -71,13 +77,12 @@ function createGlobalHandlerContext(
   return context;
 }
 
-function getAppState(draft: WorldState): WhatsAppState {
-  const state = draft.appState?.app_whatsapp as WhatsAppState | undefined;
-  if (!state) {
-    throw new Error(
-      "WhatsApp runtime requires bootstrapped app_whatsapp state",
-    );
-  }
+function getAppState(draft: WorldState, deviceId: string): WhatsAppState {
+  const state = requireAppStateForDevice<WhatsAppState>(
+    draft,
+    "app_whatsapp",
+    deviceId,
+  );
 
   if (
     typeof state.conversations !== "object" ||
@@ -145,8 +150,9 @@ function getAppState(draft: WorldState): WhatsAppState {
 
 function getConversations(
   draft: WorldState,
+  deviceId: string,
 ): Record<string, WhatsAppConversation> {
-  const appState = getAppState(draft);
+  const appState = getAppState(draft, deviceId);
   return appState.conversations as Record<string, WhatsAppConversation>;
 }
 
@@ -302,16 +308,16 @@ export function whatsappReducer(draft: WorldState, event: TimelineEvent): void {
   // Global events are valid without conversation state. Their context throws
   // if a handler accidentally reaches for conversation-scoped APIs.
   if (!conversationId) {
-    getAppState(draft);
-    const ctx = createGlobalHandlerContext(draft, parsed);
+    const state = getAppState(draft, parsed.deviceId);
+    const ctx = createGlobalHandlerContext(draft, parsed, state);
     handler(ctx, parsed);
-    const state = getAppState(draft);
     state.layoutRevision += 1;
     syncViewMode(state);
     return;
   }
 
-  const conversations = getConversations(draft);
+  const state = getAppState(draft, parsed.deviceId);
+  const conversations = getConversations(draft, parsed.deviceId);
   if (!conversations[conversationId]) {
     throw new Error(
       `WhatsApp event references unknown conversation "${conversationId}"`,
@@ -323,6 +329,7 @@ export function whatsappReducer(draft: WorldState, event: TimelineEvent): void {
   const ctx: HandlerContext = {
     draft,
     event: parsed,
+    state,
     conversation,
     addMessage: (msg) =>
       addTimestampedMessage(conversation, msg, draft, parsed.deviceId),
@@ -333,7 +340,6 @@ export function whatsappReducer(draft: WorldState, event: TimelineEvent): void {
   };
 
   handler(ctx, parsed);
-  const state = getAppState(draft);
   if (
     conversation.messages.length > previousMessageCount &&
     state.threadViewport?.conversationId === conversationId

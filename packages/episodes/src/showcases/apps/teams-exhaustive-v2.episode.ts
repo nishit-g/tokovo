@@ -14,14 +14,7 @@ export default defineEpisode({
     appId: "app_teams",
     visibility: "public",
     sortOrder: 510,
-    tags: [
-      "teams",
-      "exhaustive",
-      "threads",
-      "mentions",
-      "notifications",
-      "calls",
-    ],
+    tags: ["teams", "exhaustive", "threads", "mentions", "notifications", "calls"],
   },
   config: {
     format: "1080x1920",
@@ -204,6 +197,6 @@ export default defineEpisode({
           text: "Resume controlled rollout. Sales owns outreach. Posting exec update now.",
         });
       })
-      .use(new OSDirectorPlugin())
+      .use(new OSDirectorPlugin({ deviceId: "phone" }))
       .build(),
 });

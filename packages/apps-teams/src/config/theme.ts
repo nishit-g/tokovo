@@ -475,19 +475,3 @@ export function getTheme(
   }
   return { ...base, id: "teams-default" };
 }
-
-export function getThemeForDevice(
-  deviceId: string,
-  darkMode = false,
-  themeId?: string,
-): TeamsDesignTokens {
-  const normalized = deviceId.toLowerCase();
-  const platform =
-    normalized.includes("android") ||
-    normalized.includes("pixel") ||
-    normalized.includes("galaxy") ||
-    normalized.includes("samsung")
-      ? "android"
-      : "ios";
-  return getTheme(platform, darkMode, themeId);
-}

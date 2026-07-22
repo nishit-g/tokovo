@@ -180,6 +180,14 @@ export function prepareInputSession(intent: InputSessionIntent): PreparedInputSe
     platformProfileId:
       intent.keyboard?.platformProfileId ??
       (intent.keyboard?.platform === "android" ? "android:material3@1" : "ios:liquid-glass@1"),
+    visualPreferences: {
+      textScale: intent.keyboard?.visualPreferences?.textScale ?? 1,
+      contrast: intent.keyboard?.visualPreferences?.contrast ?? "standard",
+      motion: intent.keyboard?.visualPreferences?.motion ?? "full",
+      transparency: intent.keyboard?.visualPreferences?.transparency ?? "standard",
+      materialPreference: intent.keyboard?.visualPreferences?.materialPreference ?? "automatic",
+      colorSeed: intent.keyboard?.visualPreferences?.colorSeed,
+    },
     autocapitalization: intent.keyboard?.autocapitalization ?? "sentences",
     autocorrection: intent.keyboard?.autocorrection ?? true,
   };

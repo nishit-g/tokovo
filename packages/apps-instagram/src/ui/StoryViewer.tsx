@@ -6,22 +6,22 @@ import { Avatar, Icon, ProgressBars } from "./components.js";
 import {
   getActiveStory,
   getActiveStorySet,
+  getInstagramState,
   getStoriesForSet,
   getThreadDraft,
   getUserById,
 } from "../runtime/selectors.js";
 
-export const StoryViewer: React.FC<{ world: WorldState }> = ({ world }) => {
-  const storySet = getActiveStorySet(world);
-  const story = getActiveStory(world);
-  const author = getUserById(world, story?.authorId ?? null);
-  const stories = getStoriesForSet(world, storySet?.id ?? null);
-  const appState = world.appState?.app_instagram;
-  const replyThread =
-    appState && typeof appState === "object" && "activeThreadId" in appState
-      ? ((appState as { activeThreadId?: string | null }).activeThreadId ?? null)
-      : null;
-  const replyDraft = getThreadDraft(world, replyThread);
+export const StoryViewer: React.FC<{ world: WorldState; deviceId: string }> = ({
+  world,
+  deviceId,
+}) => {
+  const storySet = getActiveStorySet(world, deviceId);
+  const story = getActiveStory(world, deviceId);
+  const author = getUserById(world, deviceId, story?.authorId ?? null);
+  const stories = getStoriesForSet(world, deviceId, storySet?.id ?? null);
+  const replyThread = getInstagramState(world, deviceId)?.activeThreadId ?? null;
+  const replyDraft = getThreadDraft(world, deviceId, replyThread);
 
   return (
     <AppShell immersive>

@@ -4,8 +4,8 @@ import { buildSemantic, createPx, rect } from "./shared.js";
 
 export function computeXChatLayout(ctx: LayoutContext): ChatLayoutState {
   const { viewportWidth: w, viewportHeight: h, appViewport } = ctx;
-  const contentTop = appViewport.contentInsets.top;
-  const contentBottom = appViewport.contentInsets.bottom;
+  const contentTop = appViewport.interactiveInsets.top;
+  const contentBottom = appViewport.interactiveInsets.bottom;
   const px = createPx(w);
 
   const headerH = contentTop + px(xSpacing.headerHeight);

@@ -159,7 +159,7 @@ export const StoryOverlay: React.FC<{
   width: number;
   height: number;
 }> = ({ world, t, width, height }) => {
-  const overlayState = (world?.appState?.sys_overlay ?? undefined) as OverlayState | undefined;
+  const overlayState = world.capabilityState.overlay as OverlayState | undefined;
   const items = getActiveItems(overlayState, t);
   if (items.length === 0) return null;
 

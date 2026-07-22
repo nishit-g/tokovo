@@ -9,7 +9,6 @@ import {
   logAudioDucking,
   logAudioPlay,
   logAudioPolicyDrop,
-  logAudioSoundPathFallback,
   logAudioStop,
   logEngineError,
   logEngineEvent,
@@ -19,7 +18,8 @@ import {
 
 const baseWorld = {
   devices: {},
-  appState: {},
+  appInstances: {},
+  capabilityState: {},
   audio: {
     activeSounds: {},
     buses: {},
@@ -68,7 +68,6 @@ describe("engine runtime utilities", () => {
       alternateSound: "a_soft",
       replacedBy: "b",
     });
-    logAudioSoundPathFallback("sound", "fallback");
     logAudioPlay("sound", "sfx", 1);
     logAudioStop("sound", 2);
     logAudioCrossfade("a", "b", 10, 1);
@@ -119,11 +118,14 @@ describe("engine runtime utilities", () => {
     const result = runWithSnapshot(
       1,
       baseWorld,
-      (_start, state) => ({ ...state, appState: { ran: true } }) as WorldState,
+      (_start, state) => ({
+        ...state,
+        capabilityState: { ...state.capabilityState, ran: true },
+      }),
       cache,
     );
 
-    expect((result.appState as any).ran).toBe(true);
+    expect(result.capabilityState.ran).toBe(true);
   });
 
   it("runs without snapshots when cache is empty", () => {
@@ -131,10 +133,12 @@ describe("engine runtime utilities", () => {
     const result = runWithSnapshot(
       1,
       baseWorld,
-      (_start, state) =>
-        ({ ...state, appState: { empty: true } }) as WorldState,
+      (_start, state) => ({
+        ...state,
+        capabilityState: { ...state.capabilityState, empty: true },
+      }),
       cache,
     );
-    expect((result.appState as any).empty).toBe(true);
+    expect(result.capabilityState.empty).toBe(true);
   });
 });

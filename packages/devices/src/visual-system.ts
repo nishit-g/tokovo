@@ -6,6 +6,7 @@ import {
   type SystemGeometryState,
   type VisualAppearance,
   type VisualDirection,
+  type VisualPreferences,
 } from "@tokovo/visual-system";
 import type { DeviceProfile } from "./types.js";
 
@@ -20,15 +21,19 @@ export function resolveDevicePlatformVisuals(
   profile: DeviceProfile,
   appearance: VisualAppearance,
   locale = "en-US",
+  preferences: Partial<VisualPreferences> = {},
 ): ResolvedPlatformVisuals {
   return resolvePlatformVisuals({
     platformProfileId: profile.platformProfileId,
     appearance,
     locale,
     direction: directionForLocale(locale),
-    textScale: 1,
-    contrast: "standard",
-    motion: "full",
+    textScale: preferences.textScale ?? 1,
+    contrast: preferences.contrast ?? "standard",
+    motion: preferences.motion ?? "full",
+    transparency: preferences.transparency ?? "standard",
+    materialPreference: preferences.materialPreference ?? "automatic",
+    colorSeed: preferences.colorSeed,
   });
 }
 
@@ -37,6 +42,7 @@ export function resolveDeviceSystemGeometry(
   options: {
     appearance?: VisualAppearance;
     locale?: string;
+    preferences?: Partial<VisualPreferences>;
     state?: SystemGeometryState;
   } = {},
 ): SystemGeometryFrame {
@@ -44,6 +50,7 @@ export function resolveDeviceSystemGeometry(
     profile,
     options.appearance ?? "light",
     options.locale,
+    options.preferences,
   );
   return resolveSystemGeometry(profile, visuals, options.state);
 }

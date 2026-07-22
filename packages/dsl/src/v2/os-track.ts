@@ -46,6 +46,7 @@ export class OSPointBuilder {
   constructor(
     private _frame: number,
     private _fps: number,
+    private _deviceId: string,
     private _events: OSTrackEvent[],
     private _getOrder: GetDeclarationOrder,
   ) {}
@@ -54,11 +55,11 @@ export class OSPointBuilder {
    * Set full OS state.
    */
   set(options: OSStateOptions): void {
-    const time =
-      options.time instanceof Date ? options.time.getTime() : options.time;
+    const time = options.time instanceof Date ? options.time.getTime() : options.time;
 
     this._events.push({
       at: this._frame,
+      deviceId: this._deviceId,
       kind: "OS",
       type: "SET_STATE",
       payload: {
@@ -85,6 +86,7 @@ export class OSPointBuilder {
     const time = date instanceof Date ? date.getTime() : date;
     this._events.push({
       at: this._frame,
+      deviceId: this._deviceId,
       kind: "OS",
       type: "SET_TIME",
       payload: { time },
@@ -98,6 +100,7 @@ export class OSPointBuilder {
   battery(level: number, options: BatteryOptions = {}): void {
     this._events.push({
       at: this._frame,
+      deviceId: this._deviceId,
       kind: "OS",
       type: "SET_BATTERY",
       payload: {
@@ -111,12 +114,10 @@ export class OSPointBuilder {
   /**
    * Set network status.
    */
-  network(
-    type: "wifi" | "5G" | "4G" | "3G" | "none",
-    options: NetworkOptions = {},
-  ): void {
+  network(type: "wifi" | "5G" | "4G" | "3G" | "none", options: NetworkOptions = {}): void {
     this._events.push({
       at: this._frame,
+      deviceId: this._deviceId,
       kind: "OS",
       type: "SET_NETWORK",
       payload: {
@@ -133,13 +134,13 @@ export class OSPointBuilder {
   dnd(enabled: boolean): void {
     this._events.push({
       at: this._frame,
+      deviceId: this._deviceId,
       kind: "OS",
       type: "SET_DND",
       payload: { enabled },
       _declarationOrder: this._getOrder(),
     });
   }
-
 }
 
 // =============================================================================
@@ -151,6 +152,7 @@ export class OSTrackBuilder {
 
   constructor(
     private _fps: number,
+    private _deviceId: string,
     private _getOrder: GetDeclarationOrder,
   ) {}
 
@@ -159,7 +161,7 @@ export class OSTrackBuilder {
    */
   at(time: string | number): OSPointBuilder {
     const frame = parseTimeToFrames(time, this._fps);
-    return new OSPointBuilder(frame, this._fps, this._events, this._getOrder);
+    return new OSPointBuilder(frame, this._fps, this._deviceId, this._events, this._getOrder);
   }
 
   /**
@@ -167,6 +169,6 @@ export class OSTrackBuilder {
    */
   span(start: string | number, _end: string | number): OSPointBuilder {
     const frame = parseTimeToFrames(start, this._fps);
-    return new OSPointBuilder(frame, this._fps, this._events, this._getOrder);
+    return new OSPointBuilder(frame, this._fps, this._deviceId, this._events, this._getOrder);
   }
 }

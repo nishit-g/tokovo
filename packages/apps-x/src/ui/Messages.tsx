@@ -13,12 +13,13 @@ import { BottomNav } from "./BottomNav.js";
 
 interface MessagesProps {
   world: WorldState;
+  deviceId: string;
 }
 
-export const Messages: React.FC<MessagesProps> = ({ world }) => {
+export const Messages: React.FC<MessagesProps> = ({ world, deviceId }) => {
   const theme = useXTheme();
-  const state = getXState(world);
-  const threads = getDMThreads(world);
+  const state = getXState(world, deviceId);
+  const threads = getDMThreads(world, deviceId);
   const users = state?.users ?? [];
   const currentUser = users.find((user) => user.id === state?.currentUserId);
   const nowMs = (state?.dmMessages ?? []).reduce(
@@ -141,7 +142,7 @@ export const Messages: React.FC<MessagesProps> = ({ world }) => {
               const mainParticipant = users.find((user) => user.id === participants[0]);
               const lastMessageId = thread.messageIds[thread.messageIds.length - 1];
               const lastMessage = state?.dmMessages.find((message) => message.id === lastMessageId);
-              const draft = getThreadDraft(world, thread.id);
+              const draft = getThreadDraft(world, deviceId, thread.id);
               const title =
                 thread.title ??
                 (participants.length > 1

@@ -13,6 +13,7 @@ import type {
   DynamicIslandProjection,
   ScreenRecordingCompletionBanner,
 } from "./contract.js";
+import type { VisualPreferences } from "@tokovo/visual-system";
 
 interface DynamicIslandCopy {
   screenRecording: string;
@@ -218,9 +219,15 @@ function recordingProjection(input: {
   locale: string;
   appearance: "light" | "dark";
   copy: DynamicIslandCopy;
+  preferences?: Partial<VisualPreferences>;
 }): DynamicIslandProjection {
   const { profile, recording, currentFrame, fps, locale, appearance, copy } = input;
-  const platformVisuals = resolveDevicePlatformVisuals(profile, appearance, locale);
+  const platformVisuals = resolveDevicePlatformVisuals(
+    profile,
+    appearance,
+    locale,
+    input.preferences,
+  );
   const metrics = getIOSChromeMetrics(profile).dynamicIsland;
   if (!metrics) throw new Error(`Missing Dynamic Island metrics for ${profile.id}`);
 
@@ -323,12 +330,18 @@ export function projectDynamicIsland(input: {
   fps: number;
   locale?: string;
   appearance?: "light" | "dark";
+  preferences?: Partial<VisualPreferences>;
 }): DynamicIslandProjection | null {
   if (!input.profile.dynamicIsland) return null;
   const locale = input.locale ?? "en-US";
   const appearance = input.appearance ?? "light";
   const copy = COPY[languageFor(locale)];
-  const platformVisuals = resolveDevicePlatformVisuals(input.profile, appearance, locale);
+  const platformVisuals = resolveDevicePlatformVisuals(
+    input.profile,
+    appearance,
+    locale,
+    input.preferences,
+  );
   const recording = input.screenRecording;
 
   if (
@@ -345,6 +358,7 @@ export function projectDynamicIsland(input: {
       locale,
       appearance,
       copy,
+      preferences: input.preferences,
     });
   }
 

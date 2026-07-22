@@ -21,7 +21,7 @@ interface AppShellProps {
 
 export const AppShell: React.FC<AppShellProps> = ({ children, overrideContentInsets }) => {
   const theme = useIMessageTheme();
-  const { contentInsets } = useAppViewport();
+  const { interactiveInsets: contentInsets } = useAppViewport();
 
   const topInset = overrideContentInsets?.top ?? contentInsets.top;
   const bottomInset = overrideContentInsets?.bottom ?? contentInsets.bottom;

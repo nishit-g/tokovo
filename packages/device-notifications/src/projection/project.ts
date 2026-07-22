@@ -99,6 +99,7 @@ function itemProjection(
     id: record.id,
     appId: record.appId,
     appName: record.presentation.appName,
+    category: record.category,
     icon: record.presentation.icon,
     accentColor: record.presentation.accentColor,
     leadingImage: reveal ? record.presentation.leadingImage : undefined,
@@ -167,6 +168,7 @@ export function projectNotifications(
     !Number.isFinite(config.viewportWidth) ||
     !Number.isFinite(config.viewportHeight) ||
     !Number.isFinite(config.pointScale) ||
+    !Number.isFinite(config.clockMs) ||
     config.viewportWidth <= 0 ||
     config.viewportHeight <= 0 ||
     config.pointScale <= 0
@@ -180,6 +182,7 @@ export function projectNotifications(
     device.appearance,
     device.platformProfileId,
     device.locale,
+    device.visualPreferences,
   );
   const deviceContext = resolveNotificationDeviceContext(device, frame, program.actionEffects);
   const localization = getNotificationLocalization(device.locale);
@@ -262,6 +265,15 @@ export function projectNotifications(
     appearance: device.appearance,
     locale: device.locale,
     direction: localization.direction,
+    clockLabel: new Intl.DateTimeFormat(device.locale, {
+      hour: "numeric",
+      minute: "2-digit",
+    }).format(config.clockMs),
+    dateLabel: new Intl.DateTimeFormat(device.locale, {
+      weekday: "short",
+      month: "short",
+      day: "numeric",
+    }).format(config.clockMs),
     strings: {
       centerTitle: localization.strings.centerTitle,
       newNotification: localization.strings.newNotification,

@@ -1,6 +1,6 @@
 import React from "react";
 import { useCurrentFrame } from "remotion";
-import { WorldState } from "@tokovo/core";
+import { requireAppStateForDevice, WorldState } from "@tokovo/core";
 import { ArchiveIcon, ChevronRightIcon } from "../Icons.js";
 import { ChatListHeader } from "../ChatListHeader.js";
 import { TabNavigation } from "../TabNavigation.js";
@@ -24,6 +24,7 @@ import { formatWhatsAppNumber } from "../../localization/index.js";
 
 export interface ChatListScreenProps {
   world: WorldState;
+  deviceId: string;
   contentInsets: {
     top: number;
     bottom: number;
@@ -275,6 +276,7 @@ const EmptyState: React.FC<{ filter: WhatsAppChatFilter }> = ({ filter }) => {
 
 export const ChatListScreen: React.FC<ChatListScreenProps> = ({
   world,
+  deviceId,
   contentInsets,
   width: _width,
   height: _height,
@@ -283,7 +285,6 @@ export const ChatListScreen: React.FC<ChatListScreenProps> = ({
   const { locale, t } = useWhatsAppLocale();
   const { uiSpacing: spacing } = theme;
   const currentFrame = useCurrentFrame();
-  const deviceId = Object.keys(world.devices || {})[0];
   const baseTime = getBaseTime(world, deviceId);
 
   // TokovoRenderer already provides contentInsets in design coordinates.
@@ -291,7 +292,11 @@ export const ChatListScreen: React.FC<ChatListScreenProps> = ({
   const contentInsetBottom = contentInsets.bottom;
 
   // Extract app state and conversations
-  const appState = (world.appState?.["app_whatsapp"] || {}) as WhatsAppState;
+  const appState = requireAppStateForDevice<WhatsAppState>(
+    world,
+    "app_whatsapp",
+    deviceId,
+  );
   const activeFilter = appState.chatFilter ?? "all";
   const statuses = appState.statuses ?? [];
   const allConversations = (

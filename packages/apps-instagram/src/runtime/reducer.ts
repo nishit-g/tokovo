@@ -1,4 +1,9 @@
-import type { PluginReducer, RuntimeEvent, WorldState } from "@tokovo/core";
+import {
+  requireAppStateForDevice,
+  type PluginReducer,
+  type RuntimeEvent,
+  type WorldState,
+} from "@tokovo/core";
 import type {
   InstagramComment,
   InstagramDMMessage,
@@ -11,7 +16,6 @@ import type {
   InstagramStorySet,
   InstagramUser,
 } from "./state.js";
-import { createInstagramInitialState } from "./state.js";
 
 function ensureMutableArray<T>(value: T[] | undefined | null): T[] {
   if (!Array.isArray(value)) return [];
@@ -38,10 +42,12 @@ function syncViewMode(state: InstagramState): void {
   state.conversationId = undefined;
 }
 
-function getAppState(draft: WorldState): InstagramState {
-  draft.appState ??= {};
-  draft.appState.app_instagram ??= createInstagramInitialState();
-  const state = draft.appState.app_instagram as InstagramState;
+function getAppState(draft: WorldState, deviceId: string): InstagramState {
+  const state = requireAppStateForDevice<InstagramState>(
+    draft,
+    "app_instagram",
+    deviceId,
+  );
   state.users = ensureMutableArray(state.users);
   state.posts = ensureMutableArray(state.posts);
   state.comments = ensureMutableArray(state.comments);
@@ -216,9 +222,13 @@ function upsertById<T extends { id: string }>(list: T[], value: T): void {
 
 export const instagramReducer: PluginReducer<"app_instagram"> = (
   draft: WorldState,
-  event: RuntimeEvent & { kind: "APP"; appId: "app_instagram" },
+  event: RuntimeEvent & {
+    kind: "APP";
+    appId: "app_instagram";
+    deviceId: string;
+  },
 ) => {
-  const state = getAppState(draft);
+  const state = getAppState(draft, event.deviceId);
 
   switch (event.type) {
     case "INSTAGRAM_ADD_USER": {

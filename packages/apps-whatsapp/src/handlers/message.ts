@@ -16,20 +16,15 @@ import { translateWhatsApp } from "../localization/index.js";
 import type { WhatsAppLocale } from "../localization/index.js";
 
 function isConversationActive(
-  ctx: { draft: unknown; conversation: { id: string } },
+  ctx: Pick<HandlerContext, "state" | "conversation">,
 ): boolean {
-  const appState = (
-    ctx.draft as {
-      appState?: { app_whatsapp?: { conversationId?: string } };
-    }
-  ).appState?.app_whatsapp;
-  return !!(
-    appState?.conversationId &&
-    appState.conversationId === ctx.conversation.id
-  );
+  return ctx.state.conversationId === ctx.conversation.id;
 }
 
-function bumpUnread(ctx: { draft: unknown; conversation: { id: string; unreadCount?: number } }, from: string): void {
+function bumpUnread(
+  ctx: Pick<HandlerContext, "state" | "conversation">,
+  from: string,
+): void {
   if (from === "me" || from === "system") return;
   if (isConversationActive(ctx)) {
     return;
@@ -111,9 +106,7 @@ function buildReplyPreview(
   if (!replyTo) return undefined;
 
   const target = ctx.requireMessageById(replyTo.messageId, "reply to message");
-  const locale = (
-    ctx.draft.appState?.app_whatsapp as { locale?: WhatsAppLocale } | undefined
-  )?.locale ?? "en-US";
+  const locale = ctx.state.locale;
   return {
     messageId: replyTo.messageId,
     text: replyTo.text ?? getReplyFallbackText(target, locale),

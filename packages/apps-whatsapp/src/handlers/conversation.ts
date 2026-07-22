@@ -11,7 +11,6 @@ import type {
   ConversationOpenedEvent,
   ReadMessagesEvent,
 } from "../schemas/index.js";
-import type { WhatsAppState } from "../types/index.js";
 
 export function registerConversationHandlers(
   registry: MutableHandlerRegistry,
@@ -63,49 +62,30 @@ export function registerConversationHandlers(
 
   registry.registerHandler<NavigateScreenEvent>("NAVIGATE_SCREEN", (ctx, e) => {
     const screen = e.payload.screen;
-    const appState = ctx.draft.appState?.["app_whatsapp"];
-    if (appState) {
-      const targetConversationId = e.payload.conversationId;
-      if (
-        (screen === "chat" || screen === "profile") &&
-        !targetConversationId
-      ) {
-        throw new Error(
-          `WhatsApp ${screen} navigation requires a conversationId`,
-        );
-      }
-      (appState as { currentScreen?: string }).currentScreen = screen;
-      // Keep LayoutEngine invariants in sync.
-      (
-        appState as { viewMode?: "CHAT" | "FEED" | "FULLSCREEN" | "TRANSITION" }
-      ).viewMode = screen === "chat" ? "CHAT" : "FEED";
-      if (screen === "chat") {
-        (appState as { conversationId?: string }).conversationId =
-          targetConversationId;
-      } else if (screen === "profile") {
-        (appState as { conversationId?: string }).conversationId =
-          targetConversationId;
-      } else {
-        (appState as { conversationId?: string }).conversationId = undefined;
-      }
+    const targetConversationId = e.payload.conversationId;
+    if (
+      (screen === "chat" || screen === "profile") &&
+      !targetConversationId
+    ) {
+      throw new Error(
+        `WhatsApp ${screen} navigation requires a conversationId`,
+      );
     }
+    ctx.state.currentScreen = screen;
+    ctx.state.viewMode = screen === "chat" ? "CHAT" : "FEED";
+    ctx.state.conversationId =
+      screen === "chat" || screen === "profile"
+        ? targetConversationId
+        : undefined;
   });
 
   registry.registerHandler<ConversationOpenedEvent>(
     "CONVERSATION_OPENED",
     (ctx, e) => {
       const conversationId = e.payload.conversationId;
-      const appState = ctx.draft.appState?.["app_whatsapp"];
-      if (appState && conversationId) {
-        (appState as { conversationId?: string }).conversationId =
-          conversationId;
-        (appState as { currentScreen?: string }).currentScreen = "chat";
-        (
-          appState as {
-            viewMode?: "CHAT" | "FEED" | "FULLSCREEN" | "TRANSITION";
-          }
-        ).viewMode = "CHAT";
-      }
+      ctx.state.conversationId = conversationId;
+      ctx.state.currentScreen = "chat";
+      ctx.state.viewMode = "CHAT";
       if (
         !ctx.conversation.unreadDividerMessageId &&
         (ctx.conversation.unreadCount ?? 0) > 0
@@ -121,16 +101,13 @@ export function registerConversationHandlers(
           }
         }
       }
-      if (appState) {
-        const state = appState as WhatsAppState;
-        state.threadViewport = ctx.conversation.unreadDividerMessageId
-          ? {
-              conversationId,
-              focusMessageId: ctx.conversation.unreadDividerMessageId,
-              reason: "unread",
-            }
-          : null;
-      }
+      ctx.state.threadViewport = ctx.conversation.unreadDividerMessageId
+        ? {
+            conversationId,
+            focusMessageId: ctx.conversation.unreadDividerMessageId,
+            reason: "unread",
+          }
+        : null;
       ctx.conversation.unreadCount = 0;
     },
   );

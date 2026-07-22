@@ -1,11 +1,12 @@
-import type {
-  ChatLayoutState,
-  FeedLayoutState,
-  FullscreenLayoutState,
-  LayoutContext,
-  LayoutRect,
-  PluginLayoutStrategy,
-  SemanticRegion,
+import {
+  requireAppStateForDevice,
+  type ChatLayoutState,
+  type FeedLayoutState,
+  type FullscreenLayoutState,
+  type LayoutContext,
+  type LayoutRect,
+  type PluginLayoutStrategy,
+  type SemanticRegion,
 } from "@tokovo/core";
 
 import type { IMessageState } from "../types/index.js";
@@ -26,12 +27,16 @@ function buildSemantic(
 
 function computeIMessageFeedLayout(ctx: LayoutContext): FeedLayoutState {
   const { viewportWidth: w, viewportHeight: h, appViewport, world } = ctx;
-  const contentTop = appViewport.contentInsets.top;
-  const contentBottom = appViewport.contentInsets.bottom;
+  const contentTop = appViewport.interactiveInsets.top;
+  const contentBottom = appViewport.interactiveInsets.bottom;
   const scale = w / DESIGN_WIDTH;
   const px = (v: number) => v * scale;
 
-  const state = (world.appState?.app_imessage ?? {}) as Partial<IMessageState>;
+  const state = requireAppStateForDevice<IMessageState>(
+    world,
+    "app_imessage",
+    ctx.activeDeviceId,
+  );
   const screen = state.currentScreen ?? "list";
 
   const headerH = contentTop + px(iMessageSpacing.headerHeight);
@@ -99,8 +104,8 @@ function computeIMessageFeedLayout(ctx: LayoutContext): FeedLayoutState {
 
 function computeIMessageChatLayout(ctx: LayoutContext): ChatLayoutState {
   const { viewportWidth: w, viewportHeight: h, appViewport } = ctx;
-  const contentTop = appViewport.contentInsets.top;
-  const contentBottom = appViewport.contentInsets.bottom;
+  const contentTop = appViewport.interactiveInsets.top;
+  const contentBottom = appViewport.interactiveInsets.bottom;
   const scale = w / DESIGN_WIDTH;
   const px = (v: number) => v * scale;
 
@@ -156,12 +161,16 @@ function computeIMessageChatLayout(ctx: LayoutContext): ChatLayoutState {
 
 function computeIMessageFullscreenLayout(ctx: LayoutContext): FullscreenLayoutState {
   const { viewportWidth: w, viewportHeight: h, appViewport, world } = ctx;
-  const contentTop = appViewport.contentInsets.top;
-  const contentBottom = appViewport.contentInsets.bottom;
+  const contentTop = appViewport.interactiveInsets.top;
+  const contentBottom = appViewport.interactiveInsets.bottom;
   const scale = w / DESIGN_WIDTH;
   const px = (v: number) => v * scale;
 
-  const state = (world.appState?.app_imessage ?? {}) as Partial<IMessageState>;
+  const state = requireAppStateForDevice<IMessageState>(
+    world,
+    "app_imessage",
+    ctx.activeDeviceId,
+  );
   const screen = state.currentScreen ?? "info";
 
   const topY = contentTop + px(iMessageSpacing.headerHeight);

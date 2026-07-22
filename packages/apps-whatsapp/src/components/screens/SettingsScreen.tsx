@@ -1,4 +1,4 @@
-import type { WorldState } from "@tokovo/core";
+import { requireAppStateForDevice, type WorldState } from "@tokovo/core";
 import { DeterministicImage } from "@tokovo/react";
 import {
   Bell,
@@ -21,6 +21,7 @@ import { AppScaffold, SectionHeader, SettingsGroup, SettingsRow } from "../surfa
 
 export interface SettingsScreenProps {
   world: WorldState;
+  deviceId: string;
   contentInsets: {
     top: number;
     bottom: number;
@@ -51,17 +52,16 @@ function localizeTheme(theme: string | undefined, t: Translator): string {
   return t("settings.systemTheme");
 }
 
-export function SettingsScreen({ world, contentInsets }: SettingsScreenProps) {
+export function SettingsScreen({ world, deviceId, contentInsets }: SettingsScreenProps) {
   const theme = useTheme();
   const { locale, t } = useWhatsAppLocale();
   const { uiTypography: typography } = theme;
   const contentInsetTop = contentInsets.top;
   const contentInsetBottom = contentInsets.bottom;
-  const state = (world.appState?.app_whatsapp ?? {}) as Partial<WhatsAppState>;
+  const state = requireAppStateForDevice<WhatsAppState>(world, "app_whatsapp", deviceId);
   const profile = state.profile;
   const settings = state.settings ?? {};
-  const deviceId = Object.keys(world.devices ?? {})[0];
-  const ownerName = deviceId ? world.devices[deviceId]?.ownerName : undefined;
+  const ownerName = world.devices[deviceId]?.ownerName;
   const name = profile?.name ?? ownerName ?? t("chat.you");
 
   return (

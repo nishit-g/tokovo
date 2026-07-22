@@ -31,6 +31,7 @@ export function findInputSessionForProjection(
       appearance: session.keyboard.appearance,
       locale: session.keyboard.locale.tag,
       platformProfileId: session.keyboard.platformProfileId,
+      preferences: session.keyboard.visualPreferences,
     });
     const exitFrames = Math.max(1, Math.round(experience.theme.motion.exitDurationSeconds * fps));
     return frame <= session.endFrame + exitFrames;
@@ -152,6 +153,7 @@ export function projectInputSession(
             appearance: session.keyboard.appearance,
             locale: session.keyboard.locale.tag,
             platformProfileId: session.keyboard.platformProfileId,
+            preferences: session.keyboard.visualPreferences,
           }).theme.motion.entranceDurationSeconds,
       ),
     );
@@ -162,6 +164,7 @@ export function projectInputSession(
     appearance: session.keyboard.appearance,
     locale: session.keyboard.locale.tag,
     platformProfileId: session.keyboard.platformProfileId,
+    preferences: session.keyboard.visualPreferences,
   });
 
   return {

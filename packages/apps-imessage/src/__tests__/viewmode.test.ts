@@ -1,16 +1,17 @@
 import { describe, it, expect } from "vitest";
 import type { RuntimeEvent, WorldState } from "@tokovo/core";
-import { DEFAULT_AUDIO_STATE } from "@tokovo/core";
+import { createDefaultAudioState } from "@tokovo/core";
 import { iMessageReducer } from "../runtime/reducer.js";
 import { createIMessageInitialState } from "../runtime/initial-state.js";
 
 function createTestWorldState(): WorldState {
   return {
-    appState: {
-      app_imessage: createIMessageInitialState(),
+    appInstances: {
+      "phone:app_imessage": createIMessageInitialState(),
     },
+    capabilityState: {},
     devices: {},
-    audio: DEFAULT_AUDIO_STATE,
+    audio: createDefaultAudioState(),
   } as WorldState;
 }
 
@@ -23,7 +24,7 @@ function runReducer(state: WorldState, event: RuntimeEvent): WorldState {
 describe("iMessage viewMode invariants", () => {
   it("initial state is FEED", () => {
     const world = createTestWorldState();
-    const app = world.appState?.app_imessage as any;
+    const app = world.appInstances?.["phone:app_imessage"] as any;
     expect(app.viewMode).toBe("FEED");
   });
 
@@ -32,12 +33,13 @@ describe("iMessage viewMode invariants", () => {
     const next = runReducer(world, {
       at: 1,
       kind: "APP",
+      deviceId: "phone",
       appId: "app_imessage",
       type: "IMESSAGE_SET_SCREEN",
       payload: { screen: "chat", conversationId: "c1" },
     });
 
-    const app = next.appState?.app_imessage as any;
+    const app = next.appInstances?.["phone:app_imessage"] as any;
     expect(app.viewMode).toBe("CHAT");
     expect(app.conversationId).toBe("c1");
   });
@@ -47,6 +49,7 @@ describe("iMessage viewMode invariants", () => {
     const toChat = runReducer(world, {
       at: 1,
       kind: "APP",
+      deviceId: "phone",
       appId: "app_imessage",
       type: "IMESSAGE_SET_SCREEN",
       payload: { screen: "chat", conversationId: "c1" },
@@ -54,12 +57,13 @@ describe("iMessage viewMode invariants", () => {
     const toList = runReducer(toChat, {
       at: 2,
       kind: "APP",
+      deviceId: "phone",
       appId: "app_imessage",
       type: "IMESSAGE_SET_SCREEN",
       payload: { screen: "list" },
     });
 
-    const app = toList.appState?.app_imessage as any;
+    const app = toList.appInstances?.["phone:app_imessage"] as any;
     expect(app.viewMode).toBe("FEED");
     expect(app.conversationId).toBeUndefined();
   });
@@ -69,12 +73,13 @@ describe("iMessage viewMode invariants", () => {
     const next = runReducer(world, {
       at: 1,
       kind: "APP",
+      deviceId: "phone",
       appId: "app_imessage",
       type: "IMESSAGE_SET_SCREEN",
       payload: { screen: "media", conversationId: "c1" },
     });
 
-    const app = next.appState?.app_imessage as any;
+    const app = next.appInstances?.["phone:app_imessage"] as any;
     expect(app.viewMode).toBe("FULLSCREEN");
     expect(app.conversationId).toBeUndefined();
   });

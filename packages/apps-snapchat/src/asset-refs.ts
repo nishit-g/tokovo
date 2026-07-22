@@ -1,4 +1,8 @@
-import type { EpisodeAssetRef, PluginAssetCollector } from "@tokovo/core";
+import {
+  getAppStateForDevice,
+  type EpisodeAssetRef,
+  type PluginAssetCollector,
+} from "@tokovo/core";
 import type { SnapchatConversation, SnapchatState } from "./types/index.js";
 
 function createRef(
@@ -51,8 +55,13 @@ function pushConversationAssets(
 
 export const collectSnapchatAssetRefs: PluginAssetCollector<"app_snapchat"> = ({
   initialWorld,
+  deviceId,
 }) => {
-  const state = initialWorld.appState?.app_snapchat as SnapchatState | undefined;
+  const state = getAppStateForDevice<SnapchatState>(
+    initialWorld,
+    "app_snapchat",
+    deviceId,
+  );
   if (!state) return [];
   const refs: EpisodeAssetRef[] = [];
 

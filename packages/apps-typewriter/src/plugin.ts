@@ -38,7 +38,6 @@ export const TypewriterPlugin: TokovoPluginContract<
     "TYPEWRITER_NEWLINE",
     "TYPEWRITER_BACKSPACE",
     "TYPEWRITER_SET_CURSOR",
-    "TYPEWRITER_SCROLL",
   ] as const,
   assets: {
     icons: { app_icon: "/icons/typewriter.svg" },

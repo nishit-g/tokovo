@@ -71,27 +71,22 @@ const NotificationIcon: React.FC<{
 
 export const AndroidStatusBarStrategy: React.FC<StatusBarStrategyProps> = ({
   os,
-  time = "9:41",
-  batteryPercentage = 100,
   notificationIcons = [],
-  theme = "dark",
+  theme,
   deviceProfile,
 }) => {
-  // Read from device.os if available
-  const displayTime = os ? formatTime(os.clock) : time;
-  const displayBattery = os?.battery ?? batteryPercentage;
-  const isCharging = os?.charging ?? false;
-  const network = os?.network ?? "wifi";
-  const wifiStrength = os?.wifiStrength ?? 3;
-  const cellStrength = os?.cellStrength ?? 4;
-  const isDND = os?.dnd ?? false;
+  const displayTime = formatTime(os.clock);
+  const displayBattery = os.battery;
+  const isCharging = os.charging;
+  const network = os.network;
+  const wifiStrength = os.wifiStrength;
+  const cellStrength = os.cellStrength;
+  const isDND = os.dnd;
   const resolvedTheme = typeof theme === "string" ? STATUS_BAR_PRESETS[theme] : theme;
   const textColor = resolvedTheme?.iconColor ?? "#FFFFFF";
   const backgroundColor = resolvedTheme?.backgroundColor ?? "transparent";
-  if (!deviceProfile) {
-    throw new Error("ANDROID_STATUS_BAR_DEVICE_PROFILE_REQUIRED");
-  }
-  const fontFamily = resolveDevicePlatformVisuals(deviceProfile, "light").typography.primaryFamily;
+  const fontFamily = resolveDevicePlatformVisuals(deviceProfile, os.appearance, os.locale, os)
+    .typography.primaryFamily;
   const scale = deviceProfile.pointScale;
   const statusHeight = 28 * scale;
 

@@ -11,6 +11,7 @@ export {
   useDeviceId,
   useAppId,
   useAppViewport,
+  usePlatformVisuals,
   useKeyboardHeight,
   useInputProgram,
   useInputProjection,

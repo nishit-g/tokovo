@@ -141,6 +141,14 @@ export interface DeviceOSState {
   hourCycle?: "h12" | "h24";
   /** Optional authored lockscreen wallpaper asset or CSS background. */
   lockScreenWallpaper?: string;
+  /** Deterministic platform accessibility and material preferences. */
+  textScale: number;
+  contrast: "standard" | "increased";
+  motion: "full" | "reduced";
+  transparency: "standard" | "reduced";
+  materialPreference: "automatic" | "regular" | "clear";
+  /** Android dynamic-color seed. Other platforms preserve it without applying it. */
+  colorSeed?: string;
   clock: number;
   battery: number;
   charging: boolean;
@@ -155,6 +163,11 @@ export interface DeviceOSState {
 export const DEFAULT_OS_STATE: DeviceOSState = {
   locale: "en-US",
   appearance: "light",
+  textScale: 1,
+  contrast: "standard",
+  motion: "full",
+  transparency: "standard",
+  materialPreference: "automatic",
   clock: 1704102060000,
   battery: 85,
   charging: false,
@@ -235,7 +248,7 @@ export interface DeviceState {
   theme?: DeviceTheme;
 
   // OS Layer
-  os?: DeviceOSState;
+  os: DeviceOSState;
 
   // App UI theme/strategy (e.g., "whatsapp-storybook")
   appTheme?: string;
@@ -254,10 +267,16 @@ export interface DeviceTransitionState {
   kind: "unlock" | "openApp" | "goHome";
   startFrame: number;
   durationFrames: number;
-  style?: "faceIdSwipe" | "iosZoom" | (string & {});
+  style: DeviceTransitionStyle;
   originX?: number;
   originY?: number;
 }
+
+export type DeviceTransitionStyle =
+  | "platform-default"
+  | "platform-unlock"
+  | "ios-container-zoom"
+  | "android-container-transform";
 
 // =============================================================================
 // TYPE ALIASES

@@ -1,12 +1,12 @@
-import type { WorldState } from "@tokovo/core";
+import { getAppStateForDevice, type WorldState } from "@tokovo/core";
 import type { SnapchatConversation, SnapchatMessage, SnapchatState } from "../types/index.js";
 
-export function selectSnapchatState(world: WorldState): SnapchatState | undefined {
-  return world.appState?.app_snapchat as SnapchatState | undefined;
+export function selectSnapchatState(world: WorldState, deviceId: string): SnapchatState | undefined {
+  return getAppStateForDevice<SnapchatState>(world, "app_snapchat", deviceId);
 }
 
-export function selectConversations(world: WorldState): SnapchatConversation[] {
-  return Object.values(selectSnapchatState(world)?.conversations ?? {}).sort((a, b) => {
+export function selectConversations(world: WorldState, deviceId: string): SnapchatConversation[] {
+  return Object.values(selectSnapchatState(world, deviceId)?.conversations ?? {}).sort((a, b) => {
     if ((a.pinned ?? false) !== (b.pinned ?? false)) {
       return a.pinned ? -1 : 1;
     }
@@ -14,36 +14,38 @@ export function selectConversations(world: WorldState): SnapchatConversation[] {
   });
 }
 
-export function selectActiveConversation(world: WorldState): SnapchatConversation | undefined {
-  const state = selectSnapchatState(world);
+export function selectActiveConversation(world: WorldState, deviceId: string): SnapchatConversation | undefined {
+  const state = selectSnapchatState(world, deviceId);
   if (!state?.activeConversationId) return undefined;
   return state.conversations?.[state.activeConversationId];
 }
 
 export function selectMessages(
   world: WorldState,
+  deviceId: string,
   conversationId?: string,
 ): SnapchatMessage[] {
   if (!conversationId) return [];
-  return selectSnapchatState(world)?.conversations?.[conversationId]?.messages ?? [];
+  return selectSnapchatState(world, deviceId)?.conversations?.[conversationId]?.messages ?? [];
 }
 
 export function selectTypingActors(
   world: WorldState,
+  deviceId: string,
   conversationId?: string,
 ): string[] {
   if (!conversationId) return [];
-  const typing = selectSnapchatState(world)?.conversations?.[conversationId]?.typing ?? {};
+  const typing = selectSnapchatState(world, deviceId)?.conversations?.[conversationId]?.typing ?? {};
   return Object.entries(typing)
     .filter(([, value]) => value)
     .map(([actor]) => actor);
 }
 
-export function selectUnreadConversationCount(world: WorldState): number {
-  return selectConversations(world).filter((conversation) => conversation.unreadCount > 0).length;
+export function selectUnreadConversationCount(world: WorldState, deviceId: string): number {
+  return selectConversations(world, deviceId).filter((conversation) => conversation.unreadCount > 0).length;
 }
 
-export function selectDraft(world: WorldState, conversationId?: string): string {
+export function selectDraft(world: WorldState, deviceId: string, conversationId?: string): string {
   if (!conversationId) return "";
-  return selectSnapchatState(world)?.drafts?.[conversationId] ?? "";
+  return selectSnapchatState(world, deviceId)?.drafts?.[conversationId] ?? "";
 }

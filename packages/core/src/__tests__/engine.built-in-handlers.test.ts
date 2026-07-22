@@ -10,7 +10,8 @@ import * as handlers from "../engine/handlers/index.js";
 const baseWorld = (): WorldState =>
   ({
     devices: { phone: { id: "phone" } },
-    appState: {},
+    appInstances: {},
+    capabilityState: {},
     audio: {
       activeSounds: {},
       buses: {},

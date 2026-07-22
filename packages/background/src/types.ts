@@ -89,5 +89,3 @@ export const DEFAULT_BACKGROUND_CONFIG: BackgroundConfig = {
   blur: 0,
   position: "cover",
 };
-
-export const FALLBACK_COLOR = "#0a0a0f";

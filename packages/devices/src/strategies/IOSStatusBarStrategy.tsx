@@ -28,8 +28,8 @@ function resolveThemeColors(theme: StatusBarStrategyProps["theme"]): {
   textColor: string;
   bgColor: string;
 } {
-  if (typeof theme === "string" || !theme) {
-    const preset = STATUS_BAR_PRESETS[theme || "light"];
+  if (typeof theme === "string") {
+    const preset = STATUS_BAR_PRESETS[theme];
     return {
       textColor: preset.iconColor,
       bgColor: preset.backgroundColor,
@@ -44,38 +44,24 @@ function resolveThemeColors(theme: StatusBarStrategyProps["theme"]): {
 
 export const IOSStatusBarStrategy: React.FC<StatusBarStrategyProps> = ({
   os,
-  time = "9:41",
-  theme = "light",
-  batteryPercentage = 100,
+  theme,
   deviceProfile,
 }) => {
-  // Read from device.os if available, otherwise use props
-  const displayTime = os ? formatTime(os.clock) : time;
-  const displayBattery = os?.battery ?? batteryPercentage;
-  const isCharging = os?.charging ?? false;
-  const network = os?.network ?? "wifi";
-  const wifiStrength = os?.wifiStrength ?? 3;
-  const cellStrength = os?.cellStrength ?? 4;
-  const isDND = os?.dnd ?? false;
+  const displayTime = formatTime(os.clock);
+  const displayBattery = os.battery;
+  const isCharging = os.charging;
+  const network = os.network;
+  const wifiStrength = os.wifiStrength;
+  const cellStrength = os.cellStrength;
+  const isDND = os.dnd;
 
   // Resolve theme to actual colors
   const { textColor, bgColor } = resolveThemeColors(theme);
-  const metrics = deviceProfile ? getIOSChromeMetrics(deviceProfile) : null;
-  const pointScale = metrics?.pointScale ?? 3;
-  const statusBar = metrics?.statusBar ?? {
-    height: 132,
-    paddingTop: 45,
-    paddingX: 72,
-    timeFontSize: 51,
-    timeLetterSpacing: 0.5,
-    iconGap: 15,
-    iconOffsetY: 6,
-    networkFontSize: 36,
-  };
-  if (!deviceProfile) {
-    throw new Error("IOS_STATUS_BAR_DEVICE_PROFILE_REQUIRED");
-  }
-  const fontFamily = resolveDevicePlatformVisuals(deviceProfile, "light").typography.primaryFamily;
+  const metrics = getIOSChromeMetrics(deviceProfile);
+  const pointScale = metrics.pointScale;
+  const statusBar = metrics.statusBar;
+  const fontFamily = resolveDevicePlatformVisuals(deviceProfile, os.appearance, os.locale, os)
+    .typography.primaryFamily;
 
   return (
     <div

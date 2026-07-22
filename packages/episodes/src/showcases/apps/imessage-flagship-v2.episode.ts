@@ -69,23 +69,19 @@ export default defineEpisode({
             title: "Violent Pancakes Club",
             description: "Brunch with no respect for portion control.",
             domain: "example.com",
-            thumbnail: "/placeholders/media.svg",
+            thumbnail: "/media/launch-board.svg",
           },
           messageId: "im_flag_msg_2",
         });
         im.at("8.0s").tapback({ messageId: "im_flag_msg_2", type: "heart" });
         im.at("10.0s").setScreen("list");
         im.at("11.0s").openConversation("dm_ava_v2");
-        im.at("12.0s").receive(
-          "Ava",
-          "Real question: are you bringing the camera?",
-        );
+        im.at("12.0s").receive("Ava", "Real question: are you bringing the camera?");
         im.at("13.6s").typing("Ava", true);
         im.at("15.2s").typing("Ava", false);
-        im.at("15.4s").send(
-          "Only if nobody makes me photograph the food before eating.",
-          { messageId: "im_flag_msg_3" },
-        );
+        im.at("15.4s").send("Only if nobody makes me photograph the food before eating.", {
+          messageId: "im_flag_msg_3",
+        });
         im.at("18.0s").tapback({ messageId: "im_flag_msg_3", type: "haha" });
         im.at("20.4s").read();
       })

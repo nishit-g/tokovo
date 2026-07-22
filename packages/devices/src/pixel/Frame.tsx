@@ -74,12 +74,6 @@ export const PixelFrame: React.FC<{ children: React.ReactNode; statusBar?: React
             display: "flex",
             flexDirection: "column",
             color: "white",
-            // Strict clipping
-            overflow: "hidden",
-            borderRadius: 60, // Match outer
-            clipPath: "inset(0px round 60px)",
-            transform: "translateZ(0)",
-            willChange: "transform",
           }}
         >
           {children}

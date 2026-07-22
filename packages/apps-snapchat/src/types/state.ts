@@ -21,9 +21,3 @@ export interface SnapchatState {
     drafts?: Record<string, string>;
     lastNavFrame?: number;
 }
-
-export function asSnapchatState(
-    appState: Record<string, unknown>,
-): SnapchatState | undefined {
-    return appState?.app_snapchat as SnapchatState | undefined;
-}

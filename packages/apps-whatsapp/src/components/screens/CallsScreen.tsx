@@ -1,5 +1,5 @@
 import { ArrowDownLeft, ArrowUpRight, Link, Phone, PhoneMissed, Plus, Video } from "lucide-react";
-import type { WorldState } from "@tokovo/core";
+import { requireAppStateForDevice, type WorldState } from "@tokovo/core";
 import { DeterministicImage } from "@tokovo/react";
 import { useTheme, useWhatsAppLocale } from "../../experience/ExperienceContext.js";
 import type { WhatsAppCallLogEntry, WhatsAppState } from "../../types/index.js";
@@ -10,6 +10,7 @@ import { AppScaffold, EmptyState, SectionHeader } from "../surfaces/index.js";
 
 export interface CallsScreenProps {
   world: WorldState;
+  deviceId: string;
   contentInsets: {
     top: number;
     bottom: number;
@@ -136,14 +137,13 @@ function CallRow({ entry, baseTime }: { entry: WhatsAppCallLogEntry; baseTime: D
   );
 }
 
-export function CallsScreen({ world, contentInsets }: CallsScreenProps) {
+export function CallsScreen({ world, deviceId, contentInsets }: CallsScreenProps) {
   const theme = useTheme();
   const { t } = useWhatsAppLocale();
   const { uiTypography: typography } = theme;
   const contentInsetTop = contentInsets.top;
   const contentInsetBottom = contentInsets.bottom;
-  const state = (world.appState?.app_whatsapp ?? {}) as Partial<WhatsAppState>;
-  const deviceId = Object.keys(world.devices ?? {})[0];
+  const state = requireAppStateForDevice<WhatsAppState>(world, "app_whatsapp", deviceId);
   const baseTime = getBaseTime(world, deviceId);
   const callLog = [...(state.callLog ?? [])].sort(
     (left, right) => right.startedAt - left.startedAt,

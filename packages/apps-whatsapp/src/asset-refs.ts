@@ -1,4 +1,8 @@
-import type { EpisodeAssetRef, PluginAssetCollector } from "@tokovo/core";
+import {
+  getAppStateForDevice,
+  type EpisodeAssetRef,
+  type PluginAssetCollector,
+} from "@tokovo/core";
 import type {
   WhatsAppConversation,
   WhatsAppMessage,
@@ -56,8 +60,13 @@ function asConversationMap(
 
 export const collectWhatsAppAssetRefs: PluginAssetCollector<"app_whatsapp"> = ({
   initialWorld,
+  deviceId,
 }) => {
-  const state = initialWorld.appState?.app_whatsapp as WhatsAppState | undefined;
+  const state = getAppStateForDevice<WhatsAppState>(
+    initialWorld,
+    "app_whatsapp",
+    deviceId,
+  );
   if (!state) {
     return [];
   }

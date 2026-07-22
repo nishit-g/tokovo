@@ -6,7 +6,7 @@ import {
   type LayoutState,
 } from "@tokovo/core";
 import type { InputProjection, PreparedInputProgram } from "@tokovo/device-keyboard";
-import type { AppViewportFrame } from "@tokovo/visual-system";
+import type { AppViewportFrame, ResolvedPlatformVisuals } from "@tokovo/visual-system";
 
 interface TokovoContextValue {
   world: WorldState;
@@ -15,8 +15,9 @@ interface TokovoContextValue {
   t: number;
   fps: number;
   layout: LayoutState | undefined;
-  platform: string;
+  platform: "ios" | "android";
   appViewport: AppViewportFrame;
+  platformVisuals: ResolvedPlatformVisuals;
   keyboardHeight: number;
   inputProgram?: PreparedInputProgram;
   inputProjection?: InputProjection;
@@ -30,10 +31,11 @@ interface TokovoProviderProps {
   deviceId: string;
   appId: string;
   t: number;
-  fps?: number;
+  fps: number;
   layout?: LayoutState;
-  platform?: string;
+  platform: "ios" | "android";
   appViewport: AppViewportFrame;
+  platformVisuals: ResolvedPlatformVisuals;
   keyboardHeight?: number;
   inputProgram?: PreparedInputProgram;
   inputProjection?: InputProjection;
@@ -45,10 +47,11 @@ export function TokovoProvider({
   deviceId,
   appId,
   t,
-  fps = 30,
+  fps,
   layout,
-  platform = "ios",
+  platform,
   appViewport,
+  platformVisuals,
   keyboardHeight = 0,
   inputProgram,
   inputProjection,
@@ -63,6 +66,7 @@ export function TokovoProvider({
       layout,
       platform,
       appViewport,
+      platformVisuals,
       keyboardHeight,
       inputProgram,
       inputProjection,
@@ -76,6 +80,7 @@ export function TokovoProvider({
       layout,
       platform,
       appViewport,
+      platformVisuals,
       keyboardHeight,
       inputProgram,
       inputProjection,
@@ -137,6 +142,10 @@ export function useAppId(): string {
 
 export function useAppViewport(): AppViewportFrame {
   return useTokovoContext().appViewport;
+}
+
+export function usePlatformVisuals(): ResolvedPlatformVisuals {
+  return useTokovoContext().platformVisuals;
 }
 
 export function useKeyboardHeight() {

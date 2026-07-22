@@ -15,7 +15,10 @@
 import React, { useEffect, useRef } from "react";
 import { Img } from "remotion";
 import { useFps, useKeyboardHeight, useInputField, useAppViewport, useTime } from "@tokovo/react";
-import type { PluginViewProps } from "@tokovo/core";
+import {
+  requireAppStateForDevice,
+  type PluginViewProps,
+} from "@tokovo/core";
 import { SNAPCHAT_APP_ID } from "../constants.js";
 import type { SnapchatState } from "../types/state.js";
 import type { SnapchatConversation } from "../types/conversation.js";
@@ -278,30 +281,20 @@ const SpotlightIcon: React.FC<{ size?: number; color?: string }> = ({ size = 22,
 // HELPERS
 // =============================================================================
 
-function getState(world: PluginViewProps["world"]): SnapchatState {
-  return (world.appState?.[SNAPCHAT_APP_ID] ?? {
-    viewMode: "FEED",
-    currentScreen: "chat_list",
-    conversations: {},
-  }) as SnapchatState;
+function getState(world: PluginViewProps["world"], deviceId: string): SnapchatState {
+  return requireAppStateForDevice<SnapchatState>(
+    world,
+    SNAPCHAT_APP_ID,
+    deviceId,
+  );
 }
 
-function getWorldClock(world: PluginViewProps["world"], deviceId?: string): number {
-  if (deviceId) {
-    const activeClock = world.devices?.[deviceId]?.os?.clock;
-    if (typeof activeClock === "number" && Number.isFinite(activeClock)) {
-      return activeClock;
-    }
+function getWorldClock(world: PluginViewProps["world"], deviceId: string): number {
+  const device = world.devices[deviceId];
+  if (!device) {
+    throw new Error(`SNAPCHAT_DEVICE_MISSING: "${deviceId}" is not in world state.`);
   }
-
-  for (const device of Object.values(world.devices ?? {})) {
-    const clock = device.os?.clock;
-    if (typeof clock === "number" && Number.isFinite(clock)) {
-      return clock;
-    }
-  }
-
-  return 0;
+  return device.os.clock;
 }
 
 /** Format timestamp to relative time string */
@@ -491,9 +484,9 @@ const ChatListScreen: React.FC<{
   contentTop: number;
   contentBottom: number;
   world: PluginViewProps["world"];
-  deviceId?: string;
+  deviceId: string;
 }> = ({ contentTop, contentBottom, world, deviceId }) => {
-  const conversations = selectConversations(world);
+  const conversations = selectConversations(world, deviceId);
 
   return (
     <div
@@ -547,7 +540,7 @@ const ChatListScreen: React.FC<{
 const ChatListRow: React.FC<{
   conversation: SnapchatConversation;
   world: PluginViewProps["world"];
-  deviceId?: string;
+  deviceId: string;
 }> = ({ conversation, world, deviceId }) => {
   const lastMessage = conversation.messages[conversation.messages.length - 1];
   const name = conversation.title ?? conversation.participants[0]?.name ?? conversation.id;
@@ -1049,9 +1042,9 @@ const SnapViewScreen: React.FC<{ state: SnapchatState }> = ({ state }) => {
 // =============================================================================
 
 export const SnapchatView: React.FC<PluginViewProps> = (props) => {
-  const state = getState(props.world);
+  const state = getState(props.world, props.deviceId);
   const screen = state.currentScreen ?? "chat_list";
-  const { contentInsets } = useAppViewport();
+  const { interactiveInsets: contentInsets } = useAppViewport();
   const keyboardHeight = useKeyboardHeight();
 
   switch (screen) {

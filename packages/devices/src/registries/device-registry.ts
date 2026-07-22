@@ -12,10 +12,8 @@
  * ```
  */
 
-import { createScopedLogger, type SoundRegistryAPI } from "@tokovo/core";
+import { registerHardwareVisualIdentity } from "@tokovo/visual-system";
 import type { DeviceProfile } from "../types.js";
-
-const log = createScopedLogger("device");
 
 // =============================================================================
 // REGISTRY IMPLEMENTATION
@@ -29,30 +27,21 @@ export class DeviceRegistryClass {
    * @param id Profile identifier (e.g., "iphone16", "pixel")
    * @param profile The device profile
    */
-  register(
-    id: string,
-    profile: DeviceProfile,
-    options: { soundRegistry?: SoundRegistryAPI } = {},
-  ): void {
+  register(id: string, profile: DeviceProfile): void {
     if (this.profiles.has(id)) {
-      log.warn(`Overwriting device profile ${id}`, {
-        event: "device.registry.overwrite",
-        profileId: id,
-      });
+      throw new Error(`DEVICE_PROFILE_COLLISION: profile "${id}" is already registered.`);
     }
+    if (profile.id !== id) {
+      throw new Error(
+        `DEVICE_PROFILE_ID_MISMATCH: registry key "${id}" does not match profile id "${profile.id}".`,
+      );
+    }
+    registerHardwareVisualIdentity(id, {
+      platform: profile.platform,
+      platformProfileId: profile.platformProfileId,
+      systemSurfaces: profile.systemSurfaces,
+    });
     this.profiles.set(id, profile);
-
-    // Auto-register device sounds if provided
-    if (profile.sounds && options.soundRegistry) {
-      Object.entries(profile.sounds).forEach(([soundId, soundPath]) => {
-        // Device profiles currently share generic sound IDs like
-        // `device.notification`. Keep the first registration to avoid
-        // noisy overwrite logs while the engine remains globally keyed.
-        if (!options.soundRegistry?.has(soundId)) {
-          options.soundRegistry?.register(soundId, soundPath);
-        }
-      });
-    }
   }
 
   /**

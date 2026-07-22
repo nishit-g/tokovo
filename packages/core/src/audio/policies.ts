@@ -8,7 +8,6 @@
  */
 
 import { SoundCue, AudioBus } from "../types.js";
-import { logAudioPolicyDrop } from "../logger/index.js";
 
 // =============================================================================
 // TYPES
@@ -67,8 +66,7 @@ export function checkSpamPure(
   }
 
   if (frame - lastFrame < config.spamGateFrames) {
-    const softSuffix =
-      config.softVariant === null ? null : config.softVariant || "_soft";
+    const softSuffix = config.softVariant === null ? null : config.softVariant || "_soft";
     if (!softSuffix) {
       return { shouldPlay: false, updatedRecentSounds: recentSounds };
     }
@@ -98,62 +96,6 @@ export function cleanupRecentSounds(
 }
 
 // =============================================================================
-// SPAM GATE (CLASS - DEPRECATED, use pure functions above)
-// =============================================================================
-
-/**
- * @deprecated Use checkSpamPure() for deterministic rendering.
- * This class maintains internal state which breaks replay determinism.
- */
-export class SpamGate {
-  private recentSounds: Map<string, number> = new Map();
-  private config: PolicyConfig;
-
-  constructor(config: PolicyConfig = DEFAULT_POLICY_CONFIG) {
-    this.config = config;
-  }
-
-  checkSpam(
-    soundId: string,
-    frame: number,
-  ): { shouldPlay: boolean; alternateSound?: string } {
-    const lastFrame = this.recentSounds.get(soundId);
-
-    if (lastFrame === undefined) {
-      this.recentSounds.set(soundId, frame);
-      return { shouldPlay: true };
-    }
-
-    if (frame - lastFrame < this.config.spamGateFrames) {
-      const softSuffix =
-        this.config.softVariant === null ? null : this.config.softVariant || "_soft";
-      if (!softSuffix) {
-        return { shouldPlay: false };
-      }
-      return {
-        shouldPlay: false,
-        alternateSound: soundId + softSuffix,
-      };
-    }
-
-    this.recentSounds.set(soundId, frame);
-    return { shouldPlay: true };
-  }
-
-  reset(): void {
-    this.recentSounds.clear();
-  }
-
-  cleanup(currentFrame: number, maxAge: number = 300): void {
-    for (const [soundId, frame] of this.recentSounds.entries()) {
-      if (currentFrame - frame > maxAge) {
-        this.recentSounds.delete(soundId);
-      }
-    }
-  }
-}
-
-// =============================================================================
 // CONCURRENCY LIMIT
 // =============================================================================
 
@@ -162,6 +104,7 @@ export function enforceBusConcurrency(
   activeCues: SoundCue[],
   maxConcurrent: number,
 ): { shouldAdd: boolean; toRemove: string[] } {
+  requireAudioBus(newCue.bus);
   const sameBusCues = activeCues.filter((cue) => cue.bus === newCue.bus);
 
   // If under limit, allow
@@ -192,7 +135,14 @@ export function enforceBusConcurrency(
  * Get default priority for a bus type
  */
 export function getDefaultPriority(bus: AudioBus): number {
-  return PRIORITY_LEVELS[bus] ?? 50;
+  requireAudioBus(bus);
+  return PRIORITY_LEVELS[bus];
+}
+
+function requireAudioBus(bus: AudioBus): void {
+  if (PRIORITY_LEVELS[bus] === undefined) {
+    throw new Error(`AUDIO_BUS_UNREGISTERED: audio bus "${String(bus)}" is not registered.`);
+  }
 }
 
 /**
@@ -205,10 +155,7 @@ export function sortByPriority(sounds: SoundCue[]): SoundCue[] {
 /**
  * Check if a new sound should interrupt/replace an existing one
  */
-export function shouldInterrupt(
-  existing: SoundCue,
-  incoming: SoundCue,
-): boolean {
+export function shouldInterrupt(existing: SoundCue, incoming: SoundCue): boolean {
   // Voice always wins
   if (incoming.bus === "voice") {
     return true;
@@ -241,6 +188,7 @@ export function checkAllPoliciesPure(
   recentSounds: Record<string, number>,
   config: PolicyConfig = DEFAULT_POLICY_CONFIG,
 ): PolicyResult {
+  requireAudioBus(cue.bus);
   const spamResult = checkSpamPure(cue.soundId, frame, recentSounds, config);
 
   if (!spamResult.shouldPlay) {
@@ -262,12 +210,11 @@ export function checkAllPoliciesPure(
     };
   }
 
-  const maxConcurrent = config.maxConcurrentPerBus[cue.bus] ?? 10;
-  const concurrencyResult = enforceBusConcurrency(
-    cue,
-    activeCues,
-    maxConcurrent,
-  );
+  const maxConcurrent = config.maxConcurrentPerBus[cue.bus];
+  if (maxConcurrent === undefined) {
+    throw new Error(`AUDIO_POLICY_MISSING: audio bus "${cue.bus}" has no concurrency policy.`);
+  }
+  const concurrencyResult = enforceBusConcurrency(cue, activeCues, maxConcurrent);
 
   if (!concurrencyResult.shouldAdd) {
     return {
@@ -284,87 +231,5 @@ export function checkAllPoliciesPure(
     soundId: cue.soundId,
     toRemove: concurrencyResult.toRemove,
     updatedRecentSounds: spamResult.updatedRecentSounds,
-  };
-}
-
-/**
- * @deprecated Use checkAllPoliciesPure() for deterministic rendering.
- * This function uses the mutable SpamGate class which breaks replay.
- */
-export function checkAllPolicies(
-  cue: SoundCue,
-  frame: number,
-  activeCues: SoundCue[],
-  spamGate: SpamGate,
-  config: PolicyConfig = DEFAULT_POLICY_CONFIG,
-): PolicyResult {
-  const spamResult = spamGate.checkSpam(cue.soundId, frame);
-  if (!spamResult.shouldPlay) {
-    if (spamResult.alternateSound) {
-      logAudioPolicyDrop({
-        soundId: cue.soundId,
-        bus: cue.bus,
-        frame,
-        reason: "spam_softened",
-        alternateSound: spamResult.alternateSound,
-      });
-      return {
-        shouldPlay: true,
-        soundId: spamResult.alternateSound,
-        toRemove: [],
-        reason: "spam_softened",
-      };
-    }
-    logAudioPolicyDrop({
-      soundId: cue.soundId,
-      bus: cue.bus,
-      frame,
-      reason: "spam_gate",
-    });
-    return {
-      shouldPlay: false,
-      soundId: cue.soundId,
-      toRemove: [],
-      reason: "spam_dropped",
-    };
-  }
-
-  const maxConcurrent = config.maxConcurrentPerBus[cue.bus] ?? 10;
-  const concurrencyResult = enforceBusConcurrency(
-    cue,
-    activeCues,
-    maxConcurrent,
-  );
-  if (!concurrencyResult.shouldAdd) {
-    logAudioPolicyDrop({
-      soundId: cue.soundId,
-      bus: cue.bus,
-      frame,
-      reason: "concurrency_limit",
-    });
-    return {
-      shouldPlay: false,
-      soundId: cue.soundId,
-      toRemove: [],
-      reason: "concurrency_limit",
-    };
-  }
-
-  if (concurrencyResult.toRemove.length > 0) {
-    for (const removed of concurrencyResult.toRemove) {
-      logAudioPolicyDrop({
-        soundId: removed,
-        bus: cue.bus,
-        frame,
-        reason: "priority_too_low",
-        replacedBy: cue.soundId,
-      });
-    }
-  }
-
-  return {
-    shouldPlay: true,
-    soundId: cue.soundId,
-    toRemove: concurrencyResult.toRemove,
   };
 }

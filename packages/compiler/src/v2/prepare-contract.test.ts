@@ -461,7 +461,9 @@ describe("compiler pipeline guarantees", () => {
       validate: true,
     });
 
-    const app = prepared.initialWorld.appState.app_whatsapp as Record<string, unknown>;
+    const app = prepared.initialWorld.appInstances[
+      "phone:app_whatsapp"
+    ] as Record<string, unknown>;
     expect(app.viewMode).toBe("CHAT");
     expect(app.currentScreen).toBe("chat");
     expect(app.conversationId).toBe("dm_alex");
@@ -486,8 +488,8 @@ describe("compiler pipeline guarantees", () => {
           avatarUrl: `/avatars/${String(snapshot?.snapshot?.label).toLowerCase()}.png`,
         }),
       },
-      collectAssetRefs: ({ initialWorld }: any) => {
-        collectedLabels.push(initialWorld.appState.app_same?.label);
+      collectAssetRefs: ({ appState }: any) => {
+        collectedLabels.push(appState.label);
         return [];
       },
     } as unknown as TokovoPlugin;
@@ -519,13 +521,12 @@ describe("compiler pipeline guarantees", () => {
       validate: true,
     });
 
-    expect(prepared.initialWorld.appState.app_same).toBeUndefined();
-    expect(prepared.initialWorld.appStateByDevice?.left?.app_same).toEqual({
+    expect(prepared.initialWorld.appInstances["left:app_same"]).toEqual({
       deviceId: "left",
       label: "LEFT",
       avatarUrl: "/avatars/left.png",
     });
-    expect(prepared.initialWorld.appStateByDevice?.right?.app_same).toEqual({
+    expect(prepared.initialWorld.appInstances["right:app_same"]).toEqual({
       deviceId: "right",
       label: "RIGHT",
       avatarUrl: "/avatars/right.png",
@@ -621,7 +622,7 @@ describe("compiler pipeline guarantees", () => {
       },
     );
 
-    expect(prepared.initialWorld.appState.app_x).toMatchObject({
+    expect(prepared.initialWorld.appInstances["phone:app_x"]).toMatchObject({
       currentScreen: "timeline",
       viewMode: "FEED",
     });
@@ -671,7 +672,7 @@ describe("compiler pipeline guarantees", () => {
       },
     );
 
-    expect(prepared.initialWorld.appState.app_imessage).toMatchObject({
+    expect(prepared.initialWorld.appInstances["phone:app_imessage"]).toMatchObject({
       currentScreen: "list",
       viewMode: "FEED",
     });
@@ -733,7 +734,7 @@ describe("compiler pipeline guarantees", () => {
       validate: true,
     });
 
-    expect(prepared.initialWorld.appState.app_whatsapp).toEqual(
+    expect(prepared.initialWorld.appInstances["phone:app_whatsapp"]).toEqual(
       expect.objectContaining({ migrated: true }),
     );
   });
@@ -757,7 +758,9 @@ describe("compiler pipeline guarantees", () => {
       validate: true,
     });
 
-    const app = prepared.initialWorld.appState.app_whatsapp as Record<string, unknown>;
+    const app = prepared.initialWorld.appInstances[
+      "phone:app_whatsapp"
+    ] as Record<string, unknown>;
     expect(app.viewMode).toBe("FEED");
     expect(app.currentScreen).toBe("chats");
     expect(app.conversationId).toBeUndefined();

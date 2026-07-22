@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { WorldState } from "@tokovo/core";
-import { DEFAULT_AUDIO_STATE } from "@tokovo/core";
+import { createDefaultAudioState } from "@tokovo/core";
 import {
   createInstagramInitialState,
   type InstagramState,
@@ -9,11 +9,12 @@ import { instagramReducer } from "../runtime/reducer.js";
 
 function createWorld(): WorldState {
   return {
-    appState: {
-      app_instagram: createInstagramInitialState(),
+    appInstances: {
+      "phone:app_instagram": createInstagramInitialState(),
     },
+    capabilityState: {},
     devices: {},
-    audio: DEFAULT_AUDIO_STATE,
+    audio: createDefaultAudioState(),
   } as WorldState;
 }
 
@@ -50,7 +51,7 @@ describe("instagram reducer", () => {
       },
     } as never);
 
-    const state = world.appState?.app_instagram as InstagramState | undefined;
+    const state = world.appInstances?.["phone:app_instagram"] as InstagramState | undefined;
     expect(state?.posts[0]?.commentCount).toBe(1);
     expect(state?.posts[0]?.commentIds).toEqual(["c1"]);
   });
@@ -85,7 +86,7 @@ describe("instagram reducer", () => {
       },
     } as never);
 
-    let state = world.appState?.app_instagram as InstagramState | undefined;
+    let state = world.appInstances?.["phone:app_instagram"] as InstagramState | undefined;
     expect(state?.dmThreads[0]?.unreadCount).toBe(1);
 
     instagramReducer(world, {
@@ -97,7 +98,7 @@ describe("instagram reducer", () => {
       payload: { screen: "thread", threadId: "thread1" },
     } as never);
 
-    state = world.appState?.app_instagram as InstagramState | undefined;
+    state = world.appInstances?.["phone:app_instagram"] as InstagramState | undefined;
     expect(state?.dmThreads[0]?.unreadCount).toBe(0);
   });
 });

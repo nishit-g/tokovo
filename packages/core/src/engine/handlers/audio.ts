@@ -2,22 +2,17 @@
  * Audio Handler - Production-grade audio event processing
  *
  * Handles:
- * - PLAY/PLAY_SOUND: Start playing sounds (routes music to musicBed)
- * - STOP/STOP_SOUND: Stop sounds by instanceId OR soundId
+ * - PLAY: Start playing sounds (routes music to musicBed)
+ * - STOP: Stop sounds by instanceId OR soundId
  * - STOP_ALL: Stop all sounds in a bus or globally
- * - FADE_OUT/FADE_VOLUME: Fade sounds out
+ * - FADE_OUT: Fade sounds out
  * - CROSSFADE: Smooth transition between music tracks
- * - BACKGROUND_MUSIC: Legacy background music support
  * - Auto-sounds: Derived audio from semantic events
  */
 
 import type { WorldState, TimelineEvent, AudioState } from "../../types.js";
 import type { HandlerContext, AudioEvent } from "./types.js";
-import {
-  DEFAULT_BUS_CONFIG,
-  SoundCue,
-  AudioBus,
-} from "../../types/audio.js";
+import { SoundCue, AudioBus } from "../../types/audio.js";
 import { deriveAudioInstructions, AutoSoundRule } from "../../audio/auto-sound.js";
 import {
   checkAllPoliciesPure,
@@ -55,35 +50,20 @@ interface AudioEventPayload {
 // STATE HELPERS
 // =============================================================================
 
-function createDefaultAudioState(): AudioState {
-  return {
-    activeSounds: {},
-    buses: { ...DEFAULT_BUS_CONFIG },
-    policyState: {
-      recentSounds: {},
-      nextId: 0,
-    },
-    autoSoundRules: [],
-  };
-}
-
-export function ensureAudioState(
+function assertAudioState(
   draft: WorldState,
 ): asserts draft is WorldState & { audio: AudioState } {
-  if (!draft.audio) {
-    draft.audio = createDefaultAudioState();
-  }
-  if (!draft.audio.activeSounds) {
-    draft.audio.activeSounds = {};
-  }
-  if (!draft.audio.buses) {
-    draft.audio.buses = { ...DEFAULT_BUS_CONFIG };
-  }
-  if (!draft.audio.policyState) {
-    draft.audio.policyState = {
-      recentSounds: {},
-      nextId: 0,
-    };
+  const audio = draft.audio as AudioState | undefined;
+  if (
+    !audio ||
+    !audio.activeSounds ||
+    !audio.buses ||
+    !audio.policyState ||
+    !Array.isArray(audio.autoSoundRules)
+  ) {
+    throw new Error(
+      "AUDIO_STATE_INVALID: audio, activeSounds, buses, policyState, and autoSoundRules are required",
+    );
   }
 }
 
@@ -126,7 +106,7 @@ function findInstancesByBus(
  * Determines if a sound should be routed to musicBed.
  * Only uses explicit bus assignment - loop is irrelevant.
  */
-function isMusic(bus?: string, _loop?: boolean): boolean {
+function isMusic(bus?: string): boolean {
   return bus === "music";
 }
 
@@ -141,13 +121,16 @@ function handlePlay(
   _ctx: HandlerContext,
 ): void {
   const audio = draft.audio;
-  if (!audio) return;
+  const soundId = payload.soundId;
+  if (!soundId) {
+    throw new Error("AUDIO_PLAY_SOUND_ID_REQUIRED: PLAY requires soundId");
+  }
 
   const instanceId = `sound_${audio.policyState.nextId++}`;
 
-  if (isMusic(payload.bus, payload.loop)) {
+  if (isMusic(payload.bus)) {
     audio.musicBed = {
-      soundId: payload.soundId || "",
+      soundId,
       baseGain: payload.volume ?? 0.35,
       loop: payload.loop ?? true,
       startFrame: event.at,
@@ -156,7 +139,7 @@ function handlePlay(
     };
   } else {
     const tempCue: SoundCue = {
-      soundId: payload.soundId || "",
+      soundId,
       startFrame: event.at,
       volume: payload.volume ?? 1,
       loop: payload.loop ?? false,
@@ -195,7 +178,6 @@ function handlePlay(
 
 function handleStop(draft: WorldState, payload: AudioEventPayload): void {
   const audio = draft.audio;
-  if (!audio) return;
 
   if (payload.instanceId) {
     deleteActiveSound(audio.activeSounds, payload.instanceId);
@@ -215,7 +197,6 @@ function handleStop(draft: WorldState, payload: AudioEventPayload): void {
 
 function handleStopAll(draft: WorldState, payload: AudioEventPayload): void {
   const audio = draft.audio;
-  if (!audio) return;
 
   if (payload.bus) {
     const instances = findInstancesByBus(
@@ -242,7 +223,6 @@ function handleFade(
   payload: AudioEventPayload,
 ): void {
   const audio = draft.audio;
-  if (!audio) return;
 
   let duration = payload.duration ?? DEFAULT_FADE_DURATION;
   const toVolume = payload.toVolume ?? 0;
@@ -295,7 +275,6 @@ function handleCrossfade(
   payload: AudioEventPayload,
 ): void {
   const audio = draft.audio;
-  if (!audio) return;
 
   const duration = payload.crossfadeDuration ?? payload.duration ?? 60;
 
@@ -308,15 +287,18 @@ function handleCrossfade(
   }
 
   const targetSoundId = payload.toSoundId || payload.soundId;
-  if (targetSoundId) {
-    audio.musicBed = {
-      soundId: targetSoundId,
-      baseGain: payload.volume ?? 0.35,
-      loop: true,
-      startFrame: event.at,
-      crossfadeFrames: duration,
-    };
+  if (!targetSoundId) {
+    throw new Error(
+      "AUDIO_CROSSFADE_SOUND_ID_REQUIRED: CROSSFADE requires soundId or toSoundId",
+    );
   }
+  audio.musicBed = {
+    soundId: targetSoundId,
+    baseGain: payload.volume ?? 0.35,
+    loop: true,
+    startFrame: event.at,
+    crossfadeFrames: duration,
+  };
 }
 
 // =============================================================================
@@ -328,18 +310,16 @@ export function processAudioEvent(
   event: AudioEvent,
   ctx: HandlerContext,
 ): void {
-  ensureAudioState(draft);
+  assertAudioState(draft);
 
   const payload = event as AudioEvent & AudioEventPayload;
 
   switch (event.type) {
     case "PLAY":
-    case "PLAY_SOUND":
       handlePlay(draft, event, payload, ctx);
       break;
 
     case "STOP":
-    case "STOP_SOUND":
       handleStop(draft, payload);
       break;
 
@@ -348,7 +328,6 @@ export function processAudioEvent(
       break;
 
     case "FADE_OUT":
-    case "FADE_VOLUME":
       handleFade(draft, event, payload);
       break;
 
@@ -357,8 +336,7 @@ export function processAudioEvent(
       break;
 
     default: {
-      // Silently ignore - may be auto-sound trigger events
-      break;
+      throw new Error(`AUDIO_EVENT_UNSUPPORTED: ${event.type}`);
     }
   }
 }
@@ -371,8 +349,8 @@ export function cleanupExpiredSounds(
   draft: WorldState,
   currentFrame: number,
 ): void {
+  assertAudioState(draft);
   const audio = draft.audio;
-  if (!audio?.activeSounds) return;
 
   const toDelete: string[] = [];
 
@@ -431,9 +409,8 @@ export function handleAutoSounds(
   event: TimelineEvent,
   _ctx: HandlerContext,
 ): void {
-  ensureAudioState(draft);
+  assertAudioState(draft);
   const audio = draft.audio;
-  if (!audio) return;
 
   const instructions = deriveAudioInstructions(
     event,

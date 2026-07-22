@@ -1,27 +1,28 @@
 import { describe, it, expect } from "vitest";
 import type { WorldState } from "@tokovo/core";
-import { DEFAULT_AUDIO_STATE } from "@tokovo/core";
+import { createDefaultAudioState } from "@tokovo/core";
 import { createIMessageInitialState } from "../runtime/initial-state.js";
 import type { IMessageState } from "../types/index.js";
 import { selectActiveConversation } from "../runtime/selectors.js";
 
 function createTestWorldState(): WorldState {
   return {
-    appState: {
-      app_imessage: createIMessageInitialState(),
+    appInstances: {
+      "phone:app_imessage": createIMessageInitialState(),
     },
+    capabilityState: {},
     devices: {},
-    audio: DEFAULT_AUDIO_STATE,
+    audio: createDefaultAudioState(),
   } as WorldState;
 }
 
 describe("iMessage selectors", () => {
   it("selectActiveConversation returns active conversation", () => {
     const state = createTestWorldState();
-    if (!state.appState?.app_imessage) {
+    if (!state.appInstances?.["phone:app_imessage"]) {
       throw new Error("Missing iMessage state in test world");
     }
-    (state.appState.app_imessage as IMessageState).conversations = {
+    (state.appInstances["phone:app_imessage"] as IMessageState).conversations = {
       c1: {
         id: "c1",
         transport: "imessage",
@@ -31,9 +32,9 @@ describe("iMessage selectors", () => {
         unreadCount: 0,
       },
     } as any;
-    (state.appState.app_imessage as IMessageState).activeConversationId = "c1";
+    (state.appInstances["phone:app_imessage"] as IMessageState).activeConversationId = "c1";
 
-    const conv = selectActiveConversation(state);
+    const conv = selectActiveConversation(state, "phone");
     expect(conv?.id).toBe("c1");
   });
 });

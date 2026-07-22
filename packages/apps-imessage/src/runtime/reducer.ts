@@ -1,4 +1,8 @@
-import type { WorldState, TimelineEvent } from "@tokovo/core";
+import {
+  requireAppStateForDevice,
+  type WorldState,
+  type TimelineEvent,
+} from "@tokovo/core";
 import { IMESSAGE_APP_ID } from "../constants.js";
 import type {
   IMessageConversation,
@@ -37,21 +41,12 @@ function asPayload<T extends IMessageEventType>(
   return payload as unknown as IMessageEventPayload<T>;
 }
 
-function getAppState(draft: WorldState): IMessageState {
-  if (!draft.appState) {
-    draft.appState = {};
-  }
-  if (!draft.appState.app_imessage) {
-    draft.appState.app_imessage = {
-      viewMode: "FEED",
-      conversationId: undefined,
-      currentScreen: "list",
-      activeConversationId: undefined,
-      statusBarTheme: "dark",
-      conversations: {},
-    };
-  }
-  const state = draft.appState.app_imessage as IMessageState;
+function getAppState(draft: WorldState, deviceId: string): IMessageState {
+  const state = requireAppStateForDevice<IMessageState>(
+    draft,
+    IMESSAGE_APP_ID,
+    deviceId,
+  );
   state.viewMode ??= "FEED";
   state.conversationId ??= undefined;
   state.currentScreen ??= "list";
@@ -235,12 +230,13 @@ export function iMessageReducer(draft: WorldState, event: TimelineEvent): void {
   if (event.kind !== "APP") return;
   const appEvent = event as TimelineEvent & {
     appId?: string;
+    deviceId: string;
     type?: string;
     payload?: Record<string, unknown>;
   };
   if (appEvent.appId !== IMESSAGE_APP_ID) return;
 
-  const state = getAppState(draft);
+  const state = getAppState(draft, appEvent.deviceId);
   const type = appEvent.type as IMessageEventType | undefined;
   if (!type) return;
 

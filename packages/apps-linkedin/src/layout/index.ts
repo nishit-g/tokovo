@@ -1,11 +1,12 @@
-import type {
-  ChatLayoutState,
-  FeedLayoutState,
-  FullscreenLayoutState,
-  LayoutContext,
-  LayoutRect,
-  PluginLayoutStrategy,
-  SemanticRegion,
+import {
+  requireAppStateForDevice,
+  type ChatLayoutState,
+  type FeedLayoutState,
+  type FullscreenLayoutState,
+  type LayoutContext,
+  type LayoutRect,
+  type PluginLayoutStrategy,
+  type SemanticRegion,
 } from "@tokovo/core";
 
 import type { LinkedInState } from "../runtime/state.js";
@@ -25,8 +26,12 @@ function buildSemantic(
   return { regions, groups };
 }
 
-function getAppState(ctx: LayoutContext): Partial<LinkedInState> {
-  return (ctx.world.appState?.app_linkedin ?? {}) as Partial<LinkedInState>;
+function getAppState(ctx: LayoutContext): LinkedInState {
+  return requireAppStateForDevice<LinkedInState>(
+    ctx.world,
+    "app_linkedin",
+    ctx.activeDeviceId,
+  );
 }
 
 function getFeedFocusIndex(state: Partial<LinkedInState>): number {
@@ -38,8 +43,8 @@ function getFeedFocusIndex(state: Partial<LinkedInState>): number {
 
 function computeFeedLayout(ctx: LayoutContext): FeedLayoutState {
   const { viewportWidth: w, viewportHeight: h, appViewport } = ctx;
-  const contentTop = appViewport.contentInsets.top;
-  const contentBottom = appViewport.contentInsets.bottom;
+  const contentTop = appViewport.interactiveInsets.top;
+  const contentBottom = appViewport.interactiveInsets.bottom;
   const scale = w / DESIGN_WIDTH;
   const px = (value: number) => value * scale;
   const state = getAppState(ctx);
@@ -265,8 +270,8 @@ function computeFeedLayout(ctx: LayoutContext): FeedLayoutState {
 
 function computeChatLayout(ctx: LayoutContext): ChatLayoutState {
   const { viewportWidth: w, viewportHeight: h, appViewport } = ctx;
-  const contentTop = appViewport.contentInsets.top;
-  const contentBottom = appViewport.contentInsets.bottom;
+  const contentTop = appViewport.interactiveInsets.top;
+  const contentBottom = appViewport.interactiveInsets.bottom;
   const scale = w / DESIGN_WIDTH;
   const px = (value: number) => value * scale;
 
@@ -318,8 +323,8 @@ function computeChatLayout(ctx: LayoutContext): ChatLayoutState {
 
 function computeFullscreenLayout(ctx: LayoutContext): FullscreenLayoutState {
   const { viewportWidth: w, viewportHeight: h, appViewport } = ctx;
-  const contentTop = appViewport.contentInsets.top;
-  const contentBottom = appViewport.contentInsets.bottom;
+  const contentTop = appViewport.interactiveInsets.top;
+  const contentBottom = appViewport.interactiveInsets.bottom;
   const scale = w / DESIGN_WIDTH;
   const px = (value: number) => value * scale;
 

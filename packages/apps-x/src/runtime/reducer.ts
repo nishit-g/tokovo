@@ -1,4 +1,9 @@
-import type { WorldState, PluginReducer, RuntimeEvent } from "@tokovo/core";
+import {
+  requireAppStateForDevice,
+  type WorldState,
+  type PluginReducer,
+  type RuntimeEvent,
+} from "@tokovo/core";
 import type {
   ProfileTab,
   TimelineTab,
@@ -10,7 +15,6 @@ import type {
   XTweet,
   XUser,
 } from "./state.js";
-import { createXInitialState } from "./state.js";
 
 function ensureMutableArray<T>(value: T[] | undefined | null): T[] {
   if (!Array.isArray(value)) return [];
@@ -44,14 +48,8 @@ function syncViewMode(state: XState): void {
   state.conversationId = undefined;
 }
 
-function getAppState(draft: WorldState): XState {
-  if (!draft.appState) {
-    draft.appState = {};
-  }
-  if (!draft.appState["app_x"]) {
-    draft.appState["app_x"] = createXInitialState();
-  }
-  const state = draft.appState["app_x"] as XState;
+function getAppState(draft: WorldState, deviceId: string): XState {
+  const state = requireAppStateForDevice<XState>(draft, "app_x", deviceId);
   state.users = ensureMutableArray(state.users);
   state.tweets = ensureMutableArray(state.tweets);
   state.timeline = ensureMutableArray(state.timeline);
@@ -166,9 +164,9 @@ function getThreadById(state: XState, threadId: string): XDMThread | undefined {
 
 export const xReducer: PluginReducer<"app_x"> = (
   draft: WorldState,
-  event: RuntimeEvent & { kind: "APP"; appId: "app_x" }
+  event: RuntimeEvent & { kind: "APP"; appId: "app_x"; deviceId: string },
 ) => {
-  const appState = getAppState(draft);
+  const appState = getAppState(draft, event.deviceId);
 
   switch (event.type) {
     case "ADD_USER": {

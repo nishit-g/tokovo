@@ -54,6 +54,7 @@ import {
 import {
   scaleAppViewportFrame,
   type AppViewportFrame,
+  type ResolvedPlatformVisuals,
   type SystemGeometryFrame,
 } from "@tokovo/visual-system";
 import { useRendererRegistries } from "../RegistryContext.js";
@@ -104,6 +105,8 @@ export interface LayoutEngineOutput {
   systemGeometry: SystemGeometryFrame;
   /** System geometry transformed into the app's registered design coordinates. */
   appViewport: AppViewportFrame;
+  /** Fully resolved platform environment shared by apps and system painters. */
+  platformVisuals: ResolvedPlatformVisuals;
   /** Canonical keyboard + app-field projection for this device/frame. */
   inputProjection?: InputProjection;
   /** Canonical OS-owned notification projection for this device/frame. */
@@ -230,7 +233,13 @@ export function computeLayoutEngine(
   const config = input.config ?? TokovoConfig;
   const effectiveFps = fps ?? config.rendering.defaultFps;
 
-  const deviceId = focusDeviceId || Object.keys(world.devices)[0];
+  const deviceIds = Object.keys(world.devices);
+  if (!focusDeviceId && deviceIds.length !== 1) {
+    throw new Error(
+      `DEVICE_LAYOUT_FOCUS_REQUIRED: expected focusDeviceId for ${deviceIds.length} devices.`,
+    );
+  }
+  const deviceId = focusDeviceId ?? deviceIds[0];
   const device = world.devices[deviceId];
 
   if (!device) {
@@ -317,9 +326,26 @@ export function computeLayoutEngine(
   // 3. Get device profile
   const profile = resolveProfile(registries.devices, device.profileId);
   const pointScale = profile.pointScale;
-  const osAppearance = device.os?.appearance ?? "light";
-  const osLocale = device.os?.locale ?? "en-US";
-  const platformVisuals = resolveDevicePlatformVisuals(profile, osAppearance, osLocale);
+  const os = device.os;
+  if (!os) {
+    throw new Error(`DEVICE_OS_STATE_MISSING: Device "${deviceId}" has no OS environment.`);
+  }
+  const osAppearance = os.appearance;
+  const osLocale = os.locale;
+  const visualPreferences = {
+    textScale: os.textScale,
+    contrast: os.contrast,
+    motion: os.motion,
+    transparency: os.transparency,
+    materialPreference: os.materialPreference,
+    colorSeed: os.colorSeed,
+  };
+  const platformVisuals = resolveDevicePlatformVisuals(
+    profile,
+    osAppearance,
+    osLocale,
+    visualPreferences,
+  );
   const appDesignWidth = appId ? registries.plugins.metadata.get(appId).designWidth : undefined;
   if (appId && appDesignWidth === undefined) {
     throw new Error(`APP_DESIGN_WIDTH_MISSING: App "${appId}" must register assets.designWidth.`);
@@ -330,6 +356,7 @@ export function computeLayoutEngine(
         viewportWidth: profile.display.width,
         viewportHeight: profile.display.height,
         pointScale,
+        clockMs: os.clock,
       })
     : undefined;
   const variant: "ios" | "android" = profile.platform;
@@ -337,7 +364,7 @@ export function computeLayoutEngine(
     ? projectLockscreen({
         profile,
         os: device.os,
-        fallbackWallpaper: device.homeScreen?.wallpaper,
+        homeWallpaper: device.homeScreen?.wallpaper,
       })
     : !appId && device.homeScreen
       ? projectHomeScreen({ profile, os: device.os, config: device.homeScreen })
@@ -350,6 +377,7 @@ export function computeLayoutEngine(
         appearance: projectedInputSession.keyboard.appearance,
         locale: projectedInputSession.keyboard.locale.tag,
         platformProfileId: projectedInputSession.keyboard.platformProfileId,
+        preferences: projectedInputSession.keyboard.visualPreferences,
       })
     : undefined;
   const inputProjection =
@@ -364,6 +392,7 @@ export function computeLayoutEngine(
   const systemGeometry = resolveDeviceSystemGeometry(profile, {
     appearance: osAppearance,
     locale: osLocale,
+    preferences: visualPreferences,
     state: {
       keyboard: inputProjection
         ? {
@@ -387,6 +416,7 @@ export function computeLayoutEngine(
     t,
     activeDeviceId: deviceId,
     activeAppId: appId || "",
+    platform: variant,
     viewKind,
     activeConversationId,
     activeStoryId,
@@ -414,6 +444,7 @@ export function computeLayoutEngine(
     activeStoryId,
     systemGeometry,
     appViewport,
+    platformVisuals,
     inputProjection,
     notificationProjection,
     systemSurfaceProjection,

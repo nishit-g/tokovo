@@ -1,4 +1,4 @@
-import type { WorldState } from "@tokovo/core";
+import { getAppStateForDevice, type WorldState } from "@tokovo/core";
 import type {
   LinkedInState,
   LIUser,
@@ -12,42 +12,42 @@ import type { LIThemeMode } from "../types/events.js";
 
 const VIRTUAL_MINUTE_FRAMES = 24;
 
-export function getLinkedInState(world: WorldState): LinkedInState | undefined {
-  return world.appState?.["app_linkedin"] as LinkedInState | undefined;
+export function getLinkedInState(world: WorldState, deviceId: string): LinkedInState | undefined {
+  return getAppStateForDevice<LinkedInState>(world, "app_linkedin", deviceId);
 }
 
-export function getThemeMode(world: WorldState): LIThemeMode {
-  return getLinkedInState(world)?.themeMode ?? "light";
+export function getThemeMode(world: WorldState, deviceId: string): LIThemeMode {
+  return getLinkedInState(world, deviceId)?.themeMode ?? "light";
 }
 
-export function getCurrentUserId(world: WorldState): string | null {
-  return getLinkedInState(world)?.currentUserId ?? null;
+export function getCurrentUserId(world: WorldState, deviceId: string): string | null {
+  return getLinkedInState(world, deviceId)?.currentUserId ?? null;
 }
 
-export function getCurrentUser(world: WorldState): LIUser | null {
-  return getUserById(world, getCurrentUserId(world));
+export function getCurrentUser(world: WorldState, deviceId: string): LIUser | null {
+  return getUserById(world, deviceId, getCurrentUserId(world, deviceId));
 }
 
-export function getUserById(world: WorldState, userId: string | null): LIUser | null {
+export function getUserById(world: WorldState, deviceId: string, userId: string | null): LIUser | null {
   if (!userId) return null;
-  return getLinkedInState(world)?.users.find((u) => u.id === userId) ?? null;
+  return getLinkedInState(world, deviceId)?.users.find((u) => u.id === userId) ?? null;
 }
 
-export function getPostById(world: WorldState, postId: string | null): LIPost | null {
+export function getPostById(world: WorldState, deviceId: string, postId: string | null): LIPost | null {
   if (!postId) return null;
-  return getLinkedInState(world)?.posts.find((p) => p.id === postId) ?? null;
+  return getLinkedInState(world, deviceId)?.posts.find((p) => p.id === postId) ?? null;
 }
 
-export function getFeedPosts(world: WorldState): LIPost[] {
-  const state = getLinkedInState(world);
+export function getFeedPosts(world: WorldState, deviceId: string): LIPost[] {
+  const state = getLinkedInState(world, deviceId);
   if (!state) return [];
   const byId = new Map((state.posts ?? []).map((p) => [p.id, p]));
   return (state.feed ?? []).map((id) => byId.get(id)).filter(Boolean) as LIPost[];
 }
 
-export function getFeedFocusPostId(world: WorldState): string | null {
-  const state = getLinkedInState(world);
-  const posts = getFeedPosts(world);
+export function getFeedFocusPostId(world: WorldState, deviceId: string): string | null {
+  const state = getLinkedInState(world, deviceId);
+  const posts = getFeedPosts(world, deviceId);
   if (!state || posts.length === 0) return null;
   if (state.currentScreen === "feed" && state.activePostId && posts.some((post) => post.id === state.activePostId)) {
     return state.activePostId;
@@ -55,26 +55,26 @@ export function getFeedFocusPostId(world: WorldState): string | null {
   return posts[0]?.id ?? null;
 }
 
-export function getFeedFocusIndex(world: WorldState): number {
-  const focusId = getFeedFocusPostId(world);
+export function getFeedFocusIndex(world: WorldState, deviceId: string): number {
+  const focusId = getFeedFocusPostId(world, deviceId);
   if (!focusId) return 0;
-  return Math.max(0, getFeedPosts(world).findIndex((post) => post.id === focusId));
+  return Math.max(0, getFeedPosts(world, deviceId).findIndex((post) => post.id === focusId));
 }
 
-export function getActivePost(world: WorldState): LIPost | null {
-  return getPostById(world, getLinkedInState(world)?.activePostId ?? null);
+export function getActivePost(world: WorldState, deviceId: string): LIPost | null {
+  return getPostById(world, deviceId, getLinkedInState(world, deviceId)?.activePostId ?? null);
 }
 
-export function getActiveUser(world: WorldState): LIUser | null {
-  return getUserById(world, getLinkedInState(world)?.activeUserId ?? null);
+export function getActiveUser(world: WorldState, deviceId: string): LIUser | null {
+  return getUserById(world, deviceId, getLinkedInState(world, deviceId)?.activeUserId ?? null);
 }
 
-export function getProfileUser(world: WorldState): LIUser | null {
-  return getActiveUser(world) ?? getCurrentUser(world);
+export function getProfileUser(world: WorldState, deviceId: string): LIUser | null {
+  return getActiveUser(world, deviceId) ?? getCurrentUser(world, deviceId);
 }
 
-export function getCommentsForPost(world: WorldState, postId: string | null): LIComment[] {
-  const state = getLinkedInState(world);
+export function getCommentsForPost(world: WorldState, deviceId: string, postId: string | null): LIComment[] {
+  const state = getLinkedInState(world, deviceId);
   if (!state || !postId) return [];
   return (state.comments ?? [])
     .filter((comment) => comment.postId === postId)
@@ -83,43 +83,44 @@ export function getCommentsForPost(world: WorldState, postId: string | null): LI
 
 export function getLatestCommentsForPost(
   world: WorldState,
+  deviceId: string,
   postId: string | null,
   limit = 2,
 ): LIComment[] {
-  return getCommentsForPost(world, postId).slice(-limit);
+  return getCommentsForPost(world, deviceId, postId).slice(-limit);
 }
 
-export function getRepostCountForPost(world: WorldState, postId: string | null): number {
+export function getRepostCountForPost(world: WorldState, deviceId: string, postId: string | null): number {
   if (!postId) return 0;
-  const state = getLinkedInState(world);
+  const state = getLinkedInState(world, deviceId);
   if (!state) return 0;
   return state.posts.filter((post) => post.repostOfId === postId).length;
 }
 
-export function getNotifications(world: WorldState): LINotification[] {
-  return [...(getLinkedInState(world)?.notifications ?? [])].sort((a, b) => b.createdAt - a.createdAt);
+export function getNotifications(world: WorldState, deviceId: string): LINotification[] {
+  return [...(getLinkedInState(world, deviceId)?.notifications ?? [])].sort((a, b) => b.createdAt - a.createdAt);
 }
 
-export function getUnreadNotificationCount(world: WorldState): number {
-  return getNotifications(world).filter((notification) => notification.unread).length;
+export function getUnreadNotificationCount(world: WorldState, deviceId: string): number {
+  return getNotifications(world, deviceId).filter((notification) => notification.unread).length;
 }
 
-export function getDMThreads(world: WorldState): LIDMThread[] {
-  return [...(getLinkedInState(world)?.dmThreads ?? [])].sort((a, b) => {
+export function getDMThreads(world: WorldState, deviceId: string): LIDMThread[] {
+  return [...(getLinkedInState(world, deviceId)?.dmThreads ?? [])].sort((a, b) => {
     if (a.pinned !== b.pinned) return a.pinned ? -1 : 1;
     if ((a.unreadCount ?? 0) !== (b.unreadCount ?? 0)) return (b.unreadCount ?? 0) - (a.unreadCount ?? 0);
     return (b.lastMessageAt ?? 0) - (a.lastMessageAt ?? 0);
   });
 }
 
-export function getActiveThread(world: WorldState): LIDMThread | null {
-  const state = getLinkedInState(world);
+export function getActiveThread(world: WorldState, deviceId: string): LIDMThread | null {
+  const state = getLinkedInState(world, deviceId);
   if (!state?.activeThreadId) return null;
   return (state.dmThreads ?? []).find((thread) => thread.id === state.activeThreadId) ?? null;
 }
 
-export function getThreadMessages(world: WorldState, threadId: string | null): LIDMMessage[] {
-  const state = getLinkedInState(world);
+export function getThreadMessages(world: WorldState, deviceId: string, threadId: string | null): LIDMMessage[] {
+  const state = getLinkedInState(world, deviceId);
   if (!state || !threadId) return [];
   const thread = (state.dmThreads ?? []).find((item) => item.id === threadId);
   if (!thread) return [];
@@ -127,18 +128,18 @@ export function getThreadMessages(world: WorldState, threadId: string | null): L
   return thread.messageIds.map((id) => byId.get(id)).filter(Boolean) as LIDMMessage[];
 }
 
-export function getLastMessageForThread(world: WorldState, threadId: string | null): LIDMMessage | null {
-  const messages = getThreadMessages(world, threadId);
+export function getLastMessageForThread(world: WorldState, deviceId: string, threadId: string | null): LIDMMessage | null {
+  const messages = getThreadMessages(world, deviceId, threadId);
   return messages[messages.length - 1] ?? null;
 }
 
-export function getUnreadMessageCount(world: WorldState): number {
-  return getDMThreads(world).reduce((sum, thread) => sum + (thread.unreadCount ?? 0), 0);
+export function getUnreadMessageCount(world: WorldState, deviceId: string): number {
+  return getDMThreads(world, deviceId).reduce((sum, thread) => sum + (thread.unreadCount ?? 0), 0);
 }
 
-export function getUserPosts(world: WorldState, userId: string | null): LIPost[] {
+export function getUserPosts(world: WorldState, deviceId: string, userId: string | null): LIPost[] {
   if (!userId) return [];
-  return getFeedPosts(world).filter((post) => post.authorId === userId);
+  return getFeedPosts(world, deviceId).filter((post) => post.authorId === userId);
 }
 
 export function formatRelativeFrameTime(createdAt: number, referenceAt: number): string {
@@ -152,8 +153,8 @@ export function formatRelativeFrameTime(createdAt: number, referenceAt: number):
   return `${Math.floor(minutes / (60 * 24 * 7))}w`;
 }
 
-export function getReferenceFrame(world: WorldState): number {
-  const state = getLinkedInState(world);
+export function getReferenceFrame(world: WorldState, deviceId: string): number {
+  const state = getLinkedInState(world, deviceId);
   if (!state) return 0;
   const candidates = [
     ...state.posts.map((post) => post.createdAt),

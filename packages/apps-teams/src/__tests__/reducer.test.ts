@@ -1,17 +1,19 @@
 import { describe, expect, it } from "vitest";
 import { produce } from "immer";
 import type { WorldState } from "@tokovo/core";
-import { DEFAULT_AUDIO_STATE } from "@tokovo/core";
+import { createDefaultAudioState } from "@tokovo/core";
 import { teamsReducer } from "../runtime/reducer.js";
 import type { TeamsState } from "../types/state.js";
 import { dmTarget, threadTarget } from "../dsl/index.js";
 import { teamsBootstrap } from "../bootstrap.js";
+import { createTeamsInitialState } from "../runtime/initial-state.js";
 
 function createWorld(): WorldState {
   return {
-    appState: {},
+    appInstances: { "phone:app_teams": createTeamsInitialState() },
+    capabilityState: {},
     devices: {},
-    audio: DEFAULT_AUDIO_STATE,
+    audio: createDefaultAudioState(),
   } as WorldState;
 }
 
@@ -24,7 +26,7 @@ function run(state: WorldState, event: TeamsReducerEvent): WorldState {
 }
 
 function getTeamsState(world: WorldState): TeamsState {
-  const appState = world.appState.app_teams;
+  const appState = world.appInstances["phone:app_teams"];
   expect(appState).toBeDefined();
   return appState as TeamsState;
 }
@@ -51,7 +53,7 @@ function createBootstrapContext(
 describe("teams reducer", () => {
   it("hydrates bootstrap snapshots and thread messages", () => {
     const hydrated = createWorld();
-    hydrated.appState.app_teams = teamsBootstrap.hydrate(
+    hydrated.appInstances["phone:app_teams"] = teamsBootstrap.hydrate(
       createBootstrapContext(
         getTeamsState(
           run(createWorld(), {
@@ -115,7 +117,7 @@ describe("teams reducer", () => {
 
   it("tracks draft, typing, unread, and active thread transitions", () => {
     const world = createWorld();
-    world.appState.app_teams = teamsBootstrap.hydrate(
+    world.appInstances["phone:app_teams"] = teamsBootstrap.hydrate(
       createBootstrapContext(
         getTeamsState(
           run(createWorld(), {

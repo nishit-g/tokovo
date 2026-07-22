@@ -10,9 +10,8 @@
 // =============================================================================
 export * from "./types.js";
 export type { ViewLayoutMode, PIPPosition } from "./types.js";
-export { createAppViewportFrame } from "@tokovo/visual-system";
+export { createAppViewportFrame, resolvePlatformVisuals } from "@tokovo/visual-system";
 // Note: types/index.ts exists but is NOT exported here to avoid duplicate exports.
-// types.ts re-exports needed types from types/layout.ts for compatibility.
 
 // =============================================================================
 // ENGINE - Replay loop and handlers

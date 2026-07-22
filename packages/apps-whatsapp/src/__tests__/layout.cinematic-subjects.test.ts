@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import type { LayoutContext, WorldState } from "@tokovo/core";
-import { createAppViewportFrame, DEFAULT_AUDIO_STATE } from "@tokovo/core";
+import { createAppViewportFrame, createDefaultAudioState } from "@tokovo/core";
 import { computeChatLayout, computeFeedLayout } from "../layout/index.js";
 import { createWhatsAppInitialState } from "../runtime/initial-state.js";
 import { WhatsAppCinematicSubjects } from "../camera/subjects.js";
@@ -19,9 +19,17 @@ function computeForScreen(
     ...statePatch,
   };
   const world = {
-    appState: { app_whatsapp: appState },
-    devices: {},
-    audio: DEFAULT_AUDIO_STATE,
+    appInstances: { "d1:app_whatsapp": appState },
+    capabilityState: {},
+    devices: {
+      d1: {
+        id: "d1",
+        profileId: "iphone16",
+        appAppearance: "light",
+        os: { clock: 0, appearance: "light" },
+      } as never,
+    },
+    audio: createDefaultAudioState(),
   } as WorldState;
 
   const ctx: LayoutContext = {
@@ -29,13 +37,14 @@ function computeForScreen(
     t: 0,
     activeDeviceId: "d1",
     activeAppId: "app_whatsapp",
+    platform: "ios",
     viewKind: "FEED",
     viewportWidth: 393,
     viewportHeight: 852,
     appViewport: createAppViewportFrame({
       width: 393,
       height: 852,
-      contentInsets: { top: 47, bottom: 34 },
+      interactiveInsets: { top: 47, bottom: 34 },
     }),
     layoutCache: undefined,
   };
@@ -212,8 +221,8 @@ describe("WhatsApp semantic subjects (FEED)", () => {
 describe("WhatsApp semantic subjects (CHAT)", () => {
   it("projects the same system, reply, reaction, and message IDs as the UI", () => {
     const world = {
-      appState: {
-        app_whatsapp: {
+      appInstances: {
+        "d1:app_whatsapp": {
           ...createWhatsAppInitialState(),
           currentScreen: "chat",
           conversationId: "room",
@@ -251,16 +260,20 @@ describe("WhatsApp semantic subjects (CHAT)", () => {
           },
         },
       },
+      capabilityState: {},
       devices: {
         d1: {
           id: "d1",
           ownerName: "Owner",
           profileId: "iphone16",
-          os: { clock: new Date("2026-07-20T10:00:00Z").getTime() },
+          os: {
+            clock: new Date("2026-07-20T10:00:00Z").getTime(),
+            appearance: "light",
+          },
         },
       },
       config: { fps: 30 },
-      audio: DEFAULT_AUDIO_STATE,
+      audio: createDefaultAudioState(),
     } as unknown as WorldState;
     const layout = computeChatLayout({
       world,
@@ -274,7 +287,7 @@ describe("WhatsApp semantic subjects (CHAT)", () => {
       appViewport: createAppViewportFrame({
         width: 393,
         height: 852,
-        contentInsets: { top: 47, bottom: 34 },
+        interactiveInsets: { top: 47, bottom: 34 },
       }),
     });
 
@@ -346,17 +359,19 @@ describe("WhatsApp semantic subjects (CHAT)", () => {
       },
     };
     const world = {
-      appState: { app_whatsapp: state },
+      appInstances: { "d1:app_whatsapp": state },
+      capabilityState: {},
       devices: {
         d1: {
           id: "d1",
           ownerName: "Owner",
           profileId: "iphone16",
           screenDimensions: { width: 393, height: 852 },
+          os: { clock: 0, appearance: "light" },
         },
       },
       config: { fps: 30 },
-      audio: DEFAULT_AUDIO_STATE,
+      audio: createDefaultAudioState(),
     } as unknown as WorldState;
     const layout = computeChatLayout({
       world,
@@ -370,7 +385,7 @@ describe("WhatsApp semantic subjects (CHAT)", () => {
       appViewport: createAppViewportFrame({
         width: 393,
         height: 852,
-        contentInsets: { top: 47, bottom: 34 },
+        interactiveInsets: { top: 47, bottom: 34 },
       }),
     });
 
@@ -414,10 +429,18 @@ describe("WhatsApp semantic subjects (CHAT)", () => {
       },
     };
     const world = {
-      appState: { app_whatsapp: state },
-      devices: { d1: { id: "d1", ownerName: "Owner", profileId: "phone" } },
+      appInstances: { "d1:app_whatsapp": state },
+      capabilityState: {},
+      devices: {
+        d1: {
+          id: "d1",
+          ownerName: "Owner",
+          profileId: "phone",
+          os: { clock: 0, appearance: "light" },
+        },
+      },
       config: { fps: 30 },
-      audio: DEFAULT_AUDIO_STATE,
+      audio: createDefaultAudioState(),
     } as unknown as WorldState;
     const viewportHeight = 852;
     const contentInsets = { top: 47, bottom: 34, left: 0, right: 0 };
@@ -433,7 +456,7 @@ describe("WhatsApp semantic subjects (CHAT)", () => {
       appViewport: createAppViewportFrame({
         width: 393,
         height: viewportHeight,
-        contentInsets,
+        interactiveInsets: contentInsets,
       }),
     });
 
@@ -464,10 +487,18 @@ describe("WhatsApp semantic subjects (CHAT)", () => {
       },
     };
     const world = {
-      appState: { app_whatsapp: state },
-      devices: { d1: { id: "d1", ownerName: "Owner", profileId: "phone" } },
+      appInstances: { "d1:app_whatsapp": state },
+      capabilityState: {},
+      devices: {
+        d1: {
+          id: "d1",
+          ownerName: "Owner",
+          profileId: "phone",
+          os: { clock: 0, appearance: "light" },
+        },
+      },
       config: { fps: 30 },
-      audio: DEFAULT_AUDIO_STATE,
+      audio: createDefaultAudioState(),
     } as unknown as WorldState;
     const context: LayoutContext = {
       world,
@@ -481,7 +512,7 @@ describe("WhatsApp semantic subjects (CHAT)", () => {
       appViewport: createAppViewportFrame({
         width: 393,
         height: 852,
-        contentInsets: { top: 47, bottom: 34 },
+        interactiveInsets: { top: 47, bottom: 34 },
       }),
     };
 

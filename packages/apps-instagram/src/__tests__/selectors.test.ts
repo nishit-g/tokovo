@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { WorldState } from "@tokovo/core";
-import { DEFAULT_AUDIO_STATE } from "@tokovo/core";
+import { createDefaultAudioState } from "@tokovo/core";
 import { createInstagramInitialState } from "../runtime/state.js";
 import {
   getActiveStory,
@@ -11,8 +11,8 @@ import {
 
 function createWorld(): WorldState {
   return {
-    appState: {
-      app_instagram: {
+    appInstances: {
+      "phone:app_instagram": {
         ...createInstagramInitialState(),
         posts: [
           {
@@ -81,21 +81,22 @@ function createWorld(): WorldState {
         ],
       },
     },
+    capabilityState: {},
     devices: {},
-    audio: DEFAULT_AUDIO_STATE,
+    audio: createDefaultAudioState(),
   } as WorldState;
 }
 
 describe("instagram selectors", () => {
   it("orders visible feed posts by recency", () => {
-    const posts = getVisibleFeedPosts(createWorld());
+    const posts = getVisibleFeedPosts(createWorld(), "phone");
     expect(posts.map((post) => post.id)).toEqual(["p2", "p1"]);
   });
 
   it("returns active story and aggregate badge counts", () => {
     const world = createWorld();
-    expect(getActiveStory(world)?.id).toBe("story1");
-    expect(getUnreadDMCount(world)).toBe(2);
-    expect(getVisibleNotifications(world)).toHaveLength(1);
+    expect(getActiveStory(world, "phone")?.id).toBe("story1");
+    expect(getUnreadDMCount(world, "phone")).toBe(2);
+    expect(getVisibleNotifications(world, "phone")).toHaveLength(1);
   });
 });

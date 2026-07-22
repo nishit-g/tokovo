@@ -23,16 +23,18 @@ export {
 
 // Policies
 export {
-  SpamGate,
+  checkSpamPure,
+  cleanupRecentSounds,
   enforceBusConcurrency,
   getDefaultPriority,
   sortByPriority,
   shouldInterrupt,
-  checkAllPolicies,
+  checkAllPoliciesPure,
   DEFAULT_POLICY_CONFIG,
   PRIORITY_LEVELS,
   type PolicyConfig,
   type PolicyResult,
+  type SpamCheckResult,
 } from "./policies.js";
 
 // Auto-Sound

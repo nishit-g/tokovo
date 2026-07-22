@@ -40,7 +40,7 @@ function createAudioEvent(
   return {
     at,
     kind: "AUDIO",
-    type: "PLAY_SOUND",
+    type: "PLAY",
     soundId: input.soundId,
     volume: input.volume,
     bus: input.bus,
@@ -534,7 +534,6 @@ export const typewriterLowering: TypewriterLoweringHandler = {
         ];
       }
       case "TYPEWRITER_SET_CURSOR":
-      case "TYPEWRITER_SCROLL":
         return [createRuntimeEvent(event.at, deviceId, event.type, event.payload ?? {})];
       default:
         return [];

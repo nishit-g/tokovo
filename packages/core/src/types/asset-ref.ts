@@ -43,6 +43,8 @@ export interface EpisodeAssetRef {
 
 export interface PluginAssetCollectorContext<AppId extends string = string> {
   appId: AppId;
+  deviceId: string;
+  appState: unknown;
   ir: import("@tokovo/ir").TrackEpisodeIR;
   initialWorld: WorldState;
   events: RuntimeEvent[];

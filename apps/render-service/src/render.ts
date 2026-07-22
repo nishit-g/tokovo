@@ -188,6 +188,14 @@ export async function renderEpisodeArtifact(
       frameRange: options.frameRange,
       logger,
     });
+    await writeJson(paths.cameraDiagnosticsPath, {
+      version: 2,
+      selectedCameraPlanId: camera.selectedCameraPlanId,
+      manifests: cameraPrograms,
+      representativeFrames,
+      explanations,
+      temporalQuality: renderOutput.cameraQuality ?? null,
+    });
 
     const sizeBytes = await statSize(paths.videoPath);
     const [videoSha256, posterSha256] = await Promise.all([
@@ -226,6 +234,8 @@ export async function renderEpisodeArtifact(
       sourceFrameRange: renderOutput.sourceFrameRange,
       sourceSignature: renderOutput.sourceSignature,
       camera,
+      projectionMode: "render",
+      cameraQuality: renderOutput.cameraQuality ?? null,
       artifact: artifactRecord,
       timingMs: {
         preflight: preflightMs,

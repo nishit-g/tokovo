@@ -101,7 +101,7 @@ type InitialStateForApp<AppId extends string> = AppId extends keyof AppInitialSt
  */
 export type PluginReducer<AppId extends string = string> = (
   draft: import("../types").WorldState,
-  event: RuntimeEvent & { kind: "APP"; appId: AppId },
+  event: RuntimeEvent & { kind: "APP"; appId: AppId; deviceId: string },
 ) => void;
 
 // =============================================================================
@@ -113,9 +113,12 @@ export type PluginReducer<AppId extends string = string> = (
  */
 export interface PluginViewProps {
   world: import("../types").WorldState;
-  deviceId?: string;
-  platform?: "ios" | "android";
-  t?: number;
+  deviceId: string;
+  platform: "ios" | "android";
+  t: number;
+  /** Logical app-space dimensions after device-pixel scaling. */
+  width: number;
+  height: number;
   appViewport: AppViewportFrame;
 }
 

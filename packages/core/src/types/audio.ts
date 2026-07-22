@@ -122,15 +122,22 @@ export const DEFAULT_BUS_CONFIG: AudioState["buses"] = {
   voice: { baseGain: 1.0, maxConcurrent: 1 },
 };
 
-export const DEFAULT_AUDIO_STATE: AudioState = {
-  activeSounds: {},
-  buses: DEFAULT_BUS_CONFIG,
-  policyState: {
-    recentSounds: {},
-    nextId: 0,
-  },
-  autoSoundRules: [],
-};
+export function createDefaultAudioState(): AudioState {
+  return {
+    activeSounds: {},
+    buses: {
+      music: { ...DEFAULT_BUS_CONFIG.music },
+      ui: { ...DEFAULT_BUS_CONFIG.ui },
+      sfx: { ...DEFAULT_BUS_CONFIG.sfx },
+      voice: { ...DEFAULT_BUS_CONFIG.voice },
+    },
+    policyState: {
+      recentSounds: {},
+      nextId: 0,
+    },
+    autoSoundRules: [],
+  };
+}
 
 // =============================================================================
 // VIDEO CONFIG

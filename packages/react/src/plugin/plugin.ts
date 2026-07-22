@@ -42,10 +42,12 @@ export type TokovoPlugin = TokovoPluginContract<string>;
 
 export interface AppViewProps {
   world: WorldState;
-  t?: number;
+  t: number;
   layout?: unknown;
-  platform?: "ios" | "android";
-  deviceId?: string;
+  platform: "ios" | "android";
+  deviceId: string;
+  width: number;
+  height: number;
   appViewport: AppViewportFrame;
 }
 
@@ -122,8 +124,7 @@ export class PluginManagerClass {
     }
 
     if (this.plugins.has(plugin.id)) {
-      log.warn(`Overwriting plugin: ${plugin.id}`);
-      this.unregister(plugin.id);
+      throw new Error(`Plugin "${plugin.id}" is already registered`);
     }
 
     const cleanups: Array<() => void> = [];
@@ -304,17 +305,6 @@ export class PluginManagerClass {
     return this.initialStateCreators.get(appId);
   }
 
-  createInitialAppState(): Record<string, unknown> {
-    const appState: Record<string, unknown> = {};
-    for (const [appId, creator] of this.initialStateCreators) {
-      appState[appId] = creator();
-    }
-    log.debug("Built initial app state snapshot", {
-      event: "plugin.initial_state.created",
-      appIds: Object.keys(appState),
-    });
-    return appState;
-  }
 }
 
 // =============================================================================

@@ -1,4 +1,9 @@
-import type { AppRuntimeEvent, PluginReducer, WorldState } from "@tokovo/core";
+import {
+  requireAppStateForDevice,
+  type AppRuntimeEvent,
+  type PluginReducer,
+  type WorldState,
+} from "@tokovo/core";
 import { SNAPCHAT_APP_ID } from "../constants.js";
 import type {
   SnapchatConversation,
@@ -62,23 +67,12 @@ function syncViewMode(state: SnapchatState): void {
   }
 }
 
-function createInitialSnapchatState(): SnapchatState {
-  return {
-    viewMode: "FEED",
-    conversationId: undefined,
-    currentScreen: "chat_list",
-    activeConversationId: undefined,
-    conversations: {},
-    drafts: {},
-    lastNavFrame: 0,
-  };
-}
-
-function getAppState(draft: WorldState): SnapchatState {
-  if (!draft.appState.app_snapchat) {
-    draft.appState.app_snapchat = createInitialSnapchatState();
-  }
-  const state = draft.appState.app_snapchat as SnapchatState;
+function getAppState(draft: WorldState, deviceId: string): SnapchatState {
+  const state = requireAppStateForDevice<SnapchatState>(
+    draft,
+    SNAPCHAT_APP_ID,
+    deviceId,
+  );
   state.viewMode ??= "FEED";
   state.conversationId ??= undefined;
   state.currentScreen ??= "chat_list";
@@ -213,7 +207,7 @@ export const snapchatReducer: PluginReducer<typeof SNAPCHAT_APP_ID> = (
 ): void => {
   if (!isSnapchatEvent(event)) return;
 
-  const state = getAppState(draft);
+  const state = getAppState(draft, event.deviceId);
   const at = event.at ?? 0;
   const conversationId = resolveConversationId(event);
 

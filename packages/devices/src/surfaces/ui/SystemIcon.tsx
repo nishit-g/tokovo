@@ -51,6 +51,164 @@ const GhostGlyph: React.FC = () => (
   </svg>
 );
 
+const SystemGlyph: React.FC<{
+  kind:
+    | "phone"
+    | "browser"
+    | "calendar"
+    | "photos"
+    | "clock"
+    | "maps"
+    | "weather"
+    | "notes"
+    | "files"
+    | "store"
+    | "settings"
+    | "mail"
+    | "music";
+}> = ({ kind }) => {
+  if (kind === "phone") {
+    return (
+      <svg width="58%" height="58%" viewBox="0 0 64 64" aria-hidden="true">
+        <path
+          d="M18 10c3-2 6-1 8 2l5 10c1 3 1 5-2 7l-4 3c4 8 9 13 17 17l3-4c2-2 5-3 7-1l9 5c3 2 4 5 2 8-3 5-8 8-14 7C28 61 3 36 6 15c1-3 5-4 12-5Z"
+          fill="white"
+        />
+      </svg>
+    );
+  }
+  if (kind === "browser") {
+    return (
+      <svg width="70%" height="70%" viewBox="0 0 64 64" aria-hidden="true">
+        <circle cx="32" cy="32" r="27" fill="white" opacity=".95" />
+        <path d="m38 16-9 12-5 19 12-11 5-20Z" fill="#147EFB" />
+        <circle cx="32" cy="32" r="4" fill="#EF4444" />
+      </svg>
+    );
+  }
+  if (kind === "calendar") {
+    return (
+      <svg width="100%" height="100%" viewBox="0 0 64 64" aria-hidden="true">
+        <rect width="64" height="64" rx="13" fill="white" />
+        <path d="M0 13h64v12H0z" fill="#FF3B30" />
+        <text x="32" y="48" textAnchor="middle" fontSize="27" fontWeight="650" fill="#161618">
+          21
+        </text>
+      </svg>
+    );
+  }
+  if (kind === "photos") {
+    return (
+      <svg width="72%" height="72%" viewBox="0 0 64 64" aria-hidden="true">
+        <g transform="translate(32 32)">
+          {[
+            "#FF3B30",
+            "#FF9500",
+            "#FFD60A",
+            "#34C759",
+            "#30B0C7",
+            "#0A84FF",
+            "#5E5CE6",
+            "#AF52DE",
+          ].map((color, index) => (
+            <ellipse
+              key={color}
+              cx="0"
+              cy="-14"
+              rx="8"
+              ry="16"
+              fill={color}
+              opacity=".9"
+              transform={`rotate(${index * 45})`}
+            />
+          ))}
+        </g>
+        <circle cx="32" cy="32" r="7" fill="white" />
+      </svg>
+    );
+  }
+  if (kind === "clock") {
+    return (
+      <svg width="74%" height="74%" viewBox="0 0 64 64" aria-hidden="true">
+        <circle cx="32" cy="32" r="27" fill="#111" stroke="white" strokeWidth="3" />
+        <path d="M32 17v16l11 6" stroke="white" strokeWidth="3.5" strokeLinecap="round" />
+      </svg>
+    );
+  }
+  if (kind === "maps") {
+    return (
+      <svg width="72%" height="72%" viewBox="0 0 64 64" aria-hidden="true">
+        <path d="m7 13 16-6 18 6 16-6v44l-16 6-18-6-16 6Z" fill="white" />
+        <path d="M23 7v44M41 13v44" stroke="#5ACB72" strokeWidth="8" />
+        <path d="M5 38h54" stroke="#55A7FF" strokeWidth="7" />
+        <path d="M44 19a8 8 0 1 0-16 0c0 7 8 15 8 15s8-8 8-15Z" fill="#FF3B30" />
+      </svg>
+    );
+  }
+  if (kind === "weather") {
+    return (
+      <svg width="70%" height="70%" viewBox="0 0 64 64" aria-hidden="true">
+        <circle cx="24" cy="23" r="13" fill="#FFD60A" />
+        <path d="M19 48h30a10 10 0 0 0 0-20 15 15 0 0 0-28 5h-2a8 8 0 0 0 0 15Z" fill="white" />
+      </svg>
+    );
+  }
+  if (kind === "notes") {
+    return (
+      <svg width="100%" height="100%" viewBox="0 0 64 64" aria-hidden="true">
+        <rect width="64" height="64" rx="13" fill="#FFFDF4" />
+        <path d="M0 14h64v12H0z" fill="#FFD60A" />
+        <path d="M12 35h40M12 44h34M12 53h28" stroke="#A8A6A0" strokeWidth="2" />
+      </svg>
+    );
+  }
+  if (kind === "files") {
+    return (
+      <svg width="66%" height="66%" viewBox="0 0 64 64" aria-hidden="true">
+        <path d="M7 17h21l5 6h24v27H7Z" fill="white" opacity=".96" />
+        <path d="M7 17v-5h18l5 5" fill="none" stroke="white" strokeWidth="5" />
+      </svg>
+    );
+  }
+  if (kind === "store") {
+    return (
+      <svg width="66%" height="66%" viewBox="0 0 64 64" aria-hidden="true">
+        <path
+          d="M18 47 36 15M28 47h23M14 39h35"
+          stroke="white"
+          strokeWidth="6"
+          strokeLinecap="round"
+        />
+      </svg>
+    );
+  }
+  if (kind === "settings") {
+    return (
+      <svg width="70%" height="70%" viewBox="0 0 64 64" aria-hidden="true">
+        <path
+          d="M28 5h8l2 8 7 3 7-4 6 6-4 7 3 7 8 2v8l-8 2-3 7 4 7-6 6-7-4-7 3-2 8h-8l-2-8-7-3-7 4-6-6 4-7-3-7-8-2v-8l8-2 3-7-4-7 6-6 7 4 7-3Z"
+          fill="white"
+          opacity=".9"
+        />
+        <circle cx="32" cy="38" r="9" fill="#74777D" />
+      </svg>
+    );
+  }
+  if (kind === "mail") {
+    return (
+      <svg width="68%" height="68%" viewBox="0 0 64 64" aria-hidden="true">
+        <rect x="5" y="12" width="54" height="40" rx="7" fill="white" />
+        <path d="m8 17 24 20 24-20" fill="none" stroke="#2F8CFF" strokeWidth="4" />
+      </svg>
+    );
+  }
+  return (
+    <svg width="64%" height="64%" viewBox="0 0 64 64" aria-hidden="true">
+      <path d="M38 9v34a10 10 0 1 1-6-9V16l22-5v27a10 10 0 1 1-6-9V7Z" fill="white" />
+    </svg>
+  );
+};
+
 function builtInIdentity(
   appId: string,
 ): { background: string; foreground: React.ReactNode } | null {
@@ -86,6 +244,58 @@ function builtInIdentity(
       return {
         background: "linear-gradient(145deg, #74777D, #292B2F)",
         foreground: <CameraGlyph />,
+      };
+    case "system_phone":
+      return {
+        background: "linear-gradient(145deg,#5FE47A,#18AA4C)",
+        foreground: <SystemGlyph kind="phone" />,
+      };
+    case "system_messages":
+      return { background: "linear-gradient(145deg,#5FE47A,#18AA4C)", foreground: <BubbleGlyph /> };
+    case "system_browser":
+      return {
+        background: "linear-gradient(145deg,#55B8FF,#0877EE)",
+        foreground: <SystemGlyph kind="browser" />,
+      };
+    case "system_calendar":
+      return { background: "#FFFFFF", foreground: <SystemGlyph kind="calendar" /> };
+    case "system_photos":
+      return { background: "#FFFFFF", foreground: <SystemGlyph kind="photos" /> };
+    case "system_clock":
+      return { background: "#111113", foreground: <SystemGlyph kind="clock" /> };
+    case "system_maps":
+      return { background: "#EAF7E9", foreground: <SystemGlyph kind="maps" /> };
+    case "system_weather":
+      return {
+        background: "linear-gradient(#2189F7,#56C2FF)",
+        foreground: <SystemGlyph kind="weather" />,
+      };
+    case "system_notes":
+      return { background: "#FFFDF4", foreground: <SystemGlyph kind="notes" /> };
+    case "system_files":
+      return {
+        background: "linear-gradient(#55B8FF,#176DE4)",
+        foreground: <SystemGlyph kind="files" />,
+      };
+    case "system_store":
+      return {
+        background: "linear-gradient(#44B7FF,#0877EE)",
+        foreground: <SystemGlyph kind="store" />,
+      };
+    case "system_settings":
+      return {
+        background: "linear-gradient(#AEB2B8,#686C72)",
+        foreground: <SystemGlyph kind="settings" />,
+      };
+    case "system_mail":
+      return {
+        background: "linear-gradient(#54B8FF,#147EFB)",
+        foreground: <SystemGlyph kind="mail" />,
+      };
+    case "system_music":
+      return {
+        background: "linear-gradient(145deg,#FF5B80,#F02D55)",
+        foreground: <SystemGlyph kind="music" />,
       };
     default:
       return null;

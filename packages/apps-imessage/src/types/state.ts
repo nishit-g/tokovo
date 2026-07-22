@@ -41,11 +41,3 @@ export interface IMessageState {
   /** Frame at which the active screen effect began. */
   activeScreenEffectStartedAtFrame?: number;
 }
-
-export function asIMessageState(
-  appState: Record<string, unknown>,
-): IMessageState | undefined {
-  return (appState?.app_imessage || appState?.imessage) as
-    | IMessageState
-    | undefined;
-}

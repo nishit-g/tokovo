@@ -28,15 +28,7 @@ export default defineEpisode({
     appId: "app_whatsapp",
     visibility: "public",
     sortOrder: 95,
-    tags: [
-      "whatsapp",
-      "multi-device",
-      "rtl",
-      "accessibility",
-      "media",
-      "gestures",
-      "determinism",
-    ],
+    tags: ["whatsapp", "multi-device", "rtl", "accessibility", "media", "gestures", "determinism"],
   },
   config: {
     format: "1080x1920",
@@ -151,8 +143,7 @@ export default defineEpisode({
             media: {
               type: "image",
               src: "/media/founder-whiteboard.jpg",
-              caption:
-                "The release board is green. Shipping after the final replay.",
+              caption: "The release board is green. Shipping after the final replay.",
             },
           },
           {
@@ -173,7 +164,7 @@ export default defineEpisode({
           {
             id: "ios_channel",
             name: "Interaction Lab",
-            avatar: "/placeholders/app-icon.svg",
+            avatar: "/avatars/group-design.jpg",
             description: "Practical mobile interaction studies",
             followersLabel: "184K followers",
             followed: true,
@@ -340,7 +331,7 @@ export default defineEpisode({
           {
             id: "ar_channel",
             name: "مختبر التفاعل",
-            avatar: "/placeholders/app-icon.svg",
+            avatar: "/avatars/group-design.jpg",
             description: "دراسات عملية لتجارب الهاتف",
             followersLabel: "١٨٤ ألف متابع",
             followed: true,

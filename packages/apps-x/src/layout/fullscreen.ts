@@ -4,8 +4,8 @@ import { buildSemantic, createPx, rect } from "./shared.js";
 
 export function computeXFullscreenLayout(ctx: LayoutContext): FullscreenLayoutState {
   const { viewportWidth: w, viewportHeight: h, appViewport } = ctx;
-  const contentTop = appViewport.contentInsets.top;
-  const contentBottom = appViewport.contentInsets.bottom;
+  const contentTop = appViewport.interactiveInsets.top;
+  const contentBottom = appViewport.interactiveInsets.bottom;
   const px = createPx(w);
   const headerH = contentTop + px(xSpacing.headerHeight);
   const bodyH = Math.max(0, h - headerH - contentBottom);

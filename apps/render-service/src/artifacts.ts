@@ -4,6 +4,7 @@ import path from "node:path";
 
 import type { RenderProfileId } from "./profiles";
 import type { getEpisodeCameraArtifact } from "video-runner/camera-diagnostics";
+import type { CameraTemporalQualityReport } from "@tokovo/camera";
 import { rendersRoot, repoRoot } from "./constants";
 
 export type RenderArtifactPaths = {
@@ -42,6 +43,8 @@ export type RenderArtifactMetadata = {
   sourceFrameRange: readonly [number, number];
   sourceSignature: string;
   camera: Awaited<ReturnType<typeof getEpisodeCameraArtifact>>;
+  projectionMode: "render";
+  cameraQuality: CameraTemporalQualityReport | null;
   artifact: {
     storageProvider: "local" | "r2";
     bucket?: string;

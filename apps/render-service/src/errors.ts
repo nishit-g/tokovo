@@ -9,6 +9,7 @@ export type RenderStage =
   | "render-poster"
   | "camera-texture-render"
   | "camera-texture-compositor"
+  | "camera-quality"
   | "storage"
   | "artifacts"
   | "render";
@@ -26,6 +27,7 @@ export type RenderServiceErrorCode =
   | "CAMERA_PLAN_NOT_FOUND"
   | "CAM_TEXTURE_RENDER_FAILED"
   | "CAM_TEXTURE_COMPOSITOR_FAILED"
+  | "CAMERA_TEMPORAL_QUALITY_FAILED"
   | "MEDIA_RENDER_FAILED"
   | "POSTER_RENDER_FAILED"
   | "STORAGE_CONFIG_INVALID"

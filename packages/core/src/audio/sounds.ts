@@ -1,5 +1,4 @@
 import type { SoundRegistryAPI } from "../registries/sound.js";
-import { logAudioSoundPathFallback } from "../logger/index.js";
 
 const BUILT_IN_SOUNDS = {
   notification: "generated/core/notification.wav",
@@ -37,10 +36,7 @@ export function getSoundPath(
 
   const path = registry.getPath(soundId);
   if (!path) {
-    // Default to wav fallback. (Prefer explicit registry entries in production.)
-    const fallbackPath = `sounds/${soundId}.wav`;
-    logAudioSoundPathFallback(soundId, fallbackPath);
-    return fallbackPath;
+    throw new Error(`SOUND_NOT_REGISTERED: "${soundId}"`);
   }
   return `sounds/${path}`;
 }

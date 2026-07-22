@@ -60,9 +60,8 @@ export default defineEpisode({
           {
             id: "ig_story_post_v2",
             authorId: "ig_story_me",
-            imageUrl: "/placeholders/media.svg",
-            caption:
-              "How reels are made when your taste is expensive but your process is chaotic.",
+            imageUrl: "/media/founder-whiteboard.jpg",
+            caption: "How reels are made when your taste is expensive but your process is chaotic.",
             createdAt: baseTs - 60000,
             likeCount: 21200,
             commentCount: 420,

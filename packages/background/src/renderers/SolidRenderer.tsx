@@ -5,21 +5,24 @@
 import React from "react";
 import { AbsoluteFill } from "remotion";
 import type { ResolvedBackgroundConfig } from "../types.js";
-import { FALLBACK_COLOR } from "../types.js";
 
 interface SolidRendererProps {
-    config: ResolvedBackgroundConfig;
+  config: ResolvedBackgroundConfig;
 }
 
 export const SolidRenderer: React.FC<SolidRendererProps> = ({ config }) => {
-    const style: React.CSSProperties = {
-        backgroundColor: config.color || FALLBACK_COLOR,
-        opacity: config.opacity ?? 1,
-    };
+  if (!config.color) {
+    throw new Error("BACKGROUND_SOLID_INVALID: solid backgrounds require a color.");
+  }
 
-    if (config.blur && config.blur > 0) {
-        style.filter = `blur(${config.blur}px)`;
-    }
+  const style: React.CSSProperties = {
+    backgroundColor: config.color,
+    opacity: config.opacity ?? 1,
+  };
 
-    return <AbsoluteFill style={style} />;
+  if (config.blur && config.blur > 0) {
+    style.filter = `blur(${config.blur}px)`;
+  }
+
+  return <AbsoluteFill style={style} />;
 };

@@ -18,7 +18,8 @@ function context(cursor = { page: 0, row: 2, col: 7 }): LayoutContext {
         foregroundAppId: TYPEWRITER_APP_ID,
       },
     },
-    appState: { [TYPEWRITER_APP_ID]: state },
+    appInstances: { "desk:app_typewriter": state },
+    capabilityState: {},
     audio: { activeSounds: [], musicBed: null },
   } as unknown as WorldState;
   return {
@@ -26,6 +27,7 @@ function context(cursor = { page: 0, row: 2, col: 7 }): LayoutContext {
     t: 0,
     activeDeviceId: "desk",
     activeAppId: TYPEWRITER_APP_ID,
+    platform: "ios",
     viewKind: "FULLSCREEN",
     viewportWidth: 1080,
     viewportHeight: 1920,

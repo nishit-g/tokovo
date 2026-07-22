@@ -4,15 +4,12 @@ import {
   DEFAULT_POLICY_CONFIG,
   checkSpamPure,
   cleanupRecentSounds,
-  SpamGate,
   enforceBusConcurrency,
   getDefaultPriority,
   sortByPriority,
   shouldInterrupt,
   checkAllPoliciesPure,
-  checkAllPolicies,
 } from "../audio/policies.js";
-import { getLogger, LogCollector } from "../logger/index.js";
 
 describe("audio policies", () => {
   it("checks spam with pure function", () => {
@@ -37,33 +34,6 @@ describe("audio policies", () => {
     expect(cleaned).toEqual({ b: 40 });
   });
 
-  it("spam gate class tracks and resets", () => {
-    const gate = new SpamGate({ ...DEFAULT_POLICY_CONFIG, spamGateFrames: 5 });
-    expect(gate.checkSpam("tap", 1).shouldPlay).toBe(true);
-    expect(gate.checkSpam("tap", 3).shouldPlay).toBe(false);
-    gate.cleanup(100, 10);
-    gate.reset();
-    expect(gate.checkSpam("tap", 20).shouldPlay).toBe(true);
-  });
-
-  it("uses default soft variant when configured", () => {
-    const gate = new SpamGate({
-      ...DEFAULT_POLICY_CONFIG,
-      spamGateFrames: 5,
-      softVariant: undefined,
-    });
-    gate.checkSpam("ding", 0);
-    const result = gate.checkSpam("ding", 2);
-    expect(result.alternateSound).toBe("ding_soft");
-  });
-
-  it("spam gate returns no alternate when soft variant is disabled", () => {
-    const gate = new SpamGate({ ...DEFAULT_POLICY_CONFIG, spamGateFrames: 5, softVariant: null });
-    gate.checkSpam("tap", 0);
-    const result = gate.checkSpam("tap", 2);
-    expect(result).toEqual({ shouldPlay: false });
-  });
-
   it("enforces concurrency limits", () => {
     const cue = { soundId: "a", bus: "sfx", priority: 5 } as SoundCue;
     const active = [{ soundId: "b", bus: "sfx", priority: 1 } as SoundCue];
@@ -79,7 +49,7 @@ describe("audio policies", () => {
 
   it("handles priority helpers", () => {
     expect(getDefaultPriority("ui")).toBeGreaterThan(0);
-    expect(getDefaultPriority("custom" as any)).toBe(50);
+    expect(() => getDefaultPriority("custom" as any)).toThrow("AUDIO_BUS_UNREGISTERED");
     const sorted = sortByPriority([
       { soundId: "a", bus: "sfx", priority: 1 } as SoundCue,
       { soundId: "b", bus: "sfx", priority: 10 } as SoundCue,
@@ -138,14 +108,9 @@ describe("audio policies", () => {
     expect(limited.shouldPlay).toBe(false);
     expect(limited.reason).toBe("concurrency_limit");
 
-    const defaultMax = checkAllPoliciesPure(
-      { ...cue, bus: "custom" as any },
-      100,
-      [],
-      {},
-      DEFAULT_POLICY_CONFIG,
-    );
-    expect(defaultMax.shouldPlay).toBe(true);
+    expect(() =>
+      checkAllPoliciesPure({ ...cue, bus: "custom" as any }, 100, [], {}, DEFAULT_POLICY_CONFIG),
+    ).toThrow("AUDIO_BUS_UNREGISTERED");
   });
 
   it("drops spam when no alternate sound is available (forced)", () => {
@@ -159,58 +124,5 @@ describe("audio policies", () => {
     );
     expect(result.shouldPlay).toBe(false);
     expect(result.reason).toBe("spam_dropped");
-  });
-
-  it("runs combined policies (mutable) and logs drops", () => {
-    const collector = new LogCollector();
-    const logger = getLogger();
-    logger.configure({ consoleOutput: false, minLevel: "debug", components: [] });
-    logger.clearSinks();
-    logger.addSink(collector);
-    const gate = new SpamGate({ ...DEFAULT_POLICY_CONFIG, spamGateFrames: 5 });
-    const cue = { soundId: "ding", bus: "ui", priority: 1 } as SoundCue;
-
-    gate.checkSpam("ding", 0);
-    const spam = checkAllPolicies(cue, 1, [], gate, DEFAULT_POLICY_CONFIG);
-    expect(spam.shouldPlay).toBe(true);
-
-    const limit = checkAllPolicies(cue, 20, [{ ...cue, priority: 2 } as SoundCue], gate, {
-      ...DEFAULT_POLICY_CONFIG,
-      maxConcurrentPerBus: { ui: 1, sfx: 1, music: 1, voice: 1, master: 1 },
-    });
-    expect(limit.shouldPlay).toBe(false);
-
-    const replace = checkAllPolicies(
-      { ...cue, priority: 10 },
-      25,
-      [{ ...cue, soundId: "low", priority: 1 } as SoundCue],
-      gate,
-      {
-        ...DEFAULT_POLICY_CONFIG,
-        maxConcurrentPerBus: { ui: 1, sfx: 1, music: 1, voice: 1, master: 1 },
-      },
-    );
-    expect(replace.shouldPlay).toBe(true);
-    expect(replace.toRemove).toEqual(["low"]);
-
-    const spamGateOnly = checkAllPolicies(
-      cue,
-      26,
-      [],
-      { checkSpam: () => ({ shouldPlay: false }) } as unknown as SpamGate,
-      DEFAULT_POLICY_CONFIG,
-    );
-    expect(spamGateOnly.shouldPlay).toBe(false);
-    expect(spamGateOnly.reason).toBe("spam_dropped");
-
-    const defaultMax = checkAllPolicies(
-      { ...cue, bus: "custom" as any },
-      30,
-      [],
-      gate,
-      DEFAULT_POLICY_CONFIG,
-    );
-    expect(defaultMax.shouldPlay).toBe(true);
-    expect(collector.peek().some((entry) => entry.event === "audio.policy_drop")).toBe(true);
   });
 });

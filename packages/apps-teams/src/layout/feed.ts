@@ -16,7 +16,7 @@ function semantic(regions: Record<string, SemanticRegion>, groups: Record<string
 }
 
 export function computeTeamsFeedLayout(ctx: LayoutContext): FeedLayoutState {
-  const state = selectTeamsState(ctx.world) ?? undefined;
+  const state = selectTeamsState(ctx.world, ctx.activeDeviceId);
   const { viewportWidth: width, viewportHeight: height, appViewport } = ctx;
   const rows =
     state?.screen === "channel_feed"
@@ -24,9 +24,9 @@ export function computeTeamsFeedLayout(ctx: LayoutContext): FeedLayoutState {
       : state
         ? selectChatListRows(state)
         : [];
-  const headerHeight = appViewport.contentInsets.top + 56;
+  const headerHeight = appViewport.interactiveInsets.top + 56;
   const filterHeight = state?.screen === "chat_list" ? 40 : 0;
-  const tabBarHeight = 49 + appViewport.contentInsets.bottom;
+  const tabBarHeight = 49 + appViewport.interactiveInsets.bottom;
   const contentY = headerHeight + filterHeight;
   const contentWidth = width - 32;
   const itemLayouts: Record<string, FeedItemLayout> = {};

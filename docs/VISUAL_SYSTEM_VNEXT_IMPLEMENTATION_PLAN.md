@@ -31,6 +31,9 @@ composition, backdrops, quality gates, and flagship proof.
 - [x] Rename camera output protection to `editorialInsets`.
 - [x] Require a composition profile on every camera output.
 - [x] Add deterministic negative-space overlay/PIP placement.
+- [x] Replace cardinality-dependent app state with canonical device/app instances across every app.
+- [x] Move overlay state into the capability-state domain.
+- [x] Reject unregistered and incomplete backgrounds instead of silently substituting a solid fill.
 - [x] Replace the broad background preset catalog with four governed backdrop profiles.
 - [x] Remove generic renderer layouts and device/status/frame substitution paths.
 - [x] Update the flagship camera and backdrop to prove the new contracts.
@@ -55,6 +58,8 @@ composition, backdrops, quality gates, and flagship proof.
 - [x] workspace episode validation passes;
 - [x] camera and OS-surface flagship renders complete;
 - [x] inspected frames show correct display inset, keyboard attachment, notification depth, compact recording, and PIP negative space;
+- [x] independent browser processes prove the mega episode at reviewed system-surface frames;
+- [x] camera temporal-quality diagnostics reject gaps and unexplained pose discontinuities;
 - [x] release verification passes;
 - [x] repository scan finds no old visual safe-area, pixel-density, theme-ID, or generic-layout compatibility path;
 - [x] changes are committed as one intentional hard-cut changeset.

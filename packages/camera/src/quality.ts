@@ -1,0 +1,155 @@
+import type {
+  CameraQualitySample,
+  CameraTemporalQualityReport,
+  EvaluatedCameraOutput,
+} from "./types.js";
+
+function round(value: number): number {
+  return Math.round(value * 1_000_000) / 1_000_000;
+}
+
+function missingRanges(frames: readonly number[]): readonly (readonly [number, number])[] {
+  const ranges: Array<readonly [number, number]> = [];
+  for (let index = 1; index < frames.length; index += 1) {
+    const previous = frames[index - 1];
+    const current = frames[index];
+    if (current > previous + 1) ranges.push([previous + 1, current - 1]);
+  }
+  return ranges;
+}
+
+export function cameraQualitySample(output: EvaluatedCameraOutput): CameraQualitySample {
+  return {
+    frame: output.frame,
+    outputId: output.outputId,
+    viewport: output.pose.clipRect,
+    pose: {
+      centerX: output.pose.centerX,
+      centerY: output.pose.centerY,
+      scale: output.pose.scale,
+      rotationDeg: output.pose.rotationDeg,
+    },
+    subjectResolution: output.trace.subjectResolution,
+    subjectFillRatio: output.trace.quality.subjectFillRatio,
+    cropCompensation: output.trace.quality.cropCompensation,
+    intentionalDiscontinuity:
+      output.trace.transition?.durationFrames === 0 || output.trace.transition?.whipActive === true,
+  };
+}
+
+export function analyzeCameraTemporalQuality(
+  samples: readonly CameraQualitySample[],
+): CameraTemporalQualityReport {
+  const grouped = new Map<string, CameraQualitySample[]>();
+  for (const sample of samples) {
+    const group = grouped.get(sample.outputId) ?? [];
+    group.push(sample);
+    grouped.set(sample.outputId, group);
+  }
+  const violations: CameraTemporalQualityReport["violations"][number][] = [];
+  const outputs = [...grouped.entries()]
+    .sort(([left], [right]) => left.localeCompare(right))
+    .map(([outputId, values]) => {
+      const ordered = [...values].sort((left, right) => left.frame - right.frame);
+      const frames = ordered.map((sample) => sample.frame);
+      const gaps = missingRanges(frames);
+      for (const gap of gaps) {
+        violations.push({
+          code: "CAM_QUALITY_FRAME_GAP",
+          outputId,
+          frame: gap[0],
+          message: `Camera output "${outputId}" is missing frames ${gap[0]}-${gap[1]}.`,
+        });
+      }
+      const positionVelocities: number[] = [];
+      const scaleVelocities: number[] = [];
+      const rotationVelocities: number[] = [];
+      const discontinuities: number[] = [];
+      let cropCompensationChangeCount = 0;
+      for (let index = 1; index < ordered.length; index += 1) {
+        const previous = ordered[index - 1];
+        const current = ordered[index];
+        const frameDelta = Math.max(1, current.frame - previous.frame);
+        const averageScale = (previous.pose.scale + current.pose.scale) / 2;
+        const viewportDiagonal = Math.max(
+          1,
+          Math.hypot(current.viewport.width, current.viewport.height),
+        );
+        const positionVelocity =
+          (Math.hypot(
+            current.pose.centerX - previous.pose.centerX,
+            current.pose.centerY - previous.pose.centerY,
+          ) *
+            averageScale) /
+          viewportDiagonal /
+          frameDelta;
+        const scaleVelocity =
+          Math.abs(Math.log(current.pose.scale / previous.pose.scale)) / frameDelta;
+        const rotationVelocity =
+          Math.abs(current.pose.rotationDeg - previous.pose.rotationDeg) / frameDelta;
+        positionVelocities.push(positionVelocity);
+        scaleVelocities.push(scaleVelocity);
+        rotationVelocities.push(rotationVelocity);
+        if (Math.abs(current.cropCompensation - previous.cropCompensation) > 0.03) {
+          cropCompensationChangeCount += 1;
+        }
+        if (
+          !current.intentionalDiscontinuity &&
+          (positionVelocity > 0.105 || scaleVelocity > 0.12 || rotationVelocity > 7.5)
+        ) {
+          discontinuities.push(current.frame);
+          violations.push({
+            code: "CAM_QUALITY_POSE_DISCONTINUITY",
+            outputId,
+            frame: current.frame,
+            message: `Camera output "${outputId}" has an unauthored pose discontinuity at frame ${current.frame}.`,
+          });
+        }
+      }
+      const accelerations = positionVelocities
+        .slice(1)
+        .map((velocity, index) => Math.abs(velocity - positionVelocities[index]));
+      const jerks = accelerations
+        .slice(1)
+        .map((acceleration, index) => Math.abs(acceleration - accelerations[index]));
+      const fills = ordered.map((sample) => sample.subjectFillRatio);
+      ordered.forEach((sample) => {
+        if (
+          !Number.isFinite(sample.subjectFillRatio) ||
+          sample.subjectFillRatio <= 0 ||
+          sample.subjectFillRatio > 4
+        ) {
+          violations.push({
+            code: "CAM_QUALITY_FILL_INVALID",
+            outputId,
+            frame: sample.frame,
+            message: `Camera output "${outputId}" has invalid subject fill ${sample.subjectFillRatio} at frame ${sample.frame}.`,
+          });
+        }
+      });
+      return {
+        outputId,
+        frameRange: [ordered[0]?.frame ?? 0, ordered.at(-1)?.frame ?? 0] as const,
+        maximumPositionVelocity: round(Math.max(0, ...positionVelocities)),
+        maximumScaleVelocity: round(Math.max(0, ...scaleVelocities)),
+        maximumRotationVelocityDeg: round(Math.max(0, ...rotationVelocities)),
+        maximumPositionAcceleration: round(Math.max(0, ...accelerations)),
+        maximumPositionJerk: round(Math.max(0, ...jerks)),
+        minimumSubjectFillRatio: round(Math.min(...fills)),
+        maximumSubjectFillRatio: round(Math.max(...fills)),
+        fallbackFrameCount: ordered.filter(
+          (sample) => sample.subjectResolution === "explicit-fallback",
+        ).length,
+        cropCompensationChangeCount,
+        discontinuityFrames: discontinuities,
+        missingFrameRanges: gaps,
+      };
+    });
+  return {
+    version: 1,
+    passed: violations.length === 0,
+    sampleCount: samples.length,
+    outputs,
+    violations,
+  };
+}

@@ -3,15 +3,16 @@ import { iMessageReducer } from "../runtime/reducer.js";
 import { createIMessageInitialState } from "../runtime/initial-state.js";
 import type { IMessageState } from "../types/index.js";
 import type { WorldState, RuntimeEvent } from "@tokovo/core";
-import { DEFAULT_AUDIO_STATE } from "@tokovo/core";
+import { createDefaultAudioState } from "@tokovo/core";
 
 function createTestWorldState(): WorldState {
   return {
-    appState: {
-      app_imessage: createIMessageInitialState(),
+    appInstances: {
+      "phone:app_imessage": createIMessageInitialState(),
     },
+    capabilityState: {},
     devices: {},
-    audio: DEFAULT_AUDIO_STATE,
+    audio: createDefaultAudioState(),
   } as WorldState;
 }
 
@@ -27,12 +28,13 @@ describe("iMessage Reducer", () => {
     const nextState = runReducer(state, {
       at: 0,
       kind: "APP",
+      deviceId: "phone",
       appId: "app_imessage",
       type: "IMESSAGE_MESSAGE_SEND",
       payload: { conversationId: "c1", text: "Hello" },
     });
 
-    const conv = (nextState.appState?.app_imessage as IMessageState | undefined)
+    const conv = (nextState.appInstances?.["phone:app_imessage"] as IMessageState | undefined)
       ?.conversations?.["c1"];
     expect(conv?.messages.length).toBe(1);
     expect(conv?.messages[0].text).toBe("Hello");
@@ -43,12 +45,13 @@ describe("iMessage Reducer", () => {
     const nextState = runReducer(state, {
       at: 0,
       kind: "APP",
+      deviceId: "phone",
       appId: "app_imessage",
       type: "IMESSAGE_MESSAGE_RECEIVE",
       payload: { conversationId: "c1", from: "Alex", text: "Yo" },
     });
 
-    const conv = (nextState.appState?.app_imessage as IMessageState | undefined)
+    const conv = (nextState.appInstances?.["phone:app_imessage"] as IMessageState | undefined)
       ?.conversations?.["c1"];
     expect(conv?.unreadCount).toBe(1);
   });
@@ -58,6 +61,7 @@ describe("iMessage Reducer", () => {
     const withMessage = runReducer(state, {
       at: 0,
       kind: "APP",
+      deviceId: "phone",
       appId: "app_imessage",
       type: "IMESSAGE_MESSAGE_SEND",
       payload: { conversationId: "c1", text: "Hello", messageId: "m1" },
@@ -66,12 +70,13 @@ describe("iMessage Reducer", () => {
     const reacted = runReducer(withMessage, {
       at: 1,
       kind: "APP",
+      deviceId: "phone",
       appId: "app_imessage",
       type: "IMESSAGE_TAPBACK_ADD",
       payload: { conversationId: "c1", messageId: "m1", type: "heart" },
     });
 
-    const conv = (reacted.appState?.app_imessage as IMessageState | undefined)
+    const conv = (reacted.appInstances?.["phone:app_imessage"] as IMessageState | undefined)
       ?.conversations?.["c1"];
 
     const msg = conv?.messages[0];
@@ -82,12 +87,13 @@ describe("iMessage Reducer", () => {
     const nextState = runReducer(createTestWorldState(), {
       at: 123,
       kind: "APP",
+      deviceId: "phone",
       appId: "app_imessage",
       type: "IMESSAGE_SCREEN_EFFECT",
       payload: { effect: "confetti" },
     });
 
-    const appState = nextState.appState?.app_imessage as
+    const appState = nextState.appInstances?.["phone:app_imessage"] as
       | IMessageState
       | undefined;
     expect(appState?.activeScreenEffect).toBe("confetti");

@@ -4,12 +4,15 @@ import { Button, Header, LIAvatar, LIIcon } from "./components.js";
 import { useLinkedInTheme } from "./ThemeContext.js";
 import { formatCompactCount, getCurrentUser, getProfileUser, getUnreadMessageCount, getUserPosts } from "../runtime/selectors.js";
 
-export const Profile: React.FC<{ world: WorldState }> = ({ world }) => {
+export const Profile: React.FC<{ world: WorldState; deviceId: string }> = ({
+  world,
+  deviceId,
+}) => {
   const theme = useLinkedInTheme();
-  const currentUser = getCurrentUser(world);
-  const user = getProfileUser(world) ?? currentUser;
-  const unreadMessages = getUnreadMessageCount(world);
-  const posts = getUserPosts(world, user?.id ?? null).slice(0, 3);
+  const currentUser = getCurrentUser(world, deviceId);
+  const user = getProfileUser(world, deviceId) ?? currentUser;
+  const unreadMessages = getUnreadMessageCount(world, deviceId);
+  const posts = getUserPosts(world, deviceId, user?.id ?? null).slice(0, 3);
   const profileViews = user?.profileViews ?? Math.max(96, posts.length * 84 + Math.floor((user?.followers ?? 0) / 3));
   const impressionCount = user?.impressionCount ?? Math.max(180, posts.length * 142 + Math.floor((user?.connections ?? 0) / 4));
   const featuredTitle = posts[0]?.text?.slice(0, 88) ?? "Shipping deterministic, story-first product surfaces for Tokovo.";

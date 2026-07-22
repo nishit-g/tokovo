@@ -1,6 +1,10 @@
-import type { PluginReducer, RuntimeEvent, WorldState } from "@tokovo/core";
+import {
+  requireAppStateForDevice,
+  type PluginReducer,
+  type RuntimeEvent,
+  type WorldState,
+} from "@tokovo/core";
 import type { LinkedInState, LIUser, LIPost, LIComment, LINotification, LIDMThread, LIDMMessage, LIRoute } from "./state.js";
-import { createLinkedInInitialState } from "./state.js";
 import type { LIReactionType, LIScreen, LIThemeMode } from "../types/index.js";
 
 function ensureMutableArray<T>(value: T[] | undefined | null): T[] {
@@ -23,10 +27,12 @@ function syncViewMode(state: LinkedInState): void {
   state.conversationId = undefined;
 }
 
-function getAppState(draft: WorldState): LinkedInState {
-  if (!draft.appState) draft.appState = {};
-  if (!draft.appState["app_linkedin"]) draft.appState["app_linkedin"] = createLinkedInInitialState();
-  const state = draft.appState["app_linkedin"] as LinkedInState;
+function getAppState(draft: WorldState, deviceId: string): LinkedInState {
+  const state = requireAppStateForDevice<LinkedInState>(
+    draft,
+    "app_linkedin",
+    deviceId,
+  );
 
   state.users = ensureMutableArray(state.users);
   state.posts = ensureMutableArray(state.posts);
@@ -133,9 +139,13 @@ function routesEqual(a: LIRoute, b: LIRoute): boolean {
 
 export const linkedInReducer: PluginReducer<"app_linkedin"> = (
   draft: WorldState,
-  event: RuntimeEvent & { kind: "APP"; appId: "app_linkedin" },
+  event: RuntimeEvent & {
+    kind: "APP";
+    appId: "app_linkedin";
+    deviceId: string;
+  },
 ) => {
-  const app = getAppState(draft);
+  const app = getAppState(draft, event.deviceId);
 
   switch (event.type) {
     case "LINKEDIN_ADD_USER": {

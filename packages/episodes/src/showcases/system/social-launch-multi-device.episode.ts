@@ -186,8 +186,7 @@ export default defineEpisode({
             id: "ig_launch_post",
             authorId: "ig_noa",
             imageUrl: "/media/founder-whiteboard.jpg",
-            caption:
-              "POV: the private launch cut escaped before the final export.",
+            caption: "POV: the private launch cut escaped before the final export.",
             createdAt: baseTs - 35_000,
             location: "Launch Room",
             likeCount: 19_400,
@@ -248,11 +247,9 @@ export default defineEpisode({
           durationFrames: 105,
           intensity: 0.96,
         });
-        overlay
-          .at("11.5s")
-          .caption("One leak. Two phones. The timeline splits.", {
-            durationFrames: 120,
-          });
+        overlay.at("11.5s").caption("One leak. Two phones. The timeline splits.", {
+          durationFrames: 120,
+        });
         overlay.at("22.5s").receipt("WhatsApp → X → Instagram", {
           preset: "topLeft",
           durationFrames: 150,
@@ -272,7 +269,7 @@ export default defineEpisode({
       .deviceTrack("creator_phone", (device) => {
         device.at("0s").screenRecording(true, { presentation: "compact" });
         device.at("22.5s").openApp("app_instagram", {
-          transition: { durationFrames: 18, style: "iosZoom" },
+          transition: { durationFrames: 18, style: "platform-default" },
         });
       })
       .notificationTrack("audience_phone", (notifications) => {
@@ -290,12 +287,8 @@ export default defineEpisode({
         whatsapp.openChatList("0s");
         whatsapp.switchTo("launch_room", "1.8s");
         whatsapp.at("3s").receive("Mira", "The private cut is public.");
-        whatsapp
-          .at("4.3s")
-          .receive("Noa", "Do not open X unless you are ready.");
-        whatsapp
-          .at("9s")
-          .send("Nobody repost it. I am pulling the link now.", {});
+        whatsapp.at("4.3s").receive("Noa", "Do not open X unless you are ready.");
+        whatsapp.at("9s").send("Nobody repost it. I am pulling the link now.", {});
         whatsapp.at("10.8s").receive("Dev", "Too late. X is already at 84K.");
       })
       .x("audience_phone", (x) => {

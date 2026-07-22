@@ -133,6 +133,6 @@ export default defineEpisode({
         });
         teams.at("20.4s").endCall("teams_flagship_call_v2");
       })
-      .use(new OSDirectorPlugin())
+      .use(new OSDirectorPlugin({ deviceId: "phone" }))
       .build(),
 });

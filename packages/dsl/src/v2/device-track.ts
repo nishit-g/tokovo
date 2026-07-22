@@ -6,11 +6,8 @@
  * and setting `silent: true` on the DEVICE event to suppress auto-sounds.
  */
 
-import type {
-  AudioTrackEvent,
-  DeviceTrackEvent,
-  TrackEvent,
-} from "@tokovo/ir";
+import type { AudioTrackEvent, DeviceTrackEvent, TrackEvent } from "@tokovo/ir";
+import type { DeviceTransitionStyle } from "@tokovo/core";
 import { parseTimeToFrames } from "./utils/time.js";
 
 // =============================================================================
@@ -33,7 +30,7 @@ export interface DeviceEventMetaOptions {
 
 export interface TransitionOptions {
   durationFrames?: number;
-  style?: string;
+  style?: Exclude<DeviceTransitionStyle, "platform-unlock">;
   originX?: number;
   originY?: number;
 }
@@ -117,31 +114,18 @@ export class DevicePointBuilderV2 {
     appId: string,
     options?: DeviceEventMetaOptions & { transition?: TransitionOptions },
   ): void {
-    this.emitDevice(
-      "OPEN_APP",
-      { appId, transition: options?.transition },
-      options,
-    );
+    this.emitDevice("OPEN_APP", { appId, transition: options?.transition }, options);
   }
 
-  goHome(
-    options?: DeviceEventMetaOptions & { transition?: TransitionOptions },
-  ): void {
+  goHome(options?: DeviceEventMetaOptions & { transition?: TransitionOptions }): void {
     this.emitDevice("GO_HOME", { transition: options?.transition }, options);
   }
 
-  setBadge(
-    appId: string,
-    count: number,
-    options?: DeviceEventMetaOptions,
-  ): void {
+  setBadge(appId: string, count: number, options?: DeviceEventMetaOptions): void {
     this.emitDevice("SET_BADGE", { appId, count }, options);
   }
 
-  screenRecording(
-    enabled: boolean,
-    options?: ScreenRecordingOptions,
-  ): void {
+  screenRecording(enabled: boolean, options?: ScreenRecordingOptions): void {
     const toDurationFrames = (
       value: string | number | undefined,
       fallbackSeconds: number,
@@ -157,12 +141,8 @@ export class DevicePointBuilderV2 {
         enabled,
         presentation: options?.presentation,
         microphoneEnabled: options?.microphoneEnabled,
-        countdownFrames: enabled
-          ? toDurationFrames(options?.countdown, 3)
-          : undefined,
-        feedbackFrames: !enabled
-          ? toDurationFrames(options?.feedback, 2.4)
-          : undefined,
+        countdownFrames: enabled ? toDurationFrames(options?.countdown, 3) : undefined,
+        feedbackFrames: !enabled ? toDurationFrames(options?.feedback, 2.4) : undefined,
       },
       options,
     );
@@ -207,15 +187,8 @@ export class DeviceTrackBuilderV2 {
   ) {}
 
   at(time: string | number): DevicePointBuilderV2 {
-    const frame =
-      typeof time === "number" ? time : parseTimeToFrames(time, this._fps);
-    return new DevicePointBuilderV2(
-      frame,
-      this._fps,
-      this._deviceId,
-      this._events,
-      this._getOrder,
-    );
+    const frame = typeof time === "number" ? time : parseTimeToFrames(time, this._fps);
+    return new DevicePointBuilderV2(frame, this._fps, this._deviceId, this._events, this._getOrder);
   }
 
   span(start: string | number, _end: string | number): DevicePointBuilderV2 {

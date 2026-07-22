@@ -13,10 +13,10 @@ import React from "react";
 import {
   WorldState,
   createScopedLogger,
+  getAppStateForDevice,
   TokovoConfig,
   TokovoConfigType,
   type LayoutCacheStore,
-  projectWorldForDevice,
 } from "@tokovo/core";
 import { PluginManagerClass } from "@tokovo/react";
 import { AppSurface, TokovoProvider } from "@tokovo/react";
@@ -125,11 +125,9 @@ const TokovoRendererInner: React.FC<TokovoRendererProps> = ({
     notificationProjection,
     systemSurfaceProjection,
     appViewport,
+    platformVisuals,
   } = layoutOutput;
-  const renderWorld = React.useMemo(
-    () => projectWorldForDevice(world, deviceId),
-    [world, deviceId],
-  );
+  const renderWorld = world;
 
   const hasActiveCall = device.call && device.call.status !== "ended";
   const dynamicIslandProjection = React.useMemo(
@@ -143,32 +141,22 @@ const TokovoRendererInner: React.FC<TokovoRendererProps> = ({
             fps,
             locale: device.os?.locale,
             appearance: device.os?.appearance,
+            preferences: {
+              textScale: device.os?.textScale,
+              contrast: device.os?.contrast,
+              motion: device.os?.motion,
+              transparency: device.os?.transparency,
+              materialPreference: device.os?.materialPreference,
+              colorSeed: device.os?.colorSeed,
+            },
           })
         : null,
-    [
-      device.dynamicIsland,
-      device.os?.appearance,
-      device.os?.locale,
-      device.screenRecording,
-      fps,
-      hasActiveCall,
-      profile,
-      t,
-    ],
+    [device.dynamicIsland, device.os, device.screenRecording, fps, hasActiveCall, profile, t],
   );
   const hidesStatusBar = dynamicIslandProjection?.suppressesStatusBar === true;
   const keyboardHeightForLayout = inputProjection?.surface.viewportInset ?? 0;
 
-  const transition = (device as unknown as { transition?: unknown }).transition as
-    | {
-        kind: "unlock" | "openApp" | "goHome";
-        startFrame: number;
-        durationFrames: number;
-        style?: string;
-        originX?: number;
-        originY?: number;
-      }
-    | undefined;
+  const transition = device.transition;
 
   const transitionProgress =
     transition && transition.durationFrames > 0
@@ -210,7 +198,7 @@ const TokovoRendererInner: React.FC<TokovoRendererProps> = ({
         ? "dark"
         : "light";
     if (!appId) return fallbackTheme;
-    const state = renderWorld.appState?.[appId];
+    const state = getAppStateForDevice(renderWorld, appId, deviceId);
     if (!state || typeof state === "string") return fallbackTheme;
     const theme = (state as { statusBarTheme?: "light" | "dark" }).statusBarTheme;
     return theme === "dark" || theme === "light" ? theme : fallbackTheme;
@@ -247,6 +235,7 @@ const TokovoRendererInner: React.FC<TokovoRendererProps> = ({
           dynamicIsland={
             profile.dynamicIsland && dynamicIslandProjection ? (
               <DynamicIsland
+                deviceId={deviceId}
                 device={device}
                 deviceProfile={profile}
                 world={renderWorld}
@@ -280,40 +269,48 @@ const TokovoRendererInner: React.FC<TokovoRendererProps> = ({
                   );
                 }
                 const scale = profile.display.width / designWidth;
+                const logicalHeight = profile.display.height / scale;
 
-                baseContent = (
-                  <AppErrorBoundary appId={appId}>
-                    <AppSurface
-                      designWidth={designWidth}
-                      targetWidth={profile.display.width}
-                      targetHeight={profile.display.height}
-                      backgroundColor={undefined}
+                const appSurface = (
+                  <AppSurface
+                    designWidth={designWidth}
+                    targetWidth={profile.display.width}
+                    targetHeight={profile.display.height}
+                    backgroundColor={undefined}
+                  >
+                    <TokovoProvider
+                      world={renderWorld}
+                      deviceId={deviceId}
+                      appId={appId}
+                      t={t}
+                      fps={fps}
+                      layout={layout}
+                      platform={variant}
+                      appViewport={appViewport}
+                      platformVisuals={platformVisuals}
+                      keyboardHeight={keyboardHeightForLayout / scale}
+                      inputProgram={inputProgram}
+                      inputProjection={inputProjection}
                     >
-                      <TokovoProvider
+                      <AppView
                         world={renderWorld}
-                        deviceId={deviceId}
-                        appId={appId}
                         t={t}
-                        fps={fps}
                         layout={layout}
                         platform={variant}
+                        deviceId={deviceId}
+                        width={designWidth}
+                        height={logicalHeight}
                         appViewport={appViewport}
-                        keyboardHeight={keyboardHeightForLayout / scale}
-                        inputProgram={inputProgram}
-                        inputProjection={inputProjection}
-                      >
-                        <AppView
-                          world={renderWorld}
-                          t={t}
-                          layout={layout}
-                          platform={variant}
-                          deviceId={deviceId}
-                          appViewport={appViewport}
-                        />
-                      </TokovoProvider>
-                    </AppSurface>
-                  </AppErrorBoundary>
+                      />
+                    </TokovoProvider>
+                  </AppSurface>
                 );
+                baseContent =
+                  mode === "render" ? (
+                    appSurface
+                  ) : (
+                    <AppErrorBoundary appId={appId}>{appSurface}</AppErrorBoundary>
+                  );
               }
             } else if (!device.isLocked && device.homeScreen) {
               // System: Home
@@ -337,6 +334,8 @@ const TokovoRendererInner: React.FC<TokovoRendererProps> = ({
             if (isAppTransitionActive && transitionProgress !== undefined) {
               baseContent = (
                 <AppTransition
+                  platform={variant}
+                  style={transition?.style ?? "platform-default"}
                   isOpening={transition?.kind === "openApp"}
                   isClosing={transition?.kind === "goHome"}
                   progress={transitionProgress}
@@ -350,12 +349,6 @@ const TokovoRendererInner: React.FC<TokovoRendererProps> = ({
 
             // Auto unlock transition
             if (isUnlockTransitionActive && transitionProgress !== undefined) {
-              const phase = transitionProgress < 0.7 ? "face_id" : "unlocking";
-              const p =
-                transitionProgress < 0.7
-                  ? transitionProgress / 0.7
-                  : (transitionProgress - 0.7) / 0.3;
-
               baseContent = (
                 <div
                   style={{
@@ -368,11 +361,11 @@ const TokovoRendererInner: React.FC<TokovoRendererProps> = ({
                     projection={projectLockscreen({
                       profile,
                       os: device.os,
-                      fallbackWallpaper: device.homeScreen?.wallpaper,
+                      homeWallpaper: device.homeScreen?.wallpaper,
                     })}
                   />
                   <div style={{ position: "absolute", inset: 0 }}>
-                    <UnlockTransition phase={phase} progress={p}>
+                    <UnlockTransition platform={variant} progress={transitionProgress}>
                       {baseContent}
                     </UnlockTransition>
                   </div>

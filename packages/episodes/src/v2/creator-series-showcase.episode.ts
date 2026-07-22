@@ -175,22 +175,22 @@ export default defineEpisode({
 
         // Open WhatsApp with manual transition
         d.at("3.8s").openApp("app_whatsapp", {
-          transition: { durationFrames: 18, style: "iosZoom" },
+          transition: { durationFrames: 18, style: "platform-default" },
         });
 
         // Switch to X with manual transition
         d.at("28.0s").openApp("app_x", {
-          transition: { durationFrames: 18, style: "iosZoom" },
+          transition: { durationFrames: 18, style: "platform-default" },
         });
 
         // Switch to iMessage with manual transition
         d.at("56.0s").openApp("app_imessage", {
-          transition: { durationFrames: 18, style: "iosZoom" },
+          transition: { durationFrames: 18, style: "platform-default" },
         });
 
         // End: go home and lock on the final cliffhanger.
         d.at("82.0s").goHome({
-          transition: { durationFrames: 14, style: "iosZoom" },
+          transition: { durationFrames: 14, style: "platform-default" },
         });
         d.at("84.0s").lock();
       })
@@ -233,33 +233,21 @@ export default defineEpisode({
       .whatsapp("phone", "wa_grp", (wa) => {
         wa.switchTo("wa_grp", "0s");
 
-        wa.at("5.0s").receive(
-          "Rhea",
-          "He posted a screenshot of the group chat.",
-        );
+        wa.at("5.0s").receive("Rhea", "He posted a screenshot of the group chat.");
         wa.at("6.0s").receive("Omar", "NOOOO 😭");
         wa.at("7.0s").receive("Tina", "Drop link.");
 
         wa.span("8.0s", "8.7s").typing("Jay");
-        wa.at("8.8s").receive(
-          "Jay",
-          "He really thought he ate with that caption.",
-        );
+        wa.at("8.8s").receive("Jay", "He really thought he ate with that caption.");
 
         wa.span("9.2s", "10.0s").typing("Rhea");
         wa.at("10.1s").receive("Rhea", "Caption is giving: 'I lie for sport'");
 
         // Creator POV send.
-        wa.at("11.6s").send(
-          "Stop. The audacity has a subscription plan now.",
-          {},
-        );
+        wa.at("11.6s").send("Stop. The audacity has a subscription plan now.", {});
 
         wa.at("16.2s").receive("Omar", "subscription plan is CRAZY 😭");
-        wa.at("19.0s").receive(
-          "Tina",
-          "Okay but X is already cooking you btw.",
-        );
+        wa.at("19.0s").receive("Tina", "Okay but X is already cooking you btw.");
         wa.at("23.0s").receive("Rhea", "Open it. I need to see this thread.");
       })
 
@@ -287,14 +275,8 @@ export default defineEpisode({
       // ---------------------------------------------------------------------
       .imessage("phone", "im_dm", (im) => {
         im.at("58.0s").openConversation("im_dm");
-        im.at("60.0s").receive(
-          "Mina",
-          "They’re quote-tweeting your messages now.",
-        );
-        im.at("62.0s").receive(
-          "Mina",
-          "Do NOT open the replies if you're fragile.",
-        );
+        im.at("60.0s").receive("Mina", "They’re quote-tweeting your messages now.");
+        im.at("62.0s").receive("Mina", "Do NOT open the replies if you're fragile.");
 
         // Reply beat.
         im.at("66.0s").send("Too late. I'm already opening them.", {});

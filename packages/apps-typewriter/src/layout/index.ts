@@ -1,9 +1,10 @@
-import type {
-  FullscreenLayoutState,
-  LayoutContext,
-  LayoutRect,
-  PluginLayoutStrategy,
-  SemanticRegion,
+import {
+  requireAppStateForDevice,
+  type FullscreenLayoutState,
+  type LayoutContext,
+  type LayoutRect,
+  type PluginLayoutStrategy,
+  type SemanticRegion,
 } from "@tokovo/core";
 
 import { TYPEWRITER_APP_ID } from "../constants.js";
@@ -22,18 +23,20 @@ export function computeTypewriterFullscreenLayout(
     width: ctx.viewportWidth,
     height: ctx.viewportHeight,
   };
-  const state = ctx.world.appState?.[TYPEWRITER_APP_ID] as
-    | TypewriterState
-    | undefined;
+  const state = requireAppStateForDevice<TypewriterState>(
+    ctx.world,
+    TYPEWRITER_APP_ID,
+    ctx.activeDeviceId,
+  );
   const theme = resolveTypewriterTheme({
-    config: state?.theme,
+    config: state.theme,
     video: dimensions,
   });
   const geometry = computeTypewriterGeometry(dimensions, theme);
   const cursor = {
-    x: geometry.textArea.x + theme.text.charWidthPx * (state?.cursor?.col ?? 0),
+    x: geometry.textArea.x + theme.text.charWidthPx * state.cursor.col,
     y:
-      geometry.textArea.y + theme.text.lineHeightPx * (state?.cursor?.row ?? 0),
+      geometry.textArea.y + theme.text.lineHeightPx * state.cursor.row,
     width: Math.max(2, theme.text.charWidthPx * 0.9),
     height: Math.max(2, theme.text.lineHeightPx * 0.9),
   };

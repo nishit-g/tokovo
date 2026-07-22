@@ -1,4 +1,8 @@
-import type { EpisodeAssetRef, PluginAssetCollector } from "@tokovo/core";
+import {
+  getAppStateForDevice,
+  type EpisodeAssetRef,
+  type PluginAssetCollector,
+} from "@tokovo/core";
 import type { IMessageConversation, IMessageState } from "./types/index.js";
 
 function createRef(
@@ -58,8 +62,13 @@ function pushConversationAssets(
 
 export const collectIMessageAssetRefs: PluginAssetCollector<"app_imessage"> = ({
   initialWorld,
+  deviceId,
 }) => {
-  const state = initialWorld.appState?.app_imessage as IMessageState | undefined;
+  const state = getAppStateForDevice<IMessageState>(
+    initialWorld,
+    "app_imessage",
+    deviceId,
+  );
   if (!state) return [];
   const refs: EpisodeAssetRef[] = [];
 

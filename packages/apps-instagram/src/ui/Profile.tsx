@@ -17,12 +17,15 @@ function formatCount(value: number): string {
   return `${value}`;
 }
 
-export const ProfileScreen: React.FC<{ world: WorldState }> = ({ world }) => {
+export const ProfileScreen: React.FC<{ world: WorldState; deviceId: string }> = ({
+  world,
+  deviceId,
+}) => {
   const theme = useInstagramTheme();
-  const state = getInstagramState(world);
-  const currentUser = getCurrentUser(world);
-  const profile = getActiveProfile(world);
-  const posts = getProfilePosts(world, profile?.id ?? null);
+  const state = getInstagramState(world, deviceId);
+  const currentUser = getCurrentUser(world, deviceId);
+  const profile = getActiveProfile(world, deviceId);
+  const posts = getProfilePosts(world, deviceId, profile?.id ?? null);
 
   if (!profile) {
     return (

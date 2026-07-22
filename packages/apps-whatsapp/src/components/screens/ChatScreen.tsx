@@ -1,6 +1,6 @@
 import React from "react";
 import { Pin } from "lucide-react";
-import { WorldState } from "@tokovo/core";
+import { requireAppStateForDevice, WorldState } from "@tokovo/core";
 import { KeyboardAwareView, useInputField } from "@tokovo/react";
 import { Header as DefaultHeader } from "../Header.js";
 import { GroupHeader } from "../GroupHeader.js";
@@ -18,7 +18,7 @@ import { getChatChromeGeometry } from "../../config/layout-config.js";
 
 export interface ChatScreenProps {
   world: WorldState;
-  deviceId?: string;
+  deviceId: string;
   contentInsets: {
     top: number;
     bottom: number;
@@ -38,11 +38,12 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({
 }) => {
   const theme = useTheme();
   const { locale, t } = useWhatsAppLocale();
-  const appState = world.appState?.app_whatsapp as WhatsAppState | undefined;
-  if (!appState) {
-    throw new Error("WhatsApp chat screen requires app_whatsapp state");
-  }
-  const conversations = (appState?.conversations ?? {}) as Record<string, WhatsAppConversation>;
+  const appState = requireAppStateForDevice<WhatsAppState>(
+    world,
+    "app_whatsapp",
+    deviceId,
+  );
+  const conversations = appState.conversations as Record<string, WhatsAppConversation>;
   const conversationId = appState.conversationId;
 
   const conversation: WhatsAppConversation | undefined = conversationId
@@ -95,8 +96,11 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({
     );
   })();
 
-  const resolvedDeviceId = deviceId ?? Object.keys(world.devices ?? {})[0];
-  const ownerName = resolvedDeviceId ? world.devices?.[resolvedDeviceId]?.ownerName : undefined;
+  const device = world.devices[deviceId];
+  if (!device) {
+    throw new Error(`WHATSAPP_DEVICE_MISSING: "${deviceId}" is not in world state.`);
+  }
+  const ownerName = device.ownerName;
   const thread = projectWhatsAppThread({
     conversationId,
     messages,

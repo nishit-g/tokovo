@@ -12,16 +12,14 @@ function createContext(fps: number): CompilerContext {
 
 describe("OSDirectorPlugin", () => {
   it("rejects invalid start times", () => {
-    expect(() => new OSDirectorPlugin({ startTime: "not-a-date" })).toThrow(
+    expect(() => new OSDirectorPlugin({ deviceId: "phone", startTime: "not-a-date" })).toThrow(
       /Invalid startTime/,
     );
   });
 
   it("rejects update intervals smaller than one frame", () => {
-    const plugin = new OSDirectorPlugin({ updateInterval: "0.01s" });
+    const plugin = new OSDirectorPlugin({ deviceId: "phone", updateInterval: "0.01s" });
 
-    expect(() => plugin.process([], createContext(30))).toThrow(
-      /smaller than one frame/,
-    );
+    expect(() => plugin.process([], createContext(30))).toThrow(/smaller than one frame/);
   });
 });

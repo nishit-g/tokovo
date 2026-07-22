@@ -8,6 +8,9 @@ export interface KeyboardLayoutDefinition {
   rowInsets: readonly number[];
   keyGapScale: number;
   fontScale: number;
+  controlRow: number;
+  showsShift: boolean;
+  form: "rows" | "flick-grid";
 }
 
 const LATIN: KeyboardRows = [
@@ -16,16 +19,20 @@ const LATIN: KeyboardRows = [
   ["z", "x", "c", "v", "b", "n", "m"],
 ];
 
-const IOS_DEVANAGARI: KeyboardRows = [
-  ["ौ", "ै", "ा", "ी", "ू", "ब", "ह", "ग", "द", "ज"],
-  ["ो", "े", "्", "ि", "ु", "प", "र", "क", "त", "च"],
-  ["ं", "म", "न", "व", "ल", "स", "य"],
+/** iOS 18+ alphabetical Hindi layout; intentionally not the old crowded InScript approximation. */
+const IOS_DEVANAGARI_ALPHABETICAL: KeyboardRows = [
+  ["अ", "आ", "इ", "ई", "उ", "ऊ", "ए", "ऐ", "ओ", "औ"],
+  ["क", "ख", "ग", "घ", "च", "छ", "ज", "झ", "ट", "ठ"],
+  ["त", "थ", "द", "ध", "न", "प", "फ", "ब", "भ", "म"],
+  ["य", "र", "ल", "व", "श", "ष", "स", "ह"],
 ];
 
-const ANDROID_DEVANAGARI: KeyboardRows = [
-  ["ौ", "ै", "ा", "ी", "ू", "ब", "ह", "ग", "द", "ज", "ड़"],
-  ["ो", "े", "्", "ि", "ु", "प", "र", "क", "त", "च", "ट"],
-  ["ॅ", "ं", "म", "न", "व", "ल", "स", "य"],
+/** Gboard Hindi alphabetic arrangement with full-size targets and dedicated vowel row. */
+const ANDROID_DEVANAGARI_ALPHABETICAL: KeyboardRows = [
+  ["अ", "आ", "इ", "ई", "उ", "ऊ", "ए", "ऐ", "ओ", "औ"],
+  ["क", "ख", "ग", "घ", "च", "छ", "ज", "झ", "ट", "ठ"],
+  ["त", "थ", "द", "ध", "न", "प", "फ", "ब", "भ", "म"],
+  ["य", "र", "ल", "व", "श", "ष", "स", "ह"],
 ];
 
 const FAMILY_ROWS: Partial<Record<KeyboardFamily, KeyboardRows>> = {
@@ -93,9 +100,10 @@ const FAMILY_ROWS: Partial<Record<KeyboardFamily, KeyboardRows>> = {
     ["ㅋ", "ㅌ", "ㅊ", "ㅍ", "ㅠ", "ㅜ", "ㅡ"],
   ],
   kana: [
-    ["あ", "か", "さ", "た", "な", "は", "ま", "や", "ら", "わ"],
-    ["い", "き", "し", "ち", "に", "ひ", "み", "ゆ", "り", "を"],
-    ["う", "く", "す", "つ", "ぬ", "ふ", "む", "よ", "る", "ん"],
+    ["あ", "か", "さ"],
+    ["た", "な", "は"],
+    ["ま", "や", "ら"],
+    ["小", "わ", "ん"],
   ],
 };
 
@@ -125,18 +133,27 @@ export function resolveInputKeyboardLayout(projection: InputProjection): Keyboar
       rowInsets: [0, 0, 14],
       keyGapScale: 1,
       fontScale: projection.surface.layout === "emoji" ? 0.88 : 1,
+      controlRow: 2,
+      showsShift: projection.surface.layout !== "emoji",
+      form: "rows",
     };
   }
   if (projection.surface.family === "devanagari") {
     return {
       id:
         projection.surface.platform === "ios"
-          ? "ios:devanagari-inscript@1"
-          : "android:devanagari-inscript@1",
-      rows: projection.surface.platform === "ios" ? IOS_DEVANAGARI : ANDROID_DEVANAGARI,
-      rowInsets: projection.surface.platform === "ios" ? [2, 2, 19] : [0, 0, 13],
-      keyGapScale: projection.surface.platform === "ios" ? 0.82 : 0.7,
-      fontScale: projection.surface.platform === "ios" ? 0.84 : 0.8,
+          ? "ios:devanagari-alphabetical@1"
+          : "android:devanagari-alphabetical@1",
+      rows:
+        projection.surface.platform === "ios"
+          ? IOS_DEVANAGARI_ALPHABETICAL
+          : ANDROID_DEVANAGARI_ALPHABETICAL,
+      rowInsets: [0, 0, 0, 10],
+      keyGapScale: projection.surface.platform === "ios" ? 0.72 : 0.78,
+      fontScale: projection.surface.platform === "ios" ? 0.82 : 0.86,
+      controlRow: 3,
+      showsShift: false,
+      form: "rows",
     };
   }
   const dense =
@@ -151,5 +168,8 @@ export function resolveInputKeyboardLayout(projection: InputProjection): Keyboar
     rowInsets: [0, projection.surface.platform === "ios" ? 14 : 7, 18],
     keyGapScale: dense ? 0.72 : 1,
     fontScale: dense ? 0.84 : 1,
+    controlRow: projection.surface.family === "kana" ? 3 : 2,
+    showsShift: projection.surface.family !== "kana",
+    form: projection.surface.family === "kana" ? "flick-grid" : "rows",
   };
 }

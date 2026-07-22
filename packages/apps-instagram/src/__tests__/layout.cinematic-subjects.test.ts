@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { LayoutContext, ViewKind, WorldState } from "@tokovo/core";
-import { createAppViewportFrame, DEFAULT_AUDIO_STATE } from "@tokovo/core";
+import { createAppViewportFrame, createDefaultAudioState } from "@tokovo/core";
 import { instagramLayoutStrategies } from "../layout/index.js";
 import { createInstagramInitialState, type InstagramState } from "../runtime/state.js";
 
@@ -11,22 +11,24 @@ function computeLayoutFor(screen: InstagramState["currentScreen"], viewKind: Vie
     viewMode: viewKind,
   };
   const world = {
-    appState: { app_instagram: appState },
+    appInstances: { "phone:app_instagram": appState },
+    capabilityState: {},
     devices: {},
-    audio: DEFAULT_AUDIO_STATE,
+    audio: createDefaultAudioState(),
   } as WorldState;
   const ctx: LayoutContext = {
     world,
     t: 0,
     activeDeviceId: "phone",
     activeAppId: "app_instagram",
+    platform: "ios",
     viewKind,
     viewportWidth: 393,
     viewportHeight: 852,
     appViewport: createAppViewportFrame({
       width: 393,
       height: 852,
-      contentInsets: { top: 47, bottom: 34 },
+      interactiveInsets: { top: 47, bottom: 34 },
     }),
     layoutCache: undefined,
   };

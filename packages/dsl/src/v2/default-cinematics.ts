@@ -45,6 +45,12 @@ export function createDefaultEpisodeCinematics(input: {
   if (input.devices.length === 0) return undefined;
   const subjects = input.devices.map((device) => cameraSubject.device(device.id, "body"));
   const stageSubject = subjects.length === 1 ? subjects[0]! : cameraSubject.group(...subjects);
+  const compositionProfileId =
+    input.devices.length === 1
+      ? "hero-device"
+      : input.devices.length === 2
+        ? "duo-balanced"
+        : "wide-context";
 
   return cinematicProgram(
     {
@@ -73,7 +79,7 @@ export function createDefaultEpisodeCinematics(input: {
                 height: STAGE_HEIGHT,
               },
               defaultRigId: "stage-neutral",
-              compositionProfileId: "wide-context",
+              compositionProfileId,
             })
             .modifier("quiet-breathing", "lens-breathing", {
               amount: 0.0025,
@@ -88,7 +94,7 @@ export function createDefaultEpisodeCinematics(input: {
                 fillMode: "contain",
                 paddingPx: input.devices.length === 1 ? 34 : 44,
                 minScale: 0.25,
-                maxScale: 1.15,
+                maxScale: input.devices.length === 1 ? 2 : 1.15,
               },
               framingGuard: {
                 subject: stageSubject,

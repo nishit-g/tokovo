@@ -25,8 +25,10 @@ This file tracks bundled assets that ship with the repository.
 ## App and Story Media
 
 - Location: `apps/video-runner/public/{avatars,backgrounds,banners,link-preview,maps,media,placeholders,stickers,wallpapers}/**`
-- Purpose: local episode fixtures and visual placeholders for app simulation demos
-- Policy: keep only assets that are either referenced by registered episodes, used by docs, or intentionally kept as reusable fixtures for new examples. New third-party assets must include provenance and license notes in this file.
+- Purpose: original or generated local episode fixtures for app simulation demos
+- License: `LicenseRef-Tokovo-Original-Fixture`; distributed with this repository for Tokovo examples and renders
+- Per-file inventory: `apps/video-runner/public/asset-provenance.json` records the content hash, byte size, source category, and license of every bundled render asset.
+- Policy: placeholder assets are forbidden. New third-party assets must declare their exact source and license here and in the per-file manifest before release validation passes.
 - `apps/video-runner/public/media/launch-board.svg` is an original deterministic fixture authored in-repo for the WhatsApp cinematic showcase.
 
 ## App Icons
@@ -34,6 +36,19 @@ This file tracks bundled assets that ship with the repository.
 - Location: `apps/video-runner/public/icons/**`
 - Source: simplified vector fixtures authored in-repo for deterministic simulated UI
 - Purpose: app identity in home-screen, status-bar, and notification render surfaces
+- License: `LicenseRef-Tokovo-Original-Fixture`
+
+## Device Calibration Assets
+
+- Location: `apps/video-runner/public/assets/**`
+- Source: original in-repository device calibration fixtures
+- License: `LicenseRef-Tokovo-Original-Fixture`
+
+## Demo Voice Fixtures
+
+- Location: `apps/video-runner/public/voice/**`
+- Source: generated demo voice and its deterministic timing manifest
+- License: `LicenseRef-Tokovo-Original-Fixture`
 
 ## Deterministic UI Fonts
 

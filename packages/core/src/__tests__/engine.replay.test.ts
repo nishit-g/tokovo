@@ -1,7 +1,6 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 import type { WorldState } from "../types.js";
 import {
-  replay,
   replayIncremental,
   createInitialWorld,
   createEventIndex,
@@ -10,17 +9,15 @@ import {
   cacheStateAtKeyframe,
   PluginError,
 } from "../engine.js";
-import {
-  createEngineRegistries,
-  type EngineRegistries,
-} from "../engine/registries.js";
+import { createEngineRegistries, type EngineRegistries } from "../engine/registries.js";
 import { getLogger } from "../logger/index.js";
 import { createConfig } from "../config/index.js";
 
 const baseWorld = (): WorldState =>
   ({
     devices: { phone: { id: "phone" } },
-    appState: {},
+    appInstances: { "phone:app": {} },
+    capabilityState: {},
     audio: {
       activeSounds: {},
       buses: {},
@@ -58,24 +55,14 @@ afterEach(() => {
 });
 
 describe("engine replay", () => {
-  it("handles negative time, empty events, and missing initial state", () => {
+  it("clamps negative time and rejects a missing initial world", () => {
     const world = baseWorld();
-    const result = replay(world, [], -5, previewCtx());
+    const result = replayIncremental(world, [], -5, previewCtx());
     expect(result.audio).toBeDefined();
 
-    const empty = replay(
-      undefined as any,
-      [{ at: 0, kind: "APP" } as any],
-      0,
-      previewCtx(),
-    );
-    expect(empty.devices).toEqual({});
-  });
-
-  it("creates defaults when initial state is missing and no events are provided", () => {
-    const result = replay(undefined as any, [], 0, previewCtx());
-    expect(result.devices).toEqual({});
-    expect(result.audio).toBeDefined();
+    expect(() =>
+      replayIncremental(undefined as any, [], 0, previewCtx()),
+    ).toThrowError("WORLD_STATE_REQUIRED");
   });
 
   it("processes handlers, reducers, and built-in events", () => {
@@ -84,12 +71,13 @@ describe("engine replay", () => {
     registries.eventHandlers.register({
       kind: "CUSTOM",
       handler: (draft) => {
-        (draft.appState as any).custom = true;
+        draft.capabilityState.custom = true;
       },
     });
 
-    registries.reducers.registerAppReducer("app", (draft) => {
-      (draft.appState as any).app = { handled: true };
+    registries.reducers.registerAppReducer("app", (draft, event) => {
+      if (event.kind !== "APP") throw new Error("expected APP event");
+      draft.appInstances[`${event.deviceId}:app`] = { handled: true };
     });
     registries.reducers.registerEventKinds("app", ["APP_EVENT"]);
 
@@ -103,14 +91,14 @@ describe("engine replay", () => {
 
     const events = [
       { at: 0, kind: "CUSTOM" },
-      { at: 1, kind: "APP", appId: "app" },
+      { at: 1, kind: "APP", appId: "app", deviceId: "phone" },
       { at: 2, kind: "APP" },
-      { at: 3, kind: "APP_EVENT" },
+      { at: 3, kind: "APP_EVENT", deviceId: "phone" },
       { at: 5, kind: "DEVICE", type: "LOCK", deviceId: "phone" },
       { at: 6, kind: "UNKNOWN" },
     ] as any[];
 
-    const result = replay(
+    const result = replayIncremental(
       world,
       events,
       10,
@@ -118,8 +106,8 @@ describe("engine replay", () => {
       createEventIndex(events as any),
     );
 
-    expect((result.appState as any).custom).toBe(true);
-    expect((result.appState as any).app).toEqual({ handled: true });
+    expect(result.capabilityState.custom).toBe(true);
+    expect(result.appInstances["phone:app"]).toEqual({ handled: true });
     expect((result.devices as any).phone.touched).toBe(true);
   });
 
@@ -130,14 +118,14 @@ describe("engine replay", () => {
     registries.reducers.registerEventKinds("app", ["CUSTOM"]);
 
     const renderIndex = createKeyframedEventIndex(
-      [{ at: 0, kind: "CUSTOM" } as any],
+      [{ at: 0, kind: "CUSTOM", deviceId: "phone" } as any],
       1,
     );
     const renderCache = createStateCache(1);
     expect(() =>
       replayIncremental(
         baseWorld(),
-        [{ at: 0, kind: "CUSTOM" } as any],
+        [{ at: 0, kind: "CUSTOM", deviceId: "phone" } as any],
         0,
         renderCtx(),
         renderIndex,
@@ -146,7 +134,7 @@ describe("engine replay", () => {
     ).toThrow(PluginError);
 
     const errors: any[] = [];
-    replay(baseWorld(), [{ at: 0, kind: "CUSTOM" } as any], 0, {
+    replayIncremental(baseWorld(), [{ at: 0, kind: "CUSTOM", deviceId: "phone" } as any], 0, {
       ...previewCtx(),
       errors,
     });
@@ -159,12 +147,12 @@ describe("engine replay", () => {
       throw new Error("boom");
     });
 
-    const events = [{ at: 0, kind: "APP", appId: "app" } as any];
+    const events = [{ at: 0, kind: "APP", appId: "app", deviceId: "phone" } as any];
     const index = createKeyframedEventIndex(events as any, 1);
     const cache = createStateCache(1);
-    expect(() =>
-      replayIncremental(baseWorld(), events, 0, renderCtx(), index, cache),
-    ).toThrow(PluginError);
+    expect(() => replayIncremental(baseWorld(), events, 0, renderCtx(), index, cache)).toThrow(
+      PluginError,
+    );
   });
 
   it("captures errors in preview mode", () => {
@@ -173,9 +161,9 @@ describe("engine replay", () => {
     });
 
     const errors: any[] = [];
-    const result = replay(
+    const result = replayIncremental(
       baseWorld(),
-      [{ at: 0, kind: "APP", appId: "app" } as any],
+      [{ at: 0, kind: "APP", appId: "app", deviceId: "phone" } as any],
       0,
       { ...previewCtx(), errors },
     );
@@ -185,18 +173,18 @@ describe("engine replay", () => {
   });
 
   it("creates initial worlds", () => {
-    const initial = createInitialWorld({ appState: { ok: true } as any });
-    expect(initial.appState).toBeDefined();
+    const initial = createInitialWorld({
+      appInstances: { "phone:app": { ok: true } },
+    });
+    expect(initial.appInstances["phone:app"]).toEqual({ ok: true });
   });
 
   it("handles missing built-in handlers gracefully", async () => {
     const builtIn = await import("../engine/built-in-handlers");
     const hasSpy = vi.spyOn(builtIn, "hasBuiltInHandler").mockReturnValue(true);
-    const getSpy = vi
-      .spyOn(builtIn, "getBuiltInHandler")
-      .mockReturnValue(undefined);
+    const getSpy = vi.spyOn(builtIn, "getBuiltInHandler").mockReturnValue(undefined);
 
-    const result = replay(
+    const result = replayIncremental(
       baseWorld(),
       [{ at: 0, kind: "DEVICE" } as any],
       0,
@@ -215,9 +203,9 @@ describe("engine replay incremental", () => {
     expect(result.audio).toBeDefined();
   });
 
-  it("falls back to full replay when missing index or cache", () => {
+  it("uses the uncached preview path when missing index or cache", () => {
     const events = [{ at: 0, kind: "APP" } as any];
-    const full = replay(baseWorld(), events, 0, previewCtx());
+    const full = replayIncremental(baseWorld(), events, 0, previewCtx());
     const incremental = replayIncremental(baseWorld(), events, 0, previewCtx());
 
     expect(incremental).toEqual(full);
@@ -234,10 +222,7 @@ describe("engine replay incremental", () => {
       [{ at: 2, kind: "APP", appId: "app" } as any],
       2,
       previewCtx(),
-      createKeyframedEventIndex(
-        [{ at: 2, kind: "APP", appId: "app" } as any],
-        2,
-      ),
+      createKeyframedEventIndex([{ at: 2, kind: "APP", appId: "app" } as any], 2),
       cache,
     );
 
@@ -251,30 +236,16 @@ describe("engine replay incremental", () => {
     const cachedState = baseWorld();
     cacheStateAtKeyframe(cache, 0, cachedState);
 
-    const result = replayIncremental(
-      baseWorld(),
-      events,
-      1,
-      previewCtx(),
-      index,
-      cache,
-    );
+    const result = replayIncremental(baseWorld(), events, 1, previewCtx(), index, cache);
 
-    expect(result.appState).toBeDefined();
+    expect(result.appInstances).toBeDefined();
   });
 
   it("handles negative frames by clamping to zero", () => {
     const events = [{ at: 0, kind: "APP" } as any];
     const index = createKeyframedEventIndex(events, 2);
     const cache = createStateCache(2);
-    const result = replayIncremental(
-      baseWorld(),
-      events,
-      -1,
-      previewCtx(),
-      index,
-      cache,
-    );
+    const result = replayIncremental(baseWorld(), events, -1, previewCtx(), index, cache);
     expect(result.audio).toBeDefined();
   });
 
@@ -284,32 +255,18 @@ describe("engine replay incremental", () => {
     });
     registries.reducers.registerEventKinds("app", ["CUSTOM"]);
 
-    const events = [{ at: 0, kind: "CUSTOM" } as any];
+    const events = [{ at: 0, kind: "CUSTOM", deviceId: "phone" } as any];
     const index = createKeyframedEventIndex(events, 2);
     const errors: any[] = [];
 
     const previewCache = createStateCache(2);
-    replayIncremental(
-      baseWorld(),
-      events,
-      0,
-      { ...previewCtx(), errors },
-      index,
-      previewCache,
-    );
+    replayIncremental(baseWorld(), events, 0, { ...previewCtx(), errors }, index, previewCache);
     expect(errors[0].error).toBeInstanceOf(Error);
     expect(errors[0].error.message).toBe("boom");
 
     try {
       const renderCache = createStateCache(2);
-      replayIncremental(
-        baseWorld(),
-        events,
-        0,
-        renderCtx(),
-        index,
-        renderCache,
-      );
+      replayIncremental(baseWorld(), events, 0, renderCtx(), index, renderCache);
       throw new Error("expected replayIncremental to throw");
     } catch (err) {
       expect(err).toBeInstanceOf(PluginError);
@@ -344,8 +301,8 @@ describe("engine replay incremental", () => {
     const events = [{ at: 0, kind: "APP", appId: "app" } as any];
     const index = createKeyframedEventIndex(events, 2);
     const cache = createStateCache(2);
-    expect(() =>
-      replayIncremental(baseWorld(), events, 0, renderCtx(), index, cache),
-    ).toThrow(PluginError);
+    expect(() => replayIncremental(baseWorld(), events, 0, renderCtx(), index, cache)).toThrow(
+      PluginError,
+    );
   });
 });

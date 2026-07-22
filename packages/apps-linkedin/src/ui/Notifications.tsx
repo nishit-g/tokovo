@@ -11,12 +11,15 @@ import {
   getUserById,
 } from "../runtime/selectors.js";
 
-export const Notifications: React.FC<{ world: WorldState }> = ({ world }) => {
+export const Notifications: React.FC<{ world: WorldState; deviceId: string }> = ({
+  world,
+  deviceId,
+}) => {
   const theme = useLinkedInTheme();
-  const currentUser = getCurrentUser(world);
-  const notifications = getNotifications(world);
-  const unreadMessages = getUnreadMessageCount(world);
-  const referenceFrame = getReferenceFrame(world);
+  const currentUser = getCurrentUser(world, deviceId);
+  const notifications = getNotifications(world, deviceId);
+  const unreadMessages = getUnreadMessageCount(world, deviceId);
+  const referenceFrame = getReferenceFrame(world, deviceId);
 
   return (
     <div style={{ flex: 1, overflow: "hidden", display: "flex", flexDirection: "column" }}>
@@ -24,7 +27,7 @@ export const Notifications: React.FC<{ world: WorldState }> = ({ world }) => {
 
       <div style={{ flex: 1, overflow: "auto" }}>
         {notifications.length > 0 ? notifications.map((notification) => {
-          const user = getUserById(world, notification.actorId);
+          const user = getUserById(world, deviceId, notification.actorId);
           const config = getNotificationConfig(notification.type, theme);
 
           return (

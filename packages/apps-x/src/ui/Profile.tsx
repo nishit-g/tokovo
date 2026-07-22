@@ -21,6 +21,7 @@ import { BottomNav } from "./BottomNav.js";
 
 interface ProfileProps {
   world: WorldState;
+  deviceId: string;
 }
 
 function formatCount(n: number): string {
@@ -29,16 +30,16 @@ function formatCount(n: number): string {
   return n.toString();
 }
 
-export const Profile: React.FC<ProfileProps> = ({ world }) => {
+export const Profile: React.FC<ProfileProps> = ({ world, deviceId }) => {
   const theme = useXTheme();
-  const state = getXState(world);
+  const state = getXState(world, deviceId);
   const activeUser =
-    getActiveUser(world) ??
+    getActiveUser(world, deviceId) ??
     (state?.currentUserId
       ? state.users.find((user) => user.id === state.currentUserId) ?? null
       : null);
   const currentUser = state?.users.find((user) => user.id === state.currentUserId);
-  const profileTab = getProfileTab(world);
+  const profileTab = getProfileTab(world, deviceId);
 
   if (!activeUser) {
     return (
@@ -55,7 +56,7 @@ export const Profile: React.FC<ProfileProps> = ({ world }) => {
     );
   }
 
-  const allTweets = getTweetsByAuthor(world, activeUser.id);
+  const allTweets = getTweetsByAuthor(world, deviceId, activeUser.id);
   const tweets = allTweets.filter((tweet) => {
     if (profileTab === "replies") return Boolean(tweet.replyToId);
     if (profileTab === "media") return Boolean(tweet.media);

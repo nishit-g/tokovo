@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import type { WorldState } from "@tokovo/core";
-import { DEFAULT_AUDIO_STATE } from "@tokovo/core";
+import { createDefaultAudioState } from "@tokovo/core";
 import { whatsappReducer } from "../runtime/reducer.js";
 import { createWhatsAppInitialState } from "../runtime/initial-state.js";
 
@@ -8,9 +8,10 @@ function baseWorld(): WorldState {
   const appState = createWhatsAppInitialState();
   appState.conversations.c1 = { id: "c1", messages: [] };
   return {
+    capabilityState: {},
     devices: {},
-    appState: { app_whatsapp: appState },
-    audio: DEFAULT_AUDIO_STATE,
+    appInstances: { "d1:app_whatsapp": appState },
+    audio: createDefaultAudioState(),
   } as unknown as WorldState;
 }
 
@@ -26,7 +27,7 @@ describe("WhatsApp viewMode invariants", () => {
       payload: { screen: "chats" },
     } as any);
 
-    const s = (world.appState as any).app_whatsapp;
+    const s = (world.appInstances["d1:app_whatsapp"] as any);
     expect(s.currentScreen).toBe("chats");
     expect(s.viewMode).toBe("FEED");
     expect(s.conversationId).toBeUndefined();
@@ -43,7 +44,7 @@ describe("WhatsApp viewMode invariants", () => {
       payload: { conversationId: "c1" },
     } as any);
 
-    const s = (world.appState as any).app_whatsapp;
+    const s = (world.appInstances["d1:app_whatsapp"] as any);
     expect(s.currentScreen).toBe("chat");
     expect(s.viewMode).toBe("CHAT");
     expect(s.conversationId).toBe("c1");
@@ -60,7 +61,7 @@ describe("WhatsApp viewMode invariants", () => {
       payload: { screen: "profile", conversationId: "c1" },
     } as any);
 
-    const state = (world.appState as any).app_whatsapp;
+    const state = (world.appInstances["d1:app_whatsapp"] as any);
     expect(state.currentScreen).toBe("profile");
     expect(state.viewMode).toBe("FEED");
     expect(state.conversationId).toBe("c1");

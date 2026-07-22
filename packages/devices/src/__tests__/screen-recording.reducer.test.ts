@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { DeviceState, TimelineEvent } from "@tokovo/core";
+import { DEFAULT_OS_STATE, type DeviceState, type TimelineEvent } from "@tokovo/core";
 import { deviceReducer } from "../reducer.js";
 
 function baseDevice(): DeviceState {
@@ -8,13 +8,11 @@ function baseDevice(): DeviceState {
     profileId: "iphone16",
     isLocked: false,
     foregroundAppId: "app_whatsapp",
+    os: DEFAULT_OS_STATE,
   };
 }
 
-function event(
-  at: number,
-  payload: Record<string, unknown>,
-): TimelineEvent {
+function event(at: number, payload: Record<string, unknown>): TimelineEvent {
   return {
     kind: "DEVICE",
     type: "SET_SCREEN_RECORDING",
@@ -96,10 +94,7 @@ describe("deviceReducer screen recording", () => {
       [60, "hidden"],
       [90, "compact"],
     ] as const) {
-      devices = deviceReducer(
-        devices,
-        event(at, { enabled: true, presentation }),
-      );
+      devices = deviceReducer(devices, event(at, { enabled: true, presentation }));
       expect(devices.phone.screenRecording).toMatchObject({
         isCapturing: true,
         presentation,
@@ -108,10 +103,7 @@ describe("deviceReducer screen recording", () => {
       });
     }
 
-    devices = deviceReducer(
-      devices,
-      event(120, { enabled: false, feedbackFrames: 72 }),
-    );
+    devices = deviceReducer(devices, event(120, { enabled: false, feedbackFrames: 72 }));
     expect(devices.phone.screenRecording).toMatchObject({
       isCapturing: false,
       completion: "saved",
@@ -133,10 +125,7 @@ describe("deviceReducer screen recording", () => {
         },
       },
     };
-    const next = deviceReducer(
-      devices,
-      event(180, { enabled: false, feedbackFrames: 72 }),
-    );
+    const next = deviceReducer(devices, event(180, { enabled: false, feedbackFrames: 72 }));
 
     expect(next.phone.screenRecording).toMatchObject({
       isCapturing: false,
@@ -162,10 +151,7 @@ describe("deviceReducer screen recording", () => {
         },
       },
     };
-    const next = deviceReducer(
-      devices,
-      event(60, { enabled: false, feedbackFrames: 72 }),
-    );
+    const next = deviceReducer(devices, event(60, { enabled: false, feedbackFrames: 72 }));
 
     expect(next.phone.screenRecording).toMatchObject({
       isCapturing: false,

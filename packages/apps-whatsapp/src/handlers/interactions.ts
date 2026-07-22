@@ -13,9 +13,7 @@ import type {
 } from "./registry.js";
 
 function getState(ctx: HandlerContext): WhatsAppState {
-  const state = ctx.draft.appState?.app_whatsapp as WhatsAppState | undefined;
-  if (!state) throw new Error("WhatsApp interaction requires app state");
-  return state;
+  return ctx.state;
 }
 
 function requireMatchingGesture(

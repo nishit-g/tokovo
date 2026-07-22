@@ -1,4 +1,4 @@
-import type { WorldState } from "@tokovo/core";
+import { requireAppStateForDevice, type WorldState } from "@tokovo/core";
 import { DeterministicImage } from "@tokovo/react";
 import {
   Ban,
@@ -24,6 +24,7 @@ import { GroupInfoScreen } from "./GroupInfoScreen.js";
 
 export interface ProfileScreenProps {
   world: WorldState;
+  deviceId: string;
   contentInsets: {
     top: number;
     bottom: number;
@@ -76,16 +77,13 @@ function ActionTile({ label, icon }: { label: string; icon: React.ReactNode }) {
   );
 }
 
-export function ProfileScreen({ world, contentInsets, width, height }: ProfileScreenProps) {
+export function ProfileScreen({ world, deviceId, contentInsets, width, height }: ProfileScreenProps) {
   const theme = useTheme();
   const { direction, locale, t } = useWhatsAppLocale();
   const { uiTypography: typography } = theme;
   const contentInsetTop = contentInsets.top;
   const contentInsetBottom = contentInsets.bottom;
-  const state = world.appState?.app_whatsapp as WhatsAppState | undefined;
-  if (!state) {
-    throw new Error("WhatsApp profile screen requires app_whatsapp state");
-  }
+  const state = requireAppStateForDevice<WhatsAppState>(world, "app_whatsapp", deviceId);
   const conversations = state.conversations;
   const conversationId = state.conversationId;
   const conversation = conversationId ? conversations[conversationId] : undefined;
@@ -98,6 +96,7 @@ export function ProfileScreen({ world, contentInsets, width, height }: ProfileSc
     return (
       <GroupInfoScreen
         world={world}
+        deviceId={deviceId}
         conversationId={conversation.id}
         contentInsets={contentInsets}
         width={width}

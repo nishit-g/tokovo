@@ -264,6 +264,7 @@ export type XEventPayloadMap = {
 export type XTrackEventFor<T extends XEventType> = TrackEventBase & {
   kind: "APP";
   appId: "app_x";
+  deviceId: string;
   type: T;
   payload: XEventPayloadMap[T];
 };

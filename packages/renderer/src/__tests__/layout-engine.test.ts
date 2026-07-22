@@ -6,7 +6,11 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { createAppViewportFrame, type WorldState } from "@tokovo/core";
+import {
+  createAppViewportFrame,
+  getAppStateForDevice,
+  type WorldState,
+} from "@tokovo/core";
 import { computeLayout } from "../layout/index.js";
 
 // Mock the registry context
@@ -61,8 +65,8 @@ function createTestWorld(overrides: Partial<WorldState> = {}): WorldState {
         foregroundAppId: "app_whatsapp",
       },
     },
-    appState: {
-      app_whatsapp: {
+    appInstances: {
+      "device_1:app_whatsapp": {
         viewMode: "CHAT",
         conversationId: "conv_1",
         conversations: {
@@ -77,6 +81,7 @@ function createTestWorld(overrides: Partial<WorldState> = {}): WorldState {
         },
       },
     },
+    capabilityState: {},
     audio: { activeSounds: [], musicBed: null },
     ...overrides,
   } as unknown as WorldState;
@@ -106,8 +111,8 @@ describe("LayoutEngine", () => {
     it("produces different signature when message count changes", () => {
       const world1 = createTestWorld();
       const world2 = createTestWorld({
-        appState: {
-          app_whatsapp: {
+        appInstances: {
+          "device_1:app_whatsapp": {
             viewMode: "CHAT",
             conversationId: "conv_1",
             conversations: {
@@ -185,7 +190,7 @@ describe("LayoutEngine", () => {
     });
   });
 
-  it("projects same-app state for the active device", () => {
+  it("reads the canonical app instance for the active device", () => {
     const world = createTestWorld({
       devices: {
         left: {
@@ -199,18 +204,21 @@ describe("LayoutEngine", () => {
           foregroundAppId: "app_same",
         },
       },
-      appState: {},
-      appStateByDevice: {
-        left: { app_same: { label: "LEFT" } },
-        right: { app_same: { label: "RIGHT" } },
+      appInstances: {
+        "left:app_same": { label: "LEFT" },
+        "right:app_same": { label: "RIGHT" },
       },
     } as Partial<WorldState>);
     const registry = {
       get: () => ({
-        computeLayout: (ctx: { world: WorldState }) => ({
+        computeLayout: (ctx: { world: WorldState; activeDeviceId: string }) => ({
           kind: "FEED",
           meta: {
-            label: (ctx.world.appState.app_same as { label: string }).label,
+            label: (
+              getAppStateForDevice(ctx.world, "app_same", ctx.activeDeviceId) as {
+                label: string;
+              }
+            ).label,
           },
         }),
       }),
@@ -244,7 +252,9 @@ function computeTestWorldSignature(
   appId: string | undefined,
 ): string {
   const device = world.devices[deviceId];
-  const appState = appId ? (world.appState as Record<string, unknown>)?.[appId] : undefined;
+  const appState = appId
+    ? getAppStateForDevice(world, appId, deviceId)
+    : undefined;
 
   const parts = [
     deviceId,

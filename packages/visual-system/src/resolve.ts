@@ -1,5 +1,9 @@
 import type {
   AppViewportFrame,
+  MaterialRecipe,
+  PlatformMotionProfile,
+  PlatformPalette,
+  PlatformTypographyProfile,
   ResolvedPlatformVisuals,
   SystemGeometryFrame,
   SystemGeometryState,
@@ -9,14 +13,17 @@ import type {
   VisualInsets,
   VisualRect,
 } from "./contract.js";
-import {
-  platformDesignRegistry,
-  type PlatformDesignRegistry,
-} from "./registry.js";
+import { platformDesignRegistry, type PlatformDesignRegistry } from "./registry.js";
 
 function finitePositive(value: number, label: string): void {
   if (!Number.isFinite(value) || value <= 0) {
     throw new Error(`VISUAL_GEOMETRY_INVALID: ${label} must be positive.`);
+  }
+}
+
+function finiteRange(value: number, min: number, max: number, label: string): void {
+  if (!Number.isFinite(value) || value < min || value > max) {
+    throw new Error(`VISUAL_ENVIRONMENT_INVALID: ${label} must be between ${min} and ${max}.`);
   }
 }
 
@@ -46,33 +53,161 @@ function clamp01(value: number): number {
   return Math.max(0, Math.min(1, value));
 }
 
+function seededHue(seed: string): number {
+  const normalized = seed.trim();
+  const hex = /^#?([0-9a-f]{6})$/iu.exec(normalized)?.[1];
+  if (hex) {
+    const red = Number.parseInt(hex.slice(0, 2), 16) / 255;
+    const green = Number.parseInt(hex.slice(2, 4), 16) / 255;
+    const blue = Number.parseInt(hex.slice(4, 6), 16) / 255;
+    const max = Math.max(red, green, blue);
+    const min = Math.min(red, green, blue);
+    const delta = max - min;
+    if (delta === 0) return 0;
+    const hue =
+      max === red
+        ? ((green - blue) / delta) % 6
+        : max === green
+          ? (blue - red) / delta + 2
+          : (red - green) / delta + 4;
+    return Math.round((hue * 60 + 360) % 360);
+  }
+  return Number.parseInt(stableHash(normalized), 16) % 360;
+}
+
+function resolvePalette(
+  palette: PlatformPalette,
+  platform: ResolvedPlatformVisuals["platform"],
+  appearance: ResolvedPlatformVisuals["appearance"],
+  contrast: VisualEnvironmentIR["contrast"],
+  colorSeed?: string,
+): PlatformPalette {
+  const increased =
+    contrast === "increased"
+      ? {
+          primaryText: appearance === "dark" ? "#FFFFFF" : "#000000",
+          secondaryText: appearance === "dark" ? "#F1F1F5" : "#242428",
+          tertiaryText: appearance === "dark" ? "#D8D8DE" : "#3E3E43",
+          separator: appearance === "dark" ? "rgba(255,255,255,0.42)" : "rgba(0,0,0,0.38)",
+        }
+      : {};
+  if (platform !== "android" || !colorSeed?.trim()) {
+    return { ...palette, ...increased };
+  }
+  const hue = seededHue(colorSeed);
+  const seeded =
+    appearance === "dark"
+      ? {
+          accent: `hsl(${hue} 72% 82%)`,
+          keyboardAccentKey: `hsl(${hue} 56% 78%)`,
+          keyboardAccentKeyPressed: `hsl(${hue} 56% 68%)`,
+          notificationCardSecondary: `hsl(${hue} 18% 24%)`,
+          surfaceRaised: `hsl(${hue} 10% 18%)`,
+        }
+      : {
+          accent: `hsl(${hue} 68% 38%)`,
+          keyboardAccentKey: `hsl(${hue} 62% 40%)`,
+          keyboardAccentKeyPressed: `hsl(${hue} 62% 31%)`,
+          notificationCardSecondary: `hsl(${hue} 34% 91%)`,
+          surfaceRaised: `hsl(${hue} 28% 98%)`,
+        };
+  return { ...palette, ...seeded, ...increased };
+}
+
+function withOpaqueAlpha(fill: string, alpha: number): string {
+  const rgba = /^rgba\(([^,]+),([^,]+),([^,]+),([^)]+)\)$/u.exec(fill.replaceAll(" ", ""));
+  return rgba ? `rgba(${rgba[1]},${rgba[2]},${rgba[3]},${Math.max(Number(rgba[4]), alpha)})` : fill;
+}
+
+function resolveMaterial(
+  material: MaterialRecipe,
+  environment: VisualEnvironmentIR,
+): MaterialRecipe {
+  const reducedTransparency = environment.transparency === "reduced";
+  const preference = environment.materialPreference;
+  const clearMultiplier = preference === "clear" ? 1.2 : preference === "regular" ? 0.8 : 1;
+  return {
+    ...material,
+    fill:
+      reducedTransparency || environment.contrast === "increased"
+        ? withOpaqueAlpha(material.fill, reducedTransparency ? 0.96 : 0.9)
+        : material.fill,
+    backdropBlur: reducedTransparency
+      ? 0
+      : Math.round(material.backdropBlur * clearMultiplier * 100) / 100,
+    backdropSaturation: reducedTransparency ? 1 : material.backdropSaturation,
+    backdropBrightness: reducedTransparency ? 1 : material.backdropBrightness,
+    stroke:
+      environment.contrast === "increased"
+        ? {
+            width: Math.max(material.stroke?.width ?? 0, 1),
+            color:
+              environment.appearance === "dark" ? "rgba(255,255,255,0.42)" : "rgba(0,0,0,0.34)",
+          }
+        : material.stroke,
+    minimumBackdropContrast:
+      environment.contrast === "increased"
+        ? Math.max(2, material.minimumBackdropContrast)
+        : material.minimumBackdropContrast,
+  };
+}
+
+function resolveTypography(
+  typography: PlatformTypographyProfile,
+  textScale: number,
+): PlatformTypographyProfile {
+  return {
+    ...typography,
+    roles: Object.fromEntries(
+      Object.entries(typography.roles).map(([role, style]) => [
+        role,
+        {
+          ...style,
+          size: Math.round(style.size * textScale * 100) / 100,
+          lineHeight: Math.round(style.lineHeight * textScale * 100) / 100,
+        },
+      ]),
+    ) as PlatformTypographyProfile["roles"],
+  };
+}
+
+function resolveMotion(
+  motion: PlatformMotionProfile,
+  preference: VisualEnvironmentIR["motion"],
+): PlatformMotionProfile {
+  if (preference === "full") return motion;
+  return Object.fromEntries(
+    Object.keys(motion).map((key) => [key, 0]),
+  ) as unknown as PlatformMotionProfile;
+}
+
 /** Creates a complete app viewport for focused tests and non-device canvases. */
 export function createAppViewportFrame(input: {
   width: number;
   height: number;
-  contentInsets?: Partial<VisualInsets>;
+  interactiveInsets?: Partial<VisualInsets>;
   occlusions?: readonly SystemRegion[];
 }): AppViewportFrame {
   finitePositive(input.width, "app viewport width");
   finitePositive(input.height, "app viewport height");
-  const contentInsets: VisualInsets = {
-    top: input.contentInsets?.top ?? 0,
-    right: input.contentInsets?.right ?? 0,
-    bottom: input.contentInsets?.bottom ?? 0,
-    left: input.contentInsets?.left ?? 0,
+  const interactiveInsets: VisualInsets = {
+    top: input.interactiveInsets?.top ?? 0,
+    right: input.interactiveInsets?.right ?? 0,
+    bottom: input.interactiveInsets?.bottom ?? 0,
+    left: input.interactiveInsets?.left ?? 0,
   };
   const viewport = { x: 0, y: 0, width: input.width, height: input.height };
-  const contentRect = {
-    x: contentInsets.left,
-    y: contentInsets.top,
-    width: Math.max(0, input.width - contentInsets.left - contentInsets.right),
-    height: Math.max(0, input.height - contentInsets.top - contentInsets.bottom),
+  const interactiveRect = {
+    x: interactiveInsets.left,
+    y: interactiveInsets.top,
+    width: Math.max(0, input.width - interactiveInsets.left - interactiveInsets.right),
+    height: Math.max(0, input.height - interactiveInsets.top - interactiveInsets.bottom),
   };
   const data = {
     coordinateSpace: "platform-logical" as const,
     viewport,
-    contentRect,
-    contentInsets,
+    interactiveRect,
+    interactiveInsets,
     occlusions: input.occlusions ?? [],
   };
   return { ...data, signature: signature(data) };
@@ -83,8 +218,33 @@ export function resolvePlatformVisuals(
   registry: PlatformDesignRegistry = platformDesignRegistry,
 ): ResolvedPlatformVisuals {
   finitePositive(environment.textScale, "textScale");
+  finiteRange(environment.textScale, 0.75, 2, "textScale");
   const profile = registry.require(environment.platformProfileId);
   const appearance = profile.appearances[environment.appearance];
+  const palette = resolvePalette(
+    appearance.palette,
+    profile.platform,
+    environment.appearance,
+    environment.contrast,
+    environment.colorSeed,
+  );
+  const materials = Object.fromEntries(
+    Object.entries(appearance.materials).map(([name, recipe]) => [
+      name,
+      resolveMaterial(
+        {
+          ...recipe,
+          fill:
+            recipe.fill === appearance.palette.notificationCardSecondary
+              ? palette.notificationCardSecondary
+              : recipe.fill === appearance.palette.surfaceRaised
+                ? palette.surfaceRaised
+                : recipe.fill,
+        },
+        environment,
+      ),
+    ]),
+  ) as ResolvedPlatformVisuals["materials"];
   const resolved = {
     profileId: profile.id,
     version: profile.version,
@@ -95,11 +255,14 @@ export function resolvePlatformVisuals(
     textScale: environment.textScale,
     contrast: environment.contrast,
     motion: environment.motion,
-    typography: profile.typography,
+    transparency: environment.transparency,
+    materialPreference: environment.materialPreference,
+    colorSeed: environment.colorSeed,
+    typography: resolveTypography(profile.typography, environment.textScale),
     geometry: profile.geometry,
-    palette: appearance.palette,
-    materials: appearance.materials,
-    motionProfile: profile.motion,
+    palette,
+    materials,
+    motionProfile: resolveMotion(profile.motion, environment.motion),
   } as const;
   return { ...resolved, signature: signature(resolved) };
 }
@@ -136,7 +299,7 @@ export function resolveSystemGeometry(
     id: region.id,
     kind: "hardware",
     rect: scaleRect(region.rect, hardware.pointScale),
-    behavior: "blocks-content",
+    behavior: "blocks-interaction",
     zIndex: 100,
   }));
   if (hardware.systemSurfaces) {
@@ -144,7 +307,7 @@ export function resolveSystemGeometry(
       id: "system.status-bar",
       kind: "status-bar",
       rect: { x: 0, y: 0, width: viewport.width, height: base.top },
-      behavior: "blocks-content",
+      behavior: "overlays-content",
       zIndex: 80,
     });
     regions.push({
@@ -156,7 +319,7 @@ export function resolveSystemGeometry(
         width: viewport.width,
         height: base.bottom,
       },
-      behavior: "blocks-content",
+      behavior: "overlays-content",
       zIndex: 80,
     });
   }
@@ -175,14 +338,13 @@ export function resolveSystemGeometry(
         width: viewport.width,
         height: keyboardHeight,
       },
-      behavior: "blocks-content",
+      behavior: "blocks-interaction",
       zIndex: 200,
     });
   }
 
   if (state.notification?.bannerVisible) {
-    const height =
-      state.notification.bannerHeight ?? visuals.geometry.notification.minimumHeight;
+    const height = state.notification.bannerHeight ?? visuals.geometry.notification.minimumHeight;
     const top = base.top + visuals.geometry.notification.islandClearance;
     const margin = visuals.geometry.notification.horizontalMargin;
     regions.push({
@@ -209,24 +371,22 @@ export function resolveSystemGeometry(
     });
   }
 
-  const contentInsets: VisualInsets = {
+  const interactiveInsets: VisualInsets = {
     ...base,
     bottom: Math.max(base.bottom, keyboardHeight),
   };
-  const contentRect: VisualRect = {
-    x: contentInsets.left,
-    y: contentInsets.top,
-    width: Math.max(0, viewport.width - contentInsets.left - contentInsets.right),
-    height: Math.max(0, viewport.height - contentInsets.top - contentInsets.bottom),
+  const interactiveRect: VisualRect = {
+    x: interactiveInsets.left,
+    y: interactiveInsets.top,
+    width: Math.max(0, viewport.width - interactiveInsets.left - interactiveInsets.right),
+    height: Math.max(0, viewport.height - interactiveInsets.top - interactiveInsets.bottom),
   };
-  const occlusions = regions.filter(
-    (region) => region.behavior !== "protects-editorial",
-  );
+  const occlusions = regions.filter((region) => region.behavior !== "protects-editorial");
   const appFrameData = {
     coordinateSpace: "platform-logical" as const,
     viewport,
-    contentRect,
-    contentInsets,
+    interactiveRect,
+    interactiveInsets,
     occlusions,
   };
   const appViewport: AppViewportFrame = {
@@ -243,10 +403,7 @@ export function resolveSystemGeometry(
   return { ...frameData, signature: signature(frameData) };
 }
 
-export function scaleAppViewportFrame(
-  frame: AppViewportFrame,
-  scale: number,
-): AppViewportFrame {
+export function scaleAppViewportFrame(frame: AppViewportFrame, scale: number): AppViewportFrame {
   finitePositive(scale, "app viewport scale");
   const rect = (value: VisualRect): VisualRect => ({
     x: value.x / scale,
@@ -263,8 +420,8 @@ export function scaleAppViewportFrame(
   const scaled = {
     coordinateSpace: frame.coordinateSpace,
     viewport: rect(frame.viewport),
-    contentRect: rect(frame.contentRect),
-    contentInsets: insets(frame.contentInsets),
+    interactiveRect: rect(frame.interactiveRect),
+    interactiveInsets: insets(frame.interactiveInsets),
     occlusions: frame.occlusions.map((region) => ({
       ...region,
       rect: rect(region.rect),

@@ -54,15 +54,16 @@ const FilterChip: React.FC<{ label: string; active?: boolean }> = ({ label, acti
 
 const InboxRow: React.FC<{
   world: WorldState;
+  deviceId: string;
   thread: ReturnType<typeof getDMThreads>[number];
   currentUserId: string | null;
   currentUserConnectionIds: string[];
   referenceFrame: number;
-}> = ({ world, thread, currentUserId, currentUserConnectionIds, referenceFrame }) => {
+}> = ({ world, deviceId, thread, currentUserId, currentUserConnectionIds, referenceFrame }) => {
   const theme = useLinkedInTheme();
   const otherUserId = thread.participantIds.find((id) => id !== currentUserId) ?? thread.participantIds[0] ?? null;
-  const user = getUserById(world, otherUserId);
-  const message = getLastMessageForThread(world, thread.id);
+  const user = getUserById(world, deviceId, otherUserId);
+  const message = getLastMessageForThread(world, deviceId, thread.id);
   const isInMail = Boolean(otherUserId && !currentUserConnectionIds.includes(otherUserId));
   const hasDraft = thread.draftText.trim().length > 0;
 
@@ -197,12 +198,15 @@ const InboxRow: React.FC<{
   );
 };
 
-export const Messages: React.FC<{ world: WorldState }> = ({ world }) => {
+export const Messages: React.FC<{ world: WorldState; deviceId: string }> = ({
+  world,
+  deviceId,
+}) => {
   const theme = useLinkedInTheme();
-  const currentUser = getCurrentUser(world);
-  const threads = getDMThreads(world);
-  const referenceFrame = getReferenceFrame(world);
-  const unreadCount = getUnreadMessageCount(world);
+  const currentUser = getCurrentUser(world, deviceId);
+  const threads = getDMThreads(world, deviceId);
+  const referenceFrame = getReferenceFrame(world, deviceId);
+  const unreadCount = getUnreadMessageCount(world, deviceId);
   const connectionIds = currentUser?.connectionIds ?? [];
   const focusedThreads = threads.filter((thread) => thread.pinned || thread.unreadCount > 0);
   const otherThreads = threads.filter((thread) => !(thread.pinned || thread.unreadCount > 0));
@@ -353,6 +357,7 @@ export const Messages: React.FC<{ world: WorldState }> = ({ world }) => {
             <InboxRow
               key={thread.id}
               world={world}
+              deviceId={deviceId}
               thread={thread}
               currentUserId={currentUser?.id ?? null}
               currentUserConnectionIds={connectionIds}
@@ -409,6 +414,7 @@ export const Messages: React.FC<{ world: WorldState }> = ({ world }) => {
               <InboxRow
                 key={`other-${thread.id}`}
                 world={world}
+                deviceId={deviceId}
                 thread={thread}
                 currentUserId={currentUser?.id ?? null}
                 currentUserConnectionIds={connectionIds}

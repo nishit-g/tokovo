@@ -43,8 +43,6 @@ export {
 
 export { DeviceRegistryProvider, useDeviceRegistries } from "./DeviceRegistryContext.js";
 
-export { createDeviceShellRegistry, DeviceShellRegistryClass } from "./registry.js";
-
 // REDUCER
 // =============================================================================
 

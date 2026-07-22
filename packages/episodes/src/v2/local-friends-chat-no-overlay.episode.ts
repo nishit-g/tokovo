@@ -8,17 +8,7 @@ export default defineEpisode({
     description:
       "Local creator group chat across WhatsApp and X. No overlays. Uses a device banner, BGM, and camera direction.",
     category: "showcase",
-    tags: [
-      "v2",
-      "creator",
-      "chat",
-      "whatsapp",
-      "x",
-      "no-overlay",
-      "bgm",
-      "keyboard",
-      "camera",
-    ],
+    tags: ["v2", "creator", "chat", "whatsapp", "x", "no-overlay", "bgm", "keyboard", "camera"],
   },
   config: {
     format: "1080x1920",
@@ -123,11 +113,11 @@ export default defineEpisode({
       // ============================================
       .deviceTrack("phone", (d) => {
         d.at("10.0s").openApp("app_x", {
-          transition: { durationFrames: 18, style: "iosZoom" },
+          transition: { durationFrames: 18, style: "platform-default" },
         });
 
         d.at("26.0s").openApp("app_whatsapp", {
-          transition: { durationFrames: 18, style: "iosZoom" },
+          transition: { durationFrames: 18, style: "platform-default" },
         });
       })
       .notificationTrack("phone", (notifications) => {
@@ -148,29 +138,17 @@ export default defineEpisode({
       .whatsapp("phone", "grp_local", (wa) => {
         wa.switchTo("grp_local", "0s");
 
-        wa.at("1.0s").receive(
-          "Mina",
-          "The teaser landed. People noticed the camera move.",
-        );
+        wa.at("1.0s").receive("Mina", "The teaser landed. People noticed the camera move.");
         wa.at("2.2s").receive(
           "Omar",
           "Someone clipped the transition and called it over-produced.",
         );
-        wa.at("3.4s").receive(
-          "Tess",
-          "Own it. Make the reply feel like part of the plan.",
-        );
+        wa.at("3.4s").receive("Tess", "Own it. Make the reply feel like part of the plan.");
 
-        wa.at("5.0s").send(
-          "It was a mood pass. The next clip will make it make sense.",
-          {},
-        );
+        wa.at("5.0s").send("It was a mood pass. The next clip will make it make sense.", {});
 
         wa.at("8.3s").receive("Jay", "The thread is already running with it.");
-        wa.at("9.3s").receive(
-          "Mina",
-          "Open X. Reply before the clip gets away from us.",
-        );
+        wa.at("9.3s").receive("Mina", "Open X. Reply before the clip gets away from us.");
       })
 
       // ============================================
@@ -197,18 +175,9 @@ export default defineEpisode({
       // WHATSAPP (backfire punchline)
       // ============================================
       .whatsapp("phone", "grp_local", (wa) => {
-        wa.at("27.4s").receive(
-          "Mina",
-          "You replied. The second clip better be ready.",
-        );
-        wa.at("29.0s").receive(
-          "Omar",
-          "Comments are asking for the full sequence now.",
-        );
-        wa.at("31.2s").receive(
-          "Tess",
-          "Next episode: prove the setup was intentional.",
-        );
+        wa.at("27.4s").receive("Mina", "You replied. The second clip better be ready.");
+        wa.at("29.0s").receive("Omar", "Comments are asking for the full sequence now.");
+        wa.at("31.2s").receive("Tess", "Next episode: prove the setup was intentional.");
 
         wa.at("34.0s").send("Next cut goes up clean. No loose setup.", {});
 

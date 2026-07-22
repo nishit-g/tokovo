@@ -6,7 +6,6 @@
 
 import type { WorldState, TimelineEvent, DeviceState } from "../types.js";
 import type { HandlerContext } from "./handlers/types.js";
-import { logEngineWarn } from "../logger/index.js";
 
 // =============================================================================
 // REDUCER TYPES
@@ -20,12 +19,6 @@ export type DeviceReducer = (
 
 /** App reducer type (mutates draft via Immer) */
 export type AppReducer = (draft: WorldState, event: TimelineEvent) => void;
-
-/** Scoped app reducer - only gets access to its own appState slice */
-export type ScopedAppReducer<TAppState = unknown> = (
-  appState: TAppState,
-  event: TimelineEvent,
-) => void;
 
 /** Feature reducer type */
 export type FeatureReducer = (
@@ -63,38 +56,18 @@ export class ReducerRegistryClass {
    */
   registerAppReducer(appId: string, reducer: AppReducer): void {
     if (this._appReducers.has(appId)) {
-      logEngineWarn(`Overwriting reducer for ${appId}`, {
-        appId,
-      });
+      throw new Error(`App reducer "${appId}" is already registered`);
     }
     this._appReducers.set(appId, reducer);
-  }
-
-  /**
-   * Register a scoped app reducer that only has access to its own appState slice.
-   * This is the RECOMMENDED way to register reducers for plugin isolation.
-   */
-  registerScopedAppReducer<TAppState>(
-    appId: string,
-    reducer: ScopedAppReducer<TAppState>,
-    initialStateFactory: () => TAppState,
-  ): void {
-    const wrappedReducer: AppReducer = (draft, event) => {
-      if (!draft.appState) {
-        draft.appState = {};
-      }
-      if (draft.appState[appId] === undefined) {
-        draft.appState[appId] = initialStateFactory();
-      }
-      reducer(draft.appState[appId] as TAppState, event);
-    };
-    this.registerAppReducer(appId, wrappedReducer);
   }
 
   /**
    * Register a generic feature reducer for an explicitly registered event kind.
    */
   registerFeatureReducer(kind: string, reducer: FeatureReducer): void {
+    if (this._featureReducers.has(kind)) {
+      throw new Error(`Feature reducer "${kind}" is already registered`);
+    }
     this._featureReducers.set(kind, reducer);
   }
 
@@ -196,13 +169,6 @@ export class ReducerRegistryClass {
     for (const kind of kindsToRemove) {
       this._eventKindToAppId.delete(kind);
     }
-  }
-
-  /**
-   * Legacy compatibility - access appReducers as object
-   */
-  get appReducers(): Record<string, AppReducer> {
-    return Object.fromEntries(this._appReducers);
   }
 
   /**

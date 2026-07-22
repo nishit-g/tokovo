@@ -104,6 +104,12 @@ Deterministic replay and runtime:
 - device and app runtime types
 - structured logging and observability hooks
 
+Runtime app state has exactly one representation: `world.appInstances[`${deviceId}:${appId}`]`.
+Every app event carries `deviceId`, reducers mutate only that mounted instance, and missing or
+duplicate instance registration fails loudly. OS-owned cross-app state lives in typed
+`capabilityState` domains such as `capabilityState.overlay`; core never swaps, projects, or mirrors
+app state for a selected device.
+
 ### App Packages
 
 Each app plugin owns:
@@ -123,6 +129,11 @@ consumers through the root barrel:
 - `@tokovo/apps-*/contract` for bootstrap, schema, and IR contracts
 - `@tokovo/apps-*/dsl` for authoring helpers
 - `@tokovo/apps-*/runtime` for reducer and selector consumers
+
+Every app instance is keyed by `${deviceId}:${appId}` in `WorldState.appInstances`. App events,
+reducers, selectors, layouts, subjects, asset collectors, and views all carry the exact device ID.
+There is no global app-state alias or single-device state shape. System feature state belongs in
+`WorldState.capabilityState`, not in the app-instance map.
 
 ### Device / System Packages
 

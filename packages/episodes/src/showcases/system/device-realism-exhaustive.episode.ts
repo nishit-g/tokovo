@@ -11,14 +11,7 @@ export default defineEpisode({
     catalogType: "system_showcase",
     visibility: "public",
     sortOrder: 100,
-    tags: [
-      "system",
-      "device",
-      "lockscreen",
-      "unlock",
-      "keyboard",
-      "transitions",
-    ],
+    tags: ["system", "device", "lockscreen", "unlock", "keyboard", "transitions"],
   },
   config: {
     format: "1080x1920",
@@ -90,7 +83,7 @@ export default defineEpisode({
           {
             id: "ig_seed_1",
             authorId: "ig_me",
-            imageUrl: "/placeholders/media.svg",
+            imageUrl: "/media/founder-whiteboard.jpg",
             caption: "Launch stills before sunrise.",
             createdAt: new Date("2026-04-10T08:15:00Z").getTime(),
             likeCount: 4211,
@@ -134,13 +127,13 @@ export default defineEpisode({
       .deviceTrack("phone", (d) => {
         d.at("3.0s").unlock();
         d.at("3.7s").openApp("app_whatsapp", {
-          transition: { durationFrames: 18, style: "iosZoom" },
+          transition: { durationFrames: 18, style: "platform-default" },
         });
         d.at("16.0s").openApp("app_instagram", {
-          transition: { durationFrames: 18, style: "iosZoom" },
+          transition: { durationFrames: 18, style: "platform-default" },
         });
         d.at("23.0s").openApp("app_x", {
-          transition: { durationFrames: 18, style: "iosZoom" },
+          transition: { durationFrames: 18, style: "platform-default" },
         });
       })
       .notificationTrack("phone", (notifications) => {
@@ -180,15 +173,9 @@ export default defineEpisode({
       })
       .whatsapp("phone", "dm_ops", (wa) => {
         wa.switchTo("dm_ops", "4.2s");
-        wa.at("5.0s").receive(
-          "Ops Lead",
-          "QA missed one screenshot in the deck.",
-        );
+        wa.at("5.0s").receive("Ops Lead", "QA missed one screenshot in the deck.");
         wa.at("6.4s").send("Patch is already exporting.", {});
-        wa.at("8.2s").receive(
-          "Ops Lead",
-          "Good. Move the team back into launch thread.",
-        );
+        wa.at("8.2s").receive("Ops Lead", "Good. Move the team back into launch thread.");
       })
       .instagram("phone", (ig) => {
         ig.at("16.8s").navigate("home");

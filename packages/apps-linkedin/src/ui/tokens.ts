@@ -58,13 +58,7 @@ export const liSpacing = {
   postCardHeight: 404,
   postCardExpandedHeight: 476,
 
-  // Layout-system backwards compatible aliases
-  cardPaddingH: 14,
-  cardPaddingV: 14,
-  cardRadius: 8,
   fabSize: 56,
-  reactionRowHeight: 48,
-  profileHeaderExtra: 132,
   commentComposerHeight: 84,
   dmComposerHeight: 84,
 } as const;
@@ -244,18 +238,4 @@ export const liAnimation = {
   transform: "transform 200ms cubic-bezier(0.4, 0.0, 0.2, 1)",
   opacity: "opacity 200ms cubic-bezier(0.4, 0.0, 0.2, 1)",
   all: "all 200ms cubic-bezier(0.4, 0.0, 0.2, 1)",
-} as const;
-
-// =============================================================================
-// COMBINED THEME EXPORT (for backwards compatibility)
-// =============================================================================
-export const liColors = liColorsLight;
-
-export const liTheme = {
-  colors: liColors,
-  typography: liTypography,
-  spacing: liSpacing,
-  radius: liRadius,
-  shadows: liShadows,
-  animation: liAnimation,
 } as const;

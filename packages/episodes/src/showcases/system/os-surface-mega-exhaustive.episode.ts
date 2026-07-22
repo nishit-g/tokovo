@@ -83,6 +83,7 @@ export default defineEpisode({
         locked: true,
         installedApps: INSTALLED_APPS,
         homeScreen: {
+          preset: "ios-default",
           dock: ["app_imessage", "app_whatsapp", "app_camera", "app_instagram"],
           pages: [["app_x", "app_linkedin", "app_snapchat", "app_teams"]],
         },
@@ -100,6 +101,7 @@ export default defineEpisode({
         locked: true,
         installedApps: INSTALLED_APPS,
         homeScreen: {
+          preset: "android-default",
           dock: ["app_camera", "app_whatsapp", "app_x", "app_teams", "app_instagram"],
           pages: [["app_linkedin", "app_snapchat", "app_imessage"]],
         },
@@ -118,6 +120,7 @@ export default defineEpisode({
         locked: true,
         installedApps: INSTALLED_APPS,
         homeScreen: {
+          preset: "ios-default",
           dock: ["app_imessage", "app_camera", "app_whatsapp", "app_instagram"],
           pages: [["app_x", "app_teams", "app_linkedin", "app_snapchat"]],
         },
@@ -135,6 +138,7 @@ export default defineEpisode({
         locked: true,
         installedApps: INSTALLED_APPS,
         homeScreen: {
+          preset: "android-default",
           dock: ["app_camera", "app_imessage", "app_whatsapp", "app_x", "app_instagram"],
           pages: [["app_teams", "app_linkedin", "app_snapchat"]],
         },
@@ -192,31 +196,35 @@ export default defineEpisode({
       })
       .deviceTrack("ios_light_hi", (device) => {
         device.at("6s").unlock();
-        device.at("6.7s").goHome({ transition: { durationFrames: 16, style: "iosZoom" } });
+        device.at("6.7s").goHome({ transition: { durationFrames: 16, style: "platform-default" } });
         device.at("24.7s").openApp("app_whatsapp", {
-          transition: { durationFrames: 16, style: "iosZoom" },
+          transition: { durationFrames: 16, style: "platform-default" },
         });
         device.at("60s").lock();
       })
       .deviceTrack("android_dark_ar", (device) => {
         device.at("6s").unlock();
-        device.at("6.7s").goHome({ transition: { durationFrames: 16, style: "iosZoom" } });
+        device.at("6.7s").goHome({ transition: { durationFrames: 16, style: "platform-default" } });
         device.at("33.2s").openApp("app_whatsapp", {
-          transition: { durationFrames: 14, style: "iosZoom" },
+          transition: { durationFrames: 14, style: "platform-default" },
         });
       })
       .deviceTrack("ios_dark_ja", (device) => {
         device.at("20s").unlock();
-        device.at("20.7s").goHome({ transition: { durationFrames: 16, style: "iosZoom" } });
+        device
+          .at("20.7s")
+          .goHome({ transition: { durationFrames: 16, style: "platform-default" } });
         device.at("42.7s").openApp("app_whatsapp", {
-          transition: { durationFrames: 16, style: "iosZoom" },
+          transition: { durationFrames: 16, style: "platform-default" },
         });
       })
       .deviceTrack("android_light_en", (device) => {
         device.at("20s").unlock();
-        device.at("20.7s").goHome({ transition: { durationFrames: 14, style: "iosZoom" } });
+        device
+          .at("20.7s")
+          .goHome({ transition: { durationFrames: 14, style: "platform-default" } });
         device.at("51.7s").openApp("app_whatsapp", {
-          transition: { durationFrames: 14, style: "iosZoom" },
+          transition: { durationFrames: 14, style: "platform-default" },
         });
       })
       .notificationTrack("ios_light_hi", (notifications) => {

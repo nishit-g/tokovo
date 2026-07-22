@@ -8,11 +8,11 @@ import { getInstagramState } from "../runtime/selectors.js";
 
 export const ComposerScreen: React.FC<{
   world: WorldState;
-  deviceId?: string;
-  t?: number;
-}> = ({ world }) => {
+  deviceId: string;
+  t: number;
+}> = ({ world, deviceId }) => {
   const theme = useInstagramTheme();
-  const state = getInstagramState(world);
+  const state = getInstagramState(world, deviceId);
   const input = useInputField("post");
   const typedCaption = input?.value ?? state?.composerDraft.caption ?? "";
 

@@ -1,15 +1,24 @@
-import type { FeedLayoutState, LayoutContext, SemanticRegion } from "@tokovo/core";
+import {
+  requireAppStateForDevice,
+  type FeedLayoutState,
+  type LayoutContext,
+  type SemanticRegion,
+} from "@tokovo/core";
 import type { XState } from "../runtime/state.js";
 import { xSpacing } from "../config/tokens.js";
 import { buildSemantic, createPx, rect } from "./shared.js";
 
 export function computeXFeedLayout(ctx: LayoutContext): FeedLayoutState {
   const { viewportWidth: w, viewportHeight: h, appViewport, world } = ctx;
-  const contentTop = appViewport.contentInsets.top;
-  const contentBottom = appViewport.contentInsets.bottom;
+  const contentTop = appViewport.interactiveInsets.top;
+  const contentBottom = appViewport.interactiveInsets.bottom;
   const px = createPx(w);
 
-  const state = (world.appState?.app_x ?? {}) as Partial<XState>;
+  const state = requireAppStateForDevice<XState>(
+    world,
+    "app_x",
+    ctx.activeDeviceId,
+  );
   const screen = state.currentScreen ?? "timeline";
 
   const navHeight = px(xSpacing.navHeight);

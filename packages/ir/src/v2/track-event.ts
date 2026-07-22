@@ -82,8 +82,9 @@ export type AudioTrackEvent = TrackEventBase & {
 /**
  * OS track event
  */
-export type OSTrackEvent = TrackEventBase & {
+export type OSTrackEvent = Omit<TrackEventBase, "deviceId"> & {
   kind: "OS";
+  deviceId: string;
 } & (
     | { type: "SET_STATE"; payload: OSPayloads["SET_STATE"] }
     | { type: "SET_TIME"; payload: OSPayloads["SET_TIME"] }
@@ -121,8 +122,9 @@ export type CallTrackEvent = TrackEventBase & {
 /**
  * Device track event (device-level operations)
  */
-export type DeviceTrackEvent = TrackEventBase & {
+export type DeviceTrackEvent = Omit<TrackEventBase, "deviceId"> & {
   kind: "DEVICE";
+  deviceId: string;
 } & (
     | { type: "LOCK"; payload: DevicePayloads["LOCK"] }
     | { type: "UNLOCK"; payload: DevicePayloads["UNLOCK"] }
@@ -187,9 +189,7 @@ export type SystemTrackEvent =
  * This is the canonical event type for the V2 DSL.
  * All tracks compile to TrackEvent[].
  */
-export type TrackEvent =
-  | SystemTrackEvent
-  | AppTrackEventRegistry[keyof AppTrackEventRegistry];
+export type TrackEvent = SystemTrackEvent | AppTrackEventRegistry[keyof AppTrackEventRegistry];
 
 // =============================================================================
 // TYPE GUARDS
@@ -207,9 +207,7 @@ export function isMarkerEvent(e: TrackEvent): e is MarkerTrackEvent {
   return e.kind === "MARKER";
 }
 
-export function isAppEvent(
-  e: TrackEvent,
-): e is AppTrackEventRegistry[keyof AppTrackEventRegistry] {
+export function isAppEvent(e: TrackEvent): e is AppTrackEventRegistry[keyof AppTrackEventRegistry] {
   return (e as { kind: string }).kind === "APP";
 }
 

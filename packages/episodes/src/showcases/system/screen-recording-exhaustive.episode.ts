@@ -83,10 +83,7 @@ export default defineEpisode({
       })
       .whatsapp("phone", "dm_record_v2", (wa) => {
         wa.switchTo("dm_record_v2", "0.8s");
-        wa.at("1.6s").receive(
-          "Mina",
-          "Does the recording chrome survive app switches?",
-        );
+        wa.at("1.6s").receive("Mina", "Does the recording chrome survive app switches?");
         wa.at("3.0s").send("It should feel like iOS, not a watermark.", {});
       })
       .x("phone", (x) => {
@@ -108,19 +105,19 @@ export default defineEpisode({
           countdown: "3s",
         });
         d.at("10.8s").openApp("app_x", {
-          transition: { durationFrames: 18, style: "iosZoom" },
+          transition: { durationFrames: 18, style: "platform-default" },
         });
         d.at("11.0s").screenRecording(true, { presentation: "expanded" });
         d.at("13.2s").screenRecording(true, { presentation: "compact" });
         d.at("18.0s").screenRecording(true, { presentation: "hidden" });
         d.at("19.5s").goHome({
-          transition: { durationFrames: 18, style: "iosZoom" },
+          transition: { durationFrames: 18, style: "platform-default" },
         });
         d.at("20.0s").screenRecording(true, { presentation: "compact" });
         d.at("21.0s").lock();
         d.at("23.0s").unlock();
         d.at("24.2s").openApp("app_whatsapp", {
-          transition: { durationFrames: 18, style: "iosZoom" },
+          transition: { durationFrames: 18, style: "platform-default" },
         });
         d.at("24.4s").screenRecording(true, { presentation: "expanded" });
         d.at("27.0s").screenRecording(true, { presentation: "compact" });

@@ -11,7 +11,11 @@ import type {
   NotificationPrivacyIR,
   NotificationReplyIR,
 } from "@tokovo/ir";
-import type { MaterialRecipe, PlatformDesignProfileId } from "@tokovo/visual-system";
+import type {
+  MaterialRecipe,
+  PlatformDesignProfileId,
+  VisualPreferences,
+} from "@tokovo/visual-system";
 
 export type NotificationPlatform = "ios" | "android";
 export type NotificationAppearance = "light" | "dark";
@@ -39,6 +43,7 @@ export interface NotificationDeviceDescriptor {
   platformProfileId: PlatformDesignProfileId;
   appearance: NotificationAppearance;
   locale: string;
+  visualPreferences: VisualPreferences;
   initialLocked: boolean;
   initialDnd: boolean;
   initialForegroundAppId?: string;
@@ -133,15 +138,7 @@ export interface PreparedNotificationActionEffect {
   target: NotificationActionTargetIR;
 }
 
-export interface PreparedNotificationDevice {
-  id: string;
-  platform: NotificationPlatform;
-  platformProfileId: PlatformDesignProfileId;
-  appearance: NotificationAppearance;
-  locale: string;
-  initialLocked: boolean;
-  initialDnd: boolean;
-  initialForegroundAppId?: string;
+export interface PreparedNotificationDevice extends NotificationDeviceDescriptor {
   operations: readonly NotificationDeviceContextOperation[];
 }
 
@@ -241,6 +238,7 @@ export interface NotificationItemProjection {
   id: string;
   appId: string;
   appName: string;
+  category: NonNullable<NotificationIntentIR["category"]>;
   icon: string;
   accentColor: string;
   leadingImage?: string;
@@ -276,6 +274,8 @@ export interface NotificationDeviceProjection {
   appearance: NotificationAppearance;
   locale: string;
   direction: "ltr" | "rtl";
+  clockLabel: string;
+  dateLabel: string;
   strings: {
     centerTitle: string;
     newNotification: string;
@@ -308,6 +308,7 @@ export interface NotificationProjectionConfig {
   viewportWidth: number;
   viewportHeight: number;
   pointScale: number;
+  clockMs: number;
 }
 
 export interface NotificationAudioCue {

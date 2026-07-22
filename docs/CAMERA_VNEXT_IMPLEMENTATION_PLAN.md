@@ -588,10 +588,9 @@ Evidence at this checkpoint:
   while screen/app geometry receives the exact profile display inset;
 - DSL: 13 tests passing; camera: 17; IR: 8; episodes: 17; renderer: 12; render service: 20.
 
-This checkpoint does not claim repository-wide legacy deletion. Forty-seven episode files still
-author event-camera choreography, and multi-device VNext painting remains intentionally fail-closed.
-Deleting the old package before those two migrations would silently remove direction from shipped
-episodes, so Phase 10 remains gated rather than being papered over with a compatibility adapter.
+This was the final pre-cutover checkpoint. The remaining episode choreography and multi-device
+painting migrations were subsequently completed, after which Phase 10 deleted the retired camera
+implementation. The completed tree contains no adapter or dual authoring path.
 
 ### Enterprise contract and hot-path checkpoint — 2026-07-22
 

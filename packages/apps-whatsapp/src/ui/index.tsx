@@ -1,5 +1,8 @@
 import React, { useMemo } from "react";
-import { getAppStateForDevice, projectWorldForDevice, type PluginViewProps } from "@tokovo/core";
+import {
+  requireAppStateForDevice,
+  type PluginViewProps,
+} from "@tokovo/core";
 import { WhatsAppExperienceProvider } from "../experience/ExperienceContext.js";
 import { resolveWhatsAppExperience } from "../experience/resolver.js";
 import type { WhatsAppAppearance } from "../experience/contract.js";
@@ -13,8 +16,6 @@ import { WhatsAppState } from "../types/index.js";
 
 export interface WhatsappChatViewProps extends PluginViewProps {
   appearance?: WhatsAppAppearance;
-  width?: number;
-  height?: number;
 }
 
 export const WhatsappChatView: React.FC<WhatsappChatViewProps> = ({
@@ -27,22 +28,20 @@ export const WhatsappChatView: React.FC<WhatsappChatViewProps> = ({
   height,
   appViewport,
 }) => {
-  const resolvedDeviceId = deviceId ?? Object.keys(world.devices || {})[0];
-  const appTheme =
-    resolvedDeviceId && world.devices?.[resolvedDeviceId]?.appTheme
-      ? world.devices[resolvedDeviceId]?.appTheme
-      : undefined;
-  const resolvedAppearance =
-    appearance ??
-    (resolvedDeviceId ? world.devices?.[resolvedDeviceId]?.appAppearance : undefined) ??
-    "light";
-  const resolvedPlatform =
-    platform ??
-    (world.devices?.[resolvedDeviceId ?? ""]?.profileId?.toLowerCase().includes("pixel")
-      ? "android"
-      : "ios");
-  const appState = getAppStateForDevice<WhatsAppState>(world, "app_whatsapp", resolvedDeviceId);
-  const locale = appState?.locale ?? "en-US";
+  const resolvedDeviceId = deviceId;
+  const device = world.devices[resolvedDeviceId];
+  if (!device) {
+    throw new Error(`WHATSAPP_DEVICE_MISSING: "${resolvedDeviceId}" is not in world state.`);
+  }
+  const appTheme = device.appTheme;
+  const resolvedAppearance = appearance ?? device.appAppearance ?? device.os.appearance;
+  const resolvedPlatform = platform;
+  const appState = requireAppStateForDevice<WhatsAppState>(
+    world,
+    "app_whatsapp",
+    resolvedDeviceId,
+  );
+  const locale = appState.locale;
   const experience = useMemo(
     () =>
       resolveWhatsAppExperience({
@@ -55,28 +54,18 @@ export const WhatsappChatView: React.FC<WhatsappChatViewProps> = ({
   );
 
   // 1. Resolve App State & Screen
-  const currentScreen = appState?.currentScreen || "chats";
-  const renderWorld = useMemo(
-    () => projectWorldForDevice(world, resolvedDeviceId),
-    [world, resolvedDeviceId],
-  );
-
-  // 2. Resolve Dimensions (Resolution Independence)
-  // Receive logical dimensions from parent (TokovoRenderer's AppSurface)
-  // If undefined, assume standard logical width (393)
-  const activeWidth = width || 393;
-  const activeHeight = height || 852;
+  const currentScreen = appState.currentScreen;
 
   const activeScreenContent = renderWhatsAppScreen(currentScreen, {
-    world: renderWorld,
+    world,
     deviceId: resolvedDeviceId,
-    width: activeWidth,
-    height: activeHeight,
-    contentInsets: appViewport.contentInsets,
+    width,
+    height,
+    contentInsets: appViewport.interactiveInsets,
   });
-  const viewer = appState?.mediaViewer;
-  const statusViewer = appState?.statusViewer;
-  const viewerConversation = viewer ? appState?.conversations?.[viewer.conversationId] : undefined;
+  const viewer = appState.mediaViewer;
+  const statusViewer = appState.statusViewer;
+  const viewerConversation = viewer ? appState.conversations?.[viewer.conversationId] : undefined;
   const viewerMessage = viewer
     ? viewerConversation?.messages.find((message) => message.id === viewer.messageId)
     : undefined;
@@ -99,9 +88,9 @@ export const WhatsappChatView: React.FC<WhatsappChatViewProps> = ({
         )}
         {statusViewer && (
           <StatusViewerOverlay
-            statuses={appState?.statuses ?? []}
+            statuses={appState.statuses}
             viewer={statusViewer}
-            baseTime={getBaseTime(renderWorld, resolvedDeviceId)}
+            baseTime={getBaseTime(world, resolvedDeviceId)}
           />
         )}
       </div>

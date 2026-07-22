@@ -1,16 +1,21 @@
-import type { PluginReducer, RuntimeEvent, WorldState } from "@tokovo/core";
-import { createTypewriterInitialState, type TypewriterState } from "./state.js";
+import {
+  requireAppStateForDevice,
+  type PluginReducer,
+  type RuntimeEvent,
+  type WorldState,
+} from "@tokovo/core";
+import type { TypewriterState } from "./state.js";
 import { TYPEWRITER_APP_ID } from "../constants.js";
 import { deriveKeyPressFromChar } from "../keyboard/index.js";
 import { TYPEWRITER_THEME_PRESETS, deepMerge } from "../theme/index.js";
 import type { TypewriterThemeConfig, TypewriterThemeTokens } from "../theme/types.js";
 
-function getAppState(draft: WorldState): TypewriterState {
-  if (!draft.appState) draft.appState = {};
-  if (!draft.appState[TYPEWRITER_APP_ID]) {
-    draft.appState[TYPEWRITER_APP_ID] = createTypewriterInitialState();
-  }
-  return draft.appState[TYPEWRITER_APP_ID] as TypewriterState;
+function getAppState(draft: WorldState, deviceId: string): TypewriterState {
+  return requireAppStateForDevice<TypewriterState>(
+    draft,
+    TYPEWRITER_APP_ID,
+    deviceId,
+  );
 }
 
 function clamp(n: number, min: number, max: number): number {
@@ -106,9 +111,13 @@ function deriveSettingsFromThemeConfig(
 
 export const typewriterReducer: PluginReducer<typeof TYPEWRITER_APP_ID> = (
   draft: WorldState,
-  event: RuntimeEvent & { kind: "APP"; appId: typeof TYPEWRITER_APP_ID },
+  event: RuntimeEvent & {
+    kind: "APP";
+    appId: typeof TYPEWRITER_APP_ID;
+    deviceId: string;
+  },
 ) => {
-  const s = getAppState(draft);
+  const s = getAppState(draft, event.deviceId);
   ensurePageCells(s, s.cursor.page);
   clampCursorToBounds(s);
 
@@ -158,11 +167,6 @@ export const typewriterReducer: PluginReducer<typeof TYPEWRITER_APP_ID> = (
       const col = clamp(Math.floor(payload.col ?? s.cursor.col), 0, maxCols - 1);
       ensurePageCells(s, page);
       s.cursor = { page, row, col };
-      break;
-    }
-
-    case "TYPEWRITER_SCROLL": {
-      // Kept for compatibility but no-op in paged document mode.
       break;
     }
 

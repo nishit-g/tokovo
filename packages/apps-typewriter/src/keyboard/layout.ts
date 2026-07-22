@@ -98,7 +98,7 @@ export const TYPEWRITER_KEYBOARD_ROWS: KeyDef[][] = [
     { id: "K", label: "K" },
     { id: "L", label: "L" },
     { id: "SEMICOLON", label: ";", shiftedLabel: ":" },
-    { id: "QUOTE", label: "'", shiftedLabel: "\"" },
+    { id: "QUOTE", label: "'", shiftedLabel: '"' },
     { id: "RETURN", label: "Return", w: 1.6 },
   ],
   [
@@ -148,7 +148,7 @@ const SHIFTED: Record<string, string> = {
   "]": "}",
   "\\": "|",
   ";": ":",
-  "'": "\"",
+  "'": '"',
   ",": "<",
   ".": ">",
   "/": "?",
@@ -201,8 +201,11 @@ export function deriveKeyPressFromChar(ch: string): KeyPress {
 
   const upper = ch.toUpperCase();
   if (upper >= "A" && upper <= "Z") {
-    const needsShift = ch !== upper;
-    return { keys: needsShift ? ["SHIFT", upper as TypewriterKeyId] : [upper as TypewriterKeyId], category: "key" };
+    const needsShift = ch === upper;
+    return {
+      keys: needsShift ? ["SHIFT", upper as TypewriterKeyId] : [upper as TypewriterKeyId],
+      category: "key",
+    };
   }
 
   if (ch in DIGITS) {
@@ -221,6 +224,6 @@ export function deriveKeyPressFromChar(ch: string): KeyPress {
   const kid = keyIdForUnshiftedSymbol(ch);
   if (kid) return { keys: [kid], category: "punct" };
 
-  // Fallback: animate shift lightly so it still "feels" mechanical.
-  return { keys: ["SHIFT"], category: "punct" };
+  // The glyph still reaches the page, but unsupported scripts must not fake a physical key.
+  return { keys: [], category: "key" };
 }

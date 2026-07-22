@@ -33,7 +33,7 @@ export type {
   ResolvedBackgroundConfig,
   BackgroundPreset,
 } from "./types.js";
-export { DEFAULT_BACKGROUND_CONFIG, FALLBACK_COLOR } from "./types.js";
+export { DEFAULT_BACKGROUND_CONFIG } from "./types.js";
 
 // Presets
 export { BACKGROUND_PRESETS, getPreset, listPresets, isPresetId } from "./presets.js";

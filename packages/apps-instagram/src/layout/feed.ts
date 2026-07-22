@@ -1,4 +1,9 @@
-import type { FeedLayoutState, LayoutContext, SemanticRegion } from "@tokovo/core";
+import {
+  requireAppStateForDevice,
+  type FeedLayoutState,
+  type LayoutContext,
+  type SemanticRegion,
+} from "@tokovo/core";
 import type { InstagramState } from "../runtime/state.js";
 import { instagramSpacing } from "../config/tokens.js";
 import {
@@ -10,10 +15,14 @@ import { buildSemantic, createPx, rect } from "./shared.js";
 
 export function computeInstagramFeedLayout(ctx: LayoutContext): FeedLayoutState {
   const { viewportWidth: w, viewportHeight: h, appViewport, world } = ctx;
-  const contentTop = appViewport.contentInsets.top;
-  const contentBottom = appViewport.contentInsets.bottom;
+  const contentTop = appViewport.interactiveInsets.top;
+  const contentBottom = appViewport.interactiveInsets.bottom;
   const px = createPx(w);
-  const state = (world.appState?.app_instagram ?? {}) as Partial<InstagramState>;
+  const state = requireAppStateForDevice<InstagramState>(
+    world,
+    "app_instagram",
+    ctx.activeDeviceId,
+  );
   const screen = state.currentScreen ?? "home";
   const headerH = contentTop + px(instagramSpacing.headerHeight);
   const navH = px(instagramSpacing.tabBarHeight);

@@ -22,6 +22,9 @@ function createRuntimeEvent(
   type: string,
   payload: unknown
 ): RuntimeEvent {
+  if (!event.deviceId) {
+    throw new Error("X_EVENT_DEVICE_REQUIRED: lowered app events require deviceId");
+  }
   return {
     at: event.at,
     kind: "APP",

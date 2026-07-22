@@ -1,4 +1,8 @@
-import type { EpisodeAssetRef, PluginAssetCollector } from "@tokovo/core";
+import {
+  getAppStateForDevice,
+  type EpisodeAssetRef,
+  type PluginAssetCollector,
+} from "@tokovo/core";
 import type { XState, XTweet, XUser } from "./runtime/state.js";
 
 const MAX_TIMELINE_TWEETS = 4;
@@ -72,8 +76,9 @@ function pushTweetAssets(
 
 export const collectXAssetRefs: PluginAssetCollector<"app_x"> = ({
   initialWorld,
+  deviceId,
 }) => {
-  const state = initialWorld.appState?.app_x as XState | undefined;
+  const state = getAppStateForDevice<XState>(initialWorld, "app_x", deviceId);
   if (!state) {
     return [];
   }

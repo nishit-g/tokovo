@@ -73,7 +73,7 @@ export default defineEpisode({
             createdAt: baseTs - 100000,
             media: {
               type: "image",
-              urls: ["/placeholders/media.svg"],
+              urls: ["/media/launch-board.svg"],
               aspect: "wide",
             },
           },

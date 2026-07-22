@@ -16,19 +16,19 @@ import {
   getUserById,
 } from "../runtime/selectors.js";
 
-export const MessageThread: React.FC<{ world: WorldState; deviceId?: string; t?: number }> = ({
+export const MessageThread: React.FC<{ world: WorldState; deviceId: string; t: number }> = ({
   world,
-  deviceId: _deviceId,
+  deviceId,
   t: _t,
 }) => {
   const theme = useLinkedInTheme();
-  const thread = getActiveThread(world);
-  const messages = getThreadMessages(world, thread?.id ?? null);
-  const currentUserId = getCurrentUserId(world);
+  const thread = getActiveThread(world, deviceId);
+  const messages = getThreadMessages(world, deviceId, thread?.id ?? null);
+  const currentUserId = getCurrentUserId(world, deviceId);
   const otherUserId = thread?.participantIds.find((id) => id !== currentUserId) ?? thread?.participantIds[0] ?? null;
-  const otherUser = getUserById(world, otherUserId);
-  const currentUser = getUserById(world, currentUserId);
-  const referenceFrame = getReferenceFrame(world);
+  const otherUser = getUserById(world, deviceId, otherUserId);
+  const currentUser = getUserById(world, deviceId, currentUserId);
+  const referenceFrame = getReferenceFrame(world, deviceId);
   const composerInput = useInputField("composer");
   const liveDraft = composerInput?.value ?? thread?.draftText ?? "";
   const isInMail = Boolean(
@@ -119,7 +119,7 @@ export const MessageThread: React.FC<{ world: WorldState; deviceId?: string; t?:
         ) : null}
         {messages.length > 0 ? messages.map((message, index) => {
           const isMe = message.senderId === currentUserId;
-          const sender = getUserById(world, message.senderId);
+          const sender = getUserById(world, deviceId, message.senderId);
           const showAvatar = !isMe && (index === messages.length - 1 || messages[index + 1]?.senderId !== message.senderId);
 
           return (

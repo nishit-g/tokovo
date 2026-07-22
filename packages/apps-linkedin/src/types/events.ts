@@ -193,6 +193,7 @@ export type LIEventPayloadMap = {
 export type LITrackEventFor<T extends LIEventType> = TrackEventBase & {
   kind: "APP";
   appId: "app_linkedin";
+  deviceId: string;
   type: T;
   payload: LIEventPayloadMap[T];
 };

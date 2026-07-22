@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import type { LayoutContext, ViewKind, WorldState } from "@tokovo/core";
-import { createAppViewportFrame, DEFAULT_AUDIO_STATE } from "@tokovo/core";
+import { createAppViewportFrame, createDefaultAudioState } from "@tokovo/core";
 import { xLayoutStrategies } from "../layout/index.js";
 import { createXInitialState, type XScreen } from "../runtime/state.js";
 
@@ -11,23 +11,25 @@ function computeLayoutFor(screen: XScreen, viewKind: ViewKind) {
     viewMode: viewKind,
   };
   const world = {
-    appState: { app_x: appState },
+    appInstances: { "phone:app_x": appState },
+    capabilityState: {},
     devices: {},
-    audio: DEFAULT_AUDIO_STATE,
+    audio: createDefaultAudioState(),
   } as WorldState;
 
   const ctx: LayoutContext = {
     world,
     t: 0,
-    activeDeviceId: "d1",
+    activeDeviceId: "phone",
     activeAppId: "app_x",
+    platform: "ios",
     viewKind,
     viewportWidth: 393,
     viewportHeight: 852,
     appViewport: createAppViewportFrame({
       width: 393,
       height: 852,
-      contentInsets: { top: 47, bottom: 34 },
+      interactiveInsets: { top: 47, bottom: 34 },
     }),
     layoutCache: undefined,
   };

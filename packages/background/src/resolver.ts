@@ -1,12 +1,11 @@
 /**
  * Background Resolver
  *
- * Resolves background configurations with preset expansion,
- * fallback handling, and validation.
+ * Resolves background configurations with preset expansion and strict validation.
  */
 
 import type { BackgroundConfig, ResolvedBackgroundConfig, BackgroundPresetId } from "./types.js";
-import { DEFAULT_BACKGROUND_CONFIG, FALLBACK_COLOR } from "./types.js";
+import { DEFAULT_BACKGROUND_CONFIG } from "./types.js";
 import { BACKGROUND_PRESETS, isPresetId } from "./presets.js";
 
 // =============================================================================
@@ -19,7 +18,7 @@ import { BACKGROUND_PRESETS, isPresetId } from "./presets.js";
  * - Expands preset references
  * - Applies defaults
  * - Validates paths
- * - Returns safe fallback on errors
+ * - Rejects incomplete or unregistered configurations
  */
 export function resolveBackground(
   config?: BackgroundConfig | BackgroundPresetId | null,
@@ -37,8 +36,7 @@ export function resolveBackground(
     if (isPresetId(config)) {
       const preset = BACKGROUND_PRESETS[config];
       return {
-        ...DEFAULT_BACKGROUND_CONFIG,
-        ...preset.config,
+        ...validateAndClean(applyCommonDefaults(preset.config)),
         _resolved: true,
       };
     }
@@ -47,28 +45,40 @@ export function resolveBackground(
   }
 
   // Object config
-  let resolved: BackgroundConfig = { ...DEFAULT_BACKGROUND_CONFIG, ...config };
+  let resolved: BackgroundConfig;
 
   // Expand preset if specified
   if (config.preset && isPresetId(config.preset)) {
     const preset = BACKGROUND_PRESETS[config.preset];
     resolved = {
-      ...DEFAULT_BACKGROUND_CONFIG,
       ...preset.config,
-      ...config, // User overrides take priority
+      ...config,
+      // The governed profile owns the renderer kind. `type` is only present on
+      // BackgroundConfig because non-preset configurations require it.
+      type: preset.config.type,
     };
   } else if (config.preset) {
     throw new Error(
       `BACKGROUND_PRESET_MISSING: backdrop profile "${config.preset}" is not registered.`,
     );
+  } else {
+    resolved = { ...config };
   }
 
-  // Validate and clean
-  resolved = validateAndClean(resolved);
+  resolved = validateAndClean(applyCommonDefaults(resolved));
 
   return {
     ...resolved,
     _resolved: true,
+  };
+}
+
+function applyCommonDefaults(config: BackgroundConfig): BackgroundConfig {
+  return {
+    ...config,
+    opacity: config.opacity ?? DEFAULT_BACKGROUND_CONFIG.opacity,
+    blur: config.blur ?? DEFAULT_BACKGROUND_CONFIG.blur,
+    position: config.position ?? DEFAULT_BACKGROUND_CONFIG.position,
   };
 }
 
@@ -93,7 +103,7 @@ function validateAndClean(config: BackgroundConfig): BackgroundConfig {
   switch (cleaned.type) {
     case "solid":
       if (!cleaned.color) {
-        cleaned.color = FALLBACK_COLOR;
+        throw new Error("BACKGROUND_SOLID_INVALID: solid backgrounds require a color.");
       }
       break;
 
@@ -113,6 +123,15 @@ function validateAndClean(config: BackgroundConfig): BackgroundConfig {
         );
       }
       break;
+
+    case "particles":
+    case "ambient":
+      break;
+
+    default:
+      throw new Error(
+        `BACKGROUND_TYPE_UNREGISTERED: background type "${String(cleaned.type)}" is not registered.`,
+      );
   }
 
   return cleaned;

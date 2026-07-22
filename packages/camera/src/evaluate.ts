@@ -72,11 +72,17 @@ function resolveWithPolicy(input: {
   ref: CinematicSubjectRefIR;
   policy: CameraMissingSubjectPolicyIR;
   available: SubjectIndex;
-}): readonly ResolvedCinematicSubject[] | undefined {
+}):
+  | {
+      subjects: readonly ResolvedCinematicSubject[];
+      source: "direct" | "explicit-fallback";
+    }
+  | undefined {
   const direct = resolveSubjects(input.ref, input.available);
-  if (direct) return direct;
+  if (direct) return { subjects: direct, source: "direct" };
   if (input.policy.type === "use-explicit") {
-    return resolveSubjects(input.policy.fallback, input.available);
+    const fallback = resolveSubjects(input.policy.fallback, input.available);
+    return fallback ? { subjects: fallback, source: "explicit-fallback" } : undefined;
   }
   return undefined;
 }
@@ -115,8 +121,8 @@ function evaluateRig(
   policy: CameraMissingSubjectPolicyIR,
   available: SubjectIndex,
 ): CameraRigResolution {
-  const subjects = resolveWithPolicy({ ref: rig.subject, policy, available });
-  if (!subjects) return { status: "subject-missing" };
+  const subjectResolution = resolveWithPolicy({ ref: rig.subject, policy, available });
+  if (!subjectResolution) return { status: "subject-missing" };
   const framingGuardSubjects = rig.framingGuard
     ? resolveSubjects(rig.framingGuard.subject, available)
     : [];
@@ -127,8 +133,9 @@ function evaluateRig(
     status: "resolved",
     evaluation: {
       rig,
-      subjects,
+      subjects: subjectResolution.subjects,
       framingGuardSubjects: framingGuardSubjects ?? [],
+      subjectResolution: subjectResolution.source,
     },
   };
 }
@@ -713,6 +720,28 @@ export function evaluateCameraOutput(
     };
   }
 
+  const subjectBounds = unionRects(
+    selected.subjects.map((subject) => subject.clippedWorldRect ?? subject.worldRect),
+  );
+  const effectiveInsets = resolveOutputEditorialInsets(output);
+  const effectiveWidth = Math.max(
+    1,
+    output.viewport.width - effectiveInsets.left - effectiveInsets.right,
+  );
+  const effectiveHeight = Math.max(
+    1,
+    output.viewport.height - effectiveInsets.top - effectiveInsets.bottom,
+  );
+  const subjectFillRatio = Math.max(
+    (subjectBounds.width * pose.scale) / effectiveWidth,
+    (subjectBounds.height * pose.scale) / effectiveHeight,
+  );
+  const cropCompensation = projectionPasses.reduce(
+    (maximum, pass) =>
+      "cropCompensation" in pass ? Math.max(maximum, pass.cropCompensation) : maximum,
+    1,
+  );
+
   return {
     frame,
     outputId,
@@ -734,6 +763,7 @@ export function evaluateCameraOutput(
       selection: activeShot ? "shot" : "default-rig",
       shotId: activeShot?.id ?? null,
       rigId: selected.rig.id,
+      subjectResolution: selected.subjectResolution,
       desiredPose: target.pose,
       finalPose: pose,
       transition: transitionTrace,
@@ -781,6 +811,10 @@ export function evaluateCameraOutput(
       },
       bakedTrajectory: target.trajectoryTrace,
       projectionPassKinds: projectionPasses.map((pass) => pass.kind),
+      quality: {
+        subjectFillRatio,
+        cropCompensation,
+      },
     },
   };
 }

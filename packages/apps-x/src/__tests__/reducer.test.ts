@@ -4,15 +4,16 @@ import { xReducer } from "../runtime/reducer.js";
 import { createXInitialState } from "../runtime/state.js";
 import { getXState } from "../runtime/selectors.js";
 import type { WorldState, RuntimeEvent } from "@tokovo/core";
-import { DEFAULT_AUDIO_STATE } from "@tokovo/core";
+import { createDefaultAudioState } from "@tokovo/core";
 
 function createTestWorldState(): WorldState {
   return {
-    appState: {
-      app_x: createXInitialState(),
+    appInstances: {
+      "phone:app_x": createXInitialState(),
     },
+    capabilityState: {},
     devices: {},
-    audio: DEFAULT_AUDIO_STATE,
+    audio: createDefaultAudioState(),
   } as WorldState;
 }
 
@@ -28,6 +29,7 @@ describe("X Reducer", () => {
     const nextState = runReducer(state, {
       at: 0,
       kind: "APP",
+      deviceId: "phone",
       appId: "app_x",
       type: "ADD_USER",
       payload: {
@@ -37,7 +39,7 @@ describe("X Reducer", () => {
       },
     });
 
-    const appState = getXState(nextState);
+    const appState = getXState(nextState, "phone");
     if (!appState) throw new Error("Missing X app state after reducer run");
     expect(appState.users).toHaveLength(1);
     expect(appState.users[0].handle).toBe("alex");
@@ -48,6 +50,7 @@ describe("X Reducer", () => {
     const nextState = runReducer(state, {
       at: 10,
       kind: "APP",
+      deviceId: "phone",
       appId: "app_x",
       type: "ADD_TWEET",
       payload: {
@@ -58,7 +61,7 @@ describe("X Reducer", () => {
       },
     });
 
-    const appState = getXState(nextState);
+    const appState = getXState(nextState, "phone");
     if (!appState) throw new Error("Missing X app state after reducer run");
     expect(appState.tweets).toHaveLength(1);
     expect(appState.timeline[0]).toBe("tw-1");
@@ -69,6 +72,7 @@ describe("X Reducer", () => {
     const withTweet = runReducer(state, {
       at: 0,
       kind: "APP",
+      deviceId: "phone",
       appId: "app_x",
       type: "ADD_TWEET",
       payload: {
@@ -82,12 +86,13 @@ describe("X Reducer", () => {
     const liked = runReducer(withTweet, {
       at: 1,
       kind: "APP",
+      deviceId: "phone",
       appId: "app_x",
       type: "LIKE_TWEET",
       payload: { tweetId: "tw-1", userId: "u2" },
     });
 
-    const appState = getXState(liked);
+    const appState = getXState(liked, "phone");
     if (!appState) throw new Error("Missing X app state after reducer run");
     expect(appState.tweets[0].likeCount).toBe(1);
   });
@@ -97,6 +102,7 @@ describe("X Reducer", () => {
     const inThread = runReducer(state, {
       at: 1,
       kind: "APP",
+      deviceId: "phone",
       appId: "app_x",
       type: "SET_SCREEN",
       payload: { screen: "thread", threadId: "dm-1" },
@@ -105,12 +111,13 @@ describe("X Reducer", () => {
     const backToTimeline = runReducer(inThread, {
       at: 2,
       kind: "APP",
+      deviceId: "phone",
       appId: "app_x",
       type: "SET_SCREEN",
       payload: { screen: "timeline" },
     });
 
-    const appState = getXState(backToTimeline);
+    const appState = getXState(backToTimeline, "phone");
     if (!appState) throw new Error("Missing X app state after reducer run");
     expect(appState.activeTweetId).toBeNull();
     expect(appState.activeUserId).toBeNull();
@@ -124,6 +131,7 @@ describe("X Reducer", () => {
       runReducer(state, {
         at: 0,
         kind: "APP",
+        deviceId: "phone",
         appId: "app_x",
         type: "ADD_USER",
         payload: {
@@ -137,6 +145,7 @@ describe("X Reducer", () => {
       {
         at: 0,
         kind: "APP",
+        deviceId: "phone",
         appId: "app_x",
         type: "ADD_USER",
         payload: {
@@ -152,12 +161,13 @@ describe("X Reducer", () => {
     const unfollowed = runReducer(withUsers, {
       at: 1,
       kind: "APP",
+      deviceId: "phone",
       appId: "app_x",
       type: "UNFOLLOW_USER",
       payload: { followerId: "u1", followingId: "u2" },
     });
 
-    const appState = getXState(unfollowed);
+    const appState = getXState(unfollowed, "phone");
     if (!appState) throw new Error("Missing X app state after reducer run");
     const u1 = appState.users.find((u) => u.id === "u1");
     const u2 = appState.users.find((u) => u.id === "u2");
@@ -170,6 +180,7 @@ describe("X Reducer", () => {
     const withNew = runReducer(state, {
       at: 10,
       kind: "APP",
+      deviceId: "phone",
       appId: "app_x",
       type: "ADD_TWEET",
       payload: {
@@ -183,6 +194,7 @@ describe("X Reducer", () => {
     const withOld = runReducer(withNew, {
       at: 20,
       kind: "APP",
+      deviceId: "phone",
       appId: "app_x",
       type: "ADD_TWEET",
       payload: {
@@ -193,7 +205,7 @@ describe("X Reducer", () => {
       },
     });
 
-    const appState = getXState(withOld);
+    const appState = getXState(withOld, "phone");
     if (!appState) throw new Error("Missing X app state after reducer run");
     expect(appState.timeline).toEqual(["tw-newer", "tw-older"]);
   });
@@ -203,6 +215,7 @@ describe("X Reducer", () => {
     const withUser = runReducer(state, {
       at: 0,
       kind: "APP",
+      deviceId: "phone",
       appId: "app_x",
       type: "SET_CURRENT_USER",
       payload: { userId: "u1" },
@@ -210,6 +223,7 @@ describe("X Reducer", () => {
     const withThread = runReducer(withUser, {
       at: 1,
       kind: "APP",
+      deviceId: "phone",
       appId: "app_x",
       type: "ADD_DM_THREAD",
       payload: {
@@ -226,6 +240,7 @@ describe("X Reducer", () => {
     const withMessage = runReducer(withThread, {
       at: 2,
       kind: "APP",
+      deviceId: "phone",
       appId: "app_x",
       type: "ADD_DM_MESSAGE",
       payload: {
@@ -237,7 +252,7 @@ describe("X Reducer", () => {
       },
     });
 
-    const appState = getXState(withMessage);
+    const appState = getXState(withMessage, "phone");
     expect(appState?.dmThreads[0]?.unreadCount).toBe(1);
   });
 
@@ -246,6 +261,7 @@ describe("X Reducer", () => {
     const withNotification = runReducer(state, {
       at: 0,
       kind: "APP",
+      deviceId: "phone",
       appId: "app_x",
       type: "ADD_NOTIFICATION",
       payload: {
@@ -260,11 +276,12 @@ describe("X Reducer", () => {
     const opened = runReducer(withNotification, {
       at: 1,
       kind: "APP",
+      deviceId: "phone",
       appId: "app_x",
       type: "SET_SCREEN",
       payload: { screen: "notifications" },
     });
 
-    expect(getXState(opened)?.notifications[0]?.read).toBe(true);
+    expect(getXState(opened, "phone")?.notifications[0]?.read).toBe(true);
   });
 });

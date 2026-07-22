@@ -75,7 +75,7 @@ export interface AppRuntimeEvent<
   kind: "APP";
   appId: AppId;
   type: Type;
-  deviceId?: string;
+  deviceId: string;
   payload: Payload;
 }
 
@@ -208,14 +208,7 @@ export type AudioEventType =
   | "STOP"
   | "FADE_OUT"
   | "CROSSFADE"
-  | "STOP_ALL"
-  | "PLAY_ONE_SHOT"
-  | "START_LOOP"
-  | "DUCK"
-  | "PLAY_SOUND"
-  | "STOP_SOUND"
-  | "FADE_VOLUME"
-  | "BACKGROUND_MUSIC";
+  | "STOP_ALL";
 
 interface BaseAudioRuntimeEvent extends BaseRuntimeEvent {
   kind: "AUDIO";

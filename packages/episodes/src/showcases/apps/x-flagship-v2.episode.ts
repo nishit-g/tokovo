@@ -85,7 +85,7 @@ export default defineEpisode({
             media: {
               type: "image",
               aspect: "wide",
-              urls: ["/placeholders/media.svg"],
+              urls: ["/media/office-meme.png"],
             },
           },
         ],

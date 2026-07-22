@@ -1,4 +1,4 @@
-import type { CameraProjectionPass, Matrix3 } from "@tokovo/camera";
+import type { CameraProjectionPass, CameraQualitySample, Matrix3 } from "@tokovo/camera";
 
 export const CAMERA_TEXTURE_CAPTURE_PREFIX = "TOKOVO_CAMERA_TEXTURE_FRAME:";
 
@@ -10,7 +10,7 @@ export type CameraRenderLayer =
   | "foreground-plate";
 
 export interface CameraTextureProjectionCapture {
-  version: 3;
+  version: 4;
   frame: number;
   storySignature: string;
   stageSignature: string;
@@ -27,6 +27,7 @@ export interface CameraTextureProjectionCapture {
     clipRadiusPx: number;
     shadow?: { offsetX: number; offsetY: number; blurPx: number; opacity: number };
     projectionPasses: readonly CameraProjectionPass[];
+    quality: Omit<CameraQualitySample, "frame" | "outputId" | "viewport">;
   }[];
 }
 
@@ -57,7 +58,7 @@ export function parseCameraTextureProjectionCapture(
       matrix.length === 9 &&
       matrix.every((entry) => typeof entry === "number" && Number.isFinite(entry));
     if (
-      value.version !== 3 ||
+      value.version !== 4 ||
       !Number.isInteger(value.frame) ||
       typeof value.storySignature !== "string" ||
       typeof value.stageSignature !== "string" ||
@@ -77,6 +78,17 @@ export function parseCameraTextureProjectionCapture(
           !validMatrix(output.viewMatrix) ||
           !Number.isFinite(output.opacity) ||
           !Number.isFinite(output.clipRadiusPx) ||
+          !output.quality ||
+          !output.quality.pose ||
+          !Number.isFinite(output.quality.pose.centerX) ||
+          !Number.isFinite(output.quality.pose.centerY) ||
+          !Number.isFinite(output.quality.pose.scale) ||
+          !Number.isFinite(output.quality.pose.rotationDeg) ||
+          (output.quality.subjectResolution !== "direct" &&
+            output.quality.subjectResolution !== "explicit-fallback") ||
+          !Number.isFinite(output.quality.subjectFillRatio) ||
+          !Number.isFinite(output.quality.cropCompensation) ||
+          typeof output.quality.intentionalDiscontinuity !== "boolean" ||
           (output.shadow !== undefined &&
             (!Number.isFinite(output.shadow.offsetX) ||
               !Number.isFinite(output.shadow.offsetY) ||

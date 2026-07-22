@@ -476,8 +476,11 @@ export class EpisodeBuilder {
   /**
    * Add an OS track.
    */
-  os(fn: TrackFn<OSTrackBuilder>): this {
-    const builder = new OSTrackBuilder(this._fps, () => this._declarationOrder++);
+  os(deviceId: string, fn: TrackFn<OSTrackBuilder>): this {
+    if (!this._devices.some((device) => device.id === deviceId)) {
+      throw new Error(`Cannot author OS track for unknown device "${deviceId}"`);
+    }
+    const builder = new OSTrackBuilder(this._fps, deviceId, () => this._declarationOrder++);
     fn(builder);
     this._events.push(...builder._events);
     return this;

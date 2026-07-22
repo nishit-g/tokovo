@@ -14,11 +14,11 @@ type OverlayEvent = TimelineEvent & {
 };
 
 function getOverlayState(draft: WorldState): OverlayState {
-  const appState = draft.appState as Record<string, unknown>;
-  if (!appState[OVERLAY_STATE_KEY]) {
-    appState[OVERLAY_STATE_KEY] = createInitialOverlayState();
+  const capabilityState = draft.capabilityState;
+  if (!capabilityState[OVERLAY_STATE_KEY]) {
+    capabilityState[OVERLAY_STATE_KEY] = createInitialOverlayState();
   }
-  return appState[OVERLAY_STATE_KEY] as OverlayState;
+  return capabilityState[OVERLAY_STATE_KEY] as OverlayState;
 }
 
 function cleanupExpired(state: OverlayState, frame: number): void {

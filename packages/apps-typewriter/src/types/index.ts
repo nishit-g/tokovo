@@ -8,7 +8,6 @@ export type TypewriterTrackEventType =
   | "TYPEWRITER_NEWLINE"
   | "TYPEWRITER_BACKSPACE"
   | "TYPEWRITER_SET_CURSOR"
-  | "TYPEWRITER_SCROLL"
   | "TYPEWRITER_TYPE_TEXT";
 
 export type TypewriterRuntimeEventType =
@@ -16,14 +15,14 @@ export type TypewriterRuntimeEventType =
   | "TYPEWRITER_KEY"
   | "TYPEWRITER_NEWLINE"
   | "TYPEWRITER_BACKSPACE"
-  | "TYPEWRITER_SET_CURSOR"
-  | "TYPEWRITER_SCROLL";
+  | "TYPEWRITER_SET_CURSOR";
 
 export type TypewriterEventKind = TypewriterRuntimeEventType;
 
 export type TypewriterTrackEvent = TrackEventBase & {
   kind: "APP";
   appId: typeof TYPEWRITER_APP_ID;
+  deviceId: string;
 } & {
   type: TypewriterTrackEventType;
   payload: Record<string, unknown>;

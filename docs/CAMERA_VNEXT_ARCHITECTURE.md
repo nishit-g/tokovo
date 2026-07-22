@@ -322,6 +322,11 @@ Every evaluated output includes a deterministic trace:
 - transition state and movement intent;
 - ordered projection-pass kinds.
 
+The release path also aggregates a temporal-quality report across every captured frame and output.
+It records frame coverage, subject fill, explicit fallback usage, crop-compensation changes, maximum
+position/scale/rotation velocity, acceleration, jerk, and unauthored discontinuities. Exact cuts and
+authored whips are marked as intentional discontinuities; unexplained pose jumps fail release.
+
 The debug overlay displays stage nodes, cinematic subjects, editorial insets, framing guards, desired and
 final pose points, and passes. Diagnostics cannot affect rendered pixels.
 
@@ -341,6 +346,10 @@ Release jobs emit:
 - `projection-hashes.json`;
 - `camera-trace.ndjson`;
 - `camera-failure-packet.json` when a render fails.
+
+`camera-diagnostics.json` includes the temporal-quality report, and render metadata records the
+projection mode. Fast browser output is visibly marked as preview optics and cannot use a release
+artifact filename.
 
 ## Performance Model
 

@@ -1,6 +1,9 @@
 import React from "react";
 import { useAppViewport } from "@tokovo/react";
-import type { PluginViewProps } from "@tokovo/core";
+import {
+  requireAppStateForDevice,
+  type PluginViewProps,
+} from "@tokovo/core";
 import { TEAMS_APP_ID, TEAMS_TABS } from "../constants.js";
 import type { TeamsState } from "../types/index.js";
 import {
@@ -22,45 +25,15 @@ import { ChatListScreen } from "../components/screens/ChatListScreen.js";
 import { ChannelFeedScreen } from "../components/screens/ChannelFeedScreen.js";
 import { ThreadScreen } from "../components/screens/ThreadScreen.js";
 import { CallOverlayScreen } from "../components/screens/CallOverlayScreen.js";
-import { createTeamsInitialState } from "../runtime/initial-state.js";
 import { TeamsThemeProvider, useTeamsTheme } from "../theme/index.js";
-
-const CallsFallbackIcon = CallsIcon ?? ChatIcon;
-
-function getState(world: PluginViewProps["world"]): TeamsState {
-  const state = world.appState?.[TEAMS_APP_ID];
-  if (state && typeof state === "object" && "ui" in state) {
-    return state as TeamsState;
-  }
-  return createTeamsInitialState();
-}
 
 const TABS = [
   { id: TEAMS_TABS.CHAT, label: "Chat", Icon: ChatIcon },
   { id: TEAMS_TABS.TEAMS, label: "Teams", Icon: TeamsIcon },
   { id: TEAMS_TABS.CALENDAR, label: "Calendar", Icon: CalendarIcon },
-  { id: TEAMS_TABS.CALLS, label: "Calls", Icon: CallsFallbackIcon },
+  { id: TEAMS_TABS.CALLS, label: "Calls", Icon: CallsIcon },
   { id: TEAMS_TABS.MORE, label: "More", Icon: MoreIcon },
 ] as const;
-
-function resolvePlatform(
-  platform: PluginViewProps["platform"],
-  deviceId: string | undefined,
-): "ios" | "android" {
-  if (platform) return platform;
-  const normalized = (deviceId ?? "").toLowerCase();
-  return normalized.includes("android") ||
-    normalized.includes("pixel") ||
-    normalized.includes("galaxy") ||
-    normalized.includes("samsung")
-    ? "android"
-    : "ios";
-}
-
-function resolveDarkMode(appTheme?: string): boolean {
-  if (!appTheme) return false;
-  return /(dark|night|midnight)/i.test(appTheme);
-}
 
 function BottomTabs({ activeTab }: { activeTab: TeamsState["ui"]["activeTab"] }) {
   return (
@@ -82,7 +55,7 @@ function BottomTabs({ activeTab }: { activeTab: TeamsState["ui"]["activeTab"] })
 }
 
 const TeamsSurface: React.FC<{ state: TeamsState }> = ({ state }) => {
-  const { contentInsets } = useAppViewport();
+  const { interactiveInsets: contentInsets } = useAppViewport();
   const theme = useTeamsTheme();
 
   React.useEffect(() => {
@@ -113,15 +86,21 @@ const TeamsSurface: React.FC<{ state: TeamsState }> = ({ state }) => {
 };
 
 export const TeamsView: React.FC<PluginViewProps> = ({ world, deviceId, platform }) => {
-  const state = getState(world);
-  const resolvedDeviceId = deviceId ?? Object.keys(world.devices ?? {})[0];
-  const appTheme = resolvedDeviceId ? world.devices?.[resolvedDeviceId]?.appTheme : undefined;
-  const resolvedPlatform = resolvePlatform(platform, resolvedDeviceId);
+  const state = requireAppStateForDevice<TeamsState>(
+    world,
+    TEAMS_APP_ID,
+    deviceId,
+  );
+  const device = world.devices[deviceId];
+  if (!device) {
+    throw new Error(`TEAMS_DEVICE_MISSING: "${deviceId}" is not in world state.`);
+  }
+  const appTheme = device.appTheme;
 
   return (
     <TeamsThemeProvider
-      platform={resolvedPlatform}
-      darkMode={resolveDarkMode(appTheme)}
+      platform={platform}
+      darkMode={device.os.appearance === "dark"}
       themeId={appTheme}
     >
       <TeamsSurface state={state} />

@@ -5,6 +5,7 @@
  */
 
 import type { WorldState } from "./world-state.js";
+import type { Platform } from "./device.js";
 import type { AppViewportFrame } from "@tokovo/visual-system";
 
 // =============================================================================
@@ -71,6 +72,7 @@ export interface LayoutContext {
   t: number;
   activeDeviceId: string;
   activeAppId: string;
+  platform: Platform;
   viewKind: ViewKind;
   activeConversationId?: string;
   activeFeedId?: string;

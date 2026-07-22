@@ -1,18 +1,11 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import { analyzeCameraTemporalQuality, type CameraTemporalQualityReport } from "@tokovo/camera";
 
 import { bundle } from "@remotion/bundler";
-import {
-  openBrowser,
-  renderMedia,
-  renderStill,
-  selectComposition,
-} from "@remotion/renderer";
-import {
-  getEpisodeAssetRefs,
-  getEpisodeRenderData,
-} from "video-runner/render-data";
+import { openBrowser, renderMedia, renderStill, selectComposition } from "@remotion/renderer";
+import { getEpisodeAssetRefs, getEpisodeRenderData } from "video-runner/render-data";
 import type { EpisodeRenderData } from "video-runner/render-data";
 
 import {
@@ -79,12 +72,7 @@ export async function getServeUrl(
     return { serveUrl: await serveUrlPromise, sourceSignature };
   }
 
-  const bundleDir = path.join(
-    repoRoot,
-    ".remotion",
-    "bundles",
-    sourceSignature,
-  );
+  const bundleDir = path.join(repoRoot, ".remotion", "bundles", sourceSignature);
   const indexPath = path.join(bundleDir, "index.html");
   if (fs.existsSync(indexPath)) {
     await logger?.info("bundle.reuse", "Reusing cached Remotion bundle", {
@@ -188,9 +176,7 @@ async function resolveCameraLayerPlate(input: {
   logger: RenderLogger;
   render: () => Promise<void>;
 }): Promise<string> {
-  const lookup = input.cacheEnabled
-    ? await lookupCameraLayerPlate(input.identity)
-    : null;
+  const lookup = input.cacheEnabled ? await lookupCameraLayerPlate(input.identity) : null;
   if (lookup?.status === "hit") {
     await input.logger.info(
       "camera.layer-plate.cache.hit",
@@ -210,9 +196,7 @@ async function resolveCameraLayerPlate(input: {
   }
 
   await input.logger.info(
-    input.cacheEnabled
-      ? "camera.layer-plate.cache.miss"
-      : "camera.layer-plate.cache.disabled",
+    input.cacheEnabled ? "camera.layer-plate.cache.miss" : "camera.layer-plate.cache.disabled",
     input.cacheEnabled
       ? "Rendering uncached camera-independent layer plate"
       : "Layer-plate cache disabled for this render",
@@ -282,10 +266,7 @@ export async function renderEpisodeMedia(input: {
   const assetSources = getEpisodeAssetSources(input.episodeId);
   const presignedAssetUrlMap = await createPresignedAssetUrlMap(
     assetSources,
-    Math.max(
-      3600,
-      Math.floor(input.profile.timeoutInMilliseconds / 1000) + 300,
-    ),
+    Math.max(3600, Math.floor(input.profile.timeoutInMilliseconds / 1000) + 300),
   );
   const renderData = await getPreparedRenderData({
     episodeId: input.episodeId,
@@ -299,9 +280,7 @@ export async function renderEpisodeMedia(input: {
   const renderEnvVariables = {
     TOKOVO_RENDER_PROFILE: input.profile.id,
     TOKOVO_RENDER_EXECUTOR: "render-service",
-    ...(publicAssetBaseUrl
-      ? { TOKOVO_PUBLIC_ASSET_BASE_URL: publicAssetBaseUrl }
-      : {}),
+    ...(publicAssetBaseUrl ? { TOKOVO_PUBLIC_ASSET_BASE_URL: publicAssetBaseUrl } : {}),
   };
   const bundleStartedAt = Date.now();
   const { serveUrl, sourceSignature } = await getServeUrl(input.logger);
@@ -348,10 +327,7 @@ export async function renderEpisodeMedia(input: {
     durationMs: selectCompositionMs,
   });
 
-  const sourceFrameRange = input.frameRange ?? [
-    0,
-    composition.durationInFrames - 1,
-  ];
+  const sourceFrameRange = input.frameRange ?? [0, composition.durationInFrames - 1];
   if (
     !Number.isInteger(sourceFrameRange[0]) ||
     !Number.isInteger(sourceFrameRange[1]) ||
@@ -373,14 +349,9 @@ export async function renderEpisodeMedia(input: {
 
   const cinematicPrograms = renderData.prepared.cinematics;
   const selectedCameraProgram = cinematicPrograms?.cameraPrograms.find(
-    (program) =>
-      program.plan.id ===
-      (input.cameraPlanId ?? cinematicPrograms.defaultCameraPlanId),
+    (program) => program.plan.id === (input.cameraPlanId ?? cinematicPrograms.defaultCameraPlanId),
   );
-  if (
-    (cinematicPrograms && !selectedCameraProgram) ||
-    (!cinematicPrograms && input.cameraPlanId)
-  ) {
+  if ((cinematicPrograms && !selectedCameraProgram) || (!cinematicPrograms && input.cameraPlanId)) {
     throw createRenderServiceError({
       code: "CAMERA_PLAN_NOT_FOUND",
       stage: "composition",
@@ -393,9 +364,7 @@ export async function renderEpisodeMedia(input: {
   }
   if (selectedCameraProgram?.projectionBackendRequirement === "texture") {
     const stageProgram = cinematicPrograms?.stageProgram.program;
-    const stageRoot = stageProgram?.nodes.find(
-      (node) => node.id === stageProgram.rootNodeId,
-    );
+    const stageRoot = stageProgram?.nodes.find((node) => node.id === stageProgram.rootNodeId);
     if (!cinematicPrograms || !stageRoot) {
       throw createRenderServiceError({
         code: "CAM_TEXTURE_RENDER_FAILED",
@@ -428,10 +397,7 @@ export async function renderEpisodeMedia(input: {
     );
     const underlayPath = path.join(workingDirectory, "underlay.mov");
     const cameraPlatePath = path.join(workingDirectory, "camera.mov");
-    const projectionDataPath = path.join(
-      workingDirectory,
-      "camera-projection-data.mp4",
-    );
+    const projectionDataPath = path.join(workingDirectory, "camera-projection-data.mp4");
     const foregroundPlatePath = path.join(workingDirectory, "foreground.mov");
     const collector = new CameraTextureCaptureCollector();
     try {
@@ -446,10 +412,7 @@ export async function renderEpisodeMedia(input: {
       );
       const sharedLayerOptions = {
         serveUrl,
-        concurrency: Math.max(
-          1,
-          Math.min(input.profile.concurrency, os.cpus().length),
-        ),
+        concurrency: Math.max(1, Math.min(input.profile.concurrency, os.cpus().length)),
         browserExecutable: getBrowserExecutable(),
         puppeteerInstance: browser,
         timeoutInMilliseconds: input.profile.timeoutInMilliseconds,
@@ -480,8 +443,7 @@ export async function renderEpisodeMedia(input: {
         });
         return { layerInputProps, layerComposition };
       };
-      const cacheEnabled =
-        process.env.TOKOVO_CAMERA_LAYER_PLATE_CACHE !== "off";
+      const cacheEnabled = process.env.TOKOVO_CAMERA_LAYER_PLATE_CACHE !== "off";
       const projectionData = await selectLayer("camera-projection-data");
       await renderMedia({
         ...sharedLayerOptions,
@@ -551,17 +513,35 @@ export async function renderEpisodeMedia(input: {
           });
         },
       });
-      const captures = collector.completeRange(
-        sourceFrameRange[0],
-        sourceFrameRange[1],
+      const captures = collector.completeRange(sourceFrameRange[0], sourceFrameRange[1]);
+      const cameraQuality: CameraTemporalQualityReport = analyzeCameraTemporalQuality(
+        captures.flatMap((capture) =>
+          capture.outputs.map((output) => ({
+            frame: capture.frame,
+            outputId: output.outputId,
+            viewport: output.viewport,
+            ...output.quality,
+          })),
+        ),
       );
+      await input.logger.info("camera.quality.measured", "Measured camera temporal quality", {
+        passed: cameraQuality.passed,
+        sampleCount: cameraQuality.sampleCount,
+        violationCount: cameraQuality.violations.length,
+      });
+      if (input.profile.id === "release" && !cameraQuality.passed) {
+        throw createRenderServiceError({
+          code: "CAMERA_TEMPORAL_QUALITY_FAILED",
+          stage: "camera-texture-render",
+          message: `Release camera quality gate failed with ${cameraQuality.violations.length} violation(s).`,
+          details: { cameraQuality },
+        });
+      }
       if (input.cameraTracePath) {
         await fs.promises.writeFile(
           input.cameraTracePath,
           `${captures
-            .map((capture) =>
-              JSON.stringify({ kind: "projection", ...capture }),
-            )
+            .map((capture) => JSON.stringify({ kind: "projection", ...capture }))
             .join("\n")}\n`,
           "utf8",
         );
@@ -608,6 +588,7 @@ export async function renderEpisodeMedia(input: {
           renderMedia: renderMediaMs,
           renderStill: renderStillMs,
         },
+        cameraQuality,
       };
     } catch (error) {
       throw createRenderServiceError({
@@ -637,13 +618,92 @@ export async function renderEpisodeMedia(input: {
     }
   }
 
+  let compositedCameraQuality: CameraTemporalQualityReport | undefined;
+  if (selectedCameraProgram) {
+    const diagnosticsDirectory = await fs.promises.mkdtemp(
+      path.join(os.tmpdir(), "tokovo-camera-quality-"),
+    );
+    const diagnosticsVideo = path.join(diagnosticsDirectory, "projection-data.mp4");
+    const collector = new CameraTextureCaptureCollector();
+    try {
+      const diagnosticInputProps = {
+        ...inputProps,
+        cameraRenderLayer: "camera-projection-data" as const,
+      };
+      const diagnosticComposition = await selectComposition({
+        serveUrl,
+        id: releaseCompositionId,
+        inputProps: diagnosticInputProps,
+        browserExecutable: getBrowserExecutable(),
+        puppeteerInstance: browser,
+        timeoutInMilliseconds: input.profile.timeoutInMilliseconds,
+        envVariables: renderEnvVariables,
+        logLevel: "error",
+      });
+      await renderMedia({
+        composition: diagnosticComposition,
+        serveUrl,
+        inputProps: diagnosticInputProps,
+        outputLocation: diagnosticsVideo,
+        codec: "h264",
+        pixelFormat: "yuv420p",
+        muted: true,
+        concurrency: Math.max(1, Math.min(input.profile.concurrency, os.cpus().length)),
+        browserExecutable: getBrowserExecutable(),
+        puppeteerInstance: browser,
+        timeoutInMilliseconds: input.profile.timeoutInMilliseconds,
+        imageFormat: "jpeg",
+        chromiumOptions: { gl: input.profile.chromiumGl },
+        envVariables: renderEnvVariables,
+        overwrite: true,
+        logLevel: "error",
+        frameRange: sourceFrameRange,
+        onBrowserLog: (log) => collector.acceptBrowserLog(log.text),
+      });
+      const captures = collector.completeRange(sourceFrameRange[0], sourceFrameRange[1]);
+      compositedCameraQuality = analyzeCameraTemporalQuality(
+        captures.flatMap((capture) =>
+          capture.outputs.map((output) => ({
+            frame: capture.frame,
+            outputId: output.outputId,
+            viewport: output.viewport,
+            ...output.quality,
+          })),
+        ),
+      );
+      if (input.cameraTracePath) {
+        await fs.promises.writeFile(
+          input.cameraTracePath,
+          `${captures.map((capture) => JSON.stringify({ kind: "projection", ...capture })).join("\n")}\n`,
+          "utf8",
+        );
+      }
+      await input.logger.info(
+        "camera.quality.measured",
+        "Measured composited camera temporal quality",
+        {
+          passed: compositedCameraQuality.passed,
+          sampleCount: compositedCameraQuality.sampleCount,
+          violationCount: compositedCameraQuality.violations.length,
+        },
+      );
+      if (input.profile.id === "release" && !compositedCameraQuality.passed) {
+        throw createRenderServiceError({
+          code: "CAMERA_TEMPORAL_QUALITY_FAILED",
+          stage: "camera-quality",
+          message: `Release camera quality gate failed with ${compositedCameraQuality.violations.length} violation(s).`,
+          details: { cameraQuality: compositedCameraQuality },
+        });
+      }
+    } finally {
+      await fs.promises.rm(diagnosticsDirectory, { recursive: true, force: true });
+    }
+  }
+
   const renderStartedAt = Date.now();
   await input.logger.info("render.media.start", "Rendering video artifact", {
     outputLocation: input.outputLocation,
-    concurrency: Math.max(
-      1,
-      Math.min(input.profile.concurrency, os.cpus().length),
-    ),
+    concurrency: Math.max(1, Math.min(input.profile.concurrency, os.cpus().length)),
   });
   await renderMedia({
     composition,
@@ -652,10 +712,7 @@ export async function renderEpisodeMedia(input: {
     outputLocation: input.outputLocation,
     codec: input.profile.codec,
     audioCodec: input.profile.audioCodec,
-    concurrency: Math.max(
-      1,
-      Math.min(input.profile.concurrency, os.cpus().length),
-    ),
+    concurrency: Math.max(1, Math.min(input.profile.concurrency, os.cpus().length)),
     videoBitrate: input.profile.videoBitrate,
     x264Preset: input.profile.x264Preset,
     hardwareAcceleration: input.profile.hardwareAcceleration,
@@ -740,5 +797,6 @@ export async function renderEpisodeMedia(input: {
       renderMedia: renderMediaMs,
       renderStill: renderStillMs,
     },
+    cameraQuality: compositedCameraQuality,
   };
 }

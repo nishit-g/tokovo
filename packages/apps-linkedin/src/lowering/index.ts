@@ -14,6 +14,9 @@ function isLITrackEvent(event: TrackEvent): event is LITrackEvent {
 }
 
 function createRuntimeEvent(event: TrackEvent, type: string, payload: unknown): RuntimeEvent {
+  if (!event.deviceId) {
+    throw new Error("LINKEDIN_EVENT_DEVICE_REQUIRED: lowered app events require deviceId");
+  }
   return {
     at: event.at,
     kind: "APP",
@@ -28,7 +31,9 @@ export const linkedInLowering: LILoweringHandler = {
   lower: (event: TrackEvent, ctx: NotificationIntentEmitter): RuntimeEvent[] => {
     if (!isLITrackEvent(event)) return [];
     const deviceId = (event as { deviceId?: string }).deviceId;
-    if (!deviceId) return [];
+    if (!deviceId) {
+      throw new Error("LINKEDIN_EVENT_DEVICE_REQUIRED: app events require deviceId");
+    }
     switch (event.type) {
       case "USER_CREATE":
         return [

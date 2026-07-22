@@ -11,7 +11,8 @@ import {
 
 const baseState = {
   devices: {},
-  appState: {},
+  appInstances: {},
+    capabilityState: {},
   audio: {
     activeSounds: {},
     buses: {},

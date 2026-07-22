@@ -6,10 +6,7 @@
  */
 
 import React, { useMemo } from "react";
-import { AbsoluteFill } from "remotion";
-import { createScopedLogger } from "@tokovo/core";
 import type { BackgroundConfig, BackgroundPresetId } from "./types.js";
-import { FALLBACK_COLOR } from "./types.js";
 import { resolveBackground } from "./resolver.js";
 import {
   SolidRenderer,
@@ -18,8 +15,6 @@ import {
   VideoRenderer,
   ParticlesRenderer,
 } from "./renderers/index.js";
-
-const log = createScopedLogger("renderer");
 
 // =============================================================================
 // TYPES
@@ -74,12 +69,9 @@ export const BackgroundLayer: React.FC<BackgroundLayerProps> = React.memo(
         return <ParticlesRenderer config={resolved} frame={frame} fps={fps} />;
 
       default:
-        // Fallback for unknown types
-        log.warn(`Unknown background type ${resolved.type}; using solid fallback`, {
-          event: "background.type.unknown",
-          type: resolved.type,
-        });
-        return <AbsoluteFill style={{ backgroundColor: FALLBACK_COLOR }} />;
+        throw new Error(
+          `BACKGROUND_TYPE_UNREGISTERED: background type "${String(resolved.type)}" is not registered.`,
+        );
     }
   },
 );

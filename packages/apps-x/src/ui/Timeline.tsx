@@ -23,6 +23,7 @@ import { BottomNav } from "./BottomNav.js";
 
 interface TimelineProps {
   world: WorldState;
+  deviceId: string;
 }
 
 function renderRichText(text: string, accent: string): React.ReactNode {
@@ -145,11 +146,11 @@ const TimelineTweetRow: React.FC<{
   );
 };
 
-export const Timeline: React.FC<TimelineProps> = ({ world }) => {
+export const Timeline: React.FC<TimelineProps> = ({ world, deviceId }) => {
   const theme = useXTheme();
-  const state = getXState(world);
-  const tweets = getTimelineTweets(world);
-  const timelineTab = getTimelineTab(world);
+  const state = getXState(world, deviceId);
+  const tweets = getTimelineTweets(world, deviceId);
+  const timelineTab = getTimelineTab(world, deviceId);
   const users = state?.users ?? [];
   const currentUser = users.find((user) => user.id === state?.currentUserId);
   const nowMs = tweets.reduce((max, tweet) => Math.max(max, tweet.createdAt), 0);

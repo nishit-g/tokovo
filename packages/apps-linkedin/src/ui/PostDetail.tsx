@@ -24,15 +24,18 @@ import {
 } from "../runtime/selectors.js";
 import type { LIReactionType } from "../types/index.js";
 
-export const PostDetail: React.FC<{ world: WorldState }> = ({ world }) => {
+export const PostDetail: React.FC<{ world: WorldState; deviceId: string }> = ({
+  world,
+  deviceId,
+}) => {
   const theme = useLinkedInTheme();
   const commentInput = useInputField("comment");
   const commentText = commentInput?.value ?? "";
-  const post = getActivePost(world);
-  const comments = getCommentsForPost(world, post?.id ?? null);
-  const author = getUserById(world, post?.authorId ?? null);
-  const currentUser = getCurrentUser(world);
-  const referenceFrame = getReferenceFrame(world);
+  const post = getActivePost(world, deviceId);
+  const comments = getCommentsForPost(world, deviceId, post?.id ?? null);
+  const author = getUserById(world, deviceId, post?.authorId ?? null);
+  const currentUser = getCurrentUser(world, deviceId);
+  const referenceFrame = getReferenceFrame(world, deviceId);
 
   return (
     <KeyboardAwareView style={{ flex: 1, minHeight: 0 }}>
@@ -76,9 +79,10 @@ export const PostDetail: React.FC<{ world: WorldState }> = ({ world }) => {
               }
               reactions={post.reactions as Partial<Record<LIReactionType, number>>}
               commentCount={comments.length}
-              repostCount={getRepostCountForPost(world, post.id)}
+              repostCount={getRepostCountForPost(world, deviceId, post.id)}
               commentPreview={comments.slice(-2).map((comment) => ({
-                authorName: getUserById(world, comment.authorId)?.name ?? "Member",
+                authorName:
+                  getUserById(world, deviceId, comment.authorId)?.name ?? "Member",
                 text: comment.text,
               }))}
             />
@@ -105,7 +109,7 @@ export const PostDetail: React.FC<{ world: WorldState }> = ({ world }) => {
                   }}
                 >
                   {comments.map((comment, index) => {
-                    const commentAuthor = getUserById(world, comment.authorId);
+                    const commentAuthor = getUserById(world, deviceId, comment.authorId);
                     return (
                       <div
                         key={comment.id}

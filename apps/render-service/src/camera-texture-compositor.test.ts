@@ -21,7 +21,7 @@ function capture(
   projectionPasses: CameraTextureProjectionCapture["outputs"][number]["projectionPasses"] = [],
 ): CameraTextureProjectionCapture {
   return {
-    version: 3,
+    version: 4,
     frame,
     storySignature: "story-a",
     stageSignature: "stage-a",
@@ -38,6 +38,13 @@ function capture(
         opacity: 1,
         clipRadiusPx: 0,
         projectionPasses,
+        quality: {
+          pose: { centerX: 540, centerY: 960, scale: 1, rotationDeg: 0 },
+          subjectResolution: "direct",
+          subjectFillRatio: 0.72,
+          cropCompensation: 1,
+          intentionalDiscontinuity: false,
+        },
       },
     ],
   };
@@ -67,6 +74,13 @@ function multiOutputCapture(frame: number): CameraTextureProjectionCapture {
             cropCompensation: 1.025,
           },
         ],
+        quality: {
+          pose: { centerX: 540, centerY: 960, scale: 0.5, rotationDeg: 0 },
+          subjectResolution: "direct",
+          subjectFillRatio: 0.68,
+          cropCompensation: 1.025,
+          intentionalDiscontinuity: false,
+        },
       },
     ],
   };
@@ -87,21 +101,15 @@ describe("camera texture capture", () => {
   it("completes focused source ranges in local sequence order", () => {
     const collector = new CameraTextureCaptureCollector();
     for (const frame of [101, 100, 102]) {
-      collector.acceptBrowserLog(
-        encodeCameraTextureProjectionCapture(capture(frame)),
-      );
+      collector.acceptBrowserLog(encodeCameraTextureProjectionCapture(capture(frame)));
     }
-    expect(
-      collector.completeRange(100, 102).map((entry) => entry.frame),
-    ).toEqual([100, 101, 102]);
+    expect(collector.completeRange(100, 102).map((entry) => entry.frame)).toEqual([100, 101, 102]);
     expect(() => collector.completeRange(102, 100)).toThrow("RANGE_INVALID");
   });
 
   it("rejects conflicting data for one frame", () => {
     const collector = new CameraTextureCaptureCollector();
-    collector.acceptBrowserLog(
-      encodeCameraTextureProjectionCapture(capture(0)),
-    );
+    collector.acceptBrowserLog(encodeCameraTextureProjectionCapture(capture(0)));
     expect(() =>
       collector.acceptBrowserLog(
         encodeCameraTextureProjectionCapture({
@@ -114,12 +122,8 @@ describe("camera texture capture", () => {
 
   it("rejects output topology changes inside one capture range", () => {
     const collector = new CameraTextureCaptureCollector();
-    collector.acceptBrowserLog(
-      encodeCameraTextureProjectionCapture(multiOutputCapture(0)),
-    );
-    collector.acceptBrowserLog(
-      encodeCameraTextureProjectionCapture(capture(1)),
-    );
+    collector.acceptBrowserLog(encodeCameraTextureProjectionCapture(multiOutputCapture(0)));
+    collector.acceptBrowserLog(encodeCameraTextureProjectionCapture(capture(1)));
     expect(() => collector.complete(2)).toThrow("IDENTITY_CHANGED");
   });
 });
@@ -226,9 +230,9 @@ describe("camera perspective and optical maps", () => {
       mapHeight: 8,
     });
     expect([...planes.x]).not.toEqual(new Array(64).fill(128));
-    expect(() =>
-      createPerspectiveCorners(multiOutputCapture(0), "missing"),
-    ).toThrow("OUTPUT_MISSING");
+    expect(() => createPerspectiveCorners(multiOutputCapture(0), "missing")).toThrow(
+      "OUTPUT_MISSING",
+    );
   });
 });
 
@@ -247,9 +251,7 @@ describe("camera smear and FFmpeg graph", () => {
       startFrame: 960,
       endFrame: 1080,
     });
-    expect(() => createCompositorFrameChunks(1.5)).toThrow(
-      "CHUNK_FRAME_COUNT_INVALID",
-    );
+    expect(() => createCompositorFrameChunks(1.5)).toThrow("CHUNK_FRAME_COUNT_INVALID");
   });
 
   it("emits frame-addressed commands and named filter targets", () => {
@@ -287,13 +289,9 @@ describe("camera smear and FFmpeg graph", () => {
     expect(commands).toContain("overlay@tokovo_smear_overlay_0 x");
     expect(commands).toContain("eq@tokovo_grade_0 brightness 0.03");
     expect(commands).toContain("eq@tokovo_grade_0 contrast 1.12");
-    expect(commands).toContain(
-      "colorchannelmixer@tokovo_grade_rgb_0 rr 1.0205",
-    );
+    expect(commands).toContain("colorchannelmixer@tokovo_grade_rgb_0 rr 1.0205");
     expect(commands).toContain("colorchannelmixer@tokovo_grade_rgb_0 gg 1.008");
-    expect(commands).toContain(
-      "colorchannelmixer@tokovo_grade_rgb_0 bb 0.9725",
-    );
+    expect(commands).toContain("colorchannelmixer@tokovo_grade_rgb_0 bb 0.9725");
   });
 
   it("timestamps a focused source range from local zero", () => {
@@ -335,20 +333,14 @@ describe("camera smear and FFmpeg graph", () => {
     expect(graph).toContain("crop=1080:1920:0:0,format=rgba[framed_0]");
     expect(graph).not.toContain("[framed_0][xmap_0][ymap_0]displace");
     expect(graph).toContain("camera-00-opacity.sendcmd");
-    expect(graph).toContain(
-      "colorchannelmixer@tokovo_camera_opacity_0=aa=1[warped_0]",
-    );
+    expect(graph).toContain("colorchannelmixer@tokovo_camera_opacity_0=aa=1[warped_0]");
     expect(graph).toContain("camera-00-grade-eq.sendcmd");
-    expect(graph).toContain(
-      "eq@tokovo_grade_0=brightness=0:contrast=1:saturation=1:gamma=1",
-    );
+    expect(graph).toContain("eq@tokovo_grade_0=brightness=0:contrast=1:saturation=1:gamma=1");
     expect(graph).toContain("camera-00-grade-rgb.sendcmd");
     expect(graph).toContain(
       "colorchannelmixer@tokovo_grade_rgb_0=rr=1:gg=1:bb=1:aa=1,format=rgba[graded_0]",
     );
-    expect(graph).toContain(
-      "[graded_0]split=2[crisp_source_0][smear_source_0]",
-    );
+    expect(graph).toContain("[graded_0]split=2[crisp_source_0][smear_source_0]");
     expect(graph).toContain("[optical_clipped_0]null[optical_0]");
     expect(graph).not.toContain("alphamerge");
     expect(graph).not.toContain("alphaextract");
@@ -369,15 +361,11 @@ describe("camera smear and FFmpeg graph", () => {
     expect(graph).toContain(
       "[framed_color_0][xmap_color_0][ymap_color_0]displace=edge=blank,format=rgb24[color_warped_0]",
     );
-    expect(graph).toContain(
-      "[framed_alpha_source_0]alphaextract[alpha_source_0]",
-    );
+    expect(graph).toContain("[framed_alpha_source_0]alphaextract[alpha_source_0]");
     expect(graph).toContain(
       "[alpha_source_0][xmap_alpha_0][ymap_alpha_0]displace=edge=blank,format=gray[alpha_warped_0]",
     );
-    expect(graph).toContain(
-      "[color_warped_0][alpha_warped_0]alphamerge,format=rgba",
-    );
+    expect(graph).toContain("[color_warped_0][alpha_warped_0]alphamerge,format=rgba");
     expect(graph).not.toContain("[framed_0][xmap_0][ymap_0]displace");
     expect(graph).toContain("[4:v]format=rgba[foreground]");
   });
@@ -402,20 +390,14 @@ describe("camera smear and FFmpeg graph", () => {
     expect(graph).toContain("crop=324:576:684:124,format=rgba[framed_1]");
     expect(graph).toContain("[2:v]scale=324:576");
     expect(graph).toContain("[3:v]scale=324:576");
-    expect(graph).toContain(
-      "[framed_color_1][xmap_color_1][ymap_color_1]displace=edge=blank",
-    );
-    expect(graph).toContain(
-      "[framed_alpha_source_1]alphaextract[alpha_source_1]",
-    );
+    expect(graph).toContain("[framed_color_1][xmap_color_1][ymap_color_1]displace=edge=blank");
+    expect(graph).toContain("[framed_alpha_source_1]alphaextract[alpha_source_1]");
     expect(graph).toContain("[color_warped_1][alpha_warped_1]alphamerge");
     expect(graph).toContain("geq=r='r(X,Y)'");
     expect(graph).toContain("[shadow_source_1]pad=404:656:40:40:color=black@0");
     expect(graph).toContain("pad=404:656:40:40:color=black@0");
     expect(graph).toContain("[camera_canvas_1][shadow_1]overlay=x=644:y=98");
-    expect(graph).toContain(
-      "[camera_shadow_canvas_1][optical_1]overlay=x=684:y=124",
-    );
+    expect(graph).toContain("[camera_shadow_canvas_1][optical_1]overlay=x=684:y=124");
     expect(graph).toContain("[4:v]format=rgba[foreground]");
   });
 });

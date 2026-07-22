@@ -1,4 +1,4 @@
-export const OVERLAY_STATE_KEY = "sys_overlay";
+export const OVERLAY_STATE_KEY = "overlay";
 
 export type OverlayVariant =
   | "hook"
@@ -54,4 +54,3 @@ export function getDefaultDurationFrames(variant: OverlayVariant): number {
       return 120;
   }
 }
-

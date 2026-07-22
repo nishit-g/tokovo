@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { WorldState } from "@tokovo/core";
 import { typewriterReducer } from "../runtime/reducer.js";
 import { TYPEWRITER_APP_ID } from "../constants.js";
+import { createTypewriterInitialState } from "../runtime/state.js";
 
 function baseWorld(): WorldState {
   return {
@@ -14,7 +15,8 @@ function baseWorld(): WorldState {
         foregroundAppId: TYPEWRITER_APP_ID,
       } as any,
     },
-    appState: {} as any,
+    appInstances: { "desk:app_typewriter": createTypewriterInitialState() },
+    capabilityState: {},
     audio: { activeSounds: {}, autoSoundRules: [] } as any,
   } as WorldState;
 }
@@ -39,10 +41,12 @@ describe("typewriterReducer", () => {
       deviceId: "desk",
     } as any);
 
-    const s = (w.appState as any)[TYPEWRITER_APP_ID];
+    const s = w.appInstances["desk:app_typewriter"] as ReturnType<
+      typeof createTypewriterInitialState
+    >;
     expect(s.cursor).toEqual({ page: 0, row: 0, col: 2 });
-    expect(s.pages[0].cells[0].ch).toBe("H");
-    expect(s.pages[0].cells[1].ch).toBe("i");
+    expect(s.pages[0]?.cells[0]?.ch).toBe("H");
+    expect(s.pages[0]?.cells[1]?.ch).toBe("i");
     expect(Object.keys(s.fx.pressedKeys).length).toBeGreaterThan(0);
   });
 
@@ -51,6 +55,7 @@ describe("typewriterReducer", () => {
     typewriterReducer(w, {
       at: 0,
       kind: "APP",
+      deviceId: "desk",
       appId: TYPEWRITER_APP_ID,
       type: "TYPEWRITER_KEY",
       payload: { ch: "A" },
@@ -58,6 +63,7 @@ describe("typewriterReducer", () => {
     typewriterReducer(w, {
       at: 1,
       kind: "APP",
+      deviceId: "desk",
       appId: TYPEWRITER_APP_ID,
       type: "TYPEWRITER_NEWLINE",
       payload: {},
@@ -65,15 +71,18 @@ describe("typewriterReducer", () => {
     typewriterReducer(w, {
       at: 2,
       kind: "APP",
+      deviceId: "desk",
       appId: TYPEWRITER_APP_ID,
       type: "TYPEWRITER_KEY",
       payload: { ch: "B" },
     } as any);
 
-    const s = (w.appState as any)[TYPEWRITER_APP_ID];
+    const s = w.appInstances["desk:app_typewriter"] as ReturnType<
+      typeof createTypewriterInitialState
+    >;
     expect(s.cursor).toEqual({ page: 0, row: 1, col: 1 });
-    expect(s.pages[0].cells[0].ch).toBe("A");
-    expect(s.pages[0].cells[44].ch).toBe("B");
+    expect(s.pages[0]?.cells[0]?.ch).toBe("A");
+    expect(s.pages[0]?.cells[44]?.ch).toBe("B");
     expect(typeof s.fx.lastCarriageFromCol).toBe("number");
   });
 
@@ -82,6 +91,7 @@ describe("typewriterReducer", () => {
     typewriterReducer(w, {
       at: 0,
       kind: "APP",
+      deviceId: "desk",
       appId: TYPEWRITER_APP_ID,
       type: "TYPEWRITER_INIT_LETTER",
       payload: { reset: true },
@@ -89,6 +99,7 @@ describe("typewriterReducer", () => {
     typewriterReducer(w, {
       at: 1,
       kind: "APP",
+      deviceId: "desk",
       appId: TYPEWRITER_APP_ID,
       type: "TYPEWRITER_SET_CURSOR",
       payload: { page: 0, row: 25, col: 43 },
@@ -96,11 +107,14 @@ describe("typewriterReducer", () => {
     typewriterReducer(w, {
       at: 2,
       kind: "APP",
+      deviceId: "desk",
       appId: TYPEWRITER_APP_ID,
       type: "TYPEWRITER_KEY",
       payload: { ch: "X" },
     } as any);
-    const s = (w.appState as any)[TYPEWRITER_APP_ID];
+    const s = w.appInstances["desk:app_typewriter"] as ReturnType<
+      typeof createTypewriterInitialState
+    >;
     expect(s.pages.length).toBeGreaterThan(1);
     expect(s.cursor.page).toBe(1);
     expect(s.cursor.row).toBe(0);

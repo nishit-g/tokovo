@@ -18,8 +18,8 @@ import { BottomNav } from "./BottomNav.js";
 
 interface TweetDetailProps {
   world: WorldState;
-  deviceId?: string;
-  t?: number;
+  deviceId: string;
+  t: number;
 }
 
 function formatCount(n: number): string {
@@ -28,10 +28,10 @@ function formatCount(n: number): string {
   return n.toLocaleString("en-US");
 }
 
-export const TweetDetail: React.FC<TweetDetailProps> = ({ world }) => {
+export const TweetDetail: React.FC<TweetDetailProps> = ({ world, deviceId }) => {
   const theme = useXTheme();
-  const state = getXState(world);
-  const tweet = getActiveTweet(world);
+  const state = getXState(world, deviceId);
+  const tweet = getActiveTweet(world, deviceId);
   const users = state?.users ?? [];
   const currentUser = users.find((user) => user.id === state?.currentUserId);
   const author = users.find((user) => user.id === tweet?.authorId);

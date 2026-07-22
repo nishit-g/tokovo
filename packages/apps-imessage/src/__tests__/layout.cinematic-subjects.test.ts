@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import type { LayoutContext, ViewKind, WorldState } from "@tokovo/core";
-import { createAppViewportFrame, DEFAULT_AUDIO_STATE } from "@tokovo/core";
+import { createAppViewportFrame, createDefaultAudioState } from "@tokovo/core";
 import { iMessageLayoutStrategies } from "../layout/index.js";
 import { createIMessageInitialState } from "../runtime/initial-state.js";
 import type { IMessageScreen } from "../types/state.js";
@@ -12,23 +12,25 @@ function computeLayoutFor(screen: IMessageScreen, viewKind: ViewKind) {
     viewMode: viewKind,
   };
   const world = {
-    appState: { app_imessage: appState },
+    appInstances: { "phone:app_imessage": appState },
+    capabilityState: {},
     devices: {},
-    audio: DEFAULT_AUDIO_STATE,
+    audio: createDefaultAudioState(),
   } as WorldState;
 
   const ctx: LayoutContext = {
     world,
     t: 0,
-    activeDeviceId: "d1",
+    activeDeviceId: "phone",
     activeAppId: "app_imessage",
+    platform: "ios",
     viewKind,
     viewportWidth: 393,
     viewportHeight: 852,
     appViewport: createAppViewportFrame({
       width: 393,
       height: 852,
-      contentInsets: { top: 47, bottom: 34 },
+      interactiveInsets: { top: 47, bottom: 34 },
     }),
     layoutCache: undefined,
   };

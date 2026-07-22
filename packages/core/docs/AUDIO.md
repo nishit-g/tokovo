@@ -20,8 +20,8 @@ Example: Playing the same notification sound twice creates one soundId with two 
 │                                                                      │
 │  Timeline Events          Handlers              State                │
 │  ──────────────          ────────              ─────                 │
-│  PLAY_SOUND    ────────► audio.ts ──────────► AudioState            │
-│  STOP_SOUND              voice.ts              ├─ activeSounds      │
+│  PLAY          ────────► audio.ts ──────────► AudioState            │
+│  STOP                    voice.ts              ├─ activeSounds      │
 │  CROSSFADE                                     ├─ musicBed          │
 │  FADE_OUT                                      ├─ outgoingMusicBed  │
 │  STOP_ALL                                      └─ buses             │
@@ -153,11 +153,11 @@ const DEFAULT_VOICE_DUCK: DuckRule = {
 
 | Event                      | Payload                                            | Behavior                                                                    |
 | -------------------------- | -------------------------------------------------- | --------------------------------------------------------------------------- |
-| `PLAY` / `PLAY_SOUND`      | `soundId`, `volume?`, `loop?`, `bus?`, `deviceId?` | Creates SoundCue. If `bus="music"` or `loop=true`, creates MusicBed instead |
-| `STOP` / `STOP_SOUND`      | `instanceId?` or `soundId?`                        | Removes matching sounds                                                     |
-| `STOP_ALL`                 | `bus?`                                             | Removes all sounds (or all on specified bus)                                |
-| `FADE_OUT` / `FADE_VOLUME` | `toVolume?`, `duration?`                           | Fades sound/music                                                           |
-| `CROSSFADE`                | `toSoundId` or `soundId`, `crossfadeDuration?`     | Crossfades music beds                                                       |
+| `PLAY`      | `soundId`, `volume?`, `loop?`, `bus?`, `deviceId?` | Creates a `SoundCue`; an explicit `bus="music"` creates the music bed |
+| `STOP`      | `instanceId?` or `soundId?`                        | Removes matching sounds                                               |
+| `STOP_ALL`  | `bus?`                                             | Removes all sounds (or all on the specified bus)                       |
+| `FADE_OUT`  | `toVolume?`, `duration?`                           | Fades a sound or music bed                                              |
+| `CROSSFADE` | `toSoundId` or `soundId`, `crossfadeDuration?`     | Crossfades music beds                                                   |
 
 ### Voice Events (voice.ts)
 
@@ -267,7 +267,7 @@ const { state, rejected } = enforceBusConcurrency(audioState, newCue);
 ```typescript
 const event: TimelineEvent = {
   kind: "AUDIO",
-  type: "PLAY_SOUND",
+  type: "PLAY",
   at: 150,
   soundId: "ui/tap.mp3",
   bus: "ui",

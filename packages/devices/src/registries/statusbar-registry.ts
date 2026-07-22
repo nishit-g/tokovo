@@ -13,10 +13,7 @@
 
 import type React from "react";
 import type { DeviceOSState, ResolvedStatusBarTheme } from "@tokovo/core";
-import { createScopedLogger } from "@tokovo/core";
 import type { DeviceProfile } from "../types.js";
-
-const log = createScopedLogger("device");
 
 // =============================================================================
 // TYPES
@@ -34,21 +31,17 @@ export interface StatusBarNotificationIcon {
  */
 export interface StatusBarStrategyProps {
   /** Device OS state */
-  os?: DeviceOSState;
-  /** Manual time override */
-  time?: string;
+  os: DeviceOSState;
   /**
    * Theme - can be:
    * - "light" | "dark" semantic foreground presets
    * - Full ResolvedStatusBarTheme object with colors
    */
-  theme?: "light" | "dark" | ResolvedStatusBarTheme;
-  /** Battery percentage override */
-  batteryPercentage?: number;
+  theme: "light" | "dark" | ResolvedStatusBarTheme;
   /** Notification icons (Android) */
   notificationIcons?: readonly StatusBarNotificationIcon[];
   /** Active device profile for device-aware chrome sizing */
-  deviceProfile?: DeviceProfile;
+  deviceProfile: DeviceProfile;
 }
 
 export type StatusBarStrategyComponent = React.FC<StatusBarStrategyProps>;
@@ -67,10 +60,7 @@ export class StatusBarStrategyRegistryClass {
    */
   register(variant: string, component: StatusBarStrategyComponent): void {
     if (this.strategies.has(variant)) {
-      log.warn(`Overwriting status bar strategy ${variant}`, {
-        event: "device.statusbar.overwrite",
-        variant,
-      });
+      throw new Error(`STATUS_BAR_STRATEGY_COLLISION: variant "${variant}" is already registered.`);
     }
     this.strategies.set(variant, component);
   }

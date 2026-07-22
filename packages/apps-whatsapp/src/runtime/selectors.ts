@@ -20,7 +20,7 @@ import type {
  */
 export function selectAppState(
   world: WorldState,
-  deviceId?: string,
+  deviceId: string,
 ): WhatsAppState | undefined {
   return getAppStateForDevice<WhatsAppState>(world, "app_whatsapp", deviceId);
 }
@@ -30,7 +30,7 @@ export function selectAppState(
  */
 export function selectConversations(
   world: WorldState,
-  deviceId?: string,
+  deviceId: string,
 ): Record<string, WhatsAppConversation> {
   const appState = selectAppState(world, deviceId);
   return (appState?.conversations ?? {}) as Record<
@@ -44,7 +44,7 @@ export function selectConversations(
  */
 export function selectCurrentConversationId(
   world: WorldState,
-  deviceId?: string,
+  deviceId: string,
 ): string | undefined {
   const appState = selectAppState(world, deviceId);
   return appState?.conversationId;
@@ -55,7 +55,7 @@ export function selectCurrentConversationId(
  */
 export function selectCurrentConversation(
   world: WorldState,
-  deviceId?: string,
+  deviceId: string,
 ): WhatsAppConversation | undefined {
   const convId = selectCurrentConversationId(world, deviceId);
   if (!convId) return undefined;
@@ -68,7 +68,7 @@ export function selectCurrentConversation(
 export function selectMessages(
   world: WorldState,
   conversationId: string,
-  deviceId?: string,
+  deviceId: string,
 ): WhatsAppMessage[] {
   const conv = selectConversations(world, deviceId)[conversationId];
   return conv?.messages ?? [];
@@ -80,7 +80,7 @@ export function selectMessages(
 export function selectLastMessage(
   world: WorldState,
   conversationId: string,
-  deviceId?: string,
+  deviceId: string,
 ): WhatsAppMessage | undefined {
   const messages = selectMessages(world, conversationId, deviceId);
   return messages[messages.length - 1];
@@ -92,7 +92,7 @@ export function selectLastMessage(
 export function selectTypingMembers(
   world: WorldState,
   conversationId: string,
-  deviceId?: string,
+  deviceId: string,
 ): string[] {
   const conv = selectConversations(world, deviceId)[conversationId];
   if (!conv?.typing) return [];
@@ -107,7 +107,7 @@ export function selectTypingMembers(
 export function selectIsGroupConversation(
   world: WorldState,
   conversationId: string,
-  deviceId?: string,
+  deviceId: string,
 ): boolean {
   const conv = selectConversations(world, deviceId)[conversationId];
   return conv?.type === "group";

@@ -120,6 +120,29 @@ const EpisodeRendererInner: React.FC<EpisodeRendererProps> = ({
   const config = useMemo(() => createConfig(), []);
 
   useEffect(() => {
+    if (typeof document === "undefined" || !document.fonts) return;
+    const handle = delayRender(`load bundled fonts for ${episodeId}`);
+    let settled = false;
+    document.fonts.ready
+      .then(() => {
+        if (settled) return;
+        settled = true;
+        continueRender(handle);
+      })
+      .catch((error: unknown) => {
+        if (settled) return;
+        settled = true;
+        cancelRender(error instanceof Error ? error : new Error(String(error)));
+      });
+    return () => {
+      if (!settled) {
+        settled = true;
+        continueRender(handle);
+      }
+    };
+  }, [cancelRender, continueRender, delayRender, episodeId]);
+
+  useEffect(() => {
     if (renderDataProp) {
       setRenderData(renderDataProp);
       setRenderDataError(null);
@@ -199,7 +222,7 @@ const EpisodeRendererInner: React.FC<EpisodeRendererProps> = ({
       // eslint-disable-next-line no-console -- Browser-log IPC is Remotion's deterministic plate metadata channel.
       console.info(
         encodeCameraTextureProjectionCapture({
-          version: 3,
+          version: 4,
           frame: entry.t,
           storySignature: entry.storySignature,
           stageSignature: entry.stageSignature,
@@ -216,6 +239,20 @@ const EpisodeRendererInner: React.FC<EpisodeRendererProps> = ({
             clipRadiusPx: output.clipRadiusPx,
             shadow: output.shadow,
             projectionPasses: output.projectionPasses,
+            quality: {
+              pose: {
+                centerX: output.pose.centerX,
+                centerY: output.pose.centerY,
+                scale: output.pose.scale,
+                rotationDeg: output.pose.rotationDeg,
+              },
+              subjectResolution: output.trace.subjectResolution,
+              subjectFillRatio: output.trace.quality.subjectFillRatio,
+              cropCompensation: output.trace.quality.cropCompensation,
+              intentionalDiscontinuity:
+                output.trace.transition?.durationFrames === 0 ||
+                output.trace.transition?.whipActive === true,
+            },
           })),
         }),
       );
@@ -505,6 +542,29 @@ const EpisodeRendererInner: React.FC<EpisodeRendererProps> = ({
           <StoryOverlay world={world} t={frame} width={fmt.width} height={fmt.height} />
         )}
       </RendererRegistryProvider>
+      {cameraProjectionMode === "preview" && cameraRenderLayer === "final" ? (
+        <div
+          data-projection-mode="preview"
+          style={{
+            position: "absolute",
+            right: 18,
+            bottom: 16,
+            zIndex: 50_000,
+            padding: "7px 10px",
+            borderRadius: 8,
+            background: "rgba(4, 6, 12, 0.72)",
+            border: "1px solid rgba(255,255,255,0.2)",
+            color: "rgba(255,255,255,0.9)",
+            fontFamily: TOKOVO_MONO_UI_FONT_FAMILY,
+            fontSize: 11,
+            fontWeight: 700,
+            letterSpacing: 0.8,
+            lineHeight: 1,
+          }}
+        >
+          PREVIEW OPTICS
+        </div>
+      ) : null}
       {cameraDebugEnabled && (
         <>
           <button onClick={() => setShowCameraPanel((v) => !v)} style={cameraPanelToggleStyle}>

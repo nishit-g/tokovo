@@ -22,13 +22,19 @@ export const PluginAssetsSchema = z.object({
 
 export const PluginAutoSoundRuleSchema = z.object({
   match: z.object({
-    kind: z.string().optional(),
+    kind: z.string(),
     type: z.string().optional(),
     appId: z.string().optional(),
+    from: z.union([z.string(), z.literal("*")]).optional(),
   }),
-  sound: z.string(),
-  action: z.enum(["PLAY_SOUND"]).optional().default("PLAY_SOUND"),
+  action: z.enum(["PLAY_ONE_SHOT", "START_LOOP", "STOP_SOUND"]),
+  sound: z.string().optional(),
+  stopId: z.string().optional(),
+  bus: z.enum(["voice", "sfx", "ui", "music", "master"]).optional(),
   volume: z.number().min(0).max(1).optional(),
+  idTemplate: z.string().optional(),
+  duckMusic: z.boolean().optional(),
+  loop: z.boolean().optional(),
   priority: z.number().optional(),
 });
 

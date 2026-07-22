@@ -213,13 +213,16 @@ const FeedSortRow: React.FC = () => {
   );
 };
 
-export const Feed: React.FC<{ world: WorldState }> = ({ world }) => {
+export const Feed: React.FC<{ world: WorldState; deviceId: string }> = ({
+  world,
+  deviceId,
+}) => {
   const theme = useLinkedInTheme();
-  const posts = getFeedPosts(world);
-  const currentUser = getCurrentUser(world);
-  const referenceFrame = getReferenceFrame(world);
-  const unreadMessages = getUnreadMessageCount(world);
-  const focusedPostId = getFeedFocusPostId(world);
+  const posts = getFeedPosts(world, deviceId);
+  const currentUser = getCurrentUser(world, deviceId);
+  const referenceFrame = getReferenceFrame(world, deviceId);
+  const unreadMessages = getUnreadMessageCount(world, deviceId);
+  const focusedPostId = getFeedFocusPostId(world, deviceId);
   const scrollY = computeLinkedInFeedScrollY(posts, focusedPostId);
 
   return (
@@ -253,14 +256,16 @@ export const Feed: React.FC<{ world: WorldState }> = ({ world }) => {
 
           {posts.length > 0 ? (
             posts.map((post, index) => {
-              const author = getUserById(world, post.authorId);
+              const author = getUserById(world, deviceId, post.authorId);
               const isFocused = post.id === focusedPostId;
               const latestComments = getLatestCommentsForPost(
                 world,
+                deviceId,
                 post.id,
                 isFocused ? 4 : 2,
               ).map((comment) => ({
-                authorName: getUserById(world, comment.authorId)?.name ?? "Member",
+                authorName:
+                  getUserById(world, deviceId, comment.authorId)?.name ?? "Member",
                 text: comment.text,
               }));
 
@@ -295,7 +300,7 @@ export const Feed: React.FC<{ world: WorldState }> = ({ world }) => {
                     }
                     reactions={post.reactions}
                     commentCount={post.commentIds.length}
-                    repostCount={getRepostCountForPost(world, post.id)}
+                    repostCount={getRepostCountForPost(world, deviceId, post.id)}
                     isLiked={Boolean(currentUser && post.reactedBy[currentUser.id])}
                     showFollowButton={Boolean(
                       currentUser &&

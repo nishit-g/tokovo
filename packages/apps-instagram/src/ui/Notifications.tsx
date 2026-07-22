@@ -6,10 +6,13 @@ import { Avatar, BottomNav, Icon, formatRelativeTime } from "./components.js";
 import { useInstagramTheme } from "./ThemeContext.js";
 import { getInstagramState, getUserById, getVisibleNotifications } from "../runtime/selectors.js";
 
-export const NotificationsScreen: React.FC<{ world: WorldState }> = ({ world }) => {
+export const NotificationsScreen: React.FC<{ world: WorldState; deviceId: string }> = ({
+  world,
+  deviceId,
+}) => {
   const theme = useInstagramTheme();
-  const state = getInstagramState(world);
-  const notifications = getVisibleNotifications(world);
+  const state = getInstagramState(world, deviceId);
+  const notifications = getVisibleNotifications(world, deviceId);
   const nowMs = notifications.reduce((max, item) => Math.max(max, item.createdAt), 0);
 
   return (
@@ -31,7 +34,7 @@ export const NotificationsScreen: React.FC<{ world: WorldState }> = ({ world }) 
 
       <div style={{ flex: 1, minHeight: 0, overflow: "auto" }}>
         {notifications.map((notification) => {
-          const actor = getUserById(world, notification.actorId);
+          const actor = getUserById(world, deviceId, notification.actorId);
           const post = state?.posts.find((item) => item.id === notification.postId);
           return (
             <div

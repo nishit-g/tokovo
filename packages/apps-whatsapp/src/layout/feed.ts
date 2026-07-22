@@ -1,5 +1,5 @@
 import type { FeedLayoutState, LayoutContext, LayoutRect, SemanticRegion } from "@tokovo/core";
-import { getAppStateForDevice } from "@tokovo/core";
+import { requireAppStateForDevice } from "@tokovo/core";
 
 import type { WhatsAppState } from "../types/index.js";
 import type { WhatsAppConversation } from "../types/conversation.js";
@@ -25,23 +25,29 @@ function semantic(regions: Record<string, SemanticRegion>) {
  */
 export function computeFeedLayout(ctx: LayoutContext): FeedLayoutState {
   const { viewportWidth: w, viewportHeight: h, appViewport, world, activeDeviceId } = ctx;
-  const contentTop = appViewport.contentInsets.top;
-  const contentBottom = appViewport.contentInsets.bottom;
+  const contentTop = appViewport.interactiveInsets.top;
+  const contentBottom = appViewport.interactiveInsets.bottom;
 
   // All WhatsApp UI is authored for a 393pt design width. Renderer scales it.
   const scale = w / DESIGN_WIDTH;
   const px = (v: number) => v * scale;
   const device = world.devices[activeDeviceId];
-  const state =
-    getAppStateForDevice<Partial<WhatsAppState>>(world, "app_whatsapp", activeDeviceId) ?? {};
+  if (!device) {
+    throw new Error(`WHATSAPP_LAYOUT_DEVICE_MISSING: "${activeDeviceId}" is not in world state.`);
+  }
+  const state = requireAppStateForDevice<WhatsAppState>(
+    world,
+    "app_whatsapp",
+    activeDeviceId,
+  );
   const experience = resolveWhatsAppExperience({
-    platform: device?.profileId.toLowerCase().includes("pixel") ? "android" : "ios",
-    appearance: device?.appAppearance ?? "light",
-    themeId: device?.appTheme as WhatsAppThemeId | undefined,
-    locale: state.locale ?? "en-US",
+    platform: ctx.platform,
+    appearance: device.appAppearance ?? device.os.appearance,
+    themeId: device.appTheme as WhatsAppThemeId | undefined,
+    locale: state.locale,
   });
   const waSpacing = experience.layout.app;
-  const screen = state.currentScreen ?? "chats";
+  const screen = state.currentScreen;
 
   const hasTabBar =
     screen === "chats" ||

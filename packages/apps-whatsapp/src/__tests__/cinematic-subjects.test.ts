@@ -28,7 +28,11 @@ describe("WhatsApp cinematic subjects", () => {
         groups: { message: ["m1"], media: ["media_m1"] },
       },
     } as LayoutState;
-    const world = { devices: {}, appState: {} } as WorldState;
+    const world = {
+      devices: {},
+      appInstances: {},
+      capabilityState: {},
+    } as WorldState;
     const subjects = WhatsAppCinematicSubjects.project(world, layout, "phone");
 
     expect(subjects).toEqual(

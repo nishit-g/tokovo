@@ -21,7 +21,6 @@ export type {
 export type { IMessageParticipant, IMessageConversation } from "./conversation.js";
 
 export type { IMessageState, IMessageScreen, IMessageThemeMode } from "./state.js";
-export { asIMessageState } from "./state.js";
 
 export type {
   IMessageEventType,

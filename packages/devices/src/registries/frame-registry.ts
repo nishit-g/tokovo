@@ -13,7 +13,6 @@
  */
 
 import type React from "react";
-import { createScopedLogger } from "@tokovo/core";
 
 // =============================================================================
 // TYPES
@@ -37,8 +36,6 @@ export interface FrameProps {
 
 export type FrameComponent = React.ComponentType<FrameProps>;
 
-const log = createScopedLogger("device");
-
 // =============================================================================
 // REGISTRY IMPLEMENTATION
 // =============================================================================
@@ -53,10 +50,7 @@ export class FrameRegistryClass {
    */
   register(profileId: string, component: FrameComponent): void {
     if (this.frames.has(profileId)) {
-      log.warn(`Overwriting device frame ${profileId}`, {
-        event: "device.frame.overwrite",
-        profileId,
-      });
+      throw new Error(`DEVICE_FRAME_COLLISION: frame "${profileId}" is already registered.`);
     }
     this.frames.set(profileId, component);
   }

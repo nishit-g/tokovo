@@ -10,7 +10,7 @@
  */
 
 import { produce } from "immer";
-import { TimelineEvent, WorldState, DEFAULT_AUDIO_STATE } from "./types.js";
+import { TimelineEvent, WorldState, createDefaultAudioState } from "./types.js";
 import { TokovoConfigType } from "./config/index.js";
 import {
   EventIndex,
@@ -20,39 +20,21 @@ import {
   getEventsUpToKeyframed,
   getEventsInRange,
 } from "./utils/event-utils.js";
-import {
-  StateCache,
-  getCachedStateForFrame,
-  cacheStateAtKeyframe,
-} from "./utils/state-cache.js";
+import { StateCache, getCachedStateForFrame, cacheStateAtKeyframe } from "./utils/state-cache.js";
 
 import { createScopedLogger } from "./logger/index.js";
-import {
-  handleAutoSounds,
-  cleanupExpiredSounds,
-  HandlerContext,
-} from "./engine/handlers/index.js";
+import { handleAutoSounds, cleanupExpiredSounds, HandlerContext } from "./engine/handlers/index.js";
 import type { EventHandlerContext } from "./engine/event-handlers.js";
 import type { MiddlewareContext } from "./engine/middleware.js";
 import type { LifecycleContext } from "./engine/lifecycle.js";
-import {
-  hasBuiltInHandler,
-  getBuiltInHandler,
-} from "./engine/built-in-handlers.js";
+import { hasBuiltInHandler, getBuiltInHandler } from "./engine/built-in-handlers.js";
 import type { EngineRegistries } from "./engine/registries.js";
-import {
-  getDeviceIdsForAppState,
-  hasDeviceScopedAppState,
-} from "./utils/app-state.js";
+import { getAppStateForDevice, getDeviceIdsForAppState } from "./utils/app-state.js";
 
 const log = createScopedLogger("engine");
 const sortedEventCache = new WeakMap<TimelineEvent[], TimelineEvent[]>();
 
-export type {
-  DeviceReducer,
-  AppReducer,
-  FeatureReducer,
-} from "./engine/registry.js";
+export type { DeviceReducer, AppReducer, FeatureReducer } from "./engine/registry.js";
 export { createReducerRegistry } from "./engine/registry.js";
 export { EngineConfig } from "./engine/config.js";
 export {
@@ -104,25 +86,22 @@ export class PluginError extends Error {
     public event: TimelineEvent,
     public cause: Error,
   ) {
-    super(
-      `[${pluginId}] Reducer failed at frame ${event.at}: ${cause.message}`,
-    );
+    super(`[${pluginId}] Reducer failed at frame ${event.at}: ${cause.message}`);
     this.name = "PluginError";
   }
 }
 
 // =============================================================================
-// REPLAY FUNCTION
+// UNCACHED PREVIEW REPLAY
 // =============================================================================
 
 /**
- * Replay function - computes WorldState at time t by applying all events.
+ * Computes preview WorldState without a cache. Release rendering is required to
+ * use replayIncremental() with prepared indexes and a StateCache.
  *
  * DETERMINISM CONTRACT:
  * Given same `initial`, `events`, and `t`, output is always identical.
  * No side effects except dev logging.
- *
- * @deprecated Use replayIncremental() with a StateCache.
  *
  * @param initial - Initial world state
  * @param events - Events to apply
@@ -130,7 +109,7 @@ export class PluginError extends Error {
  * @param ctx - Optional context with mode for error handling
  * @param eventIndex - Optional pre-computed index for O(1) event lookup
  */
-export function replay(
+function replayUncachedPreview(
   initial: WorldState,
   events: TimelineEvent[],
   t: number,
@@ -139,38 +118,22 @@ export function replay(
 ): WorldState {
   if (ctx.mode === "render") {
     throw new Error(
-      "replay() is disabled in render mode. Use replayIncremental() with a StateCache.",
+      "Uncached replay is disabled in render mode. Use replayIncremental() with a StateCache.",
     );
   }
   if (t < 0) {
-    log.warn(`Replay called with negative t: ${t}, using t=0`);
+    log.warn(`Uncached preview replay called with negative t: ${t}, using t=0`);
     t = 0;
   }
 
   const registries = ctx.registries;
 
   if (!events || events.length === 0) {
-    return ensureInitialState(initial);
+    return requireInitialWorld(initial);
   }
 
   const lifecycleCtx: LifecycleContext = { frame: t, mode: ctx.mode };
   registries.lifecycle.notifyBeforeReplay(lifecycleCtx);
-
-  if (!initial) {
-    log.warn("Replay called with undefined initial state");
-    const emptyState = {
-      devices: {},
-      appState: {},
-      audio: { ...DEFAULT_AUDIO_STATE },
-    };
-    registries.lifecycle.notifyAfterReplay(emptyState, lifecycleCtx);
-    return emptyState;
-  }
-
-  const initialWithAudio: WorldState = {
-    ...initial,
-    audio: initial.audio || { ...DEFAULT_AUDIO_STATE },
-  };
 
   // Filter events up to current time - use index if provided for O(1) lookup
   const relevant = eventIndex
@@ -178,7 +141,7 @@ export function replay(
     : getSortedEvents(events).filter((e) => e.at <= t);
 
   // Apply all events and finalize in a single Immer produce (perf: avoids double structural sharing)
-  const finalState = produce(initialWithAudio, (draft) => {
+  const finalState = produce(initial, (draft) => {
     // Pre-allocate context objects once (perf: avoid allocation per event)
     const handlerCtx: HandlerContext = {
       frame: t,
@@ -259,13 +222,12 @@ export function replay(
 /**
  * Create default initial world state
  */
-export function createInitialWorld(
-  partial: Partial<WorldState> = {},
-): WorldState {
+export function createInitialWorld(partial: Partial<WorldState> = {}): WorldState {
   return {
     devices: {},
-    appState: {},
-    audio: { ...DEFAULT_AUDIO_STATE },
+    appInstances: {},
+    capabilityState: {},
+    audio: createDefaultAudioState(),
     ...partial,
   };
 }
@@ -288,7 +250,7 @@ export function replayIncremental(
   const registries = ctx.registries;
 
   if (!events || events.length === 0) {
-    return ensureInitialState(initial);
+    return requireInitialWorld(initial);
   }
 
   if (!eventIndex || !stateCache) {
@@ -297,7 +259,7 @@ export function replayIncremental(
         "replayIncremental() requires a KeyframedEventIndex and StateCache in render mode.",
       );
     }
-    return replay(initial, events, t, ctx, eventIndex);
+    return replayUncachedPreview(initial, events, t, ctx, eventIndex);
   }
 
   const lifecycleCtx: LifecycleContext = { frame: t, mode: ctx.mode };
@@ -318,7 +280,7 @@ export function replayIncremental(
     startFrame = cached.fromFrame;
     eventsToApply = getEventsInRange(eventIndex, startFrame + 1, t);
   } else {
-    startState = ensureInitialState(initial);
+    startState = requireInitialWorld(initial);
     startFrame = -1;
     eventsToApply = getEventsUpToKeyframed(eventIndex, t);
   }
@@ -378,19 +340,11 @@ export function replayIncremental(
   return finalState;
 }
 
-function ensureInitialState(initial: WorldState): WorldState {
+function requireInitialWorld(initial: WorldState): WorldState {
   if (!initial) {
-    return {
-      devices: {},
-      appState: {},
-      audio: { ...DEFAULT_AUDIO_STATE },
-    };
+    throw new Error("WORLD_STATE_REQUIRED: replay requires an initial world");
   }
-
-  return {
-    ...initial,
-    audio: initial.audio || { ...DEFAULT_AUDIO_STATE },
-  };
+  return initial;
 }
 
 function getSortedEvents(events: TimelineEvent[]): TimelineEvent[] {
@@ -429,15 +383,10 @@ function isSortedByFrame(events: TimelineEvent[]): boolean {
   return true;
 }
 
-function handleEventError(
-  error: unknown,
-  event: TimelineEvent,
-  ctx: ReplayContext,
-): void {
+function handleEventError(error: unknown, event: TimelineEvent, ctx: ReplayContext): void {
   const eventWithAppId = event as TimelineEvent & { appId?: string };
   const pluginId = eventWithAppId.appId || event.kind;
-  const wrappedError =
-    error instanceof Error ? error : new Error(String(error));
+  const wrappedError = error instanceof Error ? error : new Error(String(error));
 
   if (ctx.mode === "render" && !ctx.gracefulDegradation) {
     throw new PluginError(pluginId, event, wrappedError);
@@ -488,13 +437,7 @@ function processEventCore(
     if (appId) {
       const reducer = registries.reducers.getAppReducer(appId);
       if (reducer) {
-        runAppReducerForDevice(
-          draft,
-          event,
-          appId,
-          eventWithAppId.deviceId,
-          reducer,
-        );
+        runAppReducerForDevice(draft, event, appId, eventWithAppId.deviceId, reducer);
       }
     } else {
       log.warn("APP event missing appId", {
@@ -507,9 +450,7 @@ function processEventCore(
     return;
   }
 
-  const appIdForKind = registries.reducers.getAppIdForEventKind(
-    event.kind as string,
-  );
+  const appIdForKind = registries.reducers.getAppIdForEventKind(event.kind as string);
   if (appIdForKind) {
     const reducer = registries.reducers.getAppReducer(appIdForKind);
     if (reducer) {
@@ -526,10 +467,7 @@ function processEventCore(
   }
 
   if (hasBuiltInHandler(event.kind as string, registries.reducers)) {
-    const handler = getBuiltInHandler(
-      event.kind as string,
-      registries.reducers,
-    );
+    const handler = getBuiltInHandler(event.kind as string, registries.reducers);
     if (!handler) {
       handleAutoSounds(draft, event, handlerCtx);
       return;
@@ -554,38 +492,18 @@ function runAppReducerForDevice(
   reducer: import("./engine/registry.js").AppReducer,
 ): void {
   const scopedDeviceIds = getDeviceIdsForAppState(draft, appId);
+  if (!deviceId) {
+    throw new Error(`APP_EVENT_DEVICE_REQUIRED: event for "${appId}" must declare deviceId`);
+  }
   if (
-    scopedDeviceIds.length > 0 &&
-    (!deviceId || !scopedDeviceIds.includes(deviceId))
+    !scopedDeviceIds.includes(deviceId) ||
+    getAppStateForDevice(draft, appId, deviceId) === undefined
   ) {
     throw new Error(
-      `APP event for multi-device app "${appId}" must target one of: ${scopedDeviceIds.join(", ")}`,
+      `APP_INSTANCE_MISSING: app "${appId}" is not mounted on device "${deviceId}"; mounted devices: ${scopedDeviceIds.join(", ") || "none"}`,
     );
   }
-
-  if (!hasDeviceScopedAppState(draft, appId, deviceId) || !deviceId) {
-    reducer(draft, event);
-    return;
-  }
-
-  const scoped = draft.appStateByDevice?.[deviceId];
-  if (!scoped) {
-    reducer(draft, event);
-    return;
-  }
-
-  const previousLegacyState = draft.appState[appId];
-  draft.appState[appId] = scoped[appId];
-  try {
-    reducer(draft, event);
-    scoped[appId] = draft.appState[appId];
-  } finally {
-    if (previousLegacyState === undefined) {
-      draft.appState[appId] = undefined;
-    } else {
-      draft.appState[appId] = previousLegacyState;
-    }
-  }
+  reducer(draft, event);
 }
 
 function processEventWithMiddleware(
@@ -612,20 +530,12 @@ function processEventWithMiddleware(
   });
 }
 
-function finalizeState(
-  state: WorldState,
-  t: number,
-  config: TokovoConfigType,
-): WorldState {
+function finalizeState(state: WorldState, t: number, config: TokovoConfigType): WorldState {
   return produce(state, (draft) => {
     finalizeDraftState(draft, t, config);
   });
 }
 
-function finalizeDraftState(
-  draft: WorldState,
-  t: number,
-  _config: TokovoConfigType,
-): void {
+function finalizeDraftState(draft: WorldState, t: number, _config: TokovoConfigType): void {
   cleanupExpiredSounds(draft, t);
 }

@@ -75,17 +75,8 @@ describe("canonical code-first app tracks", () => {
     const program = prepareInputProgram(
       (ir.inputSessions ?? []).map((session) => ({ ...session, fps: ir.fps })),
     );
-    expect(
-      program.sessions[0]?.operations.map((operation) => operation.type),
-    ).toEqual(
-      expect.arrayContaining([
-        "focus",
-        "insert",
-        "setSelection",
-        "replaceRange",
-        "submit",
-        "blur",
-      ]),
+    expect(program.sessions[0]?.operations.map((operation) => operation.type)).toEqual(
+      expect.arrayContaining(["focus", "insert", "setSelection", "replaceRange", "submit", "blur"]),
     );
   });
 
@@ -117,29 +108,22 @@ describe("canonical code-first app tracks", () => {
           },
           (chat) => {
             chat.open().wait("1s");
-            const reveal = chat.receive(
-              people.riya,
-              "You should probably see this.",
-              {
-                hold: "1.5s",
-              },
-            );
+            const reveal = chat.receive(people.riya, "You should probably see this.", {
+              hold: "1.5s",
+            });
             revealSubject = reveal.subject;
             chat.reply("That explains everything.", reveal, {});
           },
         );
       })
       .scene("reaction", { at: "8s", duration: "3s" }, (scene) => {
-        scene.social(
-          { app: "x", deviceId: "phone", currentActor: people.me },
-          (social) => {
-            const post = social.post("A normal day online.", {
-              id: "post_reaction",
-            });
-            postSubject = post.subject;
-            social.wait("1s").comment(post, people.riya, "Define normal.");
-          },
-        );
+        scene.social({ app: "x", deviceId: "phone", currentActor: people.me }, (social) => {
+          const post = social.post("A normal day online.", {
+            id: "post_reaction",
+          });
+          postSubject = post.subject;
+          social.wait("1s").comment(post, people.riya, "Define normal.");
+        });
       })
       .build();
 
@@ -147,11 +131,9 @@ describe("canonical code-first app tracks", () => {
       id: "riya",
       name: "Riya G.",
     });
-    expect(
-      ir.events
-        .filter((event) => event.kind === "APP")
-        .map((event) => event.at),
-    ).toEqual([60, 90, 135, 240, 270]);
+    expect(ir.events.filter((event) => event.kind === "APP").map((event) => event.at)).toEqual([
+      60, 90, 135, 240, 270,
+    ]);
     expect(revealSubject).toEqual({
       kind: "entity",
       deviceId: "phone",
@@ -285,24 +267,19 @@ describe("canonical code-first app tracks", () => {
     const ir = episode("social-surfaces", { fps: 30, duration: "3s" })
       .scene("all feeds", { at: "0s", duration: "2s" }, (scene) => {
         for (const app of ["instagram", "linkedin", "x"] as const) {
-          scene.social(
-            { app, deviceId: "phone", currentActor: me },
-            (social) => {
-              const post = social.post(`post on ${app}`);
-              social.comment(post, riya, `reply on ${app}`);
-              social.open(post);
-            },
-          );
+          scene.social({ app, deviceId: "phone", currentActor: me }, (social) => {
+            const post = social.post(`post on ${app}`, {
+              ...(app === "instagram" ? { mediaUrl: "/media/founder-whiteboard.jpg" } : {}),
+            });
+            social.comment(post, riya, `reply on ${app}`);
+            social.open(post);
+          });
         }
       })
       .build();
 
     expect(
-      new Set(
-        ir.events
-          .filter((event) => event.kind === "APP")
-          .map((event) => event.appId),
-      ),
+      new Set(ir.events.filter((event) => event.kind === "APP").map((event) => event.appId)),
     ).toEqual(new Set(["app_instagram", "app_linkedin", "app_x"]));
   });
 
