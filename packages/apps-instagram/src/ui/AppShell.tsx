@@ -1,21 +1,13 @@
 import React from "react";
-import { useSafeAreaInsets } from "@tokovo/react";
+import { useAppViewport } from "@tokovo/react";
 import { useInstagramTheme } from "./ThemeContext.js";
-
-function useOptionalSafeAreaInsets() {
-  try {
-    return useSafeAreaInsets();
-  } catch {
-    return { top: 0, bottom: 0, left: 0, right: 0 };
-  }
-}
 
 export const AppShell: React.FC<{
   children: React.ReactNode;
   immersive?: boolean;
 }> = ({ children, immersive = false }) => {
   const theme = useInstagramTheme();
-  const safeArea = useOptionalSafeAreaInsets();
+  const { contentInsets } = useAppViewport();
 
   return (
     <div
@@ -28,12 +20,13 @@ export const AppShell: React.FC<{
             : "#050505"
           : theme.colors.background,
         color: immersive ? "#FFFFFF" : theme.colors.textPrimary,
-        fontFamily: "'Instagram Sans', 'SF Pro Display', 'Helvetica Neue', sans-serif",
+        fontFamily:
+          "'Inter Variable', 'Noto Sans Arabic Variable', 'Noto Sans Devanagari Variable', 'Noto Sans JP Variable', sans-serif",
         position: "relative",
         overflow: "hidden",
         boxSizing: "border-box",
-        paddingTop: immersive ? 0 : safeArea.top,
-        paddingBottom: immersive ? 0 : safeArea.bottom,
+        paddingTop: immersive ? 0 : contentInsets.top,
+        paddingBottom: immersive ? 0 : contentInsets.bottom,
       }}
     >
       {!immersive ? (

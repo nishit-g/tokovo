@@ -133,10 +133,7 @@ export {
 
 export type { ValidatedTrackEpisodeIR } from "./schemas.js";
 
-export {
-  createCanonicalDeviceConfig,
-  createCanonicalTrackEpisodeIR,
-} from "./fixtures.js";
+export { createCanonicalDeviceConfig, createCanonicalTrackEpisodeIR } from "./fixtures.js";
 export type { CanonicalTrackEpisodeFixtureOptions } from "./fixtures.js";
 
 export type {
@@ -160,7 +157,7 @@ export type {
   CameraModifierIR,
   CameraFilterIR,
   CameraOutputShadowIR,
-  CameraSafeAreaInsetsIR,
+  CameraEditorialInsetsIR,
   CameraOutputIR,
   CameraRigIR,
   CameraShotIR,

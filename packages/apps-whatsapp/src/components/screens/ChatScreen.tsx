@@ -6,10 +6,7 @@ import { Header as DefaultHeader } from "../Header.js";
 import { GroupHeader } from "../GroupHeader.js";
 import { MessageList } from "../MessageList.js";
 import { InputArea as DefaultInputArea } from "../InputArea.js";
-import {
-  useTheme,
-  useWhatsAppLocale,
-} from "../../experience/ExperienceContext.js";
+import { useTheme, useWhatsAppLocale } from "../../experience/ExperienceContext.js";
 import { formatWhatsAppNumber } from "../../localization/index.js";
 import type { WhatsAppState, WhatsAppConversation } from "../../types/index.js";
 import { getBaseTime } from "../../utils/messages.js";
@@ -22,7 +19,7 @@ import { getChatChromeGeometry } from "../../config/layout-config.js";
 export interface ChatScreenProps {
   world: WorldState;
   deviceId?: string;
-  safeAreaInsets?: {
+  contentInsets: {
     top: number;
     bottom: number;
     left: number;
@@ -35,7 +32,7 @@ export interface ChatScreenProps {
 export const ChatScreen: React.FC<ChatScreenProps> = ({
   world,
   deviceId,
-  safeAreaInsets,
+  contentInsets,
   width,
   height: _height,
 }) => {
@@ -45,10 +42,7 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({
   if (!appState) {
     throw new Error("WhatsApp chat screen requires app_whatsapp state");
   }
-  const conversations = (appState?.conversations ?? {}) as Record<
-    string,
-    WhatsAppConversation
-  >;
+  const conversations = (appState?.conversations ?? {}) as Record<string, WhatsAppConversation>;
   const conversationId = appState.conversationId;
 
   const conversation: WhatsAppConversation | undefined = conversationId
@@ -102,9 +96,7 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({
   })();
 
   const resolvedDeviceId = deviceId ?? Object.keys(world.devices ?? {})[0];
-  const ownerName = resolvedDeviceId
-    ? world.devices?.[resolvedDeviceId]?.ownerName
-    : undefined;
+  const ownerName = resolvedDeviceId ? world.devices?.[resolvedDeviceId]?.ownerName : undefined;
   const thread = projectWhatsAppThread({
     conversationId,
     messages,
@@ -123,19 +115,19 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({
     );
   }
 
-  // TokovoRenderer already provides safeAreaInsets in design coordinates.
-  const safeAreaTop = safeAreaInsets?.top ?? 47;
-  const safeAreaBottom = safeAreaInsets?.bottom ?? 34;
+  // TokovoRenderer already provides contentInsets in design coordinates.
+  const contentInsetTop = contentInsets.top;
+  const contentInsetBottom = contentInsets.bottom;
   const composerInput = useInputField("composer");
   const composerText = composerInput?.value ?? conversation.draftText ?? "";
   const composerFocused = composerInput?.isKeyboardVisible ?? false;
-  // A system keyboard already owns the bottom safe area. Keeping the app's
+  // A system keyboard already owns the bottom platform inset. Keeping the app's
   // home-indicator inset while it is attached creates a conspicuous dead band
   // between the WhatsApp composer and the keyboard.
-  const composerSafeAreaBottom = composerFocused ? 0 : safeAreaBottom;
+  const composerContentInsetsBottom = composerFocused ? 0 : contentInsetBottom;
   const bottomPadding = getChatChromeGeometry({
-    top: safeAreaTop,
-    bottom: composerSafeAreaBottom,
+    top: contentInsetTop,
+    bottom: composerContentInsetsBottom,
   }).messageBottomInset;
 
   return (
@@ -145,14 +137,14 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({
           groupName={contactName}
           members={conversation.members ?? []}
           groupAvatar={conversation.avatar}
-          safeAreaTop={safeAreaTop}
+          contentInsetTop={contentInsetTop}
         />
       ) : (
         <DefaultHeader
           contactName={contactName}
           avatarUrl={conversation?.avatar}
           status={status}
-          safeAreaTop={safeAreaTop}
+          contentInsetTop={contentInsetTop}
           locked={conversation.preferences?.chatLock}
           contactLabel={conversation.contact?.businessCategory}
           verifiedBusiness={conversation.contact?.verifiedBusiness}
@@ -171,11 +163,7 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({
             gap: 9,
           }}
         >
-          <Pin
-            size={15}
-            color={theme.colors.accent}
-            style={{ flexShrink: 0 }}
-          />
+          <Pin size={15} color={theme.colors.accent} style={{ flexShrink: 0 }} />
           <div style={{ minWidth: 0 }}>
             <div
               style={{
@@ -232,7 +220,7 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({
         showCursor={composerFocused}
         inputDirection={composerInput?.direction}
         inputLanguage={composerInput?.locale.tag}
-        safeAreaBottom={composerSafeAreaBottom}
+        contentInsetBottom={composerContentInsetsBottom}
       />
     </KeyboardAwareView>
   );

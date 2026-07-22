@@ -49,6 +49,7 @@ function createPlan(): CameraPlanIR {
         zIndex: 0,
         clipRadiusPx: 28,
         coveragePolicy: "allow-default",
+        compositionProfileId: "hero-device",
         defaultRigId: "establishing",
       },
     ],
@@ -209,10 +210,7 @@ describe("camera composer", () => {
     });
     const matrix = multiplyMatrix3(
       translationMatrix3(viewport.width / 2, viewport.height / 2),
-      multiplyMatrix3(
-        scaleMatrix3(pose.scale),
-        translationMatrix3(-pose.centerX, -pose.centerY),
-      ),
+      multiplyMatrix3(scaleMatrix3(pose.scale), translationMatrix3(-pose.centerX, -pose.centerY)),
     );
     const topLeft = applyMatrix3(matrix, { x: guard.x, y: guard.y });
     const bottomRight = applyMatrix3(matrix, {
@@ -229,13 +227,13 @@ describe("camera composer", () => {
     expect((topLeft.y + bottomRight.y) / 2).toBeCloseTo(960, 8);
   });
 
-  it("composes inside explicit output safe-area insets", () => {
+  it("composes inside explicit output editorial-frame insets", () => {
     const viewport = { x: 0, y: 0, width: 1080, height: 1920 };
     const subject = { x: 100, y: 200, width: 400, height: 800 };
     const pose = solveComposer({
       subjectBounds: subject,
       viewport,
-      safeAreaInsets: { top: 120, right: 80, bottom: 160, left: 80 },
+      editorialInsets: { top: 120, right: 80, bottom: 160, left: 80 },
       composer: {
         screenPosition: [0.5, 0.5],
         targetFill: 1,
@@ -286,9 +284,7 @@ describe("camera projection backend routing", () => {
     const registries = createBuiltinCameraRegistries();
     const textureProgram = prepareCameraPlan(createPlan(), registries);
     const compositedPlan = createPlan();
-    compositedPlan.rigs = compositedPlan.rigs.map(
-      ({ lensId: _lensId, ...rig }) => rig,
-    );
+    compositedPlan.rigs = compositedPlan.rigs.map(({ lensId: _lensId, ...rig }) => rig);
     compositedPlan.lenses = [];
     const compositedProgram = prepareCameraPlan(compositedPlan, registries);
 
@@ -313,9 +309,7 @@ describe("camera projection backend routing", () => {
     }));
     plan.lenses = [];
 
-    expect(
-      prepareCameraPlan(plan, registries).projectionBackendRequirement,
-    ).toBe("texture");
+    expect(prepareCameraPlan(plan, registries).projectionBackendRequirement).toBe("texture");
   });
 
   it("does not route unused texture definitions through the compositor", () => {
@@ -323,9 +317,7 @@ describe("camera projection backend routing", () => {
     const plan = createPlan();
     plan.rigs = plan.rigs.map(({ lensId: _lensId, ...rig }) => rig);
 
-    expect(
-      prepareCameraPlan(plan, registries).projectionBackendRequirement,
-    ).toBe("composited");
+    expect(prepareCameraPlan(plan, registries).projectionBackendRequirement).toBe("composited");
   });
 });
 
@@ -365,16 +357,14 @@ describe("camera program preparation", () => {
       ],
     };
 
-    expect(() =>
-      prepareCameraPlan(invalid, createBuiltinCameraRegistries()),
-    ).toThrow(CameraPreparationError);
+    expect(() => prepareCameraPlan(invalid, createBuiltinCameraRegistries())).toThrow(
+      CameraPreparationError,
+    );
     try {
       prepareCameraPlan(invalid, createBuiltinCameraRegistries());
     } catch (error) {
       expect(error).toBeInstanceOf(CameraPreparationError);
-      const codes = (error as CameraPreparationError).diagnostics.map(
-        (entry) => entry.code,
-      );
+      const codes = (error as CameraPreparationError).diagnostics.map((entry) => entry.code);
       expect(codes).toContain("CAM_LENS_MODEL_MISSING");
       expect(codes).toContain("CAM_SHOT_OVERLAP_AMBIGUOUS");
     }
@@ -390,16 +380,13 @@ describe("camera program preparation", () => {
       })),
     };
 
-    expect(() =>
-      prepareCameraPlan(invalid, createBuiltinCameraRegistries()),
-    ).toThrowError(/unknown parameter "strenght"/);
+    expect(() => prepareCameraPlan(invalid, createBuiltinCameraRegistries())).toThrowError(
+      /unknown parameter "strenght"/,
+    );
   });
 
   it("precomputes compact JSON-safe definition and interval indexes", () => {
-    const program = prepareCameraPlan(
-      createPlan(),
-      createBuiltinCameraRegistries(),
-    );
+    const program = prepareCameraPlan(createPlan(), createBuiltinCameraRegistries());
 
     expect(program.version).toBe(2);
     expect(program.outputIndexById).toEqual({ main: 0 });
@@ -428,11 +415,12 @@ describe("camera program preparation", () => {
     plan.outputs = plan.outputs.map((output) => ({
       ...output,
       coveragePolicy: "require-shots",
+      compositionProfileId: "hero-device",
     }));
 
-    expect(() =>
-      prepareCameraPlan(plan, createBuiltinCameraRegistries()),
-    ).toThrowError(/CAM_OUTPUT_COVERAGE_GAP/);
+    expect(() => prepareCameraPlan(plan, createBuiltinCameraRegistries())).toThrowError(
+      /CAM_OUTPUT_COVERAGE_GAP/,
+    );
   });
 
   it("uses collision-safe subject identities and rejects duplicate group members", () => {
@@ -502,9 +490,7 @@ describe("camera output evaluation", () => {
       expect.objectContaining({ kind: "fisheye-warp", strength: 0.22 }),
     ]);
     expect(evaluated.pose.scale).toBeGreaterThan(1);
-    expect(JSON.parse(JSON.stringify(evaluated.trace))).toEqual(
-      evaluated.trace,
-    );
+    expect(JSON.parse(JSON.stringify(evaluated.trace))).toEqual(evaluated.trace);
     expect(evaluated.trace).toEqual(
       expect.objectContaining({
         selection: "shot",
@@ -597,14 +583,8 @@ describe("camera output evaluation", () => {
 
     expect(evaluated.pose.centerX).toBeCloseTo(baseline.pose.centerX + 50, 8);
     expect(evaluated.pose.centerY).toBeCloseTo(baseline.pose.centerY - 20, 8);
-    expect(evaluated.pose.scale).toBeCloseTo(
-      baseline.pose.scale * Math.sqrt(2),
-      8,
-    );
-    expect(evaluated.pose.rotationDeg).toBeCloseTo(
-      baseline.pose.rotationDeg + 5,
-      8,
-    );
+    expect(evaluated.pose.scale).toBeCloseTo(baseline.pose.scale * Math.sqrt(2), 8);
+    expect(evaluated.pose.rotationDeg).toBeCloseTo(baseline.pose.rotationDeg + 5, 8);
     expect(evaluated.trace.bakedTrajectory).toEqual({
       interpolation: "minimum-jerk",
       fromFrame: 60,
@@ -619,9 +599,7 @@ describe("camera output evaluation", () => {
     const frame = createSubjectFrame(90);
     const withoutMessage: CinematicSubjectFrame = {
       frame: 90,
-      subjects: frame.subjects.filter(
-        (subject) => subject.ref !== messageSubject,
-      ),
+      subjects: frame.subjects.filter((subject) => subject.ref !== messageSubject),
     };
 
     expect(() =>
@@ -751,12 +729,8 @@ describe("camera output evaluation", () => {
     expect(settled.projectionPasses).toEqual([
       expect.objectContaining({ kind: "fisheye-warp", strength: 0.22 }),
     ]);
-    expect(middle.pose.scale).toBeGreaterThan(
-      Math.min(start.pose.scale, settled.pose.scale),
-    );
-    expect(middle.pose.scale).toBeLessThan(
-      Math.max(start.pose.scale, settled.pose.scale),
-    );
+    expect(middle.pose.scale).toBeGreaterThan(Math.min(start.pose.scale, settled.pose.scale));
+    expect(middle.pose.scale).toBeLessThan(Math.max(start.pose.scale, settled.pose.scale));
     expect(reverseMiddle).toEqual(middle);
   });
 
@@ -803,9 +777,7 @@ describe("camera output evaluation", () => {
 
     const peak = evaluate(75);
     expect(peak.projectionPasses).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ kind: "directional-smear" }),
-      ]),
+      expect.arrayContaining([expect.objectContaining({ kind: "directional-smear" })]),
     );
     expect(peak.trace.transition).toEqual(
       expect.objectContaining({
@@ -815,11 +787,9 @@ describe("camera output evaluation", () => {
         movementIntent: null,
       }),
     );
-    expect(
-      evaluate(90).projectionPasses.some(
-        (pass) => pass.kind === "directional-smear",
-      ),
-    ).toBe(false);
+    expect(evaluate(90).projectionPasses.some((pass) => pass.kind === "directional-smear")).toBe(
+      false,
+    );
     expect(evaluate(105)).toEqual(evaluate(105));
   });
 
@@ -844,9 +814,7 @@ describe("camera output evaluation", () => {
         },
       ],
       rigs: source.rigs.map((rig) =>
-        rig.id === "message-close"
-          ? { ...rig, filterIds: ["cool-night"] }
-          : rig,
+        rig.id === "message-close" ? { ...rig, filterIds: ["cool-night"] } : rig,
       ),
     };
     const program = prepareCameraPlan(plan, registries);

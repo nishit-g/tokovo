@@ -3,10 +3,7 @@ import { describe, expect, it } from "vitest";
 
 import { LayoutCache, computeConversationLayout } from "../layout/cache.js";
 import { projectWhatsAppThread } from "../thread/projector.js";
-import {
-  createWhatsAppThreadWindow,
-  DEFAULT_THREAD_RENDER_LIMIT,
-} from "../thread/window.js";
+import { createWhatsAppThreadWindow, DEFAULT_THREAD_RENDER_LIMIT } from "../thread/window.js";
 import type { WhatsAppConversation, WhatsAppMessage } from "../types/index.js";
 
 const MESSAGE_COUNT = 10_000;
@@ -18,30 +15,24 @@ const HOT_PROJECTION_CPU_BUDGET_MS = 150;
 const HOT_LAYOUT_CPU_BUDGET_MS = 150;
 
 function elapsedCpuMs(start: NodeJS.CpuUsage): number {
-  const elapsed = process.cpuUsage(start);
+  const elapsed = process.threadCpuUsage(start);
   return (elapsed.user + elapsed.system) / 1_000;
 }
 
 function createLongConversation(): WhatsAppConversation {
-  const messages: WhatsAppMessage[] = Array.from(
-    { length: MESSAGE_COUNT },
-    (_, index) => ({
-      id: `message-${index}`,
-      type: "text",
-      text: `Deterministic long-thread message ${index}`,
-      from: index % 2 === 0 ? "me" : `member-${index % 11}`,
-      at: index * 3,
-      status: index % 2 === 0 ? "read" : undefined,
-      reactions:
-        index % 19 === 0
-          ? [{ emoji: "👍", count: (index % 4) + 1, fromMe: index % 2 === 0 }]
-          : undefined,
-      replyTo:
-        index > 0 && index % 23 === 0
-          ? { messageId: `message-${index - 1}` }
-          : undefined,
-    }),
-  );
+  const messages: WhatsAppMessage[] = Array.from({ length: MESSAGE_COUNT }, (_, index) => ({
+    id: `message-${index}`,
+    type: "text",
+    text: `Deterministic long-thread message ${index}`,
+    from: index % 2 === 0 ? "me" : `member-${index % 11}`,
+    at: index * 3,
+    status: index % 2 === 0 ? "read" : undefined,
+    reactions:
+      index % 19 === 0
+        ? [{ emoji: "👍", count: (index % 4) + 1, fromMe: index % 2 === 0 }]
+        : undefined,
+    replyTo: index > 0 && index % 23 === 0 ? { messageId: `message-${index - 1}` } : undefined,
+  }));
 
   return {
     id: "long-thread",
@@ -74,24 +65,19 @@ describe("WhatsApp long-thread performance contract", () => {
 
     const latestWindow = createWhatsAppThreadWindow(projection);
     expect(latestWindow.renderedMessageCount).toBe(DEFAULT_THREAD_RENDER_LIMIT);
-    expect(latestWindow.hiddenBefore).toBe(
-      projection.messageCount - DEFAULT_THREAD_RENDER_LIMIT,
-    );
+    expect(latestWindow.hiddenBefore).toBe(projection.messageCount - DEFAULT_THREAD_RENDER_LIMIT);
     expect(latestWindow.hiddenAfter).toBe(0);
 
     const focusedWindow = createWhatsAppThreadWindow(projection, {
       focusMessageId: "message-5000",
     });
-    expect(focusedWindow.renderedMessageCount).toBe(
-      DEFAULT_THREAD_RENDER_LIMIT,
-    );
+    expect(focusedWindow.renderedMessageCount).toBe(DEFAULT_THREAD_RENDER_LIMIT);
     expect(focusedWindow.hiddenBefore).toBeGreaterThan(0);
     expect(focusedWindow.hiddenAfter).toBeGreaterThan(0);
     expect(
       focusedWindow.blocks.some(
         (block) =>
-          block.kind === "run" &&
-          block.items.some((item) => item.message.id === "message-5000"),
+          block.kind === "run" && block.items.some((item) => item.message.id === "message-5000"),
       ),
     ).toBe(true);
 
@@ -113,9 +99,9 @@ describe("WhatsApp long-thread performance contract", () => {
     expect(coldLayoutMs).toBeLessThan(COLD_LAYOUT_BUDGET_MS);
 
     let projectionCacheStable = true;
-    // CPU time enforces algorithmic cost without turning concurrent package
-    // scheduling pressure into a false performance regression.
-    const hotProjectionStartedAt = process.cpuUsage();
+    // Per-thread CPU time enforces algorithmic cost without counting sibling
+    // Vitest workers running other package tests in this process.
+    const hotProjectionStartedAt = process.threadCpuUsage();
     for (let index = 0; index < HOT_PROJECTION_ITERATIONS; index += 1) {
       if (projectWhatsAppThread(projectionInput) !== projection) {
         projectionCacheStable = false;
@@ -127,7 +113,7 @@ describe("WhatsApp long-thread performance contract", () => {
     expect(hotProjectionCpuMs).toBeLessThan(HOT_PROJECTION_CPU_BUDGET_MS);
 
     let layoutCacheStable = true;
-    const hotLayoutStartedAt = process.cpuUsage();
+    const hotLayoutStartedAt = process.threadCpuUsage();
     for (let index = 0; index < HOT_LAYOUT_ITERATIONS; index += 1) {
       if (computeConversationLayout(conversation, layoutOptions) !== layout) {
         layoutCacheStable = false;

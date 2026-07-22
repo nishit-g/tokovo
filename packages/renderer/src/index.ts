@@ -40,17 +40,12 @@ export { DynamicIsland } from "./os/index.js";
 // LAYOUT SYSTEM
 // ===========================================================================
 export { computeLayout } from "./layout/index.js";
-export type {
-  LayoutState,
-  ChatLayoutState,
-  ChatMessageLayout,
-} from "./layout/types.js";
+export type { LayoutState, ChatLayoutState, ChatMessageLayout } from "./layout/types.js";
 export * from "./layout/index.js";
 
 // ===========================================================================
 // UTILITIES
 // ===========================================================================
-export { NowPlayingBar } from "./NowPlayingBar.js";
 export { UnlockTransition } from "./AppTransition.js";
 export {
   RendererRegistryProvider,

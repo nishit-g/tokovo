@@ -233,7 +233,7 @@ The renderer consumes only the evaluated result:
 - active output, shot, and rig IDs;
 - complete pose;
 - view matrix;
-- clip and safe area;
+- clip and editorial insets;
 - ordered projection passes;
 - resolved subject provenance;
 - constraint results;
@@ -277,7 +277,7 @@ For each shot it will:
 
 1. resolve the subject lifecycle and desired subject trajectory;
 2. compute composer framing samples;
-3. solve crop, safe-area, scale, and rotation constraints;
+3. solve crop, editorial-frame, scale, and rotation constraints;
 4. unwrap rotation and move scale into logarithmic space;
 5. create minimum-jerk or analytic critically damped motion;
 6. interpolate lens parameters and crop compensation with the pose;
@@ -887,7 +887,7 @@ Status: Complete
 - [x] `camera explain` command;
 - [x] `camera diff` command;
 - [x] `camera subjects` command;
-- [x] preview overlay for stage nodes, subjects, safe areas, framing guards, desired pose, final pose,
+- [x] preview overlay for stage nodes, subjects, editorial insets, framing guards, desired pose, final pose,
       and projection passes;
 - [x] `camera-program.json` render artifact;
 - [x] `camera-diagnostics.json` render artifact;

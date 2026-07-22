@@ -6,11 +6,8 @@
  */
 
 import type { BackgroundConfig, ResolvedBackgroundConfig, BackgroundPresetId } from "./types.js";
-import { createScopedLogger } from "@tokovo/core";
 import { DEFAULT_BACKGROUND_CONFIG, FALLBACK_COLOR } from "./types.js";
 import { BACKGROUND_PRESETS, isPresetId } from "./presets.js";
-
-const log = createScopedLogger("renderer");
 
 // =============================================================================
 // RESOLVER
@@ -46,14 +43,7 @@ export function resolveBackground(
       };
     }
 
-    log.warn(`Unknown background preset "${config}"; using fallback`, {
-      event: "background.preset.unknown",
-      preset: config,
-    });
-    return {
-      ...DEFAULT_BACKGROUND_CONFIG,
-      _resolved: true,
-    };
+    throw new Error(`BACKGROUND_PRESET_MISSING: backdrop profile "${config}" is not registered.`);
   }
 
   // Object config
@@ -68,10 +58,9 @@ export function resolveBackground(
       ...config, // User overrides take priority
     };
   } else if (config.preset) {
-    log.warn(`Unknown background preset "${config.preset}"; ignoring`, {
-      event: "background.preset.unknown",
-      preset: config.preset,
-    });
+    throw new Error(
+      `BACKGROUND_PRESET_MISSING: backdrop profile "${config.preset}" is not registered.`,
+    );
   }
 
   // Validate and clean
@@ -110,23 +99,18 @@ function validateAndClean(config: BackgroundConfig): BackgroundConfig {
 
     case "gradient":
       if (!cleaned.gradient) {
-        log.warn("Gradient background missing gradient definition; falling back to solid", {
-          event: "background.gradient.invalid",
-        });
-        cleaned.type = "solid";
-        cleaned.color = FALLBACK_COLOR;
+        throw new Error(
+          "BACKGROUND_GRADIENT_INVALID: gradient backgrounds require a gradient definition.",
+        );
       }
       break;
 
     case "image":
     case "video":
       if (!cleaned.src) {
-        log.warn(`Background type ${cleaned.type} is missing src; falling back to solid`, {
-          event: "background.asset.missing_src",
-          type: cleaned.type,
-        });
-        cleaned.type = "solid";
-        cleaned.color = FALLBACK_COLOR;
+        throw new Error(
+          `BACKGROUND_ASSET_MISSING: background type "${cleaned.type}" requires src.`,
+        );
       }
       break;
   }

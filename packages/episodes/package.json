@@ -76,6 +76,7 @@
     "@tokovo/apps-teams": "workspace:*",
     "@tokovo/apps-typewriter": "workspace:*",
     "@tokovo/device-keyboard": "workspace:*",
+    "@tokovo/visual-system": "workspace:*",
     "zod": "^4.2.1",
     "zod-to-json-schema": "^3.23.0"
   },

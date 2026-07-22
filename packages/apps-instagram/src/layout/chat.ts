@@ -3,13 +3,13 @@ import { instagramSpacing } from "../config/tokens.js";
 import { buildSemantic, createPx, rect } from "./shared.js";
 
 export function computeInstagramChatLayout(ctx: LayoutContext): ChatLayoutState {
-  const { viewportWidth: w, viewportHeight: h, safeAreaInsets } = ctx;
-  const safeTop = safeAreaInsets?.top ?? 0;
-  const safeBottom = safeAreaInsets?.bottom ?? 0;
+  const { viewportWidth: w, viewportHeight: h, appViewport } = ctx;
+  const contentTop = appViewport.contentInsets.top;
+  const contentBottom = appViewport.contentInsets.bottom;
   const px = createPx(w);
-  const headerH = safeTop + px(instagramSpacing.headerHeight);
+  const headerH = contentTop + px(instagramSpacing.headerHeight);
   const composerH = px(instagramSpacing.composerHeight);
-  const composerY = h - safeBottom - composerH;
+  const composerY = h - contentBottom - composerH;
   const regions: Record<string, SemanticRegion> = {
     device: { id: "device", rect: rect(0, 0, w, h), tags: ["device"] },
     app: { id: "app", rect: rect(0, 0, w, h), tags: ["app"] },

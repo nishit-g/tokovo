@@ -1,8 +1,4 @@
-import type {
-  CameraPlanIR,
-  CinematicSubjectRefIR,
-  JsonValue,
-} from "@tokovo/ir";
+import type { CameraPlanIR, CinematicSubjectRefIR, JsonValue } from "@tokovo/ir";
 import { cinematicSubjectKey } from "./subjects.js";
 import type {
   CinematicSubjectFrame,
@@ -20,6 +16,7 @@ export interface CameraProgramManifest {
   outputs: readonly {
     id: string;
     defaultRigId: string;
+    compositionProfileId: CameraPlanIR["outputs"][number]["compositionProfileId"];
     coverage: PreparedCameraProgram["coverageByOutput"][string];
   }[];
   rigIds: readonly string[];
@@ -30,9 +27,7 @@ export interface CameraProgramManifest {
   diagnostics: PreparedCameraProgram["diagnostics"];
 }
 
-export function createCameraProgramManifest(
-  program: PreparedCameraProgram,
-): CameraProgramManifest {
+export function createCameraProgramManifest(program: PreparedCameraProgram): CameraProgramManifest {
   return {
     version: 1,
     planId: program.plan.id,
@@ -43,6 +38,7 @@ export function createCameraProgramManifest(
     outputs: program.plan.outputs.map((output) => ({
       id: output.id,
       defaultRigId: output.defaultRigId,
+      compositionProfileId: output.compositionProfileId,
       coverage: program.coverageByOutput[output.id],
     })),
     rigIds: program.plan.rigs.map((rig) => rig.id),
@@ -71,25 +67,17 @@ export function explainCameraProgramFrame(input: {
   }[];
   defaultRig: { id: string; subject: CinematicSubjectRefIR };
 } {
-  const output = input.program.plan.outputs.find(
-    (candidate) => candidate.id === input.outputId,
-  );
-  if (!output)
-    throw new Error(`Camera output "${input.outputId}" does not exist.`);
+  const output = input.program.plan.outputs.find((candidate) => candidate.id === input.outputId);
+  if (!output) throw new Error(`Camera output "${input.outputId}" does not exist.`);
   if (
     !Number.isInteger(input.frame) ||
     input.frame < 0 ||
     input.frame >= input.program.plan.durationInFrames
   ) {
-    throw new Error(
-      `Camera frame ${input.frame} is outside the prepared plan.`,
-    );
+    throw new Error(`Camera frame ${input.frame} is outside the prepared plan.`);
   }
-  const segment = (
-    input.program.shotSegmentsByOutput[input.outputId] ?? []
-  ).find(
-    (candidate) =>
-      input.frame >= candidate.startFrame && input.frame < candidate.endFrame,
+  const segment = (input.program.shotSegmentsByOutput[input.outputId] ?? []).find(
+    (candidate) => input.frame >= candidate.startFrame && input.frame < candidate.endFrame,
   );
   const candidateShots = (segment?.shotIndexes ?? []).map((index) => {
     const shot = input.program.plan.shots[index];
@@ -101,12 +89,9 @@ export function explainCameraProgramFrame(input: {
       missingSubjectPolicy: shot.missingSubjectPolicy,
     };
   });
-  const defaultRig =
-    input.program.plan.rigs[input.program.rigIndexById[output.defaultRigId]];
+  const defaultRig = input.program.plan.rigs[input.program.rigIndexById[output.defaultRigId]];
   if (!defaultRig) {
-    throw new Error(
-      `Camera default rig "${output.defaultRigId}" does not exist.`,
-    );
+    throw new Error(`Camera default rig "${output.defaultRigId}" does not exist.`);
   }
   return {
     planId: input.program.plan.id,
@@ -201,9 +186,7 @@ export function createCinematicSubjectManifest(frame: CinematicSubjectFrame): {
         nodeId: subject.nodeId,
         visible: subject.visible,
         worldRect: subject.worldRect,
-        ...(subject.clippedWorldRect
-          ? { clippedWorldRect: subject.clippedWorldRect }
-          : {}),
+        ...(subject.clippedWorldRect ? { clippedWorldRect: subject.clippedWorldRect } : {}),
         ownerId: subject.provenance.ownerId,
         regionId: subject.provenance.regionId,
       }))

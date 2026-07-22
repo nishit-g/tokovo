@@ -17,16 +17,16 @@ function semantic(regions: Record<string, SemanticRegion>, groups: Record<string
 
 export function computeTeamsFeedLayout(ctx: LayoutContext): FeedLayoutState {
   const state = selectTeamsState(ctx.world) ?? undefined;
-  const { viewportWidth: width, viewportHeight: height, safeAreaInsets } = ctx;
+  const { viewportWidth: width, viewportHeight: height, appViewport } = ctx;
   const rows =
     state?.screen === "channel_feed"
       ? selectChannelFeedRows(state)
       : state
         ? selectChatListRows(state)
         : [];
-  const headerHeight = safeAreaInsets.top + 56;
+  const headerHeight = appViewport.contentInsets.top + 56;
   const filterHeight = state?.screen === "chat_list" ? 40 : 0;
-  const tabBarHeight = 49 + safeAreaInsets.bottom;
+  const tabBarHeight = 49 + appViewport.contentInsets.bottom;
   const contentY = headerHeight + filterHeight;
   const contentWidth = width - 32;
   const itemLayouts: Record<string, FeedItemLayout> = {};
@@ -34,7 +34,11 @@ export function computeTeamsFeedLayout(ctx: LayoutContext): FeedLayoutState {
     device: { id: "device", rect: rect(0, 0, width, height), tags: ["device"] },
     app: { id: "app", rect: rect(0, 0, width, height), tags: ["app"] },
     teams_surface: { id: "teams_surface", rect: rect(0, 0, width, height), tags: ["surface"] },
-    teams_header: { id: "teams_header", rect: rect(0, 0, width, headerHeight), tags: ["header", "sticky"] },
+    teams_header: {
+      id: "teams_header",
+      rect: rect(0, 0, width, headerHeight),
+      tags: ["header", "sticky"],
+    },
     teams_content: {
       id: "teams_content",
       rect: rect(0, contentY, width, Math.max(0, height - contentY - tabBarHeight)),
@@ -78,10 +82,7 @@ export function computeTeamsFeedLayout(ctx: LayoutContext): FeedLayoutState {
     regions[regionId] = {
       id: regionId,
       rect: rect(16, rowY, contentWidth, rowHeight),
-      tags: [
-        state?.screen === "channel_feed" ? "thread_card" : "row",
-        "tap_target",
-      ],
+      tags: [state?.screen === "channel_feed" ? "thread_card" : "row", "tap_target"],
       metadata: { id: row.id },
     };
     groups.row.push(regionId);

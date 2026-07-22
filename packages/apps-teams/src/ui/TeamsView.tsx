@@ -1,5 +1,5 @@
 import React from "react";
-import { useSafeAreaInsets } from "@tokovo/react";
+import { useAppViewport } from "@tokovo/react";
 import type { PluginViewProps } from "@tokovo/core";
 import { TEAMS_APP_ID, TEAMS_TABS } from "../constants.js";
 import type { TeamsState } from "../types/index.js";
@@ -11,7 +11,13 @@ import {
   tabBarStyle,
   tabItemStyle,
 } from "../styles.js";
-import { CalendarIcon, CallsIcon, ChatIcon, MoreIcon, TeamsIcon } from "../components/shared/Icons.js";
+import {
+  CalendarIcon,
+  CallsIcon,
+  ChatIcon,
+  MoreIcon,
+  TeamsIcon,
+} from "../components/shared/Icons.js";
 import { ChatListScreen } from "../components/screens/ChatListScreen.js";
 import { ChannelFeedScreen } from "../components/screens/ChannelFeedScreen.js";
 import { ThreadScreen } from "../components/screens/ThreadScreen.js";
@@ -76,7 +82,7 @@ function BottomTabs({ activeTab }: { activeTab: TeamsState["ui"]["activeTab"] })
 }
 
 const TeamsSurface: React.FC<{ state: TeamsState }> = ({ state }) => {
-  const safeArea = useSafeAreaInsets();
+  const { contentInsets } = useAppViewport();
   const theme = useTeamsTheme();
 
   React.useEffect(() => {
@@ -89,8 +95,8 @@ const TeamsSurface: React.FC<{ state: TeamsState }> = ({ state }) => {
       style={{
         ...createTeamsRootVars(theme),
         ...shellStyle,
-        paddingTop: safeArea.top,
-        paddingBottom: state.screen === "call_overlay" ? 0 : safeArea.bottom,
+        paddingTop: contentInsets.top,
+        paddingBottom: state.screen === "call_overlay" ? 0 : contentInsets.bottom,
       }}
     >
       <div style={appBodyStyle}>
@@ -106,16 +112,10 @@ const TeamsSurface: React.FC<{ state: TeamsState }> = ({ state }) => {
   );
 };
 
-export const TeamsView: React.FC<PluginViewProps> = ({
-  world,
-  deviceId,
-  platform,
-}) => {
+export const TeamsView: React.FC<PluginViewProps> = ({ world, deviceId, platform }) => {
   const state = getState(world);
   const resolvedDeviceId = deviceId ?? Object.keys(world.devices ?? {})[0];
-  const appTheme = resolvedDeviceId
-    ? world.devices?.[resolvedDeviceId]?.appTheme
-    : undefined;
+  const appTheme = resolvedDeviceId ? world.devices?.[resolvedDeviceId]?.appTheme : undefined;
   const resolvedPlatform = resolvePlatform(platform, resolvedDeviceId);
 
   return (

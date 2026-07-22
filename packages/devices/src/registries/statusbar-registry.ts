@@ -83,16 +83,6 @@ export class StatusBarStrategyRegistryClass {
   }
 
   /**
-   * Get strategy with fallback
-   */
-  getWithFallback(
-    variant: string,
-    fallback: string = "ios",
-  ): StatusBarStrategyComponent | undefined {
-    return this.strategies.get(variant) || this.strategies.get(fallback);
-  }
-
-  /**
    * Check if a strategy is registered
    */
   has(variant: string): boolean {

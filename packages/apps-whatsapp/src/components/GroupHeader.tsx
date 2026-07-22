@@ -8,10 +8,7 @@ import {
   useWhatsAppPresentation,
 } from "../experience/ExperienceContext.js";
 import { UI_CONSTANTS } from "../config/layout-config.js";
-import {
-  formatWhatsAppNumber,
-  type WhatsAppLocale,
-} from "../localization/index.js";
+import { formatWhatsAppNumber, type WhatsAppLocale } from "../localization/index.js";
 
 export interface GroupMemberInfo {
   id: string;
@@ -23,7 +20,7 @@ export interface GroupHeaderProps {
   groupName: string;
   members: GroupMemberInfo[];
   groupAvatar?: string;
-  safeAreaTop?: number;
+  contentInsetTop: number;
   onBack?: () => void;
 }
 
@@ -57,10 +54,7 @@ function getSubtitle(
   return names.join(", ");
 }
 
-const slotColor = (
-  index: number,
-  theme: ReturnType<typeof useTheme>,
-): string => {
+const slotColor = (index: number, theme: ReturnType<typeof useTheme>): string => {
   const colors = [
     theme.colors.timestamp,
     theme.colors.divider,
@@ -70,9 +64,7 @@ const slotColor = (
   return colors[index % colors.length];
 };
 
-const CompositeAvatar: React.FC<{ members: GroupMemberInfo[] }> = ({
-  members,
-}) => {
+const CompositeAvatar: React.FC<{ members: GroupMemberInfo[] }> = ({ members }) => {
   const theme = useTheme();
   const displayMembers = members.slice(0, 4);
 
@@ -133,7 +125,7 @@ export const GroupHeader: React.FC<GroupHeaderProps> = ({
   groupName,
   members,
   groupAvatar,
-  safeAreaTop = 59,
+  contentInsetTop,
   onBack,
 }) => {
   const theme = useTheme();
@@ -153,10 +145,10 @@ export const GroupHeader: React.FC<GroupHeaderProps> = ({
         display: "flex",
         alignItems: "center",
         backgroundColor: `${theme.colors.headerBackground}F2`,
-        paddingTop: safeAreaTop,
+        paddingTop: contentInsetTop,
         paddingInlineStart: spacing.contentMarginLeft,
         paddingInlineEnd: spacing.contentMarginRight,
-        height: safeAreaTop + UI_CONSTANTS.HEADER_CONTENT_HEIGHT,
+        height: contentInsetTop + UI_CONSTANTS.HEADER_CONTENT_HEIGHT,
         boxSizing: "border-box",
         borderBottom: `0.5px solid ${theme.colors.divider}`,
         backdropFilter: "blur(20px)",

@@ -1,9 +1,8 @@
+import { TOKOVO_MONO_UI_FONT_FAMILY } from "@tokovo/visual-system";
+
 export type TeamsThemeMode = "light" | "dark";
 export type TeamsPlatform = "ios" | "android";
-export type TeamsThemeId =
-  | "teams-default"
-  | "teams-storybook"
-  | "teams-summit";
+export type TeamsThemeId = "teams-default" | "teams-storybook" | "teams-summit";
 
 export interface TeamsDesignTokens {
   id: TeamsThemeId;
@@ -128,8 +127,8 @@ type ThemeOverride = Partial<{
 const baseScales = {
   typography: {
     fontFamily:
-      '"Aptos", "Segoe UI Variable", "Segoe UI", system-ui, -apple-system, sans-serif',
-    fontFamilyMono: '"SF Mono", "Roboto Mono", Menlo, monospace',
+      '"Inter Variable", "Noto Sans Arabic Variable", "Noto Sans Devanagari Variable", "Noto Sans JP Variable", sans-serif',
+    fontFamilyMono: TOKOVO_MONO_UI_FONT_FAMILY,
     title: 20,
     subtitle: 14,
     body: 14,
@@ -260,7 +259,7 @@ export const teamsAndroidLightTheme: TeamsDesignTokens = {
   typography: {
     ...teamsIosLightTheme.typography,
     fontFamily:
-      '"Aptos", Roboto, "Noto Sans", "Segoe UI", sans-serif',
+      '"Roboto", "Noto Sans Arabic Variable", "Noto Sans Devanagari Variable", "Noto Sans JP Variable", sans-serif',
   },
 };
 
@@ -324,7 +323,7 @@ export const teamsAndroidDarkTheme: TeamsDesignTokens = {
   typography: {
     ...teamsIosDarkTheme.typography,
     fontFamily:
-      '"Aptos", Roboto, "Noto Sans", "Segoe UI", sans-serif',
+      '"Roboto", "Noto Sans Arabic Variable", "Noto Sans Devanagari Variable", "Noto Sans JP Variable", sans-serif',
   },
 };
 
@@ -372,8 +371,7 @@ const STORYBOOK_OVERRIDES: ThemeOverride = {
     replyPreviewBg: "rgba(107, 160, 127, 0.1)",
     replyPreviewText: "#5b5e4d",
     composeBar: "rgba(255,250,242,0.88)",
-    inputSurface:
-      "linear-gradient(180deg, rgba(249,244,236,1) 0%, rgba(255,252,246,1) 100%)",
+    inputSurface: "linear-gradient(180deg, rgba(249,244,236,1) 0%, rgba(255,252,246,1) 100%)",
     inputPlaceholder: "#958c7a",
     tabBar: "rgba(255,250,242,0.92)",
     tabBarActive: "#6ba07f",

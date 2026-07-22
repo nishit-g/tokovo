@@ -17,6 +17,7 @@
   "dependencies": {
     "@tokovo/core": "workspace:*",
     "@tokovo/device-keyboard": "workspace:*",
+    "@tokovo/visual-system": "workspace:*",
     "zod": "^4.2.1"
   },
   "peerDependencies": {

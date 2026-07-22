@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import type { LayoutContext, ViewKind, WorldState } from "@tokovo/core";
-import { DEFAULT_AUDIO_STATE } from "@tokovo/core";
+import { createAppViewportFrame, DEFAULT_AUDIO_STATE } from "@tokovo/core";
 import { xLayoutStrategies } from "../layout/index.js";
 import { createXInitialState, type XScreen } from "../runtime/state.js";
 
@@ -24,7 +24,11 @@ function computeLayoutFor(screen: XScreen, viewKind: ViewKind) {
     viewKind,
     viewportWidth: 393,
     viewportHeight: 852,
-    safeAreaInsets: { top: 47, bottom: 34, left: 0, right: 0 },
+    appViewport: createAppViewportFrame({
+      width: 393,
+      height: 852,
+      contentInsets: { top: 47, bottom: 34 },
+    }),
     layoutCache: undefined,
   };
 

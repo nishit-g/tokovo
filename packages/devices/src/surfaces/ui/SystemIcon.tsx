@@ -1,21 +1,24 @@
 import React from "react";
 import { DeterministicImage } from "@tokovo/react";
 import type { AppIcon } from "@tokovo/core";
-import type { SystemSurfaceTheme } from "../contract.js";
+import type { SystemSurfaceLayout, SystemSurfaceTheme } from "../contract.js";
 
 function isImageSource(value: string): boolean {
   return /^(?:https?:\/\/|\/|data:|r2:\/\/)/u.test(value);
 }
 
-function isEmoji(value: string): boolean {
-  return /^\p{Extended_Pictographic}/u.test(value);
-}
-
 const BubbleGlyph: React.FC<{ phone?: boolean }> = ({ phone = false }) => (
   <svg width="64%" height="64%" viewBox="0 0 64 64" fill="none" aria-hidden="true">
-    <path d="M12 28c0-11 9-19 20-19s20 8 20 19-9 19-20 19c-3.3 0-6.4-.7-9.2-2.1L13 50l2.7-9.3A18.6 18.6 0 0 1 12 28Z" fill="white" />
+    <path
+      d="M12 28c0-11 9-19 20-19s20 8 20 19-9 19-20 19c-3.3 0-6.4-.7-9.2-2.1L13 50l2.7-9.3A18.6 18.6 0 0 1 12 28Z"
+      fill="white"
+    />
     {phone ? (
-      <path d="M25 19c1.5-1 3.4-.5 4.2 1l2.1 4.2c.7 1.4.4 3-.8 4l-1.6 1.4c2.2 4.1 4.9 6.8 9 9l1.5-1.7a3.1 3.1 0 0 1 3.8-.7l4 2.2c1.6.8 2.1 2.8 1.1 4.3-1.4 2-3.8 3.5-6.4 3.5-11.8 0-24.1-12.3-24.1-24.1 0-2.7 1.3-5.1 3.4-6.5l3.8-2.6Z" fill="#20B85A" transform="scale(.75) translate(11 10)" />
+      <path
+        d="M25 19c1.5-1 3.4-.5 4.2 1l2.1 4.2c.7 1.4.4 3-.8 4l-1.6 1.4c2.2 4.1 4.9 6.8 9 9l1.5-1.7a3.1 3.1 0 0 1 3.8-.7l4 2.2c1.6.8 2.1 2.8 1.1 4.3-1.4 2-3.8 3.5-6.4 3.5-11.8 0-24.1-12.3-24.1-24.1 0-2.7 1.3-5.1 3.4-6.5l3.8-2.6Z"
+        fill="#20B85A"
+        transform="scale(.75) translate(11 10)"
+      />
     ) : null}
   </svg>
 );
@@ -38,11 +41,19 @@ const InstagramGlyph: React.FC = () => (
 
 const GhostGlyph: React.FC = () => (
   <svg width="60%" height="60%" viewBox="0 0 64 64" fill="none" aria-hidden="true">
-    <path d="M32 8c-10 0-16 8-16 18v9c0 4-4 7-8 8 2 4 6 5 10 4 2 5 7 8 14 8s12-3 14-8c4 1 8 0 10-4-4-1-8-4-8-8v-9C48 16 42 8 32 8Z" fill="white" stroke="#111" strokeWidth="2.2" strokeLinejoin="round" />
+    <path
+      d="M32 8c-10 0-16 8-16 18v9c0 4-4 7-8 8 2 4 6 5 10 4 2 5 7 8 14 8s12-3 14-8c4 1 8 0 10-4-4-1-8-4-8-8v-9C48 16 42 8 32 8Z"
+      fill="white"
+      stroke="#111"
+      strokeWidth="2.2"
+      strokeLinejoin="round"
+    />
   </svg>
 );
 
-function builtInIdentity(appId: string): { background: string; foreground: React.ReactNode } | null {
+function builtInIdentity(
+  appId: string,
+): { background: string; foreground: React.ReactNode } | null {
   switch (appId) {
     case "app_whatsapp":
       return { background: "#20B85A", foreground: <BubbleGlyph phone /> };
@@ -50,19 +61,32 @@ function builtInIdentity(appId: string): { background: string; foreground: React
       return { background: "#34C759", foreground: <BubbleGlyph /> };
     case "app_instagram":
       return {
-        background: "radial-gradient(circle at 70% 72%, #FFD36B 0 12%, transparent 34%), linear-gradient(145deg, #6D36C7 4%, #C72D8E 48%, #F36B36 82%)",
+        background:
+          "radial-gradient(circle at 70% 72%, #FFD36B 0 12%, transparent 34%), linear-gradient(145deg, #6D36C7 4%, #C72D8E 48%, #F36B36 82%)",
         foreground: <InstagramGlyph />,
       };
     case "app_x":
-      return { background: "#050505", foreground: <span style={{ color: "white", fontSize: "58%", fontWeight: 500 }}>𝕏</span> };
+      return {
+        background: "#050505",
+        foreground: <span style={{ color: "white", fontSize: "58%", fontWeight: 500 }}>𝕏</span>,
+      };
     case "app_linkedin":
-      return { background: "#0A66C2", foreground: <span style={{ color: "white", fontSize: "54%", fontWeight: 800 }}>in</span> };
+      return {
+        background: "#0A66C2",
+        foreground: <span style={{ color: "white", fontSize: "54%", fontWeight: 800 }}>in</span>,
+      };
     case "app_teams":
-      return { background: "#6264A7", foreground: <span style={{ color: "white", fontSize: "58%", fontWeight: 800 }}>T</span> };
+      return {
+        background: "#6264A7",
+        foreground: <span style={{ color: "white", fontSize: "58%", fontWeight: 800 }}>T</span>,
+      };
     case "app_snapchat":
       return { background: "#FFFC00", foreground: <GhostGlyph /> };
     case "app_camera":
-      return { background: "linear-gradient(145deg, #74777D, #292B2F)", foreground: <CameraGlyph /> };
+      return {
+        background: "linear-gradient(145deg, #74777D, #292B2F)",
+        foreground: <CameraGlyph />,
+      };
     default:
       return null;
   }
@@ -73,14 +97,16 @@ export const SystemAppIcon: React.FC<{
   size: number;
   radius: number;
   theme: SystemSurfaceTheme;
+  layout: SystemSurfaceLayout;
   showLabel?: boolean;
-}> = ({ app, size, radius, theme, showLabel = true }) => {
+}> = ({ app, size, radius, theme, layout, showLabel = true }) => {
   const identity = builtInIdentity(app.appId);
-  const scale = size / theme.geometry.home.iconSize;
+  const scale = size / layout.home.iconSize;
   const labelColor = theme.colors.primaryText;
-  const labelShadow = theme.appearance === "light"
-    ? "0 1px 5px rgba(255, 255, 255, 0.86)"
-    : "0 1px 5px rgba(0, 0, 0, 0.72)";
+  const labelShadow =
+    theme.appearance === "light"
+      ? "0 1px 5px rgba(255, 255, 255, 0.86)"
+      : "0 1px 5px rgba(0, 0, 0, 0.72)";
 
   return (
     <div
@@ -90,7 +116,7 @@ export const SystemAppIcon: React.FC<{
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
-        gap: showLabel ? theme.geometry.home.labelGap : 0,
+        gap: showLabel ? layout.home.labelGap : 0,
         minWidth: 0,
       }}
     >
@@ -114,26 +140,28 @@ export const SystemAppIcon: React.FC<{
             alignItems: "center",
             justifyContent: "center",
             background: identity?.background ?? theme.colors.chromeStrong,
-            boxShadow: theme.platform === "ios"
-              ? "0 2px 5px rgba(0, 0, 0, 0.18), inset 0 0 0 1px rgba(255, 255, 255, 0.14)"
-              : "0 2px 4px rgba(0, 0, 0, 0.2)",
+            boxShadow:
+              theme.platform === "ios"
+                ? "0 2px 5px rgba(0, 0, 0, 0.18), inset 0 0 0 1px rgba(255, 255, 255, 0.14)"
+                : "0 2px 4px rgba(0, 0, 0, 0.2)",
             fontFamily: theme.fontFamily,
             fontSize: size,
           }}
         >
-          {identity?.foreground ?? (isImageSource(app.icon) ? (
-            <DeterministicImage
-              src={app.icon}
-              alt=""
-              style={{ width: "100%", height: "100%", objectFit: "cover" }}
-            />
-          ) : isEmoji(app.icon) ? (
-            <span style={{ fontSize: size * 0.52, lineHeight: 1 }}>{app.icon}</span>
-          ) : (
-            <span style={{ color: theme.colors.primaryText, fontSize: size * 0.42, fontWeight: 750 }}>
-              {(app.label.trim()[0] || "•").toUpperCase()}
-            </span>
-          ))}
+          {identity?.foreground ??
+            (isImageSource(app.icon) ? (
+              <DeterministicImage
+                src={app.icon}
+                alt=""
+                style={{ width: "100%", height: "100%", objectFit: "cover" }}
+              />
+            ) : (
+              <span
+                style={{ color: theme.colors.primaryText, fontSize: size * 0.42, fontWeight: 750 }}
+              >
+                {(app.label.trim()[0] || "A").toUpperCase()}
+              </span>
+            ))}
         </div>
 
         {app.badge && app.badge > 0 ? (
@@ -169,14 +197,14 @@ export const SystemAppIcon: React.FC<{
       {showLabel ? (
         <span
           style={{
-            width: size + theme.geometry.pointScale * 14,
+            width: size + layout.pointScale * 14,
             overflow: "hidden",
             textOverflow: "ellipsis",
             whiteSpace: "nowrap",
             textAlign: "center",
             color: labelColor,
             fontFamily: theme.fontFamily,
-            fontSize: theme.geometry.home.labelSize,
+            fontSize: layout.home.labelSize,
             fontWeight: 500,
             lineHeight: 1.15,
             textShadow: labelShadow,

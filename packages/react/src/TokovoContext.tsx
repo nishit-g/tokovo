@@ -5,10 +5,8 @@ import {
   type DeviceState,
   type LayoutState,
 } from "@tokovo/core";
-import type {
-  InputProjection,
-  PreparedInputProgram,
-} from "@tokovo/device-keyboard";
+import type { InputProjection, PreparedInputProgram } from "@tokovo/device-keyboard";
+import type { AppViewportFrame } from "@tokovo/visual-system";
 
 interface TokovoContextValue {
   world: WorldState;
@@ -18,12 +16,7 @@ interface TokovoContextValue {
   fps: number;
   layout: LayoutState | undefined;
   platform: string;
-  safeAreaInsets: {
-    top: number;
-    bottom: number;
-    left: number;
-    right: number;
-  };
+  appViewport: AppViewportFrame;
   keyboardHeight: number;
   inputProgram?: PreparedInputProgram;
   inputProjection?: InputProjection;
@@ -40,12 +33,7 @@ interface TokovoProviderProps {
   fps?: number;
   layout?: LayoutState;
   platform?: string;
-  safeAreaInsets?: {
-    top: number;
-    bottom: number;
-    left: number;
-    right: number;
-  };
+  appViewport: AppViewportFrame;
   keyboardHeight?: number;
   inputProgram?: PreparedInputProgram;
   inputProjection?: InputProjection;
@@ -60,7 +48,7 @@ export function TokovoProvider({
   fps = 30,
   layout,
   platform = "ios",
-  safeAreaInsets = { top: 0, bottom: 0, left: 0, right: 0 },
+  appViewport,
   keyboardHeight = 0,
   inputProgram,
   inputProjection,
@@ -74,7 +62,7 @@ export function TokovoProvider({
       fps,
       layout,
       platform,
-      safeAreaInsets,
+      appViewport,
       keyboardHeight,
       inputProgram,
       inputProjection,
@@ -87,7 +75,7 @@ export function TokovoProvider({
       fps,
       layout,
       platform,
-      safeAreaInsets,
+      appViewport,
       keyboardHeight,
       inputProgram,
       inputProjection,
@@ -147,8 +135,8 @@ export function useAppId(): string {
   return useTokovoContext().appId;
 }
 
-export function useSafeAreaInsets() {
-  return useTokovoContext().safeAreaInsets;
+export function useAppViewport(): AppViewportFrame {
+  return useTokovoContext().appViewport;
 }
 
 export function useKeyboardHeight() {

@@ -50,7 +50,7 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
             padding: 40,
           }}
         >
-          <div style={{ fontSize: 48, marginBottom: 20 }}>⚠️ Render Error</div>
+          <div style={{ fontSize: 36, marginBottom: 20 }}>Render Error</div>
           <div
             style={{
               fontSize: 18,

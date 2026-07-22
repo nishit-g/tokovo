@@ -15,10 +15,7 @@ import {
   Users,
   Video,
 } from "lucide-react";
-import {
-  useTheme,
-  useWhatsAppLocale,
-} from "../../experience/ExperienceContext.js";
+import { useTheme, useWhatsAppLocale } from "../../experience/ExperienceContext.js";
 import type { WhatsAppMessage, WhatsAppState } from "../../types/index.js";
 import { resolveAvatarWithFallback } from "../../utils/avatar.js";
 import { formatWhatsAppNumber } from "../../localization/index.js";
@@ -27,7 +24,7 @@ import { GroupInfoScreen } from "./GroupInfoScreen.js";
 
 export interface ProfileScreenProps {
   world: WorldState;
-  safeAreaInsets?: {
+  contentInsets: {
     top: number;
     bottom: number;
     left: number;
@@ -79,26 +76,19 @@ function ActionTile({ label, icon }: { label: string; icon: React.ReactNode }) {
   );
 }
 
-export function ProfileScreen({
-  world,
-  safeAreaInsets,
-  width,
-  height,
-}: ProfileScreenProps) {
+export function ProfileScreen({ world, contentInsets, width, height }: ProfileScreenProps) {
   const theme = useTheme();
   const { direction, locale, t } = useWhatsAppLocale();
   const { uiTypography: typography } = theme;
-  const safeAreaTop = safeAreaInsets?.top ?? theme.safeArea.top;
-  const safeAreaBottom = safeAreaInsets?.bottom ?? theme.safeArea.bottom;
+  const contentInsetTop = contentInsets.top;
+  const contentInsetBottom = contentInsets.bottom;
   const state = world.appState?.app_whatsapp as WhatsAppState | undefined;
   if (!state) {
     throw new Error("WhatsApp profile screen requires app_whatsapp state");
   }
   const conversations = state.conversations;
   const conversationId = state.conversationId;
-  const conversation = conversationId
-    ? conversations[conversationId]
-    : undefined;
+  const conversation = conversationId ? conversations[conversationId] : undefined;
 
   if (!conversation) {
     throw new Error("WhatsApp profile screen requires a current conversation");
@@ -109,7 +99,7 @@ export function ProfileScreen({
       <GroupInfoScreen
         world={world}
         conversationId={conversation.id}
-        safeAreaInsets={safeAreaInsets}
+        contentInsets={contentInsets}
         width={width}
         height={height}
       />
@@ -119,26 +109,20 @@ export function ProfileScreen({
   const messages = conversation.messages;
   const media = messages
     .map((message) => ({ message, src: mediaSource(message) }))
-    .filter((item): item is { message: WhatsAppMessage; src: string } =>
-      Boolean(item.src),
-    );
-  const remoteMember = conversation.members?.find(
-    (member) => member.id.toLowerCase() !== "me",
-  );
+    .filter((item): item is { message: WhatsAppMessage; src: string } => Boolean(item.src));
+  const remoteMember = conversation.members?.find((member) => member.id.toLowerCase() !== "me");
   const phone = conversation.contact?.phone ?? remoteMember?.phone;
   const about = conversation.contact?.about ?? conversation.description;
   const detail =
-    conversation.contact?.lastSeenLabel ??
-    conversation.contact?.businessCategory ??
-    phone;
+    conversation.contact?.lastSeenLabel ?? conversation.contact?.businessCategory ?? phone;
   const fallbackContactName = t("profile.contact");
   const contactName = conversation.name ?? fallbackContactName;
 
   return (
     <AppScaffold
       title={t("screen.contactInfo")}
-      safeAreaTop={safeAreaTop}
-      safeAreaBottom={safeAreaBottom}
+      contentInsetTop={contentInsetTop}
+      contentInsetBottom={contentInsetBottom}
       showTabs={false}
       leading={
         <div style={{ display: "flex", alignItems: "center", gap: 2 }}>
@@ -151,16 +135,9 @@ export function ProfileScreen({
           <span style={{ fontSize: 15 }}>{t("action.back")}</span>
         </div>
       }
-      actions={
-        <span style={{ fontSize: 15, fontWeight: 600 }}>
-          {t("action.edit")}
-        </span>
-      }
+      actions={<span style={{ fontSize: 15, fontWeight: 600 }}>{t("action.edit")}</span>}
     >
-      <div
-        data-cinematic-subject="profile_hero"
-        style={{ padding: "16px 16px 12px" }}
-      >
+      <div data-cinematic-subject="profile_hero" style={{ padding: "16px 16px 12px" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
           <div
             style={{
@@ -300,8 +277,7 @@ export function ProfileScreen({
               fontFamily: theme.typography.fontFamily,
             }}
           >
-            {formatWhatsAppNumber(locale, media.length)}{" "}
-            {direction === "rtl" ? "‹" : "›"}
+            {formatWhatsAppNumber(locale, media.length)} {direction === "rtl" ? "‹" : "›"}
           </span>
         </div>
         <div style={{ display: "flex", gap: 6 }}>
@@ -334,9 +310,7 @@ export function ProfileScreen({
               }}
             >
               <FileImage size={19} />
-              <span style={{ ...typography.caption }}>
-                {t("profile.nothingShared")}
-              </span>
+              <span style={{ ...typography.caption }}>{t("profile.nothingShared")}</span>
             </div>
           )}
         </div>
@@ -361,9 +335,7 @@ export function ProfileScreen({
           icon={<Timer size={17} />}
           iconBackground="#15A085"
           title={t("profile.disappearingMessages")}
-          trailing={
-            conversation.preferences?.disappearingMessages ?? t("profile.off")
-          }
+          trailing={conversation.preferences?.disappearingMessages ?? t("profile.off")}
         />
         <SettingsRow
           icon={<Lock size={17} />}

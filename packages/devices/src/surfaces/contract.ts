@@ -1,9 +1,5 @@
-import type {
-  AppFolder,
-  AppIcon,
-  HomeScreenConfig,
-  LayoutRect,
-} from "@tokovo/core";
+import type { AppFolder, AppIcon, HomeScreenConfig, LayoutRect } from "@tokovo/core";
+import type { MaterialRecipe } from "@tokovo/visual-system";
 
 export type SystemSurfacePlatform = "ios" | "android";
 export type SystemAppearance = "light" | "dark";
@@ -16,7 +12,7 @@ export interface SystemWallpaperProjection {
 }
 
 export interface SystemSurfaceTheme {
-  id: `system:${SystemSurfacePlatform}:${SystemAppearance}`;
+  id: string;
   platform: SystemSurfacePlatform;
   appearance: SystemAppearance;
   statusBarTheme: "light" | "dark";
@@ -35,42 +31,52 @@ export interface SystemSurfaceTheme {
   };
   wallpaper: string;
   wallpaperScrim: string;
-  geometry: {
-    pointScale: number;
-    lock: {
-      dateTop: number;
-      dateSize: number;
-      clockTop: number;
-      clockSize: number;
-      androidClockSize: number;
-      controlsBottom: number;
-      controlSize: number;
-      controlIconSize: number;
-    };
-    home: {
-      gridColumns: number;
-      gridRows: number;
-      gridTop: number;
-      gridPaddingX: number;
-      rowGap: number;
-      columnGap: number;
-      iconSize: number;
-      iconRadius: number;
-      labelSize: number;
-      labelGap: number;
-      dockHeight: number;
-      dockWidth: number;
-      dockBottom: number;
-      dockRadius: number;
-      dockIconSize: number;
-      pageDotsBottom: number;
-      pageDotSize: number;
-      pageDotGap: number;
-      searchBottom: number;
-      searchHeight: number;
-      atAGlanceTop: number;
-    };
+  materials: {
+    chrome: MaterialRecipe;
+    chromeRaised: MaterialRecipe;
   };
+}
+
+export interface SystemSurfaceLayout {
+  pointScale: number;
+  lock: {
+    dateTop: number;
+    dateSize: number;
+    clockTop: number;
+    clockSize: number;
+    androidClockSize: number;
+    controlsBottom: number;
+    controlSize: number;
+    controlIconSize: number;
+  };
+  home: {
+    gridColumns: number;
+    gridRows: number;
+    gridTop: number;
+    gridPaddingX: number;
+    rowGap: number;
+    columnGap: number;
+    iconSize: number;
+    iconRadius: number;
+    labelSize: number;
+    labelGap: number;
+    dockHeight: number;
+    dockWidth: number;
+    dockBottom: number;
+    dockRadius: number;
+    dockIconSize: number;
+    pageDotsBottom: number;
+    pageDotSize: number;
+    pageDotGap: number;
+    searchBottom: number;
+    searchHeight: number;
+    atAGlanceTop: number;
+  };
+}
+
+export interface SystemSurfaceDesign {
+  theme: SystemSurfaceTheme;
+  layout: SystemSurfaceLayout;
 }
 
 export interface SystemLocalizedStrings {
@@ -87,6 +93,7 @@ export interface SystemLocalizedStrings {
 export interface LockscreenProjection {
   kind: "lockscreen";
   theme: SystemSurfaceTheme;
+  layout: SystemSurfaceLayout;
   locale: string;
   direction: SystemDirection;
   time: string;
@@ -101,6 +108,7 @@ export type ProjectedHomeItem = AppIcon | AppFolder;
 export interface HomeScreenProjection {
   kind: "homescreen";
   theme: SystemSurfaceTheme;
+  layout: SystemSurfaceLayout;
   locale: string;
   direction: SystemDirection;
   strings: SystemLocalizedStrings;
@@ -113,6 +121,4 @@ export interface HomeScreenProjection {
   cinematicSubjects: Readonly<Record<string, LayoutRect>>;
 }
 
-export type SystemSurfaceProjection =
-  | LockscreenProjection
-  | HomeScreenProjection;
+export type SystemSurfaceProjection = LockscreenProjection | HomeScreenProjection;

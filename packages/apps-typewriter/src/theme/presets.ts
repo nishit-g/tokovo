@@ -1,4 +1,5 @@
 import type { TypewriterThemePresetId, TypewriterThemeTokens } from "./types.js";
+import { TOKOVO_IOS_UI_FONT_FAMILY, TOKOVO_MONO_UI_FONT_FAMILY } from "@tokovo/visual-system";
 
 const classic: TypewriterThemeTokens = {
   designWidth: 1080,
@@ -37,15 +38,14 @@ const classic: TypewriterThemeTokens = {
     headerTopPadPx: 28,
     headerBottomPadPx: 12,
     headerGapPx: 6,
-    metaFontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
+    metaFontFamily: TOKOVO_MONO_UI_FONT_FAMILY,
     metaFontSizePx: 18,
     metaLineHeightPx: 24,
     metaLabelWidthPx: 84,
     metaLabelColor: "rgba(10, 12, 14, 0.55)",
     metaValueColor: "rgba(10, 12, 14, 0.9)",
     metaDividerColor: "rgba(0,0,0,0.08)",
-    fontFamily:
-      "\"Courier New\", Courier, ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
+    fontFamily: TOKOVO_MONO_UI_FONT_FAMILY,
     fontSizePx: 28,
     lineHeightPx: 34,
     charWidthPx: 16.5,
@@ -74,7 +74,7 @@ const classic: TypewriterThemeTokens = {
     plateHeightPx: 26,
     plateRadiusPx: 12,
     brandText: "TOKOVO",
-    brandFontFamily: "ui-sans-serif, system-ui, -apple-system, Segoe UI, sans-serif",
+    brandFontFamily: TOKOVO_IOS_UI_FONT_FAMILY,
     brandFontSizePx: 14,
     brandFontWeight: 700,
     brandLetterSpacingEm: 0.24,

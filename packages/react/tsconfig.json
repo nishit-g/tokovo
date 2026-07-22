@@ -4,6 +4,10 @@
     "outDir": "./dist",
     "rootDir": "./src"
   },
-  "references": [{ "path": "../core" }, { "path": "../device-keyboard" }],
+  "references": [
+    { "path": "../core" },
+    { "path": "../device-keyboard" },
+    { "path": "../visual-system" }
+  ],
   "include": ["src/**/*"]
 }

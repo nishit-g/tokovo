@@ -3,12 +3,9 @@ import type {
   DynamicIslandPresentation,
   ScreenRecordingPresentation,
 } from "@tokovo/core";
+import type { MaterialRecipe } from "@tokovo/visual-system";
 
-export type DynamicIslandVisualPhase =
-  | "idle"
-  | "countdown"
-  | "recording"
-  | "activity";
+export type DynamicIslandVisualPhase = "idle" | "countdown" | "recording" | "activity";
 
 export interface DynamicIslandGeometry {
   top: number;
@@ -58,6 +55,13 @@ export interface DynamicIslandProjection {
   contentOpacity: number;
   direction: "ltr" | "rtl";
   appearance: "light" | "dark";
+  visuals: {
+    fontFamily: string;
+    primaryText: string;
+    secondaryText: string;
+    islandMaterial: MaterialRecipe;
+    notificationMaterial: MaterialRecipe;
+  };
   recording?: ScreenRecordingIslandContent;
   activity?: DynamicIslandActivityContent;
   completionBanner?: ScreenRecordingCompletionBanner;

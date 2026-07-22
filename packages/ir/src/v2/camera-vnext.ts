@@ -1,3 +1,5 @@
+import type { CompositionProfileId } from "@tokovo/visual-system";
+
 /**
  * Camera VNext serializable authoring contracts.
  *
@@ -185,7 +187,7 @@ export interface CameraOutputShadowIR {
   opacity: number;
 }
 
-export interface CameraSafeAreaInsetsIR {
+export interface CameraEditorialInsetsIR {
   top: number;
   right: number;
   bottom: number;
@@ -202,8 +204,10 @@ export interface CameraOutputIR {
   shadow?: CameraOutputShadowIR;
   /** Whether authored shots must cover every frame or the default rig may cover gaps. */
   coveragePolicy: "require-shots" | "allow-default";
-  /** Output-space safe zone used by every rig targeting this output. */
-  safeAreaInsets?: CameraSafeAreaInsetsIR;
+  /** Editorial composition policy; resolves default insets and overlay intent. */
+  compositionProfileId: CompositionProfileId;
+  /** Output-space editorial protection used by every rig targeting this output. */
+  editorialInsets?: CameraEditorialInsetsIR;
   defaultRigId: string;
 }
 

@@ -24,7 +24,8 @@
   },
   "dependencies": {
     "@tokovo/ir": "workspace:*",
-    "@tokovo/stage": "workspace:*"
+    "@tokovo/stage": "workspace:*",
+    "@tokovo/visual-system": "workspace:*"
   },
   "devDependencies": {
     "typescript": "^5.9.3",

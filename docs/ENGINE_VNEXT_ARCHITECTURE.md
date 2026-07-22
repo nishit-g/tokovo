@@ -4,7 +4,7 @@
 **Audience:** maintainers, product engineers, app-package owners, rendering engineers, and contributors
 **Last reviewed:** 2026-07-21
 **Governs:** authoring, IR, compilation, runtime, device systems, app plugins, layout, rendering, audio, and deterministic enforcement
-**Specialist companion:** [Camera VNext Architecture](./CAMERA_VNEXT_ARCHITECTURE.md)
+**Specialist companions:** [Camera VNext Architecture](./CAMERA_VNEXT_ARCHITECTURE.md) and [Visual System VNext Architecture](./VISUAL_SYSTEM_VNEXT_ARCHITECTURE.md)
 
 ## Executive Summary
 
@@ -81,6 +81,12 @@ The proof fixture is `os-surface-mega-exhaustive`: four devices spanning iOS/And
 light/dark, Hindi/Arabic/Japanese/English input, RTL, lock/home, notification privacy,
 grouping, DND/foreground policy, notification center, and a real quick reply that mutates
 WhatsApp state.
+
+The visual-system hard cut is recorded in
+[VISUAL_SYSTEM_VNEXT_IMPLEMENTATION_PLAN.md](./VISUAL_SYSTEM_VNEXT_IMPLEMENTATION_PLAN.md). Device
+geometry, platform themes, app viewport geometry, editorial composition, and governed backdrops now
+share one versioned contract. App-local inset defaults and renderer/device substitution paths are
+deleted.
 
 ## Product and Engineering Verdict
 

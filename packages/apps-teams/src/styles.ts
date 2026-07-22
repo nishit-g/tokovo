@@ -3,7 +3,7 @@ import { pulse } from "@tokovo/react";
 import type { TeamsDesignTokens } from "./config/theme.js";
 
 export const teamsFontFamily =
-  'var(--teams-font-family, "Aptos", "Segoe UI Variable", "Segoe UI", system-ui, sans-serif)';
+  'var(--teams-font-family, "Inter Variable", "Noto Sans Variable", sans-serif)';
 
 let injected = false;
 
@@ -617,7 +617,7 @@ export const tabBarStyle: CSSProperties = {
   display: "flex",
   alignItems: "center",
   justifyContent: "space-around",
-  padding: "6px 10px calc(6px + env(safe-area-inset-bottom, 0px))",
+  padding: "6px 10px",
   background: token("--teams-tab-bar"),
   borderTop: `1px solid ${token("--teams-border")}`,
   backdropFilter: "blur(18px) saturate(110%)",

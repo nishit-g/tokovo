@@ -8,6 +8,7 @@
 import React from "react";
 import type { WorldState, LayoutState } from "@tokovo/core";
 import { createRegistry } from "@tokovo/core";
+import type { AppViewportFrame } from "@tokovo/visual-system";
 
 // =============================================================================
 // TYPES
@@ -24,17 +25,10 @@ export interface AppViewProps {
   deviceId?: string;
   width?: number;
   height?: number;
-  safeAreaInsets?: {
-    top: number;
-    bottom: number;
-    left: number;
-    right: number;
-  };
+  appViewport: AppViewportFrame;
 }
 
-export type AppViewComponent = (
-  props: AppViewProps,
-) => React.ReactElement | null;
+export type AppViewComponent = (props: AppViewProps) => React.ReactElement | null;
 
 // =============================================================================
 // REGISTRY

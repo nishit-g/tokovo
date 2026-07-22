@@ -1,5 +1,6 @@
 import React, { Component, ReactNode, ErrorInfo } from "react";
 import { createScopedLogger } from "@tokovo/core";
+import { TOKOVO_IOS_UI_FONT_FAMILY } from "@tokovo/visual-system";
 
 const log = createScopedLogger("renderer");
 
@@ -16,10 +17,7 @@ interface ErrorBoundaryState {
   errorInfo: ErrorInfo | null;
 }
 
-export class ErrorBoundary extends Component<
-  ErrorBoundaryProps,
-  ErrorBoundaryState
-> {
+export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
   constructor(props: ErrorBoundaryProps) {
     super(props);
     this.state = {
@@ -76,9 +74,7 @@ export class ErrorBoundary extends Component<
           }}
         >
           <div style={{ fontSize: 16, marginBottom: 10 }}>Component Error</div>
-          <div style={{ color: "#ccc", textAlign: "center", maxWidth: "90%" }}>
-            {error.message}
-          </div>
+          <div style={{ color: "#ccc", textAlign: "center", maxWidth: "90%" }}>{error.message}</div>
         </div>
       );
     }
@@ -93,11 +89,7 @@ interface RenderSafeProps {
   fallback?: ReactNode;
 }
 
-export const RenderSafe: React.FC<RenderSafeProps> = ({
-  children,
-  name,
-  fallback,
-}) => {
+export const RenderSafe: React.FC<RenderSafeProps> = ({ children, name, fallback }) => {
   return (
     <ErrorBoundary componentName={name} fallback={fallback}>
       {children}
@@ -111,11 +103,7 @@ interface AppErrorBoundaryProps {
   onError?: (error: Error, appId: string) => void;
 }
 
-export const AppErrorBoundary: React.FC<AppErrorBoundaryProps> = ({
-  children,
-  appId,
-  onError,
-}) => {
+export const AppErrorBoundary: React.FC<AppErrorBoundaryProps> = ({ children, appId, onError }) => {
   const handleError = (error: Error, _errorInfo: ErrorInfo) => {
     if (onError) {
       onError(error, appId);
@@ -136,15 +124,26 @@ export const AppErrorBoundary: React.FC<AppErrorBoundaryProps> = ({
             justifyContent: "center",
             alignItems: "center",
             color: "#666",
-            fontFamily: "system-ui, sans-serif",
+            fontFamily: TOKOVO_IOS_UI_FONT_FAMILY,
             fontSize: 14,
           }}
         >
-          <div style={{ fontSize: 32, marginBottom: 16 }}>⚠️</div>
-          <div>App failed to render</div>
-          <div style={{ fontSize: 12, marginTop: 8, color: "#444" }}>
-            {appId}
+          <div
+            style={{
+              width: 36,
+              height: 36,
+              marginBottom: 16,
+              borderRadius: 12,
+              border: "1px solid #666",
+              display: "grid",
+              placeItems: "center",
+              fontWeight: 700,
+            }}
+          >
+            !
           </div>
+          <div>App failed to render</div>
+          <div style={{ fontSize: 12, marginTop: 8, color: "#444" }}>{appId}</div>
         </div>
       }
     >

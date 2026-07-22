@@ -1,15 +1,31 @@
-import type {
-  InputProjection,
-  KeyboardFamily,
-  KeyboardLayoutKind,
-} from "../contract/index.js";
+import type { InputProjection, KeyboardFamily, KeyboardLayoutKind } from "../contract/index.js";
 
 type KeyboardRows = readonly (readonly string[])[];
+
+export interface KeyboardLayoutDefinition {
+  id: string;
+  rows: KeyboardRows;
+  rowInsets: readonly number[];
+  keyGapScale: number;
+  fontScale: number;
+}
 
 const LATIN: KeyboardRows = [
   ["q", "w", "e", "r", "t", "y", "u", "i", "o", "p"],
   ["a", "s", "d", "f", "g", "h", "j", "k", "l"],
   ["z", "x", "c", "v", "b", "n", "m"],
+];
+
+const IOS_DEVANAGARI: KeyboardRows = [
+  ["ौ", "ै", "ा", "ी", "ू", "ब", "ह", "ग", "द", "ज"],
+  ["ो", "े", "्", "ि", "ु", "प", "र", "क", "त", "च"],
+  ["ं", "म", "न", "व", "ल", "स", "य"],
+];
+
+const ANDROID_DEVANAGARI: KeyboardRows = [
+  ["ौ", "ै", "ा", "ी", "ू", "ब", "ह", "ग", "द", "ज", "ड़"],
+  ["ो", "े", "्", "ि", "ु", "प", "र", "क", "त", "च", "ट"],
+  ["ॅ", "ं", "म", "न", "व", "ल", "स", "य"],
 ];
 
 const FAMILY_ROWS: Partial<Record<KeyboardFamily, KeyboardRows>> = {
@@ -101,11 +117,39 @@ const LAYOUT_ROWS: Record<Exclude<KeyboardLayoutKind, "letters">, KeyboardRows> 
   ],
 };
 
-export function resolveInputKeyboardRows(
-  projection: InputProjection,
-): KeyboardRows {
+export function resolveInputKeyboardLayout(projection: InputProjection): KeyboardLayoutDefinition {
   if (projection.surface.layout !== "letters") {
-    return LAYOUT_ROWS[projection.surface.layout];
+    return {
+      id: `${projection.surface.platform}:${projection.surface.layout}`,
+      rows: LAYOUT_ROWS[projection.surface.layout],
+      rowInsets: [0, 0, 14],
+      keyGapScale: 1,
+      fontScale: projection.surface.layout === "emoji" ? 0.88 : 1,
+    };
   }
-  return FAMILY_ROWS[projection.surface.family] ?? LATIN;
+  if (projection.surface.family === "devanagari") {
+    return {
+      id:
+        projection.surface.platform === "ios"
+          ? "ios:devanagari-inscript@1"
+          : "android:devanagari-inscript@1",
+      rows: projection.surface.platform === "ios" ? IOS_DEVANAGARI : ANDROID_DEVANAGARI,
+      rowInsets: projection.surface.platform === "ios" ? [2, 2, 19] : [0, 0, 13],
+      keyGapScale: projection.surface.platform === "ios" ? 0.82 : 0.7,
+      fontScale: projection.surface.platform === "ios" ? 0.84 : 0.8,
+    };
+  }
+  const dense =
+    projection.surface.family === "arabic" ||
+    projection.surface.family === "thai" ||
+    projection.surface.family === "bengali" ||
+    projection.surface.family === "gurmukhi" ||
+    projection.surface.family === "gujarati";
+  return {
+    id: `${projection.surface.platform}:${projection.surface.family}@1`,
+    rows: FAMILY_ROWS[projection.surface.family] ?? LATIN,
+    rowInsets: [0, projection.surface.platform === "ios" ? 14 : 7, 18],
+    keyGapScale: dense ? 0.72 : 1,
+    fontScale: dense ? 0.84 : 1,
+  };
 }

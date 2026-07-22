@@ -1,16 +1,12 @@
-import type {
-  FeedLayoutState,
-  LayoutContext,
-  SemanticRegion,
-} from "@tokovo/core";
+import type { FeedLayoutState, LayoutContext, SemanticRegion } from "@tokovo/core";
 import type { XState } from "../runtime/state.js";
 import { xSpacing } from "../config/tokens.js";
 import { buildSemantic, createPx, rect } from "./shared.js";
 
 export function computeXFeedLayout(ctx: LayoutContext): FeedLayoutState {
-  const { viewportWidth: w, viewportHeight: h, safeAreaInsets, world } = ctx;
-  const safeTop = safeAreaInsets?.top ?? 0;
-  const safeBottom = safeAreaInsets?.bottom ?? 0;
+  const { viewportWidth: w, viewportHeight: h, appViewport, world } = ctx;
+  const contentTop = appViewport.contentInsets.top;
+  const contentBottom = appViewport.contentInsets.bottom;
   const px = createPx(w);
 
   const state = (world.appState?.app_x ?? {}) as Partial<XState>;
@@ -20,7 +16,7 @@ export function computeXFeedLayout(ctx: LayoutContext): FeedLayoutState {
   const headerBase = px(xSpacing.headerHeight);
   const tabBarHeight = px(xSpacing.tabBarHeight);
   const screenPad = px(xSpacing.screenPadding);
-  const navY = Math.max(0, h - safeBottom - navHeight);
+  const navY = Math.max(0, h - contentBottom - navHeight);
   const feedWidth = Math.max(0, w - screenPad * 2);
   const avatarSize = px(xSpacing.avatarSize);
   const avatarGap = px(xSpacing.avatarGap);
@@ -30,8 +26,8 @@ export function computeXFeedLayout(ctx: LayoutContext): FeedLayoutState {
 
   const headerH =
     screen === "timeline" || screen === "notifications" || screen === "messages"
-      ? safeTop + headerBase + tabBarHeight
-      : safeTop + headerBase;
+      ? contentTop + headerBase + tabBarHeight
+      : contentTop + headerBase;
   const feedY = headerH;
   const feedH = Math.max(0, navY - feedY);
   const tweetCardY = feedY + px(10);
@@ -53,13 +49,13 @@ export function computeXFeedLayout(ctx: LayoutContext): FeedLayoutState {
   if (screen === "timeline") {
     regions.timeline_header = {
       id: "timeline_header",
-      rect: rect(0, 0, w, safeTop + headerBase),
+      rect: rect(0, 0, w, contentTop + headerBase),
       tags: ["header", "sticky"],
       metadata: { sticky: true },
     };
     regions.timeline_tabs = {
       id: "timeline_tabs",
-      rect: rect(0, safeTop + headerBase, w, tabBarHeight),
+      rect: rect(0, contentTop + headerBase, w, tabBarHeight),
       tags: ["tabs", "sticky"],
       metadata: { sticky: true },
     };
@@ -130,7 +126,7 @@ export function computeXFeedLayout(ctx: LayoutContext): FeedLayoutState {
     const detailCardH = Math.min(px(440), Math.max(px(260), feedH * 0.56));
     regions.timeline_header = {
       id: "timeline_header",
-      rect: rect(0, 0, w, safeTop + headerBase),
+      rect: rect(0, 0, w, contentTop + headerBase),
       tags: ["header", "sticky"],
       metadata: { sticky: true },
     };
@@ -175,13 +171,13 @@ export function computeXFeedLayout(ctx: LayoutContext): FeedLayoutState {
   if (screen === "notifications") {
     regions.timeline_header = {
       id: "timeline_header",
-      rect: rect(0, 0, w, safeTop + headerBase),
+      rect: rect(0, 0, w, contentTop + headerBase),
       tags: ["header", "sticky"],
       metadata: { sticky: true },
     };
     regions.timeline_tabs = {
       id: "timeline_tabs",
-      rect: rect(0, safeTop + headerBase, w, tabBarHeight),
+      rect: rect(0, contentTop + headerBase, w, tabBarHeight),
       tags: ["tabs", "sticky"],
       metadata: { sticky: true },
     };
@@ -210,7 +206,7 @@ export function computeXFeedLayout(ctx: LayoutContext): FeedLayoutState {
   if (screen === "messages") {
     regions.timeline_header = {
       id: "timeline_header",
-      rect: rect(0, 0, w, safeTop + headerBase),
+      rect: rect(0, 0, w, contentTop + headerBase),
       tags: ["header", "sticky"],
       metadata: { sticky: true },
     };
@@ -241,7 +237,12 @@ export function computeXFeedLayout(ctx: LayoutContext): FeedLayoutState {
     };
     regions.dm_row_0_content = {
       id: "dm_row_0_content",
-      rect: rect(screenPad + px(60), feedY + px(154), Math.max(0, w - screenPad * 2 - px(60)), px(50)),
+      rect: rect(
+        screenPad + px(60),
+        feedY + px(154),
+        Math.max(0, w - screenPad * 2 - px(60)),
+        px(50),
+      ),
       tags: ["dm", "content"],
     };
     regions.compose_fab = {
@@ -255,7 +256,7 @@ export function computeXFeedLayout(ctx: LayoutContext): FeedLayoutState {
   if (screen === "profile") {
     regions.profile_header = {
       id: "profile_header",
-      rect: rect(0, 0, w, safeTop + headerBase),
+      rect: rect(0, 0, w, contentTop + headerBase),
       tags: ["profile", "header", "sticky"],
       metadata: { sticky: true },
     };

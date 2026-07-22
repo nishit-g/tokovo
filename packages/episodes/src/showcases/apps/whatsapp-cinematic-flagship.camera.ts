@@ -5,17 +5,30 @@ import {
   type CinematicShotBuilder,
 } from "@tokovo/dsl";
 import type { CinematicSubjectRefIR } from "@tokovo/ir";
+import { solveEditorialOverlayViewport } from "@tokovo/visual-system";
 
 const FPS = 30;
 const DURATION = 1080;
 const MAIN = "portrait-main";
-const PIP = "handoff-pip";
+const NOTIFICATION_HANDOFF = "notification-handoff";
+const CALLS_PIP = "calls-pip";
 const IOS = "creator_ios";
 const ANDROID = "launch_android";
 const APP = "app_whatsapp";
+const NOTIFICATION_VIEWPORT = solveEditorialOverlayViewport({
+  canvas: { width: 1080, height: 1920 },
+  overlay: { width: 330, height: 580 },
+  compositionProfileId: "handoff-pip",
+  protectedRegions: [{ x: 90, y: 240, width: 560, height: 1440 }],
+});
+const CALLS_PIP_VIEWPORT = solveEditorialOverlayViewport({
+  canvas: { width: 1080, height: 1920 },
+  overlay: { width: 330, height: 580 },
+  compositionProfileId: "handoff-pip",
+  protectedRegions: [{ x: 90, y: 240, width: 560, height: 1440 }],
+});
 
-const body = (deviceId: string): CinematicSubjectRefIR =>
-  cameraSubject.device(deviceId, "body");
+const body = (deviceId: string): CinematicSubjectRefIR => cameraSubject.device(deviceId, "body");
 const screen = (deviceId: string): CinematicSubjectRefIR =>
   cameraSubject.device(deviceId, "screen");
 const keyboard = (deviceId: string): CinematicSubjectRefIR =>
@@ -26,10 +39,7 @@ const semantic = (deviceId: string, subjectId: string): CinematicSubjectRefIR =>
   cameraSubject.semantic(deviceId, APP, subjectId);
 const message = (deviceId: string, entityId: string): CinematicSubjectRefIR =>
   cameraSubject.entity(deviceId, APP, "message", entityId, "bubble");
-const messageMedia = (
-  deviceId: string,
-  entityId: string,
-): CinematicSubjectRefIR =>
+const messageMedia = (deviceId: string, entityId: string): CinematicSubjectRefIR =>
   cameraSubject.entity(deviceId, APP, "message", entityId, "media");
 
 const split = cameraSubject.group(body(IOS), body(ANDROID));
@@ -62,15 +72,23 @@ function outputs(camera: CinematicPlanBuilder): void {
       viewport: { x: 0, y: 0, width: 1080, height: 1920 },
       defaultRigId: "split-neutral",
       coveragePolicy: "require-shots",
-      safeAreaInsets: { top: 56, right: 48, bottom: 56, left: 48 },
+      compositionProfileId: "hero-device",
     })
-    .output(PIP, {
-      viewport: { x: 600, y: 220, width: 420, height: 650 },
+    .output(NOTIFICATION_HANDOFF, {
+      viewport: NOTIFICATION_VIEWPORT,
       zIndex: 20,
-      clipRadiusPx: 44,
+      clipRadiusPx: 42,
       shadow: { offsetX: 0, offsetY: 18, blurPx: 34, opacity: 0.5 },
-      defaultRigId: "pip-hidden",
-      safeAreaInsets: { top: 8, right: 8, bottom: 8, left: 8 },
+      defaultRigId: "notification-hidden",
+      compositionProfileId: "handoff-pip",
+    })
+    .output(CALLS_PIP, {
+      viewport: CALLS_PIP_VIEWPORT,
+      zIndex: 20,
+      clipRadiusPx: 42,
+      shadow: { offsetX: 0, offsetY: 18, blurPx: 34, opacity: 0.5 },
+      defaultRigId: "calls-pip-hidden",
+      compositionProfileId: "handoff-pip",
     })
     .rig("split-neutral", {
       outputId: MAIN,
@@ -90,8 +108,22 @@ function outputs(camera: CinematicPlanBuilder): void {
       },
       motion: { type: "minimum-jerk", durationFrames: 24 },
     })
-    .rig("pip-hidden", {
-      outputId: PIP,
+    .rig("notification-hidden", {
+      outputId: NOTIFICATION_HANDOFF,
+      subject: body(IOS),
+      composer: {
+        screenPosition: [0.5, 0.5],
+        targetFill: 0.9,
+        fillMode: "contain",
+        paddingPx: 18,
+        minScale: 0.25,
+        maxScale: 1,
+      },
+      opacity: 0,
+      motion: { type: "cut" },
+    })
+    .rig("calls-pip-hidden", {
+      outputId: CALLS_PIP,
       subject: body(ANDROID),
       composer: {
         screenPosition: [0.5, 0.5],
@@ -238,11 +270,11 @@ function direction(camera: CinematicPlanBuilder, kinetic: boolean): void {
     })
     .shot("android-notification-handoff", MAIN, 570, 600, (shot) => {
       frame(shot, notification(ANDROID), {
-        position: [0.35, 0.18],
-        fill: 0.72,
+        position: [0.34, 0.2],
+        fill: 0.7,
         mode: "width",
         min: 0.45,
-        max: 1.2,
+        max: 2.4,
       })
         .fallback(body(ANDROID))
         .filters("studio");
@@ -281,7 +313,7 @@ function direction(camera: CinematicPlanBuilder, kinetic: boolean): void {
       if (kinetic) shot.lens("vertical-stretch");
     })
     .shot("calls-pip-main", MAIN, 912, 966, (shot) => {
-      frame(shot, body(IOS), { position: [0.72, 0.5], fill: 0.9, max: 1.1 })
+      frame(shot, body(IOS), { position: [0.36, 0.5], fill: 0.92, max: 2.2 })
         .filters("studio")
         .settle(18);
     })
@@ -290,8 +322,8 @@ function direction(camera: CinematicPlanBuilder, kinetic: boolean): void {
         .filters("studio")
         .dollyOut({ duration: 28, toFill: 0.88, amount: 0.1 });
     })
-    .shot("handoff-pip", PIP, 550, 600, (shot) =>
-      frame(shot, body(ANDROID), {
+    .shot("notification-source-context", NOTIFICATION_HANDOFF, 570, 600, (shot) =>
+      frame(shot, body(IOS), {
         position: [0.44, 0.5],
         fill: 0.92,
         max: 1,
@@ -299,9 +331,9 @@ function direction(camera: CinematicPlanBuilder, kinetic: boolean): void {
       })
         .filters("studio")
         .opacity(0.98)
-        .dollyIn({ duration: 16, toFill: 0.92, amount: 0.08 }),
+        .dollyIn({ duration: 14, toFill: 0.92, amount: 0.06 }),
     )
-    .shot("calls-pip", PIP, 912, 966, (shot) =>
+    .shot("calls-pip", CALLS_PIP, 912, 966, (shot) =>
       frame(shot, body(ANDROID), {
         position: [0.44, 0.5],
         fill: 0.92,
@@ -331,7 +363,7 @@ export const whatsappCinematicFlagship = cinematicProgram(
         { deviceId: IOS, x: 70, y: 510, width: 420, height: 889, zIndex: 10 },
         {
           deviceId: ANDROID,
-          x: 590,
+          x: 650,
           y: 495,
           width: 420,
           height: 917,

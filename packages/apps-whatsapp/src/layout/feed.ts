@@ -1,9 +1,4 @@
-import type {
-  FeedLayoutState,
-  LayoutContext,
-  LayoutRect,
-  SemanticRegion,
-} from "@tokovo/core";
+import type { FeedLayoutState, LayoutContext, LayoutRect, SemanticRegion } from "@tokovo/core";
 import { getAppStateForDevice } from "@tokovo/core";
 
 import type { WhatsAppState } from "../types/index.js";
@@ -29,30 +24,18 @@ function semantic(regions: Record<string, SemanticRegion>) {
  * rather than pixel-perfect DOM replication.
  */
 export function computeFeedLayout(ctx: LayoutContext): FeedLayoutState {
-  const {
-    viewportWidth: w,
-    viewportHeight: h,
-    safeAreaInsets,
-    world,
-    activeDeviceId,
-  } = ctx;
-  const safeTop = safeAreaInsets?.top ?? 0;
-  const safeBottom = safeAreaInsets?.bottom ?? 0;
+  const { viewportWidth: w, viewportHeight: h, appViewport, world, activeDeviceId } = ctx;
+  const contentTop = appViewport.contentInsets.top;
+  const contentBottom = appViewport.contentInsets.bottom;
 
   // All WhatsApp UI is authored for a 393pt design width. Renderer scales it.
   const scale = w / DESIGN_WIDTH;
   const px = (v: number) => v * scale;
   const device = world.devices[activeDeviceId];
   const state =
-    getAppStateForDevice<Partial<WhatsAppState>>(
-      world,
-      "app_whatsapp",
-      activeDeviceId,
-    ) ?? {};
+    getAppStateForDevice<Partial<WhatsAppState>>(world, "app_whatsapp", activeDeviceId) ?? {};
   const experience = resolveWhatsAppExperience({
-    platform: device?.profileId.toLowerCase().includes("pixel")
-      ? "android"
-      : "ios",
+    platform: device?.profileId.toLowerCase().includes("pixel") ? "android" : "ios",
     appearance: device?.appAppearance ?? "light",
     themeId: device?.appTheme as WhatsAppThemeId | undefined,
     locale: state.locale ?? "en-US",
@@ -67,30 +50,27 @@ export function computeFeedLayout(ctx: LayoutContext): FeedLayoutState {
     screen === "communities" ||
     screen === "settings";
 
-  const tabBarH = hasTabBar ? px(waSpacing.tabBarHeight) + safeBottom : 0;
+  const tabBarH = hasTabBar ? px(waSpacing.tabBarHeight) + contentBottom : 0;
   const tabBarY = Math.max(0, h - tabBarH);
 
   const headerH = (() => {
     if (screen === "chats") {
       // ChatListHeader structure:
-      // - top bar: navBarHeight + safeTop (handled via safeTop + px(navBarHeight))
+      // - top bar: navBarHeight plus the resolved system content inset
       // - large title block: ~54 (includes padding + font)
       // - search block: searchBarHeight + 10 bottom padding
       // - filter chips: filterChipHeight + 12 bottom padding
       const titleBlock = 54;
       const searchBlock = waSpacing.searchBarHeight + 10;
       const chipsBlock = waSpacing.filterChipHeight + 12;
-      return (
-        safeTop +
-        px(waSpacing.navBarHeight + titleBlock + searchBlock + chipsBlock)
-      );
+      return contentTop + px(waSpacing.navBarHeight + titleBlock + searchBlock + chipsBlock);
     }
 
-    // Other tab screens use a simple iOS top bar (nav height + safe area).
-    return safeTop + px(waSpacing.navBarHeight);
+    // Other tab screens use a simple top bar below the platform content inset.
+    return contentTop + px(waSpacing.navBarHeight);
   })();
 
-  const bottomLimit = hasTabBar ? tabBarY : Math.max(0, h - safeBottom);
+  const bottomLimit = hasTabBar ? tabBarY : Math.max(0, h - contentBottom);
   const contentY = Math.min(headerH, bottomLimit);
   const contentH = Math.max(0, bottomLimit - contentY);
 
@@ -120,9 +100,7 @@ export function computeFeedLayout(ctx: LayoutContext): FeedLayoutState {
         if (!a.isPinned && b.isPinned) return 1;
         return (b.lastMessageAt ?? 0) - (a.lastMessageAt ?? 0);
       });
-    const archivedCount = conversations.filter(
-      (conv) => conv.isArchived,
-    ).length;
+    const archivedCount = conversations.filter((conv) => conv.isArchived).length;
     const rowHeight = px(waSpacing.chatListItemHeight);
     let listY = contentY;
 
@@ -178,10 +156,7 @@ export function computeFeedLayout(ctx: LayoutContext): FeedLayoutState {
   } else if (screen === "updates") {
     const statusSectionTop = contentY + px(34);
     const statusSectionHeight = px(102);
-    const statusSectionBottom = Math.min(
-      bottomLimit,
-      statusSectionTop + statusSectionHeight,
-    );
+    const statusSectionBottom = Math.min(bottomLimit, statusSectionTop + statusSectionHeight);
     const channelsTop = Math.min(bottomLimit, statusSectionBottom + px(34));
     const channelsHeight = Math.max(0, bottomLimit - channelsTop);
     const statusAuthors = [
@@ -194,10 +169,7 @@ export function computeFeedLayout(ctx: LayoutContext): FeedLayoutState {
     const channels = [...(state.channels ?? [])]
       .sort((left, right) => {
         if (left.followed !== right.followed) return left.followed ? -1 : 1;
-        return (
-          (right.latestUpdate?.postedAt ?? 0) -
-          (left.latestUpdate?.postedAt ?? 0)
-        );
+        return (right.latestUpdate?.postedAt ?? 0) - (left.latestUpdate?.postedAt ?? 0);
       })
       .slice(0, 4);
 
@@ -376,21 +348,14 @@ export function computeFeedLayout(ctx: LayoutContext): FeedLayoutState {
       const rowId = `settings_${row}`;
       regions[rowId] = {
         id: rowId,
-        rect: rect(
-          0,
-          settingsRowsTop + index * settingsRowHeight,
-          w,
-          settingsRowHeight,
-        ),
+        rect: rect(0, settingsRowsTop + index * settingsRowHeight, w, settingsRowHeight),
         tags: ["row", "settings"],
         metadata: { setting: row, index },
       };
     });
   } else if (screen === "profile") {
     const conversationId = state.conversationId;
-    const conversation = conversationId
-      ? (state.conversations ?? {})[conversationId]
-      : undefined;
+    const conversation = conversationId ? (state.conversations ?? {})[conversationId] : undefined;
     const isGroup = conversation?.type === "group";
     const prefix = isGroup ? "group_info" : "profile";
     regions[`${prefix}_header`] = {
@@ -418,12 +383,7 @@ export function computeFeedLayout(ctx: LayoutContext): FeedLayoutState {
       const membersTop = contentY + px(330);
       regions.group_info_members = {
         id: "group_info_members",
-        rect: rect(
-          px(16),
-          membersTop,
-          w - px(32),
-          Math.max(0, bottomLimit - membersTop),
-        ),
+        rect: rect(px(16), membersTop, w - px(32), Math.max(0, bottomLimit - membersTop)),
         tags: ["list", "members", "group_info"],
       };
       (conversation.members ?? []).slice(0, 6).forEach((member, index) => {

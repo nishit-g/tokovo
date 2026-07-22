@@ -5,6 +5,7 @@
  */
 
 import type { WorldState } from "./world-state.js";
+import type { AppViewportFrame } from "@tokovo/visual-system";
 
 // =============================================================================
 // VIEW KINDS
@@ -23,17 +24,9 @@ export type ViewKind =
 // MULTI-DEVICE LAYOUT
 // =============================================================================
 
-export type ViewLayoutMode =
-  | "SINGLE"
-  | "SPLIT_HORIZONTAL"
-  | "SPLIT_VERTICAL"
-  | "PIP";
+export type ViewLayoutMode = "SINGLE" | "SPLIT_HORIZONTAL" | "SPLIT_VERTICAL" | "PIP";
 
-export type PIPPosition =
-  | "top-left"
-  | "top-right"
-  | "bottom-left"
-  | "bottom-right";
+export type PIPPosition = "top-left" | "top-right" | "bottom-left" | "bottom-right";
 
 // =============================================================================
 // LAYOUT RECT
@@ -66,13 +59,6 @@ export interface SemanticLayoutState {
 // LAYOUT CONTEXT
 // =============================================================================
 
-export interface SafeAreaInsets {
-  top: number;
-  bottom: number;
-  left: number;
-  right: number;
-}
-
 export interface LayoutCacheStore {
   scopeKey: string;
   get<T>(key: string): T | undefined;
@@ -91,8 +77,8 @@ export interface LayoutContext {
   activeStoryId?: string;
   viewportWidth: number;
   viewportHeight: number;
-  /** Device safe area insets (notch, home indicator, etc.) */
-  safeAreaInsets: SafeAreaInsets;
+  /** Resolved app-space viewport, including all static and dynamic system occlusions. */
+  appViewport: AppViewportFrame;
   config?: Partial<LayoutConfig>;
   /** Optional shared cache for layout strategies (scoped per episode/run). */
   layoutCache?: LayoutCacheStore;
@@ -177,6 +163,7 @@ export type LayoutState =
   | FullscreenLayoutState
   | StoryLayoutState
   | LockscreenLayoutState
+  | HomeScreenLayoutState
   | TransitionLayoutState;
 
 // Chat Layout
@@ -270,6 +257,11 @@ export interface LockscreenLayoutState extends BaseLayoutState {
 
 // eslint-disable-next-line @typescript-eslint/no-empty-object-type
 export interface LockscreenLayoutMeta {}
+
+export interface HomeScreenLayoutState extends BaseLayoutState {
+  kind: "HOMESCREEN";
+  meta: Record<string, never>;
+}
 
 // Transition Layout
 export interface TransitionLayoutState extends BaseLayoutState {

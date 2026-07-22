@@ -18,7 +18,10 @@ function rect(x: number, y: number, width: number, height: number): LayoutRect {
   return { x, y, width, height };
 }
 
-function buildSemantic(regions: Record<string, SemanticRegion>, groups: Record<string, string[]> = {}) {
+function buildSemantic(
+  regions: Record<string, SemanticRegion>,
+  groups: Record<string, string[]> = {},
+) {
   return { regions, groups };
 }
 
@@ -34,17 +37,17 @@ function getFeedFocusIndex(state: Partial<LinkedInState>): number {
 }
 
 function computeFeedLayout(ctx: LayoutContext): FeedLayoutState {
-  const { viewportWidth: w, viewportHeight: h, safeAreaInsets } = ctx;
-  const safeTop = safeAreaInsets?.top ?? 0;
-  const safeBottom = safeAreaInsets?.bottom ?? 0;
+  const { viewportWidth: w, viewportHeight: h, appViewport } = ctx;
+  const contentTop = appViewport.contentInsets.top;
+  const contentBottom = appViewport.contentInsets.bottom;
   const scale = w / DESIGN_WIDTH;
   const px = (value: number) => value * scale;
   const state = getAppState(ctx);
   const screen = state.currentScreen ?? "feed";
 
   const navH = px(liSpacing.navHeight);
-  const navY = Math.max(0, h - safeBottom - navH);
-  const headerH = safeTop + px(liSpacing.headerHeight);
+  const navY = Math.max(0, h - contentBottom - navH);
+  const headerH = contentTop + px(liSpacing.headerHeight);
   const contentY = headerH;
   const contentH = Math.max(0, navY - contentY);
   const cardX = px(liSpacing.screenPadding);
@@ -87,7 +90,11 @@ function computeFeedLayout(ctx: LayoutContext): FeedLayoutState {
       scrollY;
     const focusCardH = Math.min(metrics.focusedCardHeight, contentH - px(12));
 
-    regions.li_feed = { id: "li_feed", rect: rect(0, contentY, w, contentH), tags: ["feed", "scroll"] };
+    regions.li_feed = {
+      id: "li_feed",
+      rect: rect(0, contentY, w, contentH),
+      tags: ["feed", "scroll"],
+    };
     regions.li_feed_composer = {
       id: "li_feed_composer",
       rect: rect(cardX, contentY + px(8) - scrollY, cardW, composerH),
@@ -131,7 +138,12 @@ function computeFeedLayout(ctx: LayoutContext): FeedLayoutState {
       itemLayouts: {},
       meta: {},
       semantic: buildSemantic(regions, {
-        focus: ["li_post_focus", "li_post_focus_media", "li_post_focus_reactions", "li_post_focus_comments"],
+        focus: [
+          "li_post_focus",
+          "li_post_focus_media",
+          "li_post_focus_reactions",
+          "li_post_focus_comments",
+        ],
       }),
     };
   }
@@ -148,7 +160,12 @@ function computeFeedLayout(ctx: LayoutContext): FeedLayoutState {
     };
     regions.li_profile_actions = {
       id: "li_profile_actions",
-      rect: rect(cardX, contentY + heroH - px(liSpacing.profileActionsHeight) - px(16), cardW, px(liSpacing.profileActionsHeight)),
+      rect: rect(
+        cardX,
+        contentY + heroH - px(liSpacing.profileActionsHeight) - px(16),
+        cardW,
+        px(liSpacing.profileActionsHeight),
+      ),
       tags: ["profile", "actions"],
     };
     regions.li_profile_highlights = {
@@ -218,7 +235,12 @@ function computeFeedLayout(ctx: LayoutContext): FeedLayoutState {
     };
     regions.li_post_detail_comments = {
       id: "li_post_detail_comments",
-      rect: rect(cardX, contentY + px(liSpacing.postCardExpandedHeight) + px(20), cardW, Math.max(0, detailH - px(liSpacing.postCardExpandedHeight) - px(28))),
+      rect: rect(
+        cardX,
+        contentY + px(liSpacing.postCardExpandedHeight) + px(20),
+        cardW,
+        Math.max(0, detailH - px(liSpacing.postCardExpandedHeight) - px(28)),
+      ),
       tags: ["post", "comments", "scroll"],
     };
     regions.li_comment_composer = {
@@ -242,14 +264,14 @@ function computeFeedLayout(ctx: LayoutContext): FeedLayoutState {
 }
 
 function computeChatLayout(ctx: LayoutContext): ChatLayoutState {
-  const { viewportWidth: w, viewportHeight: h, safeAreaInsets } = ctx;
-  const safeTop = safeAreaInsets?.top ?? 0;
-  const safeBottom = safeAreaInsets?.bottom ?? 0;
+  const { viewportWidth: w, viewportHeight: h, appViewport } = ctx;
+  const contentTop = appViewport.contentInsets.top;
+  const contentBottom = appViewport.contentInsets.bottom;
   const scale = w / DESIGN_WIDTH;
   const px = (value: number) => value * scale;
 
-  const headerH = safeTop + px(liSpacing.messageHeaderHeight);
-  const composerH = px(liSpacing.dmComposerHeight) + safeBottom;
+  const headerH = contentTop + px(liSpacing.messageHeaderHeight);
+  const composerH = px(liSpacing.dmComposerHeight) + contentBottom;
   const composerY = Math.max(0, h - composerH);
   const threadY = headerH;
   const threadH = Math.max(0, composerY - threadY);
@@ -295,14 +317,14 @@ function computeChatLayout(ctx: LayoutContext): ChatLayoutState {
 }
 
 function computeFullscreenLayout(ctx: LayoutContext): FullscreenLayoutState {
-  const { viewportWidth: w, viewportHeight: h, safeAreaInsets } = ctx;
-  const safeTop = safeAreaInsets?.top ?? 0;
-  const safeBottom = safeAreaInsets?.bottom ?? 0;
+  const { viewportWidth: w, viewportHeight: h, appViewport } = ctx;
+  const contentTop = appViewport.contentInsets.top;
+  const contentBottom = appViewport.contentInsets.bottom;
   const scale = w / DESIGN_WIDTH;
   const px = (value: number) => value * scale;
 
-  const headerH = safeTop + px(liSpacing.headerHeight);
-  const bottomBarH = px(64) + safeBottom;
+  const headerH = contentTop + px(liSpacing.headerHeight);
+  const bottomBarH = px(64) + contentBottom;
 
   const regions: Record<string, SemanticRegion> = {
     device: { id: "device", rect: rect(0, 0, w, h), tags: ["device"] },

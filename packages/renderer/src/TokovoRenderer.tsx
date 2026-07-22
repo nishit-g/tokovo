@@ -24,10 +24,7 @@ import {
   NotificationSurface,
   type PreparedNotificationProgram,
 } from "@tokovo/device-notifications";
-import {
-  InputKeyboard,
-  type PreparedInputProgram,
-} from "@tokovo/device-keyboard";
+import { InputKeyboard, type PreparedInputProgram } from "@tokovo/device-keyboard";
 
 import {
   projectDynamicIsland,
@@ -39,10 +36,7 @@ import { CallOverlay } from "./overlays/index.js";
 import { DynamicIsland } from "./os/index.js";
 import { useLayoutEngine } from "./engines/useLayoutEngine.js";
 import { AppErrorBoundary } from "./ErrorBoundary.js";
-import {
-  RendererRegistryProvider,
-  type RendererRegistries,
-} from "./RegistryContext.js";
+import { RendererRegistryProvider, type RendererRegistries } from "./RegistryContext.js";
 import { AppTransition, UnlockTransition } from "./AppTransition.js";
 
 const log = createScopedLogger("renderer");
@@ -102,8 +96,7 @@ const TokovoRendererInner: React.FC<TokovoRendererProps> = ({
   const pm = pluginManager;
   const deviceRegistries = useDeviceRegistries();
   const layoutCache = React.useMemo(
-    () =>
-      createLayoutCacheStore(layoutCacheKey ?? "tokovo:layout-cache:default"),
+    () => createLayoutCacheStore(layoutCacheKey ?? "tokovo:layout-cache:default"),
     [layoutCacheKey],
   );
   // ==========================================================================
@@ -131,6 +124,7 @@ const TokovoRendererInner: React.FC<TokovoRendererProps> = ({
     inputProjection,
     notificationProjection,
     systemSurfaceProjection,
+    appViewport,
   } = layoutOutput;
   const renderWorld = React.useMemo(
     () => projectWorldForDevice(world, deviceId),
@@ -165,8 +159,7 @@ const TokovoRendererInner: React.FC<TokovoRendererProps> = ({
   const hidesStatusBar = dynamicIslandProjection?.suppressesStatusBar === true;
   const keyboardHeightForLayout = inputProjection?.surface.viewportInset ?? 0;
 
-  const transition = (device as unknown as { transition?: unknown })
-    .transition as
+  const transition = (device as unknown as { transition?: unknown }).transition as
     | {
         kind: "unlock" | "openApp" | "goHome";
         startFrame: number;
@@ -179,16 +172,11 @@ const TokovoRendererInner: React.FC<TokovoRendererProps> = ({
 
   const transitionProgress =
     transition && transition.durationFrames > 0
-      ? Math.max(
-          0,
-          Math.min(1, (t - transition.startFrame) / transition.durationFrames),
-        )
+      ? Math.max(0, Math.min(1, (t - transition.startFrame) / transition.durationFrames))
       : undefined;
 
   const isUnlockTransitionActive =
-    transition?.kind === "unlock" &&
-    transitionProgress !== undefined &&
-    transitionProgress < 1;
+    transition?.kind === "unlock" && transitionProgress !== undefined && transitionProgress < 1;
 
   const isAppTransitionActive =
     (transition?.kind === "openApp" || transition?.kind === "goHome") &&
@@ -210,43 +198,28 @@ const TokovoRendererInner: React.FC<TokovoRendererProps> = ({
   // 5. RENDER — Paint the blueprints
   // ==========================================================================
 
-  const FallbackFrame: React.FC<{
-    statusBar?: React.ReactNode;
-    children: React.ReactNode;
-    variant?: string;
-  }> = ({ statusBar, children: frameChildren }) => (
-    <>
-      {statusBar}
-      {frameChildren}
-    </>
-  );
-
-  // Resolve Device Frame from registry (with safe fallback)
-  const FrameComponent =
-    deviceRegistries.frames.getWithFallback(device.profileId, "iphone16") ??
-    FallbackFrame;
+  const FrameComponent = deviceRegistries.frames.get(device.profileId);
+  if (!FrameComponent) {
+    throw new Error(`DEVICE_FRAME_MISSING: profile "${device.profileId}" has no registered frame.`);
+  }
 
   const statusBarTheme = (() => {
-    if (systemSurfaceProjection)
-      return systemSurfaceProjection.theme.statusBarTheme;
+    if (systemSurfaceProjection) return systemSurfaceProjection.theme.statusBarTheme;
     const fallbackTheme =
-      device.appAppearance === "dark" ||
-      variant === "android" ||
-      device.isLocked
+      device.appAppearance === "dark" || variant === "android" || device.isLocked
         ? "dark"
         : "light";
     if (!appId) return fallbackTheme;
     const state = renderWorld.appState?.[appId];
     if (!state || typeof state === "string") return fallbackTheme;
-    const theme = (state as { statusBarTheme?: "light" | "dark" })
-      .statusBarTheme;
+    const theme = (state as { statusBarTheme?: "light" | "dark" }).statusBarTheme;
     return theme === "dark" || theme === "light" ? theme : fallbackTheme;
   })();
 
-  const StatusBarStrategy = deviceRegistries.statusBars.getWithFallback(
-    variant,
-    "ios",
-  );
+  const StatusBarStrategy = deviceRegistries.statusBars.get(variant);
+  if (profile.systemSurfaces && !StatusBarStrategy) {
+    throw new Error(`STATUS_BAR_STRATEGY_MISSING: platform "${variant}" is not registered.`);
+  }
 
   const deviceSurface = (
     <div
@@ -292,14 +265,11 @@ const TokovoRendererInner: React.FC<TokovoRendererProps> = ({
             // Active App (Unlocked)
             if (AppView && !device.isLocked) {
               if (!appId) {
-                baseContent = (
-                  <div style={{ flex: 1, backgroundColor: "black" }} />
-                );
+                baseContent = <div style={{ flex: 1, backgroundColor: "black" }} />;
               } else {
                 const pluginAssets = pm.get(appId)?.assets;
                 const isCanvasProfile =
-                  typeof device.profileId === "string" &&
-                  device.profileId.startsWith("canvas-");
+                  typeof device.profileId === "string" && device.profileId.startsWith("canvas-");
                 // Canvas devices should render 1:1 in video pixel coordinates.
                 const designWidth = isCanvasProfile
                   ? profile.display.width
@@ -327,12 +297,7 @@ const TokovoRendererInner: React.FC<TokovoRendererProps> = ({
                         fps={fps}
                         layout={layout}
                         platform={variant}
-                        safeAreaInsets={{
-                          top: profile.safeArea.top / scale,
-                          bottom: profile.safeArea.bottom / scale,
-                          left: profile.safeArea.left / scale,
-                          right: profile.safeArea.right / scale,
-                        }}
+                        appViewport={appViewport}
                         keyboardHeight={keyboardHeightForLayout / scale}
                         inputProgram={inputProgram}
                         inputProjection={inputProjection}
@@ -343,12 +308,7 @@ const TokovoRendererInner: React.FC<TokovoRendererProps> = ({
                           layout={layout}
                           platform={variant}
                           deviceId={deviceId}
-                          safeAreaInsets={{
-                            top: profile.safeArea.top / scale,
-                            bottom: profile.safeArea.bottom / scale,
-                            left: profile.safeArea.left / scale,
-                            right: profile.safeArea.right / scale,
-                          }}
+                          appViewport={appViewport}
                         />
                       </TokovoProvider>
                     </AppSurface>
@@ -370,9 +330,7 @@ const TokovoRendererInner: React.FC<TokovoRendererProps> = ({
                 <div style={{ flex: 1, backgroundColor: "black" }} />
               );
             } else {
-              baseContent = (
-                <div style={{ flex: 1, backgroundColor: "black" }} />
-              );
+              baseContent = <div style={{ flex: 1, backgroundColor: "black" }} />;
             }
 
             // Manual app transitions (open/goHome)
@@ -432,7 +390,7 @@ const TokovoRendererInner: React.FC<TokovoRendererProps> = ({
           {!isUnlockTransitionActive && notificationProjection ? (
             <NotificationSurface
               projection={notificationProjection}
-              pointScale={profile.pixelDensity || 1}
+              pointScale={profile.pointScale}
             />
           ) : null}
 
@@ -447,10 +405,7 @@ const TokovoRendererInner: React.FC<TokovoRendererProps> = ({
 
           {/* Keyboard - Device Level */}
           {inputProjection?.surface.visible && (
-            <InputKeyboard
-              projection={inputProjection}
-              scale={profile.pixelDensity || 1}
-            />
+            <InputKeyboard projection={inputProjection} scale={profile.pointScale} />
           )}
         </FrameComponent>
       </div>

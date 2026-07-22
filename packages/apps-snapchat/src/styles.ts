@@ -17,7 +17,7 @@ import { snapchatColors } from "./config/colors.js";
 import { snapchatSpacing } from "./config/tokens.js";
 
 const FONT =
-  "'Avenir Next', 'Avenir', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+  "'Inter Variable', 'Noto Sans Arabic Variable', 'Noto Sans Devanagari Variable', 'Noto Sans JP Variable', sans-serif";
 
 // =============================================================================
 // HEADER — Chat List (real Snapchat: bitmoji left, "Chat" center, compose right)

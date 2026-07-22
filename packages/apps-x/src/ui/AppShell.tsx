@@ -1,5 +1,5 @@
 import React from "react";
-import { useSafeAreaInsets } from "@tokovo/react";
+import { useAppViewport } from "@tokovo/react";
 import { useXTheme } from "./ThemeContext.js";
 
 interface AppShellProps {
@@ -8,7 +8,7 @@ interface AppShellProps {
 
 export const AppShell: React.FC<AppShellProps> = ({ children }) => {
   const theme = useXTheme();
-  const safeArea = useSafeAreaInsets();
+  const { contentInsets } = useAppViewport();
   const isStorybook = theme.mode === "storybook";
 
   return (
@@ -19,8 +19,8 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
         backgroundColor: theme.colors.background,
         color: theme.colors.textPrimary,
         fontFamily:
-          "'Söhne', 'GT America', 'Neue Haas Grotesk Display', 'Helvetica Neue', sans-serif",
-        paddingTop: safeArea.top,
+          "'Inter Variable', 'Noto Sans Arabic Variable', 'Noto Sans Devanagari Variable', 'Noto Sans JP Variable', sans-serif",
+        paddingTop: contentInsets.top,
         boxSizing: "border-box",
         display: "flex",
         flexDirection: "column",
@@ -52,7 +52,7 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
           flex: 1,
           minHeight: 0,
           overflow: "hidden",
-          paddingBottom: safeArea.bottom,
+          paddingBottom: contentInsets.bottom,
         }}
       >
         {children}

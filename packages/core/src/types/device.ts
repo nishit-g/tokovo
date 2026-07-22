@@ -72,13 +72,7 @@ export interface ScreenRecordingState {
 }
 
 export type DynamicIslandPresentation = "idle" | "minimal" | "compact" | "expanded";
-export type DynamicIslandActivity =
-  | "music"
-  | "call"
-  | "timer"
-  | "recording"
-  | "location"
-  | null;
+export type DynamicIslandActivity = "music" | "call" | "timer" | "recording" | "location" | null;
 
 export interface DynamicIslandState {
   visible: boolean;
@@ -107,12 +101,7 @@ export const DEFAULT_DYNAMIC_ISLAND: DynamicIslandState = {
 // =============================================================================
 
 export type CallDisplayMode = "overlay" | "fullscreen" | (string & {});
-export type CallType =
-  | "voice"
-  | "video"
-  | "facetime"
-  | "whatsapp"
-  | (string & {});
+export type CallType = "voice" | "video" | "facetime" | "whatsapp" | (string & {});
 
 export interface CallerMetadata {
   posterImage?: string;
@@ -122,13 +111,7 @@ export interface CallerMetadata {
 }
 
 export interface CallState {
-  status:
-    | "incoming"
-    | "ringing"
-    | "connecting"
-    | "active"
-    | "ended"
-    | "declined";
+  status: "incoming" | "ringing" | "connecting" | "active" | "ended" | "declined";
   callerId: string;
   callerName: string;
   callerAvatar?: string;
@@ -148,14 +131,7 @@ export interface CallState {
 // DEVICE OS STATE
 // =============================================================================
 
-export type NetworkType =
-  | "wifi"
-  | "5G"
-  | "4G"
-  | "LTE"
-  | "3G"
-  | "E"
-  | "no-service";
+export type NetworkType = "wifi" | "5G" | "4G" | "LTE" | "3G" | "E" | "no-service";
 
 export interface DeviceOSState {
   locale: string;
@@ -236,8 +212,6 @@ export interface AppFolder {
 export interface DeviceScreenDimensions {
   width: number;
   height: number;
-  safeAreaTop: number;
-  safeAreaBottom: number;
 }
 
 export interface DeviceState {

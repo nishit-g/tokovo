@@ -24,7 +24,8 @@
     { "path": "../apps-teams" },
     { "path": "../apps-typewriter" },
     { "path": "../device-keyboard" },
-    { "path": "../device-notifications" }
+    { "path": "../device-notifications" },
+    { "path": "../visual-system" }
   ],
   "include": ["src/**/*"],
   "exclude": ["src/**/*.test.ts"]

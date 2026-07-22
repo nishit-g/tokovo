@@ -44,10 +44,18 @@ import { computeLayout } from "../layout/index.js";
 import {
   projectHomeScreen,
   projectLockscreen,
+  projectSystemSurfaceLayout,
+  resolveDevicePlatformVisuals,
+  resolveDeviceSystemGeometry,
   type DeviceProfile,
   type DeviceRegistries,
   type SystemSurfaceProjection,
 } from "@tokovo/devices";
+import {
+  scaleAppViewportFrame,
+  type AppViewportFrame,
+  type SystemGeometryFrame,
+} from "@tokovo/visual-system";
 import { useRendererRegistries } from "../RegistryContext.js";
 import type { RendererRegistries } from "../RegistryContext.js";
 
@@ -92,8 +100,10 @@ export interface LayoutEngineOutput {
   activeConversationId?: string;
   /** Active story (for story views) */
   activeStoryId?: string;
-  /** Viewport height after accounting for header/input */
-  effectiveViewportHeight: number;
+  /** Canonical system geometry for this device/frame. */
+  systemGeometry: SystemGeometryFrame;
+  /** System geometry transformed into the app's registered design coordinates. */
+  appViewport: AppViewportFrame;
   /** Canonical keyboard + app-field projection for this device/frame. */
   inputProjection?: InputProjection;
   /** Canonical OS-owned notification projection for this device/frame. */
@@ -102,20 +112,13 @@ export interface LayoutEngineOutput {
   systemSurfaceProjection?: SystemSurfaceProjection;
 }
 
-function resolveProfile(
-  registries: DeviceRegistries,
-  profileId?: string,
-): DeviceProfile {
+function resolveProfile(registries: DeviceRegistries, profileId?: string): DeviceProfile {
   if (!profileId) {
-    throw new Error(
-      "DEVICE_PROFILE_ID_MISSING: Device state has no profileId.",
-    );
+    throw new Error("DEVICE_PROFILE_ID_MISSING: Device state has no profileId.");
   }
   const profile = registries.devices.get(profileId);
   if (!profile) {
-    throw new Error(
-      `DEVICE_PROFILE_MISSING: Device profile "${profileId}" is not registered.`,
-    );
+    throw new Error(`DEVICE_PROFILE_MISSING: Device profile "${profileId}" is not registered.`);
   }
   return profile;
 }
@@ -134,18 +137,12 @@ interface CachedLayoutResult {
 /** Per-renderer state for deterministic diagnostics and incremental layout reuse. */
 export interface LayoutEngineRuntime {
   readonly loggedMissingDevices: Set<string>;
-  readonly loggedMissingViewMode: Set<string>;
-  readonly loggedMissingConversation: Set<string>;
-  readonly loggedMissingStory: Set<string>;
   readonly cachedResults: Map<string, CachedLayoutResult>;
 }
 
 export function createLayoutEngineRuntime(): LayoutEngineRuntime {
   return {
     loggedMissingDevices: new Set<string>(),
-    loggedMissingViewMode: new Set<string>(),
-    loggedMissingConversation: new Set<string>(),
-    loggedMissingStory: new Set<string>(),
     cachedResults: new Map<string, CachedLayoutResult>(),
   };
 }
@@ -163,9 +160,7 @@ function computeWorldSignature(
 ): string {
   // Fast path: compute a lightweight signature from state that affects layout
   const device = world.devices[deviceId];
-  const appState = appId
-    ? getAppStateForDevice(world, appId, deviceId)
-    : undefined;
+  const appState = appId ? getAppStateForDevice(world, appId, deviceId) : undefined;
 
   // Hash key components that affect layout
   const parts = [
@@ -199,19 +194,14 @@ function computeWorldSignature(
     // Static plugin layouts must expose a monotonic invalidation key. Screen
     // is included separately so authored bootstrap state is cache-safe too.
     (appState as { currentScreen?: string } | undefined)?.currentScreen ?? "",
-    String(
-      (appState as { layoutRevision?: number } | undefined)?.layoutRevision ??
-        0,
-    ),
+    String((appState as { layoutRevision?: number } | undefined)?.layoutRevision ?? 0),
   ];
 
   // For chat apps, include message count for layout invalidation
-  const conversationId = (appState as { conversationId?: string } | undefined)
-    ?.conversationId;
+  const conversationId = (appState as { conversationId?: string } | undefined)?.conversationId;
   if (conversationId && appState) {
-    const conversations = (
-      appState as { conversations?: Record<string, { messages?: unknown[] }> }
-    ).conversations;
+    const conversations = (appState as { conversations?: Record<string, { messages?: unknown[] }> })
+      .conversations;
     const convo = conversations?.[conversationId];
     if (convo?.messages) {
       parts.push(String(convo.messages.length));
@@ -246,29 +236,18 @@ export function computeLayoutEngine(
   if (!device) {
     if (!runtime.loggedMissingDevices.has(deviceId)) {
       runtime.loggedMissingDevices.add(deviceId);
-      log.error(
-        `Layout engine could not resolve device ${deviceId}`,
-        undefined,
-        {
-          event: "renderer.layout.device_missing",
-          deviceId,
-          mode,
-        },
-      );
+      log.error(`Layout engine could not resolve device ${deviceId}`, undefined, {
+        event: "renderer.layout.device_missing",
+        deviceId,
+        mode,
+      });
     }
-    throw new Error(
-      `DEVICE_LAYOUT_MISSING: Device "${deviceId}" is absent from world state.`,
-    );
+    throw new Error(`DEVICE_LAYOUT_MISSING: Device "${deviceId}" is absent from world state.`);
   }
 
   const appId = device.foregroundAppId;
   const projectedInputSession = input.inputProgram
-    ? findInputSessionForProjection(
-        input.inputProgram,
-        deviceId,
-        t,
-        effectiveFps,
-      )
+    ? findInputSessionForProjection(input.inputProgram, deviceId, t, effectiveFps)
     : undefined;
   // INCREMENTAL CACHE CHECK
   // If world signature hasn't changed for this frame, return cached result
@@ -299,7 +278,6 @@ export function computeLayoutEngine(
   if (device.isLocked) {
     viewKind = "LOCKSCREEN";
   } else if (appId) {
-    const meta = registries.plugins.metadata.get(appId);
     const appState = getAppStateForDevice<import("@tokovo/core").BaseAppState>(
       world,
       appId,
@@ -307,20 +285,7 @@ export function computeLayoutEngine(
     );
 
     if (!appState?.viewMode) {
-      if (!runtime.loggedMissingViewMode.has(appId)) {
-        runtime.loggedMissingViewMode.add(appId);
-        log.warn(`App ${appId} is missing viewMode; using preview fallback`, {
-          event: "renderer.layout.view_mode_missing",
-          appId,
-          fallbackViewKind: meta.viewStrategy || "TRANSITION",
-        });
-      }
-      if (mode === "render") {
-        throw new Error(
-          `LayoutEngine: App "${appId}" did not provide viewMode in render mode.`,
-        );
-      }
-      viewKind = meta.viewStrategy || "TRANSITION";
+      throw new Error(`APP_VIEW_MODE_MISSING: app "${appId}" did not project viewMode.`);
     } else {
       viewKind = appState.viewMode;
     }
@@ -329,52 +294,18 @@ export function computeLayoutEngine(
       const extendedAppState = appState as typeof appState & {
         activeConversationId?: string;
       };
-      activeConversationId =
-        appState?.conversationId || extendedAppState?.activeConversationId;
+      activeConversationId = appState?.conversationId || extendedAppState?.activeConversationId;
 
-      if (!activeConversationId && mode !== "render") {
-        if (!runtime.loggedMissingConversation.has(appId)) {
-          runtime.loggedMissingConversation.add(appId);
-          log.warn(
-            `App ${appId} is missing conversationId for CHAT view; using preview fallback`,
-            {
-              event: "renderer.layout.conversation_missing",
-              appId,
-            },
-          );
-        }
-        const conversations = (appState as { conversations?: unknown })
-          ?.conversations;
-        if (conversations) {
-          if (Array.isArray(conversations)) {
-            activeConversationId = conversations[0]?.id;
-          } else {
-            activeConversationId = Object.keys(
-              conversations as Record<string, unknown>,
-            )[0];
-          }
-        }
-      }
-
-      if (!activeConversationId && mode === "render") {
+      if (!activeConversationId) {
         throw new Error(
-          `LayoutEngine: App "${appId}" missing conversationId for CHAT view in render mode.`,
+          `APP_CONVERSATION_MISSING: app "${appId}" is in CHAT without a conversation id.`,
         );
       }
     } else if (viewKind === "STORY") {
       activeStoryId = appState?.activeStoryId;
-      if (!activeStoryId && mode !== "render") {
-        if (!runtime.loggedMissingStory.has(appId)) {
-          runtime.loggedMissingStory.add(appId);
-          log.warn(`App ${appId} is missing activeStoryId for STORY view`, {
-            event: "renderer.layout.story_missing",
-            appId,
-          });
-        }
-      }
-      if (!activeStoryId && mode === "render") {
+      if (!activeStoryId) {
         throw new Error(
-          `LayoutEngine: App "${appId}" missing activeStoryId for STORY view in render mode.`,
+          `APP_STORY_MISSING: app "${appId}" is in STORY without an active story id.`,
         );
       }
     }
@@ -385,24 +316,20 @@ export function computeLayoutEngine(
 
   // 3. Get device profile
   const profile = resolveProfile(registries.devices, device.profileId);
-  const pointScale = profile.pixelDensity || 1;
-  const appDesignWidth = appId
-    ? registries.plugins.metadata.get(appId).designWidth
-    : undefined;
+  const pointScale = profile.pointScale;
+  const osAppearance = device.os?.appearance ?? "light";
+  const osLocale = device.os?.locale ?? "en-US";
+  const platformVisuals = resolveDevicePlatformVisuals(profile, osAppearance, osLocale);
+  const appDesignWidth = appId ? registries.plugins.metadata.get(appId).designWidth : undefined;
   if (appId && appDesignWidth === undefined) {
-    throw new Error(
-      `APP_DESIGN_WIDTH_MISSING: App "${appId}" must register assets.designWidth.`,
-    );
+    throw new Error(`APP_DESIGN_WIDTH_MISSING: App "${appId}" must register assets.designWidth.`);
   }
-  const appLogicalScale = appDesignWidth
-    ? profile.display.width / appDesignWidth
-    : 1;
+  const appLogicalScale = appDesignWidth ? profile.display.width / appDesignWidth : 1;
   const notificationProjection = input.notificationProgram
     ? projectNotifications(input.notificationProgram, deviceId, t, {
         viewportWidth: profile.display.width,
         viewportHeight: profile.display.height,
         pointScale,
-        safeAreaTop: profile.safeArea.top / pointScale,
       })
     : undefined;
   const variant: "ios" | "android" = profile.platform;
@@ -422,7 +349,7 @@ export function computeLayoutEngine(
         platform: projectedInputSession.keyboard.platform,
         appearance: projectedInputSession.keyboard.appearance,
         locale: projectedInputSession.keyboard.locale.tag,
-        themeId: projectedInputSession.keyboard.themeId,
+        platformProfileId: projectedInputSession.keyboard.platformProfileId,
       })
     : undefined;
   const inputProjection =
@@ -431,21 +358,28 @@ export function computeLayoutEngine(
           fps: effectiveFps,
           viewportWidth: profile.display.width,
           viewportHeight: profile.display.height,
-          keyboardHeight:
-            inputExperience.theme.geometry.height * (profile.pixelDensity || 1),
+          keyboardHeight: platformVisuals.geometry.keyboard.height * pointScale,
         })
       : undefined;
-  const keyboardHeight = inputProjection?.surface.viewportInset ?? 0;
-
-  // 5. Compute effective viewport height (shrinks when keyboard visible)
-  const effectiveViewportHeight =
-    profile.display.height / appLogicalScale - keyboardHeight / appLogicalScale;
-  const logicalSafeAreaInsets = {
-    top: (profile.safeArea?.top ?? 0) / appLogicalScale,
-    bottom: (profile.safeArea?.bottom ?? 0) / appLogicalScale,
-    left: (profile.safeArea?.left ?? 0) / appLogicalScale,
-    right: (profile.safeArea?.right ?? 0) / appLogicalScale,
-  };
+  const systemGeometry = resolveDeviceSystemGeometry(profile, {
+    appearance: osAppearance,
+    locale: osLocale,
+    state: {
+      keyboard: inputProjection
+        ? {
+            visible: inputProjection.surface.visible,
+            progress: inputProjection.surface.progress,
+            height: platformVisuals.geometry.keyboard.height,
+          }
+        : undefined,
+      notification: {
+        bannerVisible: Boolean(notificationProjection?.banner),
+        bannerHeight: platformVisuals.geometry.notification.minimumHeight,
+      },
+    },
+  });
+  const platformToAppScale = appLogicalScale / pointScale;
+  const appViewport = scaleAppViewportFrame(systemGeometry.appViewport, platformToAppScale);
 
   // 5. Build layout context and compute layout
   const layoutContext: LayoutContext = {
@@ -456,13 +390,15 @@ export function computeLayoutEngine(
     viewKind,
     activeConversationId,
     activeStoryId,
-    viewportWidth: profile.display.width / appLogicalScale,
-    viewportHeight: effectiveViewportHeight,
-    safeAreaInsets: logicalSafeAreaInsets,
+    viewportWidth: appViewport.viewport.width,
+    viewportHeight: appViewport.viewport.height,
+    appViewport,
     layoutCache: input.layoutCache,
   };
 
-  const layout = computeLayout(layoutContext, registries.plugins.layouts);
+  const layout = systemSurfaceProjection
+    ? projectSystemSurfaceLayout(systemSurfaceProjection)
+    : computeLayout(layoutContext, registries.plugins.layouts);
 
   const output: LayoutEngineOutput = {
     deviceId,
@@ -476,7 +412,8 @@ export function computeLayoutEngine(
     appLogicalScale,
     activeConversationId,
     activeStoryId,
-    effectiveViewportHeight,
+    systemGeometry,
+    appViewport,
     inputProjection,
     notificationProjection,
     systemSurfaceProjection,

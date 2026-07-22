@@ -1,4 +1,5 @@
 import type { ComponentType } from "react";
+import type { VisualHardwareProfile } from "@tokovo/visual-system";
 import type { FrameComponent } from "./registries/frame-registry.js";
 import type { StatusBarStrategyComponent } from "./registries/statusbar-registry.js";
 
@@ -59,39 +60,7 @@ export interface DeviceShell {
   hasDynamicIsland: boolean;
 }
 
-export interface SafeAreaInsets {
-  top: number;
-  bottom: number;
-  left: number;
-  right: number;
-}
-
-/** Physical display aperture inside the outer device body. */
-export interface DeviceDisplayGeometry {
-  /** Display origin in device-body coordinates. */
-  x: number;
-  y: number;
-  /** Native display pixel dimensions used by apps and OS surfaces. */
-  width: number;
-  height: number;
-  ppi: number;
-  cornerRadius: number;
-}
-
-export interface DeviceProfile {
-  id: string;
-  name: string;
-  type: "phone" | "tablet" | "desktop" | "watch";
-  platform: "ios" | "android";
-  dimensions: {
-    width: number;
-    height: number;
-    depth?: number;
-  };
-  /** Display aperture. It must not be conflated with the physical body bounds. */
-  display: DeviceDisplayGeometry;
-  pixelDensity: number;
-  safeArea: SafeAreaInsets;
+export interface DeviceProfile extends VisualHardwareProfile {
   /** Dynamic Island configuration (iOS only) */
   dynamicIsland?: DynamicIslandConfig;
   statusBarWidget?: StatusBarWidgetConfig;

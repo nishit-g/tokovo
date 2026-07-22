@@ -17,6 +17,7 @@
     "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
+    "@tokovo/visual-system": "workspace:*",
     "zod": "^4.2.1"
   },
   "devDependencies": {

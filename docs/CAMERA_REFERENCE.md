@@ -47,7 +47,8 @@ export const cinematics = cinematicProgram(
           .output("main", {
             viewport: { x: 0, y: 0, width: 1080, height: 1920 },
             coveragePolicy: "require-shots",
-            safeAreaInsets: { top: 48, right: 32, bottom: 48, left: 32 },
+            compositionProfileId: "hero-device",
+            editorialInsets: { top: 48, right: 32, bottom: 48, left: 32 },
             defaultRigId: "neutral",
           })
           .rig("neutral", {
@@ -105,14 +106,15 @@ Never compensate for the hardware rail with episode-authored pixel offsets.
 Missing-subject behavior must be explicit: fail, skip the shot, or use one explicit fallback
 subject. There is no heuristic chain that invents a broader target.
 
-## Output coverage and safe areas
+## Output coverage and editorial insets
 
 Every output declares a coverage policy. `require-shots` rejects any uncovered frame interval at
 preparation; `allow-default` intentionally fills gaps with the output's default rig. This is a
 compile-time contract, not a renderer guess.
 
-`safeAreaInsets` reduces the effective composition viewport for every rig on that output. Composer
-positioning and framing guards solve inside the safe viewport, while final clipping still uses the
+`compositionProfileId` supplies the normal editorial insets and composition guidance.
+`editorialInsets` is an intentional output-specific override. It reduces the effective composition viewport for every rig on that output. Composer
+positioning and framing guards solve inside the editorial viewport, while final clipping still uses the
 full output rectangle. Invalid or over-constrained insets fail with stable camera diagnostic codes.
 
 Authoring fails immediately with `CinematicAuthoringError` when IDs collide, a shot leaves the
@@ -208,7 +210,7 @@ mise exec -- pnpm camera subjects
 
 Render metadata embeds the complete selected camera artifact: independent story/stage signatures,
 plan signature, coverage map, required projection backend, stable IDs, preparation diagnostics, and
-the immutable plan. Preview debug mode additionally draws safe areas, projected subjects, framing
+the immutable plan. Preview debug mode additionally draws editorial insets, projected subjects, framing
 guards, desired/final pose, tracking/trajectory state, and ordered projection passes.
 
 Verify hero work with a real render:

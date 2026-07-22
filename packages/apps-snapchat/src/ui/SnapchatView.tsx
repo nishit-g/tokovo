@@ -9,18 +9,12 @@
  * - SVG line icons (no emoji)
  * - Colored indicator subtitles (red for snaps, blue for chats)
  * - Dynamic timestamps from message data
- * - Safe area insets + keyboard-aware layout
+ * - Platform viewport insets + keyboard-aware layout
  */
 
 import React, { useEffect, useRef } from "react";
 import { Img } from "remotion";
-import {
-  useFps,
-  useKeyboardHeight,
-  useInputField,
-  useSafeAreaInsets,
-  useTime,
-} from "@tokovo/react";
+import { useFps, useKeyboardHeight, useInputField, useAppViewport, useTime } from "@tokovo/react";
 import type { PluginViewProps } from "@tokovo/core";
 import { SNAPCHAT_APP_ID } from "../constants.js";
 import type { SnapchatState } from "../types/state.js";
@@ -55,7 +49,8 @@ import {
   chatHeaderSideIconsStyle,
 } from "../styles.js";
 
-const FONT = "'Avenir Next', 'Avenir', -apple-system, sans-serif";
+const FONT =
+  "'Inter Variable', 'Noto Sans Arabic Variable', 'Noto Sans Devanagari Variable', 'Noto Sans JP Variable', sans-serif";
 
 // =============================================================================
 // SVG ICONS (thin stroke, matching Snapchat's SF Symbol style)
@@ -216,10 +211,7 @@ const ComposeIcon: React.FC<{ size?: number; color?: string }> = ({
 );
 
 // Bottom nav icons
-const MapPinIcon: React.FC<{ size?: number; color?: string }> = ({
-  size = 22,
-  color,
-}) => (
+const MapPinIcon: React.FC<{ size?: number; color?: string }> = ({ size = 22, color }) => (
   <svg
     width={size}
     height={size}
@@ -235,10 +227,7 @@ const MapPinIcon: React.FC<{ size?: number; color?: string }> = ({
   </svg>
 );
 
-const ChatBubbleIcon: React.FC<{ size?: number; color?: string }> = ({
-  size = 22,
-  color,
-}) => (
+const ChatBubbleIcon: React.FC<{ size?: number; color?: string }> = ({ size = 22, color }) => (
   <svg
     width={size}
     height={size}
@@ -253,10 +242,7 @@ const ChatBubbleIcon: React.FC<{ size?: number; color?: string }> = ({
   </svg>
 );
 
-const StoriesIcon: React.FC<{ size?: number; color?: string }> = ({
-  size = 22,
-  color,
-}) => (
+const StoriesIcon: React.FC<{ size?: number; color?: string }> = ({ size = 22, color }) => (
   <svg
     width={size}
     height={size}
@@ -273,10 +259,7 @@ const StoriesIcon: React.FC<{ size?: number; color?: string }> = ({
   </svg>
 );
 
-const SpotlightIcon: React.FC<{ size?: number; color?: string }> = ({
-  size = 22,
-  color,
-}) => (
+const SpotlightIcon: React.FC<{ size?: number; color?: string }> = ({ size = 22, color }) => (
   <svg
     width={size}
     height={size}
@@ -303,10 +286,7 @@ function getState(world: PluginViewProps["world"]): SnapchatState {
   }) as SnapchatState;
 }
 
-function getWorldClock(
-  world: PluginViewProps["world"],
-  deviceId?: string,
-): number {
+function getWorldClock(world: PluginViewProps["world"], deviceId?: string): number {
   if (deviceId) {
     const activeClock = world.devices?.[deviceId]?.os?.clock;
     if (typeof activeClock === "number" && Number.isFinite(activeClock)) {
@@ -337,10 +317,7 @@ function formatRelativeTime(timestamp: number, currentTimeMs: number): string {
 }
 
 /** Get indicator color for subtitle text */
-function getSubtitleColor(
-  lastMessage?: SnapchatMessage,
-  hasUnread?: boolean,
-): string {
+function getSubtitleColor(lastMessage?: SnapchatMessage, hasUnread?: boolean): string {
   if (!lastMessage || !hasUnread) return snapchatColors.textSecondary;
   if (lastMessage.kind === "snap") return snapchatColors.indicatorRed;
   return snapchatColors.indicatorBlue;
@@ -393,9 +370,7 @@ const GroupAvatar: React.FC<{
   const miniSize = size * 0.65;
   const shown = participants.slice(0, 2);
   return (
-    <div
-      style={{ position: "relative", width: size, height: size, flexShrink: 0 }}
-    >
+    <div style={{ position: "relative", width: size, height: size, flexShrink: 0 }}>
       {shown.map((p, i) => (
         <div
           key={p.name + i}
@@ -443,17 +418,11 @@ const TypingDots: React.FC = () => {
   );
 };
 
-const IndicatorShape: React.FC<{ lastMessage?: SnapchatMessage }> = ({
-  lastMessage,
-}) => {
+const IndicatorShape: React.FC<{ lastMessage?: SnapchatMessage }> = ({ lastMessage }) => {
   if (!lastMessage) return null;
   const isSnap = lastMessage.kind === "snap";
-  const isOpened = isSnap
-    ? lastMessage.snapOpened
-    : lastMessage.status === "opened";
-  return (
-    <div style={indicatorShapeStyle(isSnap ? "snap" : "chat", !!isOpened)} />
-  );
+  const isOpened = isSnap ? lastMessage.snapOpened : lastMessage.status === "opened";
+  return <div style={indicatorShapeStyle(isSnap ? "snap" : "chat", !!isOpened)} />;
 };
 
 // =============================================================================
@@ -468,16 +437,12 @@ const NAV_ITEMS = [
   { id: "spotlight", label: "Spotlight", Icon: SpotlightIcon },
 ] as const;
 
-const BottomNavBar: React.FC<{ activeTab?: string }> = ({
-  activeTab = "chat",
-}) => (
+const BottomNavBar: React.FC<{ activeTab?: string }> = ({ activeTab = "chat" }) => (
   <div style={bottomNavBarStyle()}>
     {NAV_ITEMS.map((item) => {
       const active = item.id === activeTab;
       const isCamera = item.id === "camera";
-      const color = active
-        ? snapchatColors.textPrimary
-        : snapchatColors.textSecondary;
+      const color = active ? snapchatColors.textPrimary : snapchatColors.textSecondary;
 
       if (isCamera) {
         return (
@@ -523,11 +488,11 @@ const BottomNavBar: React.FC<{ activeTab?: string }> = ({
 // =============================================================================
 
 const ChatListScreen: React.FC<{
-  safeTop: number;
-  safeBottom: number;
+  contentTop: number;
+  contentBottom: number;
   world: PluginViewProps["world"];
   deviceId?: string;
-}> = ({ safeTop, safeBottom, world, deviceId }) => {
+}> = ({ contentTop, contentBottom, world, deviceId }) => {
   const conversations = selectConversations(world);
 
   return (
@@ -539,7 +504,7 @@ const ChatListScreen: React.FC<{
         display: "flex",
         flexDirection: "column",
         overflow: "hidden",
-        paddingTop: safeTop,
+        paddingTop: contentTop,
         boxSizing: "border-box",
       }}
     >
@@ -567,17 +532,12 @@ const ChatListScreen: React.FC<{
       {/* Conversation list */}
       <div style={{ flex: 1, overflow: "hidden" }}>
         {conversations.map((conv) => (
-          <ChatListRow
-            key={conv.id}
-            conversation={conv}
-            world={world}
-            deviceId={deviceId}
-          />
+          <ChatListRow key={conv.id} conversation={conv} world={world} deviceId={deviceId} />
         ))}
       </div>
 
       {/* Bottom nav */}
-      <div style={{ paddingBottom: safeBottom }}>
+      <div style={{ paddingBottom: contentBottom }}>
         <BottomNavBar activeTab="chat" />
       </div>
     </div>
@@ -590,8 +550,7 @@ const ChatListRow: React.FC<{
   deviceId?: string;
 }> = ({ conversation, world, deviceId }) => {
   const lastMessage = conversation.messages[conversation.messages.length - 1];
-  const name =
-    conversation.title ?? conversation.participants[0]?.name ?? conversation.id;
+  const name = conversation.title ?? conversation.participants[0]?.name ?? conversation.id;
   const avatar = conversation.avatar ?? conversation.participants[0]?.avatar;
   const isGroup = conversation.isGroup && conversation.participants.length > 1;
 
@@ -630,11 +589,7 @@ const ChatListRow: React.FC<{
           size={snapchatSpacing.bitmojiSizeList}
         />
       ) : (
-        <BitmojiAvatar
-          name={name}
-          avatar={avatar}
-          size={snapchatSpacing.bitmojiSizeList}
-        />
+        <BitmojiAvatar name={name} avatar={avatar} size={snapchatSpacing.bitmojiSizeList} />
       )}
       <div style={{ flex: 1, minWidth: 0 }}>
         <div
@@ -675,9 +630,7 @@ const ChatListRow: React.FC<{
           {/* Streak right-aligned */}
           {conversation.streak !== null &&
             conversation.streak !== undefined &&
-            conversation.streak > 0 && (
-              <StreakBadge streak={conversation.streak} />
-            )}
+            conversation.streak > 0 && <StreakBadge streak={conversation.streak} />}
         </div>
         <div
           style={{
@@ -752,14 +705,12 @@ const ChatListRow: React.FC<{
 
 const ChatScreen: React.FC<{
   state: SnapchatState;
-  safeTop: number;
-  safeBottom: number;
+  contentTop: number;
+  contentBottom: number;
   keyboardHeight: number;
-}> = ({ state, safeTop, safeBottom, keyboardHeight }) => {
+}> = ({ state, contentTop, contentBottom, keyboardHeight }) => {
   const conversationId = state.activeConversationId;
-  const conversation = conversationId
-    ? state.conversations?.[conversationId]
-    : undefined;
+  const conversation = conversationId ? state.conversations?.[conversationId] : undefined;
 
   if (!conversation) {
     return (
@@ -768,25 +719,22 @@ const ChatScreen: React.FC<{
           width: "100%",
           height: "100%",
           backgroundColor: snapchatColors.backgroundChat,
-          paddingTop: safeTop,
-          paddingBottom: safeBottom,
+          paddingTop: contentTop,
+          paddingBottom: contentBottom,
           boxSizing: "border-box",
         }}
       />
     );
   }
 
-  const name =
-    conversation.title ?? conversation.participants[0]?.name ?? conversation.id;
+  const name = conversation.title ?? conversation.participants[0]?.name ?? conversation.id;
   const avatar = conversation.avatar ?? conversation.participants[0]?.avatar;
   const messages = conversation.messages ?? [];
   const typingActors = Object.entries(conversation.typing ?? {})
     .filter(([, v]) => v)
     .map(([k]) => k);
   const composerInput = useInputField("composer");
-  const storedDraft = conversationId
-    ? (state.drafts?.[conversationId] ?? "")
-    : "";
+  const storedDraft = conversationId ? (state.drafts?.[conversationId] ?? "") : "";
   const composerText = composerInput?.value ?? storedDraft;
   const showKeyboardCursor = composerInput?.isKeyboardVisible ?? false;
 
@@ -803,14 +751,13 @@ const ChatScreen: React.FC<{
     <div
       style={{
         width: "100%",
-        height:
-          keyboardHeight > 0 ? `calc(100% - ${keyboardHeight}px)` : "100%",
+        height: keyboardHeight > 0 ? `calc(100% - ${keyboardHeight}px)` : "100%",
         backgroundColor: snapchatColors.backgroundChat,
         display: "flex",
         flexDirection: "column",
         overflow: "hidden",
-        paddingTop: safeTop,
-        paddingBottom: keyboardHeight > 0 ? 0 : safeBottom,
+        paddingTop: contentTop,
+        paddingBottom: keyboardHeight > 0 ? 0 : contentBottom,
         boxSizing: "border-box",
       }}
     >
@@ -822,11 +769,7 @@ const ChatScreen: React.FC<{
         </div>
 
         {/* Center: bitmoji + name */}
-        <BitmojiAvatar
-          name={name}
-          avatar={avatar}
-          size={snapchatSpacing.avatarSizeChat}
-        />
+        <BitmojiAvatar name={name} avatar={avatar} size={snapchatSpacing.avatarSizeChat} />
         <div
           style={{
             display: "flex",
@@ -847,9 +790,7 @@ const ChatScreen: React.FC<{
           </span>
           {conversation.streak !== null &&
             conversation.streak !== undefined &&
-            conversation.streak > 0 && (
-              <StreakBadge streak={conversation.streak} />
-            )}
+            conversation.streak > 0 && <StreakBadge streak={conversation.streak} />}
         </div>
 
         {/* Right side icons */}
@@ -993,11 +934,7 @@ const MessageRow: React.FC<{ message: SnapchatMessage }> = ({ message }) => {
             borderBottom: "5px solid transparent",
           }}
         />
-        <span
-          style={{ fontSize: 12, color, fontFamily: FONT, fontWeight: 500 }}
-        >
-          {label}
-        </span>
+        <span style={{ fontSize: 12, color, fontFamily: FONT, fontWeight: 500 }}>{label}</span>
       </div>
     );
   }
@@ -1027,9 +964,7 @@ const SnapViewScreen: React.FC<{ state: SnapchatState }> = ({ state }) => {
   const conversation = state.activeConversationId
     ? state.conversations?.[state.activeConversationId]
     : undefined;
-  const snap = conversation?.messages.find(
-    (message) => message.id === state.activeSnapId,
-  );
+  const snap = conversation?.messages.find((message) => message.id === state.activeSnapId);
   const media = snap?.attachments?.[0];
 
   return (
@@ -1078,17 +1013,13 @@ const SnapViewScreen: React.FC<{ state: SnapchatState }> = ({ state }) => {
       >
         <BackArrowIcon size={22} color={snapchatColors.white} />
         <BitmojiAvatar
-          name={
-            conversation?.title ?? conversation?.participants[0]?.name ?? "Snap"
-          }
+          name={conversation?.title ?? conversation?.participants[0]?.name ?? "Snap"}
           avatar={conversation?.avatar ?? conversation?.participants[0]?.avatar}
           size={34}
         />
         <div style={{ color: snapchatColors.white, fontFamily: FONT }}>
           <div style={{ fontSize: 15, fontWeight: 700 }}>
-            {conversation?.title ??
-              conversation?.participants[0]?.name ??
-              "Snap"}
+            {conversation?.title ?? conversation?.participants[0]?.name ?? "Snap"}
           </div>
           <div style={{ fontSize: 12, opacity: 0.85 }}>
             {snap?.snapType === "video" ? "Video Snap" : "Photo Snap"}
@@ -1120,7 +1051,7 @@ const SnapViewScreen: React.FC<{ state: SnapchatState }> = ({ state }) => {
 export const SnapchatView: React.FC<PluginViewProps> = (props) => {
   const state = getState(props.world);
   const screen = state.currentScreen ?? "chat_list";
-  const safeArea = useSafeAreaInsets();
+  const { contentInsets } = useAppViewport();
   const keyboardHeight = useKeyboardHeight();
 
   switch (screen) {
@@ -1128,8 +1059,8 @@ export const SnapchatView: React.FC<PluginViewProps> = (props) => {
       return (
         <ChatScreen
           state={state}
-          safeTop={safeArea.top}
-          safeBottom={safeArea.bottom}
+          contentTop={contentInsets.top}
+          contentBottom={contentInsets.bottom}
           keyboardHeight={keyboardHeight}
         />
       );
@@ -1139,8 +1070,8 @@ export const SnapchatView: React.FC<PluginViewProps> = (props) => {
     default:
       return (
         <ChatListScreen
-          safeTop={safeArea.top}
-          safeBottom={safeArea.bottom}
+          contentTop={contentInsets.top}
+          contentBottom={contentInsets.bottom}
           world={props.world}
           deviceId={props.deviceId}
         />

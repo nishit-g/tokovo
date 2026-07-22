@@ -30,7 +30,7 @@ export interface BackgroundLayerProps {
    * Background configuration.
    * Can be:
    * - BackgroundConfig object
-   * - BackgroundPresetId string (e.g., "ambient-night")
+   * - BackgroundPresetId string (e.g., "studio-quiet-dark")
    * - undefined (uses default dark background)
    */
   config?: BackgroundConfig | BackgroundPresetId | null;

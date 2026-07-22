@@ -41,7 +41,7 @@ visual or product completeness.
 ## UI quality
 
 - Components use semantic color, type, spacing, radius, elevation, motion, and
-  safe-area tokens; no presentation literals remain outside token definitions.
+  platform content insets come only from `AppViewportFrame`; no presentation literals remain.
 - Layout recipes remain readable without clipping from 320 to 480 design
   pixels, with long names, localized timestamps, enlarged type, and cutouts.
 - Actionable controls are semantic, labelled, keyboard reachable, visibly

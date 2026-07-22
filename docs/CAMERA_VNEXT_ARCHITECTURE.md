@@ -151,9 +151,9 @@ app-logical
   -> output-viewport
 ```
 
-The device profile supplies the physical display inset and safe area. The app plugin supplies its
-design width. Missing values fail preparation or projection; no canonical-phone rectangle is
-invented.
+The device profile supplies the physical display inset. The visual system supplies the platform
+`AppViewportFrame`, and the app plugin supplies its design width. Missing values fail preparation
+or projection; no canonical-phone rectangle is invented.
 
 ### Missing-subject policy
 
@@ -183,9 +183,9 @@ lookup tables, coverage diagnostics, and the required projection backend.
 
 ### Output
 
-An output declares its viewport, source stage node, z-order, clipping, shadow, safe-area insets,
-coverage policy, and default rig. Main and PIP outputs run separate evaluators and cannot change one
-another's pose.
+An output declares its viewport, source stage node, z-order, clipping, shadow, composition profile,
+optional editorial-inset override, coverage policy, and default rig. Main and PIP outputs run
+separate evaluators and cannot change one another's pose.
 
 ### Rig
 
@@ -213,8 +213,8 @@ interface CameraPose2D {
 }
 ```
 
-The composer solves desired position and scale against the output's safe viewport. A framing guard
-can keep a wider context subject—commonly the physical device body—inside the safe area while the
+The composer solves desired position and scale against the output's editorial viewport. A framing guard
+can keep a wider context subject—commonly the physical device body—inside the editorial region while the
 primary subject receives close framing.
 
 ## Motion and Tracking
@@ -315,14 +315,14 @@ Every evaluated output includes a deterministic trace:
 - plan and program signature;
 - output, selected shot, and rig;
 - resolved subjects and provenance;
-- safe-area constraint and effective viewport;
+- editorial-frame constraint and effective viewport;
 - framing guard;
 - desired and final pose;
 - tracking and baked-trajectory segment;
 - transition state and movement intent;
 - ordered projection-pass kinds.
 
-The debug overlay displays stage nodes, cinematic subjects, safe areas, framing guards, desired and
+The debug overlay displays stage nodes, cinematic subjects, editorial insets, framing guards, desired and
 final pose points, and passes. Diagnostics cannot affect rendered pixels.
 
 CLI inspection:
@@ -382,7 +382,7 @@ subject provider. It does not import the camera kernel or encode global shots.
 
 ### Add a new device profile
 
-Register exact physical body/display geometry, safe area, chrome, and OS surface projection. Do not
+Register exact physical body/display geometry, platform profile, chrome, and OS surface projection. Do not
 copy an existing phone as a fallback.
 
 ### Add a new semantic region
@@ -427,7 +427,7 @@ Camera VNext is complete when:
 - all invariants in this document hold;
 - every repository episode prepares through the current program model;
 - app/device subject bounds come from painted projections;
-- full output coverage and safe-area constraints validate;
+- full output coverage and editorial-frame constraints validate;
 - main and PIP evaluate independently;
 - all registered optical models reach a neutral state cleanly;
 - controlled repeated renders have matching decoded-frame hashes;

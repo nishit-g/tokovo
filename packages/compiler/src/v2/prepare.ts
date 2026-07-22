@@ -10,6 +10,7 @@
 
 import type { TrackEpisodeIR, TrackEvent } from "@tokovo/ir";
 import { safeValidateTrackEpisodeIR } from "@tokovo/ir";
+import { resolveHardwareVisualIdentity } from "@tokovo/visual-system";
 import type {
   RuntimeEvent,
   WorldState,
@@ -18,11 +19,7 @@ import type {
   TokovoConfigType,
   AutoSoundRule,
 } from "@tokovo/core";
-import {
-  DEFAULT_AUDIO_STATE,
-  DEFAULT_OS_STATE,
-  createScopedLogger,
-} from "@tokovo/core";
+import { DEFAULT_AUDIO_STATE, DEFAULT_OS_STATE, createScopedLogger } from "@tokovo/core";
 import {
   compareEvents,
   createEventIndex,
@@ -32,15 +29,9 @@ import {
 } from "@tokovo/core";
 import { lowerEpisodeWithCapabilities } from "./lowering.js";
 import { validateV1RuntimeEpisode } from "./validation.js";
-import {
-  CompilerSchemaValidationError,
-  RuntimeValidationError,
-} from "./errors.js";
+import { CompilerSchemaValidationError, RuntimeValidationError } from "./errors.js";
 import { collectEpisodeAssetRefs } from "./asset-refs.js";
-import {
-  prepareInputProgram,
-  type PreparedInputProgram,
-} from "@tokovo/device-keyboard";
+import { prepareInputProgram, type PreparedInputProgram } from "@tokovo/device-keyboard";
 import {
   prepareNotificationProgram,
   type NotificationAppAdapter,
@@ -48,10 +39,7 @@ import {
   type PreparedNotificationActionEffect,
   type PreparedNotificationProgram,
 } from "@tokovo/device-notifications";
-import {
-  createBuiltinCameraRegistries,
-  type CameraRegistries,
-} from "@tokovo/camera";
+import { createBuiltinCameraRegistries, type CameraRegistries } from "@tokovo/camera";
 import {
   prepareCinematicPrograms,
   type PreparedCinematicPrograms,
@@ -208,8 +196,7 @@ export function prepareTrackEpisode(
     const missingStageDeviceIds = [
       ...new Set(
         ir.cinematics.stageProgram.nodes.flatMap((node) =>
-          node.source.kind === "device" &&
-          !configuredDeviceIds.has(node.source.deviceId)
+          node.source.kind === "device" && !configuredDeviceIds.has(node.source.deviceId)
             ? [node.source.deviceId]
             : [],
         ),
@@ -246,10 +233,7 @@ export function prepareTrackEpisode(
     durationInFrames: ir.durationInFrames,
     events: sortedEvents,
     eventIndex: createEventIndex(sortedEvents),
-    keyframedEventIndex: createKeyframedEventIndex(
-      sortedEvents,
-      keyframeInterval,
-    ),
+    keyframedEventIndex: createKeyframedEventIndex(sortedEvents, keyframeInterval),
     keyframeInterval,
     eventSignature,
     initialWorld,
@@ -342,23 +326,24 @@ function buildNotificationProgram(
     return prepareNotificationProgram({
       fps: ir.fps,
       durationInFrames: ir.durationInFrames,
-      intents: [
-        ...(ir.notificationIntents ?? []),
-        ...lowered.notificationIntents,
-      ],
-      interactions: [
-        ...(ir.notificationInteractions ?? []),
-        ...lowered.notificationInteractions,
-      ],
-      devices: ir.devices.map((device) => ({
-        id: device.id,
-        platform: device.profile.includes("pixel") ? "android" : "ios",
-        appearance: device.os?.appearance ?? device.appearance ?? "light",
-        locale: device.os?.locale ?? "en-US",
-        initialLocked: device.locked ?? false,
-        initialDnd: device.os?.dnd ?? false,
-        initialForegroundAppId: device.app,
-      })),
+      intents: [...(ir.notificationIntents ?? []), ...lowered.notificationIntents],
+      interactions: [...(ir.notificationInteractions ?? []), ...lowered.notificationInteractions],
+      devices: ir.devices.flatMap((device) => {
+        const visualIdentity = resolveHardwareVisualIdentity(device.profile);
+        if (!visualIdentity.systemSurfaces) return [];
+        return [
+          {
+            id: device.id,
+            platform: visualIdentity.platform,
+            platformProfileId: visualIdentity.platformProfileId,
+            appearance: device.os?.appearance ?? device.appearance ?? "light",
+            locale: device.os?.locale ?? "en-US",
+            initialLocked: device.locked ?? false,
+            initialDnd: device.os?.dnd ?? false,
+            initialForegroundAppId: device.app,
+          },
+        ];
+      }),
       deviceOperations: buildNotificationDeviceOperations(ir),
       adapters,
     });
@@ -412,9 +397,7 @@ function lowerNotificationActionEffects(
 
 function buildInputProgram(ir: TrackEpisodeIR): PreparedInputProgram {
   const intents = (ir.inputSessions ?? []).map((session) => {
-    const device = ir.devices.find(
-      (candidate) => candidate.id === session.deviceId,
-    );
+    const device = ir.devices.find((candidate) => candidate.id === session.deviceId);
     if (!device) {
       throw new RuntimeValidationError(
         `[prepareTrackEpisode] input session ${JSON.stringify(session.id ?? session.fieldId)} ` +
@@ -431,10 +414,7 @@ function buildInputProgram(ir: TrackEpisodeIR): PreparedInputProgram {
         ...session.keyboard,
         platform: session.keyboard?.platform ?? platform,
         appearance:
-          session.keyboard?.appearance ??
-          device.os?.appearance ??
-          device.appearance ??
-          "light",
+          session.keyboard?.appearance ?? device.os?.appearance ?? device.appearance ?? "light",
         locale: session.keyboard?.locale ?? session.locale ?? "en-US",
       },
     };
@@ -444,9 +424,7 @@ function buildInputProgram(ir: TrackEpisodeIR): PreparedInputProgram {
     return prepareInputProgram(intents);
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
-    throw new RuntimeValidationError(
-      `[prepareTrackEpisode] input preparation failed: ${message}`,
-    );
+    throw new RuntimeValidationError(`[prepareTrackEpisode] input preparation failed: ${message}`);
   }
 }
 
@@ -457,16 +435,12 @@ function buildInputProgram(ir: TrackEpisodeIR): PreparedInputProgram {
 /**
  * Build initial WorldState from TrackEpisodeIR device configs.
  */
-function buildInitialWorld(
-  ir: TrackEpisodeIR,
-  plugins: TokovoPlugin[],
-): WorldState {
+function buildInitialWorld(ir: TrackEpisodeIR, plugins: TokovoPlugin[]): WorldState {
   const devices: Record<string, DeviceState> = {};
   for (const device of ir.devices) {
     const platform = device.profile.includes("pixel") ? "android" : "ios";
     const installedApps = device.installedApps ?? [];
-    const hasHomeScreen =
-      Boolean(device.homeScreen) || installedApps.length > 0;
+    const hasHomeScreen = Boolean(device.homeScreen) || installedApps.length > 0;
     const authoredTime = device.os?.time;
     const clock =
       authoredTime instanceof Date
@@ -489,10 +463,7 @@ function buildInitialWorld(
       os: {
         ...DEFAULT_OS_STATE,
         locale: device.os?.locale ?? DEFAULT_OS_STATE.locale,
-        appearance:
-          device.os?.appearance ??
-          device.appearance ??
-          DEFAULT_OS_STATE.appearance,
+        appearance: device.os?.appearance ?? device.appearance ?? DEFAULT_OS_STATE.appearance,
         hourCycle: device.os?.hourCycle,
         lockScreenWallpaper: device.os?.lockScreenWallpaper,
         clock,
@@ -500,20 +471,15 @@ function buildInitialWorld(
         charging: device.os?.charging ?? DEFAULT_OS_STATE.charging,
         network,
         wifiStrength:
-          network === "wifi" && strength !== undefined
-            ? strength
-            : DEFAULT_OS_STATE.wifiStrength,
+          network === "wifi" && strength !== undefined ? strength : DEFAULT_OS_STATE.wifiStrength,
         cellStrength:
-          network !== "wifi" && strength !== undefined
-            ? strength
-            : DEFAULT_OS_STATE.cellStrength,
+          network !== "wifi" && strength !== undefined ? strength : DEFAULT_OS_STATE.cellStrength,
         dnd: device.os?.dnd ?? DEFAULT_OS_STATE.dnd,
       },
       homeScreen: hasHomeScreen
         ? buildHomeScreenConfig({
             platform,
-            installedApps:
-              installedApps.length > 0 ? installedApps : [device.app],
+            installedApps: installedApps.length > 0 ? installedApps : [device.app],
             wallpaper: device.homeScreen?.wallpaper,
             dock: device.homeScreen?.dock,
             pages: device.homeScreen?.pages,
@@ -541,23 +507,15 @@ function buildInitialWorld(
 
   const audio = { ...DEFAULT_AUDIO_STATE };
 
-  const pluginsById = new Map<string, TokovoPlugin>(
-    plugins.map((p) => [p.id, p]),
-  );
+  const pluginsById = new Map<string, TokovoPlugin>(plugins.map((p) => [p.id, p]));
 
   const appState: Record<string, unknown> = {};
   const hydratedAppInstances = new Map<
     string,
     Array<{ deviceId: string; state: Record<string, unknown> }>
   >();
-  const snapshotEntries = new Map<
-    string,
-    import("@tokovo/ir").AppSnapshotEntry
-  >();
-  const initialViewEntries = new Map<
-    string,
-    import("@tokovo/ir").AppInitialViewEntry
-  >();
+  const snapshotEntries = new Map<string, import("@tokovo/ir").AppSnapshotEntry>();
+  const initialViewEntries = new Map<string, import("@tokovo/ir").AppInitialViewEntry>();
 
   for (const entry of ir.appSnapshots) {
     snapshotEntries.set(`${entry.appId}:${entry.deviceId}`, entry);

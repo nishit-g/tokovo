@@ -11,10 +11,7 @@ import {
 } from "../contract/index.js";
 import { evaluateNotificationProgram } from "../runtime/index.js";
 import { getNotificationTheme } from "../theme/index.js";
-import {
-  getNotificationLocalization,
-  type NotificationLocalizedStrings,
-} from "./localization.js";
+import { getNotificationLocalization, type NotificationLocalizedStrings } from "./localization.js";
 
 const RTL_PATTERN = /[\u0590-\u08ff\ufb1d-\ufefc]/u;
 
@@ -82,10 +79,7 @@ function ageLabel(
   return strings.day(Math.floor(hours / 24));
 }
 
-function mayRevealPreview(
-  policy: NotificationPreviewPolicyIR,
-  locked: boolean,
-): boolean {
+function mayRevealPreview(policy: NotificationPreviewPolicyIR, locked: boolean): boolean {
   return policy === "always" || (policy === "whenUnlocked" && !locked);
 }
 
@@ -98,9 +92,7 @@ function itemProjection(
   animationValue: NotificationItemProjection["animation"],
 ): NotificationItemProjection {
   const reveal = mayRevealPreview(record.previewPolicy, locked);
-  const title = reveal
-    ? record.presentation.title
-    : record.presentation.appName;
+  const title = reveal ? record.presentation.title : record.presentation.appName;
   const body = reveal ? record.presentation.body : strings.newNotification;
   const subtitle = reveal ? record.presentation.subtitle : undefined;
   return {
@@ -128,9 +120,7 @@ function itemProjection(
 
 function groupRecords(
   records: readonly PreparedNotificationRecord[],
-  createItem: (
-    record: PreparedNotificationRecord,
-  ) => NotificationItemProjection,
+  createItem: (record: PreparedNotificationRecord) => NotificationItemProjection,
   limit: number,
 ): NotificationGroupProjection[] {
   const groups = new Map<string, PreparedNotificationRecord[]>();
@@ -158,8 +148,7 @@ function groupRecords(
     })
     .sort(
       (left, right) =>
-        right.latestAtFrame - left.latestAtFrame ||
-        right.key.localeCompare(left.key),
+        right.latestAtFrame - left.latestAtFrame || right.key.localeCompare(left.key),
     )
     .slice(0, limit);
 }
@@ -172,9 +161,7 @@ export function projectNotifications(
 ): NotificationDeviceProjection {
   const device = program.devices[deviceId];
   if (!device) {
-    throw new Error(
-      `NOTIFICATION_PROJECTION_INVALID: unknown device ${deviceId}`,
-    );
+    throw new Error(`NOTIFICATION_PROJECTION_INVALID: unknown device ${deviceId}`);
   }
   if (
     !Number.isFinite(config.viewportWidth) ||
@@ -184,27 +171,19 @@ export function projectNotifications(
     config.viewportHeight <= 0 ||
     config.pointScale <= 0
   ) {
-    throw new Error(
-      "NOTIFICATION_PROJECTION_INVALID: viewport and point scale must be positive.",
-    );
+    throw new Error("NOTIFICATION_PROJECTION_INVALID: viewport and point scale must be positive.");
   }
 
   const runtime = evaluateNotificationProgram(program, deviceId, frame);
   const theme = getNotificationTheme(
     device.platform,
     device.appearance,
-    config.themeId,
+    device.platformProfileId,
+    device.locale,
   );
-  const deviceContext = resolveNotificationDeviceContext(
-    device,
-    frame,
-    program.actionEffects,
-  );
+  const deviceContext = resolveNotificationDeviceContext(device, frame, program.actionEffects);
   const localization = getNotificationLocalization(device.locale);
-  const enterFrames = durationAtFps(
-    theme.motion.cardEnterFramesAt30,
-    program.fps,
-  );
+  const enterFrames = durationAtFps(theme.motion.cardEnterFramesAt30, program.fps);
   const recordsById = getRecordsById(program);
   const visibleRecords = runtime.orderedIds
     .map((id) => recordsById.get(id))
@@ -246,9 +225,7 @@ export function projectNotifications(
       )
     : undefined;
 
-  const centerRecords = visibleRecords.filter(
-    (record) => record.delivery.centerEligible,
-  );
+  const centerRecords = visibleRecords.filter((record) => record.delivery.centerEligible);
   const statusBarIcons = [
     ...centerRecords
       .reduce((groups, record) => {
@@ -295,26 +272,18 @@ export function projectNotifications(
     theme,
     deviceContext,
     banner,
-    lockScreenGroups: groupRecords(
-      lockRecords,
-      cardItem,
-      theme.geometry.maxLockScreenGroups,
-    ),
+    lockScreenGroups: groupRecords(lockRecords, cardItem, theme.geometry.maxLockScreenGroups),
     center: {
       open: runtime.centerOpen,
       progress: centerProgress,
-      groups: groupRecords(
-        centerRecords,
-        cardItem,
-        theme.geometry.maxCenterGroups,
-      ),
+      groups: groupRecords(centerRecords, cardItem, theme.geometry.maxCenterGroups),
     },
     statusBarIcons,
     cinematicSubjects: {
       banner: banner
         ? {
             x: bannerMargin,
-            y: (theme.geometry.bannerTop + config.safeAreaTop) * scale,
+            y: theme.geometry.bannerTop * scale,
             width: config.viewportWidth - bannerMargin * 2,
             height: theme.geometry.bannerMinHeight * scale,
           }

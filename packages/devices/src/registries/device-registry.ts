@@ -63,17 +63,6 @@ export class DeviceRegistryClass {
   }
 
   /**
-   * Get a profile with fallback to default
-   */
-  getOrDefault(id: string, fallbackId: string = "iphone16"): DeviceProfile {
-    const profile = this.profiles.get(id) ?? this.profiles.get(fallbackId);
-    if (!profile) {
-      throw new Error(`Device profile not found: ${id}`);
-    }
-    return profile;
-  }
-
-  /**
    * Check if a profile is registered
    */
   has(id: string): boolean {

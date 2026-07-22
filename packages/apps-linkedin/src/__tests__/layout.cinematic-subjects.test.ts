@@ -1,16 +1,10 @@
 import { describe, it, expect } from "vitest";
 import type { LayoutContext, ViewKind, WorldState } from "@tokovo/core";
-import { DEFAULT_AUDIO_STATE } from "@tokovo/core";
+import { createAppViewportFrame, DEFAULT_AUDIO_STATE } from "@tokovo/core";
 import { linkedInLayoutStrategies } from "../layout/index.js";
-import {
-  createLinkedInInitialState,
-  type LinkedInState,
-} from "../runtime/state.js";
+import { createLinkedInInitialState, type LinkedInState } from "../runtime/state.js";
 
-function computeLayoutFor(
-  screen: LinkedInState["currentScreen"],
-  viewKind: ViewKind,
-) {
+function computeLayoutFor(screen: LinkedInState["currentScreen"], viewKind: ViewKind) {
   const appState = {
     ...createLinkedInInitialState(),
     currentScreen: screen,
@@ -34,13 +28,16 @@ function computeLayoutFor(
     viewKind,
     viewportWidth: 393,
     viewportHeight: 852,
-    safeAreaInsets: { top: 47, bottom: 34, left: 0, right: 0 },
+    appViewport: createAppViewportFrame({
+      width: 393,
+      height: 852,
+      contentInsets: { top: 47, bottom: 34 },
+    }),
     layoutCache: undefined,
   };
 
   const strat = linkedInLayoutStrategies.find((s) => s.viewKind === viewKind);
-  if (!strat)
-    throw new Error(`Missing linkedin layout strategy for ${viewKind}`);
+  if (!strat) throw new Error(`Missing linkedin layout strategy for ${viewKind}`);
   return strat.computeLayout(ctx) as any;
 }
 

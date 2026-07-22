@@ -11,10 +11,10 @@ import type {
   NotificationPrivacyIR,
   NotificationReplyIR,
 } from "@tokovo/ir";
+import type { MaterialRecipe, PlatformDesignProfileId } from "@tokovo/visual-system";
 
 export type NotificationPlatform = "ios" | "android";
 export type NotificationAppearance = "light" | "dark";
-export type NotificationThemeId = "system";
 
 export interface NotificationAppPresentation {
   appName: string;
@@ -36,6 +36,7 @@ export interface NotificationAppAdapter {
 export interface NotificationDeviceDescriptor {
   id: string;
   platform: NotificationPlatform;
+  platformProfileId: PlatformDesignProfileId;
   appearance: NotificationAppearance;
   locale: string;
   initialLocked: boolean;
@@ -135,6 +136,7 @@ export interface PreparedNotificationActionEffect {
 export interface PreparedNotificationDevice {
   id: string;
   platform: NotificationPlatform;
+  platformProfileId: PlatformDesignProfileId;
   appearance: NotificationAppearance;
   locale: string;
   initialLocked: boolean;
@@ -198,6 +200,11 @@ export interface NotificationThemeProjection {
     border: string;
     action: string;
     actionDestructive: string;
+  };
+  materials: {
+    card: MaterialRecipe;
+    secondary: MaterialRecipe;
+    center: MaterialRecipe;
   };
   geometry: {
     bannerTop: number;
@@ -301,8 +308,6 @@ export interface NotificationProjectionConfig {
   viewportWidth: number;
   viewportHeight: number;
   pointScale: number;
-  safeAreaTop: number;
-  themeId?: NotificationThemeId;
 }
 
 export interface NotificationAudioCue {

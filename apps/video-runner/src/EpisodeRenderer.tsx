@@ -21,6 +21,7 @@ import {
   useVideoConfig,
 } from "remotion";
 import { BackgroundLayer } from "@tokovo/background";
+import { TOKOVO_IOS_UI_FONT_FAMILY, TOKOVO_MONO_UI_FONT_FAMILY } from "@tokovo/visual-system";
 import {
   replayIncremental,
   createKeyframedEventIndex,
@@ -331,7 +332,22 @@ const EpisodeRendererInner: React.FC<EpisodeRendererProps> = ({
   if (renderDataError) {
     return (
       <AbsoluteFill style={errorStyle}>
-        <div style={{ fontSize: 80, marginBottom: 24 }}>⚠️</div>
+        <div
+          style={{
+            width: 72,
+            height: 72,
+            marginBottom: 24,
+            borderRadius: 24,
+            border: "2px solid #FF6B6B",
+            display: "grid",
+            placeItems: "center",
+            color: "#FF6B6B",
+            fontSize: 42,
+            fontWeight: 700,
+          }}
+        >
+          !
+        </div>
         <h1 style={{ color: "#FF6B6B", fontSize: 32, marginBottom: 16 }}>Episode Render Failed</h1>
         <div style={{ color: "#8892B0", fontSize: 18, marginBottom: 32 }}>
           Episode: <code>{episodeId}</code>
@@ -349,7 +365,16 @@ const EpisodeRendererInner: React.FC<EpisodeRendererProps> = ({
     const opacity = 0.5 + 0.5 * Math.sin((frame * Math.PI) / 30);
     return (
       <AbsoluteFill style={loadingStyle}>
-        <div style={{ fontSize: 48, marginBottom: 16 }}>🎬</div>
+        <div
+          style={{
+            width: 54,
+            height: 54,
+            marginBottom: 16,
+            borderRadius: 18,
+            border: "2px solid #8696A0",
+            opacity,
+          }}
+        />
         <div style={{ fontSize: 20, color: "#8696A0", opacity }}>Preparing {episodeId}...</div>
       </AbsoluteFill>
     );
@@ -359,7 +384,16 @@ const EpisodeRendererInner: React.FC<EpisodeRendererProps> = ({
     const opacity = 0.5 + 0.5 * Math.sin((frame * Math.PI) / 30);
     return (
       <AbsoluteFill style={loadingStyle}>
-        <div style={{ fontSize: 48, marginBottom: 16 }}>🎬</div>
+        <div
+          style={{
+            width: 54,
+            height: 54,
+            marginBottom: 16,
+            borderRadius: 18,
+            border: "2px solid #8696A0",
+            opacity,
+          }}
+        />
         <div style={{ fontSize: 20, color: "#8696A0", opacity }}>Loading {episodeId}...</div>
       </AbsoluteFill>
     );
@@ -393,7 +427,7 @@ const EpisodeRendererInner: React.FC<EpisodeRendererProps> = ({
         <BackgroundLayer
           config={
             (renderData.backgroundConfig as Parameters<typeof BackgroundLayer>[0]["config"]) ??
-            "ambient-night"
+            "studio-quiet-dark"
           }
           frame={backgroundUsesTimeline ? frame : undefined}
           fps={backgroundUsesTimeline ? fps : undefined}
@@ -492,11 +526,12 @@ const EpisodeRendererInner: React.FC<EpisodeRendererProps> = ({
                   <div>passes: {output.trace.projectionPassKinds.join(", ") || "affine"}</div>
                   <div>subjects: {output.trace.subjects.length}</div>
                   <div>tracking: {output.trace.tracking.mode}</div>
+                  <div>composition: {output.trace.constraints.compositionProfileId}</div>
                   <div>
-                    safe zone: {output.trace.constraints.safeAreaInsets.top}/
-                    {output.trace.constraints.safeAreaInsets.right}/
-                    {output.trace.constraints.safeAreaInsets.bottom}/
-                    {output.trace.constraints.safeAreaInsets.left}
+                    editorial insets: {output.trace.constraints.editorialInsets.top}/
+                    {output.trace.constraints.editorialInsets.right}/
+                    {output.trace.constraints.editorialInsets.bottom}/
+                    {output.trace.constraints.editorialInsets.left}
                   </div>
                   <div>
                     pose: {output.trace.finalPose.centerX.toFixed(1)},{" "}
@@ -525,7 +560,7 @@ const errorStyle: React.CSSProperties = {
   alignItems: "center",
   justifyContent: "center",
   padding: 48,
-  fontFamily: "SF Pro Display, -apple-system, sans-serif",
+  fontFamily: TOKOVO_IOS_UI_FONT_FAMILY,
 };
 
 const errorBoxStyle: React.CSSProperties = {
@@ -555,7 +590,7 @@ const cameraPanelToggleStyle: React.CSSProperties = {
   color: "#fff",
   borderRadius: 8,
   padding: "8px 10px",
-  fontFamily: "SF Mono, Menlo, Monaco, monospace",
+  fontFamily: TOKOVO_MONO_UI_FONT_FAMILY,
   fontSize: 12,
   cursor: "pointer",
 };
@@ -571,7 +606,7 @@ const cameraPanelStyle: React.CSSProperties = {
   borderRadius: 10,
   padding: 12,
   minWidth: 320,
-  fontFamily: "SF Mono, Menlo, Monaco, monospace",
+  fontFamily: TOKOVO_MONO_UI_FONT_FAMILY,
   fontSize: 12,
   lineHeight: 1.45,
   pointerEvents: "auto",

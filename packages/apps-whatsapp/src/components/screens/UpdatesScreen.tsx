@@ -1,19 +1,9 @@
 import { Camera, Plus, Radio, Search } from "lucide-react";
 import type { WorldState } from "@tokovo/core";
 import { DeterministicImage } from "@tokovo/react";
-import {
-  useTheme,
-  useWhatsAppLocale,
-} from "../../experience/ExperienceContext.js";
-import type {
-  WhatsAppChannel,
-  WhatsAppState,
-  WhatsAppStatusUpdate,
-} from "../../types/index.js";
-import {
-  formatConversationListTimestamp,
-  getBaseTime,
-} from "../../utils/messages.js";
+import { useTheme, useWhatsAppLocale } from "../../experience/ExperienceContext.js";
+import type { WhatsAppChannel, WhatsAppState, WhatsAppStatusUpdate } from "../../types/index.js";
+import { formatConversationListTimestamp, getBaseTime } from "../../utils/messages.js";
 import { resolveAvatarWithFallback } from "../../utils/avatar.js";
 import { AppScaffold, EmptyState, SectionHeader } from "../surfaces/index.js";
 import { StatusRing, type StatusSegmentState } from "../StatusRing.js";
@@ -21,7 +11,7 @@ import { formatWhatsAppNumber } from "../../localization/index.js";
 
 export interface UpdatesScreenProps {
   world: WorldState;
-  safeAreaInsets?: {
+  contentInsets: {
     top: number;
     bottom: number;
     left: number;
@@ -40,9 +30,7 @@ interface StatusAuthor {
   segments: StatusSegmentState[];
 }
 
-function collectStatusAuthors(
-  statuses: WhatsAppStatusUpdate[],
-): StatusAuthor[] {
+function collectStatusAuthors(statuses: WhatsAppStatusUpdate[]): StatusAuthor[] {
   const authors = new Map<string, StatusAuthor>();
   [...statuses]
     .sort((left, right) => right.postedAt - left.postedAt)
@@ -139,13 +127,7 @@ function StatusAvatar({
   );
 }
 
-function ChannelRow({
-  channel,
-  baseTime,
-}: {
-  channel: WhatsAppChannel;
-  baseTime: Date;
-}) {
+function ChannelRow({ channel, baseTime }: { channel: WhatsAppChannel; baseTime: Date }) {
   const theme = useTheme();
   const { locale, t } = useWhatsAppLocale();
   const { uiTypography: typography } = theme;
@@ -259,9 +241,7 @@ function ChannelRow({
             border: `1px solid ${channel.followed ? theme.colors.divider : theme.colors.accent}`,
             borderRadius: 14,
             textAlign: "center",
-            color: channel.followed
-              ? theme.colors.receivedBubbleText
-              : theme.colors.accent,
+            color: channel.followed ? theme.colors.receivedBubbleText : theme.colors.accent,
             fontSize: 10,
             fontWeight: 600,
             fontFamily: theme.typography.fontFamily,
@@ -294,12 +274,12 @@ function ChannelRow({
   );
 }
 
-export function UpdatesScreen({ world, safeAreaInsets }: UpdatesScreenProps) {
+export function UpdatesScreen({ world, contentInsets }: UpdatesScreenProps) {
   const theme = useTheme();
   const { t } = useWhatsAppLocale();
   const { uiTypography: typography } = theme;
-  const safeAreaTop = safeAreaInsets?.top ?? theme.safeArea.top;
-  const safeAreaBottom = safeAreaInsets?.bottom ?? theme.safeArea.bottom;
+  const contentInsetTop = contentInsets.top;
+  const contentInsetBottom = contentInsets.bottom;
   const state = (world.appState?.app_whatsapp ?? {}) as Partial<WhatsAppState>;
   const deviceId = Object.keys(world.devices ?? {})[0];
   const device = deviceId ? world.devices[deviceId] : undefined;
@@ -308,9 +288,7 @@ export function UpdatesScreen({ world, safeAreaInsets }: UpdatesScreenProps) {
   const channels = [...(state.channels ?? [])]
     .sort((left, right) => {
       if (left.followed !== right.followed) return left.followed ? -1 : 1;
-      return (
-        (right.latestUpdate?.postedAt ?? 0) - (left.latestUpdate?.postedAt ?? 0)
-      );
+      return (right.latestUpdate?.postedAt ?? 0) - (left.latestUpdate?.postedAt ?? 0);
     })
     .slice(0, 4);
   const baseTime = getBaseTime(world, deviceId);
@@ -319,8 +297,8 @@ export function UpdatesScreen({ world, safeAreaInsets }: UpdatesScreenProps) {
     <AppScaffold
       title={t("nav.updates")}
       activeTab="updates"
-      safeAreaTop={safeAreaTop}
-      safeAreaBottom={safeAreaBottom}
+      contentInsetTop={contentInsetTop}
+      contentInsetBottom={contentInsetBottom}
       actions={
         <>
           <Search size={19} />
@@ -329,10 +307,7 @@ export function UpdatesScreen({ world, safeAreaInsets }: UpdatesScreenProps) {
         </>
       }
     >
-      <SectionHeader
-        title={t("section.status")}
-        action={t("section.privacy")}
-      />
+      <SectionHeader title={t("section.status")} action={t("section.privacy")} />
       <div
         data-cinematic-subject="updates_status_strip"
         style={{
@@ -413,18 +388,11 @@ export function UpdatesScreen({ world, safeAreaInsets }: UpdatesScreenProps) {
         ))}
       </div>
 
-      <SectionHeader
-        title={t("updates.channels")}
-        action={t("action.explore")}
-      />
+      <SectionHeader title={t("updates.channels")} action={t("action.explore")} />
       <div data-cinematic-subject="updates_channels">
         {channels.length > 0 ? (
           channels.map((channel) => (
-            <ChannelRow
-              key={channel.id}
-              channel={channel}
-              baseTime={baseTime}
-            />
+            <ChannelRow key={channel.id} channel={channel} baseTime={baseTime} />
           ))
         ) : (
           <EmptyState

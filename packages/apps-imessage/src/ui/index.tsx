@@ -11,22 +11,11 @@ import {
   SearchBar,
 } from "../components/index.js";
 import { computeMessageGap, iMessageSpacing } from "../config/index.js";
-import type {
-  IMessageConversation,
-  IMessageMessage,
-  IMessageState,
-} from "../types/index.js";
+import type { IMessageConversation, IMessageMessage, IMessageState } from "../types/index.js";
 import { IMessageThemeProvider, useIMessageTheme } from "./ThemeContext.js";
 import type { ScreenEffectType } from "../components/ScreenEffect.js";
 
-type IMessageViewProps = PluginViewProps & {
-  safeAreaInsets?: {
-    top: number;
-    bottom: number;
-    left: number;
-    right: number;
-  };
-};
+type IMessageViewProps = PluginViewProps;
 
 export const IMessageView: React.FC<IMessageViewProps> = (props) => {
   const world = props.world;
@@ -50,7 +39,7 @@ export const IMessageView: React.FC<IMessageViewProps> = (props) => {
       return (
         <ConversationListView
           conversations={state.conversations ?? {}}
-          safeAreaTop={props.safeAreaInsets?.top}
+          contentInsetTop={props.appViewport.contentInsets.top}
         />
       );
     }
@@ -59,7 +48,7 @@ export const IMessageView: React.FC<IMessageViewProps> = (props) => {
       return (
         <InfoView
           conversation={state.conversations?.[activeConversationId]}
-          safeAreaTop={props.safeAreaInsets?.top}
+          contentInsetTop={props.appViewport.contentInsets.top}
         />
       );
     }
@@ -68,7 +57,7 @@ export const IMessageView: React.FC<IMessageViewProps> = (props) => {
       return (
         <MediaView
           conversation={state.conversations?.[activeConversationId]}
-          safeAreaTop={props.safeAreaInsets?.top}
+          contentInsetTop={props.appViewport.contentInsets.top}
         />
       );
     }
@@ -79,24 +68,16 @@ export const IMessageView: React.FC<IMessageViewProps> = (props) => {
         deviceId={props.deviceId}
         t={props.t}
         conversation={state.conversations?.[activeConversationId]}
-        safeAreaTop={props.safeAreaInsets?.top}
-        safeAreaBottom={props.safeAreaInsets?.bottom}
-        activeScreenEffect={
-          state.activeScreenEffect as ScreenEffectType | undefined
-        }
-        activeScreenEffectStartedAtFrame={
-          state.activeScreenEffectStartedAtFrame
-        }
+        contentInsetTop={props.appViewport.contentInsets.top}
+        contentInsetBottom={props.appViewport.contentInsets.bottom}
+        activeScreenEffect={state.activeScreenEffect as ScreenEffectType | undefined}
+        activeScreenEffectStartedAtFrame={state.activeScreenEffectStartedAtFrame}
         searchQuery={state.searchQuery}
       />
     );
   };
 
-  return (
-    <IMessageThemeProvider mode={themeMode}>
-      {renderContent()}
-    </IMessageThemeProvider>
-  );
+  return <IMessageThemeProvider mode={themeMode}>{renderContent()}</IMessageThemeProvider>;
 };
 
 const ChatView: React.FC<{
@@ -104,8 +85,8 @@ const ChatView: React.FC<{
   deviceId?: string;
   t?: number;
   conversation?: IMessageConversation;
-  safeAreaTop?: number;
-  safeAreaBottom?: number;
+  contentInsetTop: number;
+  contentInsetBottom: number;
   activeScreenEffect?: ScreenEffectType;
   activeScreenEffectStartedAtFrame?: number;
   searchQuery?: string;
@@ -114,8 +95,8 @@ const ChatView: React.FC<{
   deviceId: _deviceId,
   t: _t,
   conversation,
-  safeAreaTop,
-  safeAreaBottom,
+  contentInsetTop,
+  contentInsetBottom,
   activeScreenEffect,
   activeScreenEffectStartedAtFrame,
   searchQuery,
@@ -160,8 +141,7 @@ const ChatView: React.FC<{
         avatar={conversation.avatar}
         isGroup={conversation.isGroup}
         participantCount={conversation.participants.length}
-        theme={theme}
-        safeAreaTop={safeAreaTop}
+        contentInsetTop={contentInsetTop}
       />
 
       {/* Search bar - visible when search is active */}
@@ -217,13 +197,12 @@ const ChatView: React.FC<{
           );
         })}
 
-        {typingUsers.length > 0 && <TypingIndicator theme={theme} />}
+        {typingUsers.length > 0 && <TypingIndicator />}
       </div>
 
       <InputBar
-        theme={theme}
         draft={draftText}
-        safeAreaBottom={safeAreaBottom}
+        contentInsetBottom={contentInsetBottom}
         showCursor={composerInput?.isKeyboardVisible ?? false}
         inputDirection={composerInput?.direction}
         inputLanguage={composerInput?.locale.tag}
@@ -231,10 +210,7 @@ const ChatView: React.FC<{
 
       {/* Screen effect overlay */}
       {activeScreenEffect && activeScreenEffectStartedAtFrame !== undefined ? (
-        <ScreenEffect
-          effect={activeScreenEffect}
-          startFrame={activeScreenEffectStartedAtFrame}
-        />
+        <ScreenEffect effect={activeScreenEffect} startFrame={activeScreenEffectStartedAtFrame} />
       ) : null}
     </div>
   );
@@ -242,13 +218,13 @@ const ChatView: React.FC<{
 
 const ConversationListView: React.FC<{
   conversations: Record<string, IMessageConversation>;
-  safeAreaTop?: number;
-}> = ({ conversations, safeAreaTop }) => {
+  contentInsetTop: number;
+}> = ({ conversations, contentInsetTop }) => {
   const theme = useIMessageTheme();
   const list = Object.values(conversations).sort(
     (a, b) => (b.lastMessageAt ?? 0) - (a.lastMessageAt ?? 0),
   );
-  const topInset = safeAreaTop ?? iMessageSpacing.safeAreaTop;
+  const topInset = contentInsetTop;
 
   return (
     <div
@@ -387,8 +363,8 @@ const ConversationListItem: React.FC<{
 
 const InfoView: React.FC<{
   conversation?: IMessageConversation;
-  safeAreaTop?: number;
-}> = ({ conversation, safeAreaTop }) => {
+  contentInsetTop: number;
+}> = ({ conversation, contentInsetTop }) => {
   const theme = useIMessageTheme();
 
   return (
@@ -401,12 +377,7 @@ const InfoView: React.FC<{
         flexDirection: "column",
       }}
     >
-      <Header
-        name="Info"
-        avatar={conversation?.avatar}
-        theme={theme}
-        safeAreaTop={safeAreaTop}
-      />
+      <Header name="Info" avatar={conversation?.avatar} contentInsetTop={contentInsetTop} />
       <div
         style={{
           padding: iMessageSpacing.screenPaddingH,
@@ -421,8 +392,8 @@ const InfoView: React.FC<{
 
 const MediaView: React.FC<{
   conversation?: IMessageConversation;
-  safeAreaTop?: number;
-}> = ({ conversation, safeAreaTop }) => {
+  contentInsetTop: number;
+}> = ({ conversation, contentInsetTop }) => {
   const theme = useIMessageTheme();
 
   return (
@@ -435,12 +406,7 @@ const MediaView: React.FC<{
         flexDirection: "column",
       }}
     >
-      <Header
-        name="Media"
-        avatar={conversation?.avatar}
-        theme={theme}
-        safeAreaTop={safeAreaTop}
-      />
+      <Header name="Media" avatar={conversation?.avatar} contentInsetTop={contentInsetTop} />
       <div
         style={{
           padding: iMessageSpacing.screenPaddingH,

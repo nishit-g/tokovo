@@ -14,18 +14,10 @@ import {
   type InputSessionIntent,
 } from "../index.js";
 
-function intent(
-  overrides: Partial<InputSessionIntent> = {},
-): InputSessionIntent {
-  const hasTextOverride = Object.prototype.hasOwnProperty.call(
-    overrides,
-    "text",
-  );
+function intent(overrides: Partial<InputSessionIntent> = {}): InputSessionIntent {
+  const hasTextOverride = Object.prototype.hasOwnProperty.call(overrides, "text");
   const text = hasTextOverride ? overrides.text : "hello";
-  const expectedFinalValue = Object.prototype.hasOwnProperty.call(
-    overrides,
-    "expectedFinalValue",
-  )
+  const expectedFinalValue = Object.prototype.hasOwnProperty.call(overrides, "expectedFinalValue")
     ? overrides.expectedFinalValue
     : overrides.script
       ? undefined
@@ -53,23 +45,15 @@ describe("canonical multilingual input sessions", () => {
   });
 
   it("allows seeded cadence variation without changing the final draft", () => {
-    const first = prepareInputSession(
-      intent({ text: "a reasonably long sentence", seed: "one" }),
-    );
-    const second = prepareInputSession(
-      intent({ text: "a reasonably long sentence", seed: "two" }),
-    );
+    const first = prepareInputSession(intent({ text: "a reasonably long sentence", seed: "one" }));
+    const second = prepareInputSession(intent({ text: "a reasonably long sentence", seed: "two" }));
 
     expect(first.operations.map((operation) => operation.at)).not.toEqual(
       second.operations.map((operation) => operation.at),
     );
-    expect(evaluateInputSession(first, 500).submittedValue).toBe(
-      "a reasonably long sentence",
-    );
+    expect(evaluateInputSession(first, 500).submittedValue).toBe("a reasonably long sentence");
     expect(evaluateInputSession(first, 500).draft).toBe("");
-    expect(evaluateInputSession(second, 500).submittedValue).toBe(
-      "a reasonably long sentence",
-    );
+    expect(evaluateInputSession(second, 500).submittedValue).toBe("a reasonably long sentence");
   });
 
   it.each([
@@ -119,16 +103,14 @@ describe("canonical multilingual input sessions", () => {
     };
 
     expect(projectInputSession(arabic, 100, config).direction).toBe("rtl");
-    expect(
-      projectInputSession(englishInsideArabicKeyboard, 100, config).direction,
-    ).toBe("ltr");
+    expect(projectInputSession(englishInsideArabicKeyboard, 100, config).direction).toBe("ltr");
   });
 
   it.each([
-    ["ios", "light", "system:ios:light", "ios-system-keyboard"],
-    ["ios", "dark", "system:ios:dark", "ios-system-keyboard"],
-    ["android", "light", "system:android:light", "android-system-keyboard"],
-    ["android", "dark", "system:android:dark", "android-system-keyboard"],
+    ["ios", "light", "ios:liquid-glass@1:light:keyboard", "ios-system-keyboard"],
+    ["ios", "dark", "ios:liquid-glass@1:dark:keyboard", "ios-system-keyboard"],
+    ["android", "light", "android:material3@1:light:keyboard", "android-system-keyboard"],
+    ["android", "dark", "android:material3@1:dark:keyboard", "android-system-keyboard"],
   ] as const)(
     "resolves %s %s as a complete deterministic keyboard experience",
     (platform, appearance, themeId, presentationId) => {
@@ -155,7 +137,7 @@ describe("canonical multilingual input sessions", () => {
     ["android", "light"],
     ["android", "dark"],
   ] as const)(
-    "keeps every %s/%s key row above the system safe area",
+    "keeps every %s/%s key row above the platform gesture region",
     (platform, appearance) => {
       const { geometry } = resolveInputExperience({
         platform,
@@ -198,9 +180,7 @@ describe("canonical multilingual input sessions", () => {
     const composing = evaluateInputSession(session, secondUpdate?.at ?? 0);
     expect(composing.draft).toBe("");
     expect(composing.composition?.text).toBe("ka");
-    expect(getInputDisplayDraft(composing, session.keyboard.locale.tag)).toBe(
-      "ka",
-    );
+    expect(getInputDisplayDraft(composing, session.keyboard.locale.tag)).toBe("ka");
 
     const committed = evaluateInputSession(session, 500);
     expect(committed.submittedValue).toBe("か");
@@ -220,9 +200,7 @@ describe("canonical multilingual input sessions", () => {
       }),
     );
 
-    expect(evaluateInputSession(session, 500).submittedValue).toBe(
-      "I’ll fix it now.",
-    );
+    expect(evaluateInputSession(session, 500).submittedValue).toBe("I’ll fix it now.");
   });
 
   it("uses logical grapheme selection for emoji-safe replacement", () => {
@@ -275,17 +253,13 @@ describe("canonical multilingual input sessions", () => {
     }
 
     for (let frame = session.endFrame; frame >= 0; frame--) {
-      expect(evaluateInputSession(session, frame)).toEqual(
-        sequentialByFrame.get(frame),
-      );
+      expect(evaluateInputSession(session, frame)).toEqual(sequentialByFrame.get(frame));
     }
   });
 
   it("projects viewport inset, stable subject bounds, and active keys without history", () => {
     const session = prepareInputSession(intent({ text: "a" }));
-    const insert = session.operations.find(
-      (operation) => operation.type === "insert",
-    );
+    const insert = session.operations.find((operation) => operation.type === "insert");
     expect(insert).toBeDefined();
     const config = {
       fps: 30,
@@ -306,11 +280,7 @@ describe("canonical multilingual input sessions", () => {
     });
 
     const reverseFirst = projectInputSession(session, 300, config);
-    const earlierAfterReverse = projectInputSession(
-      session,
-      insert?.at ?? 0,
-      config,
-    );
+    const earlierAfterReverse = projectInputSession(session, insert?.at ?? 0, config);
     expect(earlierAfterReverse).toEqual(projection);
     expect(reverseFirst.displayDraft).toBe("a");
   });
@@ -354,9 +324,7 @@ describe("canonical multilingual input sessions", () => {
   });
 
   it("rejects invalid locale tags with an actionable diagnostic", () => {
-    expect(() => normalizeInputLocale("not_a_locale!")).toThrow(
-      "INPUT_INVALID_LOCALE",
-    );
+    expect(() => normalizeInputLocale("not_a_locale!")).toThrow("INPUT_INVALID_LOCALE");
   });
 
   it("allows sessions on separate devices and rejects overlap on one device", () => {
@@ -379,12 +347,8 @@ describe("canonical multilingual input sessions", () => {
     const program = prepareInputProgram([first, secondDevice]);
     expect(program.sessions).toHaveLength(2);
     expect(
-      findInputSessionForField(
-        program,
-        "phone-b:app_whatsapp",
-        "conversation:launch:composer",
-        50,
-      )?.deviceId,
+      findInputSessionForField(program, "phone-b:app_whatsapp", "conversation:launch:composer", 50)
+        ?.deviceId,
     ).toBe("phone-b");
 
     expect(() =>

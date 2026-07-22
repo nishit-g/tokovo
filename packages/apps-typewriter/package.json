@@ -47,6 +47,7 @@
     "@tokovo/dsl": "workspace:*",
     "@tokovo/ir": "workspace:*",
     "@tokovo/react": "workspace:*",
+    "@tokovo/visual-system": "workspace:*",
     "react": "18.3.1",
     "react-dom": "18.3.1",
     "remotion": "4.0.409"

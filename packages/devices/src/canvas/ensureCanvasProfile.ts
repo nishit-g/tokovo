@@ -1,5 +1,6 @@
 import type { DeviceRegistries } from "../registries/index.js";
 import type { DeviceProfile } from "../types.js";
+import { registerHardwareVisualIdentity } from "@tokovo/visual-system";
 import { CanvasFrame } from "./CanvasFrame.js";
 
 export type CanvasDimensions = { width: number; height: number };
@@ -23,8 +24,10 @@ function createCanvasProfile(id: string, dim: CanvasDimensions): DeviceProfile {
       ppi: 1,
       cornerRadius: 0,
     },
-    pixelDensity: 1,
-    safeArea: { top: 0, bottom: 0, left: 0, right: 0 },
+    pointScale: 1,
+    platformProfileId: "ios:liquid-glass@1",
+    systemSurfaces: false,
+    hardwareRegions: [],
   };
 }
 
@@ -37,6 +40,11 @@ export function ensureCanvasProfile(
   canvasProfileId: string,
   dim: CanvasDimensions,
 ): void {
+  registerHardwareVisualIdentity(canvasProfileId, {
+    platformProfileId: "ios:liquid-glass@1",
+    systemSurfaces: false,
+  });
+
   if (!deviceRegistries.devices.has(canvasProfileId)) {
     const profile = createCanvasProfile(canvasProfileId, dim);
     deviceRegistries.devices.register(canvasProfileId, profile);

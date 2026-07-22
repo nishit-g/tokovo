@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import type { LayoutContext, WorldState } from "@tokovo/core";
-import { DEFAULT_AUDIO_STATE } from "@tokovo/core";
+import { createAppViewportFrame, DEFAULT_AUDIO_STATE } from "@tokovo/core";
 import { computeChatLayout, computeFeedLayout } from "../layout/index.js";
 import { createWhatsAppInitialState } from "../runtime/initial-state.js";
 import { WhatsAppCinematicSubjects } from "../camera/subjects.js";
@@ -32,7 +32,11 @@ function computeForScreen(
     viewKind: "FEED",
     viewportWidth: 393,
     viewportHeight: 852,
-    safeAreaInsets: { top: 47, bottom: 34, left: 0, right: 0 },
+    appViewport: createAppViewportFrame({
+      width: 393,
+      height: 852,
+      contentInsets: { top: 47, bottom: 34 },
+    }),
     layoutCache: undefined,
   };
 
@@ -49,13 +53,7 @@ function expectHas(layout: any, ids: string[]) {
 describe("WhatsApp semantic subjects (FEED)", () => {
   it("chats includes expected subjects", () => {
     const layout = computeForScreen("chats");
-    expectHas(layout, [
-      "device",
-      "app",
-      "tab_bar",
-      "chat_list_header",
-      "chat_list",
-    ]);
+    expectHas(layout, ["device", "app", "tab_bar", "chat_list_header", "chat_list"]);
   });
 
   it("updates includes expected subjects", () => {
@@ -97,10 +95,7 @@ describe("WhatsApp semantic subjects (FEED)", () => {
         ],
       },
     );
-    expectHas(layout, [
-      "updates_status_dm_naina",
-      "channel_row_channel_bakery",
-    ]);
+    expectHas(layout, ["updates_status_dm_naina", "channel_row_channel_bakery"]);
   });
 
   it("chats exposes per-row subjects", () => {
@@ -187,12 +182,7 @@ describe("WhatsApp semantic subjects (FEED)", () => {
       { dm_naina: { id: "dm_naina", type: "dm", messages: [] } },
       { conversationId: "dm_naina" },
     );
-    expectHas(direct, [
-      "profile_header",
-      "profile_content",
-      "profile_hero",
-      "profile_actions",
-    ]);
+    expectHas(direct, ["profile_header", "profile_content", "profile_hero", "profile_actions"]);
 
     const group = computeForScreen(
       "profile",
@@ -281,12 +271,14 @@ describe("WhatsApp semantic subjects (CHAT)", () => {
       viewKind: "CHAT",
       viewportWidth: 393,
       viewportHeight: 852,
-      safeAreaInsets: { top: 47, bottom: 34, left: 0, right: 0 },
+      appViewport: createAppViewportFrame({
+        width: 393,
+        height: 852,
+        contentInsets: { top: 47, bottom: 34 },
+      }),
     });
 
-    expect(layout.semantic?.groups.message).toEqual(
-      expect.arrayContaining(["m1", "m2", "m3"]),
-    );
+    expect(layout.semantic?.groups.message).toEqual(expect.arrayContaining(["m1", "m2", "m3"]));
     expect(layout.semantic?.groups.system).toHaveLength(2);
     expect(layout.semantic?.groups.reply).toEqual(["reply_m3"]);
     expect(layout.semantic?.groups.reactions).toEqual(["reactions_m2"]);
@@ -294,17 +286,13 @@ describe("WhatsApp semantic subjects (CHAT)", () => {
 
     const subjects = WhatsAppCinematicSubjects.project(world, layout, "d1");
     const m1 = subjects.find(
-      (subject) =>
-        subject.ref.kind === "entity" && subject.ref.entityId === "m1",
+      (subject) => subject.ref.kind === "entity" && subject.ref.entityId === "m1",
     );
     const m3 = subjects.find(
-      (subject) =>
-        subject.ref.kind === "entity" && subject.ref.entityId === "m3",
+      (subject) => subject.ref.kind === "entity" && subject.ref.entityId === "m3",
     );
     const lastMessage = subjects.find(
-      (subject) =>
-        subject.ref.kind === "semantic" &&
-        subject.ref.subjectId === "last-message",
+      (subject) => subject.ref.kind === "semantic" && subject.ref.subjectId === "last-message",
     );
     expect(m1).toBeTruthy();
     expect(lastMessage?.rect).toEqual(m3?.rect);
@@ -312,9 +300,7 @@ describe("WhatsApp semantic subjects (CHAT)", () => {
       subjects.some(
         (subject) =>
           subject.ref.kind === "semantic" &&
-          ["message-0", "message_thread", "inputArea"].includes(
-            subject.ref.subjectId,
-          ),
+          ["message-0", "message_thread", "inputArea"].includes(subject.ref.subjectId),
       ),
     ).toBe(false);
   });
@@ -381,7 +367,11 @@ describe("WhatsApp semantic subjects (CHAT)", () => {
       viewKind: "CHAT",
       viewportWidth: 393,
       viewportHeight: 852,
-      safeAreaInsets: { top: 47, bottom: 34, left: 0, right: 0 },
+      appViewport: createAppViewportFrame({
+        width: 393,
+        height: 852,
+        contentInsets: { top: 47, bottom: 34 },
+      }),
     });
 
     expect(layout.semantic?.regions.reply_composer).toBeTruthy();
@@ -430,7 +420,7 @@ describe("WhatsApp semantic subjects (CHAT)", () => {
       audio: DEFAULT_AUDIO_STATE,
     } as unknown as WorldState;
     const viewportHeight = 852;
-    const safeAreaInsets = { top: 47, bottom: 34, left: 0, right: 0 };
+    const contentInsets = { top: 47, bottom: 34, left: 0, right: 0 };
     const layout = computeChatLayout({
       world,
       t: 0,
@@ -440,17 +430,19 @@ describe("WhatsApp semantic subjects (CHAT)", () => {
       viewKind: "CHAT",
       viewportWidth: 393,
       viewportHeight,
-      safeAreaInsets,
+      appViewport: createAppViewportFrame({
+        width: 393,
+        height: viewportHeight,
+        contentInsets,
+      }),
     });
 
     const last = layout.semantic?.regions.m2?.rect;
-    const chrome = getChatChromeGeometry(safeAreaInsets);
+    const chrome = getChatChromeGeometry(contentInsets);
     expect(last).toBeTruthy();
-    expect((last?.y ?? 0) + (last?.height ?? 0)).toBe(
-      viewportHeight - chrome.messageBottomInset,
-    );
+    expect((last?.y ?? 0) + (last?.height ?? 0)).toBe(viewportHeight - chrome.messageBottomInset);
     expect(layout.semantic?.regions.input_area?.rect.y).toBe(
-      viewportHeight - 60 - safeAreaInsets.bottom,
+      viewportHeight - 60 - contentInsets.bottom,
     );
     expect(layout.messageLayouts.m2?.rect).toEqual(last);
   });
@@ -486,7 +478,11 @@ describe("WhatsApp semantic subjects (CHAT)", () => {
       viewKind: "CHAT",
       viewportWidth: 393,
       viewportHeight: 852,
-      safeAreaInsets: { top: 47, bottom: 34, left: 0, right: 0 },
+      appViewport: createAppViewportFrame({
+        width: 393,
+        height: 852,
+        contentInsets: { top: 47, bottom: 34 },
+      }),
     };
 
     const latest = computeChatLayout(context);
@@ -501,8 +497,6 @@ describe("WhatsApp semantic subjects (CHAT)", () => {
     const subjected = computeChatLayout(context);
     expect(subjected.semantic?.regions.m20).toBeTruthy();
     expect(subjected.semantic?.regions.m180).toBeUndefined();
-    expect(Object.keys(subjected.messageLayouts).length).toBeLessThanOrEqual(
-      120,
-    );
+    expect(Object.keys(subjected.messageLayouts).length).toBeLessThanOrEqual(120);
   });
 });

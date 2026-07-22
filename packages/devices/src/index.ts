@@ -19,6 +19,7 @@
 // =============================================================================
 
 export * from "./types.js";
+export * from "./visual-system.js";
 export type { FrameProps, FrameComponent } from "./registries/index.js";
 export type {
   StatusBarStrategyProps,
@@ -40,15 +41,9 @@ export {
   type DeviceRegistries,
 } from "./registries/index.js";
 
-export {
-  DeviceRegistryProvider,
-  useDeviceRegistries,
-} from "./DeviceRegistryContext.js";
+export { DeviceRegistryProvider, useDeviceRegistries } from "./DeviceRegistryContext.js";
 
-export {
-  createDeviceShellRegistry,
-  DeviceShellRegistryClass,
-} from "./registry.js";
+export { createDeviceShellRegistry, DeviceShellRegistryClass } from "./registry.js";
 
 // REDUCER
 // =============================================================================
@@ -112,27 +107,11 @@ import type { DeviceProfile } from "./types.js";
  * Get device profile by ID
  * @param registries - Scoped device registries
  * @param profileId - Device profile ID (e.g., "iphone16", "pixel")
- * @returns DeviceProfile, falling back to first registered profile
+ * @returns the explicitly registered DeviceProfile
  */
-export function getDeviceProfile(
-  registries: DeviceRegistries,
-  profileId: string,
-): DeviceProfile {
+export function getDeviceProfile(registries: DeviceRegistries, profileId: string): DeviceProfile {
   const profile = registries.devices.get(profileId);
   if (profile) return profile;
 
-  if (registries.devices.has("iphone16")) {
-    const fallback = registries.devices.get("iphone16");
-    if (fallback) return fallback;
-  }
-
-  const firstId = registries.devices.list()[0];
-  if (firstId) {
-    const fallback = registries.devices.get(firstId);
-    if (fallback) return fallback;
-  }
-
-  throw new Error(
-    `Device profile not found: ${profileId}. Register device profiles before rendering.`,
-  );
+  throw new Error(`DEVICE_PROFILE_MISSING: "${profileId}" is not registered.`);
 }

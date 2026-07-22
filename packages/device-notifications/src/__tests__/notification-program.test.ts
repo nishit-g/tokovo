@@ -1,8 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type {
-  NotificationIntentIR,
-  NotificationInteractionIR,
-} from "@tokovo/ir";
+import type { NotificationIntentIR, NotificationInteractionIR } from "@tokovo/ir";
 import {
   evaluateNotificationProgram,
   getNotificationTheme,
@@ -40,6 +37,7 @@ function device(
   return {
     id: "phone",
     platform: "ios",
+    platformProfileId: "ios:liquid-glass@1",
     appearance: "light",
     locale: "en-US",
     initialLocked: false,
@@ -82,7 +80,6 @@ const projectionConfig = {
   viewportWidth: 1179,
   viewportHeight: 2556,
   pointScale: 3,
-  safeAreaTop: 59,
 } as const;
 
 describe("canonical notification program", () => {
@@ -94,10 +91,7 @@ describe("canonical notification program", () => {
       ],
     });
 
-    expect(program.records.map((record) => record.id)).toEqual([
-      "first",
-      "second",
-    ]);
+    expect(program.records.map((record) => record.id)).toEqual(["first", "second"]);
     expect(program.records[0].delivery).toMatchObject({
       bannerStartFrame: 30,
       bannerEndFrame: 60,
@@ -150,18 +144,14 @@ describe("canonical notification program", () => {
       ],
     });
 
-    const byId = Object.fromEntries(
-      program.records.map((record) => [record.id, record]),
-    );
+    const byId = Object.fromEntries(program.records.map((record) => [record.id, record]));
     expect(byId.passive.delivery.bannerStartFrame).toBeUndefined();
     expect(byId.passive.delivery.soundAtFrame).toBeUndefined();
     expect(byId.active.delivery.alertSuppressionReason).toBe("focus");
     expect(byId.time.delivery.bannerStartFrame).toBe(90);
     expect(byId.critical.delivery.soundAtFrame).toBe(120);
     expect(
-      projectNotificationAudio(program).find((cue) =>
-        cue.id.endsWith("critical"),
-      ),
+      projectNotificationAudio(program).find((cue) => cue.id.endsWith("critical")),
     ).toMatchObject({ critical: true });
   });
 
@@ -186,9 +176,10 @@ describe("canonical notification program", () => {
     const frame60Again = evaluateNotificationProgram(program, "phone", 60);
     expect(frame60Again).toEqual(frame60First);
     expect(frame60First.records.future.lifecycle).toBe("delivered");
-    expect(
-      evaluateNotificationProgram(program, "phone", 80).records.future,
-    ).toMatchObject({ lifecycle: "dismissed", dismissedAtFrame: 70 });
+    expect(evaluateNotificationProgram(program, "phone", 80).records.future).toMatchObject({
+      lifecycle: "dismissed",
+      dismissedAtFrame: 70,
+    });
   });
 
   it("preserves an action that occurs before expiry", () => {
@@ -220,9 +211,7 @@ describe("canonical notification program", () => {
       ],
     });
 
-    expect(
-      evaluateNotificationProgram(program, "phone", 200).records.replyable,
-    ).toMatchObject({
+    expect(evaluateNotificationProgram(program, "phone", 200).records.replyable).toMatchObject({
       lifecycle: "acted",
       actedAtFrame: 60,
       actionId: "reply",
@@ -242,11 +231,15 @@ describe("canonical notification program", () => {
 
   it("isolates devices", () => {
     const program = prepare({
-      devices: [device(), device({ id: "tablet", platform: "android" })],
-      intents: [
-        intent("phone-only", 30),
-        intent("tablet-only", 30, { deviceId: "tablet" }),
+      devices: [
+        device(),
+        device({
+          id: "tablet",
+          platform: "android",
+          platformProfileId: "android:material3@1",
+        }),
       ],
+      intents: [intent("phone-only", 30), intent("tablet-only", 30, { deviceId: "tablet" })],
       interactions: [
         {
           deviceId: "tablet",
@@ -256,12 +249,9 @@ describe("canonical notification program", () => {
         },
       ],
     });
+    expect(evaluateNotificationProgram(program, "phone", 90).orderedIds).toEqual(["phone-only"]);
     expect(
-      evaluateNotificationProgram(program, "phone", 90).orderedIds,
-    ).toEqual(["phone-only"]);
-    expect(
-      evaluateNotificationProgram(program, "tablet", 90).records["tablet-only"]
-        .lifecycle,
+      evaluateNotificationProgram(program, "tablet", 90).records["tablet-only"].lifecycle,
     ).toBe("dismissed");
   });
 });
@@ -269,18 +259,14 @@ describe("canonical notification program", () => {
 describe("notification projection, locale, privacy, and themes", () => {
   it("localizes Arabic OS chrome and redacts private content while locked", () => {
     const program = prepare({
-      devices: [
-        device({ initialLocked: true, locale: "ar-SA", appearance: "dark" }),
-      ],
+      devices: [device({ initialLocked: true, locale: "ar-SA", appearance: "dark" })],
       intents: [
         intent("arabic", 30, {
           content: { title: "ليلى", body: "الاجتماع الساعة الثامنة" },
           privacy: "private",
         }),
       ],
-      interactions: [
-        { deviceId: "phone", atFrame: 60, type: "openCenter", sequence: 0 },
-      ],
+      interactions: [{ deviceId: "phone", atFrame: 60, type: "openCenter", sequence: 0 }],
     });
 
     const locked = projectNotifications(program, "phone", 45, projectionConfig);
@@ -307,16 +293,9 @@ describe("notification projection, locale, privacy, and themes", () => {
     const content = "नमस्ते — こんにちは — परिवार 👨‍👩‍👧‍👦 — e\u0301";
     const program = prepare({
       devices: [device({ locale: "hi-IN" })],
-      intents: [
-        intent("unicode", 30, { content: { title: "अद्यतन", body: content } }),
-      ],
+      intents: [intent("unicode", 30, { content: { title: "अद्यतन", body: content } })],
     });
-    const projection = projectNotifications(
-      program,
-      "phone",
-      45,
-      projectionConfig,
-    );
+    const projection = projectNotifications(program, "phone", 45, projectionConfig);
     expect(projection.banner?.body).toBe(content);
     expect(projection.banner?.ageLabel).toBe("अभी");
   });
@@ -333,9 +312,7 @@ describe("notification projection, locale, privacy, and themes", () => {
         }),
       ],
     });
-    expect(
-      projectNotifications(program, "phone", 45, projectionConfig).banner,
-    ).toMatchObject({
+    expect(projectNotifications(program, "phone", 45, projectionConfig).banner).toMatchObject({
       icon: "/icons/chat.svg",
       leadingImage: "/avatars/ava.jpg",
       leadingImageAlt: "Ava",
@@ -356,8 +333,8 @@ describe("notification projection, locale, privacy, and themes", () => {
         }),
       ],
     });
-    const item = projectNotifications(program, "phone", 45, projectionConfig)
-      .lockScreenGroups[0].items[0];
+    const item = projectNotifications(program, "phone", 45, projectionConfig).lockScreenGroups[0]
+      .items[0];
     expect(item.leadingImage).toBeUndefined();
     expect(item.leadingImageAlt).toBeUndefined();
   });
@@ -368,8 +345,9 @@ describe("notification projection, locale, privacy, and themes", () => {
     ["android", "light"],
     ["android", "dark"],
   ] as const)("resolves a real %s/%s system theme", (platform, appearance) => {
-    const theme = getNotificationTheme(platform, appearance);
-    expect(theme.id).toBe(`system:${platform}:${appearance}`);
+    const platformProfileId = platform === "ios" ? "ios:liquid-glass@1" : "android:material3@1";
+    const theme = getNotificationTheme(platform, appearance, platformProfileId);
+    expect(theme.id).toBe(`${platformProfileId}:${appearance}:notifications`);
     expect(theme.platform).toBe(platform);
     expect(theme.appearance).toBe(appearance);
     expect(theme.colors.card).toBeTruthy();
@@ -378,21 +356,19 @@ describe("notification projection, locale, privacy, and themes", () => {
 
   it("projects grouped center cards, exact subjects, and Android status icons", () => {
     const program = prepare({
-      devices: [device({ platform: "android" })],
+      devices: [
+        device({
+          platform: "android",
+          platformProfileId: "android:material3@1",
+        }),
+      ],
       intents: [
         intent("one", 30, { groupId: "thread-a" }),
         intent("two", 60, { groupId: "thread-a" }),
       ],
-      interactions: [
-        { deviceId: "phone", atFrame: 90, type: "openCenter", sequence: 0 },
-      ],
+      interactions: [{ deviceId: "phone", atFrame: 90, type: "openCenter", sequence: 0 }],
     });
-    const projection = projectNotifications(
-      program,
-      "phone",
-      100,
-      projectionConfig,
-    );
+    const projection = projectNotifications(program, "phone", 100, projectionConfig);
     expect(projection.center.groups).toMatchObject([
       { count: 2, items: [{ id: "two" }, { id: "one" }] },
     ]);
@@ -410,14 +386,10 @@ describe("notification projection, locale, privacy, and themes", () => {
 
 describe("notification contract failures", () => {
   it("fails loudly for unknown apps and invalid interactions", () => {
-    expect(() => prepare({ adapters: new Map() })).toThrow(
-      "NOTIFICATION_ADAPTER_MISSING",
-    );
+    expect(() => prepare({ adapters: new Map() })).toThrow("NOTIFICATION_ADAPTER_MISSING");
     expect(() =>
       prepare({
-        interactions: [
-          { deviceId: "phone", atFrame: 60, type: "tap", sequence: 0 },
-        ],
+        interactions: [{ deviceId: "phone", atFrame: 60, type: "tap", sequence: 0 }],
       }),
     ).toThrow("NOTIFICATION_INTERACTION_TARGET_MISSING");
   });
@@ -425,9 +397,7 @@ describe("notification contract failures", () => {
   it("rejects actions against conditionally undelivered notifications", () => {
     expect(() =>
       prepare({
-        intents: [
-          intent("locked-only", 30, { deliveryCondition: "onlyWhenLocked" }),
-        ],
+        intents: [intent("locked-only", 30, { deliveryCondition: "onlyWhenLocked" })],
         interactions: [
           {
             deviceId: "phone",

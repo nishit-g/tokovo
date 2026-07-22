@@ -10,6 +10,7 @@
 // =============================================================================
 export * from "./types.js";
 export type { ViewLayoutMode, PIPPosition } from "./types.js";
+export { createAppViewportFrame } from "@tokovo/visual-system";
 // Note: types/index.ts exists but is NOT exported here to avoid duplicate exports.
 // types.ts re-exports needed types from types/layout.ts for compatibility.
 
@@ -86,8 +87,7 @@ export type {
 } from "./types/plugin-contract.js";
 
 /** TokovoPlugin is an alias for TokovoPluginContract<string> for convenience */
-export type TokovoPlugin =
-  import("./types/plugin-contract").TokovoPluginContract<string>;
+export type TokovoPlugin = import("./types/plugin-contract").TokovoPluginContract<string>;
 
 // =============================================================================
 // UTILS - Utilities
@@ -95,11 +95,9 @@ export type TokovoPlugin =
 export * from "./utils/index.js";
 
 // =============================================================================
-// CONSTANTS & TOKENS
-// Note: constants.ts may export Platform, so be careful
+// CONSTANTS
 // =============================================================================
 export * from "./constants.js";
-export * from "./tokens.js";
 
 // =============================================================================
 // LOGGER - Structured logging for debugging AI-generated content

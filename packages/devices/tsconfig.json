@@ -1,12 +1,15 @@
 {
-    "extends": "../../tsconfig.lib.json",
-    "compilerOptions": {
-        "outDir": "dist",
-        "rootDir": "src",
-        "jsx": "react-jsx"
-    },
-    "references": [{ "path": "../core" }, { "path": "../ir" }, { "path": "../react" }],
-    "include": [
-        "src/**/*"
-    ]
+  "extends": "../../tsconfig.lib.json",
+  "compilerOptions": {
+    "outDir": "dist",
+    "rootDir": "src",
+    "jsx": "react-jsx"
+  },
+  "references": [
+    { "path": "../core" },
+    { "path": "../ir" },
+    { "path": "../react" },
+    { "path": "../visual-system" }
+  ],
+  "include": ["src/**/*"]
 }

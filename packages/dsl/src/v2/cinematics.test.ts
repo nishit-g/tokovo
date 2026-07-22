@@ -24,6 +24,7 @@ describe("Camera VNext authoring", () => {
               .output("main", {
                 viewport: { x: 0, y: 0, width: 1080, height: 1920 },
                 defaultRigId: "neutral",
+                compositionProfileId: "hero-device",
               })
               .rig("neutral", {
                 outputId: "main",
@@ -111,10 +112,12 @@ describe("Camera VNext authoring", () => {
             .output("main", {
               viewport: { x: 0, y: 0, width: 1080, height: 1920 },
               defaultRigId: "neutral",
+              compositionProfileId: "hero-device",
             })
             .output("main", {
               viewport: { x: 0, y: 0, width: 1080, height: 1920 },
               defaultRigId: "neutral",
+              compositionProfileId: "hero-device",
             })
             .rig("neutral", {
               outputId: "main",
@@ -135,6 +138,7 @@ describe("Camera VNext authoring", () => {
           camera.output("main", {
             viewport: { x: 0, y: 0, width: 1080, height: 1920 },
             defaultRigId: "ghost",
+            compositionProfileId: "hero-device",
           });
         });
       }),

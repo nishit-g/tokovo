@@ -25,18 +25,14 @@ export function findInputSessionForProjection(
   fps: number,
 ): PreparedInputSession | undefined {
   return program.sessions.find((session) => {
-    if (session.deviceId !== deviceId || frame < session.startFrame)
-      return false;
+    if (session.deviceId !== deviceId || frame < session.startFrame) return false;
     const experience = resolveInputExperience({
       platform: session.keyboard.platform,
       appearance: session.keyboard.appearance,
       locale: session.keyboard.locale.tag,
-      themeId: session.keyboard.themeId,
+      platformProfileId: session.keyboard.platformProfileId,
     });
-    const exitFrames = Math.max(
-      1,
-      Math.round(experience.theme.motion.exitDurationSeconds * fps),
-    );
+    const exitFrames = Math.max(1, Math.round(experience.theme.motion.exitDurationSeconds * fps));
     return frame <= session.endFrame + exitFrames;
   });
 }
@@ -56,16 +52,11 @@ function getSurfaceProgress(
 ): number {
   if (frame < session.startFrame) return 0;
   if (frame < session.startFrame + duration) {
-    return easeOutCubic(
-      clamp01((frame - session.startFrame) / Math.max(1, duration)),
-    );
+    return easeOutCubic(clamp01((frame - session.startFrame) / Math.max(1, duration)));
   }
   if (frame < session.endFrame) return 1;
   if (frame < session.endFrame + duration) {
-    return (
-      1 -
-      easeOutCubic(clamp01((frame - session.endFrame) / Math.max(1, duration)))
-    );
+    return 1 - easeOutCubic(clamp01((frame - session.endFrame) / Math.max(1, duration)));
   }
   return 0;
 }
@@ -109,10 +100,7 @@ function operationKey(
   }
 }
 
-function getActiveKey(
-  session: PreparedInputSession,
-  frame: number,
-): string | null {
+function getActiveKey(session: PreparedInputSession, frame: number): string | null {
   let active: { key: string; at: number; sequence: number } | undefined;
   for (const operation of session.operations) {
     if (operation.at > frame) continue;
@@ -141,11 +129,7 @@ export function projectInputSession(
   if (!Number.isFinite(config.fps) || config.fps <= 0) {
     throw new Error("INPUT_INVALID_PROJECTION: fps must be greater than zero.");
   }
-  if (
-    config.viewportWidth <= 0 ||
-    config.viewportHeight <= 0 ||
-    config.keyboardHeight <= 0
-  ) {
+  if (config.viewportWidth <= 0 || config.viewportHeight <= 0 || config.keyboardHeight <= 0) {
     throw new Error(
       "INPUT_INVALID_PROJECTION: viewport and keyboard dimensions must be greater than zero.",
     );
@@ -167,7 +151,7 @@ export function projectInputSession(
             platform: session.keyboard.platform,
             appearance: session.keyboard.appearance,
             locale: session.keyboard.locale.tag,
-            themeId: session.keyboard.themeId,
+            platformProfileId: session.keyboard.platformProfileId,
           }).theme.motion.entranceDurationSeconds,
       ),
     );
@@ -177,7 +161,7 @@ export function projectInputSession(
     platform: session.keyboard.platform,
     appearance: session.keyboard.appearance,
     locale: session.keyboard.locale.tag,
-    themeId: session.keyboard.themeId,
+    platformProfileId: session.keyboard.platformProfileId,
   });
 
   return {
@@ -205,12 +189,13 @@ export function projectInputSession(
       layout: state.layout,
       family: session.keyboard.locale.keyboardFamily,
       appearance: session.keyboard.appearance,
-      themeId: session.keyboard.themeId,
+      platformProfileId: session.keyboard.platformProfileId,
       theme: experience.theme,
       presentation: experience.presentation,
       returnKey: session.keyboard.returnKey,
       activeKey: getActiveKey(session, frame),
       suggestions: [...state.suggestions],
+      candidateMode: state.suggestions.length > 0 ? "suggestions" : "toolbar",
       activeSuggestionIndex: state.activeSuggestionIndex,
       viewportInset,
       bounds: {

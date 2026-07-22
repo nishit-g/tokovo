@@ -1,16 +1,12 @@
 {
-    "extends": "../../tsconfig.lib.json",
-    "compilerOptions": {
-        "outDir": "./dist",
-        "rootDir": "./src",
-        "declaration": true,
-        "declarationMap": true
-    },
-    "include": [
-        "src/**/*"
-    ],
-    "exclude": [
-        "node_modules",
-        "dist"
-    ]
+  "extends": "../../tsconfig.lib.json",
+  "compilerOptions": {
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "declaration": true,
+    "declarationMap": true
+  },
+  "references": [{ "path": "../visual-system" }],
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist"]
 }

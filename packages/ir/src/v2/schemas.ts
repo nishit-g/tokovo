@@ -60,10 +60,7 @@ const CameraMissingSubjectPolicySchema = z.discriminatedUnion("type", [
 
 const CameraComposerSchema = z
   .object({
-    screenPosition: z.tuple([
-      z.number().finite().min(0).max(1),
-      z.number().finite().min(0).max(1),
-    ]),
+    screenPosition: z.tuple([z.number().finite().min(0).max(1), z.number().finite().min(0).max(1)]),
     targetFill: z.number().finite().positive().max(2),
     fillMode: z.enum(["contain", "cover", "width", "height"]),
     paddingPx: z.number().finite().nonnegative().optional(),
@@ -138,9 +135,7 @@ const CameraBlendSchema = z
   })
   .strict();
 
-export const CameraPlanSchema: z.ZodType<
-  import("./camera-vnext.js").CameraPlanIR
-> = z
+export const CameraPlanSchema: z.ZodType<import("./camera-vnext.js").CameraPlanIR> = z
   .object({
     version: z.literal(1),
     id: z.string().min(1),
@@ -165,7 +160,16 @@ export const CameraPlanSchema: z.ZodType<
               .strict()
               .optional(),
             coveragePolicy: z.enum(["require-shots", "allow-default"]),
-            safeAreaInsets: z
+            compositionProfileId: z.enum([
+              "hero-device",
+              "content-detail",
+              "wide-context",
+              "duo-balanced",
+              "handoff-pip",
+              "notification-focus",
+              "keyboard-focus",
+            ]),
+            editorialInsets: z
               .object({
                 top: z.number().finite().nonnegative(),
                 right: z.number().finite().nonnegative(),
@@ -192,10 +196,7 @@ export const CameraPlanSchema: z.ZodType<
                 subject: CinematicSubjectRefSchema,
                 paddingPx: z.number().finite().nonnegative().optional(),
                 screenPosition: z
-                  .tuple([
-                    z.number().finite().min(0).max(1),
-                    z.number().finite().min(0).max(1),
-                  ])
+                  .tuple([z.number().finite().min(0).max(1), z.number().finite().min(0).max(1)])
                   .optional(),
               })
               .strict()
@@ -311,9 +312,7 @@ const StageMatrixSchema = z
   })
   .strict();
 
-export const StageProgramSchema: z.ZodType<
-  import("./stage-vnext.js").StageProgramIR
-> = z
+export const StageProgramSchema: z.ZodType<import("./stage-vnext.js").StageProgramIR> = z
   .object({
     version: z.literal(1),
     rootNodeId: z.string().min(1),
@@ -360,9 +359,7 @@ export const StageProgramSchema: z.ZodType<
   })
   .strict();
 
-export const EpisodeCinematicsSchema: z.ZodType<
-  import("./episode-ir.js").EpisodeCinematicsIR
-> = z
+export const EpisodeCinematicsSchema: z.ZodType<import("./episode-ir.js").EpisodeCinematicsIR> = z
   .object({
     stageProgram: StageProgramSchema,
     cameraPlans: z.array(CameraPlanSchema).min(1),
@@ -370,11 +367,7 @@ export const EpisodeCinematicsSchema: z.ZodType<
   })
   .strict()
   .superRefine((cinematics, context) => {
-    if (
-      !cinematics.cameraPlans.some(
-        (plan) => plan.id === cinematics.defaultCameraPlanId,
-      )
-    ) {
+    if (!cinematics.cameraPlans.some((plan) => plan.id === cinematics.defaultCameraPlanId)) {
       context.addIssue({
         code: "custom",
         path: ["defaultCameraPlanId"],
@@ -549,12 +542,7 @@ const InputCadenceSchema = z.object({
   keyPressDurationFrames: z.number().int().positive().optional(),
 });
 
-const InputSourceSchema = z.enum([
-  "softwareKeyboard",
-  "hardwareKeyboard",
-  "paste",
-  "voice",
-]);
+const InputSourceSchema = z.enum(["softwareKeyboard", "hardwareKeyboard", "paste", "voice"]);
 
 const InputLayoutSchema = z.enum(["letters", "numbers", "symbols", "emoji"]);
 
@@ -633,26 +621,19 @@ export const InputSessionSchema = z
         platform: z.enum(["ios", "android"]).optional(),
         locale: z.string().min(1).optional(),
         layout: InputLayoutSchema.optional(),
-        returnKey: z
-          .enum(["return", "send", "search", "done", "go", "next"])
-          .optional(),
+        returnKey: z.enum(["return", "send", "search", "done", "go", "next"]).optional(),
         appearance: z.enum(["light", "dark"]).optional(),
         themeId: z.literal("system").optional(),
-        autocapitalization: z
-          .enum(["none", "sentences", "words", "characters"])
-          .optional(),
+        autocapitalization: z.enum(["none", "sentences", "words", "characters"]).optional(),
         autocorrection: z.boolean().optional(),
       })
       .optional(),
     cadence: InputCadenceSchema.optional(),
   })
-  .refine(
-    (session) => !(session.text !== undefined && session.script !== undefined),
-    {
-      message: "Input session must provide either text or script, not both",
-      path: ["script"],
-    },
-  );
+  .refine((session) => !(session.text !== undefined && session.script !== undefined), {
+    message: "Input session must provide either text or script, not both",
+    path: ["script"],
+  });
 
 const NotificationActionTargetSchema = z
   .object({
@@ -671,14 +652,9 @@ const NotificationActionTargetSchema = z
       })
       .optional(),
   })
-  .refine(
-    (target) =>
-      target.navigation !== undefined || target.appEvent !== undefined,
-    {
-      message:
-        "Notification action target must declare navigation and/or appEvent",
-    },
-  );
+  .refine((target) => target.navigation !== undefined || target.appEvent !== undefined, {
+    message: "Notification action target must declare navigation and/or appEvent",
+  });
 
 const NotificationActionSchema = z.object({
   id: z.string().min(1),
@@ -707,14 +683,10 @@ export const NotificationIntentSchema = z.object({
       })
       .optional(),
   }),
-  category: z
-    .enum(["message", "social", "work", "system", "reminder"])
-    .optional(),
+  category: z.enum(["message", "social", "work", "system", "reminder"]).optional(),
   threadId: z.string().min(1).optional(),
   groupId: z.string().min(1).optional(),
-  interruption: z
-    .enum(["passive", "active", "timeSensitive", "critical"])
-    .optional(),
+  interruption: z.enum(["passive", "active", "timeSensitive", "critical"]).optional(),
   privacy: z.enum(["public", "private", "sensitive"]).optional(),
   previewPolicy: z.enum(["always", "whenUnlocked", "never"]).optional(),
   deliveryCondition: z
@@ -765,9 +737,7 @@ export const NotificationInteractionSchema = z
     sequence: z.number().int().nonnegative().optional(),
   })
   .superRefine((interaction, ctx) => {
-    const targetsOne = ["tap", "chooseAction", "reply", "dismiss"].includes(
-      interaction.type,
-    );
+    const targetsOne = ["tap", "chooseAction", "reply", "dismiss"].includes(interaction.type);
     if (targetsOne && !interaction.notificationId) {
       ctx.addIssue({
         code: "custom",

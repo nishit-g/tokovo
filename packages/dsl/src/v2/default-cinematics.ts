@@ -43,11 +43,8 @@ export function createDefaultEpisodeCinematics(input: {
   devices: readonly DeviceConfig[];
 }): EpisodeCinematicsIR | undefined {
   if (input.devices.length === 0) return undefined;
-  const subjects = input.devices.map((device) =>
-    cameraSubject.device(device.id, "body"),
-  );
-  const stageSubject =
-    subjects.length === 1 ? subjects[0]! : cameraSubject.group(...subjects);
+  const subjects = input.devices.map((device) => cameraSubject.device(device.id, "body"));
+  const stageSubject = subjects.length === 1 ? subjects[0]! : cameraSubject.group(...subjects);
 
   return cinematicProgram(
     {
@@ -76,7 +73,7 @@ export function createDefaultEpisodeCinematics(input: {
                 height: STAGE_HEIGHT,
               },
               defaultRigId: "stage-neutral",
-              safeAreaInsets: { top: 48, right: 48, bottom: 48, left: 48 },
+              compositionProfileId: "wide-context",
             })
             .modifier("quiet-breathing", "lens-breathing", {
               amount: 0.0025,

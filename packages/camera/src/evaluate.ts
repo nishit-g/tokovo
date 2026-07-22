@@ -6,12 +6,9 @@ import type {
   CameraShotIR,
   CinematicSubjectRefIR,
 } from "@tokovo/ir";
-import {
-  interpolateCameraPose,
-  minimumJerk,
-  solveComposer,
-} from "./composer.js";
+import { interpolateCameraPose, minimumJerk, solveComposer } from "./composer.js";
 import type { CameraRegistries } from "./lenses.js";
+import { requireEditorialCompositionProfile } from "@tokovo/visual-system";
 import { applyCameraModifiers } from "./modifiers.js";
 import { cameraPoseToViewMatrix } from "./matrix.js";
 import {
@@ -35,6 +32,13 @@ import type {
   CameraProjectionPass,
 } from "./types.js";
 
+function resolveOutputEditorialInsets(output: CameraOutputIR) {
+  return (
+    output.editorialInsets ??
+    requireEditorialCompositionProfile(output.compositionProfileId).editorialInsets
+  );
+}
+
 function unionRects(rects: readonly CameraRectIR[]): CameraRectIR {
   const minimumX = Math.min(...rects.map((rect) => rect.x));
   const minimumY = Math.min(...rects.map((rect) => rect.y));
@@ -55,9 +59,7 @@ function resolveSubjects(
   available: SubjectIndex,
 ): readonly ResolvedCinematicSubject[] | undefined {
   if (ref.kind === "group") {
-    const memberGroups = ref.members.map((member) =>
-      resolveSubjects(member, available),
-    );
+    const memberGroups = ref.members.map((member) => resolveSubjects(member, available));
     if (memberGroups.some((members) => members === undefined)) return undefined;
     return memberGroups.flatMap((members) => members ?? []);
   }
@@ -147,23 +149,15 @@ function applyBakedTrajectory(
   const keyframes = trajectory.keyframes;
   let rightIndex = keyframes.findIndex((keyframe) => keyframe.frame >= frame);
   if (rightIndex < 0) rightIndex = keyframes.length - 1;
-  const leftIndex = Math.max(
-    0,
-    rightIndex - (keyframes[rightIndex]?.frame === frame ? 0 : 1),
-  );
+  const leftIndex = Math.max(0, rightIndex - (keyframes[rightIndex]?.frame === frame ? 0 : 1));
   const left = keyframes[leftIndex];
   const right = keyframes[Math.max(leftIndex, rightIndex)];
   const rawProgress =
     right.frame === left.frame
       ? 1
-      : Math.max(
-          0,
-          Math.min(1, (frame - left.frame) / (right.frame - left.frame)),
-        );
+      : Math.max(0, Math.min(1, (frame - left.frame) / (right.frame - left.frame)));
   const progress =
-    trajectory.interpolation === "minimum-jerk"
-      ? minimumJerk(rawProgress)
-      : rawProgress;
+    trajectory.interpolation === "minimum-jerk" ? minimumJerk(rawProgress) : rawProgress;
   const mix = (from: number, to: number) => from + (to - from) * progress;
   const scaleMultiplier = Math.exp(
     mix(Math.log(left.scaleMultiplier), Math.log(right.scaleMultiplier)),
@@ -174,8 +168,7 @@ function applyBakedTrajectory(
       centerX: pose.centerX + mix(left.offsetX, right.offsetX),
       centerY: pose.centerY + mix(left.offsetY, right.offsetY),
       scale: pose.scale * scaleMultiplier,
-      rotationDeg:
-        pose.rotationDeg + mix(left.rotationOffsetDeg, right.rotationOffsetDeg),
+      rotationDeg: pose.rotationDeg + mix(left.rotationOffsetDeg, right.rotationOffsetDeg),
     },
     trace: {
       interpolation: trajectory.interpolation,
@@ -194,34 +187,24 @@ function evaluateRigFrame(input: {
   registries: CameraRegistries;
 }): EvaluatedRigFrame {
   const subjectBounds = unionRects(
-    input.evaluation.subjects.map(
-      (subject) => subject.clippedWorldRect ?? subject.worldRect,
-    ),
+    input.evaluation.subjects.map((subject) => subject.clippedWorldRect ?? subject.worldRect),
   );
   const framingGuardBounds = input.evaluation.framingGuardSubjects.length
-    ? unionRects(
-        input.evaluation.framingGuardSubjects.map(
-          (subject) => subject.worldRect,
-        ),
-      )
+    ? unionRects(input.evaluation.framingGuardSubjects.map((subject) => subject.worldRect))
     : undefined;
   const basePose = solveComposer({
     subjectBounds,
     framingGuardBounds,
     framingGuardPaddingPx: input.evaluation.rig.framingGuard?.paddingPx,
-    framingGuardScreenPosition:
-      input.evaluation.rig.framingGuard?.screenPosition,
+    framingGuardScreenPosition: input.evaluation.rig.framingGuard?.screenPosition,
     viewport: input.output.viewport,
-    safeAreaInsets: input.output.safeAreaInsets,
+    compositionProfileId: input.output.compositionProfileId,
+    editorialInsets: input.output.editorialInsets,
     composer: input.evaluation.rig.composer,
     rotationDeg: input.evaluation.rig.rotationDeg,
     opacity: input.evaluation.rig.opacity,
   });
-  const trajectory = applyBakedTrajectory(
-    basePose,
-    input.evaluation.rig,
-    input.frame,
-  );
+  const trajectory = applyBakedTrajectory(basePose, input.evaluation.rig, input.frame);
   const lens = input.evaluation.rig.lensId
     ? getLensById(input.program, input.evaluation.rig.lensId)
     : undefined;
@@ -235,9 +218,7 @@ function evaluateRigFrame(input: {
       id: input.evaluation.rig.lensId,
     });
   }
-  const lensModel = lens
-    ? input.registries.lenses.get(lens.modelId, lens.modelVersion)
-    : undefined;
+  const lensModel = lens ? input.registries.lenses.get(lens.modelId, lens.modelVersion) : undefined;
   if (lens && !lensModel) {
     throwPreparedModelMissing({
       program: input.program,
@@ -256,36 +237,31 @@ function evaluateRigFrame(input: {
           parameters: lens.parameters,
         })
       : [];
-  const modifiers = (input.evaluation.rig.modifierIds ?? []).map(
-    (modifierId) => {
-      const modifier = getModifierById(input.program, modifierId);
-      if (!modifier) {
-        throwPreparedDefinitionMissing({
-          program: input.program,
-          outputId: input.output.id,
-          frame: input.frame,
-          rigId: input.evaluation.rig.id,
-          kind: "modifier",
-          id: modifierId,
-        });
-      }
-      const model = input.registries.modifiers.get(
-        modifier.modelId,
-        modifier.modelVersion,
-      );
-      if (!model) {
-        throwPreparedModelMissing({
-          program: input.program,
-          outputId: input.output.id,
-          frame: input.frame,
-          rigId: input.evaluation.rig.id,
-          kind: "modifier",
-          id: `${modifier.modelId}@${modifier.modelVersion}`,
-        });
-      }
-      return { model, parameters: modifier.parameters };
-    },
-  );
+  const modifiers = (input.evaluation.rig.modifierIds ?? []).map((modifierId) => {
+    const modifier = getModifierById(input.program, modifierId);
+    if (!modifier) {
+      throwPreparedDefinitionMissing({
+        program: input.program,
+        outputId: input.output.id,
+        frame: input.frame,
+        rigId: input.evaluation.rig.id,
+        kind: "modifier",
+        id: modifierId,
+      });
+    }
+    const model = input.registries.modifiers.get(modifier.modelId, modifier.modelVersion);
+    if (!model) {
+      throwPreparedModelMissing({
+        program: input.program,
+        outputId: input.output.id,
+        frame: input.frame,
+        rigId: input.evaluation.rig.id,
+        kind: "modifier",
+        id: `${modifier.modelId}@${modifier.modelVersion}`,
+      });
+    }
+    return { model, parameters: modifier.parameters };
+  });
   const modified = applyCameraModifiers({
     frame: input.frame,
     fps: input.program.plan.fps,
@@ -293,40 +269,35 @@ function evaluateRigFrame(input: {
     projectionPasses,
     modifiers,
   });
-  const filterPasses = (input.evaluation.rig.filterIds ?? []).flatMap(
-    (filterId) => {
-      const filter = getFilterById(input.program, filterId);
-      if (!filter) {
-        throwPreparedDefinitionMissing({
-          program: input.program,
-          outputId: input.output.id,
-          frame: input.frame,
-          rigId: input.evaluation.rig.id,
-          kind: "filter",
-          id: filterId,
-        });
-      }
-      const model = input.registries.filters.get(
-        filter.modelId,
-        filter.modelVersion,
-      );
-      if (!model) {
-        throwPreparedModelMissing({
-          program: input.program,
-          outputId: input.output.id,
-          frame: input.frame,
-          rigId: input.evaluation.rig.id,
-          kind: "filter",
-          id: `${filter.modelId}@${filter.modelVersion}`,
-        });
-      }
-      return model.evaluate({
+  const filterPasses = (input.evaluation.rig.filterIds ?? []).flatMap((filterId) => {
+    const filter = getFilterById(input.program, filterId);
+    if (!filter) {
+      throwPreparedDefinitionMissing({
+        program: input.program,
+        outputId: input.output.id,
         frame: input.frame,
-        fps: input.program.plan.fps,
-        parameters: filter.parameters,
+        rigId: input.evaluation.rig.id,
+        kind: "filter",
+        id: filterId,
       });
-    },
-  );
+    }
+    const model = input.registries.filters.get(filter.modelId, filter.modelVersion);
+    if (!model) {
+      throwPreparedModelMissing({
+        program: input.program,
+        outputId: input.output.id,
+        frame: input.frame,
+        rigId: input.evaluation.rig.id,
+        kind: "filter",
+        id: `${filter.modelId}@${filter.modelVersion}`,
+      });
+    }
+    return model.evaluate({
+      frame: input.frame,
+      fps: input.program.plan.fps,
+      parameters: filter.parameters,
+    });
+  });
   return {
     ...input.evaluation,
     pose: modified.pose,
@@ -417,18 +388,10 @@ function resolvePreviousRig(input: {
 }): CameraRigResolution {
   const previousFrame = input.shot.startFrame - 1;
   if (previousFrame >= 0) {
-    for (const previousShot of selectShots(
-      input.program,
-      input.output.id,
-      previousFrame,
-    )) {
+    for (const previousShot of selectShots(input.program, input.output.id, previousFrame)) {
       const rig = getRigById(input.program, previousShot.rigId);
       if (!rig) continue;
-      const resolution = evaluateRig(
-        rig,
-        previousShot.missingSubjectPolicy,
-        input.available,
-      );
+      const resolution = evaluateRig(rig, previousShot.missingSubjectPolicy, input.available);
       if (resolution.status !== "subject-missing") return resolution;
     }
   }
@@ -450,13 +413,11 @@ function transitionForShot(
     return {
       durationFrames: shot.blendIn.durationFrames,
       curve: shot.blendIn.curve,
-      whipDirection:
-        rig.motion?.type === "whip" ? rig.motion.direction : undefined,
+      whipDirection: rig.motion?.type === "whip" ? rig.motion.direction : undefined,
     };
   }
   const motion = rig.motion;
-  if (!motion || motion.type === "cut")
-    return { durationFrames: 0, curve: "linear" };
+  if (!motion || motion.type === "cut") return { durationFrames: 0, curve: "linear" };
   if (motion.type === "minimum-jerk") {
     return { durationFrames: motion.durationFrames, curve: "minimum-jerk" };
   }
@@ -480,10 +441,7 @@ function transitionProgress(input: {
   curve: "linear" | "smoothstep" | "minimum-jerk" | "critically-damped";
 }): number {
   if (input.durationFrames <= 0) return 1;
-  const raw = Math.max(
-    0,
-    Math.min(1, (input.frame - input.startFrame) / input.durationFrames),
-  );
+  const raw = Math.max(0, Math.min(1, (input.frame - input.startFrame) / input.durationFrames));
   if (input.curve === "minimum-jerk") return minimumJerk(raw);
   if (input.curve === "smoothstep") return raw * raw * (3 - 2 * raw);
   if (input.curve === "critically-damped") {
@@ -564,11 +522,7 @@ export function evaluateCameraOutput(
   registries: CameraRegistries,
 ): EvaluatedCameraOutput {
   const { program, outputId, frame, subjectFrame } = input;
-  if (
-    !Number.isInteger(frame) ||
-    frame < 0 ||
-    frame >= program.plan.durationInFrames
-  ) {
+  if (!Number.isInteger(frame) || frame < 0 || frame >= program.plan.durationInFrames) {
     throw new CameraEvaluationError([
       diagnostic({
         program,
@@ -624,11 +578,7 @@ export function evaluateCameraOutput(
   for (const shot of selectShots(program, outputId, frame)) {
     const rig = getRigById(program, shot.rigId);
     if (!rig) continue;
-    const resolution = evaluateRig(
-      rig,
-      shot.missingSubjectPolicy,
-      subjectIndex,
-    );
+    const resolution = evaluateRig(rig, shot.missingSubjectPolicy, subjectIndex);
     if (resolution.status === "resolved") {
       activeShot = shot;
       selected = resolution.evaluation;
@@ -680,8 +630,7 @@ export function evaluateCameraOutput(
         }),
       ]);
     }
-    selected =
-      resolution.status === "resolved" ? resolution.evaluation : undefined;
+    selected = resolution.status === "resolved" ? resolution.evaluation : undefined;
     if (!selected) {
       throw new CameraEvaluationError([
         diagnostic({
@@ -744,12 +693,7 @@ export function evaluateCameraOutput(
           evaluation: previous.evaluation,
           registries,
         });
-        pose = interpolateCameraPose(
-          source.pose,
-          target.pose,
-          progress,
-          "linear",
-        );
+        pose = interpolateCameraPose(source.pose, target.pose, progress, "linear");
         projectionPasses = blendProjectionPasses({
           from: source.projectionPasses,
           to: target.projectionPasses,
@@ -764,8 +708,7 @@ export function evaluateCameraOutput(
       durationFrames: transition.durationFrames,
       curve: transition.curve,
       progress,
-      whipActive:
-        transition.whipDirection !== undefined && progress > 0 && progress < 1,
+      whipActive: transition.whipDirection !== undefined && progress > 0 && progress < 1,
       movementIntent: selected.rig.motion?.intent ?? null,
     };
   }
@@ -817,30 +760,24 @@ export function evaluateCameraOutput(
           }
         : null,
       constraints: {
-        safeAreaInsets: output.safeAreaInsets ?? {
-          top: 0,
-          right: 0,
-          bottom: 0,
-          left: 0,
-        },
+        compositionProfileId: output.compositionProfileId,
+        editorialInsets: resolveOutputEditorialInsets(output),
         effectiveViewport: {
-          x: output.viewport.x + (output.safeAreaInsets?.left ?? 0),
-          y: output.viewport.y + (output.safeAreaInsets?.top ?? 0),
+          x: output.viewport.x + resolveOutputEditorialInsets(output).left,
+          y: output.viewport.y + resolveOutputEditorialInsets(output).top,
           width:
             output.viewport.width -
-            (output.safeAreaInsets?.left ?? 0) -
-            (output.safeAreaInsets?.right ?? 0),
+            resolveOutputEditorialInsets(output).left -
+            resolveOutputEditorialInsets(output).right,
           height:
             output.viewport.height -
-            (output.safeAreaInsets?.top ?? 0) -
-            (output.safeAreaInsets?.bottom ?? 0),
+            resolveOutputEditorialInsets(output).top -
+            resolveOutputEditorialInsets(output).bottom,
         },
       },
       tracking: {
         mode: selected.rig.tracking?.mode ?? "direct",
-        subjectKeys: selected.subjects.map((subject) =>
-          cinematicSubjectKey(subject.ref),
-        ),
+        subjectKeys: selected.subjects.map((subject) => cinematicSubjectKey(subject.ref)),
       },
       bakedTrajectory: target.trajectoryTrace,
       projectionPassKinds: projectionPasses.map((pass) => pass.kind),

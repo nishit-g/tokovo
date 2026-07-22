@@ -182,8 +182,7 @@ class VoiceTrackBuilderInternal<T extends string> {
   }
 
   at(time: string | number): VoicePointBuilder<T> {
-    const frame =
-      typeof time === "number" ? time : parseTimeToFrames(time, this._fps);
+    const frame = typeof time === "number" ? time : parseTimeToFrames(time, this._fps);
     return new VoicePointBuilder((item) => this._schedule.push(item), frame);
   }
 
@@ -208,15 +207,12 @@ export class NotificationPointBuilder {
   ) {}
 
   deliver(options: NotificationDeliveryOptions): string {
-    const id =
-      options.id ??
-      `notification_${this.deviceId}_${this.frame}_${this.intents.length}`;
+    const id = options.id ?? `notification_${this.deviceId}_${this.frame}_${this.intents.length}`;
     this.intents.push({
       ...options,
       id,
       deviceId: this.deviceId,
-      appInstanceId:
-        options.appInstanceId ?? `${this.deviceId}:${options.appId}`,
+      appInstanceId: options.appInstanceId ?? `${this.deviceId}:${options.appId}`,
       deliverAtFrame: this.frame,
       sequence: this.getOrder(),
     });
@@ -391,12 +387,7 @@ export class EpisodeBuilder {
     return this;
   }
 
-  view(
-    appId: string,
-    deviceId: string,
-    view: unknown,
-    options: ViewOptions = {},
-  ): this {
+  view(appId: string, deviceId: string, view: unknown, options: ViewOptions = {}): this {
     this._initialViews = this._initialViews.filter(
       (entry) => !(entry.appId === appId && entry.deviceId === deviceId),
     );
@@ -411,11 +402,11 @@ export class EpisodeBuilder {
 
   /**
    * Set the background for the video canvas.
-   * Can be a preset ID ("ambient-night", "neon-city", etc.) or full config.
+   * Can be a visual-system backdrop profile ID or a full config.
    *
    * @example
    * // Using preset
-   * .background("ambient-night")
+   * .background("studio-quiet-dark")
    *
    * @example
    * // Using image
@@ -440,9 +431,7 @@ export class EpisodeBuilder {
     fn: TrackFn<HandPerformanceTrackBuilder>,
   ): this {
     if (!this._devices.some((device) => device.id === deviceId)) {
-      throw new Error(
-        `Cannot attach hand performance to unknown device "${deviceId}"`,
-      );
+      throw new Error(`Cannot attach hand performance to unknown device "${deviceId}"`);
     }
 
     const builder = new HandPerformanceTrackBuilder(this._fps);
@@ -467,10 +456,7 @@ export class EpisodeBuilder {
    * Add an audio track.
    */
   audio(fn: TrackFn<AudioTrackBuilder>): this {
-    const builder = new AudioTrackBuilder(
-      this._fps,
-      () => this._declarationOrder++,
-    );
+    const builder = new AudioTrackBuilder(this._fps, () => this._declarationOrder++);
     fn(builder);
     this._events.push(...builder._events);
     return this;
@@ -481,10 +467,7 @@ export class EpisodeBuilder {
    * Renders above devices and is unaffected by camera transforms.
    */
   overlay(fn: TrackFn<OverlayTrackBuilder>): this {
-    const builder = new OverlayTrackBuilder(
-      this._fps,
-      () => this._declarationOrder++,
-    );
+    const builder = new OverlayTrackBuilder(this._fps, () => this._declarationOrder++);
     fn(builder);
     this._events.push(...builder._events);
     return this;
@@ -494,10 +477,7 @@ export class EpisodeBuilder {
    * Add an OS track.
    */
   os(fn: TrackFn<OSTrackBuilder>): this {
-    const builder = new OSTrackBuilder(
-      this._fps,
-      () => this._declarationOrder++,
-    );
+    const builder = new OSTrackBuilder(this._fps, () => this._declarationOrder++);
     fn(builder);
     this._events.push(...builder._events);
     return this;
@@ -509,25 +489,16 @@ export class EpisodeBuilder {
    * notifications, keyboard, badges, screen recording, etc.
    */
   deviceTrack(deviceId: string, fn: TrackFn<DeviceTrackBuilderV2>): this {
-    const builder = new DeviceTrackBuilderV2(
-      this._fps,
-      deviceId,
-      () => this._declarationOrder++,
-    );
+    const builder = new DeviceTrackBuilderV2(this._fps, deviceId, () => this._declarationOrder++);
     fn(builder);
     this._events.push(...builder._events);
     return this;
   }
 
   /** Author OS-owned notification delivery and interaction data. */
-  notificationTrack(
-    deviceId: string,
-    fn: TrackFn<NotificationTrackBuilder>,
-  ): this {
+  notificationTrack(deviceId: string, fn: TrackFn<NotificationTrackBuilder>): this {
     if (!this._devices.some((device) => device.id === deviceId)) {
-      throw new Error(
-        `Cannot author notification track for unknown device "${deviceId}"`,
-      );
+      throw new Error(`Cannot author notification track for unknown device "${deviceId}"`);
     }
     fn(
       new NotificationTrackBuilder(
@@ -560,13 +531,9 @@ export class EpisodeBuilder {
     const appId = options.appId ?? device.app;
     const startFrame = parseTimeToFrames(options.at, this._fps);
     const endFrame =
-      options.until === undefined
-        ? undefined
-        : parseTimeToFrames(options.until, this._fps);
+      options.until === undefined ? undefined : parseTimeToFrames(options.until, this._fps);
     const submitAtFrame =
-      options.submitAt === undefined
-        ? undefined
-        : parseTimeToFrames(options.submitAt, this._fps);
+      options.submitAt === undefined ? undefined : parseTimeToFrames(options.submitAt, this._fps);
 
     this._inputSessions.push({
       id: options.id,
@@ -595,9 +562,7 @@ export class EpisodeBuilder {
   notify(deviceId: string, options: NotificationIntentOptions): string {
     const device = this._devices.find((candidate) => candidate.id === deviceId);
     if (!device) {
-      throw new Error(
-        `Cannot author notification for unknown device "${deviceId}"`,
-      );
+      throw new Error(`Cannot author notification for unknown device "${deviceId}"`);
     }
     const { at, ...intent } = options;
     const deliverAtFrame = parseTimeToFrames(at, this._fps);
@@ -622,9 +587,7 @@ export class EpisodeBuilder {
     options: NotificationInteractionOptions,
   ): this {
     if (!this._devices.some((device) => device.id === deviceId)) {
-      throw new Error(
-        `Cannot author notification interaction for unknown device "${deviceId}"`,
-      );
+      throw new Error(`Cannot author notification interaction for unknown device "${deviceId}"`);
     }
     const { at, ...interaction } = options;
     this._notificationInteractions.push({
@@ -637,11 +600,7 @@ export class EpisodeBuilder {
     return this;
   }
 
-  setNotificationCenter(
-    deviceId: string,
-    open: boolean,
-    at: string | number,
-  ): this {
+  setNotificationCenter(deviceId: string, open: boolean, at: string | number): this {
     return this.interactWithNotification(deviceId, undefined, {
       at,
       type: open ? "openCenter" : "closeCenter",
@@ -772,21 +731,15 @@ export class EpisodeBuilder {
       appSnapshots: this._appSnapshots,
       initialViews: this._initialViews,
       events: sortedEvents,
-      inputSessions:
-        this._inputSessions.length > 0 ? [...this._inputSessions] : undefined,
+      inputSessions: this._inputSessions.length > 0 ? [...this._inputSessions] : undefined,
       notificationIntents:
-        this._notificationIntents.length > 0
-          ? [...this._notificationIntents]
-          : undefined,
+        this._notificationIntents.length > 0 ? [...this._notificationIntents] : undefined,
       notificationInteractions:
-        this._notificationInteractions.length > 0
-          ? [...this._notificationInteractions]
-          : undefined,
+        this._notificationInteractions.length > 0 ? [...this._notificationInteractions] : undefined,
       markers: this._markers,
       sections: this._sections,
       background: this._background,
-      handPerformances:
-        this._handPerformances.length > 0 ? this._handPerformances : undefined,
+      handPerformances: this._handPerformances.length > 0 ? this._handPerformances : undefined,
       cinematics:
         this._cinematics ??
         createDefaultEpisodeCinematics({
@@ -801,15 +754,13 @@ export class EpisodeBuilder {
             usePerSegmentControl: true,
             segmentSchedule: this._voiceConfig.schedule,
             durationMs: this._voiceConfig.script.durationMs,
-            segments: Object.values(this._voiceConfig.script.segments).map(
-              (seg) => ({
-                id: seg.id,
-                startMs: seg.startMs,
-                endMs: seg.endMs,
-                durationMs: seg.endMs - seg.startMs,
-                speaker: seg.speaker,
-              }),
-            ),
+            segments: Object.values(this._voiceConfig.script.segments).map((seg) => ({
+              id: seg.id,
+              startMs: seg.startMs,
+              endMs: seg.endMs,
+              durationMs: seg.endMs - seg.startMs,
+              speaker: seg.speaker,
+            })),
           }
         : undefined,
     };
@@ -823,9 +774,7 @@ export class EpisodeBuilder {
     };
   }
 
-  private _orderPluginsByDependencies(
-    plugins: CompilerPlugin[],
-  ): CompilerPlugin[] {
+  private _orderPluginsByDependencies(plugins: CompilerPlugin[]): CompilerPlugin[] {
     const ordered: CompilerPlugin[] = [];
     const visited = new Set<string>();
     const visiting = new Set<string>();
@@ -882,9 +831,6 @@ export class EpisodeBuilder {
  *   .build();
  * ```
  */
-export function episode(
-  id: string,
-  config: TrackEpisodeConfig,
-): EpisodeBuilder {
+export function episode(id: string, config: TrackEpisodeConfig): EpisodeBuilder {
   return new EpisodeBuilder(id, config);
 }

@@ -22,10 +22,7 @@ function normalizeName(name: string): string {
 }
 
 function initialsFromName(name: string): string {
-  const parts = normalizeName(name)
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2);
+  const parts = normalizeName(name).split(/\s+/).filter(Boolean).slice(0, 2);
   const initials = parts.map((part) => part[0]?.toUpperCase() ?? "").join("");
   return initials || "U";
 }
@@ -57,7 +54,7 @@ export function generateAvatarUrl(name: string, size = 128): string {
       <circle cx="100" cy="28" r="20" fill="${palette.accent}" opacity="0.7" />
       <circle cx="24" cy="104" r="30" fill="${palette.accent}" opacity="0.55" />
       <path d="M18 ${48 + ringShift}C34 ${24 + ringShift} 54 ${20 + ringShift} 74 ${30 + ringShift}C94 ${40 + ringShift} 106 ${56 + ringShift} 112 ${74 + ringShift}" fill="none" stroke="${palette.fg}" stroke-opacity="0.14" stroke-width="10" stroke-linecap="round"/>
-      <text x="64" y="72" text-anchor="middle" dominant-baseline="middle" font-family="-apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', sans-serif" font-size="42" font-weight="700" fill="${palette.fg}">
+      <text x="64" y="72" text-anchor="middle" dominant-baseline="middle" font-family="Inter Variable, Noto Sans Variable, sans-serif" font-size="42" font-weight="700" fill="${palette.fg}">
         ${initials}
       </text>
     </svg>

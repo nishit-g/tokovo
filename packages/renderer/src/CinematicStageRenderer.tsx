@@ -1,13 +1,7 @@
 import React from "react";
-import {
-  applyMatrix3,
-  evaluateCameraOutput,
-  type EvaluatedCameraOutput,
-} from "@tokovo/camera";
-import {
-  selectPreparedCameraProgram,
-  type PreparedCinematicPrograms,
-} from "@tokovo/compiler";
+import { TOKOVO_MONO_UI_FONT_FAMILY } from "@tokovo/visual-system";
+import { applyMatrix3, evaluateCameraOutput, type EvaluatedCameraOutput } from "@tokovo/camera";
+import { selectPreparedCameraProgram, type PreparedCinematicPrograms } from "@tokovo/compiler";
 import {
   TokovoConfig,
   type LayoutCacheStore,
@@ -17,10 +11,7 @@ import {
 import type { PreparedInputProgram } from "@tokovo/device-keyboard";
 import type { PreparedNotificationProgram } from "@tokovo/device-notifications";
 import { evaluateStageFrame, type EvaluatedStageFrame } from "@tokovo/stage";
-import {
-  CameraProjectionSurface,
-  projectCinematicFrame,
-} from "./camera/index.js";
+import { CameraProjectionSurface, projectCinematicFrame } from "./camera/index.js";
 import {
   computeLayoutEngine,
   createLayoutEngineRuntime,
@@ -106,7 +97,7 @@ const CinematicDebugOverlay: React.FC<{
                   boxSizing: "border-box",
                   border: "1px dashed rgba(167, 139, 250, 0.8)",
                   color: "#C4B5FD",
-                  font: "600 10px ui-monospace, SFMono-Regular, Menlo, monospace",
+                  font: `600 10px ${TOKOVO_MONO_UI_FONT_FAMILY}`,
                 }}
               >
                 {node.id}
@@ -153,7 +144,7 @@ const CinematicDebugOverlay: React.FC<{
                 boxSizing: "border-box",
                 border: "2px solid rgba(255, 213, 64, 0.96)",
                 color: "#FFE36B",
-                font: "600 11px ui-monospace, SFMono-Regular, Menlo, monospace",
+                font: `600 11px ${TOKOVO_MONO_UI_FONT_FAMILY}`,
               }}
             >
               {subject.regionId}
@@ -196,14 +187,9 @@ export interface CinematicStageRendererProps {
   notificationProgram?: PreparedNotificationProgram;
   cinematics: PreparedCinematicPrograms;
   cameraPlanId?: string;
-  cameraProjectionBackend?:
-    | "final"
-    | "texture-stage-plate"
-    | "texture-projection-data";
+  cameraProjectionBackend?: "final" | "texture-stage-plate" | "texture-projection-data";
   onCinematicCameraDebugFrame?: (frame: CinematicCameraDebugFrame) => void;
-  onCameraTextureProjectionFrame?: (
-    frame: CinematicTextureProjectionFrame,
-  ) => void;
+  onCameraTextureProjectionFrame?: (frame: CinematicTextureProjectionFrame) => void;
 }
 
 export interface CinematicCameraDebugFrame {
@@ -262,16 +248,13 @@ export const CinematicStageRenderer: React.FC<CinematicStageRendererProps> = ({
   onCameraTextureProjectionFrame,
 }) => {
   const runtimeRef = React.useRef<LayoutEngineRuntime | null>(null);
-  const layoutRuntime =
-    runtimeRef.current ?? createLayoutEngineRuntime();
+  const layoutRuntime = runtimeRef.current ?? createLayoutEngineRuntime();
   runtimeRef.current = layoutRuntime;
   const cacheRef = React.useRef<Map<string, LayoutCacheStore>>(new Map());
 
   const frame = React.useMemo(() => {
     const stage = evaluateStageFrame(cinematics.stageProgram, t);
-    const stageDevices = stage.nodes.filter(
-      (node) => node.source.kind === "device",
-    );
+    const stageDevices = stage.nodes.filter((node) => node.source.kind === "device");
     const layouts = stageDevices.map((node) => {
       if (node.source.kind !== "device") {
         throw new Error(`Stage node "${node.id}" is not a device.`);
@@ -358,19 +341,13 @@ export const CinematicStageRenderer: React.FC<CinematicStageRendererProps> = ({
       return;
     }
     const planId = frame.outputs[0]?.trace.planId;
-    if (!planId)
-      throw new Error("CAM_OUTPUT_MISSING: Camera plan produced no outputs.");
+    if (!planId) throw new Error("CAM_OUTPUT_MISSING: Camera plan produced no outputs.");
     const cameraSignature = cinematics.cameraSignatures[planId];
     if (!cameraSignature) {
       throw new Error(`Camera signature for plan "${planId}" is missing.`);
     }
-    const root = frame.stage.nodes.find(
-      (node) => node.id === frame.stage.rootNodeId,
-    );
-    if (!root)
-      throw new Error(
-        `Camera stage root "${frame.stage.rootNodeId}" is missing.`,
-      );
+    const root = frame.stage.nodes.find((node) => node.id === frame.stage.rootNodeId);
+    if (!root) throw new Error(`Camera stage root "${frame.stage.rootNodeId}" is missing.`);
     onCameraTextureProjectionFrame({
       t,
       storySignature: cinematics.storySignature,
@@ -391,35 +368,23 @@ export const CinematicStageRenderer: React.FC<CinematicStageRendererProps> = ({
 
   if (cameraProjectionBackend === "texture-projection-data") return null;
 
-  const root = frame.stage.nodes.find(
-    (node) => node.id === frame.stage.rootNodeId,
-  );
-  if (!root)
-    throw new Error(
-      `Camera stage root "${frame.stage.rootNodeId}" is missing.`,
-    );
+  const root = frame.stage.nodes.find((node) => node.id === frame.stage.rootNodeId);
+  if (!root) throw new Error(`Camera stage root "${frame.stage.rootNodeId}" is missing.`);
   const stageWidth = root.localBounds.width;
   const stageHeight = root.localBounds.height;
-  const layoutsByDevice = new Map(
-    frame.layouts.map((layout) => [layout.deviceId, layout]),
-  );
+  const layoutsByDevice = new Map(frame.layouts.map((layout) => [layout.deviceId, layout]));
   const stagePlate = (
-    <div
-      style={{ position: "relative", width: stageWidth, height: stageHeight }}
-    >
+    <div style={{ position: "relative", width: stageWidth, height: stageHeight }}>
       {frame.stage.nodes.map((node) => {
         if (node.source.kind !== "device") return null;
         const deviceId = node.source.deviceId;
         const layout = layoutsByDevice.get(deviceId);
         if (!layout) {
-          throw new Error(
-            `CAM_LAYOUT_MISSING: No layout was projected for device "${deviceId}".`,
-          );
+          throw new Error(`CAM_LAYOUT_MISSING: No layout was projected for device "${deviceId}".`);
         }
         const matrix = node.worldTransform;
         const scaleX = node.localBounds.width / layout.profile.dimensions.width;
-        const scaleY =
-          node.localBounds.height / layout.profile.dimensions.height;
+        const scaleY = node.localBounds.height / layout.profile.dimensions.height;
         return (
           <div
             key={node.id}
@@ -466,14 +431,11 @@ export const CinematicStageRenderer: React.FC<CinematicStageRendererProps> = ({
   if (cameraProjectionBackend === "texture-stage-plate") return stagePlate;
 
   return (
-    <div
-      style={{ position: "relative", width: stageWidth, height: stageHeight }}
-    >
+    <div style={{ position: "relative", width: stageWidth, height: stageHeight }}>
       {[...frame.outputs]
         .sort(
           (left: EvaluatedCameraOutput, right: EvaluatedCameraOutput) =>
-            left.zIndex - right.zIndex ||
-            left.outputId.localeCompare(right.outputId),
+            left.zIndex - right.zIndex || left.outputId.localeCompare(right.outputId),
         )
         .map((output) => (
           <CameraProjectionSurface
@@ -486,9 +448,7 @@ export const CinematicStageRenderer: React.FC<CinematicStageRendererProps> = ({
             {stagePlate}
           </CameraProjectionSurface>
         ))}
-      {debug ? (
-        <CinematicDebugOverlay outputs={frame.outputs} stage={frame.stage} />
-      ) : null}
+      {debug ? <CinematicDebugOverlay outputs={frame.outputs} stage={frame.stage} /> : null}
     </div>
   );
 };

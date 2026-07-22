@@ -11,6 +11,7 @@
  */
 
 import type { ReactElement } from "react";
+import type { AppViewportFrame } from "@tokovo/visual-system";
 import type {
   WorldState,
   BackgroundAppState,
@@ -45,12 +46,7 @@ export interface AppViewProps {
   layout?: unknown;
   platform?: "ios" | "android";
   deviceId?: string;
-  safeAreaInsets?: {
-    top: number;
-    bottom: number;
-    left: number;
-    right: number;
-  };
+  appViewport: AppViewportFrame;
 }
 
 export type AppViewComponent = (props: AppViewProps) => ReactElement | null;
@@ -113,9 +109,7 @@ export class PluginManagerClass {
     this.registries = registries;
   }
 
-  register<AppId extends string>(
-    plugin: TokovoPluginContract<AppId>,
-  ): () => void {
+  register<AppId extends string>(plugin: TokovoPluginContract<AppId>): () => void {
     try {
       validatePlugin(plugin);
     } catch (e: unknown) {
@@ -150,30 +144,17 @@ export class PluginManagerClass {
       this.plugins.set(plugin.id, storedPlugin);
 
       if (plugin.reducer) {
-        this.registries.reducers.registerAppReducer(
-          plugin.id,
-          plugin.reducer as AppReducer,
-        );
-        cleanups.push(() =>
-          this.registries.reducers.unregisterAppReducer(plugin.id),
-        );
+        this.registries.reducers.registerAppReducer(plugin.id, plugin.reducer as AppReducer);
+        cleanups.push(() => this.registries.reducers.unregisterAppReducer(plugin.id));
       }
 
       if (plugin.eventKinds && plugin.eventKinds.length > 0) {
-        this.registries.reducers.registerEventKinds(
-          plugin.id,
-          plugin.eventKinds,
-        );
-        cleanups.push(() =>
-          this.registries.reducers.unregisterEventKinds(plugin.id),
-        );
+        this.registries.reducers.registerEventKinds(plugin.id, plugin.eventKinds);
+        cleanups.push(() => this.registries.reducers.unregisterEventKinds(plugin.id));
       }
 
       if (plugin.createInitialState) {
-        this.initialStateCreators.set(
-          plugin.id,
-          plugin.createInitialState as () => unknown,
-        );
+        this.initialStateCreators.set(plugin.id, plugin.createInitialState as () => unknown);
         cleanups.push(() => this.initialStateCreators.delete(plugin.id));
       }
 
@@ -198,9 +179,7 @@ export class PluginManagerClass {
 
       if (plugin.cinematicSubjects) {
         this.registries.cinematicSubjects.register(plugin.cinematicSubjects);
-        cleanups.push(() =>
-          this.registries.cinematicSubjects.unregister(plugin.id),
-        );
+        cleanups.push(() => this.registries.cinematicSubjects.unregister(plugin.id));
       }
 
       const layouts = plugin.layouts ?? [];
@@ -221,13 +200,8 @@ export class PluginManagerClass {
       }
 
       if (plugin.assets?.sounds) {
-        this.registries.sounds.registerNamespaced(
-          plugin.id,
-          plugin.assets.sounds,
-        );
-        cleanups.push(() =>
-          this.registries.sounds.unregisterNamespaced(plugin.id),
-        );
+        this.registries.sounds.registerNamespaced(plugin.id, plugin.assets.sounds);
+        cleanups.push(() => this.registries.sounds.unregisterNamespaced(plugin.id));
       }
 
       if (plugin.audioRules) {
@@ -236,9 +210,7 @@ export class PluginManagerClass {
           match: { ...rule.match, appId: rule.match.appId ?? plugin.id },
         }));
         this.registries.autoSounds.register(rulesWithAppId);
-        cleanups.push(() =>
-          this.registries.autoSounds.unregisterByAppId(plugin.id),
-        );
+        cleanups.push(() => this.registries.autoSounds.unregisterByAppId(plugin.id));
       }
 
       this.cleanupFunctions.set(plugin.id, cleanups);
@@ -313,9 +285,7 @@ export class PluginManagerClass {
     return this.plugins.has(id);
   }
 
-  getMetadata(
-    id: string,
-  ): { name: string; icon?: string; color?: string } | undefined {
+  getMetadata(id: string): { name: string; icon?: string; color?: string } | undefined {
     const plugin = this.plugins.get(id);
     if (!plugin) return undefined;
     return {

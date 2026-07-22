@@ -1,22 +1,15 @@
 import type { WorldState } from "@tokovo/core";
 import { DeterministicImage } from "@tokovo/react";
 import { BellRing, ChevronRight, Megaphone, Plus, Users } from "lucide-react";
-import {
-  useTheme,
-  useWhatsAppLocale,
-} from "../../experience/ExperienceContext.js";
-import type {
-  WhatsAppCommunity,
-  WhatsAppConversation,
-  WhatsAppState,
-} from "../../types/index.js";
+import { useTheme, useWhatsAppLocale } from "../../experience/ExperienceContext.js";
+import type { WhatsAppCommunity, WhatsAppConversation, WhatsAppState } from "../../types/index.js";
 import { resolveAvatarWithFallback } from "../../utils/avatar.js";
 import { formatWhatsAppNumber } from "../../localization/index.js";
 import { AppScaffold, EmptyState, SectionHeader } from "../surfaces/index.js";
 
 export interface CommunitiesScreenProps {
   world: WorldState;
-  safeAreaInsets?: {
+  contentInsets: {
     top: number;
     bottom: number;
     left: number;
@@ -38,8 +31,7 @@ function CommunityGroupRow({
   const { uiTypography: typography } = theme;
   const lastMessage = conversation.messages.at(-1);
   const fallbackGroupName = t("profile.group");
-  const preview =
-    lastMessage?.text ?? conversation.description ?? t("chat.noMessages");
+  const preview = lastMessage?.text ?? conversation.description ?? t("chat.noMessages");
 
   return (
     <div
@@ -63,9 +55,7 @@ function CommunityGroupRow({
           overflow: "hidden",
           borderRadius: isAnnouncement ? 11 : 20,
           color: isAnnouncement ? theme.colors.accent : undefined,
-          backgroundColor: isAnnouncement
-            ? `${theme.colors.accent}18`
-            : theme.colors.divider,
+          backgroundColor: isAnnouncement ? `${theme.colors.accent}18` : theme.colors.divider,
           flexShrink: 0,
         }}
       >
@@ -128,10 +118,7 @@ function CommunityGroupRow({
             fontWeight: 700,
           }}
         >
-          {formatWhatsAppNumber(
-            locale,
-            Math.min(conversation.unreadCount ?? 0, 99),
-          )}
+          {formatWhatsAppNumber(locale, Math.min(conversation.unreadCount ?? 0, 99))}
         </div>
       )}
     </div>
@@ -214,14 +201,11 @@ function CommunityCard({
               fontFamily: theme.typography.fontFamily,
             }}
           >
-            {community.description ??
-              t("group.members", { count: community.memberCount ?? 0 })}
+            {community.description ?? t("group.members", { count: community.memberCount ?? 0 })}
           </div>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-          {(community.unreadCount ?? 0) > 0 && (
-            <BellRing size={15} color={theme.colors.accent} />
-          )}
+          {(community.unreadCount ?? 0) > 0 && <BellRing size={15} color={theme.colors.accent} />}
           <ChevronRight
             size={17}
             color={theme.colors.timestamp}
@@ -231,15 +215,9 @@ function CommunityCard({
           />
         </div>
       </div>
-      {announcement && (
-        <CommunityGroupRow conversation={announcement} isAnnouncement />
-      )}
+      {announcement && <CommunityGroupRow conversation={announcement} isAnnouncement />}
       {groups.map((group) => (
-        <CommunityGroupRow
-          key={group.id}
-          conversation={group}
-          isAnnouncement={false}
-        />
+        <CommunityGroupRow key={group.id} conversation={group} isAnnouncement={false} />
       ))}
       <div
         style={{
@@ -256,26 +234,18 @@ function CommunityCard({
         }}
       >
         <span>{t("communities.viewAllGroups")}</span>
-        <span>
-          {formatWhatsAppNumber(
-            locale,
-            new Set(community.groupConversationIds).size,
-          )}
-        </span>
+        <span>{formatWhatsAppNumber(locale, new Set(community.groupConversationIds).size)}</span>
       </div>
     </div>
   );
 }
 
-export function CommunitiesScreen({
-  world,
-  safeAreaInsets,
-}: CommunitiesScreenProps) {
+export function CommunitiesScreen({ world, contentInsets }: CommunitiesScreenProps) {
   const theme = useTheme();
   const { direction, t } = useWhatsAppLocale();
   const { uiTypography: typography } = theme;
-  const safeAreaTop = safeAreaInsets?.top ?? theme.safeArea.top;
-  const safeAreaBottom = safeAreaInsets?.bottom ?? theme.safeArea.bottom;
+  const contentInsetTop = contentInsets.top;
+  const contentInsetBottom = contentInsets.bottom;
   const state = (world.appState?.app_whatsapp ?? {}) as Partial<WhatsAppState>;
   const conversations = state.conversations ?? {};
   const communities = state.communities ?? [];
@@ -284,8 +254,8 @@ export function CommunitiesScreen({
     <AppScaffold
       title={t("nav.communities")}
       activeTab="communities"
-      safeAreaTop={safeAreaTop}
-      safeAreaBottom={safeAreaBottom}
+      contentInsetTop={contentInsetTop}
+      contentInsetBottom={contentInsetBottom}
       actions={<Plus size={20} />}
     >
       <div

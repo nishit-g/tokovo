@@ -8,7 +8,7 @@ import {
 import type { WhatsAppChatFilter } from "../presentation/strategy.js";
 
 export interface ChatListHeaderProps {
-  safeAreaTop?: number;
+  contentInsetTop: number;
   activeFilter?: WhatsAppChatFilter;
   onFilterChange?: (filter: WhatsAppChatFilter) => void;
   showEditButton?: boolean;
@@ -35,14 +35,10 @@ const FilterChip: React.FC<{
         backgroundColor: isActive ? activeBg : theme.colors.background,
         borderRadius: spacing.filterChipRadius,
         border: `1px solid ${theme.colors.divider}`,
-        boxShadow: isActive
-          ? `0 6px 14px ${theme.colors.accent}18`
-          : "0 1px 0 rgba(0,0,0,0.02)",
+        boxShadow: isActive ? `0 6px 14px ${theme.colors.accent}18` : "0 1px 0 rgba(0,0,0,0.02)",
         ...typography.chip,
         fontWeight: isActive ? "600" : "500",
-        color: isActive
-          ? theme.colors.receivedBubbleText
-          : theme.colors.timestamp,
+        color: isActive ? theme.colors.receivedBubbleText : theme.colors.timestamp,
         cursor: "pointer",
         userSelect: "none",
         fontFamily: theme.typography.fontFamily,
@@ -54,7 +50,7 @@ const FilterChip: React.FC<{
 };
 
 export const ChatListHeader: React.FC<ChatListHeaderProps> = ({
-  safeAreaTop = 47,
+  contentInsetTop,
   activeFilter = "all",
   onFilterChange,
   showEditButton = false,
@@ -78,9 +74,7 @@ export const ChatListHeader: React.FC<ChatListHeaderProps> = ({
       label: filterLabels[id],
     }));
   const usesToolbarTitle = presentation.chatList.titleStyle === "toolbar";
-  const headerActionColor = usesToolbarTitle
-    ? theme.colors.headerText
-    : theme.colors.accent;
+  const headerActionColor = usesToolbarTitle ? theme.colors.headerText : theme.colors.accent;
 
   return (
     <div
@@ -98,10 +92,10 @@ export const ChatListHeader: React.FC<ChatListHeaderProps> = ({
     >
       <div
         style={{
-          paddingTop: safeAreaTop,
+          paddingTop: contentInsetTop,
           paddingLeft: spacing.pagePaddingWide,
           paddingRight: spacing.pagePaddingX,
-          height: spacing.navBarHeight + safeAreaTop,
+          height: spacing.navBarHeight + contentInsetTop,
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",

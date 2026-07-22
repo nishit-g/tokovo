@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import type { LayoutContext, ViewKind, WorldState } from "@tokovo/core";
-import { DEFAULT_AUDIO_STATE } from "@tokovo/core";
+import { createAppViewportFrame, DEFAULT_AUDIO_STATE } from "@tokovo/core";
 import { iMessageLayoutStrategies } from "../layout/index.js";
 import { createIMessageInitialState } from "../runtime/initial-state.js";
 import type { IMessageScreen } from "../types/state.js";
@@ -25,13 +25,16 @@ function computeLayoutFor(screen: IMessageScreen, viewKind: ViewKind) {
     viewKind,
     viewportWidth: 393,
     viewportHeight: 852,
-    safeAreaInsets: { top: 47, bottom: 34, left: 0, right: 0 },
+    appViewport: createAppViewportFrame({
+      width: 393,
+      height: 852,
+      contentInsets: { top: 47, bottom: 34 },
+    }),
     layoutCache: undefined,
   };
 
   const strat = iMessageLayoutStrategies.find((s) => s.viewKind === viewKind);
-  if (!strat)
-    throw new Error(`Missing imessage layout strategy for ${viewKind}`);
+  if (!strat) throw new Error(`Missing imessage layout strategy for ${viewKind}`);
   return strat.computeLayout(ctx) as any;
 }
 
@@ -45,22 +48,12 @@ function expectHasSubjects(layout: any, ids: string[]) {
 describe("iMessage semantic subjects (layout-driven)", () => {
   it("list includes expected subjects", () => {
     const layout = computeLayoutFor("list", "FEED");
-    expectHasSubjects(layout, [
-      "device",
-      "app",
-      "imessage_list_header",
-      "imessage_list",
-    ]);
+    expectHasSubjects(layout, ["device", "app", "imessage_list_header", "imessage_list"]);
   });
 
   it("chat includes expected subjects", () => {
     const layout = computeLayoutFor("chat", "CHAT");
-    expectHasSubjects(layout, [
-      "device",
-      "app",
-      "imessage_thread",
-      "imessage_composer",
-    ]);
+    expectHasSubjects(layout, ["device", "app", "imessage_thread", "imessage_composer"]);
   });
 
   it("info includes expected subjects", () => {

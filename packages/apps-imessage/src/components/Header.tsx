@@ -1,22 +1,19 @@
 /**
  * iMessage Header Component
- * 
+ *
  * iOS 17 style navigation header with frosted glass effect
  */
 import React from "react";
 import { Img } from "remotion";
 import { useIMessageTheme } from "../ui/ThemeContext.js";
 import { iMessageSpacing, iMessageTypography } from "../config/tokens.js";
-import type { IMessageTheme } from "../config/imessage-theme.js";
 
 interface HeaderProps {
   name: string;
   avatar?: string;
   isGroup?: boolean;
   participantCount?: number;
-  /** For backward compatibility - prefer using inside ThemeContext */
-  theme?: IMessageTheme;
-  safeAreaTop?: number;
+  contentInsetTop: number;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -24,15 +21,12 @@ export const Header: React.FC<HeaderProps> = ({
   avatar,
   isGroup = false,
   participantCount,
-  theme: propTheme,
-  safeAreaTop,
+  contentInsetTop,
 }) => {
-  // Use hook theme if available, fall back to prop
-  const contextTheme = useIMessageTheme();
-  const theme = propTheme ?? contextTheme;
+  const theme = useIMessageTheme();
 
   const { colors } = theme;
-  const topInset = safeAreaTop ?? iMessageSpacing.safeAreaTop;
+  const topInset = contentInsetTop;
   const headerHeight = topInset + 44; // 44pt is iOS standard nav height
 
   return (
@@ -153,22 +147,13 @@ export const Header: React.FC<HeaderProps> = ({
               stroke="currentColor"
               strokeWidth="1.5"
             />
-            <path
-              d="M16 9.5 L21 7 V17 L16 14.5 Z"
-              fill="currentColor"
-            />
+            <path d="M16 9.5 L21 7 V17 L16 14.5 Z" fill="currentColor" />
           </svg>
         </IconButton>
         {/* Info */}
         <IconButton color={colors.header.icons}>
           <svg viewBox="0 0 24 24" width="18" height="18" fill="none">
-            <circle
-              cx="12"
-              cy="12"
-              r="9"
-              stroke="currentColor"
-              strokeWidth="1.5"
-            />
+            <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.5" />
             <line
               x1="12"
               y1="11"

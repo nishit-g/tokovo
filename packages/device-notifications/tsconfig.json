@@ -1,17 +1,16 @@
 {
-    "extends": "../../tsconfig.lib.json",
-    "compilerOptions": {
-        "outDir": "./dist",
-        "rootDir": "./src",
-        "declaration": true,
-        "declarationMap": true
-    },
-    "references": [{ "path": "../ir" }, { "path": "../react" }],
-    "include": [
-        "src/**/*"
-    ],
-    "exclude": [
-        "node_modules",
-        "dist"
-    ]
+  "extends": "../../tsconfig.lib.json",
+  "compilerOptions": {
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "declaration": true,
+    "declarationMap": true
+  },
+  "references": [
+    { "path": "../ir" },
+    { "path": "../react" },
+    { "path": "../visual-system" }
+  ],
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist"]
 }

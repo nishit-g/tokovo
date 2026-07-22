@@ -1,15 +1,14 @@
 import React from "react";
+import { materialToPaintStyle } from "@tokovo/visual-system";
 import type { InputProjection, InputReturnKey } from "../contract/index.js";
-import { resolveInputKeyboardRows } from "./input-layouts.js";
+import { resolveInputKeyboardLayout } from "./input-layouts.js";
 
 export interface InputKeyboardProps {
   projection: InputProjection;
   scale?: number;
 }
 
-const RETURN_LABELS: Partial<
-  Record<string, Partial<Record<InputReturnKey, string>>>
-> = {
+const RETURN_LABELS: Partial<Record<string, Partial<Record<InputReturnKey, string>>>> = {
   ar: {
     return: "رجوع",
     send: "إرسال",
@@ -59,6 +58,14 @@ const ENGLISH_RETURN_LABELS: Record<InputReturnKey, string> = {
   done: "Done",
   go: "Go",
   next: "Next",
+};
+
+const LOCALE_LABELS: Record<string, string> = {
+  ar: "العربية",
+  hi: "हिन्दी",
+  ja: "日本語",
+  ko: "한국어",
+  zh: "中文",
 };
 
 function normalizeKey(value: string): string {
@@ -114,6 +121,39 @@ function KeyboardGlyph({
   );
 }
 
+function ToolbarGlyph({ kind, size }: { kind: "undo" | "redo" | "settings"; size: number }) {
+  const common = {
+    width: size,
+    height: size,
+    viewBox: "0 0 24 24",
+    fill: "none",
+    stroke: "currentColor",
+    strokeWidth: 1.7,
+    strokeLinecap: "round" as const,
+    strokeLinejoin: "round" as const,
+    "aria-hidden": true,
+  };
+  if (kind === "settings") {
+    return (
+      <svg {...common}>
+        <circle cx="12" cy="12" r="3.1" />
+        <path d="M12 3.7v2.1m0 12.4v2.1M3.7 12h2.1m12.4 0h2.1M6.1 6.1l1.5 1.5m8.8 8.8 1.5 1.5m0-11.8-1.5 1.5m-8.8 8.8-1.5 1.5" />
+      </svg>
+    );
+  }
+  return (
+    <svg {...common}>
+      <path
+        d={
+          kind === "undo"
+            ? "M9 7 4.5 11.5 9 16M5 11.5h7.2c4 0 6.3 2.1 6.3 5.8"
+            : "m15 7 4.5 4.5L15 16m4-4.5h-7.2c-4 0-6.3 2.1-6.3 5.8"
+        }
+      />
+    </svg>
+  );
+}
+
 export const InputKeyboard: React.FC<InputKeyboardProps> = React.memo(
   ({ projection, scale = 1 }) => {
     if (!projection.surface.visible) return null;
@@ -122,10 +162,9 @@ export const InputKeyboard: React.FC<InputKeyboardProps> = React.memo(
     const { theme, presentation } = surface;
     const geometry = theme.geometry;
     const colors = theme.colors;
-    const rows = resolveInputKeyboardRows(projection);
-    const activeKey = surface.activeKey
-      ? normalizeKey(surface.activeKey)
-      : null;
+    const keyboardLayout = resolveInputKeyboardLayout(projection);
+    const rows = keyboardLayout.rows;
+    const activeKey = surface.activeKey ? normalizeKey(surface.activeKey) : null;
     const px = (value: number): number => value * scale;
     const height = px(geometry.height);
     const returnLabel =
@@ -188,7 +227,7 @@ export const InputKeyboard: React.FC<InputKeyboardProps> = React.memo(
             : label === spaceLabel
               ? theme.typography.specialKeyFontSize
               : variant === "key"
-                ? theme.typography.keyFontSize
+                ? theme.typography.keyFontSize * keyboardLayout.fontScale
                 : theme.typography.specialKeyFontSize,
         ),
         fontWeight: variant === "accent" ? 600 : 400,
@@ -239,6 +278,7 @@ export const InputKeyboard: React.FC<InputKeyboardProps> = React.memo(
         data-input-session={projection.sessionId}
         data-platform={surface.platform}
         data-appearance={surface.appearance}
+        data-layout-profile={keyboardLayout.id}
         style={{
           position: "absolute",
           zIndex: 1000,
@@ -251,10 +291,7 @@ export const InputKeyboard: React.FC<InputKeyboardProps> = React.memo(
           padding: `${px(geometry.topPadding)}px ${px(geometry.horizontalPadding)}px ${px(
             geometry.bottomPadding,
           )}px`,
-          background: colors.surface,
-          backdropFilter: "blur(22px)",
-          WebkitBackdropFilter: "blur(22px)",
-          borderTop: `${Math.max(1, px(0.35))}px solid ${colors.border}`,
+          ...materialToPaintStyle(theme.material, scale),
           transform: `translate3d(0, ${(1 - surface.progress) * height}px, 0)`,
           display: "flex",
           flexDirection: "column",
@@ -272,18 +309,12 @@ export const InputKeyboard: React.FC<InputKeyboardProps> = React.memo(
             display: "flex",
             alignItems: "center",
             background:
-              presentation.suggestionStyle === "strip"
-                ? colors.surfaceRaised
-                : "transparent",
-            borderRadius:
-              presentation.suggestionStyle === "strip"
-                ? px(geometry.keyRadius)
-                : 0,
+              presentation.suggestionStyle === "strip" ? colors.surfaceRaised : "transparent",
+            borderRadius: presentation.suggestionStyle === "strip" ? px(geometry.keyRadius) : 0,
           }}
         >
-          {(surface.suggestions.length > 0 ? surface.suggestions : ["", "", ""])
-            .slice(0, 3)
-            .map((suggestion, index) => (
+          {surface.candidateMode === "suggestions" ? (
+            surface.suggestions.slice(0, 3).map((suggestion, index) => (
               <React.Fragment key={`${suggestion}:${index}`}>
                 {index > 0 && presentation.suggestionStyle === "segmented" && (
                   <div
@@ -301,8 +332,7 @@ export const InputKeyboard: React.FC<InputKeyboardProps> = React.memo(
                     textAlign: "center",
                     color: colors.suggestionText,
                     fontSize: px(theme.typography.suggestionFontSize),
-                    fontWeight:
-                      surface.activeSuggestionIndex === index ? 650 : 400,
+                    fontWeight: surface.activeSuggestionIndex === index ? 650 : 400,
                     overflow: "hidden",
                     whiteSpace: "nowrap",
                     textOverflow: "ellipsis",
@@ -311,7 +341,37 @@ export const InputKeyboard: React.FC<InputKeyboardProps> = React.memo(
                   {suggestion}
                 </div>
               </React.Fragment>
-            ))}
+            ))
+          ) : (
+            <div
+              style={{
+                width: "100%",
+                height: "100%",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                paddingInline: px(10),
+                boxSizing: "border-box",
+                color: colors.suggestionText,
+              }}
+            >
+              <div
+                style={{
+                  fontSize: px(theme.typography.specialKeyFontSize),
+                  fontWeight: 550,
+                  opacity: 0.78,
+                  letterSpacing: px(0.1),
+                }}
+              >
+                {LOCALE_LABELS[locale.language] ?? locale.language.toUpperCase()}
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: px(18) }}>
+                <ToolbarGlyph kind="undo" size={px(18)} />
+                <ToolbarGlyph kind="redo" size={px(18)} />
+                <ToolbarGlyph kind="settings" size={px(18)} />
+              </div>
+            </div>
+          )}
         </div>
 
         {rows.map((row, rowIndex) => (
@@ -319,9 +379,8 @@ export const InputKeyboard: React.FC<InputKeyboardProps> = React.memo(
             key={rowIndex}
             style={{
               display: "flex",
-              gap: px(geometry.keyGap),
-              paddingInline:
-                rowIndex === 1 ? px(surface.platform === "ios" ? 14 : 7) : 0,
+              gap: px(geometry.keyGap * keyboardLayout.keyGapScale),
+              paddingInline: px(keyboardLayout.rowInsets[rowIndex] ?? 0),
             }}
           >
             {rowIndex === 2 && (
@@ -339,13 +398,7 @@ export const InputKeyboard: React.FC<InputKeyboardProps> = React.memo(
         ))}
 
         <div style={{ display: "flex", gap: px(geometry.keyGap) }}>
-          <div
-            style={keyStyle(
-              surface.layout === "letters" ? "123" : "ABC",
-              "special",
-              1.2,
-            )}
-          >
+          <div style={keyStyle(surface.layout === "letters" ? "123" : "ABC", "special", 1.2)}>
             {surface.layout === "letters" ? "123" : "ABC"}
           </div>
           <div style={keyStyle("language", "special", 0.85)}>

@@ -9,16 +9,16 @@ import {
 import { buildSemantic, createPx, rect } from "./shared.js";
 
 export function computeInstagramFeedLayout(ctx: LayoutContext): FeedLayoutState {
-  const { viewportWidth: w, viewportHeight: h, safeAreaInsets, world } = ctx;
-  const safeTop = safeAreaInsets?.top ?? 0;
-  const safeBottom = safeAreaInsets?.bottom ?? 0;
+  const { viewportWidth: w, viewportHeight: h, appViewport, world } = ctx;
+  const contentTop = appViewport.contentInsets.top;
+  const contentBottom = appViewport.contentInsets.bottom;
   const px = createPx(w);
   const state = (world.appState?.app_instagram ?? {}) as Partial<InstagramState>;
   const screen = state.currentScreen ?? "home";
-  const headerH = safeTop + px(instagramSpacing.headerHeight);
+  const headerH = contentTop + px(instagramSpacing.headerHeight);
   const navH = px(instagramSpacing.tabBarHeight);
   const hasBottomNav = screen === "home" || screen === "notifications" || screen === "profile";
-  const navY = hasBottomNav ? h - safeBottom - navH : h - safeBottom;
+  const navY = hasBottomNav ? h - contentBottom - navH : h - contentBottom;
   const screenPad = px(instagramSpacing.screenPadding);
   const feedY = headerH;
   const feedH = Math.max(0, navY - feedY);
@@ -102,7 +102,12 @@ export function computeInstagramFeedLayout(ctx: LayoutContext): FeedLayoutState 
           };
           regions.feed_post_focus_comments = {
             id: "feed_post_focus_comments",
-            rect: rect(screenPad, postY + px(56) + mediaHeight + px(52), w - screenPad * 2, px(108)),
+            rect: rect(
+              screenPad,
+              postY + px(56) + mediaHeight + px(52),
+              w - screenPad * 2,
+              px(108),
+            ),
             tags: ["feed", "post", "comments", "focus"],
             metadata: { postId: post.id },
           };
@@ -125,7 +130,12 @@ export function computeInstagramFeedLayout(ctx: LayoutContext): FeedLayoutState 
       };
       regions.feed_post_0_actions = {
         id: "feed_post_0_actions",
-        rect: rect(screenPad, headerH + storyH + px(56) + px(484) + px(10), w - screenPad * 2, px(30)),
+        rect: rect(
+          screenPad,
+          headerH + storyH + px(56) + px(484) + px(10),
+          w - screenPad * 2,
+          px(30),
+        ),
         tags: ["feed", "post", "actions"],
       };
       regions.feed_post_focus = regions.feed_post_0;
@@ -134,8 +144,19 @@ export function computeInstagramFeedLayout(ctx: LayoutContext): FeedLayoutState 
     return {
       kind: "FEED",
       scrollY,
-      contentHeight: Math.max(h, storyH + posts.reduce((sum, post) => sum + estimateInstagramPostHeight(post, commentCounts.get(post.id) ?? 0, w), 0)),
-      isAtBottom: activePostId !== null && activePostId !== undefined && posts[posts.length - 1]?.id === activePostId,
+      contentHeight: Math.max(
+        h,
+        storyH +
+          posts.reduce(
+            (sum, post) =>
+              sum + estimateInstagramPostHeight(post, commentCounts.get(post.id) ?? 0, w),
+            0,
+          ),
+      ),
+      isAtBottom:
+        activePostId !== null &&
+        activePostId !== undefined &&
+        posts[posts.length - 1]?.id === activePostId,
       itemLayouts: {},
       meta: {},
       semantic: buildSemantic(regions),

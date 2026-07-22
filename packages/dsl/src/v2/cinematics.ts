@@ -73,11 +73,7 @@ export const cameraSubject = {
       subjectId: requireIdentifier(subjectId, "Subject id"),
     };
   },
-  semantic(
-    deviceId: string,
-    appId: string,
-    subjectId: string,
-  ): CinematicSubjectRefIR {
+  semantic(deviceId: string, appId: string, subjectId: string): CinematicSubjectRefIR {
     return {
       kind: "semantic",
       deviceId: requireIdentifier(deviceId, "Device id"),
@@ -138,7 +134,8 @@ export interface CameraOutputOptions {
   viewport: CameraOutputIR["viewport"];
   defaultRigId: string;
   coveragePolicy?: CameraOutputIR["coveragePolicy"];
-  safeAreaInsets?: CameraOutputIR["safeAreaInsets"];
+  compositionProfileId: CameraOutputIR["compositionProfileId"];
+  editorialInsets?: CameraOutputIR["editorialInsets"];
   sourceStageNodeId?: string;
   zIndex?: number;
   clipRadiusPx?: number;
@@ -184,11 +181,7 @@ function stageProgram(input: CinematicProgramOptions["stage"]): StageProgramIR {
   if ("version" in input) {
     const parsed = StageProgramSchema.safeParse(input);
     if (!parsed.success) {
-      invalidContract(
-        "CINEMATIC_STAGE_INVALID",
-        "StageProgram",
-        parsed.error.issues,
-      );
+      invalidContract("CINEMATIC_STAGE_INVALID", "StageProgram", parsed.error.issues);
     }
     return parsed.data;
   }
@@ -249,11 +242,7 @@ function stageProgram(input: CinematicProgramOptions["stage"]): StageProgramIR {
     transformKeyframes: [],
   });
   if (!parsed.success) {
-    invalidContract(
-      "CINEMATIC_STAGE_INVALID",
-      "Generated StageProgram",
-      parsed.error.issues,
-    );
+    invalidContract("CINEMATIC_STAGE_INVALID", "Generated StageProgram", parsed.error.issues);
   }
   return parsed.data;
 }
@@ -325,10 +314,7 @@ export class CinematicShotBuilder {
     return this;
   }
 
-  guard(
-    subject: CinematicSubjectRefIR,
-    options: Omit<CameraFramingGuardIR, "subject"> = {},
-  ): this {
+  guard(subject: CinematicSubjectRefIR, options: Omit<CameraFramingGuardIR, "subject"> = {}): this {
     this.#framingGuard = { subject, ...options };
     return this;
   }
@@ -416,10 +402,7 @@ export class CinematicShotBuilder {
     const amount = options.amount ?? 0.08;
     this.#composer = {
       ...this.#composer,
-      screenPosition: [
-        this.#composer.screenPosition[0] + amount,
-        this.#composer.screenPosition[1],
-      ],
+      screenPosition: [this.#composer.screenPosition[0] + amount, this.#composer.screenPosition[1]],
     };
     this.#motion = movement(this.#fps, "truck-left", { ...options, amount });
     return this;
@@ -429,10 +412,7 @@ export class CinematicShotBuilder {
     const amount = options.amount ?? 0.08;
     this.#composer = {
       ...this.#composer,
-      screenPosition: [
-        this.#composer.screenPosition[0] - amount,
-        this.#composer.screenPosition[1],
-      ],
+      screenPosition: [this.#composer.screenPosition[0] - amount, this.#composer.screenPosition[1]],
     };
     this.#motion = movement(this.#fps, "truck-right", { ...options, amount });
     return this;
@@ -442,10 +422,7 @@ export class CinematicShotBuilder {
     const amount = options.amount ?? 0.08;
     this.#composer = {
       ...this.#composer,
-      screenPosition: [
-        this.#composer.screenPosition[0],
-        this.#composer.screenPosition[1] + amount,
-      ],
+      screenPosition: [this.#composer.screenPosition[0], this.#composer.screenPosition[1] + amount],
     };
     this.#motion = movement(this.#fps, "pedestal-up", { ...options, amount });
     return this;
@@ -455,10 +432,7 @@ export class CinematicShotBuilder {
     const amount = options.amount ?? 0.08;
     this.#composer = {
       ...this.#composer,
-      screenPosition: [
-        this.#composer.screenPosition[0],
-        this.#composer.screenPosition[1] - amount,
-      ],
+      screenPosition: [this.#composer.screenPosition[0], this.#composer.screenPosition[1] - amount],
     };
     this.#motion = movement(this.#fps, "pedestal-down", { ...options, amount });
     return this;
@@ -468,10 +442,7 @@ export class CinematicShotBuilder {
     const amount = (options.amount ?? 0.08) * 0.55;
     this.#composer = {
       ...this.#composer,
-      screenPosition: [
-        this.#composer.screenPosition[0] + amount,
-        this.#composer.screenPosition[1],
-      ],
+      screenPosition: [this.#composer.screenPosition[0] + amount, this.#composer.screenPosition[1]],
     };
     this.#motion = movement(this.#fps, "pan-left", { ...options, amount });
     return this;
@@ -481,10 +452,7 @@ export class CinematicShotBuilder {
     const amount = (options.amount ?? 0.08) * 0.55;
     this.#composer = {
       ...this.#composer,
-      screenPosition: [
-        this.#composer.screenPosition[0] - amount,
-        this.#composer.screenPosition[1],
-      ],
+      screenPosition: [this.#composer.screenPosition[0] - amount, this.#composer.screenPosition[1]],
     };
     this.#motion = movement(this.#fps, "pan-right", { ...options, amount });
     return this;
@@ -494,10 +462,7 @@ export class CinematicShotBuilder {
     const amount = (options.amount ?? 0.08) * 0.55;
     this.#composer = {
       ...this.#composer,
-      screenPosition: [
-        this.#composer.screenPosition[0],
-        this.#composer.screenPosition[1] + amount,
-      ],
+      screenPosition: [this.#composer.screenPosition[0], this.#composer.screenPosition[1] + amount],
     };
     this.#motion = movement(this.#fps, "tilt-up", { ...options, amount });
     return this;
@@ -507,10 +472,7 @@ export class CinematicShotBuilder {
     const amount = (options.amount ?? 0.08) * 0.55;
     this.#composer = {
       ...this.#composer,
-      screenPosition: [
-        this.#composer.screenPosition[0],
-        this.#composer.screenPosition[1] - amount,
-      ],
+      screenPosition: [this.#composer.screenPosition[0], this.#composer.screenPosition[1] - amount],
     };
     this.#motion = movement(this.#fps, "tilt-down", { ...options, amount });
     return this;
@@ -557,11 +519,7 @@ export class CinematicShotBuilder {
     return this;
   }
 
-  build(input: {
-    startFrame: number;
-    endFrame: number;
-    declarationOrder: number;
-  }): {
+  build(input: { startFrame: number; endFrame: number; declarationOrder: number }): {
     rig: CameraRigIR;
     shot: CameraShotIR;
   } {
@@ -589,9 +547,7 @@ export class CinematicShotBuilder {
         subject: this.#subject,
         composer: this.#composer,
         ...(this.#framingGuard ? { framingGuard: this.#framingGuard } : {}),
-        ...(this.#rotationDeg !== undefined
-          ? { rotationDeg: this.#rotationDeg }
-          : {}),
+        ...(this.#rotationDeg !== undefined ? { rotationDeg: this.#rotationDeg } : {}),
         ...(this.#opacity !== undefined ? { opacity: this.#opacity } : {}),
         ...(this.#lensId ? { lensId: this.#lensId } : {}),
         ...(this.#modifierIds.length ? { modifierIds: this.#modifierIds } : {}),
@@ -652,25 +608,17 @@ export class CinematicPlanBuilder {
       viewport: options.viewport,
       sourceStageNodeId: options.sourceStageNodeId ?? "stage.root",
       zIndex: options.zIndex ?? 0,
-      ...(options.clipRadiusPx !== undefined
-        ? { clipRadiusPx: options.clipRadiusPx }
-        : {}),
+      ...(options.clipRadiusPx !== undefined ? { clipRadiusPx: options.clipRadiusPx } : {}),
       ...(options.shadow ? { shadow: options.shadow } : {}),
       coveragePolicy: options.coveragePolicy ?? "allow-default",
-      ...(options.safeAreaInsets
-        ? { safeAreaInsets: options.safeAreaInsets }
-        : {}),
+      compositionProfileId: options.compositionProfileId,
+      ...(options.editorialInsets ? { editorialInsets: options.editorialInsets } : {}),
       defaultRigId: options.defaultRigId,
     });
     return this;
   }
 
-  lens(
-    id: string,
-    modelId: string,
-    parameters: JsonObject,
-    modelVersion = 1,
-  ): this {
+  lens(id: string, modelId: string, parameters: JsonObject, modelVersion = 1): this {
     this.registerLens({ id, modelId, modelVersion, parameters });
     return this;
   }
@@ -680,23 +628,13 @@ export class CinematicPlanBuilder {
     this.#lenses.push(lens);
   }
 
-  modifier(
-    id: string,
-    modelId: string,
-    parameters: JsonObject,
-    modelVersion = 1,
-  ): this {
+  modifier(id: string, modelId: string, parameters: JsonObject, modelVersion = 1): this {
     claimIdentifier("camera modifier", id, this.#modifierIds);
     this.#modifiers.push({ id, modelId, modelVersion, parameters });
     return this;
   }
 
-  filter(
-    id: string,
-    modelId: string,
-    parameters: JsonObject,
-    modelVersion = 1,
-  ): this {
+  filter(id: string, modelId: string, parameters: JsonObject, modelVersion = 1): this {
     claimIdentifier("camera filter", id, this.#filterIds);
     this.#filters.push({ id, modelId, modelVersion, parameters });
     return this;
@@ -734,10 +672,7 @@ export class CinematicPlanBuilder {
       fps: this.#fps,
       id,
       outputId,
-      defaultDurationFrames: Math.min(
-        endFrame - startFrame,
-        Math.round(this.#fps * 0.5),
-      ),
+      defaultDurationFrames: Math.min(endFrame - startFrame, Math.round(this.#fps * 0.5)),
       registerLens: (lens) => this.registerLens(lens),
     });
     configure(builder);
@@ -848,10 +783,7 @@ export class CinematicProgramBuilder {
     }
     this.#fps = options.fps;
     this.#durationInFrames = parseTimeToFrames(options.duration, options.fps);
-    if (
-      !Number.isInteger(this.#durationInFrames) ||
-      this.#durationInFrames <= 0
-    ) {
+    if (!Number.isInteger(this.#durationInFrames) || this.#durationInFrames <= 0) {
       throw new CinematicAuthoringError(
         "CINEMATIC_DURATION_INVALID",
         "Cinematic duration must resolve to a positive frame count.",
@@ -866,11 +798,7 @@ export class CinematicProgramBuilder {
     options: { default?: boolean } = {},
   ): this {
     claimIdentifier("CameraPlan", id, this.#planIds);
-    const builder = new CinematicPlanBuilder(
-      id,
-      this.#fps,
-      this.#durationInFrames,
-    );
+    const builder = new CinematicPlanBuilder(id, this.#fps, this.#durationInFrames);
     configure(builder);
     this.#plans.push(builder.build());
     if (options.default || !this.#defaultPlanId) this.#defaultPlanId = id;
@@ -889,10 +817,7 @@ export class CinematicProgramBuilder {
         "Cinematics requires at least one camera plan.",
       );
     }
-    if (
-      !this.#defaultPlanId ||
-      !this.#plans.some((plan) => plan.id === this.#defaultPlanId)
-    ) {
+    if (!this.#defaultPlanId || !this.#plans.some((plan) => plan.id === this.#defaultPlanId)) {
       throw new CinematicAuthoringError(
         "CINEMATIC_DEFAULT_PLAN_MISSING",
         `Default camera plan "${this.#defaultPlanId ?? ""}" is not declared.`,

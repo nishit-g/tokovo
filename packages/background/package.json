@@ -23,7 +23,8 @@
   },
   "dependencies": {
     "@remotion/media": "4.0.409",
-    "@tokovo/core": "workspace:*"
+    "@tokovo/core": "workspace:*",
+    "@tokovo/visual-system": "workspace:*"
   },
   "peerDependencies": {
     "react": "18.3.1",

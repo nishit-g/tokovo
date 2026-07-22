@@ -21,6 +21,7 @@ describe("Camera VNext IR", () => {
           sourceStageNodeId: "stage.root",
           zIndex: 0,
           coveragePolicy: "allow-default",
+          compositionProfileId: "hero-device",
           defaultRigId: "wide",
         },
       ],
@@ -65,15 +66,11 @@ describe("Camera VNext IR", () => {
     expect(JSON.parse(JSON.stringify(stage))).toEqual(stage);
     expect(CameraPlanSchema.parse(plan)).toEqual(plan);
     expect(StageProgramSchema.parse(stage)).toEqual(stage);
-    expect(CinematicSubjectRefSchema.parse(plan.rigs[0].subject)).toEqual(
-      plan.rigs[0].subject,
-    );
+    expect(CinematicSubjectRefSchema.parse(plan.rigs[0].subject)).toEqual(plan.rigs[0].subject);
   });
 
   it("rejects non-JSON lens data and empty subject groups", () => {
-    expect(() =>
-      CinematicSubjectRefSchema.parse({ kind: "group", members: [] }),
-    ).toThrow();
+    expect(() => CinematicSubjectRefSchema.parse({ kind: "group", members: [] })).toThrow();
 
     const base = CameraPlanSchema.parse({
       version: 1,
@@ -87,6 +84,7 @@ describe("Camera VNext IR", () => {
           sourceStageNodeId: "stage.root",
           zIndex: 0,
           coveragePolicy: "allow-default",
+          compositionProfileId: "hero-device",
           defaultRigId: "wide",
         },
       ],

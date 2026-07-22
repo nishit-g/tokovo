@@ -9,12 +9,9 @@ import type {
   CinematicSubjectRefIR,
 } from "@tokovo/ir";
 import { CameraPlanSchema } from "@tokovo/ir";
+import { requireEditorialCompositionProfile } from "@tokovo/visual-system";
 import type { CameraRegistries } from "./lenses.js";
-import type {
-  CameraDiagnostic,
-  CameraShotSegment,
-  PreparedCameraProgram,
-} from "./types.js";
+import type { CameraDiagnostic, CameraShotSegment, PreparedCameraProgram } from "./types.js";
 import { cinematicSubjectKey } from "./subjects.js";
 
 export class CameraPreparationError extends Error {
@@ -53,11 +50,7 @@ function hashString(value: string): string {
 }
 
 function isJsonSafe(value: unknown, seen = new Set<object>()): boolean {
-  if (
-    value === null ||
-    typeof value === "string" ||
-    typeof value === "boolean"
-  ) {
+  if (value === null || typeof value === "string" || typeof value === "boolean") {
     return true;
   }
   if (typeof value === "number") return Number.isFinite(value);
@@ -71,9 +64,7 @@ function isJsonSafe(value: unknown, seen = new Set<object>()): boolean {
   return safe;
 }
 
-function duplicateIds<T extends { id: string }>(
-  items: readonly T[],
-): readonly string[] {
+function duplicateIds<T extends { id: string }>(items: readonly T[]): readonly string[] {
   const seen = new Set<string>();
   const duplicates = new Set<string>();
   for (const item of items) {
@@ -102,10 +93,7 @@ function outputCoverageGaps(
         shot.endFrame <= plan.durationInFrames,
     )
     .map((shot) => ({ startFrame: shot.startFrame, endFrame: shot.endFrame }))
-    .sort(
-      (left, right) =>
-        left.startFrame - right.startFrame || left.endFrame - right.endFrame,
-    );
+    .sort((left, right) => left.startFrame - right.startFrame || left.endFrame - right.endFrame);
   const gaps: { startFrame: number; endFrame: number }[] = [];
   let cursor = 0;
   for (const interval of intervals) {
@@ -168,13 +156,11 @@ function validateFilter(
       ),
     ];
   }
-  return model
-    .validate(filter.parameters)
-    .map((message) =>
-      diagnostic(planId, "CAM_FILTER_PARAMETERS_INVALID", message, {
-        filterId: filter.id,
-      }),
-    );
+  return model.validate(filter.parameters).map((message) =>
+    diagnostic(planId, "CAM_FILTER_PARAMETERS_INVALID", message, {
+      filterId: filter.id,
+    }),
+  );
 }
 
 function validateSubjectGroups(
@@ -239,9 +225,7 @@ function sortPlan(plan: CameraPlanIR): CameraPlanIR {
 function indexById<T extends { id: string }>(
   items: readonly T[],
 ): Readonly<Record<string, number>> {
-  return Object.fromEntries(
-    items.map((item, index) => [item.id, index] as const),
-  );
+  return Object.fromEntries(items.map((item, index) => [item.id, index] as const));
 }
 
 function getIndexedDefinition<T>(
@@ -282,18 +266,14 @@ function buildShotSegments(
       boundaries.add(shot.endFrame);
     }
 
-    const orderedBoundaries = [...boundaries].sort(
-      (left, right) => left - right,
-    );
+    const orderedBoundaries = [...boundaries].sort((left, right) => left - right);
     const active = new Set<number>();
     const segments: CameraShotSegment[] = [];
     for (let index = 0; index < orderedBoundaries.length - 1; index += 1) {
       const startFrame = orderedBoundaries[index];
       const endFrame = orderedBoundaries[index + 1];
-      for (const shotIndex of ends.get(startFrame) ?? [])
-        active.delete(shotIndex);
-      for (const shotIndex of starts.get(startFrame) ?? [])
-        active.add(shotIndex);
+      for (const shotIndex of ends.get(startFrame) ?? []) active.delete(shotIndex);
+      for (const shotIndex of starts.get(startFrame) ?? []) active.add(shotIndex);
       segments.push({
         startFrame,
         endFrame,
@@ -347,11 +327,7 @@ export function prepareCameraPlan(
   }
   if (!Number.isFinite(plan.fps) || plan.fps <= 0) {
     diagnostics.push(
-      diagnostic(
-        plan.id,
-        "CAM_PLAN_FPS_INVALID",
-        "CameraPlan fps must be positive.",
-      ),
+      diagnostic(plan.id, "CAM_PLAN_FPS_INVALID", "CameraPlan fps must be positive."),
     );
   }
   if (!Number.isInteger(plan.durationInFrames) || plan.durationInFrames <= 0) {
@@ -364,9 +340,7 @@ export function prepareCameraPlan(
     );
   }
 
-  const categories: ReadonlyArray<
-    readonly [string, readonly { id: string }[]]
-  > = [
+  const categories: ReadonlyArray<readonly [string, readonly { id: string }[]]> = [
     ["output", plan.outputs],
     ["rig", plan.rigs],
     ["shot", plan.shots],
@@ -377,11 +351,7 @@ export function prepareCameraPlan(
   for (const [category, items] of categories) {
     for (const id of duplicateIds(items)) {
       diagnostics.push(
-        diagnostic(
-          plan.id,
-          "CAM_ID_DUPLICATE",
-          `Duplicate ${category} id "${id}".`,
-        ),
+        diagnostic(plan.id, "CAM_ID_DUPLICATE", `Duplicate ${category} id "${id}".`),
       );
     }
   }
@@ -418,8 +388,7 @@ export function prepareCameraPlan(
     }
     if (
       output.clipRadiusPx !== undefined &&
-      output.clipRadiusPx >
-        Math.min(output.viewport.width, output.viewport.height) / 2
+      output.clipRadiusPx > Math.min(output.viewport.width, output.viewport.height) / 2
     ) {
       diagnostics.push(
         diagnostic(
@@ -430,7 +399,9 @@ export function prepareCameraPlan(
         ),
       );
     }
-    const insets = output.safeAreaInsets;
+    const insets =
+      output.editorialInsets ??
+      requireEditorialCompositionProfile(output.compositionProfileId).editorialInsets;
     if (
       insets &&
       (insets.left + insets.right >= output.viewport.width ||
@@ -439,8 +410,8 @@ export function prepareCameraPlan(
       diagnostics.push(
         diagnostic(
           plan.id,
-          "CAM_OUTPUT_SAFE_AREA_INVALID",
-          `Output "${output.id}" safe-area insets leave no usable viewport.`,
+          "CAM_OUTPUT_EDITORIAL_INSETS_INVALID",
+          `Output "${output.id}" editorial insets leave no usable viewport.`,
           { outputId: output.id },
         ),
       );
@@ -448,9 +419,7 @@ export function prepareCameraPlan(
   }
 
   for (const rig of plan.rigs) {
-    diagnostics.push(
-      ...validateSubjectGroups(plan.id, rig.subject, { rigId: rig.id }),
-    );
+    diagnostics.push(...validateSubjectGroups(plan.id, rig.subject, { rigId: rig.id }));
     if (rig.framingGuard) {
       diagnostics.push(
         ...validateSubjectGroups(plan.id, rig.framingGuard.subject, {
@@ -555,10 +524,7 @@ export function prepareCameraPlan(
   }
 
   for (const modifier of plan.modifiers) {
-    const model = registries.modifiers.get(
-      modifier.modelId,
-      modifier.modelVersion,
-    );
+    const model = registries.modifiers.get(modifier.modelId, modifier.modelVersion);
     if (!model) {
       diagnostics.push(
         diagnostic(
@@ -655,11 +621,7 @@ export function prepareCameraPlan(
   for (const output of plan.outputs) {
     const shots = plan.shots.filter((shot) => shot.outputId === output.id);
     for (let leftIndex = 0; leftIndex < shots.length; leftIndex += 1) {
-      for (
-        let rightIndex = leftIndex + 1;
-        rightIndex < shots.length;
-        rightIndex += 1
-      ) {
+      for (let rightIndex = leftIndex + 1; rightIndex < shots.length; rightIndex += 1) {
         const left = shots[leftIndex];
         const right = shots[rightIndex];
         if (left.priority === right.priority && intervalsOverlap(left, right)) {
@@ -712,43 +674,28 @@ export function prepareCameraPlan(
       ...plan.outputs.map((output) => output.defaultRigId),
       ...plan.shots.map((shot) => shot.rigId),
     ]);
-    const reachableRigs = plan.rigs.filter((rig) =>
-      reachableRigIds.has(rig.id),
-    );
+    const reachableRigs = plan.rigs.filter((rig) => reachableRigIds.has(rig.id));
     if (reachableRigs.some((rig) => rig.motion?.type === "whip")) {
       return "texture";
     }
     const reachableLensIds = new Set(
       reachableRigs.flatMap((rig) => (rig.lensId ? [rig.lensId] : [])),
     );
-    for (const lens of plan.lenses.filter((entry) =>
-      reachableLensIds.has(entry.id),
-    )) {
+    for (const lens of plan.lenses.filter((entry) => reachableLensIds.has(entry.id))) {
       const model = registries.lenses.get(lens.modelId, lens.modelVersion);
       if (model?.projectionBackendRequirement === "texture") {
         return "texture";
       }
     }
-    const reachableModifierIds = new Set(
-      reachableRigs.flatMap((rig) => rig.modifierIds ?? []),
-    );
-    for (const modifier of plan.modifiers.filter((entry) =>
-      reachableModifierIds.has(entry.id),
-    )) {
-      const model = registries.modifiers.get(
-        modifier.modelId,
-        modifier.modelVersion,
-      );
+    const reachableModifierIds = new Set(reachableRigs.flatMap((rig) => rig.modifierIds ?? []));
+    for (const modifier of plan.modifiers.filter((entry) => reachableModifierIds.has(entry.id))) {
+      const model = registries.modifiers.get(modifier.modelId, modifier.modelVersion);
       if (model?.projectionBackendRequirement === "texture") {
         return "texture";
       }
     }
-    const reachableFilterIds = new Set(
-      reachableRigs.flatMap((rig) => rig.filterIds ?? []),
-    );
-    for (const filter of plan.filters.filter((entry) =>
-      reachableFilterIds.has(entry.id),
-    )) {
+    const reachableFilterIds = new Set(reachableRigs.flatMap((rig) => rig.filterIds ?? []));
+    for (const filter of plan.filters.filter((entry) => reachableFilterIds.has(entry.id))) {
       const model = registries.filters.get(filter.modelId, filter.modelVersion);
       if (model?.projectionBackendRequirement === "texture") {
         return "texture";
@@ -773,10 +720,7 @@ export function prepareCameraPlan(
   };
 }
 
-export function getRigById(
-  program: PreparedCameraProgram,
-  rigId: string,
-): CameraRigIR | undefined {
+export function getRigById(program: PreparedCameraProgram, rigId: string): CameraRigIR | undefined {
   return getIndexedDefinition(program.plan.rigs, program.rigIndexById, rigId);
 }
 
@@ -784,42 +728,26 @@ export function getOutputById(
   program: PreparedCameraProgram,
   outputId: string,
 ): CameraOutputIR | undefined {
-  return getIndexedDefinition(
-    program.plan.outputs,
-    program.outputIndexById,
-    outputId,
-  );
+  return getIndexedDefinition(program.plan.outputs, program.outputIndexById, outputId);
 }
 
 export function getLensById(
   program: PreparedCameraProgram,
   lensId: string,
 ): CameraLensIR | undefined {
-  return getIndexedDefinition(
-    program.plan.lenses,
-    program.lensIndexById,
-    lensId,
-  );
+  return getIndexedDefinition(program.plan.lenses, program.lensIndexById, lensId);
 }
 
 export function getModifierById(
   program: PreparedCameraProgram,
   modifierId: string,
 ): CameraModifierIR | undefined {
-  return getIndexedDefinition(
-    program.plan.modifiers,
-    program.modifierIndexById,
-    modifierId,
-  );
+  return getIndexedDefinition(program.plan.modifiers, program.modifierIndexById, modifierId);
 }
 
 export function getFilterById(
   program: PreparedCameraProgram,
   filterId: string,
 ): CameraFilterIR | undefined {
-  return getIndexedDefinition(
-    program.plan.filters,
-    program.filterIndexById,
-    filterId,
-  );
+  return getIndexedDefinition(program.plan.filters, program.filterIndexById, filterId);
 }

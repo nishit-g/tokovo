@@ -1,10 +1,10 @@
 import React from "react";
-import { useSafeAreaInsets } from "@tokovo/react";
+import { useAppViewport } from "@tokovo/react";
 import { useLinkedInTheme } from "./ThemeContext.js";
 
 export const LinkedInAppShell: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const theme = useLinkedInTheme();
-  const safeArea = useSafeAreaInsets();
+  const { contentInsets } = useAppViewport();
 
   return (
     <div
@@ -17,8 +17,8 @@ export const LinkedInAppShell: React.FC<{ children: React.ReactNode }> = ({ chil
             : `linear-gradient(180deg, ${theme.colors.background} 0%, ${theme.colors.background} 72%, ${theme.colors.surface} 100%)`,
         color: theme.colors.textPrimary,
         fontFamily: theme.typography.fontFamily,
-        paddingTop: safeArea.top,
-        paddingBottom: safeArea.bottom,
+        paddingTop: contentInsets.top,
+        paddingBottom: contentInsets.bottom,
         boxSizing: "border-box",
         display: "flex",
         flexDirection: "column",

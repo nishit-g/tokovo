@@ -17,7 +17,6 @@ import {
   WorldState,
   SoundCue,
   MusicBed,
-  DEFAULT_BUS_CONFIG,
   computeBusStates,
   BusState,
   computeCrossfade,
@@ -68,25 +67,23 @@ export function useAudioEngine(input: AudioEngineInput): AudioEngineOutput {
       return NULL_AUDIO_OUTPUT;
     }
 
-    // 2. Ensure buses exist (backward compatibility)
-    const audio = rawAudio.buses
-      ? rawAudio
-      : { ...rawAudio, buses: DEFAULT_BUS_CONFIG };
+    if (!rawAudio.buses) {
+      throw new Error("AUDIO_BUS_CONFIG_MISSING: prepared audio state requires buses.");
+    }
+    const audio = rawAudio;
 
     // 3. Compute bus states (with ducking)
     const busStates = computeBusStates(audio, t);
 
     // 4. Filter sounds by device
-    const activeSounds = Object.entries(audio.activeSounds || {}).filter(
-      ([_, sound]) => {
-        // Global sounds (no deviceId) always play
-        if (!sound.deviceId) return true;
-        // If no focusDeviceId specified, play all sounds
-        if (!focusDeviceId) return true;
-        // Only play if device matches
-        return sound.deviceId === focusDeviceId;
-      },
-    );
+    const activeSounds = Object.entries(audio.activeSounds || {}).filter(([_, sound]) => {
+      // Global sounds (no deviceId) always play
+      if (!sound.deviceId) return true;
+      // If no focusDeviceId specified, play all sounds
+      if (!focusDeviceId) return true;
+      // Only play if device matches
+      return sound.deviceId === focusDeviceId;
+    });
 
     // 5. Music crossfade
     const musicBed = audio.musicBed || null;

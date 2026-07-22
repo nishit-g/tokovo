@@ -17,11 +17,7 @@ import {
   type MessageType,
   type GapContext,
 } from "../config/index.js";
-import type {
-  WhatsAppMessage,
-  WhatsAppConversation,
-  WhatsAppState,
-} from "../types/index.js";
+import type { WhatsAppMessage, WhatsAppConversation, WhatsAppState } from "../types/index.js";
 import { computeConversationLayout, getLayoutCache } from "./cache.js";
 import { projectWhatsAppThread } from "../thread/projector.js";
 import { createWhatsAppThreadWindow } from "../thread/window.js";
@@ -55,15 +51,9 @@ export function computeChatLayout(
   // Physical-pixel scaling happens above the app surface in the renderer.
   const px = (value: number) => value;
 
-  const appState = (getAppStateForDevice(
-    world,
-    "app_whatsapp",
-    ctx.activeDeviceId,
-  ) || {}) as Partial<WhatsAppState>;
-  const conversations = (appState.conversations || {}) as Record<
-    string,
-    WhatsAppConversation
-  >;
+  const appState = (getAppStateForDevice(world, "app_whatsapp", ctx.activeDeviceId) ||
+    {}) as Partial<WhatsAppState>;
+  const conversations = (appState.conversations || {}) as Record<string, WhatsAppConversation>;
 
   if (!activeConversationId || !conversations[activeConversationId]) {
     return {
@@ -94,9 +84,7 @@ export function computeChatLayout(
     focusMessageId: viewportFocusMessageId,
   });
   const allMessages = threadWindow.blocks.flatMap((block) =>
-    block.kind === "system"
-      ? [block.message]
-      : block.items.map((item) => item.message),
+    block.kind === "system" ? [block.message] : block.items.map((item) => item.message),
   );
   const projectedConversation: WhatsAppConversation = {
     ...conversation,
@@ -122,11 +110,11 @@ export function computeChatLayout(
     reactions: [],
   };
 
-  const safeAreaTop = ctx.safeAreaInsets?.top ?? 0;
-  const safeAreaBottom = ctx.safeAreaInsets?.bottom ?? 0;
+  const contentTop = ctx.appViewport.contentInsets.top;
+  const contentBottom = ctx.appViewport.contentInsets.bottom;
   const chromeGeometry = getChatChromeGeometry({
-    top: safeAreaTop,
-    bottom: safeAreaBottom,
+    top: contentTop,
+    bottom: contentBottom,
   });
 
   let lastMessageId: string | undefined;
@@ -148,10 +136,7 @@ export function computeChatLayout(
     let translateX = 0;
     const translateY = 0;
 
-    if (
-      timeSinceAppear >= 0 &&
-      timeSinceAppear < config.animation.messageAppearDuration
-    ) {
+    if (timeSinceAppear >= 0 && timeSinceAppear < config.animation.messageAppearDuration) {
       const progress = timeSinceAppear / config.animation.messageAppearDuration;
       const ease = applyEasing(progress, "easeOut");
       opacity = ease;
@@ -176,11 +161,7 @@ export function computeChatLayout(
     semanticRegions[subjectId] = {
       id: subjectId,
       rect,
-      tags: [
-        "message",
-        msg.from === "me" ? "message_me" : "message_other",
-        msgType,
-      ],
+      tags: ["message", msg.from === "me" ? "message_me" : "message_other", msgType],
       metadata: {
         from: msg.from,
         type: msgType,
@@ -225,9 +206,7 @@ export function computeChatLayout(
 
     if (isMediaSemanticType) {
       const mediaHeightRatio =
-        rawMessageType === "voice" ||
-        rawMessageType === "document" ||
-        rawMessageType === "contact"
+        rawMessageType === "voice" || rawMessageType === "document" || rawMessageType === "contact"
           ? 0.44
           : rawMessageType === "location"
             ? 0.62
@@ -236,10 +215,7 @@ export function computeChatLayout(
         x: innerX,
         y: contentTop,
         width: innerWidth,
-        height: Math.max(
-          px(32),
-          Math.min(rect.height - px(16), rect.height * mediaHeightRatio),
-        ),
+        height: Math.max(px(32), Math.min(rect.height - px(16), rect.height * mediaHeightRatio)),
       };
       semanticRegions[`media_${msg.id}`] = {
         id: `media_${msg.id}`,
@@ -292,9 +268,7 @@ export function computeChatLayout(
 
     // Calculate gap before typing indicator
     const lastMsg =
-      lastVisibleIndex >= 0
-        ? (allMessages[lastVisibleIndex] as LayoutMessage)
-        : undefined;
+      lastVisibleIndex >= 0 ? (allMessages[lastVisibleIndex] as LayoutMessage) : undefined;
     if (lastMsg) {
       const prevForGap: MessageForGap = {
         type: lastMsg.type as MessageType,
@@ -351,18 +325,14 @@ export function computeChatLayout(
   }
 
   const lastVisibleLayout =
-    lastMessageId !== undefined
-      ? conversationLayout.messageLayouts.get(lastMessageId)
-      : undefined;
+    lastMessageId !== undefined ? conversationLayout.messageLayouts.get(lastMessageId) : undefined;
   const lastVisibleBottom =
-    lastVisibleLayout?.y !== undefined &&
-    lastVisibleLayout?.height !== undefined
+    lastVisibleLayout?.y !== undefined && lastVisibleLayout?.height !== undefined
       ? lastVisibleLayout.y + lastVisibleLayout.height
       : config.spacing.global.topPadding;
   const rawContentBottom = Math.max(currentY, lastVisibleBottom);
   const messageBottomInset = px(chromeGeometry.messageBottomInset);
-  const viewportOffsetY =
-    viewportHeight - messageBottomInset - rawContentBottom;
+  const viewportOffsetY = viewportHeight - messageBottomInset - rawContentBottom;
 
   // The React thread is a bottom-aligned window, not a scrollable copy of the
   // full conversation. Translate every non-sticky chat region into those same
@@ -394,13 +364,12 @@ export function computeChatLayout(
   // Ideally, the InputArea component itself should report this, but since we compute layout here:
   // We can define a "logical" input area subject at the bottom of the viewport.
 
-  const INPUT_HEIGHT = px(UI_CONSTANTS.INPUT_MIN_HEIGHT + safeAreaBottom);
+  const INPUT_HEIGHT = px(UI_CONSTANTS.INPUT_MIN_HEIGHT + contentBottom);
   const HEADER_HEIGHT = px(chromeGeometry.headerHeight);
 
   const PROFILE_SIZE = px(UI_CONSTANTS.HEADER_AVATAR_SIZE);
   const PROFILE_X_OFFSET = px(10 + (24 + 17) + 10);
-  const PROFILE_Y_OFFSET =
-    safeAreaTop + (px(UI_CONSTANTS.HEADER_CONTENT_HEIGHT) - PROFILE_SIZE) / 2;
+  const PROFILE_Y_OFFSET = contentTop + (px(UI_CONSTANTS.HEADER_CONTENT_HEIGHT) - PROFILE_SIZE) / 2;
 
   const inputRect = {
     x: 0,
@@ -501,10 +470,7 @@ function isOutgoing(message: LayoutMessage): boolean {
   return message.from === "me";
 }
 
-function findLastVisibleIndex(
-  messages: WhatsAppMessage[],
-  frame: number,
-): number {
+function findLastVisibleIndex(messages: WhatsAppMessage[], frame: number): number {
   if (messages.length === 0) return -1;
 
   let low = 0;

@@ -26,10 +26,10 @@ function estimateBubbleHeight(text: string, hasReply: boolean): number {
 
 export function computeTeamsChatLayout(ctx: LayoutContext): ChatLayoutState {
   const state = selectTeamsState(ctx.world);
-  const { viewportWidth: width, viewportHeight: height, safeAreaInsets } = ctx;
+  const { viewportWidth: width, viewportHeight: height, appViewport } = ctx;
   const messages = state ? selectVisibleMessages(state) : [];
-  const headerHeight = safeAreaInsets.top + 56;
-  const composerHeight = 76 + safeAreaInsets.bottom;
+  const headerHeight = appViewport.contentInsets.top + 56;
+  const composerHeight = 76 + appViewport.contentInsets.bottom;
   const contentTop = headerHeight + 8;
   const contentBottom = composerHeight;
   const messageLayouts: Record<string, ChatMessageLayout> = {};
@@ -37,7 +37,11 @@ export function computeTeamsChatLayout(ctx: LayoutContext): ChatLayoutState {
     device: { id: "device", rect: rect(0, 0, width, height), tags: ["device"] },
     app: { id: "app", rect: rect(0, 0, width, height), tags: ["app"] },
     teams_surface: { id: "teams_surface", rect: rect(0, 0, width, height), tags: ["surface"] },
-    teams_header: { id: "teams_header", rect: rect(0, 0, width, headerHeight), tags: ["header", "sticky"] },
+    teams_header: {
+      id: "teams_header",
+      rect: rect(0, 0, width, headerHeight),
+      tags: ["header", "sticky"],
+    },
     teams_thread: {
       id: "teams_thread",
       rect: rect(0, headerHeight, width, Math.max(0, height - headerHeight)),
@@ -63,10 +67,7 @@ export function computeTeamsChatLayout(ctx: LayoutContext): ChatLayoutState {
   let y = contentTop + 8;
   let lastMessageId: string | undefined;
   for (const message of messages) {
-    const heightEstimate = estimateBubbleHeight(
-      message.text,
-      Boolean(message.replyToMessageId),
-    );
+    const heightEstimate = estimateBubbleHeight(message.text, Boolean(message.replyToMessageId));
     const bubbleWidth = Math.min(
       width * 0.74,
       Math.max(168, message.text.length * 5.5 + (message.replyToMessageId ? 24 : 0)),

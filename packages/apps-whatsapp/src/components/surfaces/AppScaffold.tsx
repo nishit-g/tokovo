@@ -6,8 +6,8 @@ import { TabNavigation } from "../TabNavigation.js";
 export interface AppScaffoldProps {
   title: string;
   activeTab?: WhatsAppTabId;
-  safeAreaTop: number;
-  safeAreaBottom: number;
+  contentInsetTop: number;
+  contentInsetBottom: number;
   actions?: ReactNode;
   leading?: ReactNode;
   children: ReactNode;
@@ -19,8 +19,8 @@ export interface AppScaffoldProps {
 export function AppScaffold({
   title,
   activeTab,
-  safeAreaTop,
-  safeAreaBottom,
+  contentInsetTop,
+  contentInsetBottom,
   actions,
   leading,
   children,
@@ -31,9 +31,7 @@ export function AppScaffold({
   const { theme, platform, direction } = useWhatsAppExperience();
   const { uiSpacing: spacing, uiTypography: typography } = theme;
   const isAndroid = platform === "android";
-  const headerText = isAndroid
-    ? theme.colors.headerText
-    : theme.colors.receivedBubbleText;
+  const headerText = isAndroid ? theme.colors.headerText : theme.colors.receivedBubbleText;
 
   return (
     <div
@@ -56,8 +54,8 @@ export function AppScaffold({
         data-cinematic-subject={`${activeTab ?? "screen"}_header`}
         style={{
           boxSizing: "border-box",
-          height: safeAreaTop + spacing.navBarHeight,
-          paddingTop: safeAreaTop,
+          height: contentInsetTop + spacing.navBarHeight,
+          paddingTop: contentInsetTop,
           paddingInlineStart: spacing.pagePaddingWide,
           paddingInlineEnd: spacing.pagePaddingX,
           display: leading ? "grid" : "flex",
@@ -114,9 +112,7 @@ export function AppScaffold({
           flex: 1,
           minHeight: 0,
           overflow: "hidden",
-          paddingBottom: showTabs
-            ? spacing.tabBarHeight + safeAreaBottom
-            : safeAreaBottom,
+          paddingBottom: showTabs ? spacing.tabBarHeight + contentInsetBottom : contentInsetBottom,
           backgroundColor: theme.colors.background,
         }}
       >
@@ -126,7 +122,7 @@ export function AppScaffold({
       {showTabs && activeTab && (
         <TabNavigation
           activeTab={activeTab}
-          safeAreaBottom={safeAreaBottom}
+          contentInsetBottom={contentInsetBottom}
           unreadChatsCount={unreadChatsCount}
           missedCallsCount={missedCallsCount}
         />

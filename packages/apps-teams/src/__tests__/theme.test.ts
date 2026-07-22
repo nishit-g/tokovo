@@ -68,6 +68,6 @@ describe("teams theme", () => {
     expect(theme.id).toBe("teams-storybook");
     expect(theme.platform).toBe("ios");
     expect(theme.color.brand).not.toBe(TEAMS_THEME_PRESETS.light.color.brand);
-    expect(theme.typography.fontFamily).toContain("Aptos");
+    expect(theme.typography.fontFamily).toContain("Inter Variable");
   });
 });

@@ -28,7 +28,8 @@
     "@tokovo/camera": "workspace:*",
     "@tokovo/stage": "workspace:*",
     "@tokovo/device-keyboard": "workspace:*",
-    "@tokovo/device-notifications": "workspace:*"
+    "@tokovo/device-notifications": "workspace:*",
+    "@tokovo/visual-system": "workspace:*"
   },
   "devDependencies": {
     "typescript": "^5.0.0",

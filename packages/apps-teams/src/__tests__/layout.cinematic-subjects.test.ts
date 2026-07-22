@@ -1,11 +1,8 @@
 import { describe, expect, it } from "vitest";
 import type { LayoutContext, WorldState } from "@tokovo/core";
-import { DEFAULT_AUDIO_STATE } from "@tokovo/core";
+import { createAppViewportFrame, DEFAULT_AUDIO_STATE } from "@tokovo/core";
 import { createTeamsInitialState } from "../runtime/initial-state.js";
-import {
-  computeTeamsChatLayout,
-  computeTeamsFeedLayout,
-} from "../layout/index.js";
+import { computeTeamsChatLayout, computeTeamsFeedLayout } from "../layout/index.js";
 import { TeamsCinematicSubjects } from "../camera/subjects.js";
 import { dmTarget, threadTarget } from "../dsl/index.js";
 import { teamsReducer } from "../runtime/reducer.js";
@@ -20,8 +17,8 @@ function createWorld(): WorldState {
         screenDimensions: {
           width: 393,
           height: 852,
-          safeAreaTop: 44,
-          safeAreaBottom: 34,
+          contentInsetTop: 44,
+          contentInsetBottom: 34,
         },
       },
     },
@@ -29,17 +26,11 @@ function createWorld(): WorldState {
   } as unknown as WorldState;
 }
 
-function reduce(
-  world: WorldState,
-  event: Parameters<typeof teamsReducer>[1],
-): WorldState {
+function reduce(world: WorldState, event: Parameters<typeof teamsReducer>[1]): WorldState {
   return produce(world, (draft) => teamsReducer(draft, event));
 }
 
-function baseCtx(
-  world: WorldState,
-  viewKind: LayoutContext["viewKind"],
-): LayoutContext {
+function baseCtx(world: WorldState, viewKind: LayoutContext["viewKind"]): LayoutContext {
   return {
     world,
     t: 30,
@@ -48,7 +39,11 @@ function baseCtx(
     viewKind,
     viewportWidth: 393,
     viewportHeight: 852,
-    safeAreaInsets: { top: 44, bottom: 34, left: 0, right: 0 },
+    appViewport: createAppViewportFrame({
+      width: 393,
+      height: 852,
+      contentInsets: { top: 44, bottom: 34 },
+    }),
   };
 }
 
@@ -95,9 +90,7 @@ describe("teams layout semantic subjects", () => {
     expect(layout.semantic?.regions.teams_content).toBeDefined();
     expect(
       subjects.some(
-        (subject) =>
-          subject.ref.kind === "semantic" &&
-          subject.ref.subjectId === "teams_content",
+        (subject) => subject.ref.kind === "semantic" && subject.ref.subjectId === "teams_content",
       ),
     ).toBe(true);
   });
@@ -178,16 +171,12 @@ describe("teams layout semantic subjects", () => {
     expect(layout.semantic?.groups.message.length).toBeGreaterThan(0);
     expect(
       subjects.some(
-        (subject) =>
-          subject.ref.kind === "semantic" &&
-          subject.ref.subjectId === lastMessageId,
+        (subject) => subject.ref.kind === "semantic" && subject.ref.subjectId === lastMessageId,
       ),
     ).toBe(true);
     expect(
       subjects.some(
-        (subject) =>
-          subject.ref.kind === "semantic" &&
-          subject.ref.subjectId === "teams_composer",
+        (subject) => subject.ref.kind === "semantic" && subject.ref.subjectId === "teams_composer",
       ),
     ).toBe(true);
   });

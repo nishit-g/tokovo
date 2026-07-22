@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { LayoutContext, WorldState } from "@tokovo/core";
+import { createAppViewportFrame, type LayoutContext, type WorldState } from "@tokovo/core";
 
 import { TypewriterCinematicSubjects } from "../camera/subjects.js";
 import { TYPEWRITER_APP_ID } from "../constants.js";
@@ -29,7 +29,7 @@ function context(cursor = { page: 0, row: 2, col: 7 }): LayoutContext {
     viewKind: "FULLSCREEN",
     viewportWidth: 1080,
     viewportHeight: 1920,
-    safeAreaInsets: { top: 0, right: 0, bottom: 0, left: 0 },
+    appViewport: createAppViewportFrame({ width: 1080, height: 1920 }),
   };
 }
 
@@ -37,23 +37,16 @@ describe("Typewriter cinematic subjects", () => {
   it("projects the exact rectangles emitted by the canonical layout", () => {
     const input = context();
     const layout = computeTypewriterFullscreenLayout(input);
-    const projected = TypewriterCinematicSubjects.project(
-      input.world,
-      layout,
-      "desk",
-    );
+    const projected = TypewriterCinematicSubjects.project(input.world, layout, "desk");
 
     for (const subject of projected) {
       if (subject.ref.kind !== "semantic") continue;
-      expect(subject.rect).toEqual(
-        layout.semantic?.regions[subject.ref.subjectId]?.rect,
-      );
+      expect(subject.rect).toEqual(layout.semantic?.regions[subject.ref.subjectId]?.rect);
       expect(subject.coordinateSpace).toBe("app-logical");
     }
     expect(
       projected.find(
-        (subject) =>
-          subject.ref.kind === "semantic" && subject.ref.subjectId === "paper",
+        (subject) => subject.ref.kind === "semantic" && subject.ref.subjectId === "paper",
       )?.rect,
     ).toEqual(layout.semantic?.regions.paper?.rect);
   });
@@ -61,12 +54,8 @@ describe("Typewriter cinematic subjects", () => {
   it("derives dynamic cursor geometry from state without device-size fallbacks", () => {
     const firstInput = context({ page: 0, row: 1, col: 1 });
     const secondInput = context({ page: 0, row: 4, col: 12 });
-    const first =
-      computeTypewriterFullscreenLayout(firstInput).semantic?.regions.cursor
-        ?.rect;
-    const second =
-      computeTypewriterFullscreenLayout(secondInput).semantic?.regions.cursor
-        ?.rect;
+    const first = computeTypewriterFullscreenLayout(firstInput).semantic?.regions.cursor?.rect;
+    const second = computeTypewriterFullscreenLayout(secondInput).semantic?.regions.cursor?.rect;
 
     expect(second?.x).toBeGreaterThan(first?.x ?? Number.POSITIVE_INFINITY);
     expect(second?.y).toBeGreaterThan(first?.y ?? Number.POSITIVE_INFINITY);

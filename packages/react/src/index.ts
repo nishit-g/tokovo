@@ -10,7 +10,7 @@ export {
   usePlatform,
   useDeviceId,
   useAppId,
-  useSafeAreaInsets,
+  useAppViewport,
   useKeyboardHeight,
   useInputProgram,
   useInputProjection,

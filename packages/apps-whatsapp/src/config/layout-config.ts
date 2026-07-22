@@ -85,13 +85,13 @@ export const UI_CONSTANTS = {
   INPUT_MIN_HEIGHT: 60, // Standard single line
 };
 
-export function getChatChromeGeometry(safeAreaInsets: { top: number; bottom: number }): {
+export function getChatChromeGeometry(contentInsets: { top: number; bottom: number }): {
   headerHeight: number;
   messageBottomInset: number;
 } {
   return {
-    headerHeight: safeAreaInsets.top + UI_CONSTANTS.HEADER_CONTENT_HEIGHT,
-    messageBottomInset: UI_CONSTANTS.INPUT_MIN_HEIGHT + safeAreaInsets.bottom + 12,
+    headerHeight: contentInsets.top + UI_CONSTANTS.HEADER_CONTENT_HEIGHT,
+    messageBottomInset: UI_CONSTANTS.INPUT_MIN_HEIGHT + contentInsets.bottom + 12,
   };
 }
 

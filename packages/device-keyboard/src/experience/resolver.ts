@@ -3,10 +3,10 @@ import {
   type InputAppearance,
   type InputPlatform,
   type InputPresentationStrategy,
-  type InputThemeId,
   type InputThemeProjection,
   type ResolvedInputLocale,
 } from "../contract/index.js";
+import type { PlatformDesignProfileId } from "@tokovo/visual-system";
 import { getInputPresentationStrategy } from "../presentation/index.js";
 import { getInputTheme } from "../theme/index.js";
 
@@ -14,7 +14,7 @@ export interface InputExperienceInput {
   platform: InputPlatform;
   appearance: InputAppearance;
   locale: string;
-  themeId?: InputThemeId;
+  platformProfileId?: PlatformDesignProfileId;
 }
 
 export interface InputExperience {
@@ -22,7 +22,7 @@ export interface InputExperience {
   platform: InputPlatform;
   appearance: InputAppearance;
   locale: ResolvedInputLocale;
-  themeId: InputThemeId;
+  platformProfileId: PlatformDesignProfileId;
   theme: InputThemeProjection;
   presentation: InputPresentationStrategy;
   capabilities: {
@@ -33,18 +33,18 @@ export interface InputExperience {
   };
 }
 
-export function resolveInputExperience(
-  input: InputExperienceInput,
-): InputExperience {
+export function resolveInputExperience(input: InputExperienceInput): InputExperience {
   const locale = normalizeInputLocale(input.locale);
-  const themeId = input.themeId ?? "system";
+  const platformProfileId =
+    input.platformProfileId ??
+    (input.platform === "android" ? "android:material3@1" : "ios:liquid-glass@1");
   return {
     version: "1",
     platform: input.platform,
     appearance: input.appearance,
     locale,
-    themeId,
-    theme: getInputTheme(input.platform, input.appearance, themeId),
+    platformProfileId,
+    theme: getInputTheme(input.platform, input.appearance, platformProfileId, input.locale),
     presentation: getInputPresentationStrategy(input.platform),
     capabilities: {
       supportsDarkMode: true,

@@ -81,9 +81,7 @@ export interface InputSessionIntent {
   source?: InputSource;
   locale?: string;
   direction?: InputDirectionIntent;
-  keyboard?: Partial<
-    Omit<InputKeyboardConfig, "locale"> & { locale: string }
-  >;
+  keyboard?: Partial<Omit<InputKeyboardConfig, "locale"> & { locale: string }>;
   cadence?: InputCadenceIntent;
 }
 
@@ -96,13 +94,9 @@ interface ResolvedCadence {
 }
 
 type WithoutSequence<T> = T extends unknown ? Omit<T, "sequence"> : never;
-type UnsequencedPreparedInputOperation =
-  WithoutSequence<PreparedInputOperation>;
+type UnsequencedPreparedInputOperation = WithoutSequence<PreparedInputOperation>;
 
-const STYLE_CADENCE_SECONDS: Record<
-  InputCadenceStyle,
-  { delay: number; variance: number }
-> = {
+const STYLE_CADENCE_SECONDS: Record<InputCadenceStyle, { delay: number; variance: number }> = {
   slow: { delay: 0.19, variance: 0.07 },
   natural: { delay: 0.115, variance: 0.045 },
   fast: { delay: 0.065, variance: 0.02 },
@@ -122,37 +116,25 @@ function assertIdentity(name: string, value: string): void {
   }
 }
 
-function resolveCadence(
-  fps: number,
-  input: InputCadenceIntent = {},
-): ResolvedCadence {
+function resolveCadence(fps: number, input: InputCadenceIntent = {}): ResolvedCadence {
   const style = input.style ?? "natural";
   const profile = STYLE_CADENCE_SECONDS[style];
-  const framesPerGrapheme =
-    input.framesPerGrapheme ?? Math.max(1, Math.round(profile.delay * fps));
-  const varianceFrames =
-    input.varianceFrames ?? Math.max(0, Math.round(profile.variance * fps));
+  const framesPerGrapheme = input.framesPerGrapheme ?? Math.max(1, Math.round(profile.delay * fps));
+  const varianceFrames = input.varianceFrames ?? Math.max(0, Math.round(profile.variance * fps));
 
   if (!Number.isFinite(framesPerGrapheme) || framesPerGrapheme <= 0) {
-    throw new Error(
-      "INPUT_INVALID_CADENCE: framesPerGrapheme must be greater than zero.",
-    );
+    throw new Error("INPUT_INVALID_CADENCE: framesPerGrapheme must be greater than zero.");
   }
   if (!Number.isFinite(varianceFrames) || varianceFrames < 0) {
-    throw new Error(
-      "INPUT_INVALID_CADENCE: varianceFrames must be zero or greater.",
-    );
+    throw new Error("INPUT_INVALID_CADENCE: varianceFrames must be zero or greater.");
   }
 
   return {
     framesPerGrapheme,
     varianceFrames,
-    punctuationPauseFrames:
-      input.punctuationPauseFrames ?? Math.max(1, Math.round(0.12 * fps)),
-    focusLeadFrames:
-      input.focusLeadFrames ?? Math.max(1, Math.round(0.25 * fps)),
-    keyPressDurationFrames:
-      input.keyPressDurationFrames ?? Math.max(1, Math.round(0.1 * fps)),
+    punctuationPauseFrames: input.punctuationPauseFrames ?? Math.max(1, Math.round(0.12 * fps)),
+    focusLeadFrames: input.focusLeadFrames ?? Math.max(1, Math.round(0.25 * fps)),
+    keyPressDurationFrames: input.keyPressDurationFrames ?? Math.max(1, Math.round(0.1 * fps)),
   };
 }
 
@@ -180,20 +162,14 @@ function validateIntent(intent: InputSessionIntent): void {
     assertFrame("submitAtFrame", intent.submitAtFrame);
   }
   if (intent.text !== undefined && intent.script !== undefined) {
-    throw new Error(
-      "INPUT_AMBIGUOUS_INTENT: provide either text or script, not both.",
-    );
+    throw new Error("INPUT_AMBIGUOUS_INTENT: provide either text or script, not both.");
   }
 }
 
-export function prepareInputSession(
-  intent: InputSessionIntent,
-): PreparedInputSession {
+export function prepareInputSession(intent: InputSessionIntent): PreparedInputSession {
   validateIntent(intent);
 
-  const locale = normalizeInputLocale(
-    intent.keyboard?.locale ?? intent.locale ?? "en-US",
-  );
+  const locale = normalizeInputLocale(intent.keyboard?.locale ?? intent.locale ?? "en-US");
   const source = intent.source ?? "softwareKeyboard";
   const keyboard: InputKeyboardConfig = {
     platform: intent.keyboard?.platform ?? "ios",
@@ -201,7 +177,9 @@ export function prepareInputSession(
     layout: intent.keyboard?.layout ?? "letters",
     returnKey: (intent.keyboard?.returnKey ?? "return") as InputReturnKey,
     appearance: intent.keyboard?.appearance ?? "light",
-    themeId: intent.keyboard?.themeId ?? "system",
+    platformProfileId:
+      intent.keyboard?.platformProfileId ??
+      (intent.keyboard?.platform === "android" ? "android:material3@1" : "ios:liquid-glass@1"),
     autocapitalization: intent.keyboard?.autocapitalization ?? "sentences",
     autocorrection: intent.keyboard?.autocorrection ?? true,
   };
@@ -214,9 +192,7 @@ export function prepareInputSession(
   let sequence = 0;
   let frame = intent.startFrame;
 
-  const push = (
-    operation: UnsequencedPreparedInputOperation,
-  ): void => {
+  const push = (operation: UnsequencedPreparedInputOperation): void => {
     operations.push({ ...operation, sequence: sequence++ } as PreparedInputOperation);
   };
 
@@ -243,10 +219,7 @@ export function prepareInputSession(
             keyPressDurationFrames: cadence.keyPressDurationFrames,
           });
           const centeredVariance = (rng.next() * 2 - 1) * cadence.varianceFrames;
-          frame += Math.max(
-            1,
-            Math.round(cadence.framesPerGrapheme + centeredVariance),
-          );
+          frame += Math.max(1, Math.round(cadence.framesPerGrapheme + centeredVariance));
           if (isPunctuationPause(grapheme)) {
             frame += cadence.punctuationPauseFrames;
           }
@@ -262,9 +235,7 @@ export function prepareInputSession(
       case "deleteBackward": {
         const count = step.count ?? 1;
         if (!Number.isInteger(count) || count <= 0) {
-          throw new Error(
-            "INPUT_INVALID_DELETE: deleteBackward count must be a positive integer.",
-          );
+          throw new Error("INPUT_INVALID_DELETE: deleteBackward count must be a positive integer.");
         }
         const interval = step.intervalFrames ?? defaultCadence.framesPerGrapheme;
         for (let index = 0; index < count; index++) {
@@ -451,15 +422,10 @@ export function countInputGraphemes(text: string, locale = "en-US"): number {
   return countGraphemes(text, normalizeInputLocale(locale).tag);
 }
 
-export function prepareInputProgram(
-  intents: readonly InputSessionIntent[],
-): PreparedInputProgram {
+export function prepareInputProgram(intents: readonly InputSessionIntent[]): PreparedInputProgram {
   const sessions = intents
     .map(prepareInputSession)
-    .sort(
-      (left, right) =>
-        left.startFrame - right.startFrame || left.id.localeCompare(right.id),
-    );
+    .sort((left, right) => left.startFrame - right.startFrame || left.id.localeCompare(right.id));
   const previousByDevice = new Map<string, PreparedInputSession>();
 
   for (const session of sessions) {

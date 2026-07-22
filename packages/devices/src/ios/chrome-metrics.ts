@@ -1,12 +1,13 @@
 import type { DeviceProfile, DynamicIslandConfig } from "../types.js";
+import { resolveDevicePlatformVisuals } from "../visual-system.js";
 
 export function getIOSPointScale(profile: DeviceProfile): number {
-  if (!Number.isFinite(profile.pixelDensity) || profile.pixelDensity <= 0) {
+  if (!Number.isFinite(profile.pointScale) || profile.pointScale <= 0) {
     throw new Error(
-      `DEVICE_PIXEL_DENSITY_INVALID: Profile "${profile.id}" requires a positive finite pixelDensity.`,
+      `DEVICE_POINT_SCALE_INVALID: Profile "${profile.id}" requires a positive finite pointScale.`,
     );
   }
-  return profile.pixelDensity;
+  return profile.pointScale;
 }
 
 export function getIOSLogicalDimensions(profile: DeviceProfile): {
@@ -20,10 +21,7 @@ export function getIOSLogicalDimensions(profile: DeviceProfile): {
   };
 }
 
-export function pointsToDevicePx(
-  profile: DeviceProfile,
-  points: number,
-): number {
+export function pointsToDevicePx(profile: DeviceProfile, points: number): number {
   return points * getIOSPointScale(profile);
 }
 
@@ -77,6 +75,7 @@ export interface IOSChromeMetrics {
 
 export function getIOSChromeMetrics(profile: DeviceProfile): IOSChromeMetrics {
   const pointScale = getIOSPointScale(profile);
+  const platformVisuals = resolveDevicePlatformVisuals(profile, "light");
   const logical = getIOSLogicalDimensions(profile);
   const toPx = (points: number) => points * pointScale;
   const dynamicIsland = profile.dynamicIsland
@@ -86,12 +85,11 @@ export function getIOSChromeMetrics(profile: DeviceProfile): IOSChromeMetrics {
         compactWidth: toPx(Math.min(250, logical.width - 24)),
         recordingCompactWidth: toPx(166),
         countdownWidth: toPx(190),
-        recordingExpandedWidth: toPx(Math.min(340, logical.width - 48)),
-        recordingExpandedHeight: toPx(78),
-        recordingExpandedCornerRadius: toPx(39),
+        recordingExpandedWidth: toPx(Math.min(286, logical.width - 72)),
+        recordingExpandedHeight: toPx(68),
+        recordingExpandedCornerRadius: toPx(34),
         compactHeight: profile.dynamicIsland.collapsedHeight,
-        expandedCornerRadius:
-          profile.dynamicIsland.expandedCornerRadius ?? toPx(44),
+        expandedCornerRadius: profile.dynamicIsland.expandedCornerRadius ?? toPx(44),
         sensorPillWidth: toPx(74),
         sensorPillHeight: toPx(27),
         cameraLensSize: toPx(21),
@@ -104,7 +102,7 @@ export function getIOSChromeMetrics(profile: DeviceProfile): IOSChromeMetrics {
     logicalWidth: logical.width,
     logicalHeight: logical.height,
     statusBar: {
-      height: Math.max(profile.safeArea?.top ?? 0, toPx(44)),
+      height: toPx(platformVisuals.geometry.statusBarHeight),
       paddingTop: toPx(15),
       paddingX: toPx(24),
       timeFontSize: toPx(17),

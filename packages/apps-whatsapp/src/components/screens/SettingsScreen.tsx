@@ -13,26 +13,15 @@ import {
   Share2,
   Smile,
 } from "lucide-react";
-import {
-  useTheme,
-  useWhatsAppLocale,
-} from "../../experience/ExperienceContext.js";
+import { useTheme, useWhatsAppLocale } from "../../experience/ExperienceContext.js";
 import type { WhatsAppSettings, WhatsAppState } from "../../types/index.js";
 import { resolveAvatarWithFallback } from "../../utils/avatar.js";
-import {
-  formatWhatsAppNumber,
-  type WhatsAppMessageKey,
-} from "../../localization/index.js";
-import {
-  AppScaffold,
-  SectionHeader,
-  SettingsGroup,
-  SettingsRow,
-} from "../surfaces/index.js";
+import { formatWhatsAppNumber, type WhatsAppMessageKey } from "../../localization/index.js";
+import { AppScaffold, SectionHeader, SettingsGroup, SettingsRow } from "../surfaces/index.js";
 
 export interface SettingsScreenProps {
   world: WorldState;
-  safeAreaInsets?: {
+  contentInsets: {
     top: number;
     bottom: number;
     left: number;
@@ -42,18 +31,13 @@ export interface SettingsScreenProps {
   height: number;
 }
 
-type Translator = (
-  key: WhatsAppMessageKey,
-  parameters?: Record<string, string | number>,
-) => string;
+type Translator = (key: WhatsAppMessageKey, parameters?: Record<string, string | number>) => string;
 
 function privacySummary(settings: WhatsAppSettings, t: Translator): string {
   const privacy = settings.privacy;
   if (!privacy) return t("settings.privacyDefault");
   const readReceipts = t(
-    privacy.readReceipts === false
-      ? "settings.receiptsOff"
-      : "settings.receiptsOn",
+    privacy.readReceipts === false ? "settings.receiptsOff" : "settings.receiptsOn",
   );
   return t("settings.privacySummary", {
     lastSeen: privacy.lastSeen ?? t("settings.contacts"),
@@ -67,12 +51,12 @@ function localizeTheme(theme: string | undefined, t: Translator): string {
   return t("settings.systemTheme");
 }
 
-export function SettingsScreen({ world, safeAreaInsets }: SettingsScreenProps) {
+export function SettingsScreen({ world, contentInsets }: SettingsScreenProps) {
   const theme = useTheme();
   const { locale, t } = useWhatsAppLocale();
   const { uiTypography: typography } = theme;
-  const safeAreaTop = safeAreaInsets?.top ?? theme.safeArea.top;
-  const safeAreaBottom = safeAreaInsets?.bottom ?? theme.safeArea.bottom;
+  const contentInsetTop = contentInsets.top;
+  const contentInsetBottom = contentInsets.bottom;
   const state = (world.appState?.app_whatsapp ?? {}) as Partial<WhatsAppState>;
   const profile = state.profile;
   const settings = state.settings ?? {};
@@ -84,8 +68,8 @@ export function SettingsScreen({ world, safeAreaInsets }: SettingsScreenProps) {
     <AppScaffold
       title={t("nav.settings")}
       activeTab="settings"
-      safeAreaTop={safeAreaTop}
-      safeAreaBottom={safeAreaBottom}
+      contentInsetTop={contentInsetTop}
+      contentInsetBottom={contentInsetBottom}
     >
       <div
         style={{
@@ -231,10 +215,7 @@ export function SettingsScreen({ world, safeAreaInsets }: SettingsScreenProps) {
           icon={<Laptop size={17} />}
           iconBackground="#607D8B"
           title={t("settings.linkedDevices")}
-          trailing={formatWhatsAppNumber(
-            locale,
-            settings.linkedDevicesCount ?? 0,
-          )}
+          trailing={formatWhatsAppNumber(locale, settings.linkedDevicesCount ?? 0)}
         />
         <SettingsRow
           icon={<HelpCircle size={18} />}

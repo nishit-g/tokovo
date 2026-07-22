@@ -57,7 +57,7 @@ export default defineEpisode({
         installedApps: ["app_whatsapp"],
         os: { time: baseTime, battery: 83, network: "5G" },
       })
-      .background({ type: "image", src: "/backgrounds/neon-city.png" })
+      .background("editorial-neon")
       .cinematics(whatsappCinematicFlagship)
       .snapshot("app_whatsapp", "creator_ios", {
         locale: "en-US",
@@ -91,7 +91,7 @@ export default defineEpisode({
                 id: "ios_proof",
                 type: "image",
                 from: "noa",
-                imageUrl: "/media/founder-whiteboard.jpg",
+                imageUrl: "/media/launch-board.svg",
                 caption: "The final launch board. Every surface is signed off.",
                 media: readyMedia,
                 timestampMs: baseTime - 100_000,
@@ -101,7 +101,7 @@ export default defineEpisode({
                 type: "video",
                 from: "me",
                 videoUrl: "/media/launch-clip.mp4",
-                thumbnailUrl: "/media/founder-whiteboard.jpg",
+                thumbnailUrl: "/media/launch-board.svg",
                 duration: 2.67,
                 caption: "Clean launch cut",
                 status: "read",
@@ -137,7 +137,7 @@ export default defineEpisode({
             viewed: false,
             media: {
               type: "image",
-              src: "/media/founder-whiteboard.jpg",
+              src: "/media/launch-board.svg",
             },
           },
         ],
@@ -145,7 +145,7 @@ export default defineEpisode({
           {
             id: "ios_channel_velocity",
             name: "Launch Velocity",
-            avatar: "/placeholders/app-icon.svg",
+            avatar: "/avatars/avatar-group.png",
             description: "Live product launches, measured without the noise",
             followersLabel: "2.4M followers",
             followed: true,
@@ -266,7 +266,7 @@ export default defineEpisode({
           {
             id: "ar_channel_velocity",
             name: "سرعة الإطلاق",
-            avatar: "/placeholders/app-icon.svg",
+            avatar: "/avatars/avatar-group.png",
             description: "إطلاقات مباشرة بلا ضوضاء",
             followersLabel: "٢٫٤ مليون متابع",
             followed: true,
@@ -310,11 +310,9 @@ export default defineEpisode({
           preset: "topLeft",
           durationFrames: 72,
         });
-        overlay
-          .at("24.2s")
-          .caption("Two devices. One deterministic timeline.", {
-            durationFrames: 54,
-          });
+        overlay.at("24.2s").caption("Two devices. One deterministic timeline.", {
+          durationFrames: 54,
+        });
         overlay.at("33.1s").cliffhanger("WHATSAPP · DIRECTED BY SUBJECTS", {
           durationFrames: 78,
           intensity: 1,
@@ -341,38 +339,32 @@ export default defineEpisode({
           category: "message",
           interruption: "timeSensitive",
           privacy: "private",
-          threadId: "launch_room",
+          foregroundBehavior: "present",
+          threadId: "cairo_launch",
         });
         notifications.at("19.65s").dismiss("arabic_launch_alert");
       })
       .whatsapp("creator_ios", "launch_room", (whatsapp) => {
         whatsapp.openChatList("0s");
         whatsapp.switchTo("launch_room", "2.2s");
-        whatsapp
-          .at("4s")
-          .receive("Mira", "The private cut is already at 92K views.", {
-            messageId: "ios_velocity",
-          });
-        whatsapp
-          .at("6.2s")
-          .send(
-            "Lock comments. Publish the clean export. I’ll handle the chat.",
-            {
-              messageId: "ios_command",
-              input: {
-                duration: "2.4s",
-                style: "fast",
-                locale: "en-US",
-                keyboard: {
-                  platform: "ios",
-                  appearance: "light",
-                  returnKey: "send",
-                  autocapitalization: "sentences",
-                  autocorrection: true,
-                },
-              },
+        whatsapp.at("4s").receive("Mira", "The private cut is already at 92K views.", {
+          messageId: "ios_velocity",
+        });
+        whatsapp.at("6.2s").send("Lock comments. Publish the clean export. I’ll handle the chat.", {
+          messageId: "ios_command",
+          input: {
+            duration: "2.4s",
+            style: "fast",
+            locale: "en-US",
+            keyboard: {
+              platform: "ios",
+              appearance: "light",
+              returnKey: "send",
+              autocapitalization: "sentences",
+              autocorrection: true,
             },
-          );
+          },
+        });
         whatsapp.at("9.8s").startGesture("ios_velocity", "long_press");
         whatsapp.at("10.2s").completeGesture("ios_velocity");
         whatsapp.at("11.5s").cancelGesture("ios_velocity");
@@ -400,11 +392,9 @@ export default defineEpisode({
       .whatsapp("launch_android", "cairo_launch", (whatsapp) => {
         whatsapp.openChatList("0s");
         whatsapp.switchTo("cairo_launch", "19.8s");
-        whatsapp
-          .at("20.2s")
-          .receive("نور", "وصلنا إلى مئة ألف مشاهدة. النسخة النظيفة تتصدر.", {
-            messageId: "ar_velocity",
-          });
+        whatsapp.at("20.2s").receive("نور", "وصلنا إلى مئة ألف مشاهدة. النسخة النظيفة تتصدر.", {
+          messageId: "ar_velocity",
+        });
         whatsapp.at("21.4s").startGesture("ar_velocity", "swipe_reply");
         whatsapp.at("21.9s").updateGesture("ar_velocity", 0.61);
         whatsapp.at("22.35s").updateGesture("ar_velocity", 0.97);

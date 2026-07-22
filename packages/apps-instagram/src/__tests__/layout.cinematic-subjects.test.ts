@@ -1,16 +1,10 @@
 import { describe, expect, it } from "vitest";
 import type { LayoutContext, ViewKind, WorldState } from "@tokovo/core";
-import { DEFAULT_AUDIO_STATE } from "@tokovo/core";
+import { createAppViewportFrame, DEFAULT_AUDIO_STATE } from "@tokovo/core";
 import { instagramLayoutStrategies } from "../layout/index.js";
-import {
-  createInstagramInitialState,
-  type InstagramState,
-} from "../runtime/state.js";
+import { createInstagramInitialState, type InstagramState } from "../runtime/state.js";
 
-function computeLayoutFor(
-  screen: InstagramState["currentScreen"],
-  viewKind: ViewKind,
-) {
+function computeLayoutFor(screen: InstagramState["currentScreen"], viewKind: ViewKind) {
   const appState = {
     ...createInstagramInitialState(),
     currentScreen: screen,
@@ -29,12 +23,14 @@ function computeLayoutFor(
     viewKind,
     viewportWidth: 393,
     viewportHeight: 852,
-    safeAreaInsets: { top: 47, bottom: 34, left: 0, right: 0 },
+    appViewport: createAppViewportFrame({
+      width: 393,
+      height: 852,
+      contentInsets: { top: 47, bottom: 34 },
+    }),
     layoutCache: undefined,
   };
-  const strategy = instagramLayoutStrategies.find(
-    (item) => item.viewKind === viewKind,
-  );
+  const strategy = instagramLayoutStrategies.find((item) => item.viewKind === viewKind);
   if (!strategy) throw new Error(`missing strategy ${viewKind}`);
   return strategy.computeLayout(ctx) as {
     semantic?: { regions?: Record<string, unknown> };

@@ -171,7 +171,8 @@ export interface CameraEvaluationTrace {
     }[];
   } | null;
   constraints: {
-    safeAreaInsets: {
+    compositionProfileId: CameraPlanIR["outputs"][number]["compositionProfileId"];
+    editorialInsets: {
       top: number;
       right: number;
       bottom: number;

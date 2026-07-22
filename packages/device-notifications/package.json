@@ -17,7 +17,8 @@
   },
   "dependencies": {
     "@tokovo/ir": "workspace:*",
-    "@tokovo/react": "workspace:*"
+    "@tokovo/react": "workspace:*",
+    "@tokovo/visual-system": "workspace:*"
   },
   "devDependencies": {
     "typescript": "^5.0.0",

@@ -112,7 +112,7 @@ export const liShadows = {
 export const liTypography = {
   // Font family
   fontFamily:
-    "-apple-system, system-ui, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', 'Fira Sans', Ubuntu, Oxygen, 'Oxygen Sans', Cantarell, 'Droid Sans', 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Lucida Grande', Helvetica, Arial, sans-serif",
+    "'Inter Variable', 'Noto Sans Arabic Variable', 'Noto Sans Devanagari Variable', 'Noto Sans JP Variable', sans-serif",
 
   // Text styles
   displayLg: { fontSize: 24, fontWeight: 600, lineHeight: 1.25, letterSpacing: -0.2 },

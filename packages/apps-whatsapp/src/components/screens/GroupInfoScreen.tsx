@@ -13,10 +13,7 @@ import {
   Video,
   Phone,
 } from "lucide-react";
-import {
-  useTheme,
-  useWhatsAppLocale,
-} from "../../experience/ExperienceContext.js";
+import { useTheme, useWhatsAppLocale } from "../../experience/ExperienceContext.js";
 import type {
   WhatsAppConversation,
   WhatsAppGroupMember,
@@ -24,17 +21,12 @@ import type {
 } from "../../types/index.js";
 import { resolveAvatarWithFallback } from "../../utils/avatar.js";
 import { formatWhatsAppNumber } from "../../localization/index.js";
-import {
-  AppScaffold,
-  SectionHeader,
-  SettingsGroup,
-  SettingsRow,
-} from "../surfaces/index.js";
+import { AppScaffold, SectionHeader, SettingsGroup, SettingsRow } from "../surfaces/index.js";
 
 export interface GroupInfoScreenProps {
   world: WorldState;
   conversationId: string;
-  safeAreaInsets?: {
+  contentInsets: {
     top: number;
     bottom: number;
     left: number;
@@ -99,9 +91,7 @@ function MemberRow({
         display: "flex",
         alignItems: "center",
         gap: 10,
-        borderBottom: isLast
-          ? undefined
-          : `0.5px solid ${theme.colors.divider}`,
+        borderBottom: isLast ? undefined : `0.5px solid ${theme.colors.divider}`,
       }}
     >
       <div
@@ -163,30 +153,21 @@ function MemberRow({
   );
 }
 
-export function GroupInfoScreen({
-  world,
-  conversationId,
-  safeAreaInsets,
-}: GroupInfoScreenProps) {
+export function GroupInfoScreen({ world, conversationId, contentInsets }: GroupInfoScreenProps) {
   const theme = useTheme();
   const { direction, locale, t } = useWhatsAppLocale();
   const { uiTypography: typography } = theme;
-  const safeAreaTop = safeAreaInsets?.top ?? theme.safeArea.top;
-  const safeAreaBottom = safeAreaInsets?.bottom ?? theme.safeArea.bottom;
+  const contentInsetTop = contentInsets.top;
+  const contentInsetBottom = contentInsets.bottom;
   const state = world.appState?.app_whatsapp as WhatsAppState | undefined;
-  const conversation: WhatsAppConversation | undefined =
-    state?.conversations[conversationId];
+  const conversation: WhatsAppConversation | undefined = state?.conversations[conversationId];
   if (!conversation || conversation.type !== "group") {
-    throw new Error(
-      `WhatsApp group info requires group conversation "${conversationId}"`,
-    );
+    throw new Error(`WhatsApp group info requires group conversation "${conversationId}"`);
   }
 
   const messages = conversation.messages;
   const mediaCount = messages.filter((message) =>
-    ["image", "video", "gif", "sticker", "document", "link"].includes(
-      message.type,
-    ),
+    ["image", "video", "gif", "sticker", "document", "link"].includes(message.type),
   ).length;
   const admins = new Set(conversation.admins ?? []);
   const fallbackGroupName = t("profile.group");
@@ -195,8 +176,8 @@ export function GroupInfoScreen({
   return (
     <AppScaffold
       title={t("screen.groupInfo")}
-      safeAreaTop={safeAreaTop}
-      safeAreaBottom={safeAreaBottom}
+      contentInsetTop={contentInsetTop}
+      contentInsetBottom={contentInsetBottom}
       showTabs={false}
       leading={
         <div style={{ display: "flex", alignItems: "center", gap: 2 }}>
@@ -209,16 +190,9 @@ export function GroupInfoScreen({
           <span style={{ fontSize: 15 }}>{t("action.back")}</span>
         </div>
       }
-      actions={
-        <span style={{ fontSize: 15, fontWeight: 600 }}>
-          {t("action.edit")}
-        </span>
-      }
+      actions={<span style={{ fontSize: 15, fontWeight: 600 }}>{t("action.edit")}</span>}
     >
-      <div
-        data-cinematic-subject="profile_hero"
-        style={{ padding: "14px 16px 12px" }}
-      >
+      <div data-cinematic-subject="profile_hero" style={{ padding: "14px 16px 12px" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
           <div
             style={{
@@ -309,9 +283,7 @@ export function GroupInfoScreen({
           icon={<Timer size={17} />}
           iconBackground="#15A085"
           title={t("profile.disappearingMessages")}
-          trailing={
-            conversation.preferences?.disappearingMessages ?? t("profile.off")
-          }
+          trailing={conversation.preferences?.disappearingMessages ?? t("profile.off")}
           isLast
         />
       </SettingsGroup>
@@ -357,20 +329,16 @@ export function GroupInfoScreen({
           >
             <UserPlus size={18} />
           </div>
-          <span style={{ fontSize: 14, fontWeight: 650 }}>
-            {t("group.addMembers")}
-          </span>
+          <span style={{ fontSize: 14, fontWeight: 650 }}>{t("group.addMembers")}</span>
         </div>
-        {(conversation.members ?? [])
-          .slice(0, 4)
-          .map((member, index, members) => (
-            <MemberRow
-              key={member.id}
-              member={member}
-              admin={admins.has(member.id)}
-              isLast={index === members.length - 1}
-            />
-          ))}
+        {(conversation.members ?? []).slice(0, 4).map((member, index, members) => (
+          <MemberRow
+            key={member.id}
+            member={member}
+            admin={admins.has(member.id)}
+            isLast={index === members.length - 1}
+          />
+        ))}
       </div>
 
       <SettingsGroup>

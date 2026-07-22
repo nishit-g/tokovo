@@ -1,11 +1,4 @@
-import {
-  ChevronLeft,
-  Video,
-  Phone,
-  Lock,
-  BadgeCheck,
-  Briefcase,
-} from "lucide-react";
+import { ChevronLeft, Video, Phone, Lock, BadgeCheck, Briefcase } from "lucide-react";
 import { DeterministicImage } from "@tokovo/react";
 import { UI_CONSTANTS } from "../config/layout-config.js";
 import {
@@ -19,7 +12,7 @@ export interface HeaderProps {
   contactName: string;
   avatarUrl?: string;
   status: string;
-  safeAreaTop?: number;
+  contentInsetTop: number;
   locked?: boolean;
   contactLabel?: string;
   verifiedBusiness?: boolean;
@@ -29,7 +22,7 @@ export const Header: React.FC<HeaderProps> = ({
   contactName,
   avatarUrl,
   status,
-  safeAreaTop = 47,
+  contentInsetTop,
   locked = false,
   contactLabel,
   verifiedBusiness = false,
@@ -41,7 +34,7 @@ export const Header: React.FC<HeaderProps> = ({
   const resolvedAvatarUrl = resolveAvatarWithFallback(avatarUrl, contactName);
 
   const contentHeight = UI_CONSTANTS.HEADER_CONTENT_HEIGHT;
-  const totalHeight = safeAreaTop + contentHeight;
+  const totalHeight = contentInsetTop + contentHeight;
   const actionColor =
     presentation.conversation.headerActionColor === "accent"
       ? theme.colors.accent
@@ -53,7 +46,7 @@ export const Header: React.FC<HeaderProps> = ({
       style={{
         height: totalHeight,
         backgroundColor: theme.colors.headerBackground,
-        paddingTop: safeAreaTop,
+        paddingTop: contentInsetTop,
         display: "flex",
         alignItems: "center",
         paddingInline: UI_CONSTANTS.HEADER_PADDING_X,
@@ -138,9 +131,7 @@ export const Header: React.FC<HeaderProps> = ({
               strokeWidth={1.5}
             />
           )}
-          {locked && (
-            <Lock size={13} color={theme.colors.timestamp} strokeWidth={1.8} />
-          )}
+          {locked && <Lock size={13} color={theme.colors.timestamp} strokeWidth={1.8} />}
         </div>
         <div
           style={{
@@ -153,13 +144,7 @@ export const Header: React.FC<HeaderProps> = ({
             fontFamily: theme.typography.fontFamily,
           }}
         >
-          {contactLabel && (
-            <Briefcase
-              size={12}
-              color={theme.colors.timestamp}
-              strokeWidth={1.8}
-            />
-          )}
+          {contactLabel && <Briefcase size={12} color={theme.colors.timestamp} strokeWidth={1.8} />}
           {contactLabel ? `${contactLabel} • ${status}` : status}
         </div>
       </div>
@@ -179,12 +164,7 @@ export const Header: React.FC<HeaderProps> = ({
             background: "transparent",
           }}
         >
-          <Video
-            size={22}
-            color={actionColor}
-            strokeWidth={1.7}
-            aria-hidden="true"
-          />
+          <Video size={22} color={actionColor} strokeWidth={1.7} aria-hidden="true" />
         </button>
         <button
           type="button"
@@ -196,12 +176,7 @@ export const Header: React.FC<HeaderProps> = ({
             background: "transparent",
           }}
         >
-          <Phone
-            size={20}
-            color={actionColor}
-            strokeWidth={1.7}
-            aria-hidden="true"
-          />
+          <Phone size={20} color={actionColor} strokeWidth={1.7} aria-hidden="true" />
         </button>
       </div>
     </div>

@@ -1,30 +1,16 @@
-import {
-  ArrowDownLeft,
-  ArrowUpRight,
-  Link,
-  Phone,
-  PhoneMissed,
-  Plus,
-  Video,
-} from "lucide-react";
+import { ArrowDownLeft, ArrowUpRight, Link, Phone, PhoneMissed, Plus, Video } from "lucide-react";
 import type { WorldState } from "@tokovo/core";
 import { DeterministicImage } from "@tokovo/react";
-import {
-  useTheme,
-  useWhatsAppLocale,
-} from "../../experience/ExperienceContext.js";
+import { useTheme, useWhatsAppLocale } from "../../experience/ExperienceContext.js";
 import type { WhatsAppCallLogEntry, WhatsAppState } from "../../types/index.js";
-import {
-  formatConversationListTimestamp,
-  getBaseTime,
-} from "../../utils/messages.js";
+import { formatConversationListTimestamp, getBaseTime } from "../../utils/messages.js";
 import { resolveAvatarWithFallback } from "../../utils/avatar.js";
 import type { WhatsAppMessageKey } from "../../localization/index.js";
 import { AppScaffold, EmptyState, SectionHeader } from "../surfaces/index.js";
 
 export interface CallsScreenProps {
   world: WorldState;
-  safeAreaInsets?: {
+  contentInsets: {
     top: number;
     bottom: number;
     left: number;
@@ -34,15 +20,9 @@ export interface CallsScreenProps {
   height: number;
 }
 
-type Translator = (
-  key: WhatsAppMessageKey,
-  parameters?: Record<string, string | number>,
-) => string;
+type Translator = (key: WhatsAppMessageKey, parameters?: Record<string, string | number>) => string;
 
-function formatCallDuration(
-  seconds: number | undefined,
-  t: Translator,
-): string | undefined {
+function formatCallDuration(seconds: number | undefined, t: Translator): string | undefined {
   if (!seconds || seconds <= 0) return undefined;
   if (seconds < 60) return t("calls.durationSeconds", { count: seconds });
   const minutes = Math.floor(seconds / 60);
@@ -52,13 +32,7 @@ function formatCallDuration(
     : t("calls.durationMinutes", { count: minutes });
 }
 
-function CallRow({
-  entry,
-  baseTime,
-}: {
-  entry: WhatsAppCallLogEntry;
-  baseTime: Date;
-}) {
+function CallRow({ entry, baseTime }: { entry: WhatsAppCallLogEntry; baseTime: Date }) {
   const theme = useTheme();
   const { locale, t } = useWhatsAppLocale();
   const { uiTypography: typography } = theme;
@@ -162,12 +136,12 @@ function CallRow({
   );
 }
 
-export function CallsScreen({ world, safeAreaInsets }: CallsScreenProps) {
+export function CallsScreen({ world, contentInsets }: CallsScreenProps) {
   const theme = useTheme();
   const { t } = useWhatsAppLocale();
   const { uiTypography: typography } = theme;
-  const safeAreaTop = safeAreaInsets?.top ?? theme.safeArea.top;
-  const safeAreaBottom = safeAreaInsets?.bottom ?? theme.safeArea.bottom;
+  const contentInsetTop = contentInsets.top;
+  const contentInsetBottom = contentInsets.bottom;
   const state = (world.appState?.app_whatsapp ?? {}) as Partial<WhatsAppState>;
   const deviceId = Object.keys(world.devices ?? {})[0];
   const baseTime = getBaseTime(world, deviceId);
@@ -181,16 +155,14 @@ export function CallsScreen({ world, safeAreaInsets }: CallsScreenProps) {
         .map((entry) => [entry.name, entry] as const),
     ).values(),
   ].slice(0, 3);
-  const missedCount = callLog.filter(
-    (entry) => entry.direction === "missed",
-  ).length;
+  const missedCount = callLog.filter((entry) => entry.direction === "missed").length;
 
   return (
     <AppScaffold
       title={t("nav.calls")}
       activeTab="calls"
-      safeAreaTop={safeAreaTop}
-      safeAreaBottom={safeAreaBottom}
+      contentInsetTop={contentInsetTop}
+      contentInsetBottom={contentInsetBottom}
       missedCallsCount={missedCount}
       actions={
         <>
@@ -251,10 +223,7 @@ export function CallsScreen({ world, safeAreaInsets }: CallsScreenProps) {
 
       {favorites.length > 0 && (
         <>
-          <SectionHeader
-            title={t("calls.favorites")}
-            action={t("action.edit")}
-          />
+          <SectionHeader title={t("calls.favorites")} action={t("action.edit")} />
           <div
             style={{
               height: 88,
@@ -322,9 +291,7 @@ export function CallsScreen({ world, safeAreaInsets }: CallsScreenProps) {
         {callLog.length > 0 ? (
           callLog
             .slice(0, 6)
-            .map((entry) => (
-              <CallRow key={entry.id} entry={entry} baseTime={baseTime} />
-            ))
+            .map((entry) => <CallRow key={entry.id} entry={entry} baseTime={baseTime} />)
         ) : (
           <EmptyState
             icon={<Phone size={28} />}

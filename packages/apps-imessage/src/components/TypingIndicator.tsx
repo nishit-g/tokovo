@@ -7,18 +7,8 @@ import React from "react";
 import { pulse, useFps, useTime } from "@tokovo/react";
 import { useIMessageTheme } from "../ui/ThemeContext.js";
 import { iMessageSpacing, iMessageAnimations } from "../config/tokens.js";
-import type { IMessageTheme } from "../config/imessage-theme.js";
-
-interface TypingIndicatorProps {
-  /** For backward compatibility - prefer using inside ThemeContext */
-  theme?: IMessageTheme;
-}
-
-export const TypingIndicator: React.FC<TypingIndicatorProps> = ({
-  theme: propTheme,
-}) => {
-  const contextTheme = useIMessageTheme();
-  const theme = propTheme ?? contextTheme;
+export const TypingIndicator: React.FC = () => {
+  const theme = useIMessageTheme();
   const frame = useTime();
   const fps = useFps();
 

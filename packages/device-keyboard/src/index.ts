@@ -1,7 +1,4 @@
-export {
-  InputKeyboard,
-  resolveInputKeyboardRows,
-} from "./ui/index.js";
+export { InputKeyboard, resolveInputKeyboardLayout } from "./ui/index.js";
 export type { InputKeyboardProps } from "./ui/index.js";
 export * from "./contract/index.js";
 export * from "./compile/index.js";

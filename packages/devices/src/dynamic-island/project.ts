@@ -6,6 +6,7 @@ import type {
 } from "@tokovo/core";
 import type { DeviceProfile } from "../types.js";
 import { getIOSChromeMetrics } from "../ios/chrome-metrics.js";
+import { resolveDevicePlatformVisuals } from "../visual-system.js";
 import { directionForLocale, localizeSystemDigits } from "../surfaces/localization.js";
 import type {
   DynamicIslandGeometry,
@@ -185,7 +186,8 @@ function completionBanner(
   ) {
     return undefined;
   }
-  const scale = profile.pixelDensity || 1;
+  const scale = profile.pointScale;
+  const platformVisuals = resolveDevicePlatformVisuals(profile, "light");
   const enter = clamp01((currentFrame - recording.captureStoppedAtFrame) / 10);
   const exit = clamp01((recording.feedbackEndsAtFrame - currentFrame) / 10);
   const progress = easeOutQuint(Math.min(enter, exit));
@@ -193,7 +195,12 @@ function completionBanner(
   return {
     progress,
     left: 12 * scale,
-    top: Math.max(profile.safeArea.top + 5 * scale, 49 * scale),
+    top: Math.max(
+      (platformVisuals.geometry.minimumContentInsets.top +
+        platformVisuals.geometry.notification.islandClearance) *
+        scale,
+      49 * scale,
+    ),
     width,
     height: 82 * scale,
     appLabel: copy.photos,
@@ -213,6 +220,7 @@ function recordingProjection(input: {
   copy: DynamicIslandCopy;
 }): DynamicIslandProjection {
   const { profile, recording, currentFrame, fps, locale, appearance, copy } = input;
+  const platformVisuals = resolveDevicePlatformVisuals(profile, appearance, locale);
   const metrics = getIOSChromeMetrics(profile).dynamicIsland;
   if (!metrics) throw new Error(`Missing Dynamic Island metrics for ${profile.id}`);
 
@@ -274,10 +282,17 @@ function recordingProjection(input: {
     phase,
     presentation: isHidden ? "idle" : isCountdown ? "compact" : recording.presentation,
     geometry,
-    pointScale: profile.pixelDensity || 1,
+    pointScale: profile.pointScale,
     contentOpacity: clamp01((morphProgress - 0.18) / 0.82),
     direction: directionForLocale(locale),
     appearance,
+    visuals: {
+      fontFamily: platformVisuals.typography.primaryFamily,
+      primaryText: platformVisuals.palette.primaryText,
+      secondaryText: platformVisuals.palette.secondaryText,
+      islandMaterial: platformVisuals.materials.island,
+      notificationMaterial: platformVisuals.materials.notification,
+    },
     recording:
       phase === "idle"
         ? undefined
@@ -313,6 +328,7 @@ export function projectDynamicIsland(input: {
   const locale = input.locale ?? "en-US";
   const appearance = input.appearance ?? "light";
   const copy = COPY[languageFor(locale)];
+  const platformVisuals = resolveDevicePlatformVisuals(input.profile, appearance, locale);
   const recording = input.screenRecording;
 
   if (
@@ -359,10 +375,17 @@ export function projectDynamicIsland(input: {
     phase: supportedActivity ? "activity" : "idle",
     presentation,
     geometry,
-    pointScale: input.profile.pixelDensity || 1,
+    pointScale: input.profile.pointScale,
     contentOpacity: clamp01((progress - 0.18) / 0.82),
     direction: directionForLocale(locale),
     appearance,
+    visuals: {
+      fontFamily: platformVisuals.typography.primaryFamily,
+      primaryText: platformVisuals.palette.primaryText,
+      secondaryText: platformVisuals.palette.secondaryText,
+      islandMaterial: platformVisuals.materials.island,
+      notificationMaterial: platformVisuals.materials.notification,
+    },
     activity: supportedActivity
       ? {
           kind: supportedActivity,

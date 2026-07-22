@@ -59,7 +59,7 @@ This object is the **Brain** of the layout. Here is exactly where every field is
   - `base.minimal`: **6px** (2px visual). Used for "Visual Run" rows.
   - `base.normal`: **36px** (12px visual). Used for "Run Breaks" / Diff Senders.
   - `global.bubbleMargin`: **36px**. Distance from left/right screen edge.
-  - `global.topPadding`/`bottomPadding`: Safe areas for scroll.
+  - `appViewport.contentInsets`: platform-owned scroll boundaries.
 
 ### C. `additions` (Dynamic Height Modifiers)
 

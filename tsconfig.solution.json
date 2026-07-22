@@ -2,6 +2,7 @@
   "files": [],
   "references": [
     { "path": "./packages/ir" },
+    { "path": "./packages/visual-system" },
     { "path": "./packages/camera" },
     { "path": "./packages/stage" },
     { "path": "./packages/core" },

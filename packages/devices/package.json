@@ -19,6 +19,7 @@
     "@tokovo/core": "workspace:*",
     "@tokovo/ir": "workspace:*",
     "@tokovo/react": "workspace:*",
+    "@tokovo/visual-system": "workspace:*",
     "immer": "^10.0.0",
     "react": "18.3.1",
     "react-dom": "18.3.1"

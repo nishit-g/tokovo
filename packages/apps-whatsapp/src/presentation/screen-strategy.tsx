@@ -14,7 +14,7 @@ export interface WhatsAppScreenStrategyProps {
   deviceId?: string;
   width: number;
   height: number;
-  safeAreaInsets?: {
+  contentInsets: {
     top: number;
     bottom: number;
     left: number;
@@ -22,9 +22,7 @@ export interface WhatsAppScreenStrategyProps {
   };
 }
 
-type ScreenRenderer = (
-  props: WhatsAppScreenStrategyProps,
-) => React.ReactElement | null;
+type ScreenRenderer = (props: WhatsAppScreenStrategyProps) => React.ReactElement | null;
 
 const SCREEN_RENDERERS: Readonly<Record<WhatsAppScreenId, ScreenRenderer>> = {
   chats: (props) => <ChatListScreen {...props} />,

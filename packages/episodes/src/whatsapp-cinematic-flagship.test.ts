@@ -31,9 +31,15 @@ describe("WhatsApp cinematic flagship", () => {
     expect(kinetic?.coverageByOutput["portrait-main"]?.gaps).toEqual([]);
     expect(kinetic?.plan.outputs).toEqual([
       expect.objectContaining({
-        id: "handoff-pip",
+        id: "calls-pip",
         zIndex: 20,
-        clipRadiusPx: 44,
+        clipRadiusPx: 42,
+        shadow: { offsetX: 0, offsetY: 18, blurPx: 34, opacity: 0.5 },
+      }),
+      expect.objectContaining({
+        id: "notification-handoff",
+        zIndex: 20,
+        clipRadiusPx: 42,
         shadow: { offsetX: 0, offsetY: 18, blurPx: 34, opacity: 0.5 },
       }),
       expect.objectContaining({ id: "portrait-main", zIndex: 0 }),

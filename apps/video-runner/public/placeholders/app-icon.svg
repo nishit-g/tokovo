@@ -10,5 +10,4 @@
   <circle cx="76" cy="198" r="42" fill="#FFFFFF" opacity="0.3" />
   <circle cx="128" cy="104" r="42" fill="#6BA5FF" opacity="0.9" />
   <path d="M72 190 C84 160 106 146 128 146 C150 146 172 160 184 190" fill="#0F766E" opacity="0.82" />
-  <text x="128" y="220" text-anchor="middle" font-family="'SF Pro Display', Arial, sans-serif" font-size="22" font-weight="700" fill="#215B54">TK</text>
 </svg>

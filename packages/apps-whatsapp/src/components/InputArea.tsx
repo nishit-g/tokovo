@@ -10,16 +10,10 @@ import {
 export const InputArea: React.FC<{
   text?: string;
   showCursor?: boolean;
-  safeAreaBottom?: number;
+  contentInsetBottom: number;
   inputDirection?: "ltr" | "rtl";
   inputLanguage?: string;
-}> = ({
-  text = "",
-  showCursor = false,
-  safeAreaBottom = 34,
-  inputDirection,
-  inputLanguage,
-}) => {
+}> = ({ text = "", showCursor = false, contentInsetBottom, inputDirection, inputLanguage }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
   const theme = useTheme();
@@ -28,8 +22,8 @@ export const InputArea: React.FC<{
 
   const hasContent = text.length > 0;
   const cursorVisible = Math.floor(frame / (fps * 0.5)) % 2 === 0;
-  const keyboardAttached = safeAreaBottom === 0;
-  const paddingBottom = keyboardAttached ? 7 : Math.max(safeAreaBottom, 14);
+  const keyboardAttached = contentInsetBottom === 0;
+  const paddingBottom = keyboardAttached ? 7 : Math.max(contentInsetBottom, 14);
   const controlBottomInset = keyboardAttached ? 3 : 8;
 
   return (
@@ -79,19 +73,9 @@ export const InputArea: React.FC<{
         }}
       >
         {presentation.conversation.composerLeadingAction === "add" ? (
-          <Plus
-            size={20}
-            color={theme.colors.inputText}
-            strokeWidth={1.8}
-            aria-hidden="true"
-          />
+          <Plus size={20} color={theme.colors.inputText} strokeWidth={1.8} aria-hidden="true" />
         ) : (
-          <Smile
-            size={25}
-            color={theme.colors.inputText}
-            strokeWidth={1.6}
-            aria-hidden="true"
-          />
+          <Smile size={25} color={theme.colors.inputText} strokeWidth={1.6} aria-hidden="true" />
         )}
       </button>
 
@@ -124,9 +108,7 @@ export const InputArea: React.FC<{
             style={{
               fontSize: 16,
               fontFamily: theme.typography.fontFamily,
-              color: hasContent
-                ? theme.colors.inputText
-                : theme.colors.inputPlaceholder,
+              color: hasContent ? theme.colors.inputText : theme.colors.inputPlaceholder,
               lineHeight: "20px",
               display: "block",
             }}
@@ -159,12 +141,7 @@ export const InputArea: React.FC<{
             marginInlineEnd: 4,
           }}
         >
-          <Smile
-            size={23}
-            color={theme.colors.inputText}
-            strokeWidth={1.5}
-            aria-hidden="true"
-          />
+          <Smile size={23} color={theme.colors.inputText} strokeWidth={1.5} aria-hidden="true" />
         </div>
       </div>
 

@@ -25,18 +25,18 @@ function buildSemantic(
 }
 
 function computeIMessageFeedLayout(ctx: LayoutContext): FeedLayoutState {
-  const { viewportWidth: w, viewportHeight: h, safeAreaInsets, world } = ctx;
-  const safeTop = safeAreaInsets?.top ?? 0;
-  const safeBottom = safeAreaInsets?.bottom ?? 0;
+  const { viewportWidth: w, viewportHeight: h, appViewport, world } = ctx;
+  const contentTop = appViewport.contentInsets.top;
+  const contentBottom = appViewport.contentInsets.bottom;
   const scale = w / DESIGN_WIDTH;
   const px = (v: number) => v * scale;
 
   const state = (world.appState?.app_imessage ?? {}) as Partial<IMessageState>;
   const screen = state.currentScreen ?? "list";
 
-  const headerH = safeTop + px(iMessageSpacing.headerHeight);
+  const headerH = contentTop + px(iMessageSpacing.headerHeight);
   const listY = headerH;
-  const listH = Math.max(0, h - safeBottom - listY);
+  const listH = Math.max(0, h - contentBottom - listY);
 
   const regions: Record<string, SemanticRegion> = {
     device: { id: "device", rect: rect(0, 0, w, h), tags: ["device"] },
@@ -98,14 +98,14 @@ function computeIMessageFeedLayout(ctx: LayoutContext): FeedLayoutState {
 }
 
 function computeIMessageChatLayout(ctx: LayoutContext): ChatLayoutState {
-  const { viewportWidth: w, viewportHeight: h, safeAreaInsets } = ctx;
-  const safeTop = safeAreaInsets?.top ?? 0;
-  const safeBottom = safeAreaInsets?.bottom ?? 0;
+  const { viewportWidth: w, viewportHeight: h, appViewport } = ctx;
+  const contentTop = appViewport.contentInsets.top;
+  const contentBottom = appViewport.contentInsets.bottom;
   const scale = w / DESIGN_WIDTH;
   const px = (v: number) => v * scale;
 
-  const headerH = safeTop + px(iMessageSpacing.headerHeight);
-  const composerH = px(iMessageSpacing.inputHeight) + safeBottom;
+  const headerH = contentTop + px(iMessageSpacing.headerHeight);
+  const composerH = px(iMessageSpacing.inputHeight) + contentBottom;
   const composerY = Math.max(0, h - composerH);
   const threadY = headerH;
   const threadH = Math.max(0, composerY - threadY);
@@ -126,12 +126,7 @@ function computeIMessageChatLayout(ctx: LayoutContext): ChatLayoutState {
     },
     imessage_last_message: {
       id: "imessage_last_message",
-      rect: rect(
-        px(16),
-        threadY + Math.max(0, threadH - px(118)),
-        Math.max(0, w - px(32)),
-        px(70),
-      ),
+      rect: rect(px(16), threadY + Math.max(0, threadH - px(118)), Math.max(0, w - px(32)), px(70)),
       tags: ["thread", "message", "latest"],
     },
     imessage_composer: {
@@ -159,20 +154,18 @@ function computeIMessageChatLayout(ctx: LayoutContext): ChatLayoutState {
   };
 }
 
-function computeIMessageFullscreenLayout(
-  ctx: LayoutContext,
-): FullscreenLayoutState {
-  const { viewportWidth: w, viewportHeight: h, safeAreaInsets, world } = ctx;
-  const safeTop = safeAreaInsets?.top ?? 0;
-  const safeBottom = safeAreaInsets?.bottom ?? 0;
+function computeIMessageFullscreenLayout(ctx: LayoutContext): FullscreenLayoutState {
+  const { viewportWidth: w, viewportHeight: h, appViewport, world } = ctx;
+  const contentTop = appViewport.contentInsets.top;
+  const contentBottom = appViewport.contentInsets.bottom;
   const scale = w / DESIGN_WIDTH;
   const px = (v: number) => v * scale;
 
   const state = (world.appState?.app_imessage ?? {}) as Partial<IMessageState>;
   const screen = state.currentScreen ?? "info";
 
-  const topY = safeTop + px(iMessageSpacing.headerHeight);
-  const contentH = Math.max(0, h - topY - safeBottom);
+  const topY = contentTop + px(iMessageSpacing.headerHeight);
+  const contentH = Math.max(0, h - topY - contentBottom);
 
   const regions: Record<string, SemanticRegion> = {
     device: { id: "device", rect: rect(0, 0, w, h), tags: ["device"] },

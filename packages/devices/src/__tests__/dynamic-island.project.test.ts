@@ -10,9 +10,7 @@ if (!profileIsland || !chromeIsland) {
   throw new Error("iPhone 16 test profile must define Dynamic Island metrics");
 }
 
-function recording(
-  overrides: Partial<ScreenRecordingState> = {},
-): ScreenRecordingState {
+function recording(overrides: Partial<ScreenRecordingState> = {}): ScreenRecordingState {
   return {
     isCapturing: true,
     presentation: "compact",
@@ -40,9 +38,7 @@ describe("projectDynamicIsland", () => {
       presentation: "compact",
       recording: { countdownValue: "2", title: "Screen Recording" },
     });
-    expect(projection?.geometry.width).toBeGreaterThan(
-      profileIsland.collapsedWidth,
-    );
+    expect(projection?.geometry.width).toBeGreaterThan(profileIsland.collapsedWidth);
   });
 
   it("uses a red-dot-only compact state with elapsed time kept for expansion", () => {
@@ -81,12 +77,11 @@ describe("projectDynamicIsland", () => {
       presentation: "expanded",
       suppressesStatusBar: true,
     });
-    expect(projection?.geometry.width).toBe(
-      chromeIsland.recordingExpandedWidth,
-    );
-    expect(projection?.geometry.width).toBeLessThan(
-      profileIsland.expandedWidth,
-    );
+    expect(projection?.geometry.width).toBe(chromeIsland.recordingExpandedWidth);
+    expect(projection?.geometry.width).toBeLessThan(profileIsland.expandedWidth);
+    expect(projection).toBeDefined();
+    if (!projection) throw new Error("Expected expanded recording projection");
+    expect(projection.geometry.width / iPhone16Profile.display.width).toBeLessThan(0.7);
   });
 
   it("returns to physical idle chrome when the indicator is dismissed", () => {
@@ -103,9 +98,7 @@ describe("projectDynamicIsland", () => {
 
     expect(projection).toMatchObject({ phase: "idle", presentation: "idle" });
     expect(projection?.suppressesStatusBar).toBe(false);
-    expect(projection?.geometry.width).toBe(
-      profileIsland.collapsedWidth,
-    );
+    expect(projection?.geometry.width).toBe(profileIsland.collapsedWidth);
   });
 
   it("projects a save banner after a completed capture", () => {

@@ -23,5 +23,4 @@
     <rect x="0" y="0" width="72" height="46" rx="14" fill="#1F2C1A" opacity="0.82" />
     <polygon points="28,14 28,32 46,23" fill="#FFFFFF" />
   </g>
-  <text x="360" y="58" text-anchor="middle" font-family="'SF Pro Display', Arial, sans-serif" font-size="18" fill="#6C7C5E">shared media</text>
 </svg>

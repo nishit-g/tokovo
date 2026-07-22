@@ -69,13 +69,6 @@ export class FrameRegistryClass {
   }
 
   /**
-   * Get frame with fallback
-   */
-  getWithFallback(profileId: string, fallbackId: string = "iphone16"): FrameComponent | undefined {
-    return this.frames.get(profileId) || this.frames.get(fallbackId);
-  }
-
-  /**
    * Check if a frame is registered
    */
   has(profileId: string): boolean {

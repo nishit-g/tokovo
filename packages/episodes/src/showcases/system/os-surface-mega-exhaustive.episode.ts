@@ -100,13 +100,7 @@ export default defineEpisode({
         locked: true,
         installedApps: INSTALLED_APPS,
         homeScreen: {
-          dock: [
-            "app_camera",
-            "app_whatsapp",
-            "app_x",
-            "app_teams",
-            "app_instagram",
-          ],
+          dock: ["app_camera", "app_whatsapp", "app_x", "app_teams", "app_instagram"],
           pages: [["app_linkedin", "app_snapchat", "app_imessage"]],
         },
         os: {
@@ -141,13 +135,7 @@ export default defineEpisode({
         locked: true,
         installedApps: INSTALLED_APPS,
         homeScreen: {
-          dock: [
-            "app_camera",
-            "app_imessage",
-            "app_whatsapp",
-            "app_x",
-            "app_instagram",
-          ],
+          dock: ["app_camera", "app_imessage", "app_whatsapp", "app_x", "app_instagram"],
           pages: [["app_teams", "app_linkedin", "app_snapchat"]],
         },
         os: {
@@ -159,37 +147,25 @@ export default defineEpisode({
           network: "5G",
         },
       })
-      .background({ type: "image", src: "/backgrounds/dark-studio.png" })
+      .background("studio-quiet-dark")
       .snapshot(
         "app_whatsapp",
         "ios_light_hi",
-        conversationSnapshot(
-          "भाषा QA",
-          "हर मात्रा और संयुक्त अक्षर सही रहना चाहिए।",
-        ),
+        conversationSnapshot("भाषा QA", "हर मात्रा और संयुक्त अक्षर सही रहना चाहिए।"),
       )
       .snapshot("app_whatsapp", "android_dark_ar", {
-        ...conversationSnapshot(
-          "فريق اللغة",
-          "يجب أن يبقى اتجاه المؤشر صحيحًا.",
-        ),
+        ...conversationSnapshot("فريق اللغة", "يجب أن يبقى اتجاه المؤشر صحيحًا."),
         locale: "ar",
       })
       .snapshot(
         "app_whatsapp",
         "ios_dark_ja",
-        conversationSnapshot(
-          "言語 QA",
-          "変換中の文字は確定テキストではありません。",
-        ),
+        conversationSnapshot("言語 QA", "変換中の文字は確定テキストではありません。"),
       )
       .snapshot(
         "app_whatsapp",
         "android_light_en",
-        conversationSnapshot(
-          "Input QA",
-          "Repair the typo without rebuilding the draft.",
-        ),
+        conversationSnapshot("Input QA", "Repair the typo without rebuilding the draft."),
       )
       .overlay((overlay) => {
         overlay.at("0s").hook("FOUR NATIVE SYSTEM THEMES", {
@@ -216,9 +192,7 @@ export default defineEpisode({
       })
       .deviceTrack("ios_light_hi", (device) => {
         device.at("6s").unlock();
-        device
-          .at("6.7s")
-          .goHome({ transition: { durationFrames: 16, style: "iosZoom" } });
+        device.at("6.7s").goHome({ transition: { durationFrames: 16, style: "iosZoom" } });
         device.at("24.7s").openApp("app_whatsapp", {
           transition: { durationFrames: 16, style: "iosZoom" },
         });
@@ -226,27 +200,21 @@ export default defineEpisode({
       })
       .deviceTrack("android_dark_ar", (device) => {
         device.at("6s").unlock();
-        device
-          .at("6.7s")
-          .goHome({ transition: { durationFrames: 16, style: "iosZoom" } });
+        device.at("6.7s").goHome({ transition: { durationFrames: 16, style: "iosZoom" } });
         device.at("33.2s").openApp("app_whatsapp", {
           transition: { durationFrames: 14, style: "iosZoom" },
         });
       })
       .deviceTrack("ios_dark_ja", (device) => {
         device.at("20s").unlock();
-        device
-          .at("20.7s")
-          .goHome({ transition: { durationFrames: 16, style: "iosZoom" } });
+        device.at("20.7s").goHome({ transition: { durationFrames: 16, style: "iosZoom" } });
         device.at("42.7s").openApp("app_whatsapp", {
           transition: { durationFrames: 16, style: "iosZoom" },
         });
       })
       .deviceTrack("android_light_en", (device) => {
         device.at("20s").unlock();
-        device
-          .at("20.7s")
-          .goHome({ transition: { durationFrames: 14, style: "iosZoom" } });
+        device.at("20.7s").goHome({ transition: { durationFrames: 14, style: "iosZoom" } });
         device.at("51.7s").openApp("app_whatsapp", {
           transition: { durationFrames: 14, style: "iosZoom" },
         });
@@ -366,9 +334,7 @@ export default defineEpisode({
           },
         });
         notifications.at("66s").openCenter();
-        notifications
-          .at("68s")
-          .reply("arabic_quick_reply", "نعم، جاهزة للإرسال.");
+        notifications.at("68s").reply("arabic_quick_reply", "نعم، جاهزة للإرسال.");
         notifications.at("68.15s").closeCenter();
       })
       .notificationTrack("ios_dark_ja", (notifications) => {
@@ -462,13 +428,7 @@ export default defineEpisode({
         script: [
           {
             type: "compose",
-            updates: [
-              "ashita",
-              "あした",
-              "明日",
-              "明日の朝",
-              "明日の朝、最終版を送ります",
-            ],
+            updates: ["ashita", "あした", "明日", "明日の朝", "明日の朝、最終版を送ります"],
             commit: "明日の朝、最終版を送ります。",
             keys: ["a", "し", "明", "朝", "送"],
             intervalFrames: 18,

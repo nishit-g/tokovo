@@ -2,32 +2,29 @@
  * iMessage App Shell
  *
  * Root layout wrapper that provides:
- * - Safe area insets from device context
+ * - Platform content insets from the app viewport
  * - Theme colors from context
  * - Consistent layout structure
  */
 import React from "react";
-import { useSafeAreaInsets } from "@tokovo/react";
+import { useAppViewport } from "@tokovo/react";
 import { useIMessageTheme } from "./ThemeContext.js";
 
 interface AppShellProps {
   children: React.ReactNode;
-  /** Override safe area for manual control */
-  overrideSafeArea?: {
+  /** Override content insets for intentional immersive layouts. */
+  overrideContentInsets?: {
     top?: number;
     bottom?: number;
   };
 }
 
-export const AppShell: React.FC<AppShellProps> = ({
-  children,
-  overrideSafeArea,
-}) => {
+export const AppShell: React.FC<AppShellProps> = ({ children, overrideContentInsets }) => {
   const theme = useIMessageTheme();
-  const safeArea = useSafeAreaInsets();
+  const { contentInsets } = useAppViewport();
 
-  const topInset = overrideSafeArea?.top ?? safeArea.top;
-  const bottomInset = overrideSafeArea?.bottom ?? safeArea.bottom;
+  const topInset = overrideContentInsets?.top ?? contentInsets.top;
+  const bottomInset = overrideContentInsets?.bottom ?? contentInsets.bottom;
 
   return (
     <div

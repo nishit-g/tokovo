@@ -2,7 +2,7 @@ import React from "react";
 import { CallState } from "@tokovo/core";
 import { DeterministicImage } from "@tokovo/react";
 import type { DeviceProfile } from "@tokovo/devices";
-import { getIOSChromeMetrics } from "@tokovo/devices";
+import { getIOSChromeMetrics, resolveDevicePlatformVisuals } from "@tokovo/devices";
 
 const iconBase = {
   stroke: "currentColor",
@@ -191,8 +191,17 @@ export const CallOverlay: React.FC<CallOverlayProps> = ({
 
   const metrics = deviceProfile ? getIOSChromeMetrics(deviceProfile) : null;
   const pointScale = metrics?.pointScale ?? 3;
-  const safeTop = deviceProfile?.safeArea?.top ?? 47 * pointScale;
-  const safeBottom = deviceProfile?.safeArea?.bottom ?? 34 * pointScale;
+  const platformGeometry = deviceProfile
+    ? resolveDevicePlatformVisuals(deviceProfile, "dark").geometry
+    : undefined;
+  const fontFamily = deviceProfile
+    ? resolveDevicePlatformVisuals(deviceProfile, "dark").typography.primaryFamily
+    : undefined;
+  if (!fontFamily) {
+    throw new Error("CALL_OVERLAY_DEVICE_PROFILE_REQUIRED");
+  }
+  const contentTop = (platformGeometry?.minimumContentInsets.top ?? 62) * pointScale;
+  const contentBottom = (platformGeometry?.minimumContentInsets.bottom ?? 34) * pointScale;
   const pulse =
     call.status === "incoming" ? 0.92 + 0.08 * (0.5 + 0.5 * Math.sin(currentTime * 0.12)) : 1;
   const isIncoming = call.status === "incoming" || call.status === "ringing";
@@ -211,8 +220,8 @@ export const CallOverlay: React.FC<CallOverlayProps> = ({
   const incomingNameSize = 61 * pointScale;
   const activeNameSize = 46 * pointScale;
   const statusSize = 21 * pointScale;
-  const topPadding = safeTop + 18 * pointScale;
-  const bottomPadding = safeBottom + 20 * pointScale;
+  const topPadding = contentTop + 18 * pointScale;
+  const bottomPadding = contentBottom + 20 * pointScale;
 
   return (
     <div
@@ -221,7 +230,7 @@ export const CallOverlay: React.FC<CallOverlayProps> = ({
         inset: 0,
         backgroundColor: "#0a0d14",
         background: posterBackground,
-        fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif",
+        fontFamily,
         color: "white",
         zIndex: 7000,
         overflow: "hidden",

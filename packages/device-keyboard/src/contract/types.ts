@@ -1,18 +1,15 @@
+import type { MaterialRecipe, PlatformDesignProfileId } from "@tokovo/visual-system";
+
 export type InputSessionId = string;
 export type InputFieldId = string;
 export type AppInstanceId = string;
 
-export type InputSource =
-  | "softwareKeyboard"
-  | "hardwareKeyboard"
-  | "paste"
-  | "voice";
+export type InputSource = "softwareKeyboard" | "hardwareKeyboard" | "paste" | "voice";
 
 export type InputDirection = "ltr" | "rtl";
 export type InputDirectionIntent = InputDirection | "auto";
 export type InputPlatform = "ios" | "android";
 export type InputAppearance = "light" | "dark";
-export type InputThemeId = "system";
 
 export type KeyboardLayoutKind = "letters" | "numbers" | "symbols" | "emoji";
 
@@ -34,13 +31,7 @@ export type KeyboardFamily =
   | "cjk"
   | "generic";
 
-export type InputReturnKey =
-  | "return"
-  | "send"
-  | "search"
-  | "done"
-  | "go"
-  | "next";
+export type InputReturnKey = "return" | "send" | "search" | "done" | "go" | "next";
 
 export interface ResolvedInputLocale {
   tag: string;
@@ -67,7 +58,7 @@ export interface InputKeyboardConfig {
   layout: KeyboardLayoutKind;
   returnKey: InputReturnKey;
   appearance: InputAppearance;
-  themeId: InputThemeId;
+  platformProfileId: PlatformDesignProfileId;
   autocapitalization: "none" | "sentences" | "words" | "characters";
   autocorrection: boolean;
 }
@@ -94,6 +85,7 @@ export interface InputThemeProjection {
     keyShadow: string;
     keyPreview: string;
   };
+  material: MaterialRecipe;
   typography: {
     fontFamily: string;
     keyFontSize: number;
@@ -126,14 +118,7 @@ export interface InputPresentationStrategy {
   keyPreview: "iosBubble" | "androidPopup";
   suggestionStyle: "segmented" | "strip";
   returnKeyStyle: "accent" | "tonal";
-  bottomRowOrder: readonly (
-    | "layout"
-    | "emoji"
-    | "language"
-    | "space"
-    | "dictation"
-    | "return"
-  )[];
+  bottomRowOrder: readonly ("layout" | "emoji" | "language" | "space" | "dictation" | "return")[];
 }
 
 interface PreparedInputOperationBase {
@@ -277,12 +262,13 @@ export interface InputProjection {
     layout: KeyboardLayoutKind;
     family: KeyboardFamily;
     appearance: InputAppearance;
-    themeId: InputThemeId;
+    platformProfileId: PlatformDesignProfileId;
     theme: InputThemeProjection;
     presentation: InputPresentationStrategy;
     returnKey: InputReturnKey;
     activeKey: string | null;
     suggestions: readonly string[];
+    candidateMode: "suggestions" | "toolbar";
     activeSuggestionIndex: number | null;
     viewportInset: number;
     bounds: InputRect;

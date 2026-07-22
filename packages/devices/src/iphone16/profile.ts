@@ -7,7 +7,7 @@ export const iPhone16Constants = {
   BODY_CORNER_RADIUS: 60 * SCALE,
   DISPLAY_CORNER_RADIUS: 50 * SCALE,
   DISPLAY_INSET: 30,
-  STATUS_BAR_HEIGHT: 150,
+  STATUS_BAR_HEIGHT: 186,
   STATUS_BAR_PADDING_TOP: 40,
   STATUS_BAR_PADDING_X: 60,
   DYNAMIC_ISLAND_TOP: 11 * SCALE,
@@ -23,7 +23,7 @@ export const iPhone16Constants = {
 /**
  * iPhone 16 Device Profile
  *
- * Resolution: 1290 x 2796 (Super Retina XDR, 460 ppi)
+ * Resolution: 1320 x 2868 (Super Retina XDR, 460 ppi)
  * Dynamic Island: Centered at top, pill shape
  */
 export const iPhone16Profile: DeviceProfile = {
@@ -31,32 +31,35 @@ export const iPhone16Profile: DeviceProfile = {
   name: "iPhone 16 Pro Max",
   type: "phone",
   platform: "ios",
-  dimensions: { width: 1350, height: 2856, depth: 8 * SCALE },
+  dimensions: { width: 1380, height: 2928, depth: 8.25 * SCALE },
   display: {
     x: iPhone16Constants.DISPLAY_INSET,
     y: iPhone16Constants.DISPLAY_INSET,
-    width: 1290,
-    height: 2796,
+    width: 1320,
+    height: 2868,
     ppi: 460,
     cornerRadius: iPhone16Constants.DISPLAY_CORNER_RADIUS,
   },
-  pixelDensity: 3,
-  safeArea: {
-    top: 110,
-    bottom: 102,
-    left: 0,
-    right: 0,
-  },
+  pointScale: 3,
+  platformProfileId: "ios:liquid-glass@1",
+  systemSurfaces: true,
+  hardwareRegions: [
+    {
+      id: "hardware.dynamic-island",
+      kind: "sensor-housing",
+      rect: { x: 471, y: 33, width: 378, height: 111 },
+    },
+  ],
   // Dynamic Island dimensions (measured from iPhone 16 specs)
   dynamicIsland: {
-    centerX: 645, // 1290 / 2 (centered)
-    topY: 36, // Top padding
-    collapsedWidth: 370, // Pill width
-    collapsedHeight: 110, // Pill height
-    expandedWidth: 408 * SCALE,
-    expandedHeight: 96 * SCALE,
-    cornerRadius: 55, // Pill corners
-    expandedCornerRadius: 44 * SCALE,
+    centerX: 660,
+    topY: 33,
+    collapsedWidth: 378,
+    collapsedHeight: 111,
+    expandedWidth: 326 * SCALE,
+    expandedHeight: 84 * SCALE,
+    cornerRadius: 56,
+    expandedCornerRadius: 40 * SCALE,
   },
 
   // Device OS sounds

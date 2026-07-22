@@ -134,24 +134,19 @@ export interface WhatsAppSpacing {
   sectionGap: number;
 }
 
-export interface WhatsAppSafeArea {
-  top: number;
-  bottom: number;
-  left: number;
-  right: number;
-}
-
 export interface WhatsAppTheme {
   platform: Platform;
   colors: WhatsAppColorPalette;
   typography: WhatsAppTypography;
   spacing: WhatsAppSpacing;
-  safeArea: WhatsAppSafeArea;
   uiTypography: WhatsAppUITypography;
   uiSpacing: WhatsAppUISpacing;
 }
 
-export const WHATSAPP_FONT_FAMILY = '"Noto Sans Variable", "Noto Sans Arabic Variable", sans-serif';
+export const WHATSAPP_IOS_FONT_FAMILY =
+  '"Inter Variable", "Noto Sans Arabic Variable", "Noto Sans Devanagari Variable", "Noto Sans JP Variable", sans-serif';
+export const WHATSAPP_ANDROID_FONT_FAMILY =
+  '"Roboto", "Noto Sans Arabic Variable", "Noto Sans Devanagari Variable", "Noto Sans JP Variable", sans-serif';
 
 const sharedColors: WhatsAppColorPalette = {
   sentBubble: "#DCF8C6",
@@ -295,7 +290,7 @@ export const iosTheme: WhatsAppTheme = {
     onlineStatus: "#25D366",
   },
   typography: {
-    fontFamily: WHATSAPP_FONT_FAMILY,
+    fontFamily: WHATSAPP_IOS_FONT_FAMILY,
     messageFontSize: 16.5,
     messageLineHeight: 22,
     timestampFontSize: 11,
@@ -315,12 +310,6 @@ export const iosTheme: WhatsAppTheme = {
     inputAreaHeight: 54,
     messageGap: 2,
     sectionGap: 16,
-  },
-  safeArea: {
-    top: 47,
-    bottom: 34,
-    left: 0,
-    right: 0,
   },
   uiTypography: sharedUITypography,
   uiSpacing: sharedUISpacing,
@@ -354,7 +343,7 @@ export const androidTheme: WhatsAppTheme = {
     onlineStatus: "#25D366",
   },
   typography: {
-    fontFamily: WHATSAPP_FONT_FAMILY,
+    fontFamily: WHATSAPP_ANDROID_FONT_FAMILY,
     messageFontSize: 16,
     messageLineHeight: 21,
     timestampFontSize: 11,
@@ -374,12 +363,6 @@ export const androidTheme: WhatsAppTheme = {
     inputAreaHeight: 56,
     messageGap: 2,
     sectionGap: 12,
-  },
-  safeArea: {
-    top: 24,
-    bottom: 0,
-    left: 0,
-    right: 0,
   },
   uiTypography: sharedUITypography,
   uiSpacing: sharedUISpacing,
@@ -489,7 +472,6 @@ type WhatsAppThemeOverrides = {
   colors?: Partial<WhatsAppColorPalette>;
   typography?: Partial<WhatsAppTypography>;
   spacing?: Partial<WhatsAppSpacing>;
-  safeArea?: Partial<WhatsAppSafeArea>;
   uiTypography?: Partial<WhatsAppUITypography>;
   uiSpacing?: Partial<WhatsAppUISpacing>;
 };
@@ -622,7 +604,6 @@ function mergeTheme(base: WhatsAppTheme, overrides: WhatsAppThemeOverrides): Wha
     colors: { ...base.colors, ...overrides.colors },
     typography: { ...base.typography, ...overrides.typography },
     spacing: { ...base.spacing, ...overrides.spacing },
-    safeArea: { ...base.safeArea, ...overrides.safeArea },
     uiTypography: { ...base.uiTypography, ...overrides.uiTypography },
     uiSpacing: { ...base.uiSpacing, ...overrides.uiSpacing },
   };

@@ -1,5 +1,5 @@
 import React, { useMemo } from "react";
-import { getAppStateForDevice, projectWorldForDevice, WorldState } from "@tokovo/core";
+import { getAppStateForDevice, projectWorldForDevice, type PluginViewProps } from "@tokovo/core";
 import { WhatsAppExperienceProvider } from "../experience/ExperienceContext.js";
 import { resolveWhatsAppExperience } from "../experience/resolver.js";
 import type { WhatsAppAppearance } from "../experience/contract.js";
@@ -11,20 +11,10 @@ import { getBaseTime } from "../utils/messages.js";
 
 import { WhatsAppState } from "../types/index.js";
 
-export interface WhatsappChatViewProps {
-  world: WorldState;
-  t?: number;
-  deviceId?: string;
-  platform?: "ios" | "android";
+export interface WhatsappChatViewProps extends PluginViewProps {
   appearance?: WhatsAppAppearance;
   width?: number;
   height?: number;
-  safeAreaInsets?: {
-    top: number;
-    bottom: number;
-    left: number;
-    right: number;
-  };
 }
 
 export const WhatsappChatView: React.FC<WhatsappChatViewProps> = ({
@@ -35,7 +25,7 @@ export const WhatsappChatView: React.FC<WhatsappChatViewProps> = ({
   appearance,
   width,
   height,
-  safeAreaInsets,
+  appViewport,
 }) => {
   const resolvedDeviceId = deviceId ?? Object.keys(world.devices || {})[0];
   const appTheme =
@@ -82,7 +72,7 @@ export const WhatsappChatView: React.FC<WhatsappChatViewProps> = ({
     deviceId: resolvedDeviceId,
     width: activeWidth,
     height: activeHeight,
-    safeAreaInsets,
+    contentInsets: appViewport.contentInsets,
   });
   const viewer = appState?.mediaViewer;
   const statusViewer = appState?.statusViewer;

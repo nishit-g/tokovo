@@ -1,11 +1,5 @@
 import React from "react";
-import {
-  UpdatesIcon,
-  CallsTabIcon,
-  CommunitiesIcon,
-  ChatsIcon,
-  SettingsIcon,
-} from "./Icons.js";
+import { UpdatesIcon, CallsTabIcon, CommunitiesIcon, ChatsIcon, SettingsIcon } from "./Icons.js";
 import {
   useTheme,
   useWhatsAppLocale,
@@ -16,15 +10,12 @@ import { formatWhatsAppNumber } from "../localization/index.js";
 
 export interface TabNavigationProps {
   activeTab?: "updates" | "calls" | "communities" | "chats" | "settings";
-  safeAreaBottom?: number;
+  contentInsetBottom: number;
   unreadChatsCount?: number;
   missedCallsCount?: number;
 }
 
-const TabBadge: React.FC<{ count: number; isMuted?: boolean }> = ({
-  count,
-  isMuted,
-}) => {
+const TabBadge: React.FC<{ count: number; isMuted?: boolean }> = ({ count, isMuted }) => {
   const theme = useTheme();
   const { uiSpacing: spacing, uiTypography: typography } = theme;
   if (count <= 0) return null;
@@ -36,9 +27,7 @@ const TabBadge: React.FC<{ count: number; isMuted?: boolean }> = ({
         position: "absolute",
         top: spacing.tabBadgeOffsetTop,
         right: spacing.tabBadgeOffsetRight,
-        backgroundColor: isMuted
-          ? theme.colors.timestamp
-          : theme.colors.unreadBadge,
+        backgroundColor: isMuted ? theme.colors.timestamp : theme.colors.unreadBadge,
         color: theme.colors.unreadBadgeText,
         borderRadius: spacing.badgeRadius,
         minWidth: spacing.badgeMinWidth,
@@ -58,7 +47,7 @@ const TabBadge: React.FC<{ count: number; isMuted?: boolean }> = ({
 
 export const TabNavigation: React.FC<TabNavigationProps> = ({
   activeTab = "chats",
-  safeAreaBottom = 34,
+  contentInsetBottom,
   unreadChatsCount = 0,
   missedCallsCount = 0,
 }) => {
@@ -94,9 +83,7 @@ export const TabNavigation: React.FC<TabNavigationProps> = ({
     Icon: React.FC<{ color?: string; filled?: boolean }>;
     badge: number;
   }>;
-  const tabs = allTabs.filter((tab) =>
-    presentation.navigation.tabs.includes(tab.id),
-  );
+  const tabs = allTabs.filter((tab) => presentation.navigation.tabs.includes(tab.id));
 
   return (
     <nav
@@ -108,7 +95,7 @@ export const TabNavigation: React.FC<TabNavigationProps> = ({
         borderTop: `0.5px solid ${theme.colors.divider}`,
         display: "flex",
         justifyContent: "space-around",
-        paddingBottom: safeAreaBottom,
+        paddingBottom: contentInsetBottom,
         paddingTop: spacing.tabPaddingTop,
         position: "absolute",
         bottom: 0,

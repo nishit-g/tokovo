@@ -1,5 +1,6 @@
 import React from "react";
 import { DeterministicImage } from "@tokovo/react";
+import { materialToPaintStyle } from "@tokovo/visual-system";
 import { OffthreadVideo, Sequence } from "remotion";
 import type {
   NotificationDeviceProjection,
@@ -12,13 +13,7 @@ export interface NotificationSurfaceProps {
   pointScale?: number;
 }
 
-function Icon({
-  item,
-  size,
-}: {
-  item: NotificationItemProjection;
-  size: number;
-}) {
+function Icon({ item, size }: { item: NotificationItemProjection; size: number }) {
   const primaryImage = item.leadingImage ?? item.icon;
   const isAvatar = Boolean(item.leadingImage);
   const isImage = /^(?:https?:|data:|\/)/u.test(primaryImage);
@@ -49,24 +44,13 @@ function Icon({
         }}
       >
         {isAvatar && isImage ? (
-          <svg
-            width={size}
-            height={size}
-            viewBox="0 0 100 100"
-            style={{ display: "block" }}
-          >
+          <svg width={size} height={size} viewBox="0 0 100 100" style={{ display: "block" }}>
             <defs>
               <clipPath id={avatarClipId}>
                 <circle cx="50" cy="50" r="49" />
               </clipPath>
             </defs>
-            <foreignObject
-              x="0"
-              y="0"
-              width="100"
-              height="100"
-              clipPath={`url(#${avatarClipId})`}
-            >
+            <foreignObject x="0" y="0" width="100" height="100" clipPath={`url(#${avatarClipId})`}>
               <DeterministicImage
                 src={primaryImage}
                 alt={item.leadingImageAlt ?? ""}
@@ -136,6 +120,7 @@ function NotificationCard({
     <article
       dir={item.direction}
       data-notification-id={item.id}
+      data-notification-surface-kind={surface}
       data-interruption={item.interruption}
       aria-label={`${item.appName}: ${item.title}. ${item.body}`}
       style={{
@@ -145,24 +130,13 @@ function NotificationCard({
         padding: px(theme.geometry.cardPadding),
         borderRadius: px(theme.geometry.cardRadius),
         color: theme.colors.text,
-        background:
-          surface === "banner" ? theme.colors.banner : theme.colors.card,
-        border: `${Math.max(1, px(0.35))}px solid ${theme.colors.border}`,
-        boxShadow:
-          platform === "ios"
-            ? `0 ${px(8)}px ${px(28)}px rgba(0,0,0,.18)`
-            : `0 ${px(3)}px ${px(10)}px rgba(0,0,0,.2)`,
-        backdropFilter:
-          platform === "ios" ? "blur(30px) saturate(1.35)" : undefined,
-        WebkitBackdropFilter:
-          platform === "ios" ? "blur(30px) saturate(1.35)" : undefined,
+        ...materialToPaintStyle(theme.materials.card, pointScale),
         opacity: item.animation.progress,
         transform: `translate3d(0, ${translate}px, 0) scale(${0.98 + item.animation.progress * 0.02})`,
         fontFamily: theme.typography.fontFamily,
         overflow: "hidden",
         contain: "layout style",
-        willChange:
-          item.animation.phase === "visible" ? undefined : "transform, opacity",
+        willChange: item.animation.phase === "visible" ? undefined : "transform, opacity",
       }}
     >
       <header
@@ -174,10 +148,7 @@ function NotificationCard({
           marginBottom: px(compact ? 7 : 10),
         }}
       >
-        <Icon
-          item={item}
-          size={px(item.leadingImage ? 34 : theme.geometry.iconSize)}
-        />
+        <Icon item={item} size={px(item.leadingImage ? 34 : theme.geometry.iconSize)} />
         <div
           style={{
             minWidth: 0,
@@ -381,25 +352,22 @@ function Group({
         paddingBottom: px(stackDepth * 7),
       }}
     >
-      {Array.from({ length: stackDepth }, (_, index) => stackDepth - index).map(
-        (depth) => (
-          <div
-            key={`stack:${depth}`}
-            aria-hidden
-            style={{
-              position: "absolute",
-              top: px(depth * 7),
-              insetInline: px(depth * 3),
-              bottom: 0,
-              borderRadius: px(projection.theme.geometry.cardRadius),
-              background: projection.theme.colors.card,
-              border: `${Math.max(1, px(0.35))}px solid ${projection.theme.colors.border}`,
-              opacity: 0.88 - depth * 0.08,
-              zIndex: depth,
-            }}
-          />
-        ),
-      )}
+      {Array.from({ length: stackDepth }, (_, index) => stackDepth - index).map((depth) => (
+        <div
+          key={`stack:${depth}`}
+          aria-hidden
+          style={{
+            position: "absolute",
+            top: px(depth * 7),
+            insetInline: px(depth * 3),
+            bottom: 0,
+            borderRadius: px(projection.theme.geometry.cardRadius),
+            ...materialToPaintStyle(projection.theme.materials.secondary, pointScale),
+            opacity: 0.88 - depth * 0.08,
+            zIndex: depth,
+          }}
+        />
+      ))}
       {group.items.slice(0, 1).map((item) => (
         <div
           key={item.id}
@@ -452,9 +420,7 @@ export const NotificationSurface: React.FC<NotificationSurfaceProps> = ({
               padding: `${px(theme.geometry.centerTop)}px ${px(
                 theme.geometry.centerHorizontalMargin,
               )}px ${px(24)}px`,
-              background: theme.colors.centerScrim,
-              backdropFilter: "blur(34px)",
-              WebkitBackdropFilter: "blur(34px)",
+              ...materialToPaintStyle(theme.materials.center, pointScale),
               opacity: projection.center.progress,
               transform: `translateY(${(1 - projection.center.progress) * -px(22)}px)`,
               overflow: "hidden",
@@ -501,12 +467,7 @@ export const NotificationSurface: React.FC<NotificationSurfaceProps> = ({
             }}
           >
             {projection.lockScreenGroups.map((group) => (
-              <Group
-                key={group.key}
-                group={group}
-                pointScale={pointScale}
-                compact
-              />
+              <Group key={group.key} group={group} pointScale={pointScale} compact />
             ))}
           </div>
         ) : null}

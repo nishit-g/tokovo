@@ -10,10 +10,11 @@
  */
 
 import { RuntimeEvent } from "./runtime-event.js";
-import type { Platform } from "../tokens.js";
+import type { Platform } from "./device.js";
 import type { LayoutContext, LayoutState, ViewKind } from "./layout.js";
 import type { CinematicSubjectProvider } from "./cinematic-subject.js";
 import type { PluginAssetCollector } from "./asset-ref.js";
+import type { AppViewportFrame } from "@tokovo/visual-system";
 
 export interface PluginBootstrapValidationResult {
   errors?: string[];
@@ -34,12 +35,8 @@ export interface PluginBootstrapSchemaContext<AppId extends string = string> {
 
 export interface PluginBootstrapSchemaContract<AppId extends string = string> {
   currentVersion: number;
-  migrate?: (
-    input: PluginBootstrapSchemaContext<AppId>,
-  ) => PluginBootstrapMigrationResult;
-  validate?: (
-    input: PluginBootstrapSchemaContext<AppId>,
-  ) => PluginBootstrapValidationResult;
+  migrate?: (input: PluginBootstrapSchemaContext<AppId>) => PluginBootstrapMigrationResult;
+  validate?: (input: PluginBootstrapSchemaContext<AppId>) => PluginBootstrapValidationResult;
 }
 
 export interface PluginBootstrapContext<AppId extends string = string> {
@@ -55,12 +52,8 @@ export interface PluginBootstrapContext<AppId extends string = string> {
 export interface PluginBootstrapContract<AppId extends string = string> {
   snapshot?: PluginBootstrapSchemaContract<AppId>;
   view?: PluginBootstrapSchemaContract<AppId>;
-  hydrate: (
-    context: PluginBootstrapContext<AppId>,
-  ) => InitialStateForApp<AppId>;
-  validate?: (
-    context: PluginBootstrapContext<AppId>,
-  ) => PluginBootstrapValidationResult;
+  hydrate: (context: PluginBootstrapContext<AppId>) => InitialStateForApp<AppId>;
+  validate?: (context: PluginBootstrapContext<AppId>) => PluginBootstrapValidationResult;
 }
 // =============================================================================
 // LAYOUT CONSTANTS - App-specific UI metrics
@@ -69,8 +62,6 @@ export interface PluginBootstrapContract<AppId extends string = string> {
 export interface PluginLayoutConstants {
   headerHeight?: number;
   footerHeight?: number;
-  safeAreaInsets?: { top: number; bottom: number };
-  statusBarHeight?: number;
   navigationBarHeight?: number;
 }
 
@@ -83,10 +74,9 @@ export interface AppEventKindRegistry {
   // Plugins augment this: app_whatsapp: "MessageReceived" | "MessageSent" | ...
 }
 
-type EventKindsForApp<AppId extends string> =
-  AppId extends keyof AppEventKindRegistry
-    ? readonly AppEventKindRegistry[AppId][]
-    : readonly string[];
+type EventKindsForApp<AppId extends string> = AppId extends keyof AppEventKindRegistry
+  ? readonly AppEventKindRegistry[AppId][]
+  : readonly string[];
 
 // =============================================================================
 // APP STATE REGISTRY - Extensible via module augmentation
@@ -97,10 +87,9 @@ export interface AppInitialStateRegistry {
   // Plugins augment this: app_whatsapp: WhatsAppState
 }
 
-type InitialStateForApp<AppId extends string> =
-  AppId extends keyof AppInitialStateRegistry
-    ? AppInitialStateRegistry[AppId]
-    : unknown;
+type InitialStateForApp<AppId extends string> = AppId extends keyof AppInitialStateRegistry
+  ? AppInitialStateRegistry[AppId]
+  : unknown;
 
 // =============================================================================
 // PLUGIN REDUCER
@@ -127,6 +116,7 @@ export interface PluginViewProps {
   deviceId?: string;
   platform?: "ios" | "android";
   t?: number;
+  appViewport: AppViewportFrame;
 }
 
 /**
@@ -180,10 +170,7 @@ export interface LoweringHandler {
   handles: string[];
 
   /** Convert TrackEvent to RuntimeEvent(s) */
-  lower: (
-    op: import("@tokovo/ir").TrackEvent,
-    ctx: LowerContext,
-  ) => RuntimeEvent[];
+  lower: (op: import("@tokovo/ir").TrackEvent, ctx: LowerContext) => RuntimeEvent[];
 }
 
 // =============================================================================

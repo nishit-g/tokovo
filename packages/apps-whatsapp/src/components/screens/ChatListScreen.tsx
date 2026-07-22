@@ -10,16 +10,10 @@ import type {
   WhatsAppState,
   WhatsAppStatusUpdate,
 } from "../../types/index.js";
-import {
-  formatConversationListTimestamp,
-  getBaseTime,
-} from "../../utils/messages.js";
+import { formatConversationListTimestamp, getBaseTime } from "../../utils/messages.js";
 import { resolveTypingMembers } from "../../utils/participants.js";
 import { resolveDeliveryStage } from "../../utils/status.js";
-import {
-  useTheme,
-  useWhatsAppLocale,
-} from "../../experience/ExperienceContext.js";
+import { useTheme, useWhatsAppLocale } from "../../experience/ExperienceContext.js";
 import type { WhatsAppChatFilter } from "../../presentation/strategy.js";
 import type { StatusSegmentState } from "../StatusRing.js";
 import { formatWhatsAppNumber } from "../../localization/index.js";
@@ -30,7 +24,7 @@ import { formatWhatsAppNumber } from "../../localization/index.js";
 
 export interface ChatListScreenProps {
   world: WorldState;
-  safeAreaInsets?: {
+  contentInsets: {
     top: number;
     bottom: number;
     left: number;
@@ -147,38 +141,38 @@ const EmptyState: React.FC<{ filter: WhatsAppChatFilter }> = ({ filter }) => {
     switch (filter) {
       case "unread":
         return {
-          emoji: "✅",
+          glyph: "check" as const,
           title: t("empty.noUnreadTitle"),
           subtitle: t("empty.noUnreadBody"),
         };
       case "favorites":
         return {
-          emoji: "⭐",
+          glyph: "star" as const,
           title: t("empty.noFavoritesTitle"),
           subtitle: t("empty.noFavoritesBody"),
         };
       case "groups":
         return {
-          emoji: "👥",
+          glyph: "group" as const,
           title: t("empty.noGroupsTitle"),
           subtitle: t("empty.noGroupsBody"),
         };
       case "drafts":
         return {
-          emoji: "✍️",
+          glyph: "draft" as const,
           title: t("empty.noDraftsTitle"),
           subtitle: t("empty.noDraftsBody"),
         };
       default:
         return {
-          emoji: "💬",
+          glyph: "chat" as const,
           title: t("empty.noChatsTitle"),
           subtitle: t("empty.noChatsBody"),
         };
     }
   };
 
-  const { emoji, title, subtitle } = getMessage();
+  const { glyph, title, subtitle } = getMessage();
 
   return (
     <div
@@ -191,7 +185,66 @@ const EmptyState: React.FC<{ filter: WhatsAppChatFilter }> = ({ filter }) => {
         justifyContent: "center",
       }}
     >
-      <div style={{ fontSize: 64, marginBottom: 20 }}>{emoji}</div>
+      <div
+        style={{
+          width: 76,
+          height: 76,
+          marginBottom: 20,
+          borderRadius: 24,
+          display: "grid",
+          placeItems: "center",
+          background: theme.colors.surfaceMuted,
+          border: `1px solid ${theme.colors.divider}`,
+          color: theme.colors.accent,
+        }}
+      >
+        <svg width="42" height="42" viewBox="0 0 48 48" fill="none" aria-hidden="true">
+          {glyph === "check" ? (
+            <path
+              d="m12 25 8 8 17-19"
+              stroke="currentColor"
+              strokeWidth="4"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          ) : glyph === "star" ? (
+            <path
+              d="m24 7 5.2 10.6L41 19.3l-8.5 8.3 2 11.7L24 33.8l-10.5 5.5 2-11.7L7 19.3l11.8-1.7L24 7Z"
+              stroke="currentColor"
+              strokeWidth="3"
+              strokeLinejoin="round"
+            />
+          ) : glyph === "group" ? (
+            <>
+              <circle cx="18" cy="19" r="7" stroke="currentColor" strokeWidth="3" />
+              <circle cx="33" cy="21" r="5" stroke="currentColor" strokeWidth="3" />
+              <path
+                d="M7 39c1-8 6-12 11-12s10 4 11 12M28 29c6 0 10 3 11 9"
+                stroke="currentColor"
+                strokeWidth="3"
+                strokeLinecap="round"
+              />
+            </>
+          ) : glyph === "draft" ? (
+            <>
+              <path
+                d="M11 35 13 25 31 7l10 10-18 18-10 2 2-10"
+                stroke="currentColor"
+                strokeWidth="3"
+                strokeLinejoin="round"
+              />
+              <path d="m29 10 9 9" stroke="currentColor" strokeWidth="3" />
+            </>
+          ) : (
+            <path
+              d="M7 22c0-8 7-14 17-14s17 6 17 14-7 14-17 14c-3 0-5.7-.5-8.2-1.5L8 39l2.2-7.4A13 13 0 0 1 7 22Z"
+              stroke="currentColor"
+              strokeWidth="3"
+              strokeLinejoin="round"
+            />
+          )}
+        </svg>
+      </div>
       <div
         style={{
           ...typography.headline,
@@ -222,7 +275,7 @@ const EmptyState: React.FC<{ filter: WhatsAppChatFilter }> = ({ filter }) => {
 
 export const ChatListScreen: React.FC<ChatListScreenProps> = ({
   world,
-  safeAreaInsets,
+  contentInsets,
   width: _width,
   height: _height,
 }) => {
@@ -233,9 +286,9 @@ export const ChatListScreen: React.FC<ChatListScreenProps> = ({
   const deviceId = Object.keys(world.devices || {})[0];
   const baseTime = getBaseTime(world, deviceId);
 
-  // TokovoRenderer already provides safeAreaInsets in design coordinates.
-  const safeAreaTop = safeAreaInsets?.top ?? 47;
-  const safeAreaBottom = safeAreaInsets?.bottom ?? 34;
+  // TokovoRenderer already provides contentInsets in design coordinates.
+  const contentInsetTop = contentInsets.top;
+  const contentInsetBottom = contentInsets.bottom;
 
   // Extract app state and conversations
   const appState = (world.appState?.["app_whatsapp"] || {}) as WhatsAppState;
@@ -278,10 +331,7 @@ export const ChatListScreen: React.FC<ChatListScreenProps> = ({
   });
 
   // Calculate total unread for tab badge
-  const totalUnread = allConversations.reduce(
-    (sum, conv) => sum + (conv.unreadCount || 0),
-    0,
-  );
+  const totalUnread = allConversations.reduce((sum, conv) => sum + (conv.unreadCount || 0), 0);
 
   // Count archived conversations
   const archivedCount = allConversations.filter((c) => c.isArchived).length;
@@ -301,7 +351,7 @@ export const ChatListScreen: React.FC<ChatListScreenProps> = ({
     >
       {/* Header (Sticky) */}
       <ChatListHeader
-        safeAreaTop={safeAreaTop}
+        contentInsetTop={contentInsetTop}
         activeFilter={activeFilter}
         showEditButton={false}
         showDraftsFilter={allConversations.some((conversation) =>
@@ -316,14 +366,12 @@ export const ChatListScreen: React.FC<ChatListScreenProps> = ({
           overflow: "auto",
           overflowX: "hidden",
           backgroundColor: theme.colors.background,
-          paddingBottom: spacing.tabBarHeight + safeAreaBottom,
+          paddingBottom: spacing.tabBarHeight + contentInsetBottom,
           WebkitOverflowScrolling: "touch",
         }}
       >
         {/* Archived Row (only show if there are archived chats and "all" filter is active) */}
-        {archivedCount > 0 && activeFilter === "all" && (
-          <ArchivedRow count={archivedCount} />
-        )}
+        {archivedCount > 0 && activeFilter === "all" && <ArchivedRow count={archivedCount} />}
 
         {/* Conversations List */}
         {filteredConversations.length > 0 ? (
@@ -331,47 +379,24 @@ export const ChatListScreen: React.FC<ChatListScreenProps> = ({
             {filteredConversations.map((conv, i) => {
               const messages = conv.messages ?? [];
 
-              const lastMsg =
-                messages.length > 0
-                  ? messages[messages.length - 1]
-                  : null;
+              const lastMsg = messages.length > 0 ? messages[messages.length - 1] : null;
               const lastRenderable =
                 [...messages]
                   .reverse()
-                  .find(
-                    (msg) =>
-                      msg.type !== "system" || msg.systemType !== "date_change",
-                  ) ?? lastMsg;
+                  .find((msg) => msg.type !== "system" || msg.systemType !== "date_change") ??
+                lastMsg;
 
               // Determine media type
-              let mediaType:
-                | "photo"
-                | "video"
-                | "voice"
-                | "document"
-                | "gif"
-                | "sticker"
-                | null = null;
-              if (lastRenderable?.type === "image" || lastRenderable?.imageUrl)
-                mediaType = "photo";
-              else if (
-                lastRenderable?.type === "video" ||
-                lastRenderable?.videoUrl
-              )
+              let mediaType: "photo" | "video" | "voice" | "document" | "gif" | "sticker" | null =
+                null;
+              if (lastRenderable?.type === "image" || lastRenderable?.imageUrl) mediaType = "photo";
+              else if (lastRenderable?.type === "video" || lastRenderable?.videoUrl)
                 mediaType = "video";
-              else if (lastRenderable?.type === "voice")
-                mediaType = "voice";
-              else if (
-                lastRenderable?.type === "document" ||
-                lastRenderable?.documentUrl
-              )
+              else if (lastRenderable?.type === "voice") mediaType = "voice";
+              else if (lastRenderable?.type === "document" || lastRenderable?.documentUrl)
                 mediaType = "document";
-              else if (lastRenderable?.type === "gif" || lastRenderable?.gifUrl)
-                mediaType = "gif";
-              else if (
-                lastRenderable?.type === "sticker" ||
-                lastRenderable?.stickerUrl
-              )
+              else if (lastRenderable?.type === "gif" || lastRenderable?.gifUrl) mediaType = "gif";
+              else if (lastRenderable?.type === "sticker" || lastRenderable?.stickerUrl)
                 mediaType = "sticker";
 
               // Determine sender name for groups
@@ -383,9 +408,7 @@ export const ChatListScreen: React.FC<ChatListScreenProps> = ({
                   senderName = lastRenderable.senderName;
                 } else if (lastRenderable.from) {
                   // Try to get name from members
-                  const member = conv.members?.find(
-                    (m) => m.id === lastRenderable.from,
-                  );
+                  const member = conv.members?.find((m) => m.id === lastRenderable.from);
                   senderName = member?.name || lastRenderable.from;
                 }
               } else if (lastRenderable?.from === "me") {
@@ -393,13 +416,7 @@ export const ChatListScreen: React.FC<ChatListScreenProps> = ({
               }
 
               // Determine read status
-              let status:
-                | "sending"
-                | "sent"
-                | "delivered"
-                | "read"
-                | "failed"
-                | undefined;
+              let status: "sending" | "sent" | "delivered" | "read" | "failed" | undefined;
               if (lastRenderable?.from === "me") {
                 status = resolveDeliveryStage(lastRenderable, currentFrame);
               }
@@ -507,7 +524,7 @@ export const ChatListScreen: React.FC<ChatListScreenProps> = ({
       {/* Tab Navigation (Fixed Bottom) */}
       <TabNavigation
         activeTab="chats"
-        safeAreaBottom={safeAreaBottom}
+        contentInsetBottom={contentInsetBottom}
         unreadChatsCount={totalUnread}
       />
     </div>

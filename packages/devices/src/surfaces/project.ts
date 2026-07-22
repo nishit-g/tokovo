@@ -1,4 +1,10 @@
-import type { DeviceOSState, HomeScreenConfig, LayoutRect } from "@tokovo/core";
+import type {
+  DeviceOSState,
+  HomeScreenConfig,
+  LayoutRect,
+  LayoutState,
+  SemanticRegion,
+} from "@tokovo/core";
 import type { DeviceProfile } from "../types.js";
 import type {
   HomeScreenProjection,
@@ -7,7 +13,7 @@ import type {
   SystemWallpaperProjection,
 } from "./contract.js";
 import { formatSystemTime, getSystemLocalizedStrings } from "./localization.js";
-import { getSystemSurfaceTheme } from "./theme.js";
+import { resolveSystemSurfaceDesign } from "./theme.js";
 
 const DEFAULT_CLOCK_MS = Date.parse("2024-01-01T09:41:00Z");
 
@@ -47,23 +53,22 @@ export function projectLockscreen(input: {
   fallbackWallpaper?: string;
 }): LockscreenProjection {
   const resolved = resolveOS(input.os);
-  const theme = getSystemSurfaceTheme(input.profile, resolved.appearance);
-  const strings = getSystemLocalizedStrings(resolved.clock, resolved.locale);
-  const time = formatSystemTime(
-    resolved.clock,
+  const { theme, layout } = resolveSystemSurfaceDesign(
+    input.profile,
+    resolved.appearance,
     resolved.locale,
-    resolved.hourCycle,
   );
+  const strings = getSystemLocalizedStrings(resolved.clock, resolved.locale);
+  const time = formatSystemTime(resolved.clock, resolved.locale, resolved.hourCycle);
   const [hours = "", minutes = ""] = time.split(":");
-  const lock = theme.geometry.lock;
+  const lock = layout.lock;
   const clockHeight =
-    theme.platform === "android"
-      ? lock.androidClockSize * 1.72
-      : lock.clockSize * 1.05;
+    theme.platform === "android" ? lock.androidClockSize * 1.72 : lock.clockSize * 1.05;
 
   return {
     kind: "lockscreen",
     theme,
+    layout,
     locale: resolved.locale,
     direction: strings.direction,
     time,
@@ -76,9 +81,9 @@ export function projectLockscreen(input: {
     ),
     cinematicSubjects: {
       "lockscreen.clock": rect(
-        theme.geometry.pointScale * 20,
+        layout.pointScale * 20,
         lock.clockTop,
-        input.profile.display.width - theme.geometry.pointScale * 40,
+        input.profile.display.width - layout.pointScale * 40,
         clockHeight,
       ),
       "lockscreen.controls": rect(
@@ -98,19 +103,18 @@ export function projectHomeScreen(input: {
   activePage?: number;
 }): HomeScreenProjection {
   if (input.config.pages.length === 0) {
-    throw new Error(
-      "SYSTEM_HOME_INVALID: a home screen must contain at least one page.",
-    );
+    throw new Error("SYSTEM_HOME_INVALID: a home screen must contain at least one page.");
   }
   const resolved = resolveOS(input.os);
-  const theme = getSystemSurfaceTheme(input.profile, resolved.appearance);
-  const strings = getSystemLocalizedStrings(resolved.clock, resolved.locale);
-  const activePage = Math.max(
-    0,
-    Math.min(input.activePage ?? 0, input.config.pages.length - 1),
+  const { theme, layout } = resolveSystemSurfaceDesign(
+    input.profile,
+    resolved.appearance,
+    resolved.locale,
   );
+  const strings = getSystemLocalizedStrings(resolved.clock, resolved.locale);
+  const activePage = Math.max(0, Math.min(input.activePage ?? 0, input.config.pages.length - 1));
   const pageItems = input.config.pages[activePage]?.apps ?? [];
-  const home = theme.geometry.home;
+  const home = layout.home;
   const gridBottom =
     theme.platform === "ios"
       ? home.pageDotsBottom + home.searchHeight
@@ -129,9 +133,7 @@ export function projectHomeScreen(input: {
       home.dockHeight,
     ),
     "homescreen.search": rect(
-      theme.platform === "ios"
-        ? input.profile.display.width * 0.4
-        : home.gridPaddingX,
+      theme.platform === "ios" ? input.profile.display.width * 0.4 : home.gridPaddingX,
       input.profile.display.height - home.searchBottom - home.searchHeight,
       theme.platform === "ios"
         ? input.profile.display.width * 0.2
@@ -140,10 +142,8 @@ export function projectHomeScreen(input: {
     ),
   };
 
-  const cellWidth =
-    (input.profile.display.width - home.gridPaddingX * 2) / home.gridColumns;
-  const cellHeight =
-    home.iconSize + home.labelGap + home.labelSize + home.rowGap;
+  const cellWidth = (input.profile.display.width - home.gridPaddingX * 2) / home.gridColumns;
+  const cellHeight = home.iconSize + home.labelGap + home.labelSize + home.rowGap;
   pageItems.forEach((item, index) => {
     if (!("appId" in item)) return;
     const visualIndex =
@@ -164,14 +164,11 @@ export function projectHomeScreen(input: {
   return {
     kind: "homescreen",
     theme,
+    layout,
     locale: resolved.locale,
     direction: strings.direction,
     strings,
-    wallpaper: wallpaperProjection(
-      input.config.wallpaper,
-      theme.wallpaper,
-      theme.wallpaperScrim,
-    ),
+    wallpaper: wallpaperProjection(input.config.wallpaper, theme.wallpaper, theme.wallpaperScrim),
     activePage,
     pageCount: input.config.pages.length,
     pageItems,
@@ -179,4 +176,23 @@ export function projectHomeScreen(input: {
     config: input.config,
     cinematicSubjects,
   };
+}
+
+export function projectSystemSurfaceLayout(
+  projection: HomeScreenProjection | LockscreenProjection,
+): LayoutState {
+  const regions = Object.fromEntries(
+    Object.entries(projection.cinematicSubjects).map(([id, region]) => [
+      id,
+      {
+        id,
+        rect: region,
+        tags: ["system", projection.kind],
+      } satisfies SemanticRegion,
+    ]),
+  );
+  const semantic = { regions, groups: {} };
+  return projection.kind === "lockscreen"
+    ? { kind: "LOCKSCREEN", meta: {}, semantic, cacheHint: "static" }
+    : { kind: "HOMESCREEN", meta: {}, semantic, cacheHint: "static" };
 }

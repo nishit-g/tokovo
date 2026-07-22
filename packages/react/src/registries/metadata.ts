@@ -36,16 +36,6 @@ export interface AppMetadata {
 }
 
 // =============================================================================
-// DEFAULT FALLBACK
-// =============================================================================
-
-const DEFAULT_METADATA: AppMetadata = {
-  displayName: "Unknown App",
-  themeColor: "#8E8E93",
-  icon: "[App]",
-};
-
-// =============================================================================
 // REGISTRY
 // =============================================================================
 
@@ -71,12 +61,11 @@ export function createAppMetadataRegistry(): AppMetadataRegistryAPI {
     },
 
     get(appId: string): AppMetadata {
-      return (
-        registry.get(appId) || {
-          ...DEFAULT_METADATA,
-          displayName: appId,
-        }
-      );
+      const metadata = registry.get(appId);
+      if (!metadata) {
+        throw new Error(`APP_METADATA_MISSING: app "${appId}" is not registered.`);
+      }
+      return metadata;
     },
 
     has: registry.has,

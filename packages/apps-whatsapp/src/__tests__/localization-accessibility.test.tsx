@@ -25,7 +25,7 @@ import {
 import type { ProjectedThreadMessage } from "../thread/projector.js";
 import { createWhatsAppInitialState } from "../runtime/initial-state.js";
 
-const safeAreaInsets = { top: 47, bottom: 34, left: 0, right: 0 };
+const contentInsets = { top: 47, bottom: 34, left: 0, right: 0 };
 
 function buildArabicWorld(conversationId = "dm"): WorldState {
   const state = {
@@ -107,9 +107,7 @@ describe("WhatsApp localization and accessibility contract", () => {
     expect(formatWhatsAppNumber("ar", 2048)).toBe("٢٠٤٨");
     expect(formatWhatsAppDigits("ar", "02:09")).toBe("٠٢:٠٩");
     expect(formatWhatsAppFileSize("ar", "2.29 MB")).toBe("٢٫٢٩ م.ب");
-    expect(
-      translateWhatsApp("ar", "a11y.unreadMessages", { count: 3 }),
-    ).toBe("٣ رسائل غير مقروءة");
+    expect(translateWhatsApp("ar", "a11y.unreadMessages", { count: 3 })).toBe("٣ رسائل غير مقروءة");
   });
 
   it("generates localized screen-reader labels for messages and reactions", () => {
@@ -122,12 +120,8 @@ describe("WhatsApp localization and accessibility contract", () => {
       reactions: [{ emoji: "❤️", count: 2, fromMe: false }],
     };
 
-    expect(getMessageAccessibilityLabel(message, false, "ar")).toBe(
-      "رسالة من نور: صورة",
-    );
-    expect(getReactionAccessibilityLabel(message, "ar")).toBe(
-      "التفاعلات: ❤️ ٢",
-    );
+    expect(getMessageAccessibilityLabel(message, false, "ar")).toBe("رسالة من نور: صورة");
+    expect(getReactionAccessibilityLabel(message, "ar")).toBe("التفاعلات: ❤️ ٢");
   });
 
   it("renders landmarks, a heading, native tab controls, and RTL direction", () => {
@@ -141,8 +135,8 @@ describe("WhatsApp localization and accessibility contract", () => {
         <AppScaffold
           title={experience.t("nav.chats")}
           activeTab="chats"
-          safeAreaTop={47}
-          safeAreaBottom={34}
+          contentInsetTop={47}
+          contentInsetBottom={34}
           unreadChatsCount={3}
         >
           <div>المحتوى</div>
@@ -174,28 +168,28 @@ describe("WhatsApp localization and accessibility contract", () => {
         world={directWorld}
         width={393}
         height={852}
-        safeAreaInsets={safeAreaInsets}
+        contentInsets={contentInsets}
       />,
       <CommunitiesScreen
         key="communities"
         world={directWorld}
         width={393}
         height={852}
-        safeAreaInsets={safeAreaInsets}
+        contentInsets={contentInsets}
       />,
       <SettingsScreen
         key="settings"
         world={directWorld}
         width={393}
         height={852}
-        safeAreaInsets={safeAreaInsets}
+        contentInsets={contentInsets}
       />,
       <ProfileScreen
         key="profile"
         world={directWorld}
         width={393}
         height={852}
-        safeAreaInsets={safeAreaInsets}
+        contentInsets={contentInsets}
       />,
       <GroupInfoScreen
         key="group"
@@ -203,7 +197,7 @@ describe("WhatsApp localization and accessibility contract", () => {
         conversationId="team"
         width={393}
         height={852}
-        safeAreaInsets={safeAreaInsets}
+        contentInsets={contentInsets}
       />,
     ];
     const html = renderToStaticMarkup(

@@ -1,11 +1,6 @@
 // NOTE: DeviceId, AppId, ConversationId, Platform are now in ./types/device.ts
 // Re-export for backward compatibility
-export type {
-  DeviceId,
-  AppId,
-  ConversationId,
-  Platform,
-} from "./types/device.js";
+export type { DeviceId, AppId, ConversationId, Platform } from "./types/device.js";
 
 export type {
   AppScreens,
@@ -76,13 +71,7 @@ export type TransitionType =
 // HIGHLIGHT SYSTEM TYPES (not camera-specific, stays in core)
 // =============================================================================
 
-export type HighlightStyle =
-  | "pulse"
-  | "glow"
-  | "shake"
-  | "bounce"
-  | "spotlight"
-  | "scale";
+export type HighlightStyle = "pulse" | "glow" | "shake" | "bounce" | "spotlight" | "scale";
 
 // =============================================================================
 // MULTI-DEVICE / POV TYPES (stays in core)
@@ -125,11 +114,7 @@ export type {
   VideoConfig,
 } from "./types/audio.js";
 
-export {
-  DEFAULT_BUS_CONFIG,
-  DEFAULT_AUDIO_STATE,
-  DEFAULT_VIDEO_CONFIG,
-} from "./types/audio.js";
+export { DEFAULT_BUS_CONFIG, DEFAULT_AUDIO_STATE, DEFAULT_VIDEO_CONFIG } from "./types/audio.js";
 
 // =============================================================================
 // TOUCH STATE (for gesture visualization)
@@ -178,8 +163,9 @@ export type {
 } from "./types/runtime-event.js";
 
 // --- Layout System Types ---
-// Re-export from types/layout.ts for backward compatibility
 // (types/index.ts is NOT exported from core/index.ts to avoid duplicates)
+
+export type { AppViewportFrame } from "@tokovo/visual-system";
 
 export type {
   ViewKind,
@@ -188,7 +174,6 @@ export type {
   SemanticLayoutState,
   LayoutContext,
   LayoutCacheStore,
-  SafeAreaInsets,
   LayoutConfig,
   ChatLayoutConfig,
   FeedLayoutConfig,
@@ -214,10 +199,7 @@ export type {
 } from "./types/layout.js";
 
 // StatusBar theming
-export {
-  STATUS_BAR_PRESETS,
-  resolveStatusBarTheme,
-} from "./types/statusbar-theme.js";
+export { STATUS_BAR_PRESETS, resolveStatusBarTheme } from "./types/statusbar-theme.js";
 export type {
   StatusBarPreset,
   StatusBarCustomTheme,

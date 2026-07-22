@@ -13,7 +13,8 @@
     { "path": "../device-keyboard" },
     { "path": "../devices" },
     { "path": "../device-notifications" },
-    { "path": "../react" }
+    { "path": "../react" },
+    { "path": "../visual-system" }
   ],
   "include": ["src/**/*"],
   "exclude": ["src/**/*.test.ts", "src/**/*.spec.ts", "src/__tests__/**"]
