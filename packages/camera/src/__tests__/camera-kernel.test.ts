@@ -187,6 +187,41 @@ describe("camera composer", () => {
     expect(output.y).toBeCloseTo(1920 * 0.62, 8);
   });
 
+  it("keeps an authored detail shot inside its semantic framing guard", () => {
+    const viewport = { x: 0, y: 0, width: 1080, height: 1920 };
+    const guard = { x: 0, y: 0, width: 1290, height: 2796 };
+    const pose = solveComposer({
+      subjectBounds: { x: 40, y: 1180, width: 680, height: 460 },
+      framingGuardBounds: guard,
+      framingGuardPaddingPx: 28,
+      framingGuardScreenPosition: [0.5, 0.5],
+      viewport,
+      composer: {
+        screenPosition: [0.5, 0.55],
+        targetFill: 0.8,
+        fillMode: "width",
+        maxScale: 1.4,
+      },
+    });
+    const matrix = multiplyMatrix3(
+      translationMatrix3(viewport.width / 2, viewport.height / 2),
+      multiplyMatrix3(scaleMatrix3(pose.scale), translationMatrix3(-pose.centerX, -pose.centerY)),
+    );
+    const topLeft = applyMatrix3(matrix, { x: guard.x, y: guard.y });
+    const bottomRight = applyMatrix3(matrix, {
+      x: guard.x + guard.width,
+      y: guard.y + guard.height,
+    });
+
+    expect(pose.scale).toBeLessThan(0.7);
+    expect(topLeft.x).toBeGreaterThanOrEqual(28 - 1e-8);
+    expect(topLeft.y).toBeGreaterThanOrEqual(28 - 1e-8);
+    expect(bottomRight.x).toBeLessThanOrEqual(1080 - 28 + 1e-8);
+    expect(bottomRight.y).toBeLessThanOrEqual(1920 - 28 + 1e-8);
+    expect((topLeft.x + bottomRight.x) / 2).toBeCloseTo(540, 8);
+    expect((topLeft.y + bottomRight.y) / 2).toBeCloseTo(960, 8);
+  });
+
   it("uses minimum-jerk endpoints and logarithmic scale interpolation", () => {
     expect(minimumJerk(0)).toBe(0);
     expect(minimumJerk(1)).toBe(1);

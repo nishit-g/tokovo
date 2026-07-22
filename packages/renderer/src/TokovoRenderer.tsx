@@ -680,17 +680,22 @@ const TokovoRendererInner: React.FC<TokovoRendererProps> = ({
         position: "relative",
       }}
     >
-      {cinematicFrame.outputs.map((output) => (
-        <CameraProjectionSurface
-          key={output.outputId}
-          id={`${output.trace.planId}-${output.outputId}`}
-          output={output}
-          stageWidth={stageWidth}
-          stageHeight={stageHeight}
-        >
-          {stageDevice}
-        </CameraProjectionSurface>
-      ))}
+      {[...cinematicFrame.outputs]
+        .sort(
+          (left, right) =>
+            left.zIndex - right.zIndex || left.outputId.localeCompare(right.outputId),
+        )
+        .map((output) => (
+          <CameraProjectionSurface
+            key={output.outputId}
+            id={`${output.trace.planId}-${output.outputId}`}
+            output={output}
+            stageWidth={stageWidth}
+            stageHeight={stageHeight}
+          >
+            {stageDevice}
+          </CameraProjectionSurface>
+        ))}
     </div>
   );
 };

@@ -524,6 +524,47 @@ Evidence at this checkpoint:
 Persistent single-range reuse is complete. Chunk/subrange reuse, bounded eviction, shared remote
 storage, underlay/foreground caching, and full-episode performance measurement remain open.
 
+### Multi-output and semantic-framing checkpoint — 2026-07-22
+
+Same-stage multi-output release composition and context-safe close framing are now connected without
+moving app semantics into the camera or compositor:
+
+- camera projection capture is a version-3 hard cut containing a stable list of independently
+  evaluated outputs; version 2 is not parsed or adapted;
+- the release compositor validates and freezes output topology for the captured range, orders outputs
+  by z-index and ID, and gives each output its own homography, optical maps, opacity, rounded clip,
+  shadow, smear, and viewport composition;
+- affine/projective-only outputs bypass the displacement filter and do not create or read optical
+  map inputs. A mathematically neutral displacement map is no longer allowed to resample alpha or
+  subtly deform device/app pixels;
+- `CameraRigIR.framingGuard` accepts any structured cinematic subject and constrains a tighter hero
+  subject against its semantic context. The flagship follows app-owned messages, keyboard, media,
+  and navigation subjects while keeping the device body centered and completely inside frame;
+- guard resolution and bounds are recorded in deterministic evaluation trace data, so a crop can be
+  explained without DOM measurement or render-pixel guesses;
+- the flagship's independent PIP output follows the exact sent-message entity, then fades before the
+  notification shot. The main output remains uninterrupted and independently directed;
+- the iPhone 16 painter now separates the screen glass aperture from the physical shell with an
+  in-bounds inner edge. This adds perceived bezel depth without changing screen coordinates, app
+  layout, keyboard geometry, notification geometry, or cinematic subject bounds.
+
+Evidence at this checkpoint:
+
+- real release-compositor proofs were inspected at the opening, keyboard, sent-message/PIP,
+  notification, and media frames;
+- the sent-message PIP retains the complete bubble and input bar after the neutral-displacement
+  bypass; the main device stays centered and fully contained during close subject shots;
+- a real one-frame release proof with neutral main and PIP outputs reported zero optical outputs and
+  spent 2ms in command/map preparation before completing the FFmpeg composition;
+- camera kernel: 16 tests passing; IR contract: 8 tests passing; episode suite: 17 tests passing;
+  render-service compositor/profile suite: 20 tests passing;
+- devices, renderer, video-runner, episodes, and render-service focused builds/typechecks pass.
+
+This connects multiple independent camera outputs sourced from one stage plate. It does not yet
+connect multi-device stage painting: `EpisodeRenderer` still rejects a Camera VNext episode with
+more than one device, and the old event-camera system remains for unmigrated episodes until the
+repository-wide hard cut.
+
 ### Phase 0: Architecture lock and renderer feasibility
 
 Status: In progress
@@ -596,8 +637,8 @@ Status: In progress
 - [x] Introduce deterministic stage nodes and transforms.
 - [ ] Move current SINGLE/SPLIT/PIP layout ownership out of camera.
 - [ ] Migrate 27 authored camera layout calls to stage authoring.
-- [ ] Add main and inset output composition.
-- [ ] Give every output independent camera evaluation.
+- [x] Add same-stage main and inset output composition.
+- [x] Give every output independent camera evaluation.
 - [ ] Make device selection explicit in stage/output data.
 
 Focused verification:
@@ -652,7 +693,8 @@ Status: In progress
 - [x] Compile outputs, rigs, shots, composers, blends, motion, lenses, and modifiers.
 - [ ] Validate full output coverage.
 - [x] Implement exact cuts and minimum-jerk complete-pose blends.
-- [ ] Implement subject groups and safe zones (group union is complete; safe-zone solving remains).
+- [x] Implement subject groups and semantic framing guards.
+- [ ] Implement general output safe-zone constraints.
 - [ ] Implement bounded missing-subject behavior.
 - [ ] Implement deterministic subject tracking.
 - [ ] Bake compact curves for moving subjects.
@@ -685,6 +727,7 @@ Status: In progress
 - [x] Add first-output attachment rules for underlay, camera plate, and final foreground HUD.
 - [x] Make full-stage camera plates independent from the selected CameraPlan.
 - [x] Apply affine/projective framing with a cubic release homography before optical residuals.
+- [x] Bypass optical displacement for affine/projective-only outputs.
 - [x] Persist and integrity-check reusable stage plates across render jobs.
 - [x] Evaluate new CameraPlans through a projection-data-only cache-hit path.
 - [ ] Delete `useCameraEngine` after cutover.
@@ -717,9 +760,9 @@ No compatibility compiler or old-to-new translation layer will be written.
 
 ### Phase 8: Flagship mega episode
 
-Status: In progress — the watchable single-output vertical slice is complete; the two-device/PIP
-expansion remains gated on Phase 3 stage/output projection rather than being faked through the old
-camera layout path.
+Status: In progress — the watchable same-stage main/PIP release slice is complete; second-device
+stage painting and the cross-device handoff remain gated on Phase 3 rather than being faked through
+the old camera layout path.
 
 Create `camera-vnext-cinematic-flagship` at 1080x1920, 60fps, approximately 24 seconds.
 
@@ -754,6 +797,11 @@ Landed vertical slice:
 - one immutable story supplies exact sent-message/media entities, semantic header/input/last-message
   subjects, the canonical keyboard, a foreground notification banner, app navigation, and a grouped
   conversation settle;
+- independently evaluated main and PIP outputs are composited from the same reusable stage plate;
+  the PIP follows the exact sent-message entity, uses its own viewport/clip/shadow, and fades before
+  the notification beat;
+- each main rig uses a semantic device-body framing guard, allowing close app-owned subjects while
+  keeping the physical phone centered and fully contained;
 - selectable `restrained` and `kinetic` plans have different camera signatures while the prepared
   story signature stays equal to the episode event signature;
 - the kinetic cut covers perspective tilt, barrel, fisheye, horizontal and vertical anamorphic edge
@@ -768,9 +816,8 @@ Landed vertical slice:
 Remaining before Phase 8 is complete:
 
 - stage-authored second-device placement;
-- independent main/PIP outputs and tracking;
 - cross-device notification handoff;
-- a texture-compositor release render of the completed two-output episode and repeated pixel/hash
+- a texture-compositor release render of the completed two-device episode and repeated pixel/hash
   comparison.
 
 ### Phase 9: Diagnostics and render artifacts

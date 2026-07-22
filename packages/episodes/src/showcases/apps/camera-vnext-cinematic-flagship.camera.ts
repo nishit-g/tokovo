@@ -10,7 +10,8 @@ import type {
 
 const FPS = 60;
 const DURATION_IN_FRAMES = 1440;
-const OUTPUT_ID = "portrait-main";
+const MAIN_OUTPUT_ID = "portrait-main";
+const PIP_OUTPUT_ID = "message-pip";
 const DEVICE_ID = "director-phone";
 const APP_ID = "app_whatsapp";
 
@@ -133,7 +134,6 @@ const rigSpecs = {
     minScale: 0.54,
     maxScale: 0.92,
     motion: { type: "whip", durationFrames: 20, direction: "left" },
-    lensId: "notification-smear",
   },
   media: {
     subject: message("launch_board", "media"),
@@ -172,25 +172,59 @@ const rigSpecs = {
 type RigId = keyof typeof rigSpecs;
 
 function buildRigs(kinetic: boolean): CameraRigIR[] {
-  return (Object.entries(rigSpecs) as [RigId, RigSpec][]).map(([id, spec]) => ({
-    id,
-    outputId: OUTPUT_ID,
-    subject: spec.subject,
-    composer: {
-      screenPosition: spec.screenPosition,
-      targetFill: spec.targetFill,
-      fillMode: spec.fillMode,
-      paddingPx: spec.paddingPx,
-      minScale: spec.minScale,
-      maxScale: spec.maxScale,
+  const mainRigs = (Object.entries(rigSpecs) as [RigId, RigSpec][]).map(
+    ([id, spec]): CameraRigIR => ({
+      id,
+      outputId: MAIN_OUTPUT_ID,
+      subject: spec.subject,
+      composer: {
+        screenPosition: spec.screenPosition,
+        targetFill: spec.targetFill,
+        fillMode: spec.fillMode,
+        paddingPx: spec.paddingPx,
+        minScale: spec.minScale,
+        maxScale: spec.maxScale,
+      },
+      framingGuard: {
+        subject: device("body"),
+        paddingPx: 28,
+        screenPosition: [0.5, 0.5],
+      },
+      motion:
+        !kinetic && spec.motion.type === "whip"
+          ? { type: "minimum-jerk", durationFrames: 30 }
+          : spec.motion,
+      ...(kinetic && spec.lensId ? { lensId: spec.lensId } : {}),
+      ...(kinetic && spec.modifierIds ? { modifierIds: spec.modifierIds } : {}),
+    }),
+  );
+  const pipComposer = {
+    screenPosition: [0.5, 0.4] as const,
+    targetFill: 0.9,
+    fillMode: "width" as const,
+    paddingPx: 14,
+    minScale: 0.38,
+    maxScale: 0.72,
+  };
+  return [
+    ...mainRigs,
+    {
+      id: "pip-hidden",
+      outputId: PIP_OUTPUT_ID,
+      subject: device("screen"),
+      composer: pipComposer,
+      opacity: 0,
+      motion: { type: "minimum-jerk", durationFrames: 24 },
     },
-    motion:
-      !kinetic && spec.motion.type === "whip"
-        ? { type: "minimum-jerk", durationFrames: 30 }
-        : spec.motion,
-    ...(kinetic && spec.lensId ? { lensId: spec.lensId } : {}),
-    ...(kinetic && spec.modifierIds ? { modifierIds: spec.modifierIds } : {}),
-  }));
+    {
+      id: "pip-message",
+      outputId: PIP_OUTPUT_ID,
+      subject: message("director_reply"),
+      composer: pipComposer,
+      opacity: 0.96,
+      motion: { type: "minimum-jerk", durationFrames: 26 },
+    },
+  ];
 }
 
 function fallbackFor(rigId: RigId): CinematicSubjectRefIR {
@@ -203,7 +237,7 @@ function fallbackFor(rigId: RigId): CinematicSubjectRefIR {
   return device("body");
 }
 
-function shot(
+function mainShot(
   id: string,
   startFrame: number,
   endFrame: number,
@@ -212,7 +246,7 @@ function shot(
 ): CameraShotIR {
   return {
     id,
-    outputId: OUTPUT_ID,
+    outputId: MAIN_OUTPUT_ID,
     startFrame,
     endFrame,
     rigId,
@@ -231,16 +265,40 @@ function shot(
 }
 
 const shots: CameraShotIR[] = [
-  shot("oblique-stage-open", 0, 120, "opening", 0),
-  shot("barrel-header-arrival", 120, 240, "header", 1),
-  shot("fisheye-keyboard-entry", 240, 390, "keyboardFisheye", 2),
-  shot("anamorphic-keyboard-run", 390, 540, "keyboardAnamorphic", 3),
-  shot("exact-sent-message", 540, 636, "sentMessage", 4),
-  shot("notification-whip", 636, 750, "notificationWhip", 5),
-  shot("exact-media-reframe", 750, 930, "media", 6),
-  shot("semantic-navigation", 930, 1140, "navigation", 7),
-  shot("conversation-group-settle", 1140, 1320, "conversation", 8),
-  shot("neutral-final", 1320, DURATION_IN_FRAMES, "neutral", 9),
+  mainShot("oblique-stage-open", 0, 120, "opening", 0),
+  mainShot("barrel-header-arrival", 120, 240, "header", 1),
+  mainShot("fisheye-keyboard-entry", 240, 390, "keyboardFisheye", 2),
+  mainShot("anamorphic-keyboard-run", 390, 540, "keyboardAnamorphic", 3),
+  mainShot("exact-sent-message", 540, 636, "sentMessage", 4),
+  mainShot("notification-whip", 636, 750, "notificationWhip", 5),
+  mainShot("exact-media-reframe", 750, 930, "media", 6),
+  mainShot("semantic-navigation", 930, 1140, "navigation", 7),
+  mainShot("conversation-group-settle", 1140, 1320, "conversation", 8),
+  mainShot("neutral-final", 1320, DURATION_IN_FRAMES, "neutral", 9),
+  {
+    id: "pip-message-hold",
+    outputId: PIP_OUTPUT_ID,
+    startFrame: 540,
+    endFrame: 636,
+    rigId: "pip-message",
+    priority: 10,
+    declarationOrder: 10,
+    blendIn: { durationFrames: 28, curve: "minimum-jerk" },
+    missingSubjectPolicy: { type: "use-explicit", fallback: device("screen") },
+    source: "authored",
+  },
+  {
+    id: "pip-message-fade",
+    outputId: PIP_OUTPUT_ID,
+    startFrame: 636,
+    endFrame: 672,
+    rigId: "pip-hidden",
+    priority: 10,
+    declarationOrder: 11,
+    blendIn: { durationFrames: 24, curve: "minimum-jerk" },
+    missingSubjectPolicy: { type: "error" },
+    source: "authored",
+  },
 ];
 
 const lenses: CameraLensIR[] = [
@@ -289,17 +347,6 @@ const lenses: CameraLensIR[] = [
     },
   },
   {
-    id: "notification-smear",
-    modelId: "directional-smear",
-    modelVersion: 1,
-    parameters: {
-      direction: [-1, 0.08],
-      spreadPx: 30,
-      samples: 7,
-      decay: 0.66,
-    },
-  },
-  {
     id: "media-perspective",
     modelId: "perspective-tilt",
     modelVersion: 1,
@@ -340,11 +387,20 @@ function plan(id: string, kinetic: boolean): CameraPlanIR {
     durationInFrames: DURATION_IN_FRAMES,
     outputs: [
       {
-        id: OUTPUT_ID,
+        id: MAIN_OUTPUT_ID,
         viewport: { x: 0, y: 0, width: 1080, height: 1920 },
         sourceStageNodeId: "stage.root",
         zIndex: 0,
         defaultRigId: "neutral",
+      },
+      {
+        id: PIP_OUTPUT_ID,
+        viewport: { x: 570, y: 250, width: 480, height: 220 },
+        sourceStageNodeId: "stage.root",
+        zIndex: 20,
+        clipRadiusPx: 32,
+        shadow: { offsetX: 0, offsetY: 18, blurPx: 28, opacity: 0.58 },
+        defaultRigId: "pip-hidden",
       },
     ],
     rigs: buildRigs(kinetic),

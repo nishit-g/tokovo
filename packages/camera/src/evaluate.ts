@@ -6,11 +6,7 @@ import type {
   CameraShotIR,
   CinematicSubjectRefIR,
 } from "@tokovo/ir";
-import {
-  interpolateCameraPose,
-  minimumJerk,
-  solveComposer,
-} from "./composer.js";
+import { interpolateCameraPose, minimumJerk, solveComposer } from "./composer.js";
 import type { CameraRegistries } from "./lenses.js";
 import { applyCameraModifiers } from "./modifiers.js";
 import { cameraPoseToViewMatrix } from "./matrix.js";
@@ -58,9 +54,7 @@ function resolveSubjects(
   available: readonly ResolvedCinematicSubject[],
 ): readonly ResolvedCinematicSubject[] | undefined {
   if (ref.kind === "group") {
-    const memberGroups = ref.members.map((member) =>
-      resolveSubjects(member, available),
-    );
+    const memberGroups = ref.members.map((member) => resolveSubjects(member, available));
     if (memberGroups.some((members) => members === undefined)) return undefined;
     return memberGroups.flatMap((members) => members ?? []);
   }
@@ -103,7 +97,14 @@ function evaluateRig(
   available: readonly ResolvedCinematicSubject[],
 ): CameraRigEvaluation | undefined {
   const subjects = resolveWithPolicy({ ref: rig.subject, policy, available });
-  return subjects ? { rig, subjects } : undefined;
+  if (!subjects) return undefined;
+  const framingGuardSubjects = rig.framingGuard
+    ? resolveSubjects(rig.framingGuard.subject, available)
+    : [];
+  if (rig.framingGuard && !framingGuardSubjects) {
+    throw new Error(`Camera rig "${rig.id}" could not resolve its framing guard subject.`);
+  }
+  return { rig, subjects, framingGuardSubjects: framingGuardSubjects ?? [] };
 }
 
 interface EvaluatedRigFrame extends CameraRigEvaluation {
@@ -119,25 +120,25 @@ function evaluateRigFrame(input: {
   registries: CameraRegistries;
 }): EvaluatedRigFrame {
   const subjectBounds = unionRects(
-    input.evaluation.subjects.map(
-      (subject) => subject.clippedWorldRect ?? subject.worldRect,
-    ),
+    input.evaluation.subjects.map((subject) => subject.clippedWorldRect ?? subject.worldRect),
   );
+  const framingGuardBounds = input.evaluation.framingGuardSubjects.length
+    ? unionRects(input.evaluation.framingGuardSubjects.map((subject) => subject.worldRect))
+    : undefined;
   const basePose = solveComposer({
     subjectBounds,
+    framingGuardBounds,
+    framingGuardPaddingPx: input.evaluation.rig.framingGuard?.paddingPx,
+    framingGuardScreenPosition: input.evaluation.rig.framingGuard?.screenPosition,
     viewport: input.output.viewport,
     composer: input.evaluation.rig.composer,
     rotationDeg: input.evaluation.rig.rotationDeg,
     opacity: input.evaluation.rig.opacity,
   });
   const lens = input.evaluation.rig.lensId
-    ? input.program.plan.lenses.find(
-        (candidate) => candidate.id === input.evaluation.rig.lensId,
-      )
+    ? input.program.plan.lenses.find((candidate) => candidate.id === input.evaluation.rig.lensId)
     : undefined;
-  const lensModel = lens
-    ? input.registries.lenses.get(lens.modelId, lens.modelVersion)
-    : undefined;
+  const lensModel = lens ? input.registries.lenses.get(lens.modelId, lens.modelVersion) : undefined;
   const projectionPasses =
     lensModel && lens
       ? lensModel.evaluate({
@@ -146,28 +147,19 @@ function evaluateRigFrame(input: {
           parameters: lens.parameters,
         })
       : [];
-  const modifiers = (input.evaluation.rig.modifierIds ?? []).map(
-    (modifierId) => {
-      const modifier = input.program.plan.modifiers.find(
-        (candidate) => candidate.id === modifierId,
+  const modifiers = (input.evaluation.rig.modifierIds ?? []).map((modifierId) => {
+    const modifier = input.program.plan.modifiers.find((candidate) => candidate.id === modifierId);
+    if (!modifier) {
+      throw new Error(`Prepared camera rig references missing modifier "${modifierId}".`);
+    }
+    const model = input.registries.modifiers.get(modifier.modelId, modifier.modelVersion);
+    if (!model) {
+      throw new Error(
+        `Prepared camera modifier model "${modifier.modelId}@${modifier.modelVersion}" is missing.`,
       );
-      if (!modifier) {
-        throw new Error(
-          `Prepared camera rig references missing modifier "${modifierId}".`,
-        );
-      }
-      const model = input.registries.modifiers.get(
-        modifier.modelId,
-        modifier.modelVersion,
-      );
-      if (!model) {
-        throw new Error(
-          `Prepared camera modifier model "${modifier.modelId}@${modifier.modelVersion}" is missing.`,
-        );
-      }
-      return { model, parameters: modifier.parameters };
-    },
-  );
+    }
+    return { model, parameters: modifier.parameters };
+  });
   const modified = applyCameraModifiers({
     frame: input.frame,
     fps: input.program.plan.fps,
@@ -254,25 +246,15 @@ function resolvePreviousRig(input: {
 }): CameraRigEvaluation | undefined {
   const previousFrame = input.shot.startFrame - 1;
   if (previousFrame >= 0) {
-    for (const previousShot of selectShots(
-      input.program,
-      input.output.id,
-      previousFrame,
-    )) {
+    for (const previousShot of selectShots(input.program, input.output.id, previousFrame)) {
       const rig = getRigById(input.program, previousShot.rigId);
       if (!rig) continue;
-      const evaluated = evaluateRig(
-        rig,
-        previousShot.missingSubjectPolicy,
-        input.available,
-      );
+      const evaluated = evaluateRig(rig, previousShot.missingSubjectPolicy, input.available);
       if (evaluated) return evaluated;
     }
   }
   const defaultRig = getRigById(input.program, input.output.defaultRigId);
-  return defaultRig
-    ? evaluateRig(defaultRig, { type: "error" }, input.available)
-    : undefined;
+  return defaultRig ? evaluateRig(defaultRig, { type: "error" }, input.available) : undefined;
 }
 
 function transitionForShot(
@@ -287,13 +269,11 @@ function transitionForShot(
     return {
       durationFrames: shot.blendIn.durationFrames,
       curve: shot.blendIn.curve,
-      whipDirection:
-        rig.motion?.type === "whip" ? rig.motion.direction : undefined,
+      whipDirection: rig.motion?.type === "whip" ? rig.motion.direction : undefined,
     };
   }
   const motion = rig.motion;
-  if (!motion || motion.type === "cut")
-    return { durationFrames: 0, curve: "linear" };
+  if (!motion || motion.type === "cut") return { durationFrames: 0, curve: "linear" };
   if (motion.type === "minimum-jerk") {
     return { durationFrames: motion.durationFrames, curve: "minimum-jerk" };
   }
@@ -317,10 +297,7 @@ function transitionProgress(input: {
   curve: "linear" | "smoothstep" | "minimum-jerk" | "critically-damped";
 }): number {
   if (input.durationFrames <= 0) return 1;
-  const raw = Math.max(
-    0,
-    Math.min(1, (input.frame - input.startFrame) / input.durationFrames),
-  );
+  const raw = Math.max(0, Math.min(1, (input.frame - input.startFrame) / input.durationFrames));
   if (input.curve === "minimum-jerk") return minimumJerk(raw);
   if (input.curve === "smoothstep") return raw * raw * (3 - 2 * raw);
   if (input.curve === "critically-damped") {
@@ -367,11 +344,7 @@ export function evaluateCameraOutput(
   registries: CameraRegistries,
 ): EvaluatedCameraOutput {
   const { program, outputId, frame, subjectFrame } = input;
-  if (
-    !Number.isInteger(frame) ||
-    frame < 0 ||
-    frame >= program.plan.durationInFrames
-  ) {
+  if (!Number.isInteger(frame) || frame < 0 || frame >= program.plan.durationInFrames) {
     throw new CameraEvaluationError([
       diagnostic({
         program,
@@ -382,9 +355,7 @@ export function evaluateCameraOutput(
       }),
     ]);
   }
-  const output = program.plan.outputs.find(
-    (candidate) => candidate.id === outputId,
-  );
+  const output = program.plan.outputs.find((candidate) => candidate.id === outputId);
   if (!output) {
     throw new CameraEvaluationError([
       diagnostic({
@@ -429,11 +400,7 @@ export function evaluateCameraOutput(
   for (const shot of selectShots(program, outputId, frame)) {
     const rig = getRigById(program, shot.rigId);
     if (!rig) continue;
-    const evaluated = evaluateRig(
-      rig,
-      shot.missingSubjectPolicy,
-      subjectFrame.subjects,
-    );
+    const evaluated = evaluateRig(rig, shot.missingSubjectPolicy, subjectFrame.subjects);
     if (evaluated) {
       activeShot = shot;
       selected = evaluated;
@@ -509,12 +476,7 @@ export function evaluateCameraOutput(
           evaluation: previous,
           registries,
         });
-        pose = interpolateCameraPose(
-          source.pose,
-          target.pose,
-          progress,
-          "linear",
-        );
+        pose = interpolateCameraPose(source.pose, target.pose, progress, "linear");
         projectionPasses = blendProjectionPasses({
           from: source.projectionPasses,
           to: target.projectionPasses,
@@ -529,15 +491,17 @@ export function evaluateCameraOutput(
       durationFrames: transition.durationFrames,
       curve: transition.curve,
       progress,
-      whipActive:
-        transition.whipDirection !== undefined && progress > 0 && progress < 1,
+      whipActive: transition.whipDirection !== undefined && progress > 0 && progress < 1,
     };
   }
 
   return {
     frame,
     outputId,
+    sourceStageNodeId: output.sourceStageNodeId,
+    zIndex: output.zIndex,
     clipRadiusPx: output.clipRadiusPx ?? 0,
+    shadow: output.shadow,
     activeShotId: activeShot?.id,
     activeRigId: selected.rig.id,
     pose,
@@ -556,10 +520,25 @@ export function evaluateCameraOutput(
       subjects: selected.subjects.map((subject) => ({
         key: subjectKey(subject.ref),
         nodeId: subject.nodeId,
+        worldRect: subject.worldRect,
         sourceVersion: subject.sourceVersion,
         ownerId: subject.provenance.ownerId,
         regionId: subject.provenance.regionId,
       })),
+      framingGuard: selected.rig.framingGuard
+        ? {
+            paddingPx: selected.rig.framingGuard.paddingPx ?? 0,
+            screenPosition: selected.rig.framingGuard.screenPosition ?? null,
+            subjects: selected.framingGuardSubjects.map((subject) => ({
+              key: subjectKey(subject.ref),
+              nodeId: subject.nodeId,
+              worldRect: subject.worldRect,
+              sourceVersion: subject.sourceVersion,
+              ownerId: subject.provenance.ownerId,
+              regionId: subject.provenance.regionId,
+            })),
+          }
+        : null,
       projectionPassKinds: projectionPasses.map((pass) => pass.kind),
     },
   };

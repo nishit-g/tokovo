@@ -27,6 +27,21 @@ describe("Camera VNext cinematic flagship", () => {
     expect(restrained?.signature).not.toBe(kinetic?.signature);
     expect(restrained?.projectionBackendRequirement).toBe("composited");
     expect(kinetic?.projectionBackendRequirement).toBe("texture");
+    expect(kinetic?.plan.outputs).toEqual([
+      expect.objectContaining({
+        id: "message-pip",
+        zIndex: 20,
+        clipRadiusPx: 32,
+        shadow: { offsetX: 0, offsetY: 18, blurPx: 28, opacity: 0.58 },
+      }),
+      expect.objectContaining({ id: "portrait-main", zIndex: 0 }),
+    ]);
+    expect(
+      kinetic?.plan.shots.some(
+        (shot) => shot.outputId === "message-pip" && shot.rigId === "pip-message",
+      ),
+    ).toBe(true);
+    expect(kinetic?.plan.rigs.find((rig) => rig.id === "pip-message")).not.toHaveProperty("lensId");
     expect(ir.events.some((event) => event.kind === "CAMERA")).toBe(false);
   });
 });

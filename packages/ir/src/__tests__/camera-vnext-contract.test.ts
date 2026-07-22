@@ -33,6 +33,11 @@ describe("Camera VNext IR", () => {
             targetFill: 0.9,
             fillMode: "contain",
           },
+          framingGuard: {
+            subject: { kind: "device", deviceId: "phone", subjectId: "body" },
+            paddingPx: 24,
+            screenPosition: [0.5, 0.5],
+          },
         },
       ],
       shots: [],
@@ -58,15 +63,11 @@ describe("Camera VNext IR", () => {
     expect(JSON.parse(JSON.stringify(stage))).toEqual(stage);
     expect(CameraPlanSchema.parse(plan)).toEqual(plan);
     expect(StageProgramSchema.parse(stage)).toEqual(stage);
-    expect(CinematicSubjectRefSchema.parse(plan.rigs[0].subject)).toEqual(
-      plan.rigs[0].subject,
-    );
+    expect(CinematicSubjectRefSchema.parse(plan.rigs[0].subject)).toEqual(plan.rigs[0].subject);
   });
 
   it("rejects non-JSON lens data and empty subject groups", () => {
-    expect(() =>
-      CinematicSubjectRefSchema.parse({ kind: "group", members: [] }),
-    ).toThrow();
+    expect(() => CinematicSubjectRefSchema.parse({ kind: "group", members: [] })).toThrow();
 
     const base = CameraPlanSchema.parse({
       version: 1,

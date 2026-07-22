@@ -74,6 +74,20 @@ export interface CameraComposerIR {
   bias?: readonly [number, number];
 }
 
+/**
+ * Keeps a semantic context subject inside the output while the composer tracks
+ * a more specific child subject. This is intentionally a subject reference,
+ * rather than device geometry, so the rule works for devices, apps, and stage
+ * groups without teaching the camera about any of them.
+ */
+export interface CameraFramingGuardIR {
+  subject: CinematicSubjectRefIR;
+  /** Output-space clearance between the guarded subject and the viewport. */
+  paddingPx?: number;
+  /** Optional normalized output position for the guarded subject's center. */
+  screenPosition?: readonly [number, number];
+}
+
 export type CameraMotionProfileIR =
   | {
       type: "cut";
@@ -115,6 +129,13 @@ export interface CameraModifierIR {
   parameters: JsonObject;
 }
 
+export interface CameraOutputShadowIR {
+  offsetX: number;
+  offsetY: number;
+  blurPx: number;
+  opacity: number;
+}
+
 export interface CameraOutputIR {
   id: string;
   /** Output-space pixel rectangle within the final composition. */
@@ -122,6 +143,7 @@ export interface CameraOutputIR {
   sourceStageNodeId: string;
   zIndex: number;
   clipRadiusPx?: number;
+  shadow?: CameraOutputShadowIR;
   defaultRigId: string;
 }
 
@@ -130,6 +152,7 @@ export interface CameraRigIR {
   outputId: string;
   subject: CinematicSubjectRefIR;
   composer: CameraComposerIR;
+  framingGuard?: CameraFramingGuardIR;
   rotationDeg?: number;
   opacity?: number;
   lensId?: string;

@@ -9,7 +9,7 @@ export default defineEpisode({
     id: "camera-vnext-cinematic-flagship",
     title: "Camera VNext Cinematic Flagship",
     description:
-      "A 60fps real-WhatsApp camera reel proving semantic framing, canonical iOS input, notifications, exact message/media subjects, five optical looks, and a clean neutral settle across swappable restrained and kinetic cuts.",
+      "A 60fps real-WhatsApp camera reel proving semantic framing, independent main/PIP direction, canonical iOS input, notifications, exact message/media subjects, five optical looks, and a clean neutral settle across swappable restrained and kinetic cuts.",
     category: "showcase",
     catalogType: "app_showcase_exhaustive",
     appId: "app_whatsapp",
@@ -23,6 +23,8 @@ export default defineEpisode({
       "notifications",
       "semantic-subjects",
       "lens-effects",
+      "multi-output",
+      "pip",
       "60fps",
     ],
   },
@@ -159,6 +161,10 @@ export default defineEpisode({
         overlay.at("4.05s").receipt("02 · FISHEYE → ANAMORPHIC KEYBOARD", {
           preset: "topLeft",
           durationFrames: 264,
+        });
+        overlay.at("9.05s").receipt("INDEPENDENT MESSAGE PIP · SAME STORY", {
+          preset: "topLeft",
+          durationFrames: 90,
         });
         overlay.at("10.55s").receipt("03 · NOTIFICATION WHIP + SMEAR", {
           preset: "topLeft",

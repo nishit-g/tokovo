@@ -10,7 +10,7 @@ export type CameraRenderLayer =
   | "foreground-plate";
 
 export interface CameraTextureProjectionCapture {
-  version: 2;
+  version: 3;
   frame: number;
   storySignature: string;
   stageSignature: string;
@@ -19,10 +19,13 @@ export interface CameraTextureProjectionCapture {
   stage: { width: number; height: number };
   outputs: readonly {
     outputId: string;
+    sourceStageNodeId: string;
+    zIndex: number;
     viewport: { x: number; y: number; width: number; height: number };
     viewMatrix: Matrix3;
     opacity: number;
     clipRadiusPx: number;
+    shadow?: { offsetX: number; offsetY: number; blurPx: number; opacity: number };
     projectionPasses: readonly CameraProjectionPass[];
   }[];
 }
@@ -41,11 +44,50 @@ export function parseCameraTextureProjectionCapture(
   try {
     const value = JSON.parse(
       text.slice(index + CAMERA_TEXTURE_CAPTURE_PREFIX.length),
-    ) as CameraTextureProjectionCapture;
-    if (value.version !== 2 || !Number.isInteger(value.frame) || !Array.isArray(value.outputs)) {
+    ) as Partial<CameraTextureProjectionCapture>;
+    const validRect = (rect: unknown): boolean => {
+      if (!rect || typeof rect !== "object") return false;
+      const candidate = rect as Record<string, unknown>;
+      return [candidate.x, candidate.y, candidate.width, candidate.height].every(
+        (entry) => typeof entry === "number" && Number.isFinite(entry),
+      );
+    };
+    const validMatrix = (matrix: unknown): boolean =>
+      Array.isArray(matrix) &&
+      matrix.length === 9 &&
+      matrix.every((entry) => typeof entry === "number" && Number.isFinite(entry));
+    if (
+      value.version !== 3 ||
+      !Number.isInteger(value.frame) ||
+      typeof value.storySignature !== "string" ||
+      typeof value.stageSignature !== "string" ||
+      typeof value.cameraSignature !== "string" ||
+      typeof value.planId !== "string" ||
+      !value.stage ||
+      !Number.isFinite(value.stage.width) ||
+      !Number.isFinite(value.stage.height) ||
+      !Array.isArray(value.outputs) ||
+      value.outputs.length === 0 ||
+      value.outputs.some(
+        (output) =>
+          typeof output.outputId !== "string" ||
+          typeof output.sourceStageNodeId !== "string" ||
+          !Number.isInteger(output.zIndex) ||
+          !validRect(output.viewport) ||
+          !validMatrix(output.viewMatrix) ||
+          !Number.isFinite(output.opacity) ||
+          !Number.isFinite(output.clipRadiusPx) ||
+          (output.shadow !== undefined &&
+            (!Number.isFinite(output.shadow.offsetX) ||
+              !Number.isFinite(output.shadow.offsetY) ||
+              !Number.isFinite(output.shadow.blurPx) ||
+              !Number.isFinite(output.shadow.opacity))) ||
+          !Array.isArray(output.projectionPasses),
+      )
+    ) {
       return null;
     }
-    return value;
+    return value as CameraTextureProjectionCapture;
   } catch {
     return null;
   }

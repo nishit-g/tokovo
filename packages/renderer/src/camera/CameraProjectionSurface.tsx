@@ -424,6 +424,10 @@ export const CameraProjectionSurface: React.FC<CameraProjectionSurfaceProps> = (
         height: viewport.height,
         overflow: "visible",
         opacity: output.pose.opacity,
+        zIndex: output.zIndex,
+        filter: output.shadow
+          ? `drop-shadow(${output.shadow.offsetX}px ${output.shadow.offsetY}px ${output.shadow.blurPx}px rgba(0, 0, 0, ${output.shadow.opacity}))`
+          : undefined,
       }}
     >
       <defs>

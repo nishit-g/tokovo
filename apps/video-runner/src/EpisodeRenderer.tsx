@@ -222,7 +222,7 @@ const EpisodeRendererInner: React.FC<EpisodeRendererProps> = ({
       // eslint-disable-next-line no-console -- Browser-log IPC is Remotion's deterministic plate metadata channel.
       console.info(
         encodeCameraTextureProjectionCapture({
-          version: 2,
+          version: 3,
           frame: entry.t,
           storySignature: entry.storySignature,
           stageSignature: entry.stageSignature,
@@ -231,10 +231,13 @@ const EpisodeRendererInner: React.FC<EpisodeRendererProps> = ({
           stage: entry.stage,
           outputs: entry.outputs.map((output) => ({
             outputId: output.outputId,
+            sourceStageNodeId: output.sourceStageNodeId,
+            zIndex: output.zIndex,
             viewport: output.pose.clipRect,
             viewMatrix: output.viewMatrix,
             opacity: output.pose.opacity,
             clipRadiusPx: output.clipRadiusPx,
+            shadow: output.shadow,
             projectionPasses: output.projectionPasses,
           })),
         }),

@@ -110,17 +110,33 @@ export interface CameraEvaluationTrace {
   subjects: readonly {
     key: string;
     nodeId: string;
+    worldRect: CameraRectIR;
     sourceVersion: number;
     ownerId: string;
     regionId: string;
   }[];
+  framingGuard: {
+    paddingPx: number;
+    screenPosition: readonly [number, number] | null;
+    subjects: readonly {
+      key: string;
+      nodeId: string;
+      worldRect: CameraRectIR;
+      sourceVersion: number;
+      ownerId: string;
+      regionId: string;
+    }[];
+  } | null;
   projectionPassKinds: readonly CameraProjectionPass["kind"][];
 }
 
 export interface EvaluatedCameraOutput {
   frame: number;
   outputId: string;
+  sourceStageNodeId: string;
+  zIndex: number;
   clipRadiusPx: number;
+  shadow?: CameraPlanIR["outputs"][number]["shadow"];
   activeShotId?: string;
   activeRigId: string;
   pose: CameraPose2D;
@@ -177,4 +193,5 @@ export interface CameraEvaluationInput {
 export interface CameraRigEvaluation {
   rig: CameraRigIR;
   subjects: readonly ResolvedCinematicSubject[];
+  framingGuardSubjects: readonly ResolvedCinematicSubject[];
 }
