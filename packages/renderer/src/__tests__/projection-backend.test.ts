@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 import type { CameraProjectionPass } from "@tokovo/camera";
-import { selectCameraProjectionBackend } from "../camera/projectionBackend.js";
+import {
+  CameraProjectionPassRegistrationError,
+  CameraProjectionPassRegistry,
+  createBuiltinCameraProjectionPassRegistry,
+  selectCameraProjectionBackend,
+} from "../camera/projectionBackend.js";
 
 const perspective: CameraProjectionPass = {
   kind: "projective-warp",
@@ -35,5 +40,17 @@ describe("camera projection backend selection", () => {
     expect(
       selectCameraProjectionBackend({ mode: "render", passes: [fisheye] }),
     ).toBe("texture-compositor");
+  });
+
+  it("requires explicit kind/version renderer registration", () => {
+    const builtins = createBuiltinCameraProjectionPassRegistry();
+    expect(builtins.list()).toHaveLength(6);
+    expect(() =>
+      selectCameraProjectionBackend({
+        mode: "render",
+        passes: [perspective],
+        registry: new CameraProjectionPassRegistry(),
+      }),
+    ).toThrow(CameraProjectionPassRegistrationError);
   });
 });

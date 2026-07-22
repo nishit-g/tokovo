@@ -1,9 +1,9 @@
 const meta = {
   "building-app-plugin": "Building an App Plugin",
   "cinematic-camera": "Cinematic Camera",
-  "creating-custom-anchors": "Creating Custom Anchors",
+  "creating-cinematic-subjects": "Creating Cinematic Subjects",
   "episode-authoring-dsl": "Episode Authoring DSL",
-  "anchors-dsl-plugin-reference": "Anchors + DSL Reference",
+  "subjects-dsl-plugin-reference": "Subjects + DSL Reference",
   performance: "Performance",
   "object-storage-assets": "Object Storage Assets",
   "rendering-at-scale": "Rendering at Scale",

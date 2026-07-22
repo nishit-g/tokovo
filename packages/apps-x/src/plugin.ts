@@ -5,7 +5,7 @@ import { xReducer } from "./runtime/reducer.js";
 import { xLowering } from "./lowering/index.js";
 import { xLayoutStrategies } from "./layout/index.js";
 import { createXInitialState } from "./runtime/state.js";
-import { XAnchorProvider } from "./anchors/provider.js";
+import { XCinematicSubjects } from "./camera/subjects.js";
 import { collectXAssetRefs } from "./asset-refs.js";
 import { xBootstrap } from "./bootstrap.js";
 import { xDsl, type XDslApi } from "./dsl/extension.js";
@@ -91,7 +91,7 @@ export const XPlugin: TokovoPluginContract<"app_x"> & {
   layouts: xLayoutStrategies,
   dsl: xDsl,
   collectAssetRefs: collectXAssetRefs,
-  anchorProvider: XAnchorProvider,
+  cinematicSubjects: XCinematicSubjects,
   notificationAdapter: xNotificationAdapter,
 };
 

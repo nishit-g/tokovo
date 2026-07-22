@@ -133,16 +133,5 @@ export default defineEpisode({
         notifications.at("23.0s").clearAll();
         notifications.at("24.0s").closeCenter();
       })
-      .camera((cam) => {
-        cam.at("0s").focus("device", { scale: 1.02, duration: "0.3s" });
-        cam.span("0.9s", "3.8s").trackCinematic("notification.banner", {
-          scale: 1.15,
-          smoothing: 0.18,
-        });
-        cam.at("4.6s").focus("device", { scale: 1.04, duration: "0.35s" });
-        cam.at("12.1s").focus("device", { scale: 1.05, duration: "0.35s" });
-        cam.at("14.5s").focus("device", { scale: 1.03, duration: "0.28s" });
-        cam.at("20.1s").focus("device", { scale: 1.05, duration: "0.32s" });
-      })
       .build(),
 });

@@ -1,6 +1,5 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 import type { WorldState } from "../types.js";
-import { DEFAULT_CAMERA_TRANSFORM } from "../types.js";
 import {
   replay,
   replayIncremental,
@@ -11,17 +10,24 @@ import {
   cacheStateAtKeyframe,
   PluginError,
 } from "../engine.js";
-import { createEngineRegistries, type EngineRegistries } from "../engine/registries.js";
-import * as handlerModule from "../engine/handlers/index.js";
+import {
+  createEngineRegistries,
+  type EngineRegistries,
+} from "../engine/registries.js";
 import { getLogger } from "../logger/index.js";
 import { createConfig } from "../config/index.js";
 
-const baseWorld = (): WorldState => ({
-  devices: { phone: { id: "phone" } },
-  appState: {},
-  camera: { baseView: "APP_VIEW", activeEffects: [{ endFrame: 0 }] as any },
-  audio: { activeSounds: {}, buses: {}, policyState: { recentSounds: {}, nextId: 0 }, autoSoundRules: [] },
-} as WorldState);
+const baseWorld = (): WorldState =>
+  ({
+    devices: { phone: { id: "phone" } },
+    appState: {},
+    audio: {
+      activeSounds: {},
+      buses: {},
+      policyState: { recentSounds: {}, nextId: 0 },
+      autoSoundRules: [],
+    },
+  }) as WorldState;
 
 let registries: EngineRegistries;
 const previewCtx = () => ({
@@ -69,70 +75,7 @@ describe("engine replay", () => {
   it("creates defaults when initial state is missing and no events are provided", () => {
     const result = replay(undefined as any, [], 0, previewCtx());
     expect(result.devices).toEqual({});
-    expect(result.camera.baseView).toBe("APP_VIEW");
-  });
-
-  it("preserves camera baseView and appId when events are empty", () => {
-    const world = {
-      devices: {},
-      appState: {},
-      camera: { baseView: "TRANSITION", appId: "app_legacy" } as any,
-      audio: undefined,
-    } as WorldState;
-
-    const result = replay(world, [], 0, previewCtx());
-    expect(result.camera.baseView).toBe("TRANSITION");
-    expect(result.camera.appId).toBe("app_legacy");
     expect(result.audio).toBeDefined();
-  });
-
-  it("defaults camera baseView when missing", () => {
-    const world = {
-      devices: {},
-      appState: {},
-      camera: {} as any,
-      audio: undefined,
-    } as WorldState;
-
-    const result = replay(world, [], 0, previewCtx());
-    expect(result.camera.baseView).toBe("APP_VIEW");
-    expect(result.audio).toBeDefined();
-  });
-
-  it("preserves camera baseView and appId when events exist", () => {
-    const world = {
-      devices: { phone: { id: "phone" } },
-      appState: {},
-      camera: { baseView: "TRANSITION", appId: "app_legacy" } as any,
-      audio: undefined,
-    } as WorldState;
-
-    const result = replay(
-      world,
-      [{ at: 0, kind: "UNKNOWN" } as any],
-      0,
-      previewCtx(),
-    );
-    expect(result.camera.baseView).toBe("TRANSITION");
-    expect(result.camera.appId).toBe("app_legacy");
-    expect(result.audio).toBeDefined();
-  });
-
-  it("defaults baseView during replay when missing", () => {
-    const world = {
-      devices: { phone: { id: "phone" } },
-      appState: {},
-      camera: {} as any,
-      audio: undefined,
-    } as WorldState;
-
-    const result = replay(
-      world,
-      [{ at: 0, kind: "UNKNOWN" } as any],
-      0,
-      previewCtx(),
-    );
-    expect(result.camera.baseView).toBe("APP_VIEW");
   });
 
   it("processes handlers, reducers, and built-in events", () => {
@@ -150,23 +93,19 @@ describe("engine replay", () => {
     });
     registries.reducers.registerEventKinds("app", ["APP_EVENT"]);
 
-    registries.reducers.registerDeviceReducer((devices) => ({
-      ...devices,
-      phone: { ...devices.phone, touched: true },
-    }) as any);
-
-    const cameraSpy = vi
-      .spyOn(handlerModule, "processCameraEvent")
-      .mockImplementation(() => undefined);
+    registries.reducers.registerDeviceReducer(
+      (devices) =>
+        ({
+          ...devices,
+          phone: { ...devices.phone, touched: true },
+        }) as any,
+    );
 
     const events = [
       { at: 0, kind: "CUSTOM" },
       { at: 1, kind: "APP", appId: "app" },
       { at: 2, kind: "APP" },
       { at: 3, kind: "APP_EVENT" },
-      { at: 4, kind: "CameraZoom", type: "ZOOM" },
-      { at: 4, kind: "AnchorFocus", type: "ANCHOR_FOCUS" },
-      { at: 4, kind: "AnchorTrack", type: "ANCHOR_TRACK" },
       { at: 5, kind: "DEVICE", type: "LOCK", deviceId: "phone" },
       { at: 6, kind: "UNKNOWN" },
     ] as any[];
@@ -182,9 +121,6 @@ describe("engine replay", () => {
     expect((result.appState as any).custom).toBe(true);
     expect((result.appState as any).app).toEqual({ handled: true });
     expect((result.devices as any).phone.touched).toBe(true);
-    expect(cameraSpy).toHaveBeenCalled();
-
-    cameraSpy.mockRestore();
   });
 
   it("wraps non-error throws and uses kind when appId is missing", () => {
@@ -193,7 +129,10 @@ describe("engine replay", () => {
     });
     registries.reducers.registerEventKinds("app", ["CUSTOM"]);
 
-    const renderIndex = createKeyframedEventIndex([{ at: 0, kind: "CUSTOM" } as any], 1);
+    const renderIndex = createKeyframedEventIndex(
+      [{ at: 0, kind: "CUSTOM" } as any],
+      1,
+    );
     const renderCache = createStateCache(1);
     expect(() =>
       replayIncremental(
@@ -242,7 +181,7 @@ describe("engine replay", () => {
     );
 
     expect(errors).toHaveLength(1);
-    expect(result.camera.deviceTransforms).toBeDefined();
+    expect(result.devices).toBeDefined();
   });
 
   it("creates initial worlds", () => {
@@ -252,9 +191,7 @@ describe("engine replay", () => {
 
   it("handles missing built-in handlers gracefully", async () => {
     const builtIn = await import("../engine/built-in-handlers");
-    const hasSpy = vi
-      .spyOn(builtIn, "hasBuiltInHandler")
-      .mockReturnValue(true);
+    const hasSpy = vi.spyOn(builtIn, "hasBuiltInHandler").mockReturnValue(true);
     const getSpy = vi
       .spyOn(builtIn, "getBuiltInHandler")
       .mockReturnValue(undefined);
@@ -270,46 +207,12 @@ describe("engine replay", () => {
     hasSpy.mockRestore();
     getSpy.mockRestore();
   });
-
-  it("falls back to default transform when active device is missing", () => {
-    const world = {
-      devices: { phone: { id: "phone" } },
-      appState: {},
-      camera: { baseView: "APP_VIEW", activeDeviceId: "ghost", activeEffects: [] },
-      audio: { activeSounds: {}, buses: {}, policyState: { recentSounds: {}, nextId: 0 }, autoSoundRules: [] },
-    } as WorldState;
-
-    const result = replay(
-      world,
-      [{ at: 0, kind: "UNKNOWN" } as any],
-      0,
-      previewCtx(),
-    );
-    expect(result.camera.transform).toEqual(DEFAULT_CAMERA_TRANSFORM);
-  });
-
-  it("falls back to default transform when no devices exist", () => {
-    const world = {
-      devices: {},
-      appState: {},
-      camera: { baseView: "APP_VIEW", activeEffects: [] },
-      audio: { activeSounds: {}, buses: {}, policyState: { recentSounds: {}, nextId: 0 }, autoSoundRules: [] },
-    } as WorldState;
-
-    const result = replay(
-      world,
-      [{ at: 0, kind: "UNKNOWN" } as any],
-      0,
-      previewCtx(),
-    );
-    expect(result.camera.transform).toEqual(DEFAULT_CAMERA_TRANSFORM);
-  });
 });
 
 describe("engine replay incremental", () => {
   it("handles empty events", () => {
     const result = replayIncremental(baseWorld(), [], 0, previewCtx());
-    expect(result.camera).toBeDefined();
+    expect(result.audio).toBeDefined();
   });
 
   it("falls back to full replay when missing index or cache", () => {
@@ -331,7 +234,10 @@ describe("engine replay incremental", () => {
       [{ at: 2, kind: "APP", appId: "app" } as any],
       2,
       previewCtx(),
-      createKeyframedEventIndex([{ at: 2, kind: "APP", appId: "app" } as any], 2),
+      createKeyframedEventIndex(
+        [{ at: 2, kind: "APP", appId: "app" } as any],
+        2,
+      ),
       cache,
     );
 
@@ -354,7 +260,7 @@ describe("engine replay incremental", () => {
       cache,
     );
 
-    expect(result.camera).toBeDefined();
+    expect(result.appState).toBeDefined();
   });
 
   it("handles negative frames by clamping to zero", () => {
@@ -369,7 +275,7 @@ describe("engine replay incremental", () => {
       index,
       cache,
     );
-    expect(result.camera).toBeDefined();
+    expect(result.audio).toBeDefined();
   });
 
   it("wraps non-error throws during incremental replay", () => {
@@ -383,55 +289,32 @@ describe("engine replay incremental", () => {
     const errors: any[] = [];
 
     const previewCache = createStateCache(2);
-    replayIncremental(baseWorld(), events, 0, { ...previewCtx(), errors }, index, previewCache);
+    replayIncremental(
+      baseWorld(),
+      events,
+      0,
+      { ...previewCtx(), errors },
+      index,
+      previewCache,
+    );
     expect(errors[0].error).toBeInstanceOf(Error);
     expect(errors[0].error.message).toBe("boom");
 
     try {
       const renderCache = createStateCache(2);
-      replayIncremental(baseWorld(), events, 0, renderCtx(), index, renderCache);
+      replayIncremental(
+        baseWorld(),
+        events,
+        0,
+        renderCtx(),
+        index,
+        renderCache,
+      );
       throw new Error("expected replayIncremental to throw");
     } catch (err) {
       expect(err).toBeInstanceOf(PluginError);
       expect((err as PluginError).pluginId).toBe("CUSTOM");
     }
-  });
-
-  it("falls back to default camera transforms in incremental replay", () => {
-    const events = [{ at: 0, kind: "UNKNOWN" } as any];
-    const index = createKeyframedEventIndex(events, 2);
-
-    const worldNoDevices = {
-      devices: {},
-      appState: {},
-      camera: { baseView: "APP_VIEW", activeEffects: [] },
-      audio: { activeSounds: {}, buses: {}, policyState: { recentSounds: {}, nextId: 0 }, autoSoundRules: [] },
-    } as WorldState;
-    const resultNoDevices = replayIncremental(
-      worldNoDevices,
-      events,
-      0,
-      previewCtx(),
-      index,
-      createStateCache(2),
-    );
-    expect(resultNoDevices.camera.transform).toEqual(DEFAULT_CAMERA_TRANSFORM);
-
-    const worldGhost = {
-      devices: { phone: { id: "phone" } },
-      appState: {},
-      camera: { baseView: "APP_VIEW", activeDeviceId: "ghost", activeEffects: [] },
-      audio: { activeSounds: {}, buses: {}, policyState: { recentSounds: {}, nextId: 0 }, autoSoundRules: [] },
-    } as WorldState;
-    const resultGhost = replayIncremental(
-      worldGhost,
-      events,
-      0,
-      previewCtx(),
-      index,
-      createStateCache(2),
-    );
-    expect(resultGhost.camera.transform).toEqual(DEFAULT_CAMERA_TRANSFORM);
   });
 
   it("tracks skipped events on errors", () => {

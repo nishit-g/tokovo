@@ -39,10 +39,42 @@ export default defineEpisode({
       .snapshot("app_x", "phone", {
         currentUserId: "u_me",
         users: [
-          { id: "u_me", name: "Ira", handle: "iracuts", bio: "Interfaces, cameras, and strategic overreactions.", followers: 24200, following: 601, verified: "blue" },
-          { id: "u_hottake", name: "Hot Take Desk", handle: "hottakedesk", bio: "Every bad idea deserves an audience.", followers: 154000, following: 123, verified: "gold" },
-          { id: "u_clip", name: "Clip Thread", handle: "clipthread", bio: "We clip the internet's worst confidence.", followers: 49100, following: 281, verified: null },
-          { id: "u_vc2", name: "VC Notes", handle: "vcnotes", bio: "Reads decks so you don't have to.", followers: 38100, following: 402, verified: "grey" },
+          {
+            id: "u_me",
+            name: "Ira",
+            handle: "iracuts",
+            bio: "Interfaces, cameras, and strategic overreactions.",
+            followers: 24200,
+            following: 601,
+            verified: "blue",
+          },
+          {
+            id: "u_hottake",
+            name: "Hot Take Desk",
+            handle: "hottakedesk",
+            bio: "Every bad idea deserves an audience.",
+            followers: 154000,
+            following: 123,
+            verified: "gold",
+          },
+          {
+            id: "u_clip",
+            name: "Clip Thread",
+            handle: "clipthread",
+            bio: "We clip the internet's worst confidence.",
+            followers: 49100,
+            following: 281,
+            verified: null,
+          },
+          {
+            id: "u_vc2",
+            name: "VC Notes",
+            handle: "vcnotes",
+            bio: "Reads decks so you don't have to.",
+            followers: 38100,
+            following: 402,
+            verified: "grey",
+          },
         ],
         follows: [
           { followerId: "u_me", followingId: "u_hottake" },
@@ -75,12 +107,35 @@ export default defineEpisode({
           { id: "dm_x_backchannel_v2", participantIds: ["u_me", "u_hottake"] },
         ],
         messages: [
-          { id: "msg_x_seed_1", threadId: "dm_x_ops_v2", senderId: "u_clip", text: "Need a cleaner line before I post the screenshot.", createdAt: baseTs - 45000 },
-          { id: "msg_x_seed_2", threadId: "dm_x_backchannel_v2", senderId: "u_hottake", text: "If you have context, now is the funniest possible time.", createdAt: baseTs - 30000 },
+          {
+            id: "msg_x_seed_1",
+            threadId: "dm_x_ops_v2",
+            senderId: "u_clip",
+            text: "Need a cleaner line before I post the screenshot.",
+            createdAt: baseTs - 45000,
+          },
+          {
+            id: "msg_x_seed_2",
+            threadId: "dm_x_backchannel_v2",
+            senderId: "u_hottake",
+            text: "If you have context, now is the funniest possible time.",
+            createdAt: baseTs - 30000,
+          },
         ],
         notifications: [
-          { id: "nt_x_seed_1", type: "reply", actorId: "u_clip", tweetId: "tw_x_ex_1", createdAt: baseTs - 36000 },
-          { id: "nt_x_seed_2", type: "follow", actorId: "u_vc2", createdAt: baseTs - 24000 },
+          {
+            id: "nt_x_seed_1",
+            type: "reply",
+            actorId: "u_clip",
+            tweetId: "tw_x_ex_1",
+            createdAt: baseTs - 36000,
+          },
+          {
+            id: "nt_x_seed_2",
+            type: "follow",
+            actorId: "u_vc2",
+            createdAt: baseTs - 24000,
+          },
         ],
       })
       .view("app_x", "phone", { screen: "timeline" })
@@ -116,7 +171,9 @@ export default defineEpisode({
         });
         x.at("24.0s").navigate("profile", { userId: "u_me" });
         x.at("27.2s").navigate("compose");
-        x.at("28.0s").setComposeDraft("If your launch depends on nobody zooming into the screenshot, it depends on fiction.");
+        x.at("28.0s").setComposeDraft(
+          "If your launch depends on nobody zooming into the screenshot, it depends on fiction.",
+        );
         x.at("30.4s").postTweet({
           id: "tw_x_ex_compose_v2",
           authorId: "u_me",
@@ -124,15 +181,6 @@ export default defineEpisode({
           createdAt: baseTs + 51000,
         });
         x.at("34.0s").navigate("tweet", { tweetId: "tw_x_ex_compose_v2" });
-      })
-      .camera((cam) => {
-        cam.at("0s").focus("timeline", { scale: 1.03, duration: "0.35s" });
-        cam.at("3.1s").focus("tweet_card", { scale: 1.1, duration: "0.35s" });
-        cam.span("5.4s", "8.2s").trackCinematic("keyboard", { scale: 1.12, smoothing: 0.18 });
-        cam.at("9.0s").focus("notification_card", { scale: 1.08, duration: "0.35s" });
-        cam.at("14.3s").focus("dm_thread", { scale: 1.08, duration: "0.35s" });
-        cam.at("24.1s").focus("profile_header", { scale: 1.08, duration: "0.35s" });
-        cam.span("28.0s", "30.4s").trackCinematic("keyboard", { scale: 1.12, smoothing: 0.18 });
       })
       .build();
   },

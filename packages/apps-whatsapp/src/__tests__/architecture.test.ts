@@ -107,7 +107,7 @@ describe("WhatsApp UI architecture boundary", () => {
       'role="button"',
       "bubbleTail",
       "GO_BACK",
-      "aliasAnchor",
+      "aliasSubject",
       '"chat_header"',
       '"message_thread"',
       '"thread_card"',
@@ -157,7 +157,7 @@ describe("WhatsApp UI architecture boundary", () => {
     expect(violations).toEqual([]);
   });
 
-  it("keeps the canonical message item SVG-based and semantically anchored", () => {
+  it("keeps the canonical message item SVG-based and semantically subjected", () => {
     const source = readFileSync(
       join(sourceRoot, "components/ChatMessageItem.tsx"),
       "utf8",
@@ -165,16 +165,19 @@ describe("WhatsApp UI architecture boundary", () => {
     expect(source).toContain("export const ChatMessageItem");
     expect(source).toContain("function BubbleTail");
     expect(source).toContain("function DeliveryGlyph");
-    expect(source).toContain('data-anchor="message"');
-    expect(source).toContain('data-anchor="message-footer"');
-    expect(source).toContain('data-anchor="reactions"');
+    expect(source).toContain('data-cinematic-subject="message"');
+    expect(source).toContain('data-cinematic-subject="message-footer"');
+    expect(source).toContain('data-cinematic-subject="reactions"');
     expect(source).toContain('role="listitem"');
     expect(source).toContain("<svg");
   });
 
   it("uses the public APP event type as the runtime discriminator", () => {
     const schemas = readFileSync(join(sourceRoot, "schemas/events.ts"), "utf8");
-    const reducer = readFileSync(join(sourceRoot, "runtime/reducer.ts"), "utf8");
+    const reducer = readFileSync(
+      join(sourceRoot, "runtime/reducer.ts"),
+      "utf8",
+    );
     expect(schemas).toContain('z.discriminatedUnion("type"');
     expect(schemas).toContain('kind: z.literal("APP")');
     expect(reducer).toContain("HANDLERS[parsed.type]");

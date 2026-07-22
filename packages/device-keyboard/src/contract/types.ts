@@ -14,11 +14,7 @@ export type InputPlatform = "ios" | "android";
 export type InputAppearance = "light" | "dark";
 export type InputThemeId = "system";
 
-export type KeyboardLayoutKind =
-  | "letters"
-  | "numbers"
-  | "symbols"
-  | "emoji";
+export type KeyboardLayoutKind = "letters" | "numbers" | "symbols" | "emoji";
 
 export type KeyboardFamily =
   | "latin"
@@ -235,11 +231,7 @@ export interface PreparedInputProgram {
   sessions: readonly PreparedInputSession[];
 }
 
-export type InputSessionStatus =
-  | "idle"
-  | "focused"
-  | "submitted"
-  | "blurred";
+export type InputSessionStatus = "idle" | "focused" | "submitted" | "blurred";
 
 export interface InputRuntimeState {
   sessionId: InputSessionId;
@@ -293,6 +285,6 @@ export interface InputProjection {
     suggestions: readonly string[];
     activeSuggestionIndex: number | null;
     viewportInset: number;
-    anchor: InputRect;
+    bounds: InputRect;
   };
 }

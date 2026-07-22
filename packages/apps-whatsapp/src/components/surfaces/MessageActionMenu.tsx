@@ -28,7 +28,7 @@ export function MessageActionMenu({ messageId }: { messageId: string }) {
   const { t } = useWhatsAppLocale();
   return (
     <div
-      data-anchor="message_actions"
+      data-cinematic-subject="message_actions"
       data-message-id={messageId}
       role="menu"
       aria-label={t("a11y.messageActions")}
@@ -64,7 +64,9 @@ export function MessageActionMenu({ messageId }: { messageId: string }) {
             justifyContent: "center",
             gap: 5,
             borderRadius: 10,
-            color: action.destructive ? "#D92D20" : theme.colors.receivedBubbleText,
+            color: action.destructive
+              ? "#D92D20"
+              : theme.colors.receivedBubbleText,
             backgroundColor: theme.colors.surfaceMuted,
             fontSize: 11,
             fontWeight: 600,

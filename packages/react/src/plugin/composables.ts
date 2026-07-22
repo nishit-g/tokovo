@@ -4,22 +4,9 @@ import type {
   LayoutState,
   PluginReducer,
   PluginViews,
-  WorldState,
 } from "@tokovo/core";
 
 // Types defined locally since they're internal to plugin-contract but not re-exported from core index
-export interface AnchorBounds {
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-}
-
-export type PluginAnchorProvider = (
-  world: WorldState,
-  deviceId: string,
-) => AnchorBounds | null;
-
 export interface PluginAutoSoundRule {
   match: {
     kind: string;
@@ -49,19 +36,6 @@ export interface ViewsCapability<AppId extends string = string> {
   readonly _type: "views";
   readonly appId: AppId;
   readonly views: PluginViews;
-}
-
-export interface AnchorsCapability<AppId extends string = string> {
-  readonly _type: "anchors";
-  readonly appId: AppId;
-  readonly providers: Record<string, PluginAnchorProvider>;
-  readonly framing?: Record<string, AnchorFramingConfig>;
-}
-
-export interface AnchorFramingConfig {
-  anchorPoint?: { x: number; y: number };
-  paddingPx?: number;
-  targetFill?: number;
 }
 
 export interface LayoutsCapability<AppId extends string = string> {
@@ -95,7 +69,6 @@ export interface InitialStateCapability<
 export type PluginCapability<AppId extends string = string> =
   | ReducerCapability<AppId>
   | ViewsCapability<AppId>
-  | AnchorsCapability<AppId>
   | LayoutsCapability<AppId>
   | AudioCapability<AppId>
   | InitialStateCapability<AppId>;
@@ -121,19 +94,6 @@ export function defineViews<AppId extends string>(
     _type: "views",
     appId,
     views,
-  };
-}
-
-export function defineAnchors<AppId extends string>(
-  appId: AppId,
-  providers: Record<string, PluginAnchorProvider>,
-  framing?: Record<string, AnchorFramingConfig>,
-): AnchorsCapability<AppId> {
-  return {
-    _type: "anchors",
-    appId,
-    providers,
-    framing,
   };
 }
 

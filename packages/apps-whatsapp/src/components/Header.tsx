@@ -49,7 +49,7 @@ export const Header: React.FC<HeaderProps> = ({
 
   return (
     <div
-      data-anchor="header"
+      data-cinematic-subject="header"
       style={{
         height: totalHeight,
         backgroundColor: theme.colors.headerBackground,
@@ -91,7 +91,7 @@ export const Header: React.FC<HeaderProps> = ({
       </button>
 
       <div
-        data-anchor="profile"
+        data-cinematic-subject="profile"
         style={{
           width: UI_CONSTANTS.HEADER_AVATAR_SIZE,
           height: UI_CONSTANTS.HEADER_AVATAR_SIZE,
@@ -172,7 +172,12 @@ export const Header: React.FC<HeaderProps> = ({
         <button
           type="button"
           aria-label={t("action.video")}
-          style={{ padding: 0, border: 0, color: "inherit", background: "transparent" }}
+          style={{
+            padding: 0,
+            border: 0,
+            color: "inherit",
+            background: "transparent",
+          }}
         >
           <Video
             size={22}
@@ -184,7 +189,12 @@ export const Header: React.FC<HeaderProps> = ({
         <button
           type="button"
           aria-label={t("message.voiceCall")}
-          style={{ padding: 0, border: 0, color: "inherit", background: "transparent" }}
+          style={{
+            padding: 0,
+            border: 0,
+            color: "inherit",
+            background: "transparent",
+          }}
         >
           <Phone
             size={20}

@@ -7,12 +7,17 @@ import {
 import { createReducerRegistry } from "../engine/registry.js";
 import * as handlers from "../engine/handlers/index.js";
 
-const baseWorld = (): WorldState => ({
-  devices: { phone: { id: "phone" } },
-  appState: {},
-  camera: { baseView: "APP_VIEW" },
-  audio: { activeSounds: {}, buses: {}, policyState: { recentSounds: {}, nextId: 0 }, autoSoundRules: [] },
-} as WorldState);
+const baseWorld = (): WorldState =>
+  ({
+    devices: { phone: { id: "phone" } },
+    appState: {},
+    audio: {
+      activeSounds: {},
+      buses: {},
+      policyState: { recentSounds: {}, nextId: 0 },
+      autoSoundRules: [],
+    },
+  }) as WorldState;
 
 let reducerRegistry = createReducerRegistry();
 
@@ -42,9 +47,6 @@ describe("built-in handlers", () => {
   it("dispatches to handler modules", () => {
     const world = baseWorld();
 
-    const cameraSpy = vi
-      .spyOn(handlers, "processCameraEvent")
-      .mockImplementation(() => undefined);
     const audioSpy = vi
       .spyOn(handlers, "processAudioEvent")
       .mockImplementation(() => undefined);
@@ -58,47 +60,58 @@ describe("built-in handlers", () => {
       .spyOn(handlers, "processVoiceEvent")
       .mockReturnValue({ audio: world.audio });
 
-    getBuiltInHandler("CAMERA", reducerRegistry)?.(world, { kind: "CAMERA", type: "CUT" } as any, 0, {
-      frame: 0,
-      eventIndex: 0,
-      mode: "preview",
-      fps: 30,
-    });
-    expect(cameraSpy).toHaveBeenCalled();
-
-    getBuiltInHandler("AUDIO", reducerRegistry)?.(world, { kind: "AUDIO", type: "PLAY" } as any, 0, {
-      frame: 0,
-      eventIndex: 0,
-      mode: "preview",
-      fps: 30,
-    });
+    getBuiltInHandler("AUDIO", reducerRegistry)?.(
+      world,
+      { kind: "AUDIO", type: "PLAY" } as any,
+      0,
+      {
+        frame: 0,
+        eventIndex: 0,
+        mode: "preview",
+        fps: 30,
+      },
+    );
     expect(audioSpy).toHaveBeenCalled();
 
-    getBuiltInHandler("OS", reducerRegistry)?.(world, { kind: "OS", type: "SET_TIME" } as any, 0, {
-      frame: 0,
-      eventIndex: 0,
-      mode: "preview",
-      fps: 30,
-    });
+    getBuiltInHandler("OS", reducerRegistry)?.(
+      world,
+      { kind: "OS", type: "SET_TIME" } as any,
+      0,
+      {
+        frame: 0,
+        eventIndex: 0,
+        mode: "preview",
+        fps: 30,
+      },
+    );
     expect(osSpy).toHaveBeenCalled();
 
-    getBuiltInHandler("CALL", reducerRegistry)?.(world, { kind: "CALL", type: "INCOMING" } as any, 0, {
-      frame: 0,
-      eventIndex: 0,
-      mode: "preview",
-      fps: 30,
-    });
+    getBuiltInHandler("CALL", reducerRegistry)?.(
+      world,
+      { kind: "CALL", type: "INCOMING" } as any,
+      0,
+      {
+        frame: 0,
+        eventIndex: 0,
+        mode: "preview",
+        fps: 30,
+      },
+    );
     expect(callSpy).toHaveBeenCalled();
 
-    getBuiltInHandler("VOICE", reducerRegistry)?.(world, { kind: "VOICE", type: "STOP_VOICE" } as any, 0, {
-      frame: 0,
-      eventIndex: 0,
-      mode: "preview",
-      fps: 30,
-    });
+    getBuiltInHandler("VOICE", reducerRegistry)?.(
+      world,
+      { kind: "VOICE", type: "STOP_VOICE" } as any,
+      0,
+      {
+        frame: 0,
+        eventIndex: 0,
+        mode: "preview",
+        fps: 30,
+      },
+    );
     expect(voiceSpy).toHaveBeenCalled();
 
-    cameraSpy.mockRestore();
     audioSpy.mockRestore();
     osSpy.mockRestore();
     callSpy.mockRestore();

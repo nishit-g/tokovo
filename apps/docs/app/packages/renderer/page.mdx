@@ -14,14 +14,15 @@ Renderer should render through registries, not by hardcoding app behavior.
 
 ## Key Exports
 
-- renderers: `TokovoRenderer`, `MultiDeviceRenderer`, `AudioLayer`
+- renderers: `TokovoRenderer`, `CinematicStageRenderer`, `AudioLayer`
 - overlays: call and story overlays
-- layout and engines: `computeLayout`, `useLayoutEngine`, `useCameraEngine`, `useAudioEngine`
+- layout and engines: `computeLayout`, `computeLayoutEngine`, `useLayoutEngine`, `useAudioEngine`
+- camera integration: `CameraProjectionPassRegistry`, `projectCinematicFrame`
 - registry integration: `RendererRegistryProvider`
 
 ## V1 Rule
 
 System chrome must scale from device-aware metrics and safe areas, not ad hoc render-pixel constants.
 Lockscreen, homescreen, keyboard, and notification semantics stay in their owning device
-packages; renderer composes their projections and exposes their semantic anchors to the
-camera engine.
+packages; renderer composes their projections and supplies their cinematic subjects to the pure
+Camera VNext evaluator before painting outputs.

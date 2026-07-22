@@ -28,11 +28,11 @@ export function ReplyComposerBanner({
   const sender =
     message.from === "me"
       ? t("chat.you")
-      : message.senderName ?? message.from;
+      : (message.senderName ?? message.from);
 
   return (
     <div
-      data-anchor="reply_composer"
+      data-cinematic-subject="reply_composer"
       role="status"
       aria-label={t("composer.replyingTo", { name: sender })}
       style={{
@@ -55,7 +55,9 @@ export function ReplyComposerBanner({
     >
       <Reply size={17} color={theme.colors.accent} aria-hidden="true" />
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ color: theme.colors.accent, fontSize: 11, fontWeight: 700 }}>
+        <div
+          style={{ color: theme.colors.accent, fontSize: 11, fontWeight: 700 }}
+        >
           {t("composer.replyingTo", { name: sender })}
         </div>
         <div

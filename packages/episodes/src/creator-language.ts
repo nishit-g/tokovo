@@ -10,12 +10,10 @@ import {
   parseDurationToFrames,
   parseTimeToFrames,
   type AudioTrackBuilder,
-  type CameraFocusOptions,
-  type CameraTrackBuilder,
-  type CameraTrackOptions,
   type DeviceTrackBuilderV2,
   type OverlayTrackBuilder,
 } from "@tokovo/dsl";
+import type { CinematicSubjectRefIR } from "@tokovo/ir";
 import type { CodeFirstEpisodeBuilder } from "./code-first-episode.js";
 
 export type BuiltInApp =
@@ -84,9 +82,9 @@ export interface StoryHandle<K extends StoryHandleKind = StoryHandleKind> {
   readonly app: BuiltInApp;
   readonly appId: string;
   readonly deviceId: string;
-  readonly anchorId: string;
+  readonly subject: CinematicSubjectRefIR;
   readonly frame: number;
-  anchor(anchorId: string): { deviceId: string; anchorId: string };
+  region(subjectId: string): CinematicSubjectRefIR;
 }
 
 export type MessageHandle = StoryHandle<"message">;
@@ -164,14 +162,61 @@ function createHandle<K extends StoryHandleKind>(input: {
   kind: K;
   app: BuiltInApp;
   deviceId: string;
-  anchorId: string;
   frame: number;
 }): StoryHandle<K> {
+  const resolvedAppId = appId(input.app);
+  const semanticSubjectByKind: Record<
+    BuiltInApp,
+    Partial<Record<StoryHandleKind, string>>
+  > = {
+    whatsapp: { message: "lastMessage" },
+    imessage: { message: "imessage_last_message" },
+    instagram: {
+      message: "dm_message_latest",
+      post: "feed_post_focus",
+      comment: "feed_post_focus",
+    },
+    linkedin: {
+      message: "li_dm_focus_message",
+      post: "li_post_focus",
+      comment: "li_post_focus",
+    },
+    snapchat: { message: "snapchat_last_message" },
+    teams: { message: "teams_thread" },
+    typewriter: { message: "textArea" },
+    x: {
+      message: "dm_message_latest",
+      post: "tweet_card",
+      comment: "tweet_card",
+    },
+  };
+  const subject: CinematicSubjectRefIR =
+    input.app === "whatsapp" && input.kind === "message"
+      ? {
+          kind: "entity",
+          deviceId: input.deviceId,
+          appId: resolvedAppId,
+          entityType: "message",
+          entityId: input.id,
+          region: "bubble",
+        }
+      : {
+          kind: "semantic",
+          deviceId: input.deviceId,
+          appId: resolvedAppId,
+          subjectId: semanticSubjectByKind[input.app][input.kind] ?? "app",
+        };
   return Object.freeze({
     ...input,
-    appId: appId(input.app),
-    anchor(anchorId: string) {
-      return { deviceId: input.deviceId, anchorId };
+    appId: resolvedAppId,
+    subject,
+    region(subjectId: string): CinematicSubjectRefIR {
+      return {
+        kind: "semantic",
+        deviceId: input.deviceId,
+        appId: resolvedAppId,
+        subjectId,
+      };
     },
   });
 }
@@ -211,7 +256,6 @@ function actorIdentity(
 interface ConversationEmitter {
   app: ConversationOptions["app"];
   deviceId: string;
-  anchorId: string;
   open(frame: number): void;
   send(
     frame: number,
@@ -258,7 +302,6 @@ export class SceneConversation {
       kind: "message",
       app: this.emitter.app,
       deviceId: this.emitter.deviceId,
-      anchorId: this.emitter.anchorId,
       frame,
     });
     if (options.hold !== undefined) this.wait(options.hold);
@@ -284,7 +327,6 @@ export class SceneConversation {
       kind: "message",
       app: this.emitter.app,
       deviceId: this.emitter.deviceId,
-      anchorId: this.emitter.anchorId,
       frame,
     });
     if (options.hold !== undefined) this.wait(options.hold);
@@ -308,7 +350,6 @@ export class SceneConversation {
 interface SocialEmitter {
   app: SocialOptions["app"];
   deviceId: string;
-  anchorId: string;
   post(
     frame: number,
     id: string,
@@ -357,7 +398,6 @@ export class SceneSocial {
       kind: "post",
       app: this.emitter.app,
       deviceId: this.emitter.deviceId,
-      anchorId: this.emitter.anchorId,
       frame,
     });
     if (options.hold !== undefined) this.wait(options.hold);
@@ -386,7 +426,6 @@ export class SceneSocial {
       kind: "comment",
       app: this.emitter.app,
       deviceId: this.emitter.deviceId,
-      anchorId: this.emitter.anchorId,
       frame,
     });
     if (options.hold !== undefined) this.wait(options.hold);
@@ -535,11 +574,6 @@ export class SceneBuilder {
     return this;
   }
 
-  camera(fn: (track: CameraTrackBuilder) => void): this {
-    this.episode.camera((track) => fn(this.scoped(track)));
-    return this;
-  }
-
   audio(fn: (track: AudioTrackBuilder) => void): this {
     this.episode.audio((track) => fn(this.scoped(track)));
     return this;
@@ -558,30 +592,6 @@ export class SceneBuilder {
     return this;
   }
 
-  focus(handle: StoryHandle, options: CameraFocusOptions = {}): this {
-    this.episode.camera((camera) =>
-      camera.at(handle.frame).focus(handle, options),
-    );
-    return this;
-  }
-
-  follow(
-    handle: StoryHandle,
-    duration: string | number,
-    options: Omit<CameraTrackOptions, "preset"> = {},
-  ): this {
-    const durationFrames =
-      typeof duration === "number"
-        ? duration
-        : parseDurationToFrames(duration, this.fps);
-    this.episode.camera((camera) =>
-      camera
-        .span(handle.frame, handle.frame + durationFrames)
-        .trackCinematic(handle, options),
-    );
-    return this;
-  }
-
   conversation(
     options: ConversationOptions,
     fn: (conversation: SceneConversation) => void,
@@ -591,14 +601,6 @@ export class SceneBuilder {
     const common = {
       app: options.app,
       deviceId: options.deviceId,
-      anchorId:
-        options.app === "instagram"
-          ? "dm_message_latest"
-          : options.app === "linkedin"
-            ? "message_thread"
-            : options.app === "x"
-              ? "dm_thread"
-              : "lastMessage",
     } as const;
 
     if (options.app === "whatsapp") {
@@ -795,16 +797,9 @@ export class SceneBuilder {
   }
 
   social(options: SocialOptions, fn: (social: SceneSocial) => void): this {
-    const anchorId =
-      options.app === "instagram"
-        ? "feed_post"
-        : options.app === "linkedin"
-          ? "post_card"
-          : "tweet_card";
     const common = {
       app: options.app,
       deviceId: options.deviceId,
-      anchorId,
     } as const;
 
     if (options.app === "instagram") {

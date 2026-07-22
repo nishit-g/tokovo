@@ -1,14 +1,12 @@
 import { describe, it, expect } from "vitest";
 import { produce } from "immer";
 import type { WorldState, RuntimeEvent } from "@tokovo/core";
-import { DEFAULT_AUDIO_STATE, DEFAULT_BASE_CAMERA_STATE } from "@tokovo/core";
+import { DEFAULT_AUDIO_STATE } from "@tokovo/core";
 import {
   whatsappReducer,
   createWhatsAppInitialState,
 } from "../runtime/index.js";
-import {
-  getBaseTime,
-} from "../utils/messages.js";
+import { getBaseTime } from "../utils/messages.js";
 import { projectWhatsAppThread } from "../thread/projector.js";
 import type { WhatsAppConversation, WhatsAppMessage } from "../types/index.js";
 
@@ -37,7 +35,6 @@ function createTestWorldState(): WorldState {
       app_whatsapp: appState,
     },
     devices: {},
-    camera: DEFAULT_BASE_CAMERA_STATE,
     audio: DEFAULT_AUDIO_STATE,
   } as WorldState;
 }
@@ -377,8 +374,8 @@ describe("WhatsApp reducer", () => {
       payload: { conversationId: "dm_test", messageId: "retry-me" },
     });
 
-    const message = (completed.appState as any).app_whatsapp.conversations.dm_test
-      .messages[0];
+    const message = (completed.appState as any).app_whatsapp.conversations
+      .dm_test.messages[0];
     expect(message).toMatchObject({
       status: "sent",
       retryCount: 1,
@@ -435,7 +432,9 @@ describe("WhatsApp reducer", () => {
       statusId: "status-two",
       openedAt: 60,
     });
-    expect((advanced.appState as any).app_whatsapp.statuses[1].viewed).toBe(true);
+    expect((advanced.appState as any).app_whatsapp.statuses[1].viewed).toBe(
+      true,
+    );
 
     const closed = runReducer(advanced, {
       at: 90,

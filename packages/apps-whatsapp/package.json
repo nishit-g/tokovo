@@ -49,7 +49,6 @@
   },
   "dependencies": {
     "@tokovo/core": "workspace:*",
-    "@tokovo/device-camera": "workspace:*",
     "@tokovo/device-notifications": "workspace:*",
     "@tokovo/ir": "workspace:*",
     "@tokovo/react": "workspace:*",

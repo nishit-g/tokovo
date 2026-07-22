@@ -39,8 +39,12 @@ describe("canonical system surfaces", () => {
     (profile) => {
       expect(profile.display.x).toBeGreaterThan(0);
       expect(profile.display.y).toBeGreaterThan(0);
-      expect(profile.dimensions.width).toBe(profile.display.x * 2 + profile.display.width);
-      expect(profile.dimensions.height).toBe(profile.display.y * 2 + profile.display.height);
+      expect(profile.dimensions.width).toBe(
+        profile.display.x * 2 + profile.display.width,
+      );
+      expect(profile.dimensions.height).toBe(
+        profile.display.y * 2 + profile.display.height,
+      );
     },
   );
 
@@ -49,22 +53,31 @@ describe("canonical system surfaces", () => {
     [iPhone16Profile, "dark"],
     [PixelProfile, "light"],
     [PixelProfile, "dark"],
-  ] as const)("resolves %s/%s without a fallback theme", (profile, appearance) => {
-    const theme = getSystemSurfaceTheme(profile, appearance);
-    expect(theme.id).toBe(`system:${profile.platform}:${appearance}`);
-    expect(theme.geometry.pointScale).toBe(profile.pixelDensity);
-    expect(theme.geometry.home.iconSize).toBeGreaterThan(100);
-  });
+  ] as const)(
+    "resolves %s/%s without a fallback theme",
+    (profile, appearance) => {
+      const theme = getSystemSurfaceTheme(profile, appearance);
+      expect(theme.id).toBe(`system:${profile.platform}:${appearance}`);
+      expect(theme.geometry.pointScale).toBe(profile.pixelDensity);
+      expect(theme.geometry.home.iconSize).toBeGreaterThan(100);
+    },
+  );
 
   it("formats English, Hindi, Arabic and Japanese without host Intl", () => {
     const timestamp = Date.parse("2026-07-21T09:41:00Z");
-    expect(getSystemLocalizedStrings(timestamp, "en-US").date).toContain("Tuesday");
-    expect(getSystemLocalizedStrings(timestamp, "hi-IN").date).toContain("मंगलवार");
+    expect(getSystemLocalizedStrings(timestamp, "en-US").date).toContain(
+      "Tuesday",
+    );
+    expect(getSystemLocalizedStrings(timestamp, "hi-IN").date).toContain(
+      "मंगलवार",
+    );
     expect(getSystemLocalizedStrings(timestamp, "ar-SA").direction).toBe("rtl");
-    expect(getSystemLocalizedStrings(timestamp, "ja-JP").date).toContain("火曜日");
+    expect(getSystemLocalizedStrings(timestamp, "ja-JP").date).toContain(
+      "火曜日",
+    );
   });
 
-  it("projects a localized RTL Android lockscreen with semantic anchors", () => {
+  it("projects a localized RTL Android lockscreen with cinematic subjects", () => {
     const projected = projectLockscreen({
       profile: PixelProfile,
       os: os({ locale: "ar-SA", appearance: "dark", hourCycle: "h24" }),
@@ -72,31 +85,46 @@ describe("canonical system surfaces", () => {
     expect(projected.theme.id).toBe("system:android:dark");
     expect(projected.direction).toBe("rtl");
     expect(projected.time).toBe("٠٩:٤١");
-    expect(projected.anchors["lockscreen.clock"]).toBeDefined();
+    expect(projected.cinematicSubjects["lockscreen.clock"]).toBeDefined();
   });
 
-  it("projects stable home regions and per-app semantic anchors", () => {
-    const first = projectHomeScreen({ profile: iPhone16Profile, os: os(), config: home });
-    const second = projectHomeScreen({ profile: iPhone16Profile, os: os(), config: home });
+  it("projects stable home regions and per-app cinematic subjects", () => {
+    const first = projectHomeScreen({
+      profile: iPhone16Profile,
+      os: os(),
+      config: home,
+    });
+    const second = projectHomeScreen({
+      profile: iPhone16Profile,
+      os: os(),
+      config: home,
+    });
     expect(second).toEqual(first);
-    expect(first.anchors["homescreen.grid"]).toBeDefined();
-    expect(first.anchors["homescreen.dock"]).toBeDefined();
-    expect(first.anchors["homescreen.icon:app_whatsapp"]).toBeDefined();
+    expect(first.cinematicSubjects["homescreen.grid"]).toBeDefined();
+    expect(first.cinematicSubjects["homescreen.dock"]).toBeDefined();
     expect(
-      first.anchors["homescreen.dock"].y + first.anchors["homescreen.dock"].height,
+      first.cinematicSubjects["homescreen.icon:app_whatsapp"],
+    ).toBeDefined();
+    expect(
+      first.cinematicSubjects["homescreen.dock"].y +
+        first.cinematicSubjects["homescreen.dock"].height,
     ).toBeLessThan(iPhone16Profile.display.height);
   });
 
-  it("mirrors authored home icon anchors for RTL locales", () => {
-    const ltr = projectHomeScreen({ profile: PixelProfile, os: os(), config: home });
+  it("mirrors authored home icon subjects for RTL locales", () => {
+    const ltr = projectHomeScreen({
+      profile: PixelProfile,
+      os: os(),
+      config: home,
+    });
     const rtl = projectHomeScreen({
       profile: PixelProfile,
       os: os({ locale: "ar-SA" }),
       config: home,
     });
-    expect(rtl.anchors["homescreen.icon:app_whatsapp"].x).toBeGreaterThan(
-      ltr.anchors["homescreen.icon:app_whatsapp"].x,
-    );
+    expect(
+      rtl.cinematicSubjects["homescreen.icon:app_whatsapp"].x,
+    ).toBeGreaterThan(ltr.cinematicSubjects["homescreen.icon:app_whatsapp"].x);
   });
 
   it("fails loudly for an invalid page-less home screen", () => {

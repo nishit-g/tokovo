@@ -6,7 +6,12 @@ const TYPEWRITER_EXHAUSTIVE_THEME = {
   preset: "classic",
   overrides: {
     layout: { maxRows: 12, maxCols: 42, wrap: "word", bellColsFromRight: 4 },
-    paper: { rotationDeg: -0.42, vignetteOpacity: 0.18, grainOpacity: 0.1, fiberOpacity: 0.08 },
+    paper: {
+      rotationDeg: -0.42,
+      vignetteOpacity: 0.18,
+      grainOpacity: 0.1,
+      fiberOpacity: 0.08,
+    },
     desk: { vignetteOpacity: 0.62, highlightOpacity: 0.09 },
   },
 } as const satisfies TypewriterThemeConfig;
@@ -30,12 +35,20 @@ export default defineEpisode({
     apps: ["app_typewriter"],
   },
   build: () =>
-    episode("typewriter-exhaustive-v2", { fps: 30, duration: "46s", title: "Typewriter Exhaustive V2" })
+    episode("typewriter-exhaustive-v2", {
+      fps: 30,
+      duration: "46s",
+      title: "Typewriter Exhaustive V2",
+    })
       .background({ type: "solid", color: "#07080a" })
       .device("desk", "canvas", {
         app: "app_typewriter",
         installedApps: ["app_typewriter"],
-        os: { time: new Date("2026-04-11T00:10:00Z"), battery: 88, network: "wifi" },
+        os: {
+          time: new Date("2026-04-11T00:10:00Z"),
+          battery: 88,
+          network: "wifi",
+        },
       })
       .typewriter(
         "desk",
@@ -68,7 +81,16 @@ export default defineEpisode({
               "",
               "And intentional work ages better than loud work.",
             ].join("\n"),
-            { cps: 30, jitter: { minFrames: -1, maxFrames: 2 }, mistakes: { rate: 0.025, max: 3 }, pauses: { afterPunctFrames: 1, afterNewlineFrames: 2, afterSpaceFrames: 0 } },
+            {
+              cps: 30,
+              jitter: { minFrames: -1, maxFrames: 2 },
+              mistakes: { rate: 0.025, max: 3 },
+              pauses: {
+                afterPunctFrames: 1,
+                afterNewlineFrames: 2,
+                afterSpaceFrames: 0,
+              },
+            },
           );
           tw.at("35.0s").key("!");
           tw.at("35.2s").backspace();
@@ -76,10 +98,5 @@ export default defineEpisode({
         },
         { theme: TYPEWRITER_EXHAUSTIVE_THEME },
       )
-      .camera((cam) => {
-        cam.at("0s").focus("paper", { scale: 1.02, duration: "0.35s" });
-        cam.span("1.6s", "33.2s").trackCinematic("cursor", { scale: 1.35, smoothing: 0.22 });
-        cam.at("36.0s").focus("typewriter", { scale: 1.06, duration: "0.35s" });
-      })
       .build(),
 });

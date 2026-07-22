@@ -75,12 +75,23 @@ describe("canonical code-first app tracks", () => {
     const program = prepareInputProgram(
       (ir.inputSessions ?? []).map((session) => ({ ...session, fps: ir.fps })),
     );
-    expect(program.sessions[0]?.operations.map((operation) => operation.type)).toEqual(
-      expect.arrayContaining(["focus", "insert", "setSelection", "replaceRange", "submit", "blur"]),
+    expect(
+      program.sessions[0]?.operations.map((operation) => operation.type),
+    ).toEqual(
+      expect.arrayContaining([
+        "focus",
+        "insert",
+        "setSelection",
+        "replaceRange",
+        "submit",
+        "blur",
+      ]),
     );
   });
 
   it("authors scene-local time, reusable cast identities, handles, and camera intent", () => {
+    let revealSubject: unknown;
+    let postSubject: unknown;
     const people = cast({
       me: actor("me", {
         name: "Me",
@@ -113,8 +124,8 @@ describe("canonical code-first app tracks", () => {
                 hold: "1.5s",
               },
             );
+            revealSubject = reveal.subject;
             chat.reply("That explains everything.", reveal, {});
-            scene.focus(reveal, { scale: 1.08 });
           },
         );
       })
@@ -125,8 +136,8 @@ describe("canonical code-first app tracks", () => {
             const post = social.post("A normal day online.", {
               id: "post_reaction",
             });
+            postSubject = post.subject;
             social.wait("1s").comment(post, people.riya, "Define normal.");
-            scene.follow(post, "1.5s", { scale: 1.1 });
           },
         );
       })
@@ -141,34 +152,39 @@ describe("canonical code-first app tracks", () => {
         .filter((event) => event.kind === "APP")
         .map((event) => event.at),
     ).toEqual([60, 90, 135, 240, 270]);
-    expect(
-      ir.events.some(
-        (event) =>
-          event.kind === "CAMERA" &&
-          event.type === "FOCUS" &&
-          event.payload.anchorId === "lastMessage",
-      ),
-    ).toBe(true);
+    expect(revealSubject).toEqual({
+      kind: "entity",
+      deviceId: "phone",
+      appId: "app_whatsapp",
+      entityType: "message",
+      entityId: "reveal-message-0",
+      region: "bubble",
+    });
+    expect(postSubject).toEqual({
+      kind: "semantic",
+      deviceId: "phone",
+      appId: "app_x",
+      subjectId: "tweet_card",
+    });
     expect(ir.sections).toEqual([
       { id: "reveal", startFrame: 60, endFrame: 210 },
       { id: "reaction", startFrame: 240, endFrame: 330 },
     ]);
   });
 
-  it("turns director intent into camera events without an explicit plugin", () => {
+  it("gives every device episode a native Camera VNext plan", () => {
     const ir = episode("automatic-director", { fps: 24, duration: "4s" })
+      .device("phone", "iphone16", { app: "app_whatsapp" })
       .whatsapp("phone", "dm", (whatsapp) => {
         whatsapp.at("1s").receive("Riya", "Camera, take this one.");
       })
-      .director("Cinematic")
       .build();
 
-    expect(
-      ir.events.some(
-        (event) =>
-          event.kind === "CAMERA" && event.payload.anchorId === "lastMessage",
-      ),
-    ).toBe(true);
+    expect(ir.events.some((event) => event.kind === "CAMERA")).toBe(false);
+    expect(ir.cinematics).toMatchObject({
+      defaultCameraPlanId: "default",
+      cameraPlans: [{ id: "default", fps: 24, durationInFrames: 96 }],
+    });
   });
 
   it("keeps conversation verbs consistent across every messaging surface", () => {

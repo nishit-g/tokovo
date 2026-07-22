@@ -12,6 +12,12 @@ import { runRenderDoctor } from "./preflight";
 import { findLatestRenderArtifact, renderEpisodeArtifact } from "./render";
 import { createPresignedArtifactUrls } from "./storage";
 import { repoRoot } from "./constants";
+import {
+  diffEpisodeCameraPlans,
+  explainEpisodeCameraFrame,
+  getEpisodeCameraProgramManifests,
+  getRegisteredCinematicSubjectSchemas,
+} from "video-runner/camera-diagnostics";
 
 const DEFAULT_EPISODE_ID = "v2-creator-series-showcase";
 
@@ -23,6 +29,26 @@ function argValue(flag: string): string | undefined {
 
 function positional(index: number): string | undefined {
   return process.argv.slice(2)[index];
+}
+
+function optionalFrameRange(): [number, number] | undefined {
+  const startRaw = argValue("--start-frame");
+  const endRaw = argValue("--end-frame");
+  if (startRaw === undefined && endRaw === undefined) return undefined;
+  if (startRaw === undefined || endRaw === undefined) {
+    throw new Error("--start-frame and --end-frame must be supplied together.");
+  }
+  const startFrame = Number(startRaw);
+  const endFrame = Number(endRaw);
+  if (
+    !Number.isInteger(startFrame) ||
+    !Number.isInteger(endFrame) ||
+    startFrame < 0 ||
+    endFrame < startFrame
+  ) {
+    throw new Error(`Invalid inclusive frame range "${startRaw}-${endRaw}".`);
+  }
+  return [startFrame, endFrame];
 }
 
 async function runDoctor(): Promise<void> {
@@ -43,12 +69,14 @@ async function runRender(): Promise<void> {
     "review";
   const jobId = argValue("--job") ?? process.env.JOB_ID ?? `manual-${Date.now()}`;
   const cameraPlanId = argValue("--camera-plan") ?? process.env.CAMERA_PLAN_ID ?? undefined;
+  const frameRange = optionalFrameRange();
 
   const result = await renderEpisodeArtifact({
     episodeId,
     jobId,
     profile,
     cameraPlanId,
+    frameRange,
   });
 
   console.log(
@@ -58,6 +86,7 @@ async function runRender(): Promise<void> {
         episodeId,
         profile,
         cameraPlanId: cameraPlanId ?? null,
+        frameRange: frameRange ?? null,
         videoPath: result.videoPath,
         posterPath: result.posterPath,
         metadataPath: result.metadataPath,
@@ -66,6 +95,10 @@ async function runRender(): Promise<void> {
         artifactPosterPath: result.metadata.artifact.posterPath,
         artifactMetadataPath: result.metadata.artifact.metadataPath,
         artifactLogsPath: result.metadata.artifact.logsPath,
+        cameraProgramPath: result.metadata.artifact.cameraProgramPath,
+        cameraDiagnosticsPath: result.metadata.artifact.cameraDiagnosticsPath,
+        projectionHashesPath: result.metadata.artifact.projectionHashesPath,
+        cameraTracePath: result.metadata.artifact.cameraTracePath,
         artifactVideoUrl: result.metadata.artifact.videoUrl ?? null,
         artifactPosterUrl: result.metadata.artifact.posterUrl ?? null,
         artifactMetadataUrl: result.metadata.artifact.metadataUrl ?? null,
@@ -128,12 +161,72 @@ async function runArtifactUrls(): Promise<void> {
         artifactPosterPath: artifact.artifact.posterPath,
         artifactMetadataPath: artifact.artifact.metadataPath,
         artifactLogsPath: artifact.artifact.logsPath,
+        cameraProgramPath: artifact.artifact.cameraProgramPath,
+        cameraDiagnosticsPath: artifact.artifact.cameraDiagnosticsPath,
+        projectionHashesPath: artifact.artifact.projectionHashesPath,
+        cameraTracePath: artifact.artifact.cameraTracePath,
         ...presignedUrls,
       },
       null,
       2,
     ),
   );
+}
+
+async function runCameraCommand(): Promise<void> {
+  const action = positional(1) ?? "programs";
+  const episodeId =
+    argValue("--episode") ?? positional(2) ?? process.env.EPISODE_ID ?? DEFAULT_EPISODE_ID;
+  if (action === "programs") {
+    console.log(JSON.stringify(await getEpisodeCameraProgramManifests(episodeId), null, 2));
+    return;
+  }
+  if (action === "explain") {
+    const frameRaw = argValue("--frame") ?? "0";
+    const frame = Number(frameRaw);
+    if (!Number.isInteger(frame) || frame < 0) {
+      throw new Error(`Invalid camera frame "${frameRaw}".`);
+    }
+    console.log(
+      JSON.stringify(
+        await explainEpisodeCameraFrame({
+          episodeId,
+          cameraPlanId: argValue("--camera-plan"),
+          outputId: argValue("--output"),
+          frame,
+        }),
+        null,
+        2,
+      ),
+    );
+    return;
+  }
+  if (action === "diff") {
+    const leftCameraPlanId = argValue("--left");
+    const rightCameraPlanId = argValue("--right");
+    if (!leftCameraPlanId || !rightCameraPlanId) {
+      throw new Error("camera diff requires --left <plan> and --right <plan>.");
+    }
+    console.log(
+      JSON.stringify(
+        await diffEpisodeCameraPlans({
+          episodeId,
+          leftCameraPlanId,
+          rightCameraPlanId,
+        }),
+        null,
+        2,
+      ),
+    );
+    return;
+  }
+  if (action === "subjects") {
+    console.log(
+      JSON.stringify({ episodeId, schemas: getRegisteredCinematicSubjectSchemas() }, null, 2),
+    );
+    return;
+  }
+  throw new Error(`Unknown camera diagnostic command "${action}".`);
 }
 
 async function main(): Promise<void> {
@@ -165,6 +258,11 @@ async function main(): Promise<void> {
 
     if (command === "artifact-urls") {
       await runArtifactUrls();
+      return;
+    }
+
+    if (command === "camera") {
+      await runCameraCommand();
       return;
     }
 

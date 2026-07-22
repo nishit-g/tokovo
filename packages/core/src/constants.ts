@@ -69,30 +69,6 @@ export const DEFAULTS = {
 
   /** Default video background color */
   BACKGROUND_COLOR: "#0a0a1a",
-
-  /** Default split layout divider color */
-  SPLIT_LINE_COLOR: "#333333",
-
-  /** Default zoom scale */
-  ZOOM_SCALE: 1.3,
-
-  /** Default shake intensity */
-  SHAKE_INTENSITY: 10,
-
-  /** Default shake frequency (shakes per second) */
-  SHAKE_FREQUENCY: 16,
-
-  /** Default shake decay */
-  SHAKE_DECAY: 0.3,
-
-  /** Default camera easing */
-  CAMERA_EASING: "ease-out" as const,
-
-  /** Default PIP scale */
-  PIP_SCALE: 0.3,
-
-  /** Default PIP position */
-  PIP_POSITION: "bottom-right" as const,
 } as const;
 
 // =============================================================================
@@ -111,7 +87,6 @@ export const DEVICE_PROFILES = {
 export const EVENT_KINDS = {
   DEVICE: "DEVICE",
   APP: "APP",
-  CAMERA: "CAMERA",
   AUDIO: "AUDIO",
   OS: "OS",
   CALL: "CALL",

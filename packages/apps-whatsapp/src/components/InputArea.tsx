@@ -34,7 +34,7 @@ export const InputArea: React.FC<{
 
   return (
     <div
-      data-anchor="input"
+      data-cinematic-subject="input"
       role="group"
       aria-label={t("composer.placeholder")}
       dir={direction}
@@ -96,7 +96,7 @@ export const InputArea: React.FC<{
       </button>
 
       <div
-        data-anchor="typing"
+        data-cinematic-subject="typing"
         role="textbox"
         dir={inputDirection ?? direction}
         lang={inputLanguage}

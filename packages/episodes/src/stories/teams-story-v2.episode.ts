@@ -20,7 +20,11 @@ export default defineEpisode({
     apps: ["app_teams"],
   },
   build: () =>
-    episode("teams-story-v2", { fps: 30, duration: "39s", title: "Teams Story V2" })
+    episode("teams-story-v2", {
+      fps: 30,
+      duration: "39s",
+      title: "Teams Story V2",
+    })
       .device("phone", "iphone16", {
         app: "app_teams",
         os: {
@@ -35,9 +39,40 @@ export default defineEpisode({
           { id: "u_ops", displayName: "Priya", role: "Ops" },
           { id: "u_exec", displayName: "Rohan", role: "Exec" },
         ],
-        channels: [{ id: "launch_story_v2", name: "launch", memberIds: ["u_me", "u_ops"], description: "Go-live", threadIds: ["th_story_v2"], unreadCount: 1, mentionCount: 1 }],
-        threads: [{ id: "th_story_v2", channelId: "launch_story_v2", title: "Homepage mismatch", participantIds: ["u_me", "u_ops"], messageIds: [], unreadCount: 0, mentionCount: 0, replyCount: 0, typingUserIds: [], state: "open" }],
-        dms: [{ id: "dm_exec_story_v2", participantIds: ["u_me", "u_exec"], messageIds: [], unreadCount: 1, mentionCount: 0 }],
+        channels: [
+          {
+            id: "launch_story_v2",
+            name: "launch",
+            memberIds: ["u_me", "u_ops"],
+            description: "Go-live",
+            threadIds: ["th_story_v2"],
+            unreadCount: 1,
+            mentionCount: 1,
+          },
+        ],
+        threads: [
+          {
+            id: "th_story_v2",
+            channelId: "launch_story_v2",
+            title: "Homepage mismatch",
+            participantIds: ["u_me", "u_ops"],
+            messageIds: [],
+            unreadCount: 0,
+            mentionCount: 0,
+            replyCount: 0,
+            typingUserIds: [],
+            state: "open",
+          },
+        ],
+        dms: [
+          {
+            id: "dm_exec_story_v2",
+            participantIds: ["u_me", "u_exec"],
+            messageIds: [],
+            unreadCount: 1,
+            mentionCount: 0,
+          },
+        ],
       })
       .teams("phone", (teams) => {
         teams.openThread("launch_story_v2", "th_story_v2", "1.0s");
@@ -60,10 +95,6 @@ export default defineEpisode({
           target: dmTarget("dm_exec_story_v2"),
           text: "Board version: the rollout is healthy, but mobile cache is lagging behind the intended design.",
         });
-      })
-      .camera((cam) => {
-        cam.at("1.1s").focus("thread_view", { scale: 1.08, duration: "0.35s" });
-        cam.at("8.1s").focus("dm_thread", { scale: 1.08, duration: "0.35s" });
       })
       .build(),
 });

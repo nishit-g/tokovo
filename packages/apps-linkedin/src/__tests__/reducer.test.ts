@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { produce } from "immer";
 import type { RuntimeEvent, WorldState } from "@tokovo/core";
-import { DEFAULT_AUDIO_STATE, DEFAULT_BASE_CAMERA_STATE } from "@tokovo/core";
+import { DEFAULT_AUDIO_STATE } from "@tokovo/core";
 import { linkedInReducer } from "../runtime/reducer.js";
 import { createLinkedInInitialState } from "../runtime/state.js";
 
@@ -9,7 +9,6 @@ function createWorld(): WorldState {
   return {
     appState: { app_linkedin: createLinkedInInitialState() },
     devices: {},
-    camera: DEFAULT_BASE_CAMERA_STATE,
     audio: DEFAULT_AUDIO_STATE,
   } as WorldState;
 }
@@ -144,7 +143,12 @@ describe("LinkedIn reducer basics", () => {
       kind: "APP",
       appId: "app_linkedin",
       type: "LINKEDIN_ADD_DM_MESSAGE",
-      payload: { id: "m1", threadId: "t1", senderId: "u2", text: "Need a quick intro?" },
+      payload: {
+        id: "m1",
+        threadId: "t1",
+        senderId: "u2",
+        text: "Need a quick intro?",
+      },
     });
     expect((w3.appState?.app_linkedin as any).dmThreads[0].unreadCount).toBe(1);
 

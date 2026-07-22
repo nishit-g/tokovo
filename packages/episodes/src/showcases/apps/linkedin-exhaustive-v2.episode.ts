@@ -12,7 +12,14 @@ export default defineEpisode({
     appId: "app_linkedin",
     visibility: "public",
     sortOrder: 310,
-    tags: ["linkedin", "exhaustive", "feed", "messages", "compose", "notifications"],
+    tags: [
+      "linkedin",
+      "exhaustive",
+      "feed",
+      "messages",
+      "compose",
+      "notifications",
+    ],
   },
   config: {
     format: "1080x1920",
@@ -39,26 +46,125 @@ export default defineEpisode({
       .snapshot("app_linkedin", "phone", {
         currentUserId: "me",
         users: [
-          { id: "me", name: "Aarav Sen", handle: "aaravsen", headline: "Building product systems that still feel human", avatarUrl: "/avatars/avatar-zoe.jpg", company: "Tokovo", location: "Bengaluru", connections: 902, followers: 16500, profileViews: 520, impressionCount: 14800 },
-          { id: "u1", name: "Riku Sato", handle: "rikusato", headline: "Illustration systems lead", avatarUrl: "/avatars/avatar-priya.jpg", company: "Freelance", location: "Kyoto", connections: 612, followers: 10100 },
-          { id: "u2", name: "Noor Ahmed", handle: "noorahmed", headline: "Founder hiring PMs", avatarUrl: "/avatars/avatar-alex.jpg", company: "Northline", location: "Dubai", connections: 1110, followers: 24100 },
-          { id: "u3", name: "Mina Park", handle: "minapark", headline: "Launch strategist", avatarUrl: "/avatars/avatar-ava.jpg", company: "Lantern", location: "Seoul", connections: 1040, followers: 19800 },
+          {
+            id: "me",
+            name: "Aarav Sen",
+            handle: "aaravsen",
+            headline: "Building product systems that still feel human",
+            avatarUrl: "/avatars/avatar-zoe.jpg",
+            company: "Tokovo",
+            location: "Bengaluru",
+            connections: 902,
+            followers: 16500,
+            profileViews: 520,
+            impressionCount: 14800,
+          },
+          {
+            id: "u1",
+            name: "Riku Sato",
+            handle: "rikusato",
+            headline: "Illustration systems lead",
+            avatarUrl: "/avatars/avatar-priya.jpg",
+            company: "Freelance",
+            location: "Kyoto",
+            connections: 612,
+            followers: 10100,
+          },
+          {
+            id: "u2",
+            name: "Noor Ahmed",
+            handle: "noorahmed",
+            headline: "Founder hiring PMs",
+            avatarUrl: "/avatars/avatar-alex.jpg",
+            company: "Northline",
+            location: "Dubai",
+            connections: 1110,
+            followers: 24100,
+          },
+          {
+            id: "u3",
+            name: "Mina Park",
+            handle: "minapark",
+            headline: "Launch strategist",
+            avatarUrl: "/avatars/avatar-ava.jpg",
+            company: "Lantern",
+            location: "Seoul",
+            connections: 1040,
+            followers: 19800,
+          },
         ],
         posts: [
-          { id: "li_ex_1", authorId: "u2", text: "Hot take: most product launches fail because the team never rehearsed the comment section.", createdAt: baseTs - 170000, hashtags: ["product", "launch"] },
-          { id: "li_ex_2", authorId: "u1", text: "We cut three animations today because clarity won. The page instantly felt more confident.", createdAt: baseTs - 120000, media: { type: "image", urls: ["/placeholders/media.svg"], aspect: "wide" } },
-          { id: "li_ex_3", authorId: "me", text: "If your notification system cannot handle escalation gracefully, your app does not deserve a growth team.", createdAt: baseTs - 80000, hashtags: ["systems", "productops"] },
+          {
+            id: "li_ex_1",
+            authorId: "u2",
+            text: "Hot take: most product launches fail because the team never rehearsed the comment section.",
+            createdAt: baseTs - 170000,
+            hashtags: ["product", "launch"],
+          },
+          {
+            id: "li_ex_2",
+            authorId: "u1",
+            text: "We cut three animations today because clarity won. The page instantly felt more confident.",
+            createdAt: baseTs - 120000,
+            media: {
+              type: "image",
+              urls: ["/placeholders/media.svg"],
+              aspect: "wide",
+            },
+          },
+          {
+            id: "li_ex_3",
+            authorId: "me",
+            text: "If your notification system cannot handle escalation gracefully, your app does not deserve a growth team.",
+            createdAt: baseTs - 80000,
+            hashtags: ["systems", "productops"],
+          },
         ],
         notifications: [
-          { id: "li_ex_nt_1", type: "comment", actorId: "u3", postId: "li_ex_3", unread: true, createdAt: baseTs - 24000, title: "Mina Park commented on your post", body: "This is the most honest sentence in product ops." },
-          { id: "li_ex_nt_2", type: "follow", actorId: "u2", unread: true, createdAt: baseTs - 18000, title: "Noor Ahmed started following you", body: "Founder hiring PMs" },
+          {
+            id: "li_ex_nt_1",
+            type: "comment",
+            actorId: "u3",
+            postId: "li_ex_3",
+            unread: true,
+            createdAt: baseTs - 24000,
+            title: "Mina Park commented on your post",
+            body: "This is the most honest sentence in product ops.",
+          },
+          {
+            id: "li_ex_nt_2",
+            type: "follow",
+            actorId: "u2",
+            unread: true,
+            createdAt: baseTs - 18000,
+            title: "Noor Ahmed started following you",
+            body: "Founder hiring PMs",
+          },
         ],
         threads: [
-          { id: "li_ex_dm_1", participantIds: ["me", "u2"], title: "Noor Ahmed", unreadCount: 1, pinned: true },
-          { id: "li_ex_dm_2", participantIds: ["me", "u3"], title: "Mina Park", unreadCount: 0, pinned: false },
+          {
+            id: "li_ex_dm_1",
+            participantIds: ["me", "u2"],
+            title: "Noor Ahmed",
+            unreadCount: 1,
+            pinned: true,
+          },
+          {
+            id: "li_ex_dm_2",
+            participantIds: ["me", "u3"],
+            title: "Mina Park",
+            unreadCount: 0,
+            pinned: false,
+          },
         ],
         messages: [
-          { id: "li_ex_msg_1", threadId: "li_ex_dm_1", senderId: "u2", text: "Can you sanity check my hiring brief before I embarrass myself publicly?", createdAt: baseTs - 10000 },
+          {
+            id: "li_ex_msg_1",
+            threadId: "li_ex_dm_1",
+            senderId: "u2",
+            text: "Can you sanity check my hiring brief before I embarrass myself publicly?",
+            createdAt: baseTs - 10000,
+          },
         ],
       })
       .linkedin("phone", (li) => {
@@ -93,7 +199,9 @@ export default defineEpisode({
           createdAt: baseTs + 29000,
         });
         li.at("33.4s").navigate("compose");
-        li.at("34.0s").setComposeDraft("Good product systems remove panic without removing character.");
+        li.at("34.0s").setComposeDraft(
+          "Good product systems remove panic without removing character.",
+        );
         li.at("36.2s").post({
           id: "li_ex_post_4",
           authorId: "me",
@@ -101,15 +209,6 @@ export default defineEpisode({
           createdAt: baseTs + 42000,
         });
         li.at("39.0s").navigate("feed", { postId: "li_ex_post_4" });
-      })
-      .camera((cam) => {
-        cam.at("0s").focus("feed", { scale: 1.02, duration: "0.35s" });
-        cam.at("7.1s").focus("post_detail", { scale: 1.08, duration: "0.35s" });
-        cam.span("9.0s", "11.8s").trackCinematic("keyboard", { scale: 1.1, smoothing: 0.18 });
-        cam.at("12.7s").focus("profile_header", { scale: 1.08, duration: "0.35s" });
-        cam.at("16.9s").focus("notification_row", { scale: 1.08, duration: "0.35s" });
-        cam.at("22.5s").focus("message_thread", { scale: 1.08, duration: "0.35s" });
-        cam.at("33.5s").focus("composer", { scale: 1.08, duration: "0.35s" });
       })
       .build();
   },

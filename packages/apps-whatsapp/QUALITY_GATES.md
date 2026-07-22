@@ -10,15 +10,15 @@ visual or product completeness.
 - One public event shape from DSL through lowering and reduction; no aliases,
   payload duplication, normalization adapters, or silently dropped events.
 - Snapshots validate every discriminated message and product entity, including
-  cross-references. Missing state, conversations, messages, anchors, and assets
+  cross-references. Missing state, conversations, messages, subjects, and assets
   fail before rendering.
 - Every visible interactive state has a typed DSL event, schema, reducer
-  transition, selector, semantic anchor, and deterministic visual result.
+  transition, selector, semantic subject, and deterministic visual result.
 
 ## Geometry and pixels
 
-- React surfaces and semantic anchors consume the same layout recipes.
-- Browser bounds and anchor bounds agree within 0.5 design pixels for every
+- React surfaces and semantic subjects consume the same layout recipes.
+- Browser bounds and subject bounds agree within 0.5 design pixels for every
   target in the QA matrix.
 - A pinned Chromium/font/toolchain renders reviewed golden frames. CI performs
   exact pixel comparison and uploads the expected, actual, and diff images.

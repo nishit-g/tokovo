@@ -10,7 +10,7 @@
 - deterministic `en`, `hi`, `ar`, and `ja` system localization with RTL support
 - wallpaper, icon, badge, folder, dock, search, status-bar, and gesture presentation
 - deterministic Dynamic Island activity and screen-recording lifecycle projection
-- semantic system anchors for camera direction
+- semantic system subjects for camera direction
 - device-level runtime behavior used across episodes
 
 ## Role In Tokovo
@@ -48,6 +48,6 @@ Capture state is independent of the current app, home/lock surface, and island
 presentation. It remains active until an explicit stop event; app switches, locking,
 expanding, collapsing, or dismissing the indicator never end the capture.
 
-System anchors include `lockscreen.clock`, `lockscreen.controls`,
+System subjects include `lockscreen.clock`, `lockscreen.controls`,
 `homescreen.grid`, `homescreen.dock`, `homescreen.search`, and
 `homescreen.icon:<appId>`.

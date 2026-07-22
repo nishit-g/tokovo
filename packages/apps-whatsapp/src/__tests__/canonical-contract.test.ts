@@ -1,8 +1,4 @@
-import {
-  DEFAULT_AUDIO_STATE,
-  DEFAULT_BASE_CAMERA_STATE,
-  type WorldState,
-} from "@tokovo/core";
+import { DEFAULT_AUDIO_STATE, type WorldState } from "@tokovo/core";
 import { produce } from "immer";
 import { describe, expect, it } from "vitest";
 
@@ -22,16 +18,21 @@ function world(): WorldState {
   return {
     devices: {},
     appState: { app_whatsapp: appState },
-    camera: DEFAULT_BASE_CAMERA_STATE,
     audio: DEFAULT_AUDIO_STATE,
   } as WorldState;
 }
 
-function reduce(state: WorldState, event: Parameters<typeof whatsappReducer>[1]) {
+function reduce(
+  state: WorldState,
+  event: Parameters<typeof whatsappReducer>[1],
+) {
   return produce(state, (draft) => whatsappReducer(draft, event));
 }
 
-function reduceTrack(state: WorldState, track: WhatsAppTrackBuilder): WorldState {
+function reduceTrack(
+  state: WorldState,
+  track: WhatsAppTrackBuilder,
+): WorldState {
   const context = {
     pluginLowerers: new Map(),
     fps: 30,
@@ -59,7 +60,6 @@ describe("WhatsApp canonical authoring contract", () => {
         {
           devices: {},
           appState: {},
-          camera: DEFAULT_BASE_CAMERA_STATE,
           audio: DEFAULT_AUDIO_STATE,
         } as WorldState,
         event,
@@ -226,12 +226,16 @@ describe("WhatsApp canonical authoring contract", () => {
 
     const next = reduceTrack(world(), track);
     const conversation = selectAppState(next)?.conversations.dm;
-    expect(conversation?.messages.find((message) => message.id === "message-1")).toMatchObject({
+    expect(
+      conversation?.messages.find((message) => message.id === "message-1"),
+    ).toMatchObject({
       text: "edited",
       edited: true,
       reactions: [{ emoji: "🔥", count: 1, fromMe: true }],
     });
-    expect(conversation?.messages.find((message) => message.id === "voice-1")).toMatchObject({
+    expect(
+      conversation?.messages.find((message) => message.id === "voice-1"),
+    ).toMatchObject({
       type: "voice",
       media: {
         transferState: "ready",
@@ -240,7 +244,9 @@ describe("WhatsApp canonical authoring contract", () => {
         playbackProgress: 0.25,
       },
     });
-    expect(conversation?.messages.find((message) => message.id === "forward-1")).toMatchObject({
+    expect(
+      conversation?.messages.find((message) => message.id === "forward-1"),
+    ).toMatchObject({
       type: "deleted",
       originalText: "edited",
     });
@@ -330,12 +336,14 @@ describe("WhatsApp canonical authoring contract", () => {
     expect(conversation?.description).toBe("Launch room");
     expect(conversation?.members).toEqual([]);
     expect(conversation?.admins).toEqual([]);
-    expect(conversation?.messages.map((message) => message.systemType)).toEqual([
-      "member_added",
-      "admin_change",
-      "group_description_changed",
-      "member_removed",
-    ]);
+    expect(conversation?.messages.map((message) => message.systemType)).toEqual(
+      [
+        "member_added",
+        "admin_change",
+        "group_description_changed",
+        "member_removed",
+      ],
+    );
   });
 
   it("increments the static-layout revision after every accepted event", () => {
@@ -348,12 +356,16 @@ describe("WhatsApp canonical authoring contract", () => {
       payload: { screen: "updates" },
     });
     expect(
-      (next.appState?.app_whatsapp as { layoutRevision: number }).layoutRevision,
+      (next.appState?.app_whatsapp as { layoutRevision: number })
+        .layoutRevision,
     ).toBe(1);
   });
 
   it("selects the correct WhatsApp instance for each device", () => {
-    const left = { ...createWhatsAppInitialState(), currentScreen: "chats" as const };
+    const left = {
+      ...createWhatsAppInitialState(),
+      currentScreen: "chats" as const,
+    };
     const right = {
       ...createWhatsAppInitialState(),
       currentScreen: "updates" as const,

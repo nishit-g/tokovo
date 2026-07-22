@@ -1,7 +1,10 @@
 import { describe, expect, it } from "vitest";
 import type { WorldState } from "@tokovo/core";
-import { DEFAULT_AUDIO_STATE, DEFAULT_BASE_CAMERA_STATE } from "@tokovo/core";
-import { createInstagramInitialState, type InstagramState } from "../runtime/state.js";
+import { DEFAULT_AUDIO_STATE } from "@tokovo/core";
+import {
+  createInstagramInitialState,
+  type InstagramState,
+} from "../runtime/state.js";
 import { instagramReducer } from "../runtime/reducer.js";
 
 function createWorld(): WorldState {
@@ -10,7 +13,6 @@ function createWorld(): WorldState {
       app_instagram: createInstagramInitialState(),
     },
     devices: {},
-    camera: DEFAULT_BASE_CAMERA_STATE,
     audio: DEFAULT_AUDIO_STATE,
   } as WorldState;
 }

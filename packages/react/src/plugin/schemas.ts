@@ -38,10 +38,6 @@ export const PluginLayoutStrategySchema = z.object({
   computeLayout: z.function(),
 });
 
-export const PluginAnchorRegistrySchema = z.object({
-  providers: z.record(z.string(), z.function()),
-});
-
 export const TokovoPluginContractSchema = z.object({
   id: PluginIdSchema,
   version: PluginVersionSchema,
@@ -62,7 +58,6 @@ export const TokovoPluginContractSchema = z.object({
   assets: PluginAssetsSchema.optional(),
   layouts: z.array(PluginLayoutStrategySchema).optional(),
   audioRules: z.array(PluginAutoSoundRuleSchema).optional(),
-  anchors: PluginAnchorRegistrySchema.optional(),
   platforms: z.array(PlatformSchema).optional(),
   dependencies: z.array(z.string()).optional(),
 });

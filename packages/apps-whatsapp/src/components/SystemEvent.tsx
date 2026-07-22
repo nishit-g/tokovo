@@ -71,7 +71,13 @@ const UnreadDivider = memo(function UnreadDivider({ text }: { text: string }) {
         fontFamily: theme.typography.fontFamily,
       }}
     >
-      <div style={{ flex: 1, height: 1, backgroundColor: `${theme.colors.divider}AA` }} />
+      <div
+        style={{
+          flex: 1,
+          height: 1,
+          backgroundColor: `${theme.colors.divider}AA`,
+        }}
+      />
       <div
         style={{
           padding: "4px 10px",
@@ -83,7 +89,13 @@ const UnreadDivider = memo(function UnreadDivider({ text }: { text: string }) {
       >
         {text}
       </div>
-      <div style={{ flex: 1, height: 1, backgroundColor: `${theme.colors.divider}AA` }} />
+      <div
+        style={{
+          flex: 1,
+          height: 1,
+          backgroundColor: `${theme.colors.divider}AA`,
+        }}
+      />
     </div>
   );
 });
@@ -142,8 +154,11 @@ const TrustNotice = memo(function TrustNotice({
         <div style={{ marginTop: 2, fontSize: 12, lineHeight: "16px" }}>
           {text}
           {showLearnMore && (
-            <span style={{ color: theme.colors.systemBannerLink, fontWeight: 600 }}>
-              {" "}{t("system.learnMore")}
+            <span
+              style={{ color: theme.colors.systemBannerLink, fontWeight: 600 }}
+            >
+              {" "}
+              {t("system.learnMore")}
             </span>
           )}
         </div>
@@ -218,13 +233,15 @@ export const SystemEvent = memo(function SystemEvent({
           />
         );
       default:
-        return <SystemPill text={text || fallback} icon={getPillIcon(message)} />;
+        return (
+          <SystemPill text={text || fallback} icon={getPillIcon(message)} />
+        );
     }
   })();
 
   return (
     <div
-      data-anchor="message"
+      data-cinematic-subject="message"
       data-message-id={message.id}
       data-system-type={message.systemType ?? message.type}
       data-order={order}

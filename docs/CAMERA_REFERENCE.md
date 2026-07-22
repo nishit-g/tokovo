@@ -46,6 +46,8 @@ export const cinematics = cinematicProgram(
         camera
           .output("main", {
             viewport: { x: 0, y: 0, width: 1080, height: 1920 },
+            coveragePolicy: "require-shots",
+            safeAreaInsets: { top: 48, right: 32, bottom: 48, left: 32 },
             defaultRigId: "neutral",
           })
           .rig("neutral", {
@@ -103,6 +105,16 @@ Never compensate for the hardware rail with episode-authored pixel offsets.
 Missing-subject behavior must be explicit: fail, skip the shot, or use one explicit fallback
 subject. There is no heuristic chain that invents a broader target.
 
+## Output coverage and safe areas
+
+Every output declares a coverage policy. `require-shots` rejects any uncovered frame interval at
+preparation; `allow-default` intentionally fills gaps with the output's default rig. This is a
+compile-time contract, not a renderer guess.
+
+`safeAreaInsets` reduces the effective composition viewport for every rig on that output. Composer
+positioning and framing guards solve inside the safe viewport, while final clipping still uses the
+full output rectangle. Invalid or over-constrained insets fail with stable camera diagnostic codes.
+
 Authoring fails immediately with `CinematicAuthoringError` when IDs collide, a shot leaves the
 episode interval, a default rig belongs to the wrong output, or a rig references undeclared camera
 data. Preparation performs the independent schema/registry validation required for raw IR and
@@ -118,6 +130,49 @@ These verbs compile to complete deterministic poses and carry a movement intent 
 `orbit` currently means a projective 2.5D plate move using perspective tilt; it is not true
 multi-plane 3D parallax. A future 3D renderer can implement that intent without changing episode
 story code.
+
+## Tracking and baked trajectories
+
+Rigs use deterministic direct tracking by default: each requested frame resolves the current
+subject projection and recomputes the complete desired pose without consulting an earlier frame.
+This preserves random access and makes sequential and shuffled evaluation identical.
+
+For reviewed editorial paths, a rig may declare absolute baked offsets:
+
+```ts
+camera.rig("reviewed-path", {
+  outputId: "main",
+  subject: phone,
+  composer: {
+    screenPosition: [0.5, 0.5],
+    targetFill: 0.82,
+    fillMode: "contain",
+  },
+  tracking: { mode: "direct" },
+  bakedTrajectory: {
+    interpolation: "minimum-jerk",
+    keyframes: [
+      {
+        frame: 0,
+        offsetX: 0,
+        offsetY: 0,
+        scaleMultiplier: 1,
+        rotationOffsetDeg: 0,
+      },
+      {
+        frame: 120,
+        offsetX: -24,
+        offsetY: 18,
+        scaleMultiplier: 1.08,
+        rotationOffsetDeg: -1.5,
+      },
+    ],
+  },
+});
+```
+
+Keyframes are compact, absolute-frame data. Preparation rejects duplicates and out-of-range
+frames; evaluation interpolates scale in log space and never integrates frame-to-frame velocity.
 
 ## Lenses, modifiers, and filters
 
@@ -140,10 +195,26 @@ and ordered projection passes.
 Preparation compiles definitions into JSON-safe integer indexes and non-overlapping shot intervals.
 Runtime selection uses those indexes and does not scan or sort the authored plan per frame.
 
+Inspect prepared programs without opening Remotion:
+
+```bash
+mise exec -- pnpm camera programs --episode whatsapp-cinematic-flagship
+mise exec -- pnpm camera explain --episode whatsapp-cinematic-flagship \
+  --camera-plan kinetic --output main --frame 420
+mise exec -- pnpm camera diff --episode whatsapp-cinematic-flagship \
+  --left restrained --right kinetic
+mise exec -- pnpm camera subjects
+```
+
+Render metadata embeds the complete selected camera artifact: independent story/stage signatures,
+plan signature, coverage map, required projection backend, stable IDs, preparation diagnostics, and
+the immutable plan. Preview debug mode additionally draws safe areas, projected subjects, framing
+guards, desired/final pose, tracking/trajectory state, and ordered projection passes.
+
 Verify hero work with a real render:
 
 ```bash
-EPISODE_ID=camera-vnext-cinematic-flagship \
+EPISODE_ID=whatsapp-cinematic-flagship \
 CAMERA_PLAN_ID=kinetic \
 mise exec -- pnpm --filter video-runner render:fast
 ```
@@ -153,3 +224,19 @@ release artifact with texture-only passes must use `mise exec -- pnpm render:epi
 Remotion path fails closed instead of silently approximating release pixels. Inspect the opening,
 peak distortion, transition, notification, close-up, and final neutral frames. Tests alone cannot
 prove clipping, typography, physical screen inset, or clean optical settlement.
+
+For a deterministic release probe or distributed render chunk, provide an inclusive source range:
+
+```bash
+mise exec -- pnpm --filter @tokovo/render-service render \
+  --episode whatsapp-cinematic-flagship \
+  --profile release \
+  --camera-plan kinetic \
+  --start-frame 180 \
+  --end-frame 191 \
+  --job camera-probe
+```
+
+Both frame flags are required together. Metadata and projection hashes record the exact source
+range; all three camera-independent layer-plate caches key it independently from CameraPlan
+identity.

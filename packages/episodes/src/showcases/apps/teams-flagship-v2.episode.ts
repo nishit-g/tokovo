@@ -43,14 +43,47 @@ export default defineEpisode({
           { id: "u_exec", displayName: "Rohan", role: "Chief of staff" },
         ],
         channels: [
-          { id: "launch-core-v2", name: "launch-core", memberIds: ["u_me", "u_ops", "u_sre"], description: "Core go-live execution", threadIds: ["th_pricing_v2"], unreadCount: 1, mentionCount: 1 },
-          { id: "exec-brief-v2", name: "exec-brief", memberIds: ["u_me", "u_exec"], description: "Executive updates", threadIds: [], unreadCount: 0, mentionCount: 0 },
+          {
+            id: "launch-core-v2",
+            name: "launch-core",
+            memberIds: ["u_me", "u_ops", "u_sre"],
+            description: "Core go-live execution",
+            threadIds: ["th_pricing_v2"],
+            unreadCount: 1,
+            mentionCount: 1,
+          },
+          {
+            id: "exec-brief-v2",
+            name: "exec-brief",
+            memberIds: ["u_me", "u_exec"],
+            description: "Executive updates",
+            threadIds: [],
+            unreadCount: 0,
+            mentionCount: 0,
+          },
         ],
         threads: [
-          { id: "th_pricing_v2", channelId: "launch-core-v2", title: "Pricing mismatch", participantIds: ["u_me", "u_ops", "u_sre"], messageIds: [], unreadCount: 0, mentionCount: 0, replyCount: 0, typingUserIds: [], state: "open" },
+          {
+            id: "th_pricing_v2",
+            channelId: "launch-core-v2",
+            title: "Pricing mismatch",
+            participantIds: ["u_me", "u_ops", "u_sre"],
+            messageIds: [],
+            unreadCount: 0,
+            mentionCount: 0,
+            replyCount: 0,
+            typingUserIds: [],
+            state: "open",
+          },
         ],
         dms: [
-          { id: "dm_exec_v2", participantIds: ["u_me", "u_exec"], messageIds: [], unreadCount: 1, mentionCount: 0 },
+          {
+            id: "dm_exec_v2",
+            participantIds: ["u_me", "u_exec"],
+            messageIds: [],
+            unreadCount: 1,
+            mentionCount: 0,
+          },
         ],
       })
       .view("app_teams", "phone", { screen: "chat_list" })
@@ -99,13 +132,6 @@ export default defineEpisode({
           dominantSpeakerId: "u_sre",
         });
         teams.at("20.4s").endCall("teams_flagship_call_v2");
-      })
-      .camera((cam) => {
-        cam.at("0s").focus("chat_list", { scale: 1.02, duration: "0.35s" });
-        cam.at("1.7s").focus("thread_view", { scale: 1.08, duration: "0.35s" });
-        cam.span("2.2s", "6.2s").trackCinematic("message_list", { scale: 1.08, smoothing: 0.18 });
-        cam.at("10.3s").focus("dm_thread", { scale: 1.08, duration: "0.35s" });
-        cam.at("15.5s").focus("call_surface", { scale: 1.08, duration: "0.35s" });
       })
       .use(new OSDirectorPlugin())
       .build(),

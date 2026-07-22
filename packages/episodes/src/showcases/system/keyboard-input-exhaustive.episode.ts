@@ -56,15 +56,30 @@ export default defineEpisode({
       })
       .whatsapp("phone", "dm_editor", (wa) => {
         wa.switchTo("dm_editor", "0.8s");
-        wa.at("1.3s").receive("Language QA", "Hindi first — keep every matra intact.");
+        wa.at("1.3s").receive(
+          "Language QA",
+          "Hindi first — keep every matra intact.",
+        );
         wa.at("7.4s").send("कल सुबह 9 बजे भेज दूँगा।");
-        wa.at("7.8s").receive("Language QA", "Now RTL. The cursor must stay correct.");
+        wa.at("7.8s").receive(
+          "Language QA",
+          "Now RTL. The cursor must stay correct.",
+        );
         wa.at("13.6s").send("سأرسل النسخة النهائية الليلة.");
-        wa.at("14.0s").receive("Language QA", "IME next — composition is not committed text.");
+        wa.at("14.0s").receive(
+          "Language QA",
+          "IME next — composition is not committed text.",
+        );
         wa.at("19.6s").send("明日の朝、最終版を送ります。");
-        wa.at("20.0s").receive("Language QA", "Switch layouts without losing the draft.");
+        wa.at("20.0s").receive(
+          "Language QA",
+          "Switch layouts without losing the draft.",
+        );
         wa.at("25.2s").send("Looks 10/10 🔥🚀");
-        wa.at("25.6s").receive("Language QA", "Last one: make a typo, then repair it.");
+        wa.at("25.6s").receive(
+          "Language QA",
+          "Last one: make a typo, then repair it.",
+        );
         wa.at("31.6s").send("Ship the fix", {
           input: {
             duration: "5.6s",
@@ -142,14 +157,6 @@ export default defineEpisode({
         ],
         expectedFinalValue: "Looks 10/10 🔥🚀",
         keyboard: { appearance: "light", returnKey: "send" },
-      })
-      .camera((cam) => {
-        cam.at("0s").focus("device", { scale: 1.02, duration: "0.3s" });
-        cam.at("2.2s").focus("input", { scale: 1.08, duration: "0.3s" });
-        cam.at("8.4s").focus("typing", { scale: 1.1, duration: "0.3s" });
-        cam.at("14.6s").focus("input", { scale: 1.08, duration: "0.3s" });
-        cam.at("20.6s").focus("typing", { scale: 1.1, duration: "0.3s" });
-        cam.at("26.2s").focus("input", { scale: 1.08, duration: "0.3s" });
       })
       .build(),
 });

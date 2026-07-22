@@ -18,7 +18,6 @@
  */
 
 import type {
-  CameraPayloads,
   AudioPayloads,
   OSPayloads,
   MarkerPayloads,
@@ -64,33 +63,6 @@ export interface AppTrackEventRegistry {
 // =============================================================================
 // SYSTEM TRACK EVENTS
 // =============================================================================
-
-/**
- * Camera track event
- */
-export type CameraTrackEvent = TrackEventBase & {
-  kind: "CAMERA";
-} & (
-    | { type: "SET"; payload: CameraPayloads["SET"] }
-    | { type: "ANIMATE_START"; payload: CameraPayloads["ANIMATE_START"] }
-    | { type: "ANIMATE_END"; payload: CameraPayloads["ANIMATE_END"] }
-    | { type: "FOCUS"; payload: CameraPayloads["FOCUS"] }
-    | { type: "TRACK_START"; payload: CameraPayloads["TRACK_START"] }
-    | { type: "TRACK_END"; payload: CameraPayloads["TRACK_END"] }
-    | { type: "SHAKE_START"; payload: CameraPayloads["SHAKE_START"] }
-    | { type: "SHAKE_END"; payload: CameraPayloads["SHAKE_END"] }
-    | { type: "RESET"; payload: CameraPayloads["RESET"] }
-    | { type: "ZOOM"; payload: CameraPayloads["ZOOM"] }
-    | { type: "SHAKE"; payload: CameraPayloads["SHAKE"] }
-    | { type: "ANCHOR_FOCUS"; payload: CameraPayloads["ANCHOR_FOCUS"] }
-    | { type: "ANCHOR_TRACK"; payload: CameraPayloads["ANCHOR_TRACK"] }
-    | { type: "CUT"; payload: CameraPayloads["CUT"] }
-    | { type: "PUNCH_ZOOM"; payload: CameraPayloads["PUNCH_ZOOM"] }
-    | { type: "DUTCH_TILT"; payload: CameraPayloads["DUTCH_TILT"] }
-    | { type: "FLASH"; payload: CameraPayloads["FLASH"] }
-    | { type: "WHIP_PAN"; payload: CameraPayloads["WHIP_PAN"] }
-    | { type: "LAYOUT"; payload: CameraPayloads["LAYOUT"] }
-  );
 
 /**
  * Audio track event
@@ -197,7 +169,6 @@ export type VoiceTrackEvent = TrackEventBase & {
  * Union of all system track events.
  */
 export type SystemTrackEvent =
-  | CameraTrackEvent
   | AudioTrackEvent
   | OSTrackEvent
   | MarkerTrackEvent
@@ -223,10 +194,6 @@ export type TrackEvent =
 // =============================================================================
 // TYPE GUARDS
 // =============================================================================
-
-export function isCameraEvent(e: TrackEvent): e is CameraTrackEvent {
-  return e.kind === "CAMERA";
-}
 
 export function isAudioEvent(e: TrackEvent): e is AudioTrackEvent {
   return e.kind === "AUDIO";

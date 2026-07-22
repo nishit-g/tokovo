@@ -425,7 +425,7 @@ export const NotificationSurface: React.FC<NotificationSurfaceProps> = ({
   projection,
   pointScale = 1,
 }) => {
-  const { theme, anchors } = projection;
+  const { theme, cinematicSubjects } = projection;
   const px = (value: number) => value * pointScale;
   const groupGap = px(theme.geometry.stackGap);
   return (
@@ -441,7 +441,7 @@ export const NotificationSurface: React.FC<NotificationSurfaceProps> = ({
           pointerEvents: "none",
         }}
       >
-        {projection.center.open && anchors.center ? (
+        {projection.center.open && cinematicSubjects.center ? (
           <div
             data-notification-center
             dir={projection.direction}
@@ -487,14 +487,14 @@ export const NotificationSurface: React.FC<NotificationSurfaceProps> = ({
 
         {!projection.center.open &&
         projection.deviceContext.isLocked &&
-        anchors.lockScreen ? (
+        cinematicSubjects.lockScreen ? (
           <div
             data-notification-lock-screen
             style={{
               position: "absolute",
-              left: anchors.lockScreen.x,
-              top: anchors.lockScreen.y,
-              width: anchors.lockScreen.width,
+              left: cinematicSubjects.lockScreen.x,
+              top: cinematicSubjects.lockScreen.y,
+              width: cinematicSubjects.lockScreen.width,
               display: "flex",
               flexDirection: "column",
               gap: groupGap,
@@ -514,15 +514,15 @@ export const NotificationSurface: React.FC<NotificationSurfaceProps> = ({
         {!projection.center.open &&
         !projection.deviceContext.isLocked &&
         projection.banner &&
-        anchors.banner ? (
+        cinematicSubjects.banner ? (
           <div
             data-notification-banner
             style={{
               position: "absolute",
-              left: anchors.banner.x,
-              top: anchors.banner.y,
-              width: anchors.banner.width,
-              minHeight: anchors.banner.height,
+              left: cinematicSubjects.banner.x,
+              top: cinematicSubjects.banner.y,
+              width: cinematicSubjects.banner.width,
+              minHeight: cinematicSubjects.banner.height,
             }}
           >
             <NotificationCard

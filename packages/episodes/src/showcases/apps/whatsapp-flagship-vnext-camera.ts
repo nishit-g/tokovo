@@ -158,6 +158,8 @@ function plan(input: {
         viewport: { x: 0, y: 0, width: 1080, height: 1920 },
         sourceStageNodeId: "stage.root",
         zIndex: 0,
+        coveragePolicy: "allow-default",
+        safeAreaInsets: { top: 56, right: 48, bottom: 56, left: 48 },
         defaultRigId: "device-master",
       },
     ],

@@ -1,4 +1,9 @@
-import type { AppFolder, AppIcon, HomeScreenConfig, Rect } from "@tokovo/core";
+import type {
+  AppFolder,
+  AppIcon,
+  HomeScreenConfig,
+  LayoutRect,
+} from "@tokovo/core";
 
 export type SystemSurfacePlatform = "ios" | "android";
 export type SystemAppearance = "light" | "dark";
@@ -88,7 +93,7 @@ export interface LockscreenProjection {
   androidClockRows: readonly [string, string];
   strings: SystemLocalizedStrings;
   wallpaper: SystemWallpaperProjection;
-  anchors: Readonly<Record<string, Rect>>;
+  cinematicSubjects: Readonly<Record<string, LayoutRect>>;
 }
 
 export type ProjectedHomeItem = AppIcon | AppFolder;
@@ -105,8 +110,9 @@ export interface HomeScreenProjection {
   pageItems: readonly ProjectedHomeItem[];
   dock: readonly AppIcon[];
   config: HomeScreenConfig;
-  anchors: Readonly<Record<string, Rect>>;
+  cinematicSubjects: Readonly<Record<string, LayoutRect>>;
 }
 
-export type SystemSurfaceProjection = LockscreenProjection | HomeScreenProjection;
-
+export type SystemSurfaceProjection =
+  | LockscreenProjection
+  | HomeScreenProjection;

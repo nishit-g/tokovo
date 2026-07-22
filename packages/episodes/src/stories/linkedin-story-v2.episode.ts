@@ -21,7 +21,11 @@ export default defineEpisode({
   build: () => {
     const baseTs = new Date("2026-04-10T08:40:00Z").getTime();
 
-    return episode("linkedin-story-v2", { fps: 30, duration: "36s", title: "LinkedIn Story V2" })
+    return episode("linkedin-story-v2", {
+      fps: 30,
+      duration: "36s",
+      title: "LinkedIn Story V2",
+    })
       .device("phone", "iphone16", {
         app: "app_linkedin",
         os: {
@@ -33,11 +37,38 @@ export default defineEpisode({
       .snapshot("app_linkedin", "phone", {
         currentUserId: "me",
         users: [
-          { id: "me", name: "Ira Sen", handle: "irasen", headline: "Design systems lead", avatarUrl: "/avatars/avatar-zoe.jpg" },
-          { id: "u_rec", name: "Noor Ahmed", handle: "noorahmed", headline: "Founder hiring design leadership", avatarUrl: "/avatars/avatar-alex.jpg" },
+          {
+            id: "me",
+            name: "Ira Sen",
+            handle: "irasen",
+            headline: "Design systems lead",
+            avatarUrl: "/avatars/avatar-zoe.jpg",
+          },
+          {
+            id: "u_rec",
+            name: "Noor Ahmed",
+            handle: "noorahmed",
+            headline: "Founder hiring design leadership",
+            avatarUrl: "/avatars/avatar-alex.jpg",
+          },
         ],
-        threads: [{ id: "li_story_dm_v2", participantIds: ["me", "u_rec"], title: "Noor Ahmed", unreadCount: 1 }],
-        messages: [{ id: "li_story_seed_1", threadId: "li_story_dm_v2", senderId: "u_rec", text: "Loved your work. Could I steal 20 minutes this week?", createdAt: baseTs - 10000 }],
+        threads: [
+          {
+            id: "li_story_dm_v2",
+            participantIds: ["me", "u_rec"],
+            title: "Noor Ahmed",
+            unreadCount: 1,
+          },
+        ],
+        messages: [
+          {
+            id: "li_story_seed_1",
+            threadId: "li_story_dm_v2",
+            senderId: "u_rec",
+            text: "Loved your work. Could I steal 20 minutes this week?",
+            createdAt: baseTs - 10000,
+          },
+        ],
       })
       .linkedin("phone", (li) => {
         li.at("1.0s").navigate("messages");
@@ -63,10 +94,6 @@ export default defineEpisode({
           text: "So you want judgment, not just output.",
           createdAt: baseTs + 18000,
         });
-      })
-      .camera((cam) => {
-        cam.at("1.1s").focus("message_list", { scale: 1.05, duration: "0.35s" });
-        cam.at("2.3s").focus("message_thread", { scale: 1.08, duration: "0.35s" });
       })
       .build();
   },

@@ -3,7 +3,6 @@ import {
   createEngineRegistries,
   type EngineRegistries,
   registerBuiltInSounds,
-  DeviceAnchorProvider,
 } from "@tokovo/core";
 import {
   createPluginRegistries,
@@ -38,8 +37,5 @@ export function createTokovoRegistries(
   });
 
   registerBuiltInSounds(plugins.sounds);
-  // Static device-owned anchors (device/app/dynamicIsland/banner).
-  plugins.anchors.register(DeviceAnchorProvider);
-
   return { engine, plugins };
 }

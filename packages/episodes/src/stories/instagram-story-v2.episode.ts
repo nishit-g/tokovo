@@ -21,7 +21,11 @@ export default defineEpisode({
   build: () => {
     const baseTs = new Date("2026-04-10T20:00:00Z").getTime();
 
-    return episode("instagram-story-v2", { fps: 30, duration: "34s", title: "Instagram Story V2" })
+    return episode("instagram-story-v2", {
+      fps: 30,
+      duration: "34s",
+      title: "Instagram Story V2",
+    })
       .device("phone", "iphone16", {
         app: "app_instagram",
         installedApps: ["app_instagram"],
@@ -34,22 +38,61 @@ export default defineEpisode({
       .snapshot("app_instagram", "phone", {
         currentUserId: "ig_story_me",
         users: [
-          { id: "ig_story_me", username: "arya.cuts", displayName: "Arya Cuts", avatarUrl: "/avatars/avatar-alex.jpg", followers: 189000, following: 510, verified: true },
-          { id: "ig_story_sam", username: "sam.frames", displayName: "Sam Frames", avatarUrl: "/avatars/avatar-priya.jpg", followers: 34200, following: 415 },
+          {
+            id: "ig_story_me",
+            username: "arya.cuts",
+            displayName: "Arya Cuts",
+            avatarUrl: "/avatars/avatar-alex.jpg",
+            followers: 189000,
+            following: 510,
+            verified: true,
+          },
+          {
+            id: "ig_story_sam",
+            username: "sam.frames",
+            displayName: "Sam Frames",
+            avatarUrl: "/avatars/avatar-priya.jpg",
+            followers: 34200,
+            following: 415,
+          },
         ],
         posts: [
-          { id: "ig_story_post_v2", authorId: "ig_story_me", imageUrl: "/placeholders/media.svg", caption: "How reels are made when your taste is expensive but your process is chaotic.", createdAt: baseTs - 60000, likeCount: 21200, commentCount: 420, aspect: "portrait" },
+          {
+            id: "ig_story_post_v2",
+            authorId: "ig_story_me",
+            imageUrl: "/placeholders/media.svg",
+            caption:
+              "How reels are made when your taste is expensive but your process is chaotic.",
+            createdAt: baseTs - 60000,
+            likeCount: 21200,
+            commentCount: 420,
+            aspect: "portrait",
+          },
         ],
       })
       .instagram("phone", (ig) => {
         ig.at("1.0s").navigate("home", { postId: "ig_story_post_v2" });
-        ig.at("2.6s").commentOnPost({ id: "ig_story_comment_1", postId: "ig_story_post_v2", authorId: "ig_story_sam", text: "This reads like you lost a fight with a moodboard.", createdAt: baseTs + 6000 });
-        ig.at("3.8s").commentOnPost({ id: "ig_story_comment_2", postId: "ig_story_post_v2", authorId: "ig_story_me", text: "Correct. The moodboard won.", createdAt: baseTs + 9000 });
-        ig.at("5.2s").commentOnPost({ id: "ig_story_comment_3", postId: "ig_story_post_v2", authorId: "ig_story_sam", text: "At least it won in high resolution.", createdAt: baseTs + 13000 });
-      })
-      .camera((cam) => {
-        cam.at("1.1s").focus("feed_post", { scale: 1.08, duration: "0.35s" });
-        cam.span("2.6s", "5.6s").trackCinematic("comment_block", { scale: 1.08, smoothing: 0.18 });
+        ig.at("2.6s").commentOnPost({
+          id: "ig_story_comment_1",
+          postId: "ig_story_post_v2",
+          authorId: "ig_story_sam",
+          text: "This reads like you lost a fight with a moodboard.",
+          createdAt: baseTs + 6000,
+        });
+        ig.at("3.8s").commentOnPost({
+          id: "ig_story_comment_2",
+          postId: "ig_story_post_v2",
+          authorId: "ig_story_me",
+          text: "Correct. The moodboard won.",
+          createdAt: baseTs + 9000,
+        });
+        ig.at("5.2s").commentOnPost({
+          id: "ig_story_comment_3",
+          postId: "ig_story_post_v2",
+          authorId: "ig_story_sam",
+          text: "At least it won in high resolution.",
+          createdAt: baseTs + 13000,
+        });
       })
       .build();
   },

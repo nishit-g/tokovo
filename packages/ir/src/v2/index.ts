@@ -9,7 +9,6 @@
 export type {
   EasingType,
   TrackMessageRef,
-  CameraPayloads,
   AudioPayloads,
   VoicePayloads,
   OSPayloads,
@@ -31,7 +30,6 @@ export type {
 export type {
   TrackEventBase,
   AppTrackEventRegistry,
-  CameraTrackEvent,
   AudioTrackEvent,
   VoiceTrackEvent,
   OSTrackEvent,
@@ -44,7 +42,6 @@ export type {
 } from "./track-event.js";
 
 export {
-  isCameraEvent,
   isAudioEvent,
   isVoiceEvent,
   isOSEvent,
@@ -64,7 +61,6 @@ export type {
   AppInitialViewEntry,
   Marker,
   Section,
-  DirectorStyle,
   TrackEpisodeIR,
   TrackEpisodeConfig,
   VoiceConfig,
@@ -137,7 +133,10 @@ export {
 
 export type { ValidatedTrackEpisodeIR } from "./schemas.js";
 
-export { createCanonicalDeviceConfig, createCanonicalTrackEpisodeIR } from "./fixtures.js";
+export {
+  createCanonicalDeviceConfig,
+  createCanonicalTrackEpisodeIR,
+} from "./fixtures.js";
 export type { CanonicalTrackEpisodeFixtureOptions } from "./fixtures.js";
 
 export type {
@@ -152,6 +151,8 @@ export type {
   CameraFillModeIR,
   CameraComposerIR,
   CameraFramingGuardIR,
+  CameraTrajectoryKeyframeIR,
+  CameraBakedTrajectoryIR,
   CameraMovementIntentIR,
   CameraMotionProfileIR,
   CameraBlendIR,
@@ -159,6 +160,7 @@ export type {
   CameraModifierIR,
   CameraFilterIR,
   CameraOutputShadowIR,
+  CameraSafeAreaInsetsIR,
   CameraOutputIR,
   CameraRigIR,
   CameraShotIR,

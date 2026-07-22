@@ -1,0 +1,20 @@
+# Creating Cinematic Subjects
+
+Create a cinematic subject when a scene repeatedly needs to focus on a semantic region or entity
+that is not already exposed by the owning app or device package.
+
+## Good Cinematic Subjects
+
+- map to stable UI meaning
+- come from layout-aware data
+- stay valid across frames and state changes
+
+## Invalid Cinematic Subjects
+
+- depend on brittle DOM assumptions
+- represent one-off pixel locations
+- leak renderer internals into episode code
+
+The owning package declares a versioned schema and projects exact rectangles from its canonical
+headless layout. Missing subjects fail according to the shot's explicit policy; providers must not
+invent broader fallback rectangles.

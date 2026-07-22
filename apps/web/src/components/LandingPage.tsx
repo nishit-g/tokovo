@@ -1,83 +1,92 @@
-import { BookOpen, Camera, Code2, Film, GitBranch, Play, Smartphone, Volume2 } from "lucide-react";
-import Link from "next/link";
+import {
+  BookOpen,
+  Camera,
+  Code2,
+  Film,
+  GitBranch,
+  Play,
+  Smartphone,
+  Volume2,
+} from 'lucide-react'
+import Link from 'next/link'
 
 const steps = [
   {
     icon: Code2,
-    label: "Generate",
-    title: "Prompt the episode",
-    body: "Start with a premise, characters, tone, platform, duration, and story arc. AI can draft the phone-native scene instead of a blank timeline.",
+    label: 'Generate',
+    title: 'Prompt the episode',
+    body: 'Start with a premise, characters, tone, platform, duration, and story arc. AI can draft the phone-native scene instead of a blank timeline.',
   },
   {
     icon: Camera,
-    label: "Direct",
-    title: "Control the whole stage",
-    body: "Choose devices, chats, feeds, DMs, notifications, captions, camera moves, sound, voice, backgrounds, and pacing.",
+    label: 'Direct',
+    title: 'Control the whole stage',
+    body: 'Choose devices, chats, feeds, DMs, notifications, captions, camera moves, sound, voice, backgrounds, and pacing.',
   },
   {
     icon: Film,
-    label: "Render",
-    title: "Export the show",
-    body: "Preview, refine, and render vertical episodes for Shorts, Reels, TikTok, and serialized phone-screen formats.",
+    label: 'Render',
+    title: 'Export the show',
+    body: 'Preview, refine, and render vertical episodes for Shorts, Reels, TikTok, and serialized phone-screen formats.',
   },
-];
+]
 
 const stats = [
-  ["AI", "native studio"],
-  ["Many", "devices"],
-  ["Camera", "directed"],
-  ["Sound", "handled"],
-];
+  ['AI', 'native studio'],
+  ['Many', 'devices'],
+  ['Camera', 'directed'],
+  ['Sound', 'handled'],
+]
 
 const capabilities = [
-  "AI can generate scripts, branches, captions, translations, and variants on top of a controlled phone-native stage",
-  "Simulated phone OS surfaces cover one or many devices, chats, feeds, DMs, notifications, calls, keyboard, and lockscreen",
-  "Camera, sound, voice, backgrounds, overlays, and render output are declared in code instead of fixed by hand later",
-  "Deterministic rendering keeps every episode editable, reviewable, and repeatable",
-];
+  'AI can generate scripts, branches, captions, translations, and variants on top of a controlled phone-native stage',
+  'Simulated phone OS surfaces cover one or many devices, chats, feeds, DMs, notifications, calls, keyboard, and lockscreen',
+  'Camera, sound, voice, backgrounds, overlays, and render output are declared in code instead of fixed by hand later',
+  'Deterministic rendering keeps every episode editable, reviewable, and repeatable',
+]
 
 const stageLayers = [
   {
     icon: Smartphone,
-    label: "Multi-device",
-    body: "Stage parallel phones, split pacing, app switches, OS chrome, and screen recordings.",
+    label: 'Multi-device',
+    body: 'Stage parallel phones, split pacing, app switches, OS chrome, and screen recordings.',
   },
   {
     icon: Camera,
-    label: "Camera",
-    body: "Focus semantic anchors, track live UI motion, cut between app surfaces, and direct reveals.",
+    label: 'Camera',
+    body: 'Focus cinematic subjects, track live UI motion, cut between app surfaces, and direct reveals.',
   },
   {
     icon: Volume2,
-    label: "Sound",
-    body: "Use audio tracks, procedural sound effects, background music, and generated voice layers.",
+    label: 'Sound',
+    body: 'Use audio tracks, procedural sound effects, background music, and generated voice layers.',
   },
-];
+]
 
 export function LandingPage() {
   return (
-    <main className="min-h-screen overflow-x-hidden bg-ink text-cream noise">
+    <main className="noise min-h-screen overflow-x-hidden bg-ink text-cream">
       <header className="fixed inset-x-0 top-0 z-50 border-b border-cream/10 bg-ink/90 backdrop-blur-md">
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-5 lg:px-8">
-          <Link href="/" className="font-serif text-2xl italic text-cream">
+          <Link href="/" className="font-serif text-2xl text-cream italic">
             tokovo
           </Link>
           <nav className="flex items-center gap-5">
             <a
               href="#showcase"
-              className="hidden font-mono text-[11px] uppercase tracking-[0.16em] text-cream/55 transition-colors hover:text-cream md:block"
+              className="hidden font-mono text-[11px] tracking-[0.16em] text-cream/55 uppercase transition-colors hover:text-cream md:block"
             >
               Showcase
             </a>
             <a
               href="#workflow"
-              className="hidden font-mono text-[11px] uppercase tracking-[0.16em] text-cream/55 transition-colors hover:text-cream md:block"
+              className="hidden font-mono text-[11px] tracking-[0.16em] text-cream/55 uppercase transition-colors hover:text-cream md:block"
             >
               Workflow
             </a>
             <a
               href="https://github.com/nishit-g/tokovo"
-              className="inline-flex h-9 w-10 items-center justify-center border border-cream/20 text-cream transition-colors hover:border-copper hover:text-copper-light sm:w-auto sm:gap-2 sm:px-3 sm:font-mono sm:text-[11px] sm:uppercase sm:tracking-[0.16em]"
+              className="inline-flex h-9 w-10 items-center justify-center border border-cream/20 text-cream transition-colors hover:border-copper hover:text-copper-light sm:w-auto sm:gap-2 sm:px-3 sm:font-mono sm:text-[11px] sm:tracking-[0.16em] sm:uppercase"
             >
               <Code2 className="h-3.5 w-3.5" aria-hidden="true" />
               <span className="hidden sm:inline">GitHub</span>
@@ -95,7 +104,7 @@ export function LandingPage() {
           <div className="min-w-0">
             <div className="inline-flex items-center gap-2 border border-copper/40 bg-copper/10 px-3 py-1.5">
               <span className="h-1.5 w-1.5 bg-copper-light" />
-              <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-copper-light">
+              <span className="font-mono text-[10px] tracking-[0.16em] text-copper-light uppercase">
                 AI-native multi-device phone show studio
               </span>
             </div>
@@ -105,22 +114,23 @@ export function LandingPage() {
             </h1>
 
             <p className="mt-6 max-w-[21.5rem] font-mono text-sm leading-7 text-cream/62 sm:max-w-[34rem]">
-              Generate chat dramas, social-feed stories, and phone-screen episodes. Tokovo handles
-              the app worlds, multiple devices, camera, sound, voice, and vertical render so the
-              show can move from prompt to finished cut without After Effects.
+              Generate chat dramas, social-feed stories, and phone-screen
+              episodes. Tokovo handles the app worlds, multiple devices, camera,
+              sound, voice, and vertical render so the show can move from prompt
+              to finished cut without After Effects.
             </p>
 
             <div className="mt-8 grid gap-3 sm:flex sm:flex-wrap">
               <a
                 href="/showcase/launch-clip.mp4"
-                className="inline-flex h-12 items-center justify-center gap-2 bg-cream px-5 font-mono text-xs uppercase tracking-[0.14em] text-ink transition-colors hover:bg-copper hover:text-cream"
+                className="inline-flex h-12 items-center justify-center gap-2 bg-cream px-5 font-mono text-xs tracking-[0.14em] text-ink uppercase transition-colors hover:bg-copper hover:text-cream"
               >
                 <Play className="h-4 w-4" aria-hidden="true" />
                 Watch showcase
               </a>
               <a
                 href="https://github.com/nishit-g/tokovo#first-10-minutes"
-                className="inline-flex h-12 items-center justify-center gap-2 border border-cream/20 px-5 font-mono text-xs uppercase tracking-[0.14em] text-cream transition-colors hover:border-copper hover:text-copper-light"
+                className="inline-flex h-12 items-center justify-center gap-2 border border-cream/20 px-5 font-mono text-xs tracking-[0.14em] text-cream uppercase transition-colors hover:border-copper hover:text-copper-light"
               >
                 <BookOpen className="h-4 w-4" aria-hidden="true" />
                 Read the docs
@@ -129,9 +139,12 @@ export function LandingPage() {
 
             <dl className="mt-8 grid max-w-2xl grid-cols-2 border-y border-cream/10 sm:grid-cols-4">
               {stats.map(([value, label]) => (
-                <div key={label} className="border-cream/10 py-4 sm:border-r sm:last:border-r-0">
+                <div
+                  key={label}
+                  className="border-cream/10 py-4 sm:border-r sm:last:border-r-0"
+                >
                   <dt className="font-serif text-2xl text-cream">{value}</dt>
-                  <dd className="mt-1 font-mono text-[10px] uppercase tracking-[0.14em] text-cream/42">
+                  <dd className="mt-1 font-mono text-[10px] tracking-[0.14em] text-cream/42 uppercase">
                     {label}
                   </dd>
                 </div>
@@ -140,7 +153,7 @@ export function LandingPage() {
           </div>
 
           <div className="relative mx-auto w-full max-w-[20.75rem] min-[430px]:max-w-[24rem] lg:max-w-[30rem]">
-            <div className="absolute -left-5 top-20 hidden h-36 w-px bg-copper/60 lg:block" />
+            <div className="absolute top-20 -left-5 hidden h-36 w-px bg-copper/60 lg:block" />
             <div className="absolute -right-5 bottom-16 hidden h-24 w-px bg-cream/25 lg:block" />
             <div className="relative border border-cream/15 bg-black p-2 shadow-[0_24px_120px_rgba(0,0,0,0.55)]">
               <video
@@ -152,15 +165,16 @@ export function LandingPage() {
               />
             </div>
             <p className="mt-4 border-l border-copper/60 pl-4 font-mono text-xs leading-6 text-cream/55">
-              Rendered from the public{" "}
-              <code className="text-cream/75">v2-creator-series-showcase</code> episode.
+              Rendered from the public{' '}
+              <code className="text-cream/75">v2-creator-series-showcase</code>{' '}
+              episode.
             </p>
           </div>
         </div>
 
         <div className="relative border-y border-cream/10 bg-cream text-ink">
           <div className="mx-auto grid max-w-7xl gap-5 px-5 py-6 lg:grid-cols-[0.28fr_1fr] lg:px-8">
-            <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-ink/45">
+            <p className="font-mono text-[10px] tracking-[0.16em] text-ink/45 uppercase">
               Built for
             </p>
             <div className="flex flex-wrap gap-x-8 gap-y-3 font-mono text-sm text-ink/70">
@@ -178,7 +192,7 @@ export function LandingPage() {
         <div className="mx-auto max-w-7xl px-5 lg:px-8">
           <div className="grid gap-8 lg:grid-cols-[0.48fr_1fr]">
             <div>
-              <span className="font-mono text-xs uppercase tracking-[0.16em] text-copper-light">
+              <span className="font-mono text-xs tracking-[0.16em] text-copper-light uppercase">
                 Workflow
               </span>
               <h2 className="mt-5 max-w-xl font-serif text-4xl leading-none text-cream sm:text-5xl lg:text-6xl">
@@ -187,15 +201,23 @@ export function LandingPage() {
             </div>
             <div className="grid gap-4 md:grid-cols-3">
               {steps.map((item) => (
-                <article key={item.title} className="border border-cream/10 p-5">
-                  <item.icon className="h-5 w-5 text-copper-light" aria-hidden="true" />
-                  <p className="mt-5 font-mono text-[10px] uppercase tracking-[0.16em] text-cream/40">
+                <article
+                  key={item.title}
+                  className="border border-cream/10 p-5"
+                >
+                  <item.icon
+                    className="h-5 w-5 text-copper-light"
+                    aria-hidden="true"
+                  />
+                  <p className="mt-5 font-mono text-[10px] tracking-[0.16em] text-cream/40 uppercase">
                     {item.label}
                   </p>
                   <h3 className="mt-3 font-serif text-2xl leading-tight text-cream">
                     {item.title}
                   </h3>
-                  <p className="mt-4 font-mono text-xs leading-6 text-cream/55">{item.body}</p>
+                  <p className="mt-4 font-mono text-xs leading-6 text-cream/55">
+                    {item.body}
+                  </p>
                 </article>
               ))}
             </div>
@@ -207,7 +229,10 @@ export function LandingPage() {
                 <span className="truncate font-mono text-xs text-cream/55">
                   phone-show.episode.ts
                 </span>
-                <GitBranch className="h-4 w-4 shrink-0 text-copper-light" aria-hidden="true" />
+                <GitBranch
+                  className="h-4 w-4 shrink-0 text-copper-light"
+                  aria-hidden="true"
+                />
               </div>
               <pre className="overflow-x-auto p-5 font-mono text-xs leading-7 text-cream/72 sm:p-7">
                 <code>{`episode("cold-open", { fps: 30, duration: "45s" })
@@ -219,17 +244,7 @@ export function LandingPage() {
     app: "app_x",
     screenRecording: true
   })
-  .camera((cam) => {
-    cam.at("0s").layout({
-      mode: "SPLIT_VERTICAL",
-      primaryDeviceId: "creator_phone",
-      secondaryDeviceId: "audience_phone"
-    })
-    cam.span("3s", "12s").trackCinematic({
-      deviceId: "creator_phone",
-      anchorId: "lastMessage"
-    })
-  })
+  .cinematics(coldOpenCinematics)
   .audio((audio) => {
     audio.span("0s", "45s").bgm("/music/cinematic-ambient.mp3", {
       volume: 0.22,
@@ -242,27 +257,40 @@ export function LandingPage() {
             </div>
 
             <div className="border-l border-cream/10 pl-6">
-              <span className="font-mono text-xs uppercase tracking-[0.16em] text-copper-light">
+              <span className="font-mono text-xs tracking-[0.16em] text-copper-light uppercase">
                 Whole stage
               </span>
               <div className="mt-6 grid gap-3">
                 {stageLayers.map((item) => (
-                  <article key={item.label} className="border-t border-cream/10 pt-4">
+                  <article
+                    key={item.label}
+                    className="border-t border-cream/10 pt-4"
+                  >
                     <div className="flex items-center gap-3">
-                      <item.icon className="h-4 w-4 text-copper-light" aria-hidden="true" />
-                      <h3 className="font-mono text-xs uppercase tracking-[0.14em] text-cream/75">
+                      <item.icon
+                        className="h-4 w-4 text-copper-light"
+                        aria-hidden="true"
+                      />
+                      <h3 className="font-mono text-xs tracking-[0.14em] text-cream/75 uppercase">
                         {item.label}
                       </h3>
                     </div>
-                    <p className="mt-3 font-mono text-xs leading-6 text-cream/52">{item.body}</p>
+                    <p className="mt-3 font-mono text-xs leading-6 text-cream/52">
+                      {item.body}
+                    </p>
                   </article>
                 ))}
               </div>
               <ul className="mt-6 space-y-5">
                 {capabilities.map((item) => (
-                  <li key={item} className="flex gap-4 border-t border-cream/10 pt-5">
+                  <li
+                    key={item}
+                    className="flex gap-4 border-t border-cream/10 pt-5"
+                  >
                     <span className="mt-2 h-1.5 w-1.5 shrink-0 bg-copper-light" />
-                    <p className="font-mono text-sm leading-6 text-cream/62">{item}</p>
+                    <p className="font-mono text-sm leading-6 text-cream/62">
+                      {item}
+                    </p>
                   </li>
                 ))}
               </ul>
@@ -274,7 +302,7 @@ export function LandingPage() {
       <section id="access" className="bg-cream py-20 text-ink lg:py-28">
         <div className="mx-auto grid max-w-7xl gap-10 px-5 lg:grid-cols-[0.9fr_1fr] lg:px-8">
           <div>
-            <span className="font-mono text-xs uppercase tracking-[0.16em] text-copper">
+            <span className="font-mono text-xs tracking-[0.16em] text-copper uppercase">
               Start here
             </span>
             <h2 className="mt-5 font-serif text-4xl leading-none sm:text-5xl lg:text-6xl">
@@ -283,21 +311,22 @@ export function LandingPage() {
           </div>
           <div className="self-end">
             <p className="max-w-2xl font-mono text-sm leading-7 text-ink/60">
-              Tokovo is public, MIT licensed, and built around structured episode definitions. Run
-              the showcase locally, inspect the app simulators, camera, audio, and device systems,
-              then wire AI generation on top of the phone-native production engine.
+              Tokovo is public, MIT licensed, and built around structured
+              episode definitions. Run the showcase locally, inspect the app
+              simulators, camera, audio, and device systems, then wire AI
+              generation on top of the phone-native production engine.
             </p>
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
               <a
                 href="https://github.com/nishit-g/tokovo"
-                className="inline-flex h-12 items-center justify-center gap-2 bg-ink px-5 font-mono text-xs uppercase tracking-[0.14em] text-cream transition-colors hover:bg-copper"
+                className="inline-flex h-12 items-center justify-center gap-2 bg-ink px-5 font-mono text-xs tracking-[0.14em] text-cream uppercase transition-colors hover:bg-copper"
               >
                 <Code2 className="h-4 w-4" aria-hidden="true" />
                 Open repository
               </a>
               <a
                 href="https://github.com/nishit-g/tokovo#first-10-minutes"
-                className="inline-flex h-12 items-center justify-center gap-2 border border-ink/20 px-5 font-mono text-xs uppercase tracking-[0.14em] text-ink transition-colors hover:border-copper hover:text-copper"
+                className="inline-flex h-12 items-center justify-center gap-2 border border-ink/20 px-5 font-mono text-xs tracking-[0.14em] text-ink uppercase transition-colors hover:border-copper hover:text-copper"
               >
                 <BookOpen className="h-4 w-4" aria-hidden="true" />
                 First 10 minutes
@@ -309,25 +338,25 @@ export function LandingPage() {
 
       <footer className="border-t border-cream/10 bg-ink py-10">
         <div className="mx-auto flex max-w-7xl flex-col gap-6 px-5 sm:flex-row sm:items-center sm:justify-between lg:px-8">
-          <Link href="/" className="font-serif text-xl italic text-cream/70">
+          <Link href="/" className="font-serif text-xl text-cream/70 italic">
             tokovo
           </Link>
           <div className="flex flex-wrap gap-6">
             <a
               href="/legal/privacy"
-              className="font-mono text-xs uppercase tracking-[0.14em] text-cream/45 transition-colors hover:text-cream"
+              className="font-mono text-xs tracking-[0.14em] text-cream/45 uppercase transition-colors hover:text-cream"
             >
               Privacy
             </a>
             <a
               href="/legal/terms"
-              className="font-mono text-xs uppercase tracking-[0.14em] text-cream/45 transition-colors hover:text-cream"
+              className="font-mono text-xs tracking-[0.14em] text-cream/45 uppercase transition-colors hover:text-cream"
             >
               Terms
             </a>
             <a
               href="mailto:hello@tokovo.io"
-              className="font-mono text-xs uppercase tracking-[0.14em] text-cream/45 transition-colors hover:text-cream"
+              className="font-mono text-xs tracking-[0.14em] text-cream/45 uppercase transition-colors hover:text-cream"
             >
               Contact
             </a>
@@ -336,5 +365,5 @@ export function LandingPage() {
         </div>
       </footer>
     </main>
-  );
+  )
 }

@@ -6,12 +6,10 @@
  */
 
 // =============================================================================
-// TYPES - All type definitions (includes camera types from device-camera)
+// TYPES - All public runtime type definitions
 // =============================================================================
 export * from "./types.js";
 export type { ViewLayoutMode, PIPPosition } from "./types.js";
-export type { BaseCameraState as CameraState } from "./types.js";
-export { DEFAULT_BASE_CAMERA_STATE as DEFAULT_CAMERA_STATE } from "./types.js";
 // Note: types/index.ts exists but is NOT exported here to avoid duplicate exports.
 // types.ts re-exports needed types from types/layout.ts for compatibility.
 
@@ -43,25 +41,11 @@ export { createReducerRegistry } from "./engine/registry.js";
 export type { ReducerRegistryClass } from "./engine/registry.js";
 export { EngineConfig } from "./engine/config.js";
 
-// =============================================================================
-// ANCHOR REGISTRY - Anchor registration and resolution
-// =============================================================================
-export {
-  AnchorRegistryClass,
-  createAnchorRegistry,
-} from "./anchors/registry.js";
-
 export {
   CinematicSubjectRegistryClass,
   createCinematicSubjectRegistry,
+  createLayoutCinematicSubjectProvider,
 } from "./cinematic-subjects/index.js";
-
-export type {
-  AnchorProvider,
-  AnchorSnapshot,
-  AnchorFraming,
-  Rect,
-} from "./anchors/registry.js";
 
 // =============================================================================
 // AUDIO - Sound system
@@ -72,18 +56,8 @@ export * from "./audio/index.js";
 // REGISTRIES - All registration systems
 // Named exports to avoid conflicts with ./plugin
 // =============================================================================
-export {
-  createRegistry,
-  createSoundRegistry,
-  createBehaviorRegistry,
-} from "./registries/index.js";
-export type {
-  Registry,
-  SoundRegistryAPI,
-  CameraIntent,
-  AppBehavior,
-  BehaviorRegistryAPI,
-} from "./registries/index.js";
+export { createRegistry, createSoundRegistry } from "./registries/index.js";
+export type { Registry, SoundRegistryAPI } from "./registries/index.js";
 
 // =============================================================================
 // PLUGIN - Plugin system
@@ -96,7 +70,6 @@ export type {
   PluginLayoutStrategy,
   LoweringHandler,
   DslExtension,
-  PluginAnchorRegistry,
   PluginBootstrapContract,
   PluginBootstrapContext,
   PluginBootstrapMigrationResult,
@@ -120,11 +93,6 @@ export type TokovoPlugin =
 // UTILS - Utilities
 // =============================================================================
 export * from "./utils/index.js";
-
-// =============================================================================
-// ANCHORS - Semantic positioning
-// =============================================================================
-export * from "./anchors/index.js";
 
 // =============================================================================
 // CONSTANTS & TOKENS
@@ -190,7 +158,6 @@ export {
   getAnimationConfig,
   getRenderingConfig,
   getAudioConfig,
-  getCameraConfig,
   isDebugEnabled,
 } from "./config/index.js";
 export type { TokovoConfigType } from "./config/index.js";

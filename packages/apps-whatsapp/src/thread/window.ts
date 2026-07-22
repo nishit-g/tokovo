@@ -5,12 +5,12 @@ import type {
 } from "./projector.js";
 
 export const DEFAULT_THREAD_RENDER_LIMIT = 120;
-export const DEFAULT_MESSAGES_BEFORE_ANCHOR = 18;
+export const DEFAULT_MESSAGES_BEFORE_FOCUS = 18;
 
 export interface WhatsAppThreadWindowOptions {
-  anchorMessageId?: string;
+  focusMessageId?: string;
   maxMessages?: number;
-  messagesBeforeAnchor?: number;
+  messagesBeforeFocus?: number;
 }
 
 export interface WhatsAppThreadWindow {
@@ -18,7 +18,7 @@ export interface WhatsAppThreadWindow {
   renderedMessageCount: number;
   hiddenBefore: number;
   hiddenAfter: number;
-  anchorMessageId?: string;
+  focusMessageId?: string;
 }
 
 function blockOrders(block: WhatsAppThreadBlock): number[] {
@@ -27,15 +27,18 @@ function blockOrders(block: WhatsAppThreadBlock): number[] {
     : block.items.map((item) => item.order);
 }
 
-function includesAnchor(block: WhatsAppThreadBlock, anchorMessageId: string): boolean {
+function includesFocusMessage(
+  block: WhatsAppThreadBlock,
+  focusMessageId: string,
+): boolean {
   if (block.kind === "system") {
     return (
-      block.message.id === anchorMessageId ||
+      block.message.id === focusMessageId ||
       (block.message.systemType === "unread_divider" &&
-        block.message.id.endsWith(`:${anchorMessageId}`))
+        block.message.id.endsWith(`:${focusMessageId}`))
     );
   }
-  return block.items.some((item) => item.message.id === anchorMessageId);
+  return block.items.some((item) => item.message.id === focusMessageId);
 }
 
 function sliceRun(
@@ -64,13 +67,13 @@ export function createWhatsAppThreadWindow(
     Math.floor(options.maxMessages ?? DEFAULT_THREAD_RENDER_LIMIT),
   );
   const total = thread.messageCount;
-  const anchorMessageId = options.anchorMessageId;
-  const anchorBlock = anchorMessageId
-    ? thread.blocks.find((block) => includesAnchor(block, anchorMessageId))
+  const focusMessageId = options.focusMessageId;
+  const focusBlock = focusMessageId
+    ? thread.blocks.find((block) => includesFocusMessage(block, focusMessageId))
     : undefined;
-  if (anchorMessageId && !anchorBlock) {
+  if (focusMessageId && !focusBlock) {
     throw new Error(
-      `WhatsApp thread window anchor "${anchorMessageId}" does not exist in conversation "${thread.conversationId}"`,
+      `WhatsApp thread window focus message "${focusMessageId}" does not exist in conversation "${thread.conversationId}"`,
     );
   }
   if (total <= maxMessages) {
@@ -79,23 +82,26 @@ export function createWhatsAppThreadWindow(
       renderedMessageCount: total,
       hiddenBefore: 0,
       hiddenAfter: 0,
-      anchorMessageId: options.anchorMessageId,
+      focusMessageId: options.focusMessageId,
     };
   }
 
   let startOrder = total - maxMessages;
-  if (anchorMessageId && anchorBlock) {
-    const anchorOrder = Math.min(...blockOrders(anchorBlock));
+  if (focusMessageId && focusBlock) {
+    const focusOrder = Math.min(...blockOrders(focusBlock));
     const before = Math.max(
       0,
       Math.min(
         maxMessages - 1,
         Math.floor(
-          options.messagesBeforeAnchor ?? DEFAULT_MESSAGES_BEFORE_ANCHOR,
+          options.messagesBeforeFocus ?? DEFAULT_MESSAGES_BEFORE_FOCUS,
         ),
       ),
     );
-    startOrder = Math.max(0, Math.min(anchorOrder - before, total - maxMessages));
+    startOrder = Math.max(
+      0,
+      Math.min(focusOrder - before, total - maxMessages),
+    );
   }
   const endOrder = Math.min(total, startOrder + maxMessages);
   const blocks = thread.blocks.flatMap((block): WhatsAppThreadBlock[] => {
@@ -111,6 +117,6 @@ export function createWhatsAppThreadWindow(
     renderedMessageCount: endOrder - startOrder,
     hiddenBefore: startOrder,
     hiddenAfter: total - endOrder,
-    anchorMessageId,
+    focusMessageId,
   };
 }

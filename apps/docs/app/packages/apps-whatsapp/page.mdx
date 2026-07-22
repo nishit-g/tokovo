@@ -9,7 +9,7 @@ The flagship messaging plugin package for Tokovo.
 - bootstrap validation and hydration
 - v2 lowering and DSL helpers
 - chat, updates, calls, communities, settings, profile, channel, and status surfaces
-- semantic layout and anchor integration
+- semantic layout and subject integration
 - stable-ID message targeting with strict runtime validation
 - immutable thread projection and revision-based layout caching
 - deterministic 120-message render windows over complete 10,000-message histories
@@ -35,7 +35,7 @@ The flagship messaging plugin package for Tokovo.
 Use the point/span track DSL. Messages that will be replied to, edited, deleted,
 forwarded, reacted to, or played must have an explicit `messageId`; every targeted
 operation uses that ID. Array indexes, `last` references, and compatibility aliases are
-rejected. Camera code should target documented semantic anchors or stable message IDs.
+rejected. Camera code should target documented semantic subjects or stable message IDs.
 
 Media transfer (`remote`, `downloading`, `ready`, `failed`) is distinct from playback
 (`idle`, `playing`, `paused`, `complete`). The legacy `VOICE_PLAY` / `VOICE_PAUSE` events

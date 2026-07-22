@@ -12,9 +12,6 @@
 // Device, OS, Call
 export * from "./device.js";
 
-// Camera effects and transforms
-export * from "./camera.js";
-
 // Audio system
 export * from "./audio.js";
 
@@ -38,8 +35,6 @@ export * from "./compiled-episode.js";
 export * from "./plugin-contract.js";
 export * from "./asset-ref.js";
 
-// Anchor types - V2 camera positioning
-export * from "./anchor.js";
 export * from "./cinematic-subject.js";
 
 // StatusBar theming

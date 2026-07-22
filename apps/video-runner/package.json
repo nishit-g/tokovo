@@ -18,6 +18,9 @@
     },
     "./camera-texture-contract": {
       "default": "./src/camera-texture-contract.ts"
+    },
+    "./camera-diagnostics": {
+      "default": "./src/camera-diagnostics.ts"
     }
   },
   "scripts": {
@@ -51,7 +54,6 @@
     "@tokovo/camera": "workspace:*",
     "@tokovo/compiler": "workspace:*",
     "@tokovo/core": "workspace:*",
-    "@tokovo/device-camera": "workspace:*",
     "@tokovo/device-keyboard": "workspace:*",
     "@tokovo/device-notifications": "workspace:*",
     "@tokovo/devices": "workspace:*",

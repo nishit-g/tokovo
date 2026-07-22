@@ -1,6 +1,5 @@
 export * from "./types.js";
 
-export { processCameraEvent } from "./camera.js";
 export {
   processAudioEvent,
   handleAutoSounds,

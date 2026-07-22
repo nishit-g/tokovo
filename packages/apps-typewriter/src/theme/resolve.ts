@@ -53,7 +53,12 @@ export function resolveTypewriterTheme(input: {
   const base = TYPEWRITER_THEME_PRESETS[preset] ?? TYPEWRITER_THEME_PRESETS.classic;
   const merged = deepMerge(base, input.config?.overrides);
 
-  const scale = input.video.width / (merged.designWidth || 1080);
+  if (!Number.isFinite(merged.designWidth) || merged.designWidth <= 0) {
+    throw new Error(
+      `TYPEWRITER_THEME_DESIGN_WIDTH_INVALID: expected a positive finite designWidth, received ${String(merged.designWidth)}`,
+    );
+  }
+
+  const scale = input.video.width / merged.designWidth;
   return scalePxFields(merged, scale);
 }
-

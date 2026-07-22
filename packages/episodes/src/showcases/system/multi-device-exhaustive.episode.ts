@@ -19,7 +19,11 @@ export default defineEpisode({
     apps: ["app_whatsapp", "app_x"],
   },
   build: () =>
-    episode("multi-device-exhaustive", { fps: 30, duration: "33s", title: "Multi-Device Exhaustive" })
+    episode("multi-device-exhaustive", {
+      fps: 30,
+      duration: "33s",
+      title: "Multi-Device Exhaustive",
+    })
       .device("phone_left", "iphone16", {
         app: "app_whatsapp",
         screenRecording: true,
@@ -43,17 +47,44 @@ export default defineEpisode({
       .background({ type: "image", src: "/backgrounds/neon-city.png" })
       .snapshot("app_whatsapp", "phone_left", {
         conversations: [
-          { id: "dm_left", name: "Riya", avatar: "/avatars/avatar-maya.jpg", unreadCount: 2 },
+          {
+            id: "dm_left",
+            name: "Riya",
+            avatar: "/avatars/avatar-maya.jpg",
+            unreadCount: 2,
+          },
         ],
       })
       .snapshot("app_x", "phone_right", {
         currentUserId: "u_me",
         users: [
-          { id: "u_me", name: "Me", handle: "parallelcut", followers: 9200, following: 290, verified: "blue" },
-          { id: "u_news", name: "Newsroom", handle: "newsroom", followers: 110200, following: 91, verified: "gold" },
+          {
+            id: "u_me",
+            name: "Me",
+            handle: "parallelcut",
+            followers: 9200,
+            following: 290,
+            verified: "blue",
+          },
+          {
+            id: "u_news",
+            name: "Newsroom",
+            handle: "newsroom",
+            followers: 110200,
+            following: 91,
+            verified: "gold",
+          },
         ],
         tweets: [
-          { id: "tw_parallel", authorId: "u_news", text: "Tonight's leak is now a full public timeline event.", createdAt: new Date("2026-04-10T21:28:00Z").getTime(), viewCount: 210000, shareCount: 3200, bookmarkCount: 9200 },
+          {
+            id: "tw_parallel",
+            authorId: "u_news",
+            text: "Tonight's leak is now a full public timeline event.",
+            createdAt: new Date("2026-04-10T21:28:00Z").getTime(),
+            viewCount: 210000,
+            shareCount: 3200,
+            bookmarkCount: 9200,
+          },
         ],
       })
       .whatsapp("phone_left", "dm_left", (wa) => {
@@ -90,18 +121,6 @@ export default defineEpisode({
           privacy: "private",
           threadId: "parallel",
         });
-      })
-      .camera((cam) => {
-        cam.at("0s").focus("device", { scale: 0.94, duration: "0.35s" });
-        cam.span("2.0s", "8.0s").trackCinematic(
-          { deviceId: "phone_left", anchorId: "lastMessage" },
-          { scale: 1.06, smoothing: 0.16 },
-        );
-        cam.span("3.0s", "9.0s").trackCinematic(
-          { deviceId: "phone_right", anchorId: "tweet_card" },
-          { scale: 1.06, smoothing: 0.16 },
-        );
-        cam.at("10.0s").focus("notification.banner", { scale: 1.08, duration: "0.3s" });
       })
       .build(),
 });

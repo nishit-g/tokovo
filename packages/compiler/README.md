@@ -6,7 +6,8 @@
 
 - lower track IR into runtime events
 - normalize authored episode input
-- host compile-time plugins such as camera and typing-indicator automation
+- host compile-time plugins such as typing-indicator automation
+- prepare stage and camera programs independently from story replay
 - prepare explicit input sessions for deterministic replay
 - prepare notification intents, interactions, policy, and action effects
 
@@ -24,7 +25,6 @@ It should:
 
 Current exported compile-time plugins include:
 
-- `CameraDirectorPlugin`
 - `AudioDirectorPlugin`
 - `OSDirectorPlugin`
 - `TypingIndicatorPlugin`

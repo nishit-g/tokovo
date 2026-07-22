@@ -41,14 +41,14 @@ AI can now generate scripts, branches, edits, translations, captions, and variat
 
 Tokovo's v1 target surface covers:
 
-| Surface            | Package                                                             | What it covers                                                                               |
-| ------------------ | ------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
-| Device and OS      | `@tokovo/devices`, `@tokovo/device-*`                               | iPhone-style frames, multi-device scenes, status UI, keyboard, notifications, camera anchors |
-| Messaging          | `@tokovo/apps-whatsapp`, `@tokovo/apps-imessage`                    | chats, group threads, typing, read states, media-style cards                                 |
-| Social apps        | `@tokovo/apps-instagram`, `@tokovo/apps-x`, `@tokovo/apps-snapchat` | feeds, stories, profiles, DMs, notifications                                                 |
-| Work apps          | `@tokovo/apps-linkedin`, `@tokovo/apps-teams`                       | message threads, channels, profiles, activity surfaces                                       |
-| Storytelling tools | `@tokovo/overlay`, `@tokovo/background`, `@tokovo/voice`            | captions, backgrounds, procedural sound, music/audio cues, voice tracks                      |
-| Rendering          | `video-runner`, `@tokovo/render-service`                            | local preview, MP4 export, render-service primitives                                         |
+| Surface            | Package                                                             | What it covers                                                                                   |
+| ------------------ | ------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| Device and OS      | `@tokovo/devices`, `@tokovo/device-*`                               | iPhone-style frames, multi-device scenes, status UI, keyboard, notifications, cinematic subjects |
+| Messaging          | `@tokovo/apps-whatsapp`, `@tokovo/apps-imessage`                    | chats, group threads, typing, read states, media-style cards                                     |
+| Social apps        | `@tokovo/apps-instagram`, `@tokovo/apps-x`, `@tokovo/apps-snapchat` | feeds, stories, profiles, DMs, notifications                                                     |
+| Work apps          | `@tokovo/apps-linkedin`, `@tokovo/apps-teams`                       | message threads, channels, profiles, activity surfaces                                           |
+| Storytelling tools | `@tokovo/overlay`, `@tokovo/background`, `@tokovo/voice`            | captions, backgrounds, procedural sound, music/audio cues, voice tracks                          |
+| Rendering          | `video-runner`, `@tokovo/render-service`                            | local preview, MP4 export, render-service primitives                                             |
 
 ## Render The Showcase
 
@@ -120,15 +120,15 @@ pnpm --filter video-runner dev
 
 These are good first renders when checking the v1 target surface:
 
-| Episode ID                    | Shows                                                                      |
-| ----------------------------- | -------------------------------------------------------------------------- |
-| `v2-creator-series-showcase`  | lockscreen, notifications, app switching, typed keyboard, camera direction |
-| `multi-device-exhaustive`     | parallel phones, split pacing, screen recording, cross-app continuity      |
+| Episode ID                       | Shows                                                                                     |
+| -------------------------------- | ----------------------------------------------------------------------------------------- |
+| `v2-creator-series-showcase`     | lockscreen, notifications, app switching, typed keyboard, camera direction                |
+| `multi-device-exhaustive`        | parallel phones, split pacing, screen recording, cross-app continuity                     |
 | `whatsapp-interaction-matrix-v3` | two devices, RTL, message/media lifecycle, gestures, Status, calls, communities, settings |
-| `instagram-flagship-v2`       | story, DM, profile, creator-facing pacing                                  |
-| `x-flagship-v2`               | timeline, post detail, replies, notifications                              |
-| `typewriter-flagship-v2`      | typewriter app, procedural sound effects, text timing                      |
-| `screen-recording-exhaustive` | OS chrome and screen-recording realism                                     |
+| `instagram-flagship-v2`          | story, DM, profile, creator-facing pacing                                                 |
+| `x-flagship-v2`                  | timeline, post detail, replies, notifications                                             |
+| `typewriter-flagship-v2`         | typewriter app, procedural sound effects, text timing                                     |
+| `screen-recording-exhaustive`    | OS chrome and screen-recording realism                                                    |
 
 The full showcase matrix is documented in `apps/docs/app/showcase/page.mdx`.
 
@@ -137,12 +137,13 @@ The full showcase matrix is documented in `apps/docs/app/showcase/page.mdx`.
 | Path                  | Purpose                                                              |
 | --------------------- | -------------------------------------------------------------------- |
 | `packages/episodes`   | canonical episode definitions, release/studio catalogs, validation   |
-| `packages/dsl`        | timeline builder primitives for devices, camera, OS, audio, overlays |
+| `packages/dsl`        | timeline and cinematic-program builders                             |
 | `packages/compiler`   | lowers episode definitions into renderable IR                        |
 | `packages/core`       | deterministic runtime, registries, logging, validation               |
+| `packages/camera`     | headless Camera VNext preparation, evaluation, and diagnostics       |
 | `packages/renderer`   | React render surface and camera-aware layout                         |
 | `packages/apps-*`     | app simulators for phone-native stories                              |
-| `packages/device-*`   | OS-owned interactions: camera, keyboard, notifications               |
+| `packages/device-*`   | OS-owned interactions: keyboard and notifications                    |
 | `apps/video-runner`   | preview/render app                                                   |
 | `apps/docs`           | public documentation site                                            |
 | `apps/web`            | marketing site                                                       |
@@ -202,10 +203,10 @@ pnpm --filter docs dev
 
 The public v1 bar is intentionally strict:
 
-- app simulators must own their reducers, views, anchors, and DSL helpers
+- app simulators must own their reducers, views, subjects, and DSL helpers
 - episodes must validate before they are rendered
 - multi-device episodes should author device focus intentionally
-- camera targets should resolve to semantic anchors instead of fallback boxes
+- camera targets should resolve to semantic subjects instead of fallback boxes
 - audio cues, generated sounds, voice tracks, and backgrounds should be declared as episode data
 - docs assets must be intentional, licensed, and listed in `ASSET_LICENSES.md`
 - generated renders stay out of git unless they are part of the docs showcase

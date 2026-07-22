@@ -1,20 +1,12 @@
 import type { DeviceProfile, DynamicIslandConfig } from "../types.js";
 
-const IOS_REFERENCE_WIDTH_POINTS = 430;
-const IOS_REFERENCE_HEIGHT_POINTS = 932;
-
-function fallbackPointScale(profile: DeviceProfile): number {
-  return Math.max(
-    1,
-    Math.min(
-      profile.display.width / IOS_REFERENCE_WIDTH_POINTS,
-      profile.display.height / IOS_REFERENCE_HEIGHT_POINTS,
-    ),
-  );
-}
-
 export function getIOSPointScale(profile: DeviceProfile): number {
-  return profile.pixelDensity || fallbackPointScale(profile);
+  if (!Number.isFinite(profile.pixelDensity) || profile.pixelDensity <= 0) {
+    throw new Error(
+      `DEVICE_PIXEL_DENSITY_INVALID: Profile "${profile.id}" requires a positive finite pixelDensity.`,
+    );
+  }
+  return profile.pixelDensity;
 }
 
 export function getIOSLogicalDimensions(profile: DeviceProfile): {
@@ -28,7 +20,10 @@ export function getIOSLogicalDimensions(profile: DeviceProfile): {
   };
 }
 
-export function pointsToDevicePx(profile: DeviceProfile, points: number): number {
+export function pointsToDevicePx(
+  profile: DeviceProfile,
+  points: number,
+): number {
   return points * getIOSPointScale(profile);
 }
 
@@ -95,7 +90,8 @@ export function getIOSChromeMetrics(profile: DeviceProfile): IOSChromeMetrics {
         recordingExpandedHeight: toPx(78),
         recordingExpandedCornerRadius: toPx(39),
         compactHeight: profile.dynamicIsland.collapsedHeight,
-        expandedCornerRadius: profile.dynamicIsland.expandedCornerRadius ?? toPx(44),
+        expandedCornerRadius:
+          profile.dynamicIsland.expandedCornerRadius ?? toPx(44),
         sensorPillWidth: toPx(74),
         sensorPillHeight: toPx(27),
         cameraLensSize: toPx(21),

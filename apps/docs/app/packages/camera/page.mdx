@@ -1,0 +1,51 @@
+# @tokovo/camera
+
+`@tokovo/camera` is Tokovo's deterministic Camera VNext kernel. It evaluates immutable camera
+programs against projected cinematic subjects; it does not mutate world state.
+
+## Responsibilities
+
+- validate and prepare camera plans into random-access frame indexes;
+- resolve typed app, device, entity, and group subjects;
+- evaluate cuts, blends, tracking, framing constraints, and baked trajectories;
+- compose multi-output views with explicit coverage and safe areas;
+- emit stable traces, manifests, diffs, and frame explanations.
+
+## Runtime Flow
+
+```text
+story + stage at frame t
+        |
+        v
+app/device subject projection -> prepared camera plan -> evaluated outputs -> renderer passes
+```
+
+The same canonical headless layout supplies both app rendering geometry and camera subject
+geometry. Missing subjects, registrations, outputs, and release projection passes fail loudly.
+
+## Authoring
+
+Use `cinematicProgram`, `cameraSubject`, and the camera-plan builders exported by `@tokovo/dsl`.
+An episode may contain several named plans, so an editor can recut cinematography without changing
+story events or stage placement.
+
+See [Cinematic Camera](/guides/cinematic-camera) for shots, rigs, movement, lenses, filters,
+coverage, safe areas, baked trajectories, and diagnostics.
+
+## Diagnostics
+
+```bash
+mise exec -- pnpm camera programs --episode <episode-id>
+mise exec -- pnpm camera explain --episode <episode-id> --camera-plan <plan-id> --output main --frame 120
+mise exec -- pnpm camera diff --episode <episode-id> --left <plan-a> --right <plan-b>
+mise exec -- pnpm camera subjects
+```
+
+## Key Exports
+
+- `prepareCameraPlan`
+- `evaluateCameraOutput`
+- `createCameraProgramManifest`
+- `explainCameraProgramFrame`
+- `diffCameraPrograms`
+- camera pose, composition, subject, constraint, and trace contracts

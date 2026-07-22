@@ -7,9 +7,11 @@ import type { CameraTextureProjectionCapture } from "video-runner/camera-texture
 import {
   CameraTextureCaptureCollector,
   composeWarpDisplacement,
-  createCameraCommandFile,
+  createCameraCommandFiles,
+  createCompositorFrameChunks,
   createOpticalDisplacementMapPlanes,
   createPerspectiveCorners,
+  createPerspectiveExpressions,
   createTextureFilterGraph,
   encodeGrayscalePng,
 } from "./camera-texture-compositor";
@@ -85,15 +87,21 @@ describe("camera texture capture", () => {
   it("completes focused source ranges in local sequence order", () => {
     const collector = new CameraTextureCaptureCollector();
     for (const frame of [101, 100, 102]) {
-      collector.acceptBrowserLog(encodeCameraTextureProjectionCapture(capture(frame)));
+      collector.acceptBrowserLog(
+        encodeCameraTextureProjectionCapture(capture(frame)),
+      );
     }
-    expect(collector.completeRange(100, 102).map((entry) => entry.frame)).toEqual([100, 101, 102]);
+    expect(
+      collector.completeRange(100, 102).map((entry) => entry.frame),
+    ).toEqual([100, 101, 102]);
     expect(() => collector.completeRange(102, 100)).toThrow("RANGE_INVALID");
   });
 
   it("rejects conflicting data for one frame", () => {
     const collector = new CameraTextureCaptureCollector();
-    collector.acceptBrowserLog(encodeCameraTextureProjectionCapture(capture(0)));
+    collector.acceptBrowserLog(
+      encodeCameraTextureProjectionCapture(capture(0)),
+    );
     expect(() =>
       collector.acceptBrowserLog(
         encodeCameraTextureProjectionCapture({
@@ -106,8 +114,12 @@ describe("camera texture capture", () => {
 
   it("rejects output topology changes inside one capture range", () => {
     const collector = new CameraTextureCaptureCollector();
-    collector.acceptBrowserLog(encodeCameraTextureProjectionCapture(multiOutputCapture(0)));
-    collector.acceptBrowserLog(encodeCameraTextureProjectionCapture(capture(1)));
+    collector.acceptBrowserLog(
+      encodeCameraTextureProjectionCapture(multiOutputCapture(0)),
+    );
+    collector.acceptBrowserLog(
+      encodeCameraTextureProjectionCapture(capture(1)),
+    );
     expect(() => collector.complete(2)).toThrow("IDENTITY_CHANGED");
   });
 });
@@ -200,6 +212,8 @@ describe("camera perspective and optical maps", () => {
     expect(createHash("sha256").update(first).digest("hex")).toBe(
       createHash("sha256").update(second).digest("hex"),
     );
+    expect(first.subarray(12, 16).toString("ascii")).toBe("IHDR");
+    expect(first.toString("latin1").match(/IHDR/g)).toHaveLength(1);
   });
 
   it("builds independent maps for inset outputs", () => {
@@ -212,15 +226,34 @@ describe("camera perspective and optical maps", () => {
       mapHeight: 8,
     });
     expect([...planes.x]).not.toEqual(new Array(64).fill(128));
-    expect(() => createPerspectiveCorners(multiOutputCapture(0), "missing")).toThrow(
-      "OUTPUT_MISSING",
-    );
+    expect(() =>
+      createPerspectiveCorners(multiOutputCapture(0), "missing"),
+    ).toThrow("OUTPUT_MISSING");
   });
 });
 
 describe("camera smear and FFmpeg graph", () => {
+  it("partitions full releases into contiguous bounded chunks", () => {
+    expect(createCompositorFrameChunks(0)).toEqual([]);
+    expect(createCompositorFrameChunks(121)).toEqual([
+      { index: 0, startFrame: 0, endFrame: 120 },
+      { index: 1, startFrame: 120, endFrame: 121 },
+    ]);
+    const full = createCompositorFrameChunks(1080);
+    expect(full).toHaveLength(9);
+    expect(full[0]).toEqual({ index: 0, startFrame: 0, endFrame: 120 });
+    expect(full.at(-1)).toEqual({
+      index: 8,
+      startFrame: 960,
+      endFrame: 1080,
+    });
+    expect(() => createCompositorFrameChunks(1.5)).toThrow(
+      "CHUNK_FRAME_COUNT_INVALID",
+    );
+  });
+
   it("emits frame-addressed commands and named filter targets", () => {
-    const commands = createCameraCommandFile(
+    const commandFiles = createCameraCommandFiles(
       [
         capture(0),
         capture(1, [
@@ -244,31 +277,50 @@ describe("camera smear and FFmpeg graph", () => {
       ],
       30,
     );
-    expect(commands).toContain("0.033333333 [enter]");
-    expect(commands).toContain("perspective@tokovo_camera_0 x0");
-    expect(commands).toContain("perspective@tokovo_camera_0 y3");
+    const commands = commandFiles.map((file) => file.contents).join("\n");
+    expect(commandFiles).toHaveLength(6);
+    expect(commandFiles.map((file) => file.stage)).not.toContain("perspective");
+    expect(commands).toContain("0.016666667 [enter]");
     expect(commands).toContain("gblur@tokovo_smear_0 sigma");
     expect(commands).toContain("colorchannelmixer@tokovo_camera_opacity_0 aa");
     expect(commands).toContain("colorchannelmixer@tokovo_smear_alpha_0 aa");
     expect(commands).toContain("overlay@tokovo_smear_overlay_0 x");
     expect(commands).toContain("eq@tokovo_grade_0 brightness 0.03");
     expect(commands).toContain("eq@tokovo_grade_0 contrast 1.12");
-    expect(commands).toContain("colorchannelmixer@tokovo_grade_rgb_0 rr 1.0205");
+    expect(commands).toContain(
+      "colorchannelmixer@tokovo_grade_rgb_0 rr 1.0205",
+    );
     expect(commands).toContain("colorchannelmixer@tokovo_grade_rgb_0 gg 1.008");
-    expect(commands).toContain("colorchannelmixer@tokovo_grade_rgb_0 bb 0.9725");
+    expect(commands).toContain(
+      "colorchannelmixer@tokovo_grade_rgb_0 bb 0.9725",
+    );
   });
 
   it("timestamps a focused source range from local zero", () => {
-    const commands = createCameraCommandFile([capture(100), capture(101)], 30);
+    const commands = createCameraCommandFiles([capture(100), capture(101)], 30)
+      .map((file) => file.contents)
+      .join("\n");
     expect(commands).toContain("0.000000000 [enter]");
-    expect(commands).toContain("0.033333333 [enter]");
+    expect(commands).toContain("0.016666667 [enter]");
     expect(commands).not.toContain("3.333333333 [enter]");
+  });
+
+  it("evaluates changing perspective corners from the local frame index", () => {
+    const first = capture(100);
+    const second = capture(101);
+    second.outputs[0].viewMatrix = [1, 0, 50, 0, 1, -20, 0, 0, 1];
+    const expressions = createPerspectiveExpressions([first, second], "main");
+
+    expect(expressions.x0).toBe("0+50*gte(in\\,2)");
+    expect(expressions.y0).toBe("0-20*gte(in\\,2)");
+    expect(expressions.x3).toBe("1080+50*gte(in\\,2)");
+    expect(expressions.y3).toBe("1920-20*gte(in\\,2)");
   });
 
   it("keeps camera and foreground as separately attached layers", () => {
     const graph = createTextureFilterGraph({
-      commandFile: "/tmp/tokovo/smear.sendcmd",
-      initialCapture: capture(0),
+      commandDirectory: "/tmp/tokovo",
+      captures: [capture(0)],
       width: 1080,
       height: 1920,
     });
@@ -278,15 +330,25 @@ describe("camera smear and FFmpeg graph", () => {
     expect(graph).toContain("[camera_canvas_1][foreground]overlay");
     expect(graph).toContain("perspective@tokovo_camera_0");
     expect(graph).toContain("interpolation=cubic");
+    expect(graph).toContain("eval=frame");
+    expect(graph).not.toContain("camera-00-perspective.sendcmd");
     expect(graph).toContain("crop=1080:1920:0:0,format=rgba[framed_0]");
     expect(graph).not.toContain("[framed_0][xmap_0][ymap_0]displace");
+    expect(graph).toContain("camera-00-opacity.sendcmd");
     expect(graph).toContain(
-      "[framed_0]format=rgba,colorchannelmixer@tokovo_camera_opacity_0=aa=1[warped_0]",
+      "colorchannelmixer@tokovo_camera_opacity_0=aa=1[warped_0]",
+    );
+    expect(graph).toContain("camera-00-grade-eq.sendcmd");
+    expect(graph).toContain(
+      "eq@tokovo_grade_0=brightness=0:contrast=1:saturation=1:gamma=1",
+    );
+    expect(graph).toContain("camera-00-grade-rgb.sendcmd");
+    expect(graph).toContain(
+      "colorchannelmixer@tokovo_grade_rgb_0=rr=1:gg=1:bb=1:aa=1,format=rgba[graded_0]",
     );
     expect(graph).toContain(
-      "[warped_0]eq@tokovo_grade_0=brightness=0:contrast=1:saturation=1:gamma=1,colorchannelmixer@tokovo_grade_rgb_0=rr=1:gg=1:bb=1:aa=1,format=rgba[graded_0]",
+      "[graded_0]split=2[crisp_source_0][smear_source_0]",
     );
-    expect(graph).toContain("[graded_0]split=2[crisp_source_0][smear_source_0]");
     expect(graph).toContain("[optical_clipped_0]null[optical_0]");
     expect(graph).not.toContain("alphamerge");
     expect(graph).not.toContain("alphaextract");
@@ -295,8 +357,8 @@ describe("camera smear and FFmpeg graph", () => {
 
   it("routes optics discovered after the first frame through a prepared map input", () => {
     const graph = createTextureFilterGraph({
-      commandFile: "/tmp/tokovo/later-optics.sendcmd",
-      initialCapture: capture(0),
+      commandDirectory: "/tmp/tokovo",
+      captures: [capture(0)],
       width: 1080,
       height: 1920,
       opticalOutputIds: ["main"],
@@ -304,32 +366,56 @@ describe("camera smear and FFmpeg graph", () => {
 
     expect(graph).toContain("[2:v]scale=1080:1920");
     expect(graph).toContain("[3:v]scale=1080:1920");
-    expect(graph).toContain("[framed_0][xmap_0][ymap_0]displace");
+    expect(graph).toContain(
+      "[framed_color_0][xmap_color_0][ymap_color_0]displace=edge=blank,format=rgb24[color_warped_0]",
+    );
+    expect(graph).toContain(
+      "[framed_alpha_source_0]alphaextract[alpha_source_0]",
+    );
+    expect(graph).toContain(
+      "[alpha_source_0][xmap_alpha_0][ymap_alpha_0]displace=edge=blank,format=gray[alpha_warped_0]",
+    );
+    expect(graph).toContain(
+      "[color_warped_0][alpha_warped_0]alphamerge,format=rgba",
+    );
+    expect(graph).not.toContain("[framed_0][xmap_0][ymap_0]displace");
     expect(graph).toContain("[4:v]format=rgba[foreground]");
   });
 
   it("orders independent full-frame and rounded PIP output pipelines", () => {
     const capture = multiOutputCapture(0);
-    const commands = createCameraCommandFile([capture], 60);
+    const commands = createCameraCommandFiles([capture], 60)
+      .map((file) => file.contents)
+      .join("\n");
     const graph = createTextureFilterGraph({
-      commandFile: "/tmp/tokovo/multi.sendcmd",
-      initialCapture: capture,
+      commandDirectory: "/tmp/tokovo",
+      captures: [capture],
       width: 1080,
       height: 1920,
     });
 
-    expect(commands).toContain("perspective@tokovo_camera_0");
-    expect(commands).toContain("perspective@tokovo_camera_1");
+    expect(commands).not.toContain("perspective@tokovo_camera_0");
+    expect(commands).not.toContain("perspective@tokovo_camera_1");
+    expect(graph).toContain("perspective@tokovo_camera_0");
+    expect(graph).toContain("perspective@tokovo_camera_1");
     expect(graph).toContain("split=2[camera_source_0][camera_source_1]");
     expect(graph).toContain("crop=324:576:684:124,format=rgba[framed_1]");
     expect(graph).toContain("[2:v]scale=324:576");
     expect(graph).toContain("[3:v]scale=324:576");
-    expect(graph).toContain("[framed_1][xmap_1][ymap_1]displace");
+    expect(graph).toContain(
+      "[framed_color_1][xmap_color_1][ymap_color_1]displace=edge=blank",
+    );
+    expect(graph).toContain(
+      "[framed_alpha_source_1]alphaextract[alpha_source_1]",
+    );
+    expect(graph).toContain("[color_warped_1][alpha_warped_1]alphamerge");
     expect(graph).toContain("geq=r='r(X,Y)'");
     expect(graph).toContain("[shadow_source_1]pad=404:656:40:40:color=black@0");
     expect(graph).toContain("pad=404:656:40:40:color=black@0");
     expect(graph).toContain("[camera_canvas_1][shadow_1]overlay=x=644:y=98");
-    expect(graph).toContain("[camera_shadow_canvas_1][optical_1]overlay=x=684:y=124");
+    expect(graph).toContain(
+      "[camera_shadow_canvas_1][optical_1]overlay=x=684:y=124",
+    );
     expect(graph).toContain("[4:v]format=rgba[foreground]");
   });
 });

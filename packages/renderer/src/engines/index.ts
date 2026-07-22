@@ -8,13 +8,17 @@
  * - Renderer: all outputs → JSX pixels
  */
 
-export { useLayoutEngine, type LayoutEngineInput, type LayoutEngineOutput } from "./useLayoutEngine.js";
 export {
-  useCameraEngine,
-  mergeInputProjectionAnchor,
-  mergeNotificationProjectionAnchors,
-  mergeSystemSurfaceProjectionAnchors,
-  type CameraEngineInput,
-  type CameraEngineOutput,
-} from "./useCameraEngine.js";
-export { useAudioEngine, type AudioEngineInput, type AudioEngineOutput, NULL_AUDIO_OUTPUT } from "./useAudioEngine.js";
+  computeLayoutEngine,
+  createLayoutEngineRuntime,
+  useLayoutEngine,
+  type LayoutEngineInput,
+  type LayoutEngineOutput,
+  type LayoutEngineRuntime,
+} from "./useLayoutEngine.js";
+export {
+  useAudioEngine,
+  type AudioEngineInput,
+  type AudioEngineOutput,
+  NULL_AUDIO_OUTPUT,
+} from "./useAudioEngine.js";

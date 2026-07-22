@@ -35,7 +35,8 @@ export default defineEpisode({
     episode("new-dx-test", {
       fps: 30,
       duration: "60s",
-      title: "New DX Test - Initial Messages + Context Switching + Relative Timing",
+      title:
+        "New DX Test - Initial Messages + Context Switching + Relative Timing",
       description:
         "Tests seeded message history and explicit conversation switching.",
     })
@@ -99,8 +100,5 @@ export default defineEpisode({
           wa.at("20.4s").send("Good! Want to grab coffee sometime?");
         },
       )
-      .camera((cam) => {
-        cam.at("0s").set({ scale: 1 });
-      })
       .build(),
 });

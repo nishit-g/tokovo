@@ -13,7 +13,10 @@ import {
 } from "lucide-react";
 import { Img, staticFile } from "remotion";
 import { resolveStaticAssetSrc } from "@tokovo/core";
-import { useTheme, useWhatsAppLocale } from "../experience/ExperienceContext.js";
+import {
+  useTheme,
+  useWhatsAppLocale,
+} from "../experience/ExperienceContext.js";
 import type { ProjectedThreadMessage } from "../thread/projector.js";
 import {
   formatWhatsAppDigits,
@@ -29,15 +32,23 @@ export interface MessageBodyProps {
   footerReserveWidth?: number;
 }
 
-function formatDuration(seconds: number | undefined, locale: WhatsAppLocale): string {
+function formatDuration(
+  seconds: number | undefined,
+  locale: WhatsAppLocale,
+): string {
   const safeSeconds = Math.max(0, Math.floor(seconds ?? 0));
   const minutes = Math.floor(safeSeconds / 60);
-  return formatWhatsAppDigits(locale, `${minutes}:${String(safeSeconds % 60).padStart(2, "0")}`);
+  return formatWhatsAppDigits(
+    locale,
+    `${minutes}:${String(safeSeconds % 60).padStart(2, "0")}`,
+  );
 }
 
 function resolveAsset(source: string | undefined): string | undefined {
   return source
-    ? resolveStaticAssetSrc(source, (assetPath) => staticFile(assetPath.replace(/^\//, "")))
+    ? resolveStaticAssetSrc(source, (assetPath) =>
+        staticFile(assetPath.replace(/^\//, "")),
+      )
     : undefined;
 }
 
@@ -60,7 +71,9 @@ const MediaLifecycleOverlay = memo(function MediaLifecycleOverlay({
   const media = message.media;
   if (!media || media.transferState === "ready") return null;
 
-  const progress = Math.round(Math.max(0, Math.min(1, media.transferProgress)) * 100);
+  const progress = Math.round(
+    Math.max(0, Math.min(1, media.transferProgress)) * 100,
+  );
   const label =
     media.transferState === "downloading"
       ? t("media.progress", { progress })
@@ -202,7 +215,10 @@ const ImageBody = memo(function ImageBody({
   const { t } = useWhatsAppLocale();
   const resolved = resolveAsset(source);
   return (
-    <div data-anchor="media" style={{ overflow: "hidden", borderRadius: 12 }}>
+    <div
+      data-cinematic-subject="media"
+      style={{ overflow: "hidden", borderRadius: 12 }}
+    >
       {resolved ? (
         <Img
           src={resolved}
@@ -216,21 +232,34 @@ const ImageBody = memo(function ImageBody({
           }}
         />
       ) : (
-        <MissingMedia label={t("media.photoUnavailable")} icon={<FileText size={24} />} />
+        <MissingMedia
+          label={t("media.photoUnavailable")}
+          icon={<FileText size={24} />}
+        />
       )}
       <Caption text={caption} />
     </div>
   );
 });
 
-const VideoBody = memo(function VideoBody({ message }: { message: ProjectedThreadMessage }) {
+const VideoBody = memo(function VideoBody({
+  message,
+}: {
+  message: ProjectedThreadMessage;
+}) {
   const theme = useTheme();
   const { locale, t } = useWhatsAppLocale();
   const resolved = resolveAsset(message.thumbnailUrl);
-  const progress = Math.max(0, Math.min(1, message.media?.playbackProgress ?? 0));
+  const progress = Math.max(
+    0,
+    Math.min(1, message.media?.playbackProgress ?? 0),
+  );
   const isPlaying = message.media?.playbackState === "playing";
   return (
-    <div data-anchor="media" style={{ overflow: "hidden", borderRadius: 12 }}>
+    <div
+      data-cinematic-subject="media"
+      style={{ overflow: "hidden", borderRadius: 12 }}
+    >
       <div style={{ height: 196, position: "relative", overflow: "hidden" }}>
         {resolved ? (
           <Img
@@ -240,7 +269,10 @@ const VideoBody = memo(function VideoBody({ message }: { message: ProjectedThrea
             style={{ width: "100%", height: "100%", objectFit: "cover" }}
           />
         ) : (
-          <MissingMedia label={t("media.videoUnavailable")} icon={<Video size={26} />} />
+          <MissingMedia
+            label={t("media.videoUnavailable")}
+            icon={<Video size={26} />}
+          />
         )}
         <div
           style={{
@@ -264,7 +296,11 @@ const VideoBody = memo(function VideoBody({ message }: { message: ProjectedThrea
               boxShadow: "0 1px 6px rgba(0,0,0,0.3)",
             }}
           >
-            {isPlaying ? <Pause size={20} /> : <Play size={21} fill="currentColor" />}
+            {isPlaying ? (
+              <Pause size={20} />
+            ) : (
+              <Play size={21} fill="currentColor" />
+            )}
           </div>
         </div>
         <div
@@ -314,8 +350,13 @@ const GifBody = memo(function GifBody({ source }: { source?: string }) {
   const resolved = resolveAsset(source);
   return (
     <div
-      data-anchor="media"
-      style={{ height: 186, position: "relative", overflow: "hidden", borderRadius: 12 }}
+      data-cinematic-subject="media"
+      style={{
+        height: 186,
+        position: "relative",
+        overflow: "hidden",
+        borderRadius: 12,
+      }}
     >
       {resolved ? (
         <Img
@@ -325,7 +366,10 @@ const GifBody = memo(function GifBody({ source }: { source?: string }) {
           style={{ width: "100%", height: "100%", objectFit: "cover" }}
         />
       ) : (
-        <MissingMedia label={t("media.gifUnavailable")} icon={<Play size={26} />} />
+        <MissingMedia
+          label={t("media.gifUnavailable")}
+          icon={<Play size={26} />}
+        />
       )}
       <div
         style={{
@@ -352,7 +396,7 @@ const StickerBody = memo(function StickerBody({ source }: { source?: string }) {
   const { t } = useWhatsAppLocale();
   const resolved = resolveAsset(source);
   return (
-    <div data-anchor="media" style={{ width: 144, height: 144 }}>
+    <div data-cinematic-subject="media" style={{ width: 144, height: 144 }}>
       {resolved ? (
         <Img
           src={resolved}
@@ -366,7 +410,10 @@ const StickerBody = memo(function StickerBody({ source }: { source?: string }) {
           }}
         />
       ) : (
-        <MissingMedia label={t("media.stickerUnavailable")} icon={<FileText size={24} />} />
+        <MissingMedia
+          label={t("media.stickerUnavailable")}
+          icon={<FileText size={24} />}
+        />
       )}
     </div>
   );
@@ -376,7 +423,10 @@ const VoiceBody = memo(function VoiceBody({ message, isMe }: MessageBodyProps) {
   const theme = useTheme();
   const { locale } = useWhatsAppLocale();
   const duration = Math.max(0, message.duration ?? 0);
-  const progress = Math.max(0, Math.min(1, message.media?.playbackProgress ?? 0));
+  const progress = Math.max(
+    0,
+    Math.min(1, message.media?.playbackProgress ?? 0),
+  );
   const isPlaying = message.media?.playbackState === "playing";
   const playedBars = Math.floor(progress * 32);
   const seed = hashString(`${message.id}:${duration}`);
@@ -384,7 +434,7 @@ const VoiceBody = memo(function VoiceBody({ message, isMe }: MessageBodyProps) {
 
   return (
     <div
-      data-anchor="media"
+      data-cinematic-subject="media"
       style={{
         width: "100%",
         minHeight: 52,
@@ -431,7 +481,8 @@ const VoiceBody = memo(function VoiceBody({ message, isMe }: MessageBodyProps) {
                   width: 2,
                   height,
                   borderRadius: 1,
-                  backgroundColor: index < playedBars ? accent : `${theme.colors.timestamp}66`,
+                  backgroundColor:
+                    index < playedBars ? accent : `${theme.colors.timestamp}66`,
                 }}
               />
             );
@@ -448,20 +499,28 @@ const VoiceBody = memo(function VoiceBody({ message, isMe }: MessageBodyProps) {
           }}
         >
           <Mic size={11} />
-          <span>{formatDuration(isPlaying ? duration * progress : duration, locale)}</span>
+          <span>
+            {formatDuration(isPlaying ? duration * progress : duration, locale)}
+          </span>
         </div>
       </div>
     </div>
   );
 });
 
-const DocumentBody = memo(function DocumentBody({ message }: { message: ProjectedThreadMessage }) {
+const DocumentBody = memo(function DocumentBody({
+  message,
+}: {
+  message: ProjectedThreadMessage;
+}) {
   const theme = useTheme();
   const { locale, t } = useWhatsAppLocale();
-  const fileType = (message.fileType ?? "file").replace(/^\./, "").toUpperCase();
+  const fileType = (message.fileType ?? "file")
+    .replace(/^\./, "")
+    .toUpperCase();
   const fileSize = formatWhatsAppFileSize(locale, message.fileSize);
   return (
-    <div data-anchor="media" style={{ width: "100%" }}>
+    <div data-cinematic-subject="media" style={{ width: "100%" }}>
       <div
         style={{
           display: "flex",
@@ -487,7 +546,9 @@ const DocumentBody = memo(function DocumentBody({ message }: { message: Projecte
           }}
         >
           <FileText size={18} />
-          <span style={{ fontSize: 7, fontWeight: 700 }}>{fileType.slice(0, 4)}</span>
+          <span style={{ fontSize: 7, fontWeight: 700 }}>
+            {fileType.slice(0, 4)}
+          </span>
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div
@@ -514,7 +575,9 @@ const DocumentBody = memo(function DocumentBody({ message }: { message: Projecte
             }}
           >
             {[
-              message.pageCount ? t("message.pages", { count: message.pageCount }) : undefined,
+              message.pageCount
+                ? t("message.pages", { count: message.pageCount })
+                : undefined,
               fileSize,
               fileType,
             ]
@@ -528,13 +591,24 @@ const DocumentBody = memo(function DocumentBody({ message }: { message: Projecte
   );
 });
 
-const ContactBody = memo(function ContactBody({ message }: { message: ProjectedThreadMessage }) {
+const ContactBody = memo(function ContactBody({
+  message,
+}: {
+  message: ProjectedThreadMessage;
+}) {
   const theme = useTheme();
   const { t } = useWhatsAppLocale();
   const avatar = resolveAsset(message.contactAvatarUrl);
   return (
-    <div data-anchor="media" style={{ width: "100%" }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 11, padding: "4px 2px 10px" }}>
+    <div data-cinematic-subject="media" style={{ width: "100%" }}>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 11,
+          padding: "4px 2px 10px",
+        }}
+      >
         <div
           style={{
             width: 44,
@@ -635,11 +709,18 @@ const MapPlaceholder = memo(function MapPlaceholder() {
   );
 });
 
-const LocationBody = memo(function LocationBody({ message }: { message: ProjectedThreadMessage }) {
+const LocationBody = memo(function LocationBody({
+  message,
+}: {
+  message: ProjectedThreadMessage;
+}) {
   const theme = useTheme();
   const map = resolveAsset(message.mapThumbnailUrl);
   return (
-    <div data-anchor="media" style={{ width: "100%", overflow: "hidden", borderRadius: 12 }}>
+    <div
+      data-cinematic-subject="media"
+      style={{ width: "100%", overflow: "hidden", borderRadius: 12 }}
+    >
       <div style={{ height: 154, position: "relative" }}>
         {map ? (
           <Img
@@ -689,12 +770,17 @@ const LocationBody = memo(function LocationBody({ message }: { message: Projecte
   );
 });
 
-const PollBody = memo(function PollBody({ message }: { message: ProjectedThreadMessage }) {
+const PollBody = memo(function PollBody({
+  message,
+}: {
+  message: ProjectedThreadMessage;
+}) {
   const theme = useTheme();
   const { locale, t } = useWhatsAppLocale();
   const options = message.options ?? [];
   const totalVotes =
-    message.totalVotes ?? options.reduce((sum, option) => sum + (option.votes ?? 0), 0);
+    message.totalVotes ??
+    options.reduce((sum, option) => sum + (option.votes ?? 0), 0);
   return (
     <div style={{ width: "100%" }}>
       <div
@@ -711,7 +797,14 @@ const PollBody = memo(function PollBody({ message }: { message: ProjectedThreadM
       >
         {message.pollQuestion ?? t("message.untitledPoll")}
       </div>
-      <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 9 }}>
+      <div
+        style={{
+          marginTop: 10,
+          display: "flex",
+          flexDirection: "column",
+          gap: 9,
+        }}
+      >
         {options.map((option, index) => {
           const votes = option.votes ?? 0;
           const width = totalVotes > 0 ? (votes / totalVotes) * 100 : 0;
@@ -795,7 +888,9 @@ const CallBody = memo(function CallBody({ message, isMe }: MessageBodyProps) {
         : "message.voiceCall",
   );
   return (
-    <div style={{ width: "100%", display: "flex", alignItems: "center", gap: 10 }}>
+    <div
+      style={{ width: "100%", display: "flex", alignItems: "center", gap: 10 }}
+    >
       <div
         style={{
           width: 36,
@@ -804,7 +899,9 @@ const CallBody = memo(function CallBody({ message, isMe }: MessageBodyProps) {
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          color: missed ? theme.colors.callCardMissed : theme.colors.callCardIcon,
+          color: missed
+            ? theme.colors.callCardMissed
+            : theme.colors.callCardIcon,
           backgroundColor: isMe
             ? theme.colors.callCardIconBgOutgoing
             : theme.colors.callCardIconBgIncoming,
@@ -813,7 +910,13 @@ const CallBody = memo(function CallBody({ message, isMe }: MessageBodyProps) {
         <Icon size={18} />
       </div>
       <div>
-        <div style={{ fontSize: 14, fontWeight: 600, fontFamily: theme.typography.fontFamily }}>
+        <div
+          style={{
+            fontSize: 14,
+            fontWeight: 600,
+            fontFamily: theme.typography.fontFamily,
+          }}
+        >
           {title}
         </div>
         <div
@@ -855,7 +958,13 @@ const DeletedBody = memo(function DeletedBody({
       }}
     >
       <Ban size={15} />
-      <span>{t(deletedForEveryone === false ? "message.deletedByYou" : "message.deleted")}</span>
+      <span>
+        {t(
+          deletedForEveryone === false
+            ? "message.deletedByYou"
+            : "message.deleted",
+        )}
+      </span>
     </div>
   );
 });
@@ -868,10 +977,17 @@ export const MessageBody = memo(function MessageBody({
   let content: ReactNode;
   switch (message.type) {
     case "text":
-      content = <TextBody text={message.text ?? ""} footerReserveWidth={footerReserveWidth} />;
+      content = (
+        <TextBody
+          text={message.text ?? ""}
+          footerReserveWidth={footerReserveWidth}
+        />
+      );
       break;
     case "image":
-      content = <ImageBody source={message.imageUrl} caption={message.caption} />;
+      content = (
+        <ImageBody source={message.imageUrl} caption={message.caption} />
+      );
       break;
     case "video":
       content = <VideoBody message={message} />;
@@ -900,7 +1016,9 @@ export const MessageBody = memo(function MessageBody({
     case "link":
       content = (
         <div style={{ width: "100%" }}>
-          {message.linkPreview && <LinkPreview preview={message.linkPreview} isMyMessage={isMe} />}
+          {message.linkPreview && (
+            <LinkPreview preview={message.linkPreview} isMyMessage={isMe} />
+          )}
           {message.text && <TextBody text={message.text} />}
         </div>
       );

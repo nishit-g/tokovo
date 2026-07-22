@@ -3,24 +3,39 @@ import type { WorldState } from "../types.js";
 import navigationReducer from "../engine/handlers/navigation.js";
 
 describe("navigation reducer", () => {
-  const baseWorld = (): WorldState => ({
-    devices: {
-      phone: { id: "phone", isLocked: true, foregroundAppId: "app" },
-    },
-    appState: {},
-    camera: { baseView: "APP_VIEW" },
-    audio: { activeSounds: {}, buses: {}, policyState: { recentSounds: {}, nextId: 0 }, autoSoundRules: [] },
-  } as WorldState);
+  const baseWorld = (): WorldState =>
+    ({
+      devices: {
+        phone: { id: "phone", isLocked: true, foregroundAppId: "app" },
+      },
+      appState: {},
+      audio: {
+        activeSounds: {},
+        buses: {},
+        policyState: { recentSounds: {}, nextId: 0 },
+        autoSoundRules: [],
+      },
+    }) as WorldState;
 
   it("handles device navigation events", () => {
-    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+    const warnSpy = vi
+      .spyOn(console, "warn")
+      .mockImplementation(() => undefined);
     const world = baseWorld();
 
-    navigationReducer(world, { kind: "DEVICE", type: "LOCK", deviceId: "phone" });
+    navigationReducer(world, {
+      kind: "DEVICE",
+      type: "LOCK",
+      deviceId: "phone",
+    });
     expect(world.devices.phone.isLocked).toBe(true);
     expect(world.devices.phone.foregroundAppId).toBeUndefined();
 
-    navigationReducer(world, { kind: "DEVICE", type: "UNLOCK", deviceId: "phone" });
+    navigationReducer(world, {
+      kind: "DEVICE",
+      type: "UNLOCK",
+      deviceId: "phone",
+    });
     expect(world.devices.phone.isLocked).toBe(false);
 
     navigationReducer(world, {
@@ -32,15 +47,31 @@ describe("navigation reducer", () => {
     expect(world.devices.phone.foregroundAppId).toBe("chat");
     expect((world.appState as any).chat.currentScreen).toBe("main");
 
-    navigationReducer(world, { kind: "DEVICE", type: "CLOSE_APP", deviceId: "phone" });
+    navigationReducer(world, {
+      kind: "DEVICE",
+      type: "CLOSE_APP",
+      deviceId: "phone",
+    });
     expect(world.devices.phone.foregroundAppId).toBeUndefined();
 
-    navigationReducer(world, { kind: "DEVICE", type: "GO_HOME", deviceId: "phone" });
+    navigationReducer(world, {
+      kind: "DEVICE",
+      type: "GO_HOME",
+      deviceId: "phone",
+    });
     expect(world.devices.phone.foregroundAppId).toBeUndefined();
 
-    navigationReducer(world, { kind: "DEVICE", type: "UNKNOWN", deviceId: "phone" });
+    navigationReducer(world, {
+      kind: "DEVICE",
+      type: "UNKNOWN",
+      deviceId: "phone",
+    });
 
-    navigationReducer(world, { kind: "DEVICE", type: "LOCK", deviceId: "missing" });
+    navigationReducer(world, {
+      kind: "DEVICE",
+      type: "LOCK",
+      deviceId: "missing",
+    });
     expect(warnSpy).toHaveBeenCalled();
 
     navigationReducer(world, { kind: "DEVICE", type: "LOCK" });

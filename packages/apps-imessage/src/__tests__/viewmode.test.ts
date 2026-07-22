@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import type { RuntimeEvent, WorldState } from "@tokovo/core";
-import { DEFAULT_AUDIO_STATE, DEFAULT_BASE_CAMERA_STATE } from "@tokovo/core";
+import { DEFAULT_AUDIO_STATE } from "@tokovo/core";
 import { iMessageReducer } from "../runtime/reducer.js";
 import { createIMessageInitialState } from "../runtime/initial-state.js";
 
@@ -10,7 +10,6 @@ function createTestWorldState(): WorldState {
       app_imessage: createIMessageInitialState(),
     },
     devices: {},
-    camera: DEFAULT_BASE_CAMERA_STATE,
     audio: DEFAULT_AUDIO_STATE,
   } as WorldState;
 }
@@ -80,4 +79,3 @@ describe("iMessage viewMode invariants", () => {
     expect(app.conversationId).toBeUndefined();
   });
 });
-

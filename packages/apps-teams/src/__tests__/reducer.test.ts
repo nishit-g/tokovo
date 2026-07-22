@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { produce } from "immer";
 import type { WorldState } from "@tokovo/core";
-import { DEFAULT_AUDIO_STATE, DEFAULT_BASE_CAMERA_STATE } from "@tokovo/core";
+import { DEFAULT_AUDIO_STATE } from "@tokovo/core";
 import { teamsReducer } from "../runtime/reducer.js";
 import type { TeamsState } from "../types/state.js";
 import { dmTarget, threadTarget } from "../dsl/index.js";
@@ -11,7 +11,6 @@ function createWorld(): WorldState {
   return {
     appState: {},
     devices: {},
-    camera: DEFAULT_BASE_CAMERA_STATE,
     audio: DEFAULT_AUDIO_STATE,
   } as WorldState;
 }
@@ -52,21 +51,47 @@ function createBootstrapContext(
 describe("teams reducer", () => {
   it("hydrates bootstrap snapshots and thread messages", () => {
     const hydrated = createWorld();
-    hydrated.appState.app_teams = teamsBootstrap.hydrate(createBootstrapContext(
-      getTeamsState(run(createWorld(), {
-        at: 0,
-        kind: "APP",
-        appId: "app_teams",
-        type: "TEAMS_OPEN_CHAT_LIST",
-        payload: { filter: "all" },
-        deviceId: "phone",
-      })),
-      {
-        users: [{ id: "u_pm", displayName: "Priya" }],
-        channels: [{ id: "launch", name: "launch", memberIds: ["u_pm", "u_me"], threadIds: [], unreadCount: 0, mentionCount: 0 }],
-        threads: [{ id: "th_1", channelId: "launch", title: "War room", participantIds: ["u_pm", "u_me"], messageIds: [], unreadCount: 0, mentionCount: 0, replyCount: 0, typingUserIds: [], state: "open" }],
-      },
-    ));
+    hydrated.appState.app_teams = teamsBootstrap.hydrate(
+      createBootstrapContext(
+        getTeamsState(
+          run(createWorld(), {
+            at: 0,
+            kind: "APP",
+            appId: "app_teams",
+            type: "TEAMS_OPEN_CHAT_LIST",
+            payload: { filter: "all" },
+            deviceId: "phone",
+          }),
+        ),
+        {
+          users: [{ id: "u_pm", displayName: "Priya" }],
+          channels: [
+            {
+              id: "launch",
+              name: "launch",
+              memberIds: ["u_pm", "u_me"],
+              threadIds: [],
+              unreadCount: 0,
+              mentionCount: 0,
+            },
+          ],
+          threads: [
+            {
+              id: "th_1",
+              channelId: "launch",
+              title: "War room",
+              participantIds: ["u_pm", "u_me"],
+              messageIds: [],
+              unreadCount: 0,
+              mentionCount: 0,
+              replyCount: 0,
+              typingUserIds: [],
+              state: "open",
+            },
+          ],
+        },
+      ),
+    );
     const next = run(hydrated, {
       at: 3,
       kind: "APP",
@@ -90,19 +115,31 @@ describe("teams reducer", () => {
 
   it("tracks draft, typing, unread, and active thread transitions", () => {
     const world = createWorld();
-    world.appState.app_teams = teamsBootstrap.hydrate(createBootstrapContext(
-      getTeamsState(run(createWorld(), {
-        at: 0,
-        kind: "APP",
-        appId: "app_teams",
-        type: "TEAMS_OPEN_CHAT_LIST",
-        payload: { filter: "all" },
-        deviceId: "phone",
-      })),
-      {
-        dms: [{ id: "dm_exec", participantIds: ["u_me", "u_exec"], messageIds: [], unreadCount: 0, mentionCount: 0 }],
-      },
-    ));
+    world.appState.app_teams = teamsBootstrap.hydrate(
+      createBootstrapContext(
+        getTeamsState(
+          run(createWorld(), {
+            at: 0,
+            kind: "APP",
+            appId: "app_teams",
+            type: "TEAMS_OPEN_CHAT_LIST",
+            payload: { filter: "all" },
+            deviceId: "phone",
+          }),
+        ),
+        {
+          dms: [
+            {
+              id: "dm_exec",
+              participantIds: ["u_me", "u_exec"],
+              messageIds: [],
+              unreadCount: 0,
+              mentionCount: 0,
+            },
+          ],
+        },
+      ),
+    );
     let next = world;
     next = run(next, {
       at: 1,

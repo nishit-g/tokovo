@@ -1,24 +1,18 @@
 {
-    "extends": "../../tsconfig.lib.json",
-    "compilerOptions": {
-        "outDir": "./dist",
-        "rootDir": "./src",
-        "declaration": true,
-        "declarationMap": true
-    },
-    "references": [
-        { "path": "../core" },
-        { "path": "../camera" },
-        { "path": "../stage" },
-        { "path": "../ir" },
-        { "path": "../device-camera" },
-        { "path": "../device-keyboard" }
-    ],
-    "include": [
-        "src/**/*"
-    ],
-    "exclude": [
-        "node_modules",
-        "dist"
-    ]
+  "extends": "../../tsconfig.lib.json",
+  "compilerOptions": {
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "declaration": true,
+    "declarationMap": true
+  },
+  "references": [
+    { "path": "../core" },
+    { "path": "../camera" },
+    { "path": "../stage" },
+    { "path": "../ir" },
+    { "path": "../device-keyboard" }
+  ],
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist"]
 }

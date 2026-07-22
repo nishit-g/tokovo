@@ -213,9 +213,9 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({
         isGroupChat={conversation?.type === "group"}
         bottomPadding={bottomPadding}
         activeGesture={appState.activeGesture}
-        anchorMessageId={
+        focusMessageId={
           appState.threadViewport?.conversationId === conversationId
-            ? appState.threadViewport.anchorMessageId
+            ? appState.threadViewport.focusMessageId
             : undefined
         }
       />

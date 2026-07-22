@@ -20,7 +20,6 @@ import {
 const baseWorld = {
   devices: {},
   appState: {},
-  camera: { baseView: "APP_VIEW" },
   audio: {
     activeSounds: {},
     buses: {},
@@ -47,7 +46,11 @@ describe("engine runtime utilities", () => {
   it("logs via the core runtime logger helpers without throwing", () => {
     const collector = new LogCollector();
     const logger = getLogger();
-    logger.configure({ consoleOutput: false, minLevel: "debug", components: [] });
+    logger.configure({
+      consoleOutput: false,
+      minLevel: "debug",
+      components: [],
+    });
     logger.clearSinks();
     logger.addSink(collector);
 
@@ -76,7 +79,11 @@ describe("engine runtime utilities", () => {
 
   it("manages snapshot cache lifecycle", () => {
     const cache = new SnapshotCache({ interval: 2, maxSnapshots: 2 });
-    expect(cache.getStats()).toEqual({ count: 0, oldestFrame: -1, newestFrame: -1 });
+    expect(cache.getStats()).toEqual({
+      count: 0,
+      oldestFrame: -1,
+      newestFrame: -1,
+    });
     expect(cache.shouldSnapshot(1)).toBe(false);
     expect(cache.shouldSnapshot(2)).toBe(true);
 
@@ -124,7 +131,8 @@ describe("engine runtime utilities", () => {
     const result = runWithSnapshot(
       1,
       baseWorld,
-      (_start, state) => ({ ...state, appState: { empty: true } }) as WorldState,
+      (_start, state) =>
+        ({ ...state, appState: { empty: true } }) as WorldState,
       cache,
     );
     expect((result.appState as any).empty).toBe(true);

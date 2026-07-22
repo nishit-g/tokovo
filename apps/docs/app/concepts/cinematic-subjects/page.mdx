@@ -1,0 +1,27 @@
+---
+title: Cinematic Subjects
+---
+
+# Cinematic Subjects
+
+Cinematic subjects are typed camera targets projected by the package that owns their geometry.
+
+## Why They Exist
+
+Episodes should focus on meaningful UI regions, not brittle pixel coordinates.
+
+Examples:
+
+- device body, display, keyboard, notification, or OS surface
+- app semantic regions such as `header` or `input_area`
+- exact entities such as a message bubble or its media fragment
+- structured groups of subjects
+
+## Role In The System
+
+- app packages expose versioned schemas and project from canonical headless layouts
+- device packages project physical and OS-owned surfaces from registered profiles
+- camera resolves subjects before React painting and records exact provenance in its trace
+- episodes target subjects with explicit missing-subject behavior
+
+Never derive camera targets from DOM measurement or guessed fallback rectangles.

@@ -1,19 +1,27 @@
 # Cinematic Camera
 
-Tokovo camera work should emphasize beats, not simulate constant arbitrary motion.
+Tokovo camera work emphasizes authored beats and deterministic random-access evaluation.
 
 ## Recommended Pattern
 
-- use semantic anchors
-- use long tracking spans for sustained attention
-- use short explicit focus or shake beats for interruptions and reveals
+- target app-owned cinematic subjects, exact entities, device surfaces, or subject groups
+- use long tracking shots for sustained attention
+- use explicit cuts, settles, movements, lenses, modifiers, and filters for interruptions and reveals
+- declare output safe areas and whether every frame requires authored shot coverage
 
-## Use Automatic Direction When
+## Use Direct Tracking When
 
 - the scene has repetitive conversation coverage
-- consistency matters more than shot-by-shot uniqueness
+- the subject moves while the camera intent stays constant
 
-## Use Manual Camera When
+## Use Baked Trajectories When
 
 - the scene has a custom dramatic rhythm
-- the framing itself is part of the storytelling
+- editorial review requires an exact immutable path independent of subject motion
+
+Never target DOM measurements or authored pixel guesses. Cinematic subjects come from the same
+headless layout geometry the app and device surfaces render.
+
+For inspection, use `mise exec -- pnpm camera programs`, `camera explain`, `camera diff`, and
+`camera subjects`. The preview debug mode draws safe areas, subjects, framing guards, desired pose,
+final pose, and ordered projection passes.

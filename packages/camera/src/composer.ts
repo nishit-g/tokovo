@@ -1,4 +1,8 @@
-import type { CameraComposerIR, CameraRectIR } from "@tokovo/ir";
+import type {
+  CameraComposerIR,
+  CameraRectIR,
+  CameraSafeAreaInsetsIR,
+} from "@tokovo/ir";
 import type { CameraPose2D } from "./types.js";
 
 function clamp(value: number, minimum: number, maximum: number): number {
@@ -18,6 +22,7 @@ export function solveComposer(input: {
   framingGuardPaddingPx?: number;
   framingGuardScreenPosition?: readonly [number, number];
   viewport: CameraRectIR;
+  safeAreaInsets?: CameraSafeAreaInsetsIR;
   composer: CameraComposerIR;
   rotationDeg?: number;
   opacity?: number;
@@ -27,13 +32,27 @@ export function solveComposer(input: {
   finitePositive(subjectBounds.height, "Subject height");
   finitePositive(viewport.width, "Viewport width");
   finitePositive(viewport.height, "Viewport height");
+  const safeArea = input.safeAreaInsets ?? {
+    top: 0,
+    right: 0,
+    bottom: 0,
+    left: 0,
+  };
+  const safeViewport = {
+    x: viewport.x + safeArea.left,
+    y: viewport.y + safeArea.top,
+    width: viewport.width - safeArea.left - safeArea.right,
+    height: viewport.height - safeArea.top - safeArea.bottom,
+  };
+  finitePositive(safeViewport.width, "Safe viewport width");
+  finitePositive(safeViewport.height, "Safe viewport height");
 
   const targetFill = finitePositive(composer.targetFill, "Composer targetFill");
   const padding = Math.max(0, composer.paddingPx ?? 0);
   const paddedWidth = subjectBounds.width + padding * 2;
   const paddedHeight = subjectBounds.height + padding * 2;
-  const widthScale = (viewport.width * targetFill) / paddedWidth;
-  const heightScale = (viewport.height * targetFill) / paddedHeight;
+  const widthScale = (safeViewport.width * targetFill) / paddedWidth;
+  const heightScale = (safeViewport.height * targetFill) / paddedHeight;
 
   const unclampedScale = (() => {
     switch (composer.fillMode) {
@@ -63,17 +82,19 @@ export function solveComposer(input: {
     finitePositive(guard.width, "Framing guard width");
     finitePositive(guard.height, "Framing guard height");
     const availableWidth = finitePositive(
-      viewport.width - guardPadding * 2,
+      safeViewport.width - guardPadding * 2,
       "Framing guard available width",
     );
     const availableHeight = finitePositive(
-      viewport.height - guardPadding * 2,
+      safeViewport.height - guardPadding * 2,
       "Framing guard available height",
     );
     const rotatedGuardWidth =
-      Math.abs(rotationCosine) * guard.width + Math.abs(rotationSine) * guard.height;
+      Math.abs(rotationCosine) * guard.width +
+      Math.abs(rotationSine) * guard.height;
     const rotatedGuardHeight =
-      Math.abs(rotationSine) * guard.width + Math.abs(rotationCosine) * guard.height;
+      Math.abs(rotationSine) * guard.width +
+      Math.abs(rotationCosine) * guard.height;
     scale = Math.min(
       scale,
       availableWidth / rotatedGuardWidth,
@@ -81,12 +102,14 @@ export function solveComposer(input: {
     );
   }
 
-  const screenX = viewport.x + viewport.width * composer.screenPosition[0];
-  const screenY = viewport.y + viewport.height * composer.screenPosition[1];
-  const viewportCenterX = viewport.x + viewport.width / 2;
-  const viewportCenterY = viewport.y + viewport.height / 2;
-  const outputDeltaX = (screenX - viewportCenterX) / scale;
-  const outputDeltaY = (screenY - viewportCenterY) / scale;
+  const screenX =
+    safeViewport.x + safeViewport.width * composer.screenPosition[0];
+  const screenY =
+    safeViewport.y + safeViewport.height * composer.screenPosition[1];
+  const projectionCenterX = viewport.x + viewport.width / 2;
+  const projectionCenterY = viewport.y + viewport.height / 2;
+  const outputDeltaX = (screenX - projectionCenterX) / scale;
+  const outputDeltaY = (screenY - projectionCenterY) / scale;
 
   const inverseRadians = (-rotationDeg * Math.PI) / 180;
   const inverseCosine = Math.cos(inverseRadians);
@@ -107,27 +130,41 @@ export function solveComposer(input: {
     const guardDeltaX = guardCenterX - centerX;
     const guardDeltaY = guardCenterY - centerY;
     const projectedGuardCenterX =
-      viewportCenterX + scale * (rotationCosine * guardDeltaX - rotationSine * guardDeltaY);
+      projectionCenterX +
+      scale * (rotationCosine * guardDeltaX - rotationSine * guardDeltaY);
     const projectedGuardCenterY =
-      viewportCenterY + scale * (rotationSine * guardDeltaX + rotationCosine * guardDeltaY);
+      projectionCenterY +
+      scale * (rotationSine * guardDeltaX + rotationCosine * guardDeltaY);
     const projectedGuardHalfWidth =
-      (scale * (Math.abs(rotationCosine) * guard.width + Math.abs(rotationSine) * guard.height)) /
+      (scale *
+        (Math.abs(rotationCosine) * guard.width +
+          Math.abs(rotationSine) * guard.height)) /
       2;
     const projectedGuardHalfHeight =
-      (scale * (Math.abs(rotationSine) * guard.width + Math.abs(rotationCosine) * guard.height)) /
+      (scale *
+        (Math.abs(rotationSine) * guard.width +
+          Math.abs(rotationCosine) * guard.height)) /
       2;
-    const minimumGuardCenterX = viewport.x + guardPadding + projectedGuardHalfWidth;
+    const minimumGuardCenterX =
+      safeViewport.x + guardPadding + projectedGuardHalfWidth;
     const maximumGuardCenterX =
-      viewport.x + viewport.width - guardPadding - projectedGuardHalfWidth;
-    const minimumGuardCenterY = viewport.y + guardPadding + projectedGuardHalfHeight;
+      safeViewport.x +
+      safeViewport.width -
+      guardPadding -
+      projectedGuardHalfWidth;
+    const minimumGuardCenterY =
+      safeViewport.y + guardPadding + projectedGuardHalfHeight;
     const maximumGuardCenterY =
-      viewport.y + viewport.height - guardPadding - projectedGuardHalfHeight;
+      safeViewport.y +
+      safeViewport.height -
+      guardPadding -
+      projectedGuardHalfHeight;
     const guardScreenPosition = input.framingGuardScreenPosition;
     const desiredGuardCenterX = guardScreenPosition
-      ? viewport.x + viewport.width * guardScreenPosition[0]
+      ? safeViewport.x + safeViewport.width * guardScreenPosition[0]
       : projectedGuardCenterX;
     const desiredGuardCenterY = guardScreenPosition
-      ? viewport.y + viewport.height * guardScreenPosition[1]
+      ? safeViewport.y + safeViewport.height * guardScreenPosition[1]
       : projectedGuardCenterY;
     const clampedGuardCenterX = clamp(
       desiredGuardCenterX,
@@ -141,8 +178,10 @@ export function solveComposer(input: {
     );
     const correctionX = clampedGuardCenterX - projectedGuardCenterX;
     const correctionY = clampedGuardCenterY - projectedGuardCenterY;
-    centerX -= (rotationCosine * correctionX + rotationSine * correctionY) / scale;
-    centerY -= (-rotationSine * correctionX + rotationCosine * correctionY) / scale;
+    centerX -=
+      (rotationCosine * correctionX + rotationSine * correctionY) / scale;
+    centerY -=
+      (-rotationSine * correctionX + rotationCosine * correctionY) / scale;
   }
 
   return {

@@ -40,8 +40,24 @@ export default defineEpisode({
       .snapshot("app_x", "phone", {
         currentUserId: "u_mira",
         users: [
-          { id: "u_mira", name: "Mira", handle: "miraatelier", bio: "Quiet skies, film grain, and impossible leaves.", followers: 61200, following: 304, verified: "blue" },
-          { id: "u_elm", name: "Elm", handle: "elmsketch", bio: "Storyboards between trains.", followers: 18400, following: 290, verified: null },
+          {
+            id: "u_mira",
+            name: "Mira",
+            handle: "miraatelier",
+            bio: "Quiet skies, film grain, and impossible leaves.",
+            followers: 61200,
+            following: 304,
+            verified: "blue",
+          },
+          {
+            id: "u_elm",
+            name: "Elm",
+            handle: "elmsketch",
+            bio: "Storyboards between trains.",
+            followers: 18400,
+            following: 290,
+            verified: null,
+          },
         ],
         follows: [{ followerId: "u_mira", followingId: "u_elm" }],
         tweets: [
@@ -55,9 +71,17 @@ export default defineEpisode({
             bookmarkCount: 1900,
           },
         ],
-        threads: [{ id: "dm_storybook_v2", participantIds: ["u_mira", "u_elm"] }],
+        threads: [
+          { id: "dm_storybook_v2", participantIds: ["u_mira", "u_elm"] },
+        ],
         messages: [
-          { id: "msg_storybook_v2_1", threadId: "dm_storybook_v2", senderId: "u_elm", text: "The hillside draft finally feels alive.", createdAt: baseTs - 20000 },
+          {
+            id: "msg_storybook_v2_1",
+            threadId: "dm_storybook_v2",
+            senderId: "u_elm",
+            text: "The hillside draft finally feels alive.",
+            createdAt: baseTs - 20000,
+          },
         ],
       })
       .x("phone", (x) => {
@@ -87,13 +111,6 @@ export default defineEpisode({
           text: "Good. Then the color script stays warm and the linework stays thin.",
           createdAt: baseTs + 25000,
         });
-      })
-      .camera((cam) => {
-        cam.at("0s").focus("device", { scale: 1.01, duration: "0.35s" });
-        cam.at("3.1s").focus("tweet_card", { scale: 1.08, duration: "0.35s" });
-        cam.span("5.0s", "8.0s").trackCinematic("keyboard", { scale: 1.1, smoothing: 0.18 });
-        cam.at("9.7s").focus("notification_card", { scale: 1.08, duration: "0.35s" });
-        cam.at("13.1s").focus("dm_thread", { scale: 1.08, duration: "0.35s" });
       })
       .build();
   },

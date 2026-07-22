@@ -46,13 +46,9 @@ export type {
   ValidationResult,
   ValidationError,
   ValidationWarning,
-  AnchorRegistry,
-  AnchorInfo,
   ComponentType,
 } from "./plugins/types.js";
 
-export { CameraDirectorPlugin } from "./plugins/camera-director.plugin.js";
-export type { CameraDirectorPluginOptions } from "./plugins/camera-director.plugin.js";
 export { AudioDirectorPlugin } from "./plugins/audio-director.plugin.js";
 export type { AudioDirectorPluginOptions } from "./plugins/audio-director.plugin.js";
 export { OSDirectorPlugin } from "./plugins/os-director.plugin.js";

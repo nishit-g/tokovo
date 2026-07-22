@@ -88,8 +88,7 @@ export default defineEpisode({
               .receive(people.dad, "And nobody mention surprise cake yet.");
             chat
               .at("6s")
-              .send("Why does this sound like a hostage exchange?", {
-              });
+              .send("Why does this sound like a hostage exchange?", {});
           },
         );
       })
@@ -111,15 +110,13 @@ export default defineEpisode({
               .receive(people.riya, "That 'someone' is for you, genius.");
             chat
               .at("4s")
-              .reply("Delete this message from the universe.", reveal, {
-              });
+              .reply("Delete this message from the universe.", reveal, {});
             chat
               .at("6.4s")
               .receive(
                 people.riya,
                 "Too late. Mom asked me which shirt makes you look employable.",
               );
-            scene.focus(reveal, { scale: 1.1, duration: "0.35s" });
           },
         );
       })
@@ -144,14 +141,12 @@ export default defineEpisode({
               );
             chat
               .at("3.8s")
-              .send("Not me. I am a man of silence and mystery.", {
-              });
+              .send("Not me. I am a man of silence and mystery.", {});
             chat
               .at("6.8s")
               .receive(people.riya, "You literally sent it to the group.");
           },
         );
       })
-      .director("Cinematic")
       .build(),
 });

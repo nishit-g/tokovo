@@ -25,7 +25,7 @@ function semantic(regions: Record<string, SemanticRegion>) {
  * WhatsApp FEED layout strategy.
  *
  * This provides semantic regions for non-chat screens (chat list, updates, calls,
- * communities, profile). It intentionally focuses on stable camera anchors
+ * communities, profile). It intentionally focuses on stable cinematic subjects
  * rather than pixel-perfect DOM replication.
  */
 export function computeFeedLayout(ctx: LayoutContext): FeedLayoutState {
@@ -194,7 +194,10 @@ export function computeFeedLayout(ctx: LayoutContext): FeedLayoutState {
     const channels = [...(state.channels ?? [])]
       .sort((left, right) => {
         if (left.followed !== right.followed) return left.followed ? -1 : 1;
-        return (right.latestUpdate?.postedAt ?? 0) - (left.latestUpdate?.postedAt ?? 0);
+        return (
+          (right.latestUpdate?.postedAt ?? 0) -
+          (left.latestUpdate?.postedAt ?? 0)
+        );
       })
       .slice(0, 4);
 
@@ -373,7 +376,12 @@ export function computeFeedLayout(ctx: LayoutContext): FeedLayoutState {
       const rowId = `settings_${row}`;
       regions[rowId] = {
         id: rowId,
-        rect: rect(0, settingsRowsTop + index * settingsRowHeight, w, settingsRowHeight),
+        rect: rect(
+          0,
+          settingsRowsTop + index * settingsRowHeight,
+          w,
+          settingsRowHeight,
+        ),
         tags: ["row", "settings"],
         metadata: { setting: row, index },
       };
@@ -410,7 +418,12 @@ export function computeFeedLayout(ctx: LayoutContext): FeedLayoutState {
       const membersTop = contentY + px(330);
       regions.group_info_members = {
         id: "group_info_members",
-        rect: rect(px(16), membersTop, w - px(32), Math.max(0, bottomLimit - membersTop)),
+        rect: rect(
+          px(16),
+          membersTop,
+          w - px(32),
+          Math.max(0, bottomLimit - membersTop),
+        ),
         tags: ["list", "members", "group_info"],
       };
       (conversation.members ?? []).slice(0, 6).forEach((member, index) => {

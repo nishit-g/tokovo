@@ -1,9 +1,14 @@
 import fs from "node:fs";
 import path from "node:path";
 import { createHash } from "node:crypto";
-import { getFormat, type EpisodeDefinition, type FormatId } from "@tokovo/episodes";
+import {
+  getFormat,
+  type EpisodeDefinition,
+  type FormatId,
+} from "@tokovo/episodes";
 import { z } from "zod";
 import { createVideoRunnerEpisodeRegistry } from "../src/episode-registry";
+import { getEpisodeCameraArtifact } from "../src/camera-diagnostics";
 
 const renderArtifactManifestSchema = z.object({
   id: z.string(),
@@ -12,6 +17,7 @@ const renderArtifactManifestSchema = z.object({
   videoPath: z.string(),
   cameraPlanId: z.string().optional(),
   cameraProjectionMode: z.literal("preview").optional(),
+  camera: z.unknown(),
   thumbnailPath: z.string().optional(),
   durationMs: z.number().int().nonnegative(),
   createdAt: z.string(),
@@ -25,14 +31,17 @@ interface CliArgs {
 }
 
 function parseArgs(): CliArgs {
-  const [, , episodeId, outFile, cameraPlanId, cameraProjectionMode] = process.argv;
+  const [, , episodeId, outFile, cameraPlanId, cameraProjectionMode] =
+    process.argv;
   if (!episodeId || !outFile) {
     throw new Error(
       "Usage: write-artifact-manifest.ts <episodeId> <outFile> [cameraPlanId] [preview]",
     );
   }
   if (cameraProjectionMode && cameraProjectionMode !== "preview") {
-    throw new Error(`Unsupported camera projection mode: ${cameraProjectionMode}`);
+    throw new Error(
+      `Unsupported camera projection mode: ${cameraProjectionMode}`,
+    );
   }
   return {
     episodeId,
@@ -58,7 +67,11 @@ function computeSourceHash(episode: EpisodeDefinition): string {
     .digest("hex");
 }
 
-function deriveArtifactId(episode: EpisodeDefinition, outFile: string, sourceHash: string): string {
+function deriveArtifactId(
+  episode: EpisodeDefinition,
+  outFile: string,
+  sourceHash: string,
+): string {
   return `artifact_${createHash("sha256")
     .update(`${episode.meta.id}:${outFile}:${sourceHash}`)
     .digest("hex")
@@ -66,7 +79,8 @@ function deriveArtifactId(episode: EpisodeDefinition, outFile: string, sourceHas
 }
 
 async function main() {
-  const { episodeId, outFile, cameraPlanId, cameraProjectionMode } = parseArgs();
+  const { episodeId, outFile, cameraPlanId, cameraProjectionMode } =
+    parseArgs();
   if (!fs.existsSync(outFile)) {
     throw new Error(`Rendered file does not exist: ${outFile}`);
   }
@@ -78,6 +92,7 @@ async function main() {
   }
 
   const sourceHash = computeSourceHash(episode);
+  const camera = await getEpisodeCameraArtifact({ episodeId, cameraPlanId });
   const manifest = renderArtifactManifestSchema.parse({
     id: deriveArtifactId(episode, outFile, sourceHash),
     episodeId: episode.meta.id,
@@ -85,6 +100,7 @@ async function main() {
     videoPath: outFile,
     cameraPlanId,
     cameraProjectionMode,
+    camera,
     durationMs: getDurationMs(episode),
     createdAt: new Date().toISOString(),
   });

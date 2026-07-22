@@ -148,7 +148,7 @@ export const GroupHeader: React.FC<GroupHeaderProps> = ({
 
   return (
     <div
-      data-anchor="header"
+      data-cinematic-subject="header"
       style={{
         display: "flex",
         alignItems: "center",
@@ -184,7 +184,10 @@ export const GroupHeader: React.FC<GroupHeaderProps> = ({
       >
         <span
           aria-hidden="true"
-          style={{ display: "flex", transform: direction === "rtl" ? "scaleX(-1)" : undefined }}
+          style={{
+            display: "flex",
+            transform: direction === "rtl" ? "scaleX(-1)" : undefined,
+          }}
         >
           <ChevronLeftIcon color={theme.colors.accent} />
         </span>
@@ -192,7 +195,7 @@ export const GroupHeader: React.FC<GroupHeaderProps> = ({
 
       {groupAvatar ? (
         <DeterministicImage
-          data-anchor="profile"
+          data-cinematic-subject="profile"
           src={resolveAvatarWithFallback(groupAvatar, groupName)}
           alt={groupName}
           style={{
@@ -203,7 +206,7 @@ export const GroupHeader: React.FC<GroupHeaderProps> = ({
           }}
         />
       ) : (
-        <div data-anchor="profile">
+        <div data-cinematic-subject="profile">
           <CompositeAvatar members={members} />
         </div>
       )}
@@ -254,7 +257,12 @@ export const GroupHeader: React.FC<GroupHeaderProps> = ({
         <button
           type="button"
           aria-label={t("action.video")}
-          style={{ padding: 0, border: 0, color: "inherit", background: "transparent" }}
+          style={{
+            padding: 0,
+            border: 0,
+            color: "inherit",
+            background: "transparent",
+          }}
         >
           <span aria-hidden="true">
             <VideoCallIcon color={actionColor} />
@@ -263,7 +271,12 @@ export const GroupHeader: React.FC<GroupHeaderProps> = ({
         <button
           type="button"
           aria-label={t("message.voiceCall")}
-          style={{ padding: 0, border: 0, color: "inherit", background: "transparent" }}
+          style={{
+            padding: 0,
+            border: 0,
+            color: "inherit",
+            background: "transparent",
+          }}
         >
           <span aria-hidden="true">
             <PhoneCallIcon color={actionColor} />

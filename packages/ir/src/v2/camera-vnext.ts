@@ -88,6 +88,20 @@ export interface CameraFramingGuardIR {
   screenPosition?: readonly [number, number];
 }
 
+export interface CameraTrajectoryKeyframeIR {
+  frame: number;
+  offsetX: number;
+  offsetY: number;
+  scaleMultiplier: number;
+  rotationOffsetDeg: number;
+}
+
+/** Compact, random-access camera offsets baked independently from story replay. */
+export interface CameraBakedTrajectoryIR {
+  interpolation: "linear" | "minimum-jerk";
+  keyframes: readonly CameraTrajectoryKeyframeIR[];
+}
+
 export interface CameraMovementIntentIR {
   kind:
     | "dolly-in"
@@ -171,6 +185,13 @@ export interface CameraOutputShadowIR {
   opacity: number;
 }
 
+export interface CameraSafeAreaInsetsIR {
+  top: number;
+  right: number;
+  bottom: number;
+  left: number;
+}
+
 export interface CameraOutputIR {
   id: string;
   /** Output-space pixel rectangle within the final composition. */
@@ -179,6 +200,10 @@ export interface CameraOutputIR {
   zIndex: number;
   clipRadiusPx?: number;
   shadow?: CameraOutputShadowIR;
+  /** Whether authored shots must cover every frame or the default rig may cover gaps. */
+  coveragePolicy: "require-shots" | "allow-default";
+  /** Output-space safe zone used by every rig targeting this output. */
+  safeAreaInsets?: CameraSafeAreaInsetsIR;
   defaultRigId: string;
 }
 
@@ -188,6 +213,8 @@ export interface CameraRigIR {
   subject: CinematicSubjectRefIR;
   composer: CameraComposerIR;
   framingGuard?: CameraFramingGuardIR;
+  tracking?: { mode: "direct" };
+  bakedTrajectory?: CameraBakedTrajectoryIR;
   rotationDeg?: number;
   opacity?: number;
   lensId?: string;

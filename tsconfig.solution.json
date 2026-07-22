@@ -9,7 +9,6 @@
     { "path": "./packages/devices" },
     { "path": "./packages/device-keyboard" },
     { "path": "./packages/device-notifications" },
-    { "path": "./packages/device-camera" },
     { "path": "./packages/overlay" },
     { "path": "./packages/background" },
     { "path": "./packages/compiler" },

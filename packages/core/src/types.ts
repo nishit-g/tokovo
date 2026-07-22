@@ -59,18 +59,6 @@ export { DEFAULT_DYNAMIC_ISLAND } from "./types/device.js";
 // =============================================================================
 
 // =============================================================================
-// CAMERA SYSTEM TYPES (core owns base types, device-camera extends them)
-// =============================================================================
-
-// Core camera types (no device-camera dependency)
-export type { CameraTransform, BaseCameraState } from "./types/camera.js";
-export {
-  DEFAULT_TRANSFORM,
-  DEFAULT_CAMERA_TRANSFORM,
-  DEFAULT_BASE_CAMERA_STATE,
-} from "./types/camera.js";
-
-// =============================================================================
 // TRANSITION SYSTEM TYPES (not camera-specific, stays in core)
 // =============================================================================
 
@@ -184,19 +172,6 @@ export type {
   AudioStopAllEvent,
   AudioRuntimeEvent,
   OverlayRuntimeEvent,
-  CameraZoomEvent,
-  CameraPanEvent,
-  CameraShakeEvent,
-  CameraResetEvent,
-  CameraHoldEvent,
-  CameraAnchorFocusEvent,
-  CameraAnchorTrackEvent,
-  CameraFocusEvent,
-  CameraCutEvent,
-  CameraSetLayoutEvent,
-  CameraSetViewEvent,
-  CameraLayoutEvent,
-  CameraRuntimeEvent,
   OSRuntimeEvent,
   CallRuntimeEvent,
   DeviceRuntimeEvent,
@@ -280,7 +255,6 @@ export type {
   isRuntimeVoiceEvent,
 } from "./types/runtime-event.js";
 
-export type { SemanticAnchorId } from "./types/anchor.js";
 export type {
   CinematicSubjectProjection,
   CinematicSubjectProvider,

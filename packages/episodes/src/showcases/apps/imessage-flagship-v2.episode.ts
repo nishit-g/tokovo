@@ -34,57 +34,60 @@ export default defineEpisode({
         },
       })
       .background({ type: "image", src: "/backgrounds/cozy-bedroom.png" })
-      .imessage(
-        "phone",
-        "group_plan_v2",
-        (im) => {
-          im.at("0s").createConversation({
-            id: "group_plan_v2",
-            title: "Saturday Plan",
-            transport: "imessage",
-            isGroup: true,
-            participants: [{ id: "me", name: "Me", isMe: true }, { id: "ava", name: "Ava" }, { id: "rina", name: "Rina" }],
-          });
-          im.at("0.3s").createConversation({
-            id: "dm_ava_v2",
-            title: "Ava",
-            transport: "imessage",
-            participants: [{ id: "me", name: "Me", isMe: true }, { id: "ava", name: "Ava" }],
-          });
-          im.at("1.0s").openConversation("group_plan_v2");
-          im.at("2.0s").receive("Ava", "Brunch or chaos?");
-          im.at("3.4s").sendWithEffect({
-            text: "Why not both",
-            bubbleEffect: "loud",
-            messageId: "im_flag_msg_1",
-          });
-          im.at("5.2s").receive("Rina", "I found a place with violent pancakes");
-          im.at("6.8s").sendLink({
-            url: "https://example.com/brunch",
-            preview: {
-              title: "Violent Pancakes Club",
-              description: "Brunch with no respect for portion control.",
-              domain: "example.com",
-              thumbnail: "/placeholders/media.svg",
-            },
-            messageId: "im_flag_msg_2",
-          });
-          im.at("8.0s").tapback({ messageId: "im_flag_msg_2", type: "heart" });
-          im.at("10.0s").setScreen("list");
-          im.at("11.0s").openConversation("dm_ava_v2");
-          im.at("12.0s").receive("Ava", "Real question: are you bringing the camera?");
-          im.at("13.6s").typing("Ava", true);
-          im.at("15.2s").typing("Ava", false);
-          im.at("15.4s").send("Only if nobody makes me photograph the food before eating.", { messageId: "im_flag_msg_3" });
-          im.at("18.0s").tapback({ messageId: "im_flag_msg_3", type: "haha" });
-          im.at("20.4s").read();
-        },
-      )
-      .camera((cam) => {
-        cam.at("0s").focus("message_list", { scale: 1.02, duration: "0.35s" });
-        cam.at("3.5s").focus("message_thread", { scale: 1.08, duration: "0.35s" });
-        cam.at("6.9s").focus("message_thread", { scale: 1.08, duration: "0.35s" });
-        cam.at("11.1s").focus("message_thread", { scale: 1.08, duration: "0.35s" });
+      .imessage("phone", "group_plan_v2", (im) => {
+        im.at("0s").createConversation({
+          id: "group_plan_v2",
+          title: "Saturday Plan",
+          transport: "imessage",
+          isGroup: true,
+          participants: [
+            { id: "me", name: "Me", isMe: true },
+            { id: "ava", name: "Ava" },
+            { id: "rina", name: "Rina" },
+          ],
+        });
+        im.at("0.3s").createConversation({
+          id: "dm_ava_v2",
+          title: "Ava",
+          transport: "imessage",
+          participants: [
+            { id: "me", name: "Me", isMe: true },
+            { id: "ava", name: "Ava" },
+          ],
+        });
+        im.at("1.0s").openConversation("group_plan_v2");
+        im.at("2.0s").receive("Ava", "Brunch or chaos?");
+        im.at("3.4s").sendWithEffect({
+          text: "Why not both",
+          bubbleEffect: "loud",
+          messageId: "im_flag_msg_1",
+        });
+        im.at("5.2s").receive("Rina", "I found a place with violent pancakes");
+        im.at("6.8s").sendLink({
+          url: "https://example.com/brunch",
+          preview: {
+            title: "Violent Pancakes Club",
+            description: "Brunch with no respect for portion control.",
+            domain: "example.com",
+            thumbnail: "/placeholders/media.svg",
+          },
+          messageId: "im_flag_msg_2",
+        });
+        im.at("8.0s").tapback({ messageId: "im_flag_msg_2", type: "heart" });
+        im.at("10.0s").setScreen("list");
+        im.at("11.0s").openConversation("dm_ava_v2");
+        im.at("12.0s").receive(
+          "Ava",
+          "Real question: are you bringing the camera?",
+        );
+        im.at("13.6s").typing("Ava", true);
+        im.at("15.2s").typing("Ava", false);
+        im.at("15.4s").send(
+          "Only if nobody makes me photograph the food before eating.",
+          { messageId: "im_flag_msg_3" },
+        );
+        im.at("18.0s").tapback({ messageId: "im_flag_msg_3", type: "haha" });
+        im.at("20.4s").read();
       })
       .build(),
 });

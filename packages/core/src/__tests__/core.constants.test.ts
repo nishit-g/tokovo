@@ -21,7 +21,7 @@ describe("core constants and tokens", () => {
   it("exports constants and tokens", () => {
     expect(TIMING.FPS_DEFAULT).toBe(30);
     expect(LAYOUT.MESSAGE_BUBBLE_RADIUS).toBeGreaterThan(0);
-    expect(DEFAULTS.CAMERA_EASING).toBe("ease-out");
+    expect(DEFAULTS.VOLUME).toBe(1);
     expect(DEVICE_PROFILES.IPHONE_16).toBe("iphone16");
     expect(EVENT_KINDS.DEVICE).toBe("DEVICE");
 

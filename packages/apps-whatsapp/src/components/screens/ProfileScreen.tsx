@@ -19,10 +19,7 @@ import {
   useTheme,
   useWhatsAppLocale,
 } from "../../experience/ExperienceContext.js";
-import type {
-  WhatsAppMessage,
-  WhatsAppState,
-} from "../../types/index.js";
+import type { WhatsAppMessage, WhatsAppState } from "../../types/index.js";
 import { resolveAvatarWithFallback } from "../../utils/avatar.js";
 import { formatWhatsAppNumber } from "../../localization/index.js";
 import { AppScaffold, SettingsGroup, SettingsRow } from "../surfaces/index.js";
@@ -48,13 +45,7 @@ function mediaSource(message: WhatsAppMessage): string | undefined {
   return undefined;
 }
 
-function ActionTile({
-  label,
-  icon,
-}: {
-  label: string;
-  icon: React.ReactNode;
-}) {
+function ActionTile({ label, icon }: { label: string; icon: React.ReactNode }) {
   const theme = useTheme();
   const { uiTypography: typography } = theme;
   return (
@@ -105,7 +96,9 @@ export function ProfileScreen({
   }
   const conversations = state.conversations;
   const conversationId = state.conversationId;
-  const conversation = conversationId ? conversations[conversationId] : undefined;
+  const conversation = conversationId
+    ? conversations[conversationId]
+    : undefined;
 
   if (!conversation) {
     throw new Error("WhatsApp profile screen requires a current conversation");
@@ -126,13 +119,16 @@ export function ProfileScreen({
   const messages = conversation.messages;
   const media = messages
     .map((message) => ({ message, src: mediaSource(message) }))
-    .filter((item): item is { message: WhatsAppMessage; src: string } => Boolean(item.src));
+    .filter((item): item is { message: WhatsAppMessage; src: string } =>
+      Boolean(item.src),
+    );
   const remoteMember = conversation.members?.find(
     (member) => member.id.toLowerCase() !== "me",
   );
   const phone = conversation.contact?.phone ?? remoteMember?.phone;
   const about = conversation.contact?.about ?? conversation.description;
-  const detail = conversation.contact?.lastSeenLabel ??
+  const detail =
+    conversation.contact?.lastSeenLabel ??
     conversation.contact?.businessCategory ??
     phone;
   const fallbackContactName = t("profile.contact");
@@ -148,14 +144,23 @@ export function ProfileScreen({
         <div style={{ display: "flex", alignItems: "center", gap: 2 }}>
           <ChevronLeft
             size={21}
-            style={{ transform: direction === "rtl" ? "scaleX(-1)" : undefined }}
+            style={{
+              transform: direction === "rtl" ? "scaleX(-1)" : undefined,
+            }}
           />
           <span style={{ fontSize: 15 }}>{t("action.back")}</span>
         </div>
       }
-      actions={<span style={{ fontSize: 15, fontWeight: 600 }}>{t("action.edit")}</span>}
+      actions={
+        <span style={{ fontSize: 15, fontWeight: 600 }}>
+          {t("action.edit")}
+        </span>
+      }
     >
-      <div data-anchor="profile_hero" style={{ padding: "16px 16px 12px" }}>
+      <div
+        data-cinematic-subject="profile_hero"
+        style={{ padding: "16px 16px 12px" }}
+      >
         <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
           <div
             style={{
@@ -260,7 +265,7 @@ export function ProfileScreen({
       )}
 
       <div
-        data-anchor="profile_media"
+        data-cinematic-subject="profile_media"
         style={{
           minHeight: 88,
           margin: "0 16px 12px",
@@ -295,7 +300,8 @@ export function ProfileScreen({
               fontFamily: theme.typography.fontFamily,
             }}
           >
-            {formatWhatsAppNumber(locale, media.length)} {direction === "rtl" ? "‹" : "›"}
+            {formatWhatsAppNumber(locale, media.length)}{" "}
+            {direction === "rtl" ? "‹" : "›"}
           </span>
         </div>
         <div style={{ display: "flex", gap: 6 }}>

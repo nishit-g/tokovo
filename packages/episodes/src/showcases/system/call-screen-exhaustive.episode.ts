@@ -63,11 +63,5 @@ export default defineEpisode({
         d.at("8.2s").answerCall();
         d.at("18.8s").endCall();
       })
-      .camera((cam) => {
-        cam.at("0s").focus("device", { scale: 1.01, duration: "0.3s" });
-        cam.at("4.2s").focus("device", { scale: 1.06, duration: "0.35s" });
-        cam.at("8.3s").focus("device", { scale: 1.04, duration: "0.35s" });
-        cam.at("18.9s").focus("device", { scale: 1.01, duration: "0.3s" });
-      })
       .build(),
 });

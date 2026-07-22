@@ -28,12 +28,10 @@ import {
   createConfig,
 } from "@tokovo/core";
 import {
-  TokovoRenderer,
-  MultiDeviceRenderer,
+  CinematicStageRenderer,
   AudioLayer,
   StoryOverlay,
   RendererRegistryProvider,
-  type CameraDebugFrame,
   type CinematicCameraDebugFrame,
   type CinematicTextureProjectionFrame,
 } from "@tokovo/renderer";
@@ -43,7 +41,6 @@ import {
   type VoicePlayEvent,
   computeVoiceDuckingRanges,
 } from "@tokovo/voice";
-import { getDeviceProfile } from "@tokovo/devices";
 import type { EpisodeRendererProps } from "./episode-renderer-contract";
 import { ErrorBoundary } from "./ErrorBoundary";
 import { useVideoRunnerRuntime } from "./RuntimeSharedContext";
@@ -57,9 +54,6 @@ import { useEpisodeAssetPrefetch } from "./asset-prefetch";
 import { encodeCameraTextureProjectionCapture } from "./camera-texture-contract";
 
 const CAMERA_DEBUG_ENABLED = process.env.TOKOVO_CAMERA_DEBUG === "1";
-const MAX_DEBUG_TRACE_FRAMES = 5000;
-
-type CameraTraceStore = Map<number, CameraDebugFrame>;
 
 // =============================================================================
 // EPISODE RENDERER COMPONENT
@@ -109,7 +103,6 @@ const EpisodeRendererInner: React.FC<EpisodeRendererProps> = ({
   );
   const [renderDataError, setRenderDataError] = useState<Error | null>(null);
   const loadingHandleRef = useRef<number | null>(null);
-  const [cameraDebugFrame, setCameraDebugFrame] = useState<CameraDebugFrame | null>(null);
   const [cinematicDebugFrame, setCinematicDebugFrame] = useState<CinematicCameraDebugFrame | null>(
     null,
   );
@@ -122,10 +115,6 @@ const EpisodeRendererInner: React.FC<EpisodeRendererProps> = ({
   }, []);
   const cameraDebugEnabled = !env.isRendering && (CAMERA_DEBUG_ENABLED || debugFromUrl);
   const [showCameraPanel, setShowCameraPanel] = useState(cameraDebugEnabled);
-  const [showAllAnchors, setShowAllAnchors] = useState(false);
-  const [debugActionMessage, setDebugActionMessage] = useState<string>("");
-  const traceRef = useRef<CameraTraceStore>(new Map());
-  const [traceVersion, setTraceVersion] = useState(0);
 
   const config = useMemo(() => createConfig(), []);
 
@@ -204,19 +193,6 @@ const EpisodeRendererInner: React.FC<EpisodeRendererProps> = ({
     disabled: env.isRendering || !renderData,
   });
 
-  const handleCameraDebugFrame = useCallback((entry: CameraDebugFrame) => {
-    setCameraDebugFrame(entry);
-    const trace = traceRef.current;
-    trace.set(entry.t, entry);
-    if (trace.size > MAX_DEBUG_TRACE_FRAMES) {
-      const oldestFrame = trace.keys().next().value;
-      if (typeof oldestFrame === "number") {
-        trace.delete(oldestFrame);
-      }
-    }
-    setTraceVersion((v) => v + 1);
-  }, []);
-
   const handleCameraTextureProjectionFrame = useCallback(
     (entry: CinematicTextureProjectionFrame) => {
       // eslint-disable-next-line no-console -- Browser-log IPC is Remotion's deterministic plate metadata channel.
@@ -245,53 +221,6 @@ const EpisodeRendererInner: React.FC<EpisodeRendererProps> = ({
     },
     [],
   );
-
-  const sortedTrace = useMemo(() => {
-    return Array.from(traceRef.current.entries())
-      .sort((a, b) => a[0] - b[0])
-      .map(([, value]) => value);
-  }, [traceVersion]);
-
-  const timelineDurationInFrames = renderData?.durationInFrames ?? 1;
-
-  const exportTraceJson = useCallback(() => {
-    if (!cameraDebugFrame) return;
-    const payload = {
-      episodeId,
-      exportedAt: new Date().toISOString(),
-      traceFrames: sortedTrace,
-    };
-    const blob = new Blob([JSON.stringify(payload, null, 2)], {
-      type: "application/json",
-    });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `${episodeId}.camera-trace.json`;
-    a.click();
-    URL.revokeObjectURL(url);
-    setDebugActionMessage("Trace JSON exported.");
-  }, [cameraDebugFrame, episodeId, sortedTrace]);
-
-  const copyReproPacket = useCallback(async () => {
-    if (!cameraDebugFrame) return;
-    const currentFrame = cameraDebugFrame.t;
-    const packet = {
-      episodeId,
-      frame: currentFrame,
-      url: window.location.href,
-      debug: cameraDebugFrame,
-      surroundingFrames: sortedTrace.filter(
-        (f) => f.t >= currentFrame - 30 && f.t <= currentFrame + 30,
-      ),
-    };
-    try {
-      await navigator.clipboard.writeText(JSON.stringify(packet, null, 2));
-      setDebugActionMessage("Repro packet copied to clipboard.");
-    } catch {
-      setDebugActionMessage("Clipboard blocked. Export trace JSON instead.");
-    }
-  }, [cameraDebugFrame, episodeId, sortedTrace]);
 
   // === CREATE EVENT INDEX + STATE CACHE ===
   const keyframedEventIndex = useMemo(() => {
@@ -398,22 +327,6 @@ const EpisodeRendererInner: React.FC<EpisodeRendererProps> = ({
     return renderData.format;
   }, [cameraRenderLayer, renderData]);
 
-  const { scale } = useMemo(() => {
-    if (!renderData) return { scale: 1 };
-    const deviceId = world?.camera?.activeDeviceId || Object.keys(world?.devices ?? {})[0];
-    const profileId = (deviceId && world?.devices?.[deviceId]?.profileId) || "iphone16";
-    const profile = getDeviceProfile(rendererRegistries.devices, profileId);
-    // Scale device to fit in canvas with some margin for background visibility
-    const fitScale = Math.min(
-      fmt.width / profile.dimensions.width,
-      fmt.height / profile.dimensions.height,
-    );
-    const isCanvas = profileId.startsWith("canvas-");
-    // Canvas devices should fill the video. Phones keep a margin for background visibility.
-    const s = isCanvas ? fitScale : fitScale * 0.85;
-    return { scale: s };
-  }, [renderData, fmt.height, fmt.width, world, rendererRegistries.devices]);
-
   // === LOADING STATE ===
   if (renderDataError) {
     return (
@@ -453,19 +366,10 @@ const EpisodeRendererInner: React.FC<EpisodeRendererProps> = ({
   }
 
   const hasDevices = Object.keys(world.devices ?? {}).length > 0;
-  const hasCinematics = Boolean(renderData.prepared.cinematics);
-  if (cameraRenderLayer !== "final" && !hasCinematics) {
-    throw new Error(
-      `CAM_TEXTURE_LAYER_WITHOUT_VNEXT: Layer "${cameraRenderLayer}" requires Camera VNext cinematics.`,
-    );
+  const cinematics = renderData.prepared.cinematics;
+  if (!cinematics) {
+    throw new Error(`CAM_VNEXT_REQUIRED: Episode "${episodeId}" did not compile a CameraPlan.`);
   }
-  if (hasCinematics && Object.keys(world.devices ?? {}).length > 1) {
-    throw new Error(
-      "CAM_VNEXT_MULTI_DEVICE_NOT_CONNECTED: VNext episodes must not fall back to the legacy multi-device renderer.",
-    );
-  }
-  const usesMultiDeviceLayout =
-    Object.keys(world.devices ?? {}).length > 1 && world.camera.layout?.mode !== "SINGLE";
   const rendersUnderlay = cameraRenderLayer === "final" || cameraRenderLayer === "underlay";
   const rendersCamera =
     cameraRenderLayer === "final" ||
@@ -524,33 +428,15 @@ const EpisodeRendererInner: React.FC<EpisodeRendererProps> = ({
               volume={renderData.voiceConfig.volume ?? 1}
             />
           ))}
-        {rendersCamera && hasDevices && usesMultiDeviceLayout ? (
-          <MultiDeviceRenderer
-            world={world}
-            t={frame}
-            fps={fps}
-            debug={cameraDebugEnabled}
-            compositionWidth={fmt.width}
-            compositionHeight={fmt.height}
-            pluginManager={pluginManager}
-            registries={rendererRegistries}
-            renderAudio={false}
-            renderOverlay={false}
-            inputProgram={renderData.prepared.inputProgram}
-            notificationProgram={renderData.prepared.notificationProgram}
-          />
-        ) : rendersCamera && hasDevices ? (
+        {rendersCamera && hasDevices ? (
           <div
-            style={
-              hasCinematics
-                ? { width: fmt.width, height: fmt.height, position: "relative" }
-                : {
-                    transform: `scale(${scale})`,
-                    transformOrigin: "center center",
-                  }
-            }
+            style={{
+              width: fmt.width,
+              height: fmt.height,
+              position: "relative",
+            }}
           >
-            <TokovoRenderer
+            <CinematicStageRenderer
               world={world}
               t={frame}
               fps={fps}
@@ -558,12 +444,11 @@ const EpisodeRendererInner: React.FC<EpisodeRendererProps> = ({
               mode={renderMode}
               config={config}
               layoutCacheKey={`${renderData.prepared.id}:${renderData.prepared.eventSignature ?? "unknown"}`}
-              eventIndex={keyframedEventIndex}
               pluginManager={pluginManager}
               registries={rendererRegistries}
               inputProgram={renderData.prepared.inputProgram}
               notificationProgram={renderData.prepared.notificationProgram}
-              cinematics={renderData.prepared.cinematics}
+              cinematics={cinematics}
               cameraPlanId={cameraPlanId}
               cameraProjectionBackend={
                 cameraRenderLayer === "camera-plate"
@@ -572,7 +457,6 @@ const EpisodeRendererInner: React.FC<EpisodeRendererProps> = ({
                     ? "texture-projection-data"
                     : "final"
               }
-              onCameraDebugFrame={handleCameraDebugFrame}
               onCinematicCameraDebugFrame={setCinematicDebugFrame}
               onCameraTextureProjectionFrame={
                 cameraRenderLayer === "camera-plate" ||
@@ -580,7 +464,6 @@ const EpisodeRendererInner: React.FC<EpisodeRendererProps> = ({
                   ? handleCameraTextureProjectionFrame
                   : undefined
               }
-              cameraDebugShowAllAnchors={showAllAnchors}
             />
           </div>
         ) : null}
@@ -608,113 +491,21 @@ const EpisodeRendererInner: React.FC<EpisodeRendererProps> = ({
                   <div>rig: {output.trace.rigId}</div>
                   <div>passes: {output.trace.projectionPassKinds.join(", ") || "affine"}</div>
                   <div>subjects: {output.trace.subjects.length}</div>
+                  <div>tracking: {output.trace.tracking.mode}</div>
+                  <div>
+                    safe zone: {output.trace.constraints.safeAreaInsets.top}/
+                    {output.trace.constraints.safeAreaInsets.right}/
+                    {output.trace.constraints.safeAreaInsets.bottom}/
+                    {output.trace.constraints.safeAreaInsets.left}
+                  </div>
+                  <div>
+                    pose: {output.trace.finalPose.centerX.toFixed(1)},{" "}
+                    {output.trace.finalPose.centerY.toFixed(1)} ×{" "}
+                    {output.trace.finalPose.scale.toFixed(3)}
+                  </div>
+                  <div>trajectory: {output.trace.bakedTrajectory ? "baked" : "direct"}</div>
                 </React.Fragment>
               ))}
-            </div>
-          ) : showCameraPanel && cameraDebugFrame ? (
-            <div style={cameraPanelStyle}>
-              <div style={cameraPanelTitleStyle}>Camera Debug</div>
-              <div style={cameraActionsRowStyle}>
-                <button
-                  onClick={() => setShowAllAnchors((v) => !v)}
-                  style={cameraActionButtonStyle}
-                >
-                  {showAllAnchors ? "Hide All Anchors" : "Show All Anchors"}
-                </button>
-                <button onClick={exportTraceJson} style={cameraActionButtonStyle}>
-                  Export Trace JSON
-                </button>
-                <button onClick={copyReproPacket} style={cameraActionButtonStyle}>
-                  Copy Repro Packet
-                </button>
-              </div>
-              {debugActionMessage && (
-                <div style={cameraActionMessageStyle}>{debugActionMessage}</div>
-              )}
-              <div>episode: {episodeId}</div>
-              <div>frame: {cameraDebugFrame.t}</div>
-              <div>app: {cameraDebugFrame.appId ?? "-"}</div>
-              <div>device: {cameraDebugFrame.deviceId}</div>
-              <div>effect: {cameraDebugFrame.debugInfo?.activeEffectType ?? "-"}</div>
-              <div>effectId: {cameraDebugFrame.debugInfo?.activeEffectId ?? "-"}</div>
-              <div>target: {cameraDebugFrame.debugInfo?.requestedAnchor ?? "-"}</div>
-              <div>resolved: {cameraDebugFrame.debugInfo?.resolvedAnchor ?? "-"}</div>
-              <div>fallback: {cameraDebugFrame.debugInfo?.fallbackUsed ? "yes" : "no"}</div>
-              <div>traceFrames: {sortedTrace.length}</div>
-              {cameraDebugFrame.debugInfo?.warnings &&
-                cameraDebugFrame.debugInfo.warnings.length > 0 && (
-                  <div style={cameraWarningsRowStyle}>
-                    {cameraDebugFrame.debugInfo.warnings.map((warning) => (
-                      <span key={warning} style={cameraWarningPillStyle}>
-                        {warning}
-                      </span>
-                    ))}
-                  </div>
-                )}
-              <div>scale: {cameraDebugFrame.transform.scale.toFixed(3)}</div>
-              <div>
-                origin: {cameraDebugFrame.transform.originX.toFixed(3)},{" "}
-                {cameraDebugFrame.transform.originY.toFixed(3)}
-              </div>
-              <div>
-                translate: {cameraDebugFrame.transform.translateX.toFixed(2)},{" "}
-                {cameraDebugFrame.transform.translateY.toFixed(2)}
-              </div>
-              <div>rotation: {cameraDebugFrame.transform.rotation.toFixed(2)}</div>
-              <div>
-                shake: {cameraDebugFrame.transform.shakeX.toFixed(2)},{" "}
-                {cameraDebugFrame.transform.shakeY.toFixed(2)}
-              </div>
-              {cameraDebugFrame.debugInfo?.trackDiagnostics && (
-                <>
-                  <div>deadZonePx: {cameraDebugFrame.debugInfo.trackDiagnostics.deadZonePx}</div>
-                  <div>
-                    maxVelocityPxPerSec:{" "}
-                    {cameraDebugFrame.debugInfo.trackDiagnostics.maxVelocityPxPerSec}
-                  </div>
-                  <div>
-                    predictiveLookaheadFrames:{" "}
-                    {cameraDebugFrame.debugInfo.trackDiagnostics.predictiveLookaheadFrames}
-                  </div>
-                </>
-              )}
-              {cameraDebugFrame.debugInfo?.effectTimeline && (
-                <div style={cameraTimelineWrapStyle}>
-                  <div style={cameraTimelineHeaderStyle}>Effect Timeline</div>
-                  <div style={cameraTimelineStyle}>
-                    {cameraDebugFrame.debugInfo.effectTimeline.map((effect) => {
-                      const left = (effect.startFrame / timelineDurationInFrames) * 100;
-                      const width = Math.max(
-                        1,
-                        ((effect.endFrame - effect.startFrame) / timelineDurationInFrames) * 100,
-                      );
-                      const isActive =
-                        cameraDebugFrame.t >= effect.startFrame &&
-                        cameraDebugFrame.t < effect.endFrame;
-                      return (
-                        <div
-                          key={effect.id}
-                          style={{
-                            ...cameraTimelineSegmentStyle,
-                            left: `${left}%`,
-                            width: `${width}%`,
-                            background: isActive
-                              ? "rgba(255, 189, 89, 0.95)"
-                              : "rgba(98, 208, 255, 0.65)",
-                          }}
-                          title={`${effect.type} (${effect.startFrame}-${effect.endFrame})${effect.anchorId ? ` ${effect.anchorId}` : ""}`}
-                        />
-                      );
-                    })}
-                    <div
-                      style={{
-                        ...cameraTimelineCursorStyle,
-                        left: `${(cameraDebugFrame.t / timelineDurationInFrames) * 100}%`,
-                      }}
-                    />
-                  </div>
-                </div>
-              )}
             </div>
           ) : null}
         </>
@@ -792,76 +583,6 @@ const cameraPanelTitleStyle: React.CSSProperties = {
   fontWeight: 700,
   color: "#fff",
   marginBottom: 8,
-};
-
-const cameraActionsRowStyle: React.CSSProperties = {
-  display: "flex",
-  gap: 6,
-  flexWrap: "wrap",
-  marginBottom: 8,
-};
-
-const cameraActionButtonStyle: React.CSSProperties = {
-  border: "1px solid rgba(255,255,255,0.25)",
-  background: "rgba(20,20,20,0.95)",
-  color: "#fff",
-  borderRadius: 6,
-  padding: "4px 8px",
-  fontFamily: "SF Mono, Menlo, Monaco, monospace",
-  fontSize: 11,
-  cursor: "pointer",
-};
-
-const cameraActionMessageStyle: React.CSSProperties = {
-  color: "#9fd5ff",
-  marginBottom: 8,
-};
-
-const cameraWarningsRowStyle: React.CSSProperties = {
-  display: "flex",
-  gap: 6,
-  flexWrap: "wrap",
-  margin: "6px 0",
-};
-
-const cameraWarningPillStyle: React.CSSProperties = {
-  background: "rgba(255, 104, 104, 0.95)",
-  color: "#fff",
-  borderRadius: 999,
-  padding: "2px 8px",
-  fontSize: 11,
-};
-
-const cameraTimelineWrapStyle: React.CSSProperties = {
-  marginTop: 10,
-};
-
-const cameraTimelineHeaderStyle: React.CSSProperties = {
-  color: "#fff",
-  marginBottom: 4,
-};
-
-const cameraTimelineStyle: React.CSSProperties = {
-  position: "relative",
-  height: 28,
-  borderRadius: 6,
-  background: "rgba(255,255,255,0.12)",
-  overflow: "hidden",
-};
-
-const cameraTimelineSegmentStyle: React.CSSProperties = {
-  position: "absolute",
-  top: 5,
-  height: 18,
-  borderRadius: 4,
-};
-
-const cameraTimelineCursorStyle: React.CSSProperties = {
-  position: "absolute",
-  top: 0,
-  bottom: 0,
-  width: 2,
-  background: "#ff2d2d",
 };
 
 export default EpisodeRenderer;

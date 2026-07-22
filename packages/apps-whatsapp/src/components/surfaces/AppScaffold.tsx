@@ -53,7 +53,7 @@ export function AppScaffold({
     >
       <div
         role="banner"
-        data-anchor={`${activeTab ?? "screen"}_header`}
+        data-cinematic-subject={`${activeTab ?? "screen"}_header`}
         style={{
           boxSizing: "border-box",
           height: safeAreaTop + spacing.navBarHeight,

@@ -40,7 +40,9 @@ interface StatusAuthor {
   segments: StatusSegmentState[];
 }
 
-function collectStatusAuthors(statuses: WhatsAppStatusUpdate[]): StatusAuthor[] {
+function collectStatusAuthors(
+  statuses: WhatsAppStatusUpdate[],
+): StatusAuthor[] {
   const authors = new Map<string, StatusAuthor>();
   [...statuses]
     .sort((left, right) => right.postedAt - left.postedAt)
@@ -149,7 +151,7 @@ function ChannelRow({
   const { uiTypography: typography } = theme;
   return (
     <div
-      data-anchor="channel_row"
+      data-cinematic-subject="channel_row"
       data-channel-id={channel.id}
       style={{
         minHeight: 78,
@@ -292,10 +294,7 @@ function ChannelRow({
   );
 }
 
-export function UpdatesScreen({
-  world,
-  safeAreaInsets,
-}: UpdatesScreenProps) {
+export function UpdatesScreen({ world, safeAreaInsets }: UpdatesScreenProps) {
   const theme = useTheme();
   const { t } = useWhatsAppLocale();
   const { uiTypography: typography } = theme;
@@ -309,7 +308,9 @@ export function UpdatesScreen({
   const channels = [...(state.channels ?? [])]
     .sort((left, right) => {
       if (left.followed !== right.followed) return left.followed ? -1 : 1;
-      return (right.latestUpdate?.postedAt ?? 0) - (left.latestUpdate?.postedAt ?? 0);
+      return (
+        (right.latestUpdate?.postedAt ?? 0) - (left.latestUpdate?.postedAt ?? 0)
+      );
     })
     .slice(0, 4);
   const baseTime = getBaseTime(world, deviceId);
@@ -328,9 +329,12 @@ export function UpdatesScreen({
         </>
       }
     >
-      <SectionHeader title={t("section.status")} action={t("section.privacy")} />
+      <SectionHeader
+        title={t("section.status")}
+        action={t("section.privacy")}
+      />
       <div
-        data-anchor="updates_status_strip"
+        data-cinematic-subject="updates_status_strip"
         style={{
           height: 102,
           padding: "0 16px 10px",
@@ -374,7 +378,7 @@ export function UpdatesScreen({
         {statusAuthors.map((author) => (
           <div
             key={author.id}
-            data-anchor={`updates_status_${author.id}`}
+            data-cinematic-subject={`updates_status_${author.id}`}
             data-status-author-id={author.id}
             style={{
               width: 66,
@@ -413,10 +417,14 @@ export function UpdatesScreen({
         title={t("updates.channels")}
         action={t("action.explore")}
       />
-      <div data-anchor="updates_channels">
+      <div data-cinematic-subject="updates_channels">
         {channels.length > 0 ? (
           channels.map((channel) => (
-            <ChannelRow key={channel.id} channel={channel} baseTime={baseTime} />
+            <ChannelRow
+              key={channel.id}
+              channel={channel}
+              baseTime={baseTime}
+            />
           ))
         ) : (
           <EmptyState

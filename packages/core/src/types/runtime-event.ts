@@ -18,7 +18,6 @@
 export type RuntimeEventKind =
   | "APP"
   | "DEVICE"
-  | "CAMERA"
   | "AUDIO"
   | "VOICE"
   | "OVERLAY"
@@ -199,127 +198,6 @@ export type DeviceRuntimeEvent =
   | CallEndedEvent
   | StartBackgroundAppEvent
   | StopBackgroundAppEvent;
-
-// =============================================================================
-// CAMERA EVENT (Flat structure - matches DSL factories and reducers)
-// =============================================================================
-
-export type CameraEventType =
-  | "ZOOM"
-  | "PAN"
-  | "SHAKE"
-  | "FOCUS"
-  | "CUT"
-  | "RESET"
-  | "ANCHOR_FOCUS"
-  | "ANCHOR_TRACK"
-  | "SET_LAYOUT"
-  | "SET_VIEW"
-  | "LAYOUT"
-  | "HOLD";
-
-interface BaseCameraRuntimeEvent extends BaseRuntimeEvent {
-  kind: "CAMERA";
-  type: CameraEventType;
-  deviceId?: string;
-}
-
-export interface CameraZoomEvent extends BaseCameraRuntimeEvent {
-  type: "ZOOM";
-  scale: number;
-  duration: number;
-  originX?: number;
-  originY?: number;
-  easing?: string;
-}
-
-export interface CameraPanEvent extends BaseCameraRuntimeEvent {
-  type: "PAN";
-  translateX: number;
-  translateY: number;
-  duration: number;
-  relative?: boolean;
-  easing?: string;
-}
-
-export interface CameraShakeEvent extends BaseCameraRuntimeEvent {
-  type: "SHAKE";
-  intensity: number;
-  duration: number;
-  frequency?: number;
-  decay?: number;
-}
-
-export interface CameraResetEvent extends BaseCameraRuntimeEvent {
-  type: "RESET";
-  duration: number;
-  easing?: string;
-}
-
-export interface CameraHoldEvent extends BaseCameraRuntimeEvent {
-  type: "HOLD";
-  duration: number;
-}
-
-export interface CameraAnchorFocusEvent extends BaseCameraRuntimeEvent {
-  type: "ANCHOR_FOCUS";
-  anchor: string;
-  preset?: string;
-  shake?: number;
-  duration: number;
-  easing?: string;
-}
-
-export interface CameraAnchorTrackEvent extends BaseCameraRuntimeEvent {
-  type: "ANCHOR_TRACK";
-  anchor: string;
-  duration: number;
-  smoothing?: number;
-  preset?: string;
-  easing?: string;
-  zoom?: number;
-}
-
-export interface CameraFocusEvent extends BaseCameraRuntimeEvent {
-  type: "FOCUS";
-  anchorId?: string;
-  scale?: number;
-  duration?: number;
-  easing?: string;
-}
-
-export interface CameraCutEvent extends BaseCameraRuntimeEvent {
-  type: "CUT";
-}
-
-export interface CameraSetLayoutEvent extends BaseCameraRuntimeEvent {
-  type: "SET_LAYOUT";
-  layout: string;
-}
-
-export interface CameraSetViewEvent extends BaseCameraRuntimeEvent {
-  type: "SET_VIEW";
-  view: string;
-}
-
-export interface CameraLayoutEvent extends BaseCameraRuntimeEvent {
-  type: "LAYOUT";
-  layout: string;
-}
-
-export type CameraRuntimeEvent =
-  | CameraZoomEvent
-  | CameraPanEvent
-  | CameraShakeEvent
-  | CameraResetEvent
-  | CameraHoldEvent
-  | CameraAnchorFocusEvent
-  | CameraAnchorTrackEvent
-  | CameraFocusEvent
-  | CameraCutEvent
-  | CameraSetLayoutEvent
-  | CameraSetViewEvent
-  | CameraLayoutEvent;
 
 // =============================================================================
 // AUDIO EVENT (Flat structure - matches lowering output)
@@ -594,7 +472,6 @@ export type V2NativeOp = TrackEvent & { at: number };
 export type RuntimeEvent =
   | AppRuntimeEvent
   | DeviceRuntimeEvent
-  | CameraRuntimeEvent
   | AudioRuntimeEvent
   | VoiceRuntimeEvent
   | OverlayRuntimeEvent
@@ -675,15 +552,6 @@ export function isRuntimeDeviceEvent(
   event: RuntimeEvent,
 ): event is DeviceRuntimeEvent {
   return event.kind === "DEVICE";
-}
-
-/**
- * Check if event is a camera event
- */
-export function isRuntimeCameraEvent(
-  event: RuntimeEvent,
-): event is CameraRuntimeEvent {
-  return event.kind === "CAMERA";
 }
 
 /**

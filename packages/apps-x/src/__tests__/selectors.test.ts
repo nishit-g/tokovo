@@ -9,7 +9,7 @@ import {
 } from "../runtime/selectors.js";
 import { createXInitialState, type XTweet } from "../runtime/state.js";
 import type { WorldState } from "@tokovo/core";
-import { DEFAULT_AUDIO_STATE, DEFAULT_BASE_CAMERA_STATE } from "@tokovo/core";
+import { DEFAULT_AUDIO_STATE } from "@tokovo/core";
 
 const baseTweet = (override: Partial<XTweet>): XTweet => ({
   id: "tw-1",
@@ -35,7 +35,6 @@ describe("X Selectors", () => {
         app_x: createXInitialState(),
       },
       devices: {},
-      camera: DEFAULT_BASE_CAMERA_STATE,
       audio: DEFAULT_AUDIO_STATE,
     } as WorldState;
 
@@ -54,7 +53,6 @@ describe("X Selectors", () => {
         },
       },
       devices: {},
-      camera: DEFAULT_BASE_CAMERA_STATE,
       audio: DEFAULT_AUDIO_STATE,
     } as WorldState;
 
@@ -73,7 +71,6 @@ describe("X Selectors", () => {
         },
       },
       devices: {},
-      camera: DEFAULT_BASE_CAMERA_STATE,
       audio: DEFAULT_AUDIO_STATE,
     } as WorldState;
 
@@ -95,7 +92,6 @@ describe("X Selectors", () => {
         },
       },
       devices: {},
-      camera: DEFAULT_BASE_CAMERA_STATE,
       audio: DEFAULT_AUDIO_STATE,
     } as WorldState;
 
@@ -111,9 +107,36 @@ describe("X Selectors", () => {
           currentUserId: "u1",
           timelineTab: "following",
           users: [
-            { id: "u1", name: "A", handle: "a", followers: 0, following: 1, followerIds: [], followingIds: ["u2"], verified: null },
-            { id: "u2", name: "B", handle: "b", followers: 0, following: 0, followerIds: [], followingIds: [], verified: null },
-            { id: "u3", name: "C", handle: "c", followers: 0, following: 0, followerIds: [], followingIds: [], verified: null },
+            {
+              id: "u1",
+              name: "A",
+              handle: "a",
+              followers: 0,
+              following: 1,
+              followerIds: [],
+              followingIds: ["u2"],
+              verified: null,
+            },
+            {
+              id: "u2",
+              name: "B",
+              handle: "b",
+              followers: 0,
+              following: 0,
+              followerIds: [],
+              followingIds: [],
+              verified: null,
+            },
+            {
+              id: "u3",
+              name: "C",
+              handle: "c",
+              followers: 0,
+              following: 0,
+              followerIds: [],
+              followingIds: [],
+              verified: null,
+            },
           ],
           tweets: [
             baseTweet({ id: "tw-1", authorId: "u2", createdAt: 200 }),
@@ -123,7 +146,6 @@ describe("X Selectors", () => {
         },
       },
       devices: {},
-      camera: DEFAULT_BASE_CAMERA_STATE,
       audio: DEFAULT_AUDIO_STATE,
     } as WorldState;
 
@@ -136,17 +158,44 @@ describe("X Selectors", () => {
         app_x: {
           ...createXInitialState(),
           notifications: [
-            { id: "n1", type: "mention", actorId: "u2", createdAt: 0, read: false },
-            { id: "n2", type: "follow", actorId: "u3", createdAt: 0, read: true },
+            {
+              id: "n1",
+              type: "mention",
+              actorId: "u2",
+              createdAt: 0,
+              read: false,
+            },
+            {
+              id: "n2",
+              type: "follow",
+              actorId: "u3",
+              createdAt: 0,
+              read: true,
+            },
           ],
           dmThreads: [
-            { id: "dm-1", participantIds: ["u1", "u2"], messageIds: [], unreadCount: 2, pinned: false, typingUserId: null, lastMessageAt: 1 },
-            { id: "dm-2", participantIds: ["u1", "u3"], messageIds: [], unreadCount: 1, pinned: true, typingUserId: null, lastMessageAt: 2 },
+            {
+              id: "dm-1",
+              participantIds: ["u1", "u2"],
+              messageIds: [],
+              unreadCount: 2,
+              pinned: false,
+              typingUserId: null,
+              lastMessageAt: 1,
+            },
+            {
+              id: "dm-2",
+              participantIds: ["u1", "u3"],
+              messageIds: [],
+              unreadCount: 1,
+              pinned: true,
+              typingUserId: null,
+              lastMessageAt: 2,
+            },
           ],
         },
       },
       devices: {},
-      camera: DEFAULT_BASE_CAMERA_STATE,
       audio: DEFAULT_AUDIO_STATE,
     } as WorldState;
 

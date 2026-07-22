@@ -24,7 +24,12 @@ import type {
 } from "../../types/index.js";
 import { resolveAvatarWithFallback } from "../../utils/avatar.js";
 import { formatWhatsAppNumber } from "../../localization/index.js";
-import { AppScaffold, SectionHeader, SettingsGroup, SettingsRow } from "../surfaces/index.js";
+import {
+  AppScaffold,
+  SectionHeader,
+  SettingsGroup,
+  SettingsRow,
+} from "../surfaces/index.js";
 
 export interface GroupInfoScreenProps {
   world: WorldState;
@@ -94,7 +99,9 @@ function MemberRow({
         display: "flex",
         alignItems: "center",
         gap: 10,
-        borderBottom: isLast ? undefined : `0.5px solid ${theme.colors.divider}`,
+        borderBottom: isLast
+          ? undefined
+          : `0.5px solid ${theme.colors.divider}`,
       }}
     >
       <div
@@ -167,14 +174,19 @@ export function GroupInfoScreen({
   const safeAreaTop = safeAreaInsets?.top ?? theme.safeArea.top;
   const safeAreaBottom = safeAreaInsets?.bottom ?? theme.safeArea.bottom;
   const state = world.appState?.app_whatsapp as WhatsAppState | undefined;
-  const conversation: WhatsAppConversation | undefined = state?.conversations[conversationId];
+  const conversation: WhatsAppConversation | undefined =
+    state?.conversations[conversationId];
   if (!conversation || conversation.type !== "group") {
-    throw new Error(`WhatsApp group info requires group conversation "${conversationId}"`);
+    throw new Error(
+      `WhatsApp group info requires group conversation "${conversationId}"`,
+    );
   }
 
   const messages = conversation.messages;
   const mediaCount = messages.filter((message) =>
-    ["image", "video", "gif", "sticker", "document", "link"].includes(message.type),
+    ["image", "video", "gif", "sticker", "document", "link"].includes(
+      message.type,
+    ),
   ).length;
   const admins = new Set(conversation.admins ?? []);
   const fallbackGroupName = t("profile.group");
@@ -190,14 +202,23 @@ export function GroupInfoScreen({
         <div style={{ display: "flex", alignItems: "center", gap: 2 }}>
           <ChevronLeft
             size={21}
-            style={{ transform: direction === "rtl" ? "scaleX(-1)" : undefined }}
+            style={{
+              transform: direction === "rtl" ? "scaleX(-1)" : undefined,
+            }}
           />
           <span style={{ fontSize: 15 }}>{t("action.back")}</span>
         </div>
       }
-      actions={<span style={{ fontSize: 15, fontWeight: 600 }}>{t("action.edit")}</span>}
+      actions={
+        <span style={{ fontSize: 15, fontWeight: 600 }}>
+          {t("action.edit")}
+        </span>
+      }
     >
-      <div data-anchor="profile_hero" style={{ padding: "14px 16px 12px" }}>
+      <div
+        data-cinematic-subject="profile_hero"
+        style={{ padding: "14px 16px 12px" }}
+      >
         <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
           <div
             style={{
@@ -302,7 +323,7 @@ export function GroupInfoScreen({
         action={t("action.search")}
       />
       <div
-        data-anchor="group_members"
+        data-cinematic-subject="group_members"
         style={{
           margin: "0 16px 12px",
           overflow: "hidden",
@@ -340,14 +361,16 @@ export function GroupInfoScreen({
             {t("group.addMembers")}
           </span>
         </div>
-        {(conversation.members ?? []).slice(0, 4).map((member, index, members) => (
-          <MemberRow
-            key={member.id}
-            member={member}
-            admin={admins.has(member.id)}
-            isLast={index === members.length - 1}
-          />
-        ))}
+        {(conversation.members ?? [])
+          .slice(0, 4)
+          .map((member, index, members) => (
+            <MemberRow
+              key={member.id}
+              member={member}
+              admin={admins.has(member.id)}
+              isLast={index === members.length - 1}
+            />
+          ))}
       </div>
 
       <SettingsGroup>

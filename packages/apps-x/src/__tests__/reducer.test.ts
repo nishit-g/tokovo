@@ -4,7 +4,7 @@ import { xReducer } from "../runtime/reducer.js";
 import { createXInitialState } from "../runtime/state.js";
 import { getXState } from "../runtime/selectors.js";
 import type { WorldState, RuntimeEvent } from "@tokovo/core";
-import { DEFAULT_AUDIO_STATE, DEFAULT_BASE_CAMERA_STATE } from "@tokovo/core";
+import { DEFAULT_AUDIO_STATE } from "@tokovo/core";
 
 function createTestWorldState(): WorldState {
   return {
@@ -12,7 +12,6 @@ function createTestWorldState(): WorldState {
       app_x: createXInitialState(),
     },
     devices: {},
-    camera: DEFAULT_BASE_CAMERA_STATE,
     audio: DEFAULT_AUDIO_STATE,
   } as WorldState;
 }
@@ -127,14 +126,26 @@ describe("X Reducer", () => {
         kind: "APP",
         appId: "app_x",
         type: "ADD_USER",
-        payload: { id: "u1", name: "A", handle: "a", followers: 10, following: 20 },
+        payload: {
+          id: "u1",
+          name: "A",
+          handle: "a",
+          followers: 10,
+          following: 20,
+        },
       }),
       {
         at: 0,
         kind: "APP",
         appId: "app_x",
         type: "ADD_USER",
-        payload: { id: "u2", name: "B", handle: "b", followers: 30, following: 40 },
+        payload: {
+          id: "u2",
+          name: "B",
+          handle: "b",
+          followers: 30,
+          following: 40,
+        },
       },
     );
 

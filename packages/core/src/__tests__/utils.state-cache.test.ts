@@ -12,8 +12,12 @@ import {
 const baseState = {
   devices: {},
   appState: {},
-  camera: { baseView: "APP_VIEW" },
-  audio: { activeSounds: {}, buses: {}, policyState: { recentSounds: {}, nextId: 0 }, autoSoundRules: [] },
+  audio: {
+    activeSounds: {},
+    buses: {},
+    policyState: { recentSounds: {}, nextId: 0 },
+    autoSoundRules: [],
+  },
 } as WorldState;
 
 describe("state cache", () => {

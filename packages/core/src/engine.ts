@@ -10,14 +10,7 @@
  */
 
 import { produce } from "immer";
-import {
-  TimelineEvent,
-  WorldState,
-  DEFAULT_BASE_CAMERA_STATE,
-  DEFAULT_CAMERA_TRANSFORM,
-  DEFAULT_AUDIO_STATE,
-} from "./types.js";
-import type { CameraTransform } from "./types/camera.js";
+import { TimelineEvent, WorldState, DEFAULT_AUDIO_STATE } from "./types.js";
 import { TokovoConfigType } from "./config/index.js";
 import {
   EventIndex,
@@ -27,11 +20,14 @@ import {
   getEventsUpToKeyframed,
   getEventsInRange,
 } from "./utils/event-utils.js";
-import { StateCache, getCachedStateForFrame, cacheStateAtKeyframe } from "./utils/state-cache.js";
+import {
+  StateCache,
+  getCachedStateForFrame,
+  cacheStateAtKeyframe,
+} from "./utils/state-cache.js";
 
 import { createScopedLogger } from "./logger/index.js";
 import {
-  processCameraEvent,
   handleAutoSounds,
   cleanupExpiredSounds,
   HandlerContext,
@@ -39,14 +35,24 @@ import {
 import type { EventHandlerContext } from "./engine/event-handlers.js";
 import type { MiddlewareContext } from "./engine/middleware.js";
 import type { LifecycleContext } from "./engine/lifecycle.js";
-import { hasBuiltInHandler, getBuiltInHandler } from "./engine/built-in-handlers.js";
+import {
+  hasBuiltInHandler,
+  getBuiltInHandler,
+} from "./engine/built-in-handlers.js";
 import type { EngineRegistries } from "./engine/registries.js";
-import { getDeviceIdsForAppState, hasDeviceScopedAppState } from "./utils/app-state.js";
+import {
+  getDeviceIdsForAppState,
+  hasDeviceScopedAppState,
+} from "./utils/app-state.js";
 
 const log = createScopedLogger("engine");
 const sortedEventCache = new WeakMap<TimelineEvent[], TimelineEvent[]>();
 
-export type { DeviceReducer, AppReducer, FeatureReducer } from "./engine/registry.js";
+export type {
+  DeviceReducer,
+  AppReducer,
+  FeatureReducer,
+} from "./engine/registry.js";
 export { createReducerRegistry } from "./engine/registry.js";
 export { EngineConfig } from "./engine/config.js";
 export {
@@ -98,7 +104,9 @@ export class PluginError extends Error {
     public event: TimelineEvent,
     public cause: Error,
   ) {
-    super(`[${pluginId}] Reducer failed at frame ${event.at}: ${cause.message}`);
+    super(
+      `[${pluginId}] Reducer failed at frame ${event.at}: ${cause.message}`,
+    );
     this.name = "PluginError";
   }
 }
@@ -153,19 +161,14 @@ export function replay(
     const emptyState = {
       devices: {},
       appState: {},
-      camera: { ...DEFAULT_BASE_CAMERA_STATE },
       audio: { ...DEFAULT_AUDIO_STATE },
     };
     registries.lifecycle.notifyAfterReplay(emptyState, lifecycleCtx);
     return emptyState;
   }
 
-  // Ensure initial state has proper camera and audio state
-  const initialWithCamera: WorldState = {
+  const initialWithAudio: WorldState = {
     ...initial,
-    camera: initial.camera
-      ? { ...DEFAULT_BASE_CAMERA_STATE, ...initial.camera }
-      : { ...DEFAULT_BASE_CAMERA_STATE },
     audio: initial.audio || { ...DEFAULT_AUDIO_STATE },
   };
 
@@ -175,7 +178,7 @@ export function replay(
     : getSortedEvents(events).filter((e) => e.at <= t);
 
   // Apply all events and finalize in a single Immer produce (perf: avoids double structural sharing)
-  const finalState = produce(initialWithCamera, (draft) => {
+  const finalState = produce(initialWithAudio, (draft) => {
     // Pre-allocate context objects once (perf: avoid allocation per event)
     const handlerCtx: HandlerContext = {
       frame: t,
@@ -242,34 +245,7 @@ export function replay(
     }
 
     // Finalize state inline (merged from separate produce call)
-    const config = ctx.config;
-    // Only filter activeEffects if it exists (extended CameraState from device-camera)
-    const cameraWithEffects = draft.camera as {
-      activeEffects?: Array<{ endFrame: number }>;
-    };
-    if (Array.isArray(cameraWithEffects.activeEffects)) {
-      cameraWithEffects.activeEffects = cameraWithEffects.activeEffects.filter(
-        (effect) => t <= effect.endFrame + config.timing.effectCleanupBuffer,
-      );
-    }
-
-    if (!draft.camera.deviceTransforms) {
-      draft.camera.deviceTransforms = {};
-    }
-
-    // Use for...in to avoid Object.keys() allocation
-    let firstDeviceId: string | undefined;
-    for (const deviceId in draft.devices) {
-      if (Object.hasOwn(draft.devices, deviceId)) {
-        if (!firstDeviceId) firstDeviceId = deviceId;
-        draft.camera.deviceTransforms[deviceId] = DEFAULT_CAMERA_TRANSFORM as CameraTransform;
-      }
-    }
-
-    const activeDeviceId = draft.camera.activeDeviceId || firstDeviceId;
-    draft.camera.transform = activeDeviceId
-      ? draft.camera.deviceTransforms[activeDeviceId] || DEFAULT_CAMERA_TRANSFORM
-      : DEFAULT_CAMERA_TRANSFORM;
+    cleanupExpiredSounds(draft, t);
   });
 
   registries.lifecycle.notifyAfterReplay(finalState, lifecycleCtx);
@@ -283,11 +259,12 @@ export function replay(
 /**
  * Create default initial world state
  */
-export function createInitialWorld(partial: Partial<WorldState> = {}): WorldState {
+export function createInitialWorld(
+  partial: Partial<WorldState> = {},
+): WorldState {
   return {
     devices: {},
     appState: {},
-    camera: { ...DEFAULT_BASE_CAMERA_STATE },
     audio: { ...DEFAULT_AUDIO_STATE },
     ...partial,
   };
@@ -406,16 +383,12 @@ function ensureInitialState(initial: WorldState): WorldState {
     return {
       devices: {},
       appState: {},
-      camera: { ...DEFAULT_BASE_CAMERA_STATE },
       audio: { ...DEFAULT_AUDIO_STATE },
     };
   }
 
   return {
     ...initial,
-    camera: initial.camera
-      ? { ...DEFAULT_BASE_CAMERA_STATE, ...initial.camera }
-      : { ...DEFAULT_BASE_CAMERA_STATE },
     audio: initial.audio || { ...DEFAULT_AUDIO_STATE },
   };
 }
@@ -456,10 +429,15 @@ function isSortedByFrame(events: TimelineEvent[]): boolean {
   return true;
 }
 
-function handleEventError(error: unknown, event: TimelineEvent, ctx: ReplayContext): void {
+function handleEventError(
+  error: unknown,
+  event: TimelineEvent,
+  ctx: ReplayContext,
+): void {
   const eventWithAppId = event as TimelineEvent & { appId?: string };
   const pluginId = eventWithAppId.appId || event.kind;
-  const wrappedError = error instanceof Error ? error : new Error(String(error));
+  const wrappedError =
+    error instanceof Error ? error : new Error(String(error));
 
   if (ctx.mode === "render" && !ctx.gracefulDegradation) {
     throw new PluginError(pluginId, event, wrappedError);
@@ -510,16 +488,28 @@ function processEventCore(
     if (appId) {
       const reducer = registries.reducers.getAppReducer(appId);
       if (reducer) {
-        runAppReducerForDevice(draft, event, appId, eventWithAppId.deviceId, reducer);
+        runAppReducerForDevice(
+          draft,
+          event,
+          appId,
+          eventWithAppId.deviceId,
+          reducer,
+        );
       }
     } else {
-      log.warn("APP event missing appId", { event, frame: t, eventIndex: index });
+      log.warn("APP event missing appId", {
+        event,
+        frame: t,
+        eventIndex: index,
+      });
     }
     handleAutoSounds(draft, event, handlerCtx);
     return;
   }
 
-  const appIdForKind = registries.reducers.getAppIdForEventKind(event.kind as string);
+  const appIdForKind = registries.reducers.getAppIdForEventKind(
+    event.kind as string,
+  );
   if (appIdForKind) {
     const reducer = registries.reducers.getAppReducer(appIdForKind);
     if (reducer) {
@@ -535,31 +525,11 @@ function processEventCore(
     return;
   }
 
-  if (
-    typeof event.kind === "string" &&
-    (event.kind.startsWith("Camera") || event.kind.startsWith("Anchor"))
-  ) {
-    const type = event.kind.replace("Camera", "").toUpperCase();
-    const normalizedType =
-      type === "ANCHORFOCUS" ? "ANCHOR_FOCUS" : type === "ANCHORTRACK" ? "ANCHOR_TRACK" : type;
-
-    const cameraEvent = {
-      ...event,
-      kind: "CAMERA" as const,
-      type: normalizedType,
-    };
-    processCameraEvent(
-      draft,
-      cameraEvent as Parameters<typeof processCameraEvent>[1],
-      handlerCtx,
+  if (hasBuiltInHandler(event.kind as string, registries.reducers)) {
+    const handler = getBuiltInHandler(
+      event.kind as string,
       registries.reducers,
     );
-    handleAutoSounds(draft, event, handlerCtx);
-    return;
-  }
-
-  if (hasBuiltInHandler(event.kind as string, registries.reducers)) {
-    const handler = getBuiltInHandler(event.kind as string, registries.reducers);
     if (!handler) {
       handleAutoSounds(draft, event, handlerCtx);
       return;
@@ -584,7 +554,10 @@ function runAppReducerForDevice(
   reducer: import("./engine/registry.js").AppReducer,
 ): void {
   const scopedDeviceIds = getDeviceIdsForAppState(draft, appId);
-  if (scopedDeviceIds.length > 0 && (!deviceId || !scopedDeviceIds.includes(deviceId))) {
+  if (
+    scopedDeviceIds.length > 0 &&
+    (!deviceId || !scopedDeviceIds.includes(deviceId))
+  ) {
     throw new Error(
       `APP event for multi-device app "${appId}" must target one of: ${scopedDeviceIds.join(", ")}`,
     );
@@ -639,39 +612,20 @@ function processEventWithMiddleware(
   });
 }
 
-function finalizeState(state: WorldState, t: number, config: TokovoConfigType): WorldState {
+function finalizeState(
+  state: WorldState,
+  t: number,
+  config: TokovoConfigType,
+): WorldState {
   return produce(state, (draft) => {
     finalizeDraftState(draft, t, config);
   });
 }
 
-function finalizeDraftState(draft: WorldState, t: number, config: TokovoConfigType): void {
-  // Only filter activeEffects if it exists (extended CameraState from device-camera)
-  const cameraWithEffects = draft.camera as {
-    activeEffects?: Array<{ endFrame: number }>;
-  };
-  if (Array.isArray(cameraWithEffects.activeEffects)) {
-    cameraWithEffects.activeEffects = cameraWithEffects.activeEffects.filter(
-      (effect) => t <= effect.endFrame + config.timing.effectCleanupBuffer,
-    );
-  }
-
+function finalizeDraftState(
+  draft: WorldState,
+  t: number,
+  _config: TokovoConfigType,
+): void {
   cleanupExpiredSounds(draft, t);
-
-  if (!draft.camera.deviceTransforms) {
-    draft.camera.deviceTransforms = {};
-  }
-
-  let firstDeviceId: string | undefined;
-  for (const deviceId in draft.devices) {
-    if (Object.hasOwn(draft.devices, deviceId)) {
-      if (!firstDeviceId) firstDeviceId = deviceId;
-      draft.camera.deviceTransforms[deviceId] = DEFAULT_CAMERA_TRANSFORM as CameraTransform;
-    }
-  }
-
-  const activeDeviceId = draft.camera.activeDeviceId || firstDeviceId;
-  draft.camera.transform = activeDeviceId
-    ? draft.camera.deviceTransforms[activeDeviceId] || DEFAULT_CAMERA_TRANSFORM
-    : DEFAULT_CAMERA_TRANSFORM;
 }

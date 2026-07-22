@@ -1,43 +1,37 @@
 {
-    "extends": "../../tsconfig.base.json",
-    "compilerOptions": {
-        "outDir": "dist",
-        "rootDir": ".",
-        "jsx": "react-jsx",
-        "baseUrl": ".",
-        "composite": true
-    },
-    "references": [
-        { "path": "../../packages/background" },
-        { "path": "../../packages/camera" },
-        { "path": "../../packages/compiler" },
-        { "path": "../../packages/apps-instagram" },
-        { "path": "../../packages/apps-imessage" },
-        { "path": "../../packages/apps-linkedin" },
-        { "path": "../../packages/apps-snapchat" },
-        { "path": "../../packages/apps-teams" },
-        { "path": "../../packages/apps-typewriter" },
-        { "path": "../../packages/apps-whatsapp" },
-        { "path": "../../packages/apps-x" },
-        { "path": "../../packages/core" },
-        { "path": "../../packages/device-camera" },
-        { "path": "../../packages/device-keyboard" },
-        { "path": "../../packages/devices" },
-        { "path": "../../packages/device-notifications" },
-        { "path": "../../packages/dsl" },
-        { "path": "../../packages/overlay" },
-        { "path": "../../packages/episodes" },
-        { "path": "../../packages/ir" },
-        { "path": "../../packages/react" },
-        { "path": "../../packages/renderer" },
-        { "path": "../../packages/stage" },
-        { "path": "../../packages/voice" }
-    ],
-    "include": [
-        "src/**/*",
-        "remotion.config.ts"
-    ],
-    "exclude": [
-        "src/__tests__/**/*"
-    ]
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "outDir": "dist",
+    "rootDir": ".",
+    "jsx": "react-jsx",
+    "baseUrl": ".",
+    "composite": true
+  },
+  "references": [
+    { "path": "../../packages/background" },
+    { "path": "../../packages/camera" },
+    { "path": "../../packages/compiler" },
+    { "path": "../../packages/apps-instagram" },
+    { "path": "../../packages/apps-imessage" },
+    { "path": "../../packages/apps-linkedin" },
+    { "path": "../../packages/apps-snapchat" },
+    { "path": "../../packages/apps-teams" },
+    { "path": "../../packages/apps-typewriter" },
+    { "path": "../../packages/apps-whatsapp" },
+    { "path": "../../packages/apps-x" },
+    { "path": "../../packages/core" },
+    { "path": "../../packages/device-keyboard" },
+    { "path": "../../packages/devices" },
+    { "path": "../../packages/device-notifications" },
+    { "path": "../../packages/dsl" },
+    { "path": "../../packages/overlay" },
+    { "path": "../../packages/episodes" },
+    { "path": "../../packages/ir" },
+    { "path": "../../packages/react" },
+    { "path": "../../packages/renderer" },
+    { "path": "../../packages/stage" },
+    { "path": "../../packages/voice" }
+  ],
+  "include": ["src/**/*", "remotion.config.ts"],
+  "exclude": ["src/__tests__/**/*"]
 }

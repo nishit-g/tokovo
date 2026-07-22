@@ -3,7 +3,7 @@ import { iMessageReducer } from "../runtime/reducer.js";
 import { createIMessageInitialState } from "../runtime/initial-state.js";
 import type { IMessageState } from "../types/index.js";
 import type { WorldState, RuntimeEvent } from "@tokovo/core";
-import { DEFAULT_AUDIO_STATE, DEFAULT_BASE_CAMERA_STATE } from "@tokovo/core";
+import { DEFAULT_AUDIO_STATE } from "@tokovo/core";
 
 function createTestWorldState(): WorldState {
   return {
@@ -11,7 +11,6 @@ function createTestWorldState(): WorldState {
       app_imessage: createIMessageInitialState(),
     },
     devices: {},
-    camera: DEFAULT_BASE_CAMERA_STATE,
     audio: DEFAULT_AUDIO_STATE,
   } as WorldState;
 }

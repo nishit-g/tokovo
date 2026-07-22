@@ -25,7 +25,8 @@ export function findInputSessionForProjection(
   fps: number,
 ): PreparedInputSession | undefined {
   return program.sessions.find((session) => {
-    if (session.deviceId !== deviceId || frame < session.startFrame) return false;
+    if (session.deviceId !== deviceId || frame < session.startFrame)
+      return false;
     const experience = resolveInputExperience({
       platform: session.keyboard.platform,
       appearance: session.keyboard.appearance,
@@ -61,8 +62,9 @@ function getSurfaceProgress(
   }
   if (frame < session.endFrame) return 1;
   if (frame < session.endFrame + duration) {
-    return 1 - easeOutCubic(
-      clamp01((frame - session.endFrame) / Math.max(1, duration)),
+    return (
+      1 -
+      easeOutCubic(clamp01((frame - session.endFrame) / Math.max(1, duration)))
     );
   }
   return 0;
@@ -150,10 +152,7 @@ export function projectInputSession(
   }
 
   const state = evaluateInputSession(session, frame);
-  const displayDraft = getInputDisplayDraft(
-    state,
-    session.keyboard.locale.tag,
-  );
+  const displayDraft = getInputDisplayDraft(state, session.keyboard.locale.tag);
   const direction =
     session.direction === "auto"
       ? inferTextDirection(displayDraft, session.keyboard.locale.direction)
@@ -172,11 +171,7 @@ export function projectInputSession(
           }).theme.motion.entranceDurationSeconds,
       ),
     );
-  const progress = getSurfaceProgress(
-    session,
-    frame,
-    transitionDuration,
-  );
+  const progress = getSurfaceProgress(session, frame, transitionDuration);
   const viewportInset = config.keyboardHeight * progress;
   const experience = resolveInputExperience({
     platform: session.keyboard.platform,
@@ -218,7 +213,7 @@ export function projectInputSession(
       suggestions: [...state.suggestions],
       activeSuggestionIndex: state.activeSuggestionIndex,
       viewportInset,
-      anchor: {
+      bounds: {
         x: 0,
         y: config.viewportHeight - viewportInset,
         width: config.viewportWidth,

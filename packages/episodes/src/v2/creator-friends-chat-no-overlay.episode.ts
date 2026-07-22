@@ -8,7 +8,17 @@ export default defineEpisode({
     description:
       "Creator room episode with WhatsApp group chat, X thread escalation, notification banner, camera direction, and no overlays.",
     category: "showcase",
-    tags: ["v2", "creator", "chat", "whatsapp", "x", "no-overlay", "bgm", "keyboard", "camera"],
+    tags: [
+      "v2",
+      "creator",
+      "chat",
+      "whatsapp",
+      "x",
+      "no-overlay",
+      "bgm",
+      "keyboard",
+      "camera",
+    ],
   },
   config: {
     format: "1080x1920",
@@ -141,15 +151,29 @@ export default defineEpisode({
       .whatsapp("phone", "grp_creator_room", (wa) => {
         wa.switchTo("grp_creator_room", "0s");
 
-        wa.at("1.0s").receive("Mina", "The schedule slipped again. Who is answering the thread?");
-        wa.at("2.2s").receive("Omar", "Someone already clipped the delay into a launch-day meme.");
-        wa.at("3.4s").receive("Tess", "If we reply, it has to sound intentional.");
+        wa.at("1.0s").receive(
+          "Mina",
+          "The schedule slipped again. Who is answering the thread?",
+        );
+        wa.at("2.2s").receive(
+          "Omar",
+          "Someone already clipped the delay into a launch-day meme.",
+        );
+        wa.at("3.4s").receive(
+          "Tess",
+          "If we reply, it has to sound intentional.",
+        );
 
-        wa.at("4.8s").send("Call it pacing. The reveal needed tension.", {
-        });
+        wa.at("4.8s").send("Call it pacing. The reveal needed tension.", {});
 
-        wa.at("7.2s").receive("Jay", "Pacing? The quote post is already the headline.");
-        wa.at("8.2s").receive("Mina", "Open X. The reply window is still open.");
+        wa.at("7.2s").receive(
+          "Jay",
+          "Pacing? The quote post is already the headline.",
+        );
+        wa.at("8.2s").receive(
+          "Mina",
+          "Open X. The reply window is still open.",
+        );
       })
 
       // ============================================
@@ -175,31 +199,25 @@ export default defineEpisode({
       // WHATSAPP (back to group)
       // ============================================
       .whatsapp("phone", "grp_creator_room", (wa) => {
-        wa.at("23.4s").receive("Omar", "You replied. The quote graph just jumped again.");
-        wa.at("24.8s").receive("Mina", "Screenshots are already in the group chat.");
-        wa.at("26.2s").receive("Tess", "Next beat: controlled follow-up, not damage control.");
+        wa.at("23.4s").receive(
+          "Omar",
+          "You replied. The quote graph just jumped again.",
+        );
+        wa.at("24.8s").receive(
+          "Mina",
+          "Screenshots are already in the group chat.",
+        );
+        wa.at("26.2s").receive(
+          "Tess",
+          "Next beat: controlled follow-up, not damage control.",
+        );
 
-        wa.at("28.2s").send("One last line, then we let the clip breathe.", {
-        });
+        wa.at("28.2s").send("One last line, then we let the clip breathe.", {});
 
-        wa.at("32.8s").receive("Jay", "Too late. This is already the next episode.");
-      })
-
-      // ============================================
-      // CAMERA (device-owned anchors + app semantics)
-      // ============================================
-      .camera((cam) => {
-        cam.at("0s").focus("device", { scale: 1.02, duration: "0.35s" });
-        cam.span("1.0s", "6.4s").trackCinematic("lastMessage", { scale: 1.12, smoothing: 0.2 });
-
-        cam.at("6.65s").focus("notification.banner", { scale: 1.18, duration: "0.45s" });
-        cam.at("7.8s").focus("lastMessage", { scale: 1.12, duration: "0.35s" });
-
-        cam.at("9.45s").focus("tweet_card", { scale: 1.1, duration: "0.45s" });
-        cam.span("12.6s", "16.4s").trackCinematic("keyboard", { scale: 1.12, smoothing: 0.16 });
-
-        cam.at("23.0s").focus("lastMessage", { scale: 1.12, duration: "0.35s" });
-        cam.span("28.0s", "29.4s").trackCinematic("keyboard", { scale: 1.12, smoothing: 0.16 });
+        wa.at("32.8s").receive(
+          "Jay",
+          "Too late. This is already the next episode.",
+        );
       })
 
       .build(),

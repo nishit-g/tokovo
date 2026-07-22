@@ -1,4 +1,4 @@
-import { DeviceProfile, CameraDeviceConfig } from "../types.js";
+import { DeviceProfile } from "../types.js";
 
 const SCALE = 3;
 
@@ -19,18 +19,6 @@ export const iPhone16Constants = {
   HOME_INDICATOR_HEIGHT: 5 * SCALE,
   HOME_INDICATOR_RADIUS: 9,
 } as const;
-
-const iPhone16Camera: CameraDeviceConfig = {
-  minZoom: 0.9,
-  maxZoom: 1.15,
-  panSpeed: "slow",
-  followLag: "high",
-  snapThreshold: 40,
-  safeAreaTop: 110, // Dynamic Island + status bar
-  safeAreaBottom: 102, // Home indicator
-  followLagFactor: 0.7, // Cinematic lag
-  panSpeedMultiplier: 0.6,
-};
 
 /**
  * iPhone 16 Device Profile
@@ -59,8 +47,6 @@ export const iPhone16Profile: DeviceProfile = {
     left: 0,
     right: 0,
   },
-  camera: iPhone16Camera,
-
   // Dynamic Island dimensions (measured from iPhone 16 specs)
   dynamicIsland: {
     centerX: 645, // 1290 / 2 (centered)

@@ -1,7 +1,6 @@
 import type { TimelineEvent, WorldState } from "../types.js";
 import type { ReducerRegistryClass } from "./registry.js";
 import {
-  processCameraEvent,
   processAudioEvent,
   processOSEvent,
   processCallEvent,
@@ -37,15 +36,6 @@ function createBuiltInHandlers(
     if (registry.deviceReducer) {
       draft.devices = registry.deviceReducer(draft.devices, event);
     }
-  });
-
-  registerBuiltInHandler("CAMERA", (draft, event, _index, ctx) => {
-    processCameraEvent(
-      draft,
-      event as Parameters<typeof processCameraEvent>[1],
-      ctx,
-      registry,
-    );
   });
 
   registerBuiltInHandler("AUDIO", (draft, event, _index, ctx) => {

@@ -9,13 +9,13 @@
 // CORE RENDERERS
 // ===========================================================================
 export { TokovoRenderer } from "./TokovoRenderer.js";
-export type {
-  CameraDebugFrame,
-  CinematicCameraDebugFrame,
-  CinematicTextureProjectionFrame,
-  TokovoRendererProps,
-} from "./TokovoRenderer.js";
-export { MultiDeviceRenderer } from "./MultiDeviceRenderer.js";
+export {
+  CinematicStageRenderer,
+  type CinematicStageRendererProps,
+  type CinematicCameraDebugFrame,
+  type CinematicTextureProjectionFrame,
+} from "./CinematicStageRenderer.js";
+export type { TokovoRendererProps } from "./TokovoRenderer.js";
 export { AudioLayer } from "./AudioLayer.js";
 export {
   CameraProjectionSurface,
@@ -40,14 +40,17 @@ export { DynamicIsland } from "./os/index.js";
 // LAYOUT SYSTEM
 // ===========================================================================
 export { computeLayout } from "./layout/index.js";
-export type { LayoutState, ChatLayoutState, ChatMessageLayout } from "./layout/types.js";
+export type {
+  LayoutState,
+  ChatLayoutState,
+  ChatMessageLayout,
+} from "./layout/types.js";
 export * from "./layout/index.js";
 
 // ===========================================================================
 // UTILITIES
 // ===========================================================================
 export { NowPlayingBar } from "./NowPlayingBar.js";
-export { VisualDebugger } from "./VisualDebugger.js";
 export { UnlockTransition } from "./AppTransition.js";
 export {
   RendererRegistryProvider,
@@ -60,25 +63,15 @@ export {
 // ===========================================================================
 export {
   useLayoutEngine,
-  useCameraEngine,
+  computeLayoutEngine,
+  createLayoutEngineRuntime,
   useAudioEngine,
-  mergeInputProjectionAnchor,
-  mergeNotificationProjectionAnchors,
-  mergeSystemSurfaceProjectionAnchors,
 } from "./engines/index.js";
 export { NULL_AUDIO_OUTPUT } from "./engines/index.js";
 export type {
   LayoutEngineInput,
   LayoutEngineOutput,
-  CameraEngineInput,
-  CameraEngineOutput,
+  LayoutEngineRuntime,
   AudioEngineInput,
   AudioEngineOutput,
 } from "./engines/index.js";
-
-// ===========================================================================
-// ANCHOR SYSTEM
-// ===========================================================================
-// Note: getAnchorsForApp is in @tokovo/device-camera now.
-// Only export renderer-specific anchors:
-export { getAllAnchors } from "./anchor-providers/index.js";

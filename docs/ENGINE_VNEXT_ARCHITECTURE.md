@@ -16,7 +16,7 @@ Tokovo has a strong product thesis and several strong technical primitives:
 - plugins are explicitly registered;
 - multiple simulated devices and applications can participate in one episode;
 - audio already contains useful deterministic buses, policies, and frame envelopes;
-- semantic app anchors can support cinematic direction without episode-level pixel guesses.
+- semantic app subjects can support cinematic direction without episode-level pixel guesses.
 
 The engine is not yet a coherent best-in-class platform. It contains production-quality islands connected by compatibility paths that distribute ownership across the DSL, compiler, core, device packages, app packages, renderer, and video runner. Several features have more than one authoring surface, event namespace, reducer, state representation, or renderer. Some authored fields are accepted and then silently discarded during lowering. Camera state also owns part of multi-device stage composition, which makes camera direction capable of changing the scene it is supposed to observe.
 
@@ -54,7 +54,7 @@ Tokovo will evolve toward a capability-oriented deterministic engine with:
 7. a pure, non-React frame projection layer;
 8. a renderer that paints projections without inventing product behavior;
 9. exact deterministic replay tests separated from visual-regression tests;
-10. fail-loudly validation for unsupported events, missing assets, missing anchors, and incomplete registration;
+10. fail-loudly validation for unsupported events, missing assets, missing subjects, and incomplete registration;
 11. explicit legacy tombstones followed by deletion after catalog migration.
 
 This document is the whole-engine policy. The camera document describes the camera capability in greater detail and must obey the ownership, dependency, compilation, projection, and enforcement rules defined here.
@@ -71,7 +71,7 @@ policy end to end:
   effects, one projection layer, and one `NotificationSurface`;
 - lockscreen and homescreen contracts, deterministic localization, platform themes,
   projection, and painting live in `@tokovo/devices`;
-- renderer only composes those projections and registers their semantic camera anchors;
+- renderer only composes those projections and registers their semantic cinematic subjects;
 - app packages retain app semantics, theme, notification content adapters, and action
   targets; core has no keyboard or notification state mirror;
 - superseded keyboard, notification, renderer lock/home, and core app-config paths were
@@ -122,7 +122,7 @@ This document covers:
 - calls and system activities;
 - audio, sound effects, voice, and ducking;
 - backgrounds and story overlays;
-- anchors, solved layout, and frame projection;
+- subjects, solved layout, and frame projection;
 - React/Remotion rendering;
 - determinism, visual regression, performance, accessibility, and localization enforcement;
 - legacy removal and migration sequencing.
@@ -185,7 +185,8 @@ Presentation code may choose implementation details required to draw an already-
 
 ### Camera observes a stage
 
-Stage layout determines where devices and other scene nodes exist. Camera selects and transforms a view of that stage. A camera event must not rearrange stage nodes.
+Stage layout determines where devices and other scene nodes exist. Camera selects and transforms a
+view of that stage. A CameraPlan must not rearrange stage nodes.
 
 ### App instances are always device-scoped
 
@@ -193,7 +194,7 @@ An app mounted on one device and the same app mounted on multiple devices use th
 
 ### No hidden fallback
 
-Missing plugins, anchors, layouts, assets, profiles, event handlers, or capability adapters must fail at preparation or validation. Preview-only diagnostic output may visualize a failure; it must not silently invent production behavior.
+Missing plugins, subjects, layouts, assets, profiles, event handlers, or capability adapters must fail at preparation or validation. Preview-only diagnostic output may visualize a failure; it must not silently invent production behavior.
 
 ### Exact contracts precede compatibility
 
@@ -203,7 +204,7 @@ Compatibility adapters must be named, measurable, tested, and temporary. They ma
 
 ### Intent
 
-A semantic authoring request, such as “type this draft,” “show this notification,” “open this app,” or “frame these anchors.” It describes desired behavior without prescribing low-level state mutations.
+A semantic authoring request, such as “type this draft,” “show this notification,” “open this app,” or “frame these subjects.” It describes desired behavior without prescribing low-level state mutations.
 
 ### Canonical IR
 
@@ -263,11 +264,11 @@ The problem is not the existence of these directories. The problem is that the d
 
 ### Mega plugin contract
 
-The core plugin contract includes runtime reducers, UI view components, assets, audio rules, layout constants, bootstrap behavior, lowering, DSL extensions, anchors, and notification adapters. This makes one contract span headless runtime, authoring, compilation, and presentation.
+The core plugin contract includes runtime reducers, UI view components, assets, audio rules, layout constants, bootstrap behavior, lowering, DSL extensions, subjects, and notification adapters. This makes one contract span headless runtime, authoring, compilation, and presentation.
 
 See [`packages/core/src/types/plugin-contract.ts`](../packages/core/src/types/plugin-contract.ts).
 
-The React plugin manager then registers both runtime and presentation concerns, including reducers, event kinds, views, layouts, anchors, audio rules, and notification behavior.
+The React plugin manager then registers both runtime and presentation concerns, including reducers, event kinds, views, layouts, subjects, audio rules, and notification behavior.
 
 See [`packages/react/src/plugin/plugin.ts`](../packages/react/src/plugin/plugin.ts).
 
@@ -361,7 +362,7 @@ Read-only lowering probes confirmed that some supported-looking authoring data d
 
 ### Target ownership
 
-Compiler is an orchestrator of registered capability compilers. It does not know WhatsApp event names, notification reducer details, or device-camera implementation classes.
+Compiler is an orchestrator of registered capability compilers. It does not know WhatsApp event names, notification reducer details, or retired camera runtime implementation classes.
 
 Preparation must resolve:
 
@@ -468,7 +469,7 @@ An app package owns:
 - bootstrap snapshots;
 - app reducer and selectors;
 - semantic layouts;
-- semantic anchor declarations;
+- semantic subject declarations;
 - app notification-content adapters;
 - app audio rules;
 - UI projection and UI components;
@@ -508,7 +509,7 @@ Apps emit typed intents. Examples:
 - app asks input capability to begin a text-input session;
 - notification capability asks navigation to open an app route;
 - an app notification action emits an app-specific action event;
-- camera consumes semantic anchors projected by the app but never reads app DOM.
+- camera consumes cinematic subjects projected by the app but never reads app DOM.
 
 No app mutates device-system state directly, and no device system interprets arbitrary app-state properties.
 
@@ -516,7 +517,10 @@ No app mutates device-system state directly, and no device system interprets arb
 
 ### Current assessment
 
-The devices package combines headless metrics, React shells, navigation, calls, activities, DSL code, lowering, runtime reducers, and legacy camera geometry. Safe-area information has multiple potential authorities. Device implementations are not equally tokenized; some components use profile metrics while others contain physical constants directly in UI code.
+The devices package combines headless metrics, React shells, navigation, calls, activities, DSL
+code, lowering, runtime reducers, and physical projection geometry. Camera-critical safe-area,
+screen, and body bounds now come from the registered device profile; remaining device UI
+tokenization is tracked separately from the camera architecture.
 
 ### Target model
 
@@ -578,7 +582,7 @@ Camera must follow [Camera VNext Architecture](./CAMERA_VNEXT_ARCHITECTURE.md).
 
 At the whole-engine boundary:
 
-- apps provide typed semantic anchors through solved layout;
+- apps provide typed cinematic subjects through solved layout;
 - scene owns node placement;
 - camera compiles shot intent into deterministic shot clips;
 - camera runtime/projector produces complete poses;
@@ -586,11 +590,11 @@ At the whole-engine boundary:
 - camera cannot mutate stage layout, app state, notification state, or device state;
 - camera is a system capability, not a fake app with a null view.
 
-## Layout and Anchors
+## Layout and Subjects
 
 ### Current assessment
 
-Semantic anchors are the correct direction, but layout calculation and rendering can diverge. The current layout hook may inspect generic app fields, apply global chat constants, choose preview fallbacks, and cache using an incomplete signature.
+Semantic subjects are the correct direction, but layout calculation and rendering can diverge. The current layout hook may inspect generic app fields, apply global chat constants, choose preview fallbacks, and cache using an incomplete signature.
 
 ### Target model
 
@@ -608,12 +612,12 @@ solveAppLayout({
 }): AppLayoutProjection
 ```
 
-That projection contains render geometry and anchors from the same solved source:
+That projection contains render geometry and subjects from the same solved source:
 
 ```ts
 interface AppLayoutProjection {
   nodes: Record<NodeId, LayoutNode>;
-  anchors: Record<AnchorId, ResolvedAnchor>;
+  subjects: Record<SubjectId, ResolvedSubject>;
   contentBounds: Rect;
   revisionHash: string;
 }
@@ -889,13 +893,15 @@ Renderer may not:
 - invent conversations or preview content;
 - implement notification policy;
 - mutate world state;
-- query live DOM geometry for camera or anchors;
-- choose semantic fallback anchors;
+- query live DOM geometry for camera or subjects;
+- choose semantic fallback subjects;
 - perform capability timing.
 
 ### Host composition
 
-`EpisodeRenderer`, `MultiDeviceRenderer`, and render-service composition must not each independently decide whether to render audio, voice, backgrounds, or overlays. The prepared output composition owns that decision once.
+`EpisodeRenderer`, `CinematicStageRenderer`, and render-service composition must not each
+independently decide whether to render audio, voice, backgrounds, or overlays. The prepared output
+composition owns that decision once.
 
 ## Package and Dependency Rules
 
@@ -1040,7 +1046,7 @@ Required fixtures include:
 - call transition across full-screen and compact activity surfaces;
 - simultaneous voice, effects, and ducking;
 - direct frame access during every lifecycle boundary;
-- missing anchor and missing asset failures.
+- missing subject and missing asset failures.
 
 ### No empty production suites
 
@@ -1145,7 +1151,7 @@ These are candidates, not pre-authorized deletions:
 - competing core/device navigation reducer;
 - competing call event paths;
 - unused renderer wrappers such as legacy device-frame surfaces;
-- legacy device camera-physics fields after safe-area migration;
+- superseded device camera-physics fields after safe-area migration;
 - notification alias event names and duplicate priority vocabularies;
 - generic notification strategy fallback masquerading as platform behavior;
 - notification state mirrors;
@@ -1237,7 +1243,7 @@ Before deletion, confirm source reachability, public exports, docs, episode cata
 - Create `projectFrame` outside React.
 - Move active-device, system-surface, transition, and presentation decisions into capability projections.
 - Make app layout solvers pure.
-- Unify solved layout and anchor geometry.
+- Unify solved layout and subject geometry.
 - Remove generic app-state interpretation from renderer.
 - Replace hook-history correctness caches with content-addressed projection caches.
 
@@ -1280,7 +1286,7 @@ Before deletion, confirm source reachability, public exports, docs, episode cata
 - Remove fake-app camera registration and old device camera physics.
 - Validate multi-output and multi-device scenes.
 
-**Exit criteria:** arbitrary-frame camera output is deterministic, anchor-accurate, independent of stage layout, and visually approved.
+**Exit criteria:** arbitrary-frame camera output is deterministic, subject-accurate, independent of stage layout, and visually approved.
 
 ## Release Gates for Engine VNext
 
@@ -1308,7 +1314,7 @@ A capability is not complete until all applicable gates pass.
 
 - Pure Node-testable projection.
 - No DOM measurement.
-- Layout and anchors from one solved result.
+- Layout and subjects from one solved result.
 - No arbitrary app-state interpretation in renderer.
 - Stable serialized projection hashes.
 
@@ -1337,7 +1343,7 @@ Tokovo is best-in-class when the following statements are true in practice, not 
 3. Rendering frame 9,000 directly is identical to reaching it sequentially.
 4. A second device or app instance cannot contaminate the first.
 5. Changing a camera shot cannot rearrange devices.
-6. Anchors exactly match the geometry rendered on screen.
+6. Subjects exactly match the geometry rendered on screen.
 7. Notifications, calls, keyboard, and system activities behave consistently across supported device profiles.
 8. Voice, effects, and ducking use one deterministic audio program.
 9. Renderer components paint typed projections and contain no domain policy.
@@ -1355,7 +1361,7 @@ New code must not introduce:
 - a second reducer for an existing event namespace;
 - app semantics inside compiler/core/renderer generic code;
 - camera-owned stage layout;
-- DOM measurement as authoritative anchor geometry;
+- DOM measurement as authoritative subject geometry;
 - state shape that depends on number of instances;
 - render-time wall-clock or unseeded random behavior;
 - public options with no tested effect;
@@ -1440,10 +1446,11 @@ The following files are important starting points for implementation review. Pat
 ### Renderer, layout, camera, and stage
 
 - [`packages/renderer/src/TokovoRenderer.tsx`](../packages/renderer/src/TokovoRenderer.tsx)
-- [`packages/renderer/src/MultiDeviceRenderer.tsx`](../packages/renderer/src/MultiDeviceRenderer.tsx)
+- [`packages/renderer/src/CinematicStageRenderer.tsx`](../packages/renderer/src/CinematicStageRenderer.tsx)
 - [`packages/renderer/src/engines/useLayoutEngine.ts`](../packages/renderer/src/engines/useLayoutEngine.ts)
-- [`packages/device-camera/src/reducer/index.ts`](../packages/device-camera/src/reducer/index.ts)
-- [`packages/device-camera/src/plugin.ts`](../packages/device-camera/src/plugin.ts)
+- [`packages/camera/src/program.ts`](../packages/camera/src/program.ts)
+- [`packages/camera/src/evaluate.ts`](../packages/camera/src/evaluate.ts)
+- [`packages/stage/src/evaluate.ts`](../packages/stage/src/evaluate.ts)
 
 ### Audio, voice, backgrounds, and overlays
 

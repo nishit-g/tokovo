@@ -2,7 +2,11 @@ import fs from "node:fs";
 import { createHash } from "node:crypto";
 import path from "node:path";
 
-import { GetObjectCommand, PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
+import {
+  GetObjectCommand,
+  PutObjectCommand,
+  S3Client,
+} from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
 import { createRenderServiceError } from "./errors";
@@ -21,6 +25,10 @@ export type R2ArtifactUploadTargets = {
   poster: R2ArtifactTarget;
   metadata: R2ArtifactTarget;
   logs: R2ArtifactTarget;
+  cameraProgram: R2ArtifactTarget;
+  cameraDiagnostics: R2ArtifactTarget;
+  projectionHashes: R2ArtifactTarget;
+  cameraTrace: R2ArtifactTarget;
 };
 
 export type PresignedArtifactUrls = {
@@ -28,6 +36,10 @@ export type PresignedArtifactUrls = {
   posterUrl: string | null;
   metadataUrl: string | null;
   logsUrl: string | null;
+  cameraProgramUrl: string | null;
+  cameraDiagnosticsUrl: string | null;
+  projectionHashesUrl: string | null;
+  cameraTraceUrl: string | null;
   expiresInSeconds: number;
 };
 
@@ -35,7 +47,10 @@ export type PresignedAssetUrlMap = Record<string, string>;
 
 let cachedClient: S3Client | null = null;
 let cachedClientSignature = "";
-const presignedGetUrlCache = new Map<string, { url: string; expiresAtMs: number }>();
+const presignedGetUrlCache = new Map<
+  string,
+  { url: string; expiresAtMs: number }
+>();
 
 function withTrailingSlash(value: string): string {
   return value.endsWith("/") ? value : `${value}/`;
@@ -120,10 +135,32 @@ export function createR2ArtifactUploadTargets(
       config.publicBaseUrl,
       path.posix.join(keyPrefix, "logs.ndjson"),
     ),
+    cameraProgram: createTarget(
+      config.bucket,
+      config.publicBaseUrl,
+      path.posix.join(keyPrefix, "camera-program.json"),
+    ),
+    cameraDiagnostics: createTarget(
+      config.bucket,
+      config.publicBaseUrl,
+      path.posix.join(keyPrefix, "camera-diagnostics.json"),
+    ),
+    projectionHashes: createTarget(
+      config.bucket,
+      config.publicBaseUrl,
+      path.posix.join(keyPrefix, "projection-hashes.json"),
+    ),
+    cameraTrace: createTarget(
+      config.bucket,
+      config.publicBaseUrl,
+      path.posix.join(keyPrefix, "camera-trace.ndjson"),
+    ),
   };
 }
 
-function parseR2Locator(locator: string): { bucket: string; key: string } | null {
+function parseR2Locator(
+  locator: string,
+): { bucket: string; key: string } | null {
   if (!locator.startsWith("r2://")) return null;
   const remainder = locator.slice("r2://".length);
   const slashIndex = remainder.indexOf("/");
@@ -134,7 +171,10 @@ function parseR2Locator(locator: string): { bucket: string; key: string } | null
   };
 }
 
-async function presignGetObject(locator: string, expiresInSeconds: number): Promise<string | null> {
+async function presignGetObject(
+  locator: string,
+  expiresInSeconds: number,
+): Promise<string | null> {
   const parsed = parseR2Locator(locator);
   const config = getR2Config();
   if (!parsed || !config) return null;
@@ -168,14 +208,31 @@ export async function createPresignedArtifactUrls(
     posterPath: string;
     metadataPath: string;
     logsPath: string;
+    cameraProgramPath: string;
+    cameraDiagnosticsPath: string;
+    projectionHashesPath: string;
+    cameraTracePath: string;
   },
   expiresInSeconds = 3600,
 ): Promise<PresignedArtifactUrls> {
-  const [videoUrl, posterUrl, metadataUrl, logsUrl] = await Promise.all([
+  const [
+    videoUrl,
+    posterUrl,
+    metadataUrl,
+    logsUrl,
+    cameraProgramUrl,
+    cameraDiagnosticsUrl,
+    projectionHashesUrl,
+    cameraTraceUrl,
+  ] = await Promise.all([
     presignGetObject(artifact.videoPath, expiresInSeconds),
     presignGetObject(artifact.posterPath, expiresInSeconds),
     presignGetObject(artifact.metadataPath, expiresInSeconds),
     presignGetObject(artifact.logsPath, expiresInSeconds),
+    presignGetObject(artifact.cameraProgramPath, expiresInSeconds),
+    presignGetObject(artifact.cameraDiagnosticsPath, expiresInSeconds),
+    presignGetObject(artifact.projectionHashesPath, expiresInSeconds),
+    presignGetObject(artifact.cameraTracePath, expiresInSeconds),
   ]);
 
   return {
@@ -183,6 +240,10 @@ export async function createPresignedArtifactUrls(
     posterUrl,
     metadataUrl,
     logsUrl,
+    cameraProgramUrl,
+    cameraDiagnosticsUrl,
+    projectionHashesUrl,
+    cameraTraceUrl,
     expiresInSeconds,
   };
 }
@@ -191,7 +252,9 @@ export async function createPresignedAssetUrlMap(
   assetSources: string[],
   expiresInSeconds = 3600,
 ): Promise<PresignedAssetUrlMap> {
-  const uniqueSources = [...new Set(assetSources)].filter((src) => src.startsWith("r2://"));
+  const uniqueSources = [...new Set(assetSources)].filter((src) =>
+    src.startsWith("r2://"),
+  );
   const entries = await Promise.all(
     uniqueSources.map(async (src) => {
       const url = await presignGetObject(src, expiresInSeconds);
@@ -200,7 +263,9 @@ export async function createPresignedAssetUrlMap(
   );
 
   return Object.fromEntries(
-    entries.filter((entry): entry is readonly [string, string] => entry !== null),
+    entries.filter(
+      (entry): entry is readonly [string, string] => entry !== null,
+    ),
   );
 }
 
@@ -228,6 +293,10 @@ export async function uploadRenderArtifactsToR2(input: {
   posterFilePath: string;
   metadataFilePath: string;
   logsFilePath: string;
+  cameraProgramFilePath: string;
+  cameraDiagnosticsFilePath: string;
+  projectionHashesFilePath: string;
+  cameraTraceFilePath: string;
   targets: R2ArtifactUploadTargets;
 }): Promise<void> {
   const config = getR2Config();
@@ -259,6 +328,26 @@ export async function uploadRenderArtifactsToR2(input: {
       uploadFile(config, {
         filePath: input.metadataFilePath,
         objectKey: input.targets.metadata.objectKey,
+        contentType: "application/json",
+      }),
+      uploadFile(config, {
+        filePath: input.cameraTraceFilePath,
+        objectKey: input.targets.cameraTrace.objectKey,
+        contentType: "application/x-ndjson",
+      }),
+      uploadFile(config, {
+        filePath: input.cameraProgramFilePath,
+        objectKey: input.targets.cameraProgram.objectKey,
+        contentType: "application/json",
+      }),
+      uploadFile(config, {
+        filePath: input.cameraDiagnosticsFilePath,
+        objectKey: input.targets.cameraDiagnostics.objectKey,
+        contentType: "application/json",
+      }),
+      uploadFile(config, {
+        filePath: input.projectionHashesFilePath,
+        objectKey: input.targets.projectionHashes.objectKey,
         contentType: "application/json",
       }),
     ]);

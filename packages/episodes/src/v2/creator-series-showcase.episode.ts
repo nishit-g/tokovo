@@ -5,10 +5,10 @@ import { episode } from "../code-first-episode.js";
  * Long-form v2 showcase that exercises the "creator v1" surface in one place:
  * - lockscreen bait + unlock
  * - screen recording indicator (Dynamic Island)
- * - heads-up notification banner (device-owned anchor)
+ * - heads-up notification banner (device-owned subject)
  * - app switching transitions (WhatsApp -> X -> iMessage -> lock again)
- * - keyboard typing + camera tracking keyboard (device-owned anchor)
- * - app semantic anchors (lastMessage, tweet_card, etc.)
+ * - keyboard typing + camera tracking keyboard (device-owned subject)
+ * - app semantic subjects (lastMessage, tweet_card, etc.)
  *
  * This is intentionally "a bit long" so creators can fork it as a base template.
  */
@@ -198,7 +198,10 @@ export default defineEpisode({
         notifications.at("0.8s").deliver({
           id: "bait-wa",
           appId: "app_whatsapp",
-          content: { title: "Receipts Committee", body: "Jay: no way you still defending him 💀" },
+          content: {
+            title: "Receipts Committee",
+            body: "Jay: no way you still defending him 💀",
+          },
           category: "message",
           interruption: "timeSensitive",
           privacy: "private",
@@ -247,8 +250,10 @@ export default defineEpisode({
         wa.at("10.1s").receive("Rhea", "Caption is giving: 'I lie for sport'");
 
         // Creator POV send.
-        wa.at("11.6s").send("Stop. The audacity has a subscription plan now.", {
-        });
+        wa.at("11.6s").send(
+          "Stop. The audacity has a subscription plan now.",
+          {},
+        );
 
         wa.at("16.2s").receive("Omar", "subscription plan is CRAZY 😭");
         wa.at("19.0s").receive(
@@ -292,55 +297,8 @@ export default defineEpisode({
         );
 
         // Reply beat.
-        im.at("66.0s").send("Too late. I'm already opening them.", {
-        });
+        im.at("66.0s").send("Too late. I'm already opening them.", {});
         im.at("70.0s").receive("Mina", "Okay. Then at least screen record it.");
-      })
-
-      // ---------------------------------------------------------------------
-      // CAMERA: prove device-owned anchors are stable across apps
-      // ---------------------------------------------------------------------
-      .camera((cam) => {
-        cam.at("0s").focus("device", { scale: 1.0, duration: "0.4s" });
-
-        // Recording indicator lives in dynamic island; anchor is device-owned.
-        cam
-          .at("0.9s")
-          .focus("dynamicIsland", { scale: 1.25, duration: "0.35s" });
-        cam.at("1.4s").focus("device", { scale: 1.06, duration: "0.35s" });
-
-        // WhatsApp: follow the punchline as it arrives.
-        cam
-          .span("5.0s", "13.6s")
-          .trackCinematic("lastMessage", { scale: 1.12, smoothing: 0.2 });
-
-        // Heads-up banner (device-owned) should exist even while WhatsApp is foreground.
-        cam
-          .at("14.05s")
-          .focus("notification.banner", { scale: 1.18, duration: "0.45s" });
-        cam
-          .at("15.2s")
-          .focus("lastMessage", { scale: 1.12, duration: "0.35s" });
-
-        // X: focus tweet card and metrics; then track keyboard while composing (device-owned).
-        cam.at("32.05s").focus("tweet_card", { scale: 1.1, duration: "0.45s" });
-        cam
-          .span("32.2s", "38.6s")
-          .trackCinematic("metrics_row", { scale: 1.18, smoothing: 0.2 });
-        cam
-          .span("39.2s", "44.2s")
-          .trackCinematic("keyboard", { scale: 1.12, smoothing: 0.16 });
-
-        // iMessage reply framing.
-        cam
-          .at("58.2s")
-          .focus("imessage_thread", { scale: 1.08, duration: "0.45s" });
-        cam
-          .span("65.8s", "67.4s")
-          .trackCinematic("keyboard", { scale: 1.12, smoothing: 0.16 });
-
-        // Cliffhanger: hold the lockscreen bait.
-        cam.at("84.2s").focus("device", { scale: 1.08, duration: "0.45s" });
       })
       .build(),
 });

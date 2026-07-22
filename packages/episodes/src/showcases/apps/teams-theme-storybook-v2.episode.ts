@@ -43,13 +43,38 @@ export default defineEpisode({
           { id: "u_ren", displayName: "Ren", role: "Compositing" },
         ],
         channels: [
-          { id: "moonlit-cut-v2", name: "moonlit-cut", memberIds: ["u_me", "u_aki", "u_ren"], description: "Festival reel polish", threadIds: ["th_color_grade_v2"], unreadCount: 1, mentionCount: 0 },
+          {
+            id: "moonlit-cut-v2",
+            name: "moonlit-cut",
+            memberIds: ["u_me", "u_aki", "u_ren"],
+            description: "Festival reel polish",
+            threadIds: ["th_color_grade_v2"],
+            unreadCount: 1,
+            mentionCount: 0,
+          },
         ],
         threads: [
-          { id: "th_color_grade_v2", channelId: "moonlit-cut-v2", title: "Color grade", participantIds: ["u_me", "u_aki", "u_ren"], messageIds: [], unreadCount: 0, mentionCount: 0, replyCount: 0, typingUserIds: [], state: "open" },
+          {
+            id: "th_color_grade_v2",
+            channelId: "moonlit-cut-v2",
+            title: "Color grade",
+            participantIds: ["u_me", "u_aki", "u_ren"],
+            messageIds: [],
+            unreadCount: 0,
+            mentionCount: 0,
+            replyCount: 0,
+            typingUserIds: [],
+            state: "open",
+          },
         ],
         dms: [
-          { id: "dm_aki_v2", participantIds: ["u_me", "u_aki"], messageIds: [], unreadCount: 0, mentionCount: 0 },
+          {
+            id: "dm_aki_v2",
+            participantIds: ["u_me", "u_aki"],
+            messageIds: [],
+            unreadCount: 0,
+            mentionCount: 0,
+          },
         ],
       })
       .view("app_teams", "phone", { screen: "chat_list" })
@@ -75,11 +100,6 @@ export default defineEpisode({
           target: dmTarget("dm_aki_v2"),
           text: "That is the correct reading.",
         });
-      })
-      .camera((cam) => {
-        cam.at("0s").focus("chat_list", { scale: 1.01, duration: "0.35s" });
-        cam.at("1.5s").focus("thread_view", { scale: 1.08, duration: "0.35s" });
-        cam.at("8.3s").focus("dm_thread", { scale: 1.08, duration: "0.35s" });
       })
       .build(),
 });

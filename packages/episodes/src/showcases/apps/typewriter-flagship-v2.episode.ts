@@ -6,7 +6,12 @@ const TYPEWRITER_FLAGSHIP_THEME = {
   preset: "classic",
   overrides: {
     layout: { maxRows: 13, maxCols: 44, wrap: "word", bellColsFromRight: 5 },
-    paper: { rotationDeg: -0.3, vignetteOpacity: 0.14, grainOpacity: 0.08, fiberOpacity: 0.08 },
+    paper: {
+      rotationDeg: -0.3,
+      vignetteOpacity: 0.14,
+      grainOpacity: 0.08,
+      fiberOpacity: 0.08,
+    },
     desk: { vignetteOpacity: 0.56, highlightOpacity: 0.08 },
   },
 } as const satisfies TypewriterThemeConfig;
@@ -30,12 +35,20 @@ export default defineEpisode({
     apps: ["app_typewriter"],
   },
   build: () =>
-    episode("typewriter-flagship-v2", { fps: 30, duration: "33s", title: "Typewriter Flagship V2" })
+    episode("typewriter-flagship-v2", {
+      fps: 30,
+      duration: "33s",
+      title: "Typewriter Flagship V2",
+    })
       .background({ type: "solid", color: "#090b10" })
       .device("desk", "canvas", {
         app: "app_typewriter",
         installedApps: ["app_typewriter"],
-        os: { time: new Date("2026-04-10T23:50:00Z"), battery: 91, network: "wifi" },
+        os: {
+          time: new Date("2026-04-10T23:50:00Z"),
+          battery: 91,
+          network: "wifi",
+        },
       })
       .typewriter(
         "desk",
@@ -62,7 +75,16 @@ export default defineEpisode({
               "",
               "That is still good product discipline.",
             ].join("\n"),
-            { cps: 28, jitter: { minFrames: -1, maxFrames: 2 }, mistakes: { rate: 0.02, max: 2 }, pauses: { afterPunctFrames: 1, afterNewlineFrames: 2, afterSpaceFrames: 0 } },
+            {
+              cps: 28,
+              jitter: { minFrames: -1, maxFrames: 2 },
+              mistakes: { rate: 0.02, max: 2 },
+              pauses: {
+                afterPunctFrames: 1,
+                afterNewlineFrames: 2,
+                afterSpaceFrames: 0,
+              },
+            },
           );
           tw.at("23.0s").key("—");
           tw.at("23.2s").backspace();
@@ -70,10 +92,5 @@ export default defineEpisode({
         },
         { theme: TYPEWRITER_FLAGSHIP_THEME },
       )
-      .camera((cam) => {
-        cam.at("0s").focus("paper", { scale: 1.03, duration: "0.4s" });
-        cam.span("1.4s", "19.8s").trackCinematic("cursor", { scale: 1.32, smoothing: 0.22 });
-        cam.at("24.0s").focus("signature", { scale: 1.08, duration: "0.35s" });
-      })
       .build(),
 });

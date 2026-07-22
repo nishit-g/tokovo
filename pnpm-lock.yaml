@@ -183,9 +183,6 @@ importers:
       '@tokovo/core':
         specifier: workspace:*
         version: link:../../packages/core
-      '@tokovo/device-camera':
-        specifier: workspace:*
-        version: link:../../packages/device-camera
       '@tokovo/device-keyboard':
         specifier: workspace:*
         version: link:../../packages/device-keyboard
@@ -566,9 +563,6 @@ importers:
       '@tokovo/core':
         specifier: workspace:*
         version: link:../core
-      '@tokovo/device-camera':
-        specifier: workspace:*
-        version: link:../device-camera
       '@tokovo/device-notifications':
         specifier: workspace:*
         version: link:../device-notifications
@@ -705,9 +699,6 @@ importers:
       '@tokovo/core':
         specifier: workspace:*
         version: link:../core
-      '@tokovo/device-camera':
-        specifier: workspace:*
-        version: link:../device-camera
       '@tokovo/device-keyboard':
         specifier: workspace:*
         version: link:../device-keyboard
@@ -758,31 +749,6 @@ importers:
       vitest:
         specifier: ^1.0.0
         version: 1.6.1(@types/node@20.19.25)(happy-dom@20.8.9)(jsdom@24.1.3)(lightningcss@1.30.2)(sass@1.77.4)(terser@5.44.1)
-
-  packages/device-camera:
-    dependencies:
-      '@tokovo/core':
-        specifier: workspace:*
-        version: link:../core
-      '@tokovo/ir':
-        specifier: workspace:*
-        version: link:../ir
-      '@tokovo/react':
-        specifier: workspace:*
-        version: link:../react
-      react:
-        specifier: 18.3.1
-        version: 18.3.1
-      react-dom:
-        specifier: 18.3.1
-        version: 18.3.1(react@18.3.1)
-    devDependencies:
-      typescript:
-        specifier: ^5.3.0
-        version: 5.9.3
-      vitest:
-        specifier: ^1.0.0
-        version: 1.6.1(@types/node@24.10.11)(happy-dom@20.8.9)(jsdom@24.1.3)(lightningcss@1.30.2)(sass@1.77.4)(terser@5.44.1)
 
   packages/device-keyboard:
     dependencies:
@@ -931,9 +897,6 @@ importers:
       '@tokovo/core':
         specifier: workspace:*
         version: link:../core
-      '@tokovo/device-camera':
-        specifier: workspace:*
-        version: link:../device-camera
       '@tokovo/device-keyboard':
         specifier: workspace:*
         version: link:../device-keyboard
@@ -1049,9 +1012,6 @@ importers:
       '@tokovo/core':
         specifier: workspace:*
         version: link:../core
-      '@tokovo/device-camera':
-        specifier: workspace:*
-        version: link:../device-camera
       '@tokovo/device-keyboard':
         specifier: workspace:*
         version: link:../device-keyboard

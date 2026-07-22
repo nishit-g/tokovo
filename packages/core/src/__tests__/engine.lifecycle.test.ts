@@ -1,12 +1,19 @@
 import { describe, expect, it, vi, afterEach } from "vitest";
 import type { WorldState, TimelineEvent } from "../types.js";
-import { createLifecycleManager, defineLifecycle } from "../engine/lifecycle.js";
+import {
+  createLifecycleManager,
+  defineLifecycle,
+} from "../engine/lifecycle.js";
 
 const world = {
   devices: {},
   appState: {},
-  camera: { baseView: "APP_VIEW" },
-  audio: { activeSounds: {}, buses: {}, policyState: { recentSounds: {}, nextId: 0 }, autoSoundRules: [] },
+  audio: {
+    activeSounds: {},
+    buses: {},
+    policyState: { recentSounds: {}, nextId: 0 },
+    autoSoundRules: [],
+  },
 } as WorldState;
 
 let lifecycle = createLifecycleManager();
@@ -55,7 +62,10 @@ describe("lifecycle manager", () => {
     lifecycle.notifyAfterReplay(world, { frame: 1, mode: "preview" });
     expect(onAfterReplay).toHaveBeenCalled();
 
-    lifecycle.notifyEventProcessed({ kind: "APP", at: 0 } as TimelineEvent, world);
+    lifecycle.notifyEventProcessed(
+      { kind: "APP", at: 0 } as TimelineEvent,
+      world,
+    );
     expect(onEventProcessed).toHaveBeenCalled();
 
     lifecycle.notifyError(new Error("boom"));
@@ -66,7 +76,9 @@ describe("lifecycle manager", () => {
   });
 
   it("handles errors in hooks without crashing", async () => {
-    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    const errorSpy = vi
+      .spyOn(console, "error")
+      .mockImplementation(() => undefined);
 
     lifecycle.register("bad", {
       onInit: () => {
@@ -92,7 +104,10 @@ describe("lifecycle manager", () => {
     await lifecycle.initializeAll();
     lifecycle.notifyBeforeReplay({ frame: 0, mode: "preview" });
     lifecycle.notifyAfterReplay(world, { frame: 0, mode: "preview" });
-    lifecycle.notifyEventProcessed({ kind: "APP", at: 0 } as TimelineEvent, world);
+    lifecycle.notifyEventProcessed(
+      { kind: "APP", at: 0 } as TimelineEvent,
+      world,
+    );
     lifecycle.notifyError(new Error("boom"));
     lifecycle.destroyAll();
 
@@ -101,7 +116,9 @@ describe("lifecycle manager", () => {
   });
 
   it("handles errors in mount and unmount hooks", () => {
-    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    const errorSpy = vi
+      .spyOn(console, "error")
+      .mockImplementation(() => undefined);
 
     lifecycle.register("mount-bad", {
       onMount: () => {

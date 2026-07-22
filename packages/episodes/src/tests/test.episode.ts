@@ -55,12 +55,6 @@ export default defineEpisode({
         },
       )
 
-      // === CAMERA TRACK (optional) ===
-      .camera((cam) => {
-        cam.at("5s").animate({ scale: 1.05, duration: "0.3s" });
-        cam.at("10s").animate({ scale: 1, duration: "0.5s" });
-      })
-
       // === AUDIO TRACK (optional) ===
       .audio((_audio) => {
         // _audio.span("0s", "30s").bgm("ambient", { volume: 0.1 });

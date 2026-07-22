@@ -290,7 +290,7 @@ export interface NotificationDeviceProjection {
     icon: string;
     count: number;
   }[];
-  anchors: {
+  cinematicSubjects: {
     banner?: { x: number; y: number; width: number; height: number };
     lockScreen?: { x: number; y: number; width: number; height: number };
     center?: { x: number; y: number; width: number; height: number };

@@ -19,7 +19,11 @@ export default defineEpisode({
     apps: ["app_whatsapp", "app_instagram", "app_teams", "app_linkedin"],
   },
   build: () =>
-    episode("notification-system-exhaustive", { fps: 30, duration: "30s", title: "Notification System Exhaustive" })
+    episode("notification-system-exhaustive", {
+      fps: 30,
+      duration: "30s",
+      title: "Notification System Exhaustive",
+    })
       .device("phone", "iphone16", {
         app: "app_whatsapp",
         appearance: "dark",
@@ -53,7 +57,10 @@ export default defineEpisode({
         notifications.at("2.0s").deliver({
           id: "n_instagram_1",
           appId: "app_instagram",
-          content: { title: "Instagram", body: "112 new comments on your post." },
+          content: {
+            title: "Instagram",
+            body: "112 new comments on your post.",
+          },
           interruption: "active",
           privacy: "public",
           threadId: "ig_post",
@@ -62,7 +69,10 @@ export default defineEpisode({
         notifications.at("3.2s").deliver({
           id: "n_teams_1",
           appId: "app_teams",
-          content: { title: "Launch War Room", body: "@you in release-blocker thread" },
+          content: {
+            title: "Launch War Room",
+            body: "@you in release-blocker thread",
+          },
           interruption: "timeSensitive",
           privacy: "private",
           threadId: "teams_release",
@@ -72,7 +82,10 @@ export default defineEpisode({
         notifications.at("6.0s").deliver({
           id: "n_linkedin_1",
           appId: "app_linkedin",
-          content: { title: "Noor Ahmed", body: "Sent you an InMail about a design lead role." },
+          content: {
+            title: "Noor Ahmed",
+            body: "Sent you an InMail about a design lead role.",
+          },
           interruption: "active",
           privacy: "private",
           threadId: "li_inmail",
@@ -91,7 +104,10 @@ export default defineEpisode({
         notifications.at("12.8s").deliver({
           id: "n_lock_teams",
           appId: "app_teams",
-          content: { title: "غرفة الإطلاق", body: "انضم إلى المكالمة خلال دقيقتين." },
+          content: {
+            title: "غرفة الإطلاق",
+            body: "انضم إلى المكالمة خلال دقيقتين.",
+          },
           interruption: "critical",
           privacy: "sensitive",
           previewPolicy: "never",
@@ -103,7 +119,10 @@ export default defineEpisode({
         notifications.at("19.0s").deliver({
           id: "n_instagram_2",
           appId: "app_instagram",
-          content: { title: "Instagram", body: "Luca Frames mentioned you in a story reply." },
+          content: {
+            title: "Instagram",
+            body: "Luca Frames mentioned you in a story reply.",
+          },
           interruption: "active",
           privacy: "public",
           threadId: "ig_story",
@@ -112,7 +131,10 @@ export default defineEpisode({
         notifications.at("21.0s").deliver({
           id: "n_teams_2",
           appId: "app_teams",
-          content: { title: "Design Sync", body: "Critical approval needed despite Focus." },
+          content: {
+            title: "Design Sync",
+            body: "Critical approval needed despite Focus.",
+          },
           interruption: "timeSensitive",
           privacy: "private",
           threadId: "teams_design",
@@ -121,14 +143,6 @@ export default defineEpisode({
         notifications.at("24.0s").openCenter();
         notifications.at("26.5s").dismiss("n_teams_2");
         notifications.at("28.0s").closeCenter();
-      })
-      .camera((cam) => {
-        cam.at("0s").focus("device", { scale: 1.01, duration: "0.3s" });
-        cam.span("0.8s", "4.4s").trackCinematic("notification.lockScreen", { scale: 1.16, smoothing: 0.16 });
-        cam.at("8.0s").focus("notification.banner", { scale: 1.1, duration: "0.3s" });
-        cam.at("10.6s").focus("device", { scale: 1.02, duration: "0.35s" });
-        cam.span("12.8s", "15.8s").trackCinematic("notification.lockScreen", { scale: 1.12, smoothing: 0.18 });
-        cam.at("21.0s").focus("notification.banner", { scale: 1.08, duration: "0.25s" });
       })
       .build(),
 });

@@ -7,12 +7,6 @@ function createContext(fps: number): CompilerContext {
     fps,
     durationInFrames: 300,
     devices: [],
-    anchors: {
-      list: () => [],
-      has: () => false,
-      get: () => undefined,
-      filter: () => [],
-    },
   };
 }
 

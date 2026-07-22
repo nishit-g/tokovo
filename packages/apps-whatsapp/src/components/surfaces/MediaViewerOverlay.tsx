@@ -61,7 +61,7 @@ export function MediaViewerOverlay({
 
   return (
     <div
-      data-anchor="media_viewer"
+      data-cinematic-subject="media_viewer"
       role="dialog"
       aria-modal="true"
       aria-label={t("media.viewer")}
@@ -77,7 +77,7 @@ export function MediaViewerOverlay({
       }}
     >
       <div
-        data-anchor="media_viewer_header"
+        data-cinematic-subject="media_viewer_header"
         style={{
           height: 64,
           padding: "16px 14px 8px",
@@ -117,7 +117,7 @@ export function MediaViewerOverlay({
       </div>
 
       <div
-        data-anchor="media_viewer_content"
+        data-cinematic-subject="media_viewer_content"
         style={{
           flex: 1,
           minHeight: 0,
@@ -180,7 +180,7 @@ export function MediaViewerOverlay({
 
       {(message.caption || message.fileName || message.locationName) && (
         <div
-          data-anchor="media_viewer_caption"
+          data-cinematic-subject="media_viewer_caption"
           style={{
             padding: "12px 16px 24px",
             color: theme.colors.mediaViewerText,

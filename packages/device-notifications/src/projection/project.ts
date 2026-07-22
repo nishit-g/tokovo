@@ -310,7 +310,7 @@ export function projectNotifications(
       ),
     },
     statusBarIcons,
-    anchors: {
+    cinematicSubjects: {
       banner: banner
         ? {
             x: bannerMargin,

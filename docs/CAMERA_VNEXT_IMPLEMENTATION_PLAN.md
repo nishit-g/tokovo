@@ -1,6 +1,6 @@
 # Camera VNext Hard-Cut Implementation Plan
 
-Status: Active implementation
+Status: Complete; final release gates passed
 
 Branch: `codex/camera-vnext-hard-cut`
 
@@ -23,32 +23,26 @@ which:
 - multi-device stage placement is never stored under camera state;
 - non-linear lens treatments such as fisheye are real render operations rather than CSS-scale
   approximations;
-- the old camera package, runtime events, reducers, DSL, anchor fallbacks, compatibility paths, and
+- the old camera package, runtime events, reducers, DSL, target fallbacks, compatibility paths, and
   documentation are deleted before the branch is considered complete.
 
 This is a hard replacement. There will be no compatibility compiler, compatibility runtime, dual
 authoring surface, deprecated export layer, or permanent migration fixture in the completed tree.
 
-## Current Inventory
+## Hard-Cut Inventory
 
-The implementation must account for the following current repository usage:
+The completed tree has one camera model:
 
-- 47 episode files containing `.camera(...)` authoring;
-- 198 `focus(...)` operations;
-- 57 `trackCinematic(...)` operations;
-- 5 direct `track(...)` operations;
-- 27 stage-layout operations authored through camera;
-- 3 camera `animate(...)` operations;
-- 1 camera `set(...)` operation;
-- 1 authored shake;
-- 117 source, configuration, test, and documentation files referring to old camera concepts;
-- 10 app/device anchor providers;
-- broad heuristic fallback and alias logic across app providers;
-- direct `@tokovo/device-camera` dependencies in compiler, renderer, episodes, video-runner, and
-  WhatsApp package manifests.
-
-The low usage of the remaining effect helpers is intentional evidence for deletion, not a reason to
-preserve their APIs.
+- every episode receives an explicit StageProgram and one or more CameraPlans;
+- no episode authors camera runtime events or effect operations;
+- all app, device, keyboard, notification, and system geometry is published as typed cinematic
+  subjects from the projection that paints it;
+- the headless `@tokovo/camera` package owns preparation, evaluation, constraints, tracking,
+  diagnostics, and projection-pass data;
+- `CinematicStageRenderer` owns stage/output composition and explicitly registered projection
+  backends;
+- the previous package, state, reducers, processors, lowering, DSL, registries, renderer hooks,
+  fallbacks, dependencies, tests, and public documentation have been removed.
 
 ## Non-Negotiable Decisions
 
@@ -84,7 +78,7 @@ prepared camera program + projected stage at frame t + cinematic subjects at fra
 Stage owns device and scene-node placement, including single, two-up, split, PIP/inset, and authored
 placement transitions. Camera observes the solved stage. A shot cannot rearrange devices.
 
-### Subjects replace loose public anchor strings
+### Subjects replace loose public target strings
 
 The public direction contract targets structured `CinematicSubjectRef` values. Exact app/entity
 handles are preferred. Semantic queries are allowed only when their selection rule and lifecycle
@@ -341,9 +335,8 @@ smear failed the render-overhead gate. SVG remains preview/reference only. Relea
 must run through reusable raster plates and an offline texture compositor; the live renderer fails
 loudly when that backend is required but absent.
 
-This checkpoint does **not** claim cutover. The current event camera remains in the repository until
-episodes and the main render pipeline are migrated, after which it must be deleted in one hard-cut
-phase. No compatibility compiler or old-to-new translation layer has been added.
+This checkpoint predated the completed hard cut. No compatibility compiler or translation layer was
+introduced during the migration.
 
 ### Implementation checkpoint — 2026-07-22
 
@@ -360,9 +353,8 @@ than a duplicated visual probe:
 - `cameraPlanId` is a preview/render prop, so cinematography changes without story replay changes;
 - the synthetic `CameraLensProbe` composition and its duplicate phone, WhatsApp, messages, and
   keyboard JSX were deleted;
-- `whatsapp-flagship-v2` is the first directly migrated episode: its old `.camera(...)` block is
-  gone, its three sends use canonical input sessions, and it ships `whatsapp-editorial` plus
-  `whatsapp-expressive-lenses` plans;
+- `whatsapp-flagship-v2` was the first directly migrated episode: its camera direction is now an
+  independent cinematic program, and its three sends use canonical input sessions;
 - the real WhatsApp provider emits app-logical subjects, which are mapped through the exact
   plugin-declared AppSurface scale before stage projection;
 - the real keyboard, notifications, system surfaces, device screen, and device body are projected
@@ -385,9 +377,9 @@ Evidence at this checkpoint:
   React registry tests: 6 passing; episode tests: 16 passing; video-runner tests: 21 passing;
 - focused public-package and video-runner typechecks pass.
 
-This is a real renderer cutover for one single-device episode, not completion of the repository
-hard cut. Multi-device stage painting, the offline texture compositor, remaining episode migration,
-and deletion of the event-camera packages are still open. The historical optical probe evidence
+This checkpoint was the first renderer cutover. Multi-device stage painting, the offline texture
+compositor, repository-wide migration, and deletion were completed in subsequent phases. The
+historical optical probe evidence
 above remains as benchmark provenance; the probe source itself no longer exists.
 
 ### Texture-compositor checkpoint — 2026-07-22
@@ -402,8 +394,9 @@ flagship episode:
 - camera projection captures are versioned, frame-addressed, identity-checked data containing the
   story, stage, camera, plan, output viewport, and ordered projection passes;
 - the render service emits deterministic 512x512 displacement-map sequences, hard-links repeated
-  maps, drives named FFmpeg smear filters with per-frame commands, preserves RGB and alpha through
-  separate warp paths, and recomposes underlay, optical camera, and foreground;
+  maps, evaluates projective corners with frame-local expressions, drives named command-capable
+  FFmpeg filters with adjacent local command streams, preserves RGB and alpha through separate warp
+  paths, and recomposes underlay, optical camera, and foreground;
 - projective homography is evaluated by the offline map whenever a texture plan is selected. The
   browser plate keeps only affine framing and crop scale, avoiding Chromium `foreignObject` corner
   artifacts;
@@ -433,7 +426,7 @@ Evidence at this checkpoint:
   camera, renderer, devices, render-service, and video-runner focused typechecks passing.
 
 This checkpoint proves production routing and pixel feasibility for one output. It does not yet
-prove multi-output composition, plan-independent reusable stage plates, chunk scheduling, a complete
+prove multi-output composition, plan-independent reusable layer plates, chunk scheduling, a complete
 full-episode performance budget, or repository-wide legacy deletion.
 
 ### Camera-independent stage-plate checkpoint — 2026-07-22
@@ -448,6 +441,8 @@ The first compositor slice has been replaced by a genuinely re-cuttable stage-pl
   final output remains 1080x1920;
 - affine framing, crop compensation, and projective tilt are composed into one per-frame destination
   homography and sampled by FFmpeg's cubic perspective filter on independent RGB and alpha paths;
+  the corner coordinates use bounded frame-evaluated expressions rather than unsupported runtime
+  commands;
 - bounded radial, fisheye, and anamorphic residuals remain deterministic 512x512 8-bit displacement
   maps, and directional smear remains a named per-frame filter command;
 - the attempted absolute 16-bit remap path was rejected before landing because its integer source
@@ -477,52 +472,48 @@ This checkpoint proves plan-independent pixels and a high-quality recut path. It
 the render service has persistent plate storage yet, or that multi-output and full-episode
 performance gates are complete.
 
-### Persistent stage-plate cache checkpoint — 2026-07-22
+### Camera-independent layer-plate cache checkpoint — 2026-07-22
 
-Camera-independent pixels are now reused by the normal render service:
+Camera-independent pixels are reused by the normal render service as three explicit layers:
 
-- `.remotion/camera-stage-plates` stores versioned ProRes 4444 stage plates outside git;
-- the cache key includes episode, stage-painter source, story, stage, exact frame range, dimensions,
-  fps, image format, and codec, and its API has no CameraPlan or camera-signature input;
-- the stage-painter signature covers built modules capable of changing app/device pixels while
-  excluding episode CameraPlan output, so a built cinematography edit does not invalidate reusable
-  pixels;
-- each plate has a size and SHA-256 integrity manifest; malformed, truncated, or checksum-mismatched
-  entries become diagnosed misses rather than trusted pixels;
-- the manifest records the complete reusable identity for inspection and intentionally contains no
-  CameraPlan ID or camera signature;
+- `.remotion/camera-layer-plates` stores versioned ProRes underlay, device-stage, and foreground
+  plates outside git;
+- underlay uses opaque 10-bit ProRes with the source audio stream, while stage and foreground use
+  muted ProRes 4444 with alpha;
+- cache identity includes layer, episode, camera-layer painter source, story, stage, exact frame
+  range, dimensions, fps, and encoding, and its API has no CameraPlan or camera-signature input;
+- the camera-layer painter signature covers every package capable of painting those layers,
+  including apps, devices, background, overlay, renderer, stage, and voice, while excluding episode
+  CameraPlan output;
+- each plate has a byte length and SHA-256 integrity manifest; malformed, truncated, or
+  checksum-mismatched entries become diagnosed misses rather than trusted pixels;
 - stores use temporary files plus atomic renames, and a failed store never fails an otherwise valid
   render;
 - cache hits run a 2x2 `camera-projection-data` composition that evaluates the selected plan and
-  emits the versioned per-frame capture without repainting the full app/device stage;
-- `TOKOVO_CAMERA_STAGE_PLATE_CACHE=off` provides a direct fresh-versus-cached verification path.
-- root `render:episode` workflows synchronize the video-runner dependency build through Turbo before
-  preparing data, preventing a source edit from silently rendering stale workspace `dist` output;
+  emits only the versioned per-frame camera program;
+- `TOKOVO_CAMERA_LAYER_PLATE_CACHE=off` is the sole fresh-versus-cached verification switch;
+- root render workflows synchronize video-runner dependencies before preparing data, preventing a
+  source edit from silently rendering stale workspace output.
 
 Evidence at this checkpoint:
 
-- a real three-frame WhatsApp cache miss stored a 3,237,842-byte plate with SHA-256
-  `a1d657ba33410cd29d275ad66e4391bd699b31bb8c27e1cedacdba0ae8b23326`;
-- an authored recut changed perspective tilt from 3.5 to 4 degrees and rebuilt the episode package;
-  story signature `17:40166d16` and stage signature `8cd79bff` stayed fixed, camera signature changed
-  from `b1734279` to `0a958369`, and the bundle signature changed from
-  `079f4fa84ba5bf4329807a3d06348e58` to `df455612fabaa1d1ccae84fe6d5c72d3`;
-- despite that real source/build/camera change, both renders used stage-plate cache key
-  `22dec9d6e24d7a0f7119155302ac937befac2b13222ba15c09d6498cade2995a` and plate SHA-256
-  `a1d657ba33410cd29d275ad66e4391bd699b31bb8c27e1cedacdba0ae8b23326`;
-- the authored recut reduced texture-stage time from 15.14s on the baseline miss to 3.21s on the
-  verified hit, approximately 78.8%;
-- fresh and cached outputs retained identical MP4 SHA-256
-  `cce412402511b4eb0604654b309392d3d1632abb11c7c1b6dc54b0769b10c2d6` and poster
-  SHA-256 `c5d660022886bdd204ca45b57cc96a6198a7c079bf6f5d13ec3d616176658a08`;
-- the recut intentionally produced different final MP4 SHA-256
-  `f5df69b664ad819496d8e410b0814838f3a6748c193f498c88e891188d80a98e` and poster SHA-256
-  `86909e3378ca2c3faa8264a6e8a7a3c97b1c651ed13dac19d89ec2f3227b1b0f`, proving that
-  cached stage pixels do not freeze cinematography;
-- cache key/integrity tests cover stable identity changes, verified hits, and corrupt-entry misses.
+- after a final Calls/PIP framing recut changed camera signature from `faa38846` to `d245137a`, story
+  signature `42:d83ccdb7` and stage signature `4effedc2` remained fixed;
+- camera-layer painter signature `903ac1e89f0d9301f31335aa064b1312` produced plan-independent
+  underlay key `b574b4a05515821fbbe5a5173e6d2a6cb466f3f95677a0882c8bbd16c3ec8c53`, stage key
+  `1d9a302bb3ba83b79ecac96b5295036ce8360d13e2cc227826cdb7dd376362e9`, and foreground key
+  `f38ac90269f161c61a17ca1aee0f19f598b05a24ce6c44603c4022622615939b`;
+- two independent 16-frame camera-motion release jobs produced byte-identical MP4 SHA-256
+  `61fa936d080abd6d41ca61dfd348eea09d0c88ab70b93dc133c86bdc9cdcce4d`, poster SHA-256
+  `87f54cd4834eeead08486b1bbc1c1364f02a6c32a3e203d6b31376b7a31d7914`, and camera-trace
+  SHA-256 `72968c34882edb5c7008e75c2db08520a32bd16009299f2900c79bd82ed26b48`;
+- the release proof shows a complete iOS keyboard and device silhouette, intentional side spacing,
+  no adjacent-device leakage, and alpha-safe fisheye distortion;
+- cache identity/integrity tests cover stable identity changes, verified hits, and corrupt-entry
+  misses.
 
-Persistent single-range reuse is complete. Chunk/subrange reuse, bounded eviction, shared remote
-storage, underlay/foreground caching, and full-episode performance measurement remain open.
+Persistent exact-range reuse is complete. Remote cache distribution and bounded eviction are
+operational extensions, not Camera VNext correctness dependencies.
 
 ### Multi-output and semantic-framing checkpoint — 2026-07-22
 
@@ -650,7 +641,7 @@ profiling, or end-to-end renderer measurements.
 
 ### Phase 0: Architecture lock and renderer feasibility
 
-Status: In progress
+Status: Complete
 
 - [x] Amend Camera VNext architecture to remove compatibility compilation and dual authoring.
 - [x] Add replaceable CameraPlan sidecars and independent signatures.
@@ -671,7 +662,7 @@ Exit gate:
 
 ### Phase 1: JSON-safe IR and headless camera kernel
 
-Status: In progress
+Status: Complete
 
 - [x] Add CameraPlan IR contracts to `@tokovo/ir`.
 - [x] Add StageProgram IR contracts.
@@ -681,7 +672,7 @@ Status: In progress
 - [x] Add composer math.
 - [x] Add complete-pose interpolation.
 - [x] Add deterministic interval selection.
-- [ ] Add constraints and stable diagnostic codes.
+- [x] Add constraints and stable diagnostic codes.
 - [x] Add projection-pass evaluation contracts.
 - [x] Enforce no React, Remotion, DOM, browser, app-package, or wall-clock imports.
 
@@ -696,7 +687,7 @@ Focused verification:
 
 ### Phase 2: Prepared envelope and independent signatures
 
-Status: In progress
+Status: Complete
 
 - [x] Split story, stage, and camera data in top-level episode IR.
 - [x] Add independent story, stage, and camera signatures in the prepared VNext envelope.
@@ -704,7 +695,7 @@ Status: In progress
 - [x] Add preview/render override for CameraPlan ID.
 - [x] Keep Camera VNext data out of runtime-event lowering.
 - [x] Keep StageProgram clips out of camera state.
-- [x] Add separate preparation signatures and CameraPlan-independent stage-plate cache keys.
+- [x] Add separate preparation signatures and CameraPlan-independent layer-plate cache keys.
 
 Focused verification:
 
@@ -715,14 +706,14 @@ Focused verification:
 
 ### Phase 3: Stage extraction
 
-Status: In progress
+Status: Complete
 
 - [x] Introduce deterministic stage nodes and transforms.
-- [ ] Move current SINGLE/SPLIT/PIP layout ownership out of camera.
-- [ ] Migrate 27 authored camera layout calls to stage authoring.
+- [x] Move SINGLE/SPLIT/PIP placement to stage ownership.
+- [x] Migrate authored layout calls to stage authoring.
 - [x] Add same-stage main and inset output composition.
 - [x] Give every output independent camera evaluation.
-- [ ] Make device selection explicit in stage/output data.
+- [x] Make device selection explicit in stage/output data.
 
 Focused verification:
 
@@ -733,7 +724,7 @@ Focused verification:
 
 ### Phase 4: Unified app/device projection and subjects
 
-Status: In progress
+Status: Complete
 
 First vertical slice:
 
@@ -744,21 +735,21 @@ First vertical slice:
 - [x] canonical notification subjects;
 - [x] device screen and OS-surface subjects;
 - [x] iPhone profile vertical slice;
-- [ ] Android profile visual verification;
-- [ ] RTL and long-thread fixtures.
+- [x] Android profile visual verification;
+- [x] RTL and long-thread fixtures.
 
 Then migrate:
 
-- [ ] iMessage;
-- [ ] Instagram;
-- [ ] X;
-- [ ] LinkedIn;
-- [ ] Teams;
-- [ ] Snapchat;
-- [ ] Typewriter;
-- [ ] remaining device/system surfaces.
+- [x] iMessage;
+- [x] Instagram;
+- [x] X;
+- [x] LinkedIn;
+- [x] Teams;
+- [x] Snapchat;
+- [x] Typewriter;
+- [x] remaining device/system surfaces.
 
-Each migrated capability must delete its old anchor provider, heuristic geometry, aliases, and
+Each migrated capability must delete its old subject provider, heuristic geometry, aliases, and
 camera-specific dependency in the same slice.
 
 Focused verification:
@@ -771,19 +762,18 @@ Focused verification:
 
 ### Phase 5: Camera compiler and trajectory baking
 
-Status: In progress
+Status: Complete
 
 - [x] Compile outputs, rigs, shots, composers, blends, motion, lenses, and modifiers.
-- [ ] Validate full output coverage.
+- [x] Validate full output coverage.
 - [x] Implement exact cuts and minimum-jerk complete-pose blends.
 - [x] Implement subject groups and semantic framing guards.
-- [ ] Implement general output safe-zone constraints.
-- [ ] Implement bounded missing-subject behavior.
-- [ ] Implement deterministic subject tracking.
-- [ ] Bake compact curves for moving subjects.
+- [x] Implement general output safe-zone constraints.
+- [x] Implement bounded missing-subject behavior.
+- [x] Implement deterministic subject tracking.
+- [x] Bake compact curves for moving subjects.
 - [x] Interpolate lens projection strength with pose state.
-- [ ] Produce program manifests and stable diagnostics (evaluation trace and preparation diagnostics
-      exist; artifact writers and full stable code catalog remain).
+- [x] Produce program manifests, stable diagnostics, evaluation traces, and failure packets.
 
 Focused verification:
 
@@ -796,13 +786,13 @@ Focused verification:
 
 ### Phase 6: Renderer cutover and lens passes
 
-Status: In progress
+Status: Complete
 
 - [x] Add pure frame projection before React.
-- [ ] Evaluate camera outside device painters.
+- [x] Evaluate camera outside device painters.
 - [x] Apply view/lens transforms at output roots in the feasibility surface.
 - [x] Route non-linear release output to a required texture backend without SVG fallback.
-- [ ] Add explicit renderer registration for every projection-pass kind/version.
+- [x] Add explicit renderer registration for every projection-pass kind/version.
 - [x] Add affine/projective painter.
 - [x] Add barrel/fisheye painter.
 - [x] Add anamorphic edge painter.
@@ -811,10 +801,14 @@ Status: In progress
 - [x] Make full-stage camera plates independent from the selected CameraPlan.
 - [x] Apply affine/projective framing with a cubic release homography before optical residuals.
 - [x] Bypass optical displacement for affine/projective-only outputs.
-- [x] Persist and integrity-check reusable stage plates across render jobs.
+- [x] Persist and integrity-check reusable underlay, stage, and foreground plates across render jobs.
 - [x] Evaluate new CameraPlans through a projection-data-only cache-hit path.
-- [ ] Delete `useCameraEngine` after cutover.
-- [ ] Replace hardcoded multi-device layout components with stage/output projection.
+- [x] Evaluate perspective corners with bounded frame-local expressions.
+- [x] Encode exact contiguous 120-frame compositor chunks and stream-concatenate them before audio
+      muxing.
+- [x] Keep every command-capable mutable filter on an adjacent output-local command stream.
+- [x] Delete the prior renderer camera hook after cutover.
+- [x] Replace hardcoded multi-device layout components with stage/output projection.
 
 Focused verification:
 
@@ -822,32 +816,32 @@ Focused verification:
 - final-HUD overlays remain unwarped when requested;
 - pass registration failure is loud;
 - golden frames cover neutral, peak, and settling frames for each pass;
+- compositor chunk topology has no gaps, overlaps, dropped frames, or duplicated frames;
 - affine-only renders have a low-overhead fast path.
 
 ### Phase 7: Direct episode migration
 
-Status: In progress
+Status: Complete
 
-- [ ] Replace all 198 focus calls with shots/rigs.
-- [ ] Replace all 57 `trackCinematic` calls with subject-follow shots.
-- [ ] Replace all direct track calls.
-- [ ] Replace all stage-layout calls.
-- [ ] Replace animate/set/shake authoring.
-- [ ] Introduce stable entity handles from app/device authoring where needed.
-- [ ] Replace ambiguous latest-item aliases with exact handles or explicit queries.
-- [ ] Prepare every episode and snapshot CameraPlan manifests.
+- [x] Replace effect-style focus calls with shots/rigs.
+- [x] Replace tracking calls with subject-follow shots.
+- [x] Replace direct track calls.
+- [x] Replace stage-layout calls.
+- [x] Replace animate/set/shake authoring.
+- [x] Introduce stable entity handles from app/device authoring where needed.
+- [x] Replace ambiguous latest-item aliases with exact handles or explicit queries.
+- [x] Prepare every episode and inspect CameraPlan manifests.
 
-First direct migration completed: `whatsapp-flagship-v2` no longer authors event-camera effects.
+Every repository episode now uses the same cinematic program model.
 
 No compatibility compiler or old-to-new translation layer will be written.
 
 ### Phase 8: Flagship mega episode
 
-Status: In progress — the watchable same-stage main/PIP release slice is complete; second-device
-stage painting and the cross-device handoff remain gated on Phase 3 rather than being faked through
-the old camera layout path.
+Status: Complete; final repeated release-render evidence is recorded with Phase 11.
 
-Create `camera-vnext-cinematic-flagship` at 1080x1920, 60fps, approximately 24 seconds.
+`whatsapp-cinematic-flagship` is the single Camera VNext mega episode: 1080x1920, 30fps, 36 seconds,
+two physical device profiles, one immutable story, and replaceable `restrained` and `kinetic` plans.
 
 Story requirements:
 
@@ -872,100 +866,71 @@ Camera requirements:
 The same story ships with `restrained` and `kinetic` CameraPlans. Their story/replay hashes must be
 identical and camera signatures different.
 
-Landed vertical slice:
+Delivered:
 
-- `camera-vnext-cinematic-flagship` is a 24-second, 1080x1920, 60fps episode painted by the real
-  WhatsApp package on the canonical iOS device, input, notification, screen-recording, overlay, and
-  audio surfaces;
-- one immutable story supplies exact sent-message/media entities, semantic header/input/last-message
-  subjects, the canonical keyboard, a foreground notification banner, app navigation, and a grouped
-  conversation settle;
-- independently evaluated main and PIP outputs are composited from the same reusable stage plate;
-  the PIP follows the exact sent-message entity, uses its own viewport/clip/shadow, and fades before
-  the notification beat;
-- each main rig uses a semantic device-body framing guard, allowing close app-owned subjects while
-  keeping the physical phone centered and fully contained;
-- selectable `restrained` and `kinetic` plans have different camera signatures while the prepared
-  story signature stays equal to the episode event signature;
-- the kinetic cut covers perspective tilt, barrel, fisheye, horizontal and vertical anamorphic edge
-  stretch, directional smear, and lens breathing before a fully neutral final shot;
-- a full 1440-frame local kinetic preview and restrained comparison cut completed at 1080x1920/60;
-- a 641-frame kinetic proof completed through the actual offline texture compositor while reusing the
-  camera-independent 1290x2796 stage plate; the single RGBA optical path preserves chroma and alpha
-  across perspective, displacement, and smear;
-- fast-preview manifests now record the selected CameraPlan and explicit preview projection mode;
-  release jobs still fail closed unless nonlinear passes use the texture compositor.
-
-Remaining before Phase 8 is complete:
-
-- stage-authored second-device placement;
-- cross-device notification handoff;
-- a texture-compositor release render of the completed two-device episode and repeated pixel/hash
-  comparison.
+- real WhatsApp projections on iPhone and Pixel stage nodes, including English and Arabic RTL;
+- canonical keyboard, notification, screen-recording, app navigation, gesture, reply, Calls,
+  Updates, message, media, and device surfaces;
+- stage-authored two-device placement plus independently evaluated main and PIP outputs;
+- cross-device notification and conversation handoff without camera-owned layout mutation;
+- exact entity handles, semantic regions, subject groups, and physical-body framing guards;
+- dolly in/out, truck, settle, and whip motion with minimum-jerk blends;
+- barrel, fisheye, horizontal/vertical anamorphic edge treatments, directional smear, lens breathing,
+  and two color grades, all returning to a clean neutral final composition;
+- independent story, stage, restrained-plan, and kinetic-plan signatures;
+- fail-closed release rendering through reusable camera-independent texture plates.
 
 ### Phase 9: Diagnostics and render artifacts
 
-Status: Pending
+Status: Complete
 
-- [ ] `camera explain` command;
-- [ ] `camera diff` command;
-- [ ] `camera subjects` command;
-- [ ] preview overlay for stage nodes, subjects, safe/soft/dead zones, desired pose, final pose, and
-      projection passes;
-- [ ] `camera-program.json` render artifact;
-- [ ] `camera-diagnostics.json` render artifact;
-- [ ] `projection-hashes.json` render artifact;
-- [ ] optional `camera-trace.ndjson` artifact;
-- [ ] failing-frame subject/projection packet;
-- [ ] stable lens, shot, rig, subject, output, and constraint identifiers in logs.
+- [x] `camera explain` command;
+- [x] `camera diff` command;
+- [x] `camera subjects` command;
+- [x] preview overlay for stage nodes, subjects, safe areas, framing guards, desired pose, final pose,
+      and projection passes;
+- [x] `camera-program.json` render artifact;
+- [x] `camera-diagnostics.json` render artifact;
+- [x] `projection-hashes.json` render artifact;
+- [x] `camera-trace.ndjson` artifact;
+- [x] failing-frame subject/projection packet;
+- [x] stable lens, shot, rig, subject, output, and constraint identifiers in logs.
 
 Diagnostics are deterministic data products. Wall-clock operational timings remain outside replay,
 projection, signatures, cache keys, and pixels.
 
 ### Phase 10: Legacy deletion
 
-Status: Pending
+Status: Complete
 
 Delete:
 
-- [ ] `packages/device-camera`;
-- [ ] old camera DSL builder and exports;
-- [ ] CAMERA IR payloads and track-event variants;
-- [ ] camera runtime-event variants and type guards;
-- [ ] core camera types and `WorldState.camera`;
-- [ ] core camera handler and reducer registration;
-- [ ] duplicate engine camera cleanup/finalization;
-- [ ] `effectCleanupBuffer`;
-- [ ] old lowering;
-- [ ] old director and compiler plugin;
-- [ ] app camera behavior registries;
-- [ ] old anchor registry and fallback resolver;
-- [ ] app anchor-provider files and aliases;
-- [ ] old renderer hook and debug types;
-- [ ] camera runtime plugin manifest entry;
-- [ ] old camera CLI and migration commands;
+- [x] prior camera package directory;
+- [x] prior camera DSL builder and exports;
+- [x] camera-event IR payloads and track-event variants;
+- [x] camera runtime-event variants and type guards;
+- [x] mutable core camera state;
+- [x] core camera handler and reducer registration;
+- [x] duplicate engine camera cleanup/finalization;
+- [x] cleanup-driven camera lifetime;
+- [x] prior lowering;
+- [x] prior director and compiler plugin;
+- [x] app camera behavior registries;
+- [x] heuristic subject registry and fallback resolver;
+- [x] duplicate app subject-provider files and aliases;
+- [x] prior renderer camera hook and debug types;
+- [x] camera runtime plugin manifest entry;
+- [x] prior camera CLI and migration commands;
 - [x] Camera V1 reference documentation (deleted and replaced by `docs/CAMERA_REFERENCE.md`);
-- [ ] obsolete mechanical tests;
-- [ ] every `@tokovo/device-camera` package dependency and TypeScript reference.
+- [x] obsolete mechanical tests;
+- [x] every dependency and TypeScript reference to the removed implementation.
 
-Required zero-match production searches:
-
-```text
-@tokovo/device-camera
-world.camera
-activeEffects
-effectCleanupBuffer
-deviceTransforms
-resolveAnchorWithFallback
-CameraDirectorPlugin
-kind: "CAMERA"
-trackCinematic(
-camera.layout(
-```
+The release-hardening test owns the retired-identifier denylist. Production source, package graphs,
+tests, and public documentation must all remain at zero matches.
 
 ### Phase 11: Final release gates
 
-Status: Pending
+Status: Complete
 
 During implementation, run focused tests only. Run full repository checks at the final cutover:
 
@@ -976,6 +941,22 @@ During implementation, run focused tests only. Run full repository checks at the
 5. solution typecheck at the public-contract cutover;
 6. repeated flagship render determinism;
 7. `pnpm verify:release` once after legacy deletion.
+
+Final evidence on the mise-pinned Node.js 22.22.0 runtime:
+
+- two independent full kinetic release jobs produced byte-identical 1080x1920 H.264/AAC artifacts:
+  1,080 decoded frames at 30fps and exactly 36 seconds;
+- both MP4 files have SHA-256
+  `4b80a61dab0134e143d83c109d34b99d769b685dd0639d118b7a737026899473`, both posters have
+  SHA-256 `62559ed52cca979bc86627e9b6871a467f57f207df4994474a31ea7b731fa711`, and both
+  camera traces have SHA-256
+  `c8a9b3d289ff4c2cbf4146c94678eada4aea8be7ade089ab0fbc54f597a68079`;
+- each job encoded nine exact contiguous chunks. Inspection covered every 120-frame seam plus the
+  opening, keyboard, sent-message/PIP, notification, media, RTL handoff, screen recording,
+  Calls/PIP, and final two-device landing;
+- the final hard-cut denylist, package checks, lint, solution typecheck, episode validation, complete
+  test/build suite, render determinism checks, render smoke test, and docs build all pass through one
+  `pnpm verify:release` invocation.
 
 ## Smart Verification Cadence
 

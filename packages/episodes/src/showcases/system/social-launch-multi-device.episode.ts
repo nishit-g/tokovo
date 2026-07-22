@@ -293,8 +293,9 @@ export default defineEpisode({
         whatsapp
           .at("4.3s")
           .receive("Noa", "Do not open X unless you are ready.");
-        whatsapp.at("9s").send("Nobody repost it. I am pulling the link now.", {
-        });
+        whatsapp
+          .at("9s")
+          .send("Nobody repost it. I am pulling the link now.", {});
         whatsapp.at("10.8s").receive("Dev", "Too late. X is already at 84K.");
       })
       .x("audience_phone", (x) => {
@@ -353,66 +354,6 @@ export default defineEpisode({
           senderId: "ig_creator",
           text: "The clean cut. Everywhere. Right now.",
           createdAt: baseTs + 58_000,
-        });
-      })
-      .camera((camera) => {
-        camera.at("0s").layout({
-          mode: "SPLIT_HORIZONTAL",
-          primaryDeviceId: "creator_phone",
-          secondaryDeviceId: "audience_phone",
-        });
-        camera.at("4.8s").layout({
-          mode: "SINGLE",
-          primaryDeviceId: "creator_phone",
-        });
-        camera.at("5s").focus("lastMessage", {
-          scale: 1.08,
-          duration: "0.35s",
-        });
-        camera.span("5.8s", "9.2s").trackCinematic("keyboard", {
-          scale: 1.1,
-          smoothing: 0.18,
-        });
-        camera.at("11.5s").layout({
-          mode: "SPLIT_HORIZONTAL",
-          primaryDeviceId: "creator_phone",
-          secondaryDeviceId: "audience_phone",
-        });
-        camera.at("15.3s").layout({
-          mode: "SINGLE",
-          primaryDeviceId: "audience_phone",
-        });
-        camera.at("15.45s").focus("tweet_card", {
-          scale: 1.08,
-          duration: "0.35s",
-        });
-        camera.span("16.2s", "20.6s").trackCinematic("keyboard", {
-          scale: 1.1,
-          smoothing: 0.16,
-        });
-        camera.at("22.5s").layout({
-          mode: "PIP",
-          primaryDeviceId: "creator_phone",
-          secondaryDeviceId: "audience_phone",
-          pipPosition: "bottom-right",
-          pipScale: 0.34,
-        });
-        camera.at("25.4s").layout({
-          mode: "SINGLE",
-          primaryDeviceId: "creator_phone",
-        });
-        camera.at("25.55s").focus("story_viewer", {
-          scale: 1.06,
-          duration: "0.35s",
-        });
-        camera.at("28.7s").focus("dm_thread", {
-          scale: 1.07,
-          duration: "0.35s",
-        });
-        camera.at("30.5s").layout({
-          mode: "SPLIT_HORIZONTAL",
-          primaryDeviceId: "creator_phone",
-          secondaryDeviceId: "audience_phone",
         });
       })
       .build();

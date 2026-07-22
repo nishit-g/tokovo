@@ -220,8 +220,7 @@ export default defineEpisode({
           // Reply beat.
           wa.at("7.8s").send(
             "It was pacing. We held the reveal for the second beat.",
-            {
-            },
+            {},
           );
 
           wa.at("10.8s").receive(
@@ -275,8 +274,7 @@ export default defineEpisode({
             );
             im.at("7.5s").send(
               "Give me five minutes. Turning the thread into act two.",
-              {
-              },
+              {},
             );
             im.at("11.5s").receive(
               "Producer",
@@ -285,35 +283,5 @@ export default defineEpisode({
           });
         },
       )
-
-      // ============================================
-      // CAMERA (anchors: device/app/keyboard/notification.banner + app semantics)
-      // ============================================
-      .camera((cam) => {
-        cam.at("0s").focus("device", { scale: 1.02, duration: "0.35s" });
-        cam
-          .span("1.2s", "6.0s")
-          .trackCinematic("lastMessage", { scale: 1.12, smoothing: 0.2 });
-
-        // Heads-up banner focus (device-owned)
-        cam
-          .at("6.25s")
-          .focus("notification.banner", { scale: 1.18, duration: "0.45s" });
-        cam.at("7.2s").focus("lastMessage", { scale: 1.12, duration: "0.35s" });
-
-        // X: tweet card + keyboard (device-owned) during compose
-        cam.at("16.45s").focus("tweet_card", { scale: 1.1, duration: "0.45s" });
-        cam
-          .span("22.2s", "26.2s")
-          .trackCinematic("keyboard", { scale: 1.12, smoothing: 0.16 });
-
-        // iMessage thread + keyboard
-        cam
-          .at("35.6s")
-          .focus("imessage_thread", { scale: 1.08, duration: "0.45s" });
-        cam
-          .span("41.9s", "43.3s")
-          .trackCinematic("keyboard", { scale: 1.12, smoothing: 0.16 });
-      })
       .build(),
 });

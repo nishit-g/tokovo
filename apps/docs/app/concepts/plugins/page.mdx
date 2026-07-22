@@ -13,14 +13,14 @@ A plugin package usually owns some combination of:
 - runtime reducers
 - track builders and DSL helpers
 - React views
-- anchors or layout helpers
+- canonical layouts and cinematic-subject projection
 - package-specific UI rules
 
 Examples:
 
 - `@tokovo/apps-whatsapp`
 - `@tokovo/apps-x`
-- `@tokovo/device-camera`
+- `@tokovo/camera`
 - `@tokovo/device-notifications`
 - `@tokovo/overlay`
 
@@ -32,8 +32,8 @@ Plugins are registered by the runtime app, not by import-time side effects.
 
 - register app plugins
 - register device plugins
-- register notifications, camera, keyboard, overlay
-- register anchor providers
+- register notifications, keyboard, overlay, and camera projection passes
+- register app/device cinematic-subject providers
 
 That keeps the runtime boot path inspectable and testable.
 

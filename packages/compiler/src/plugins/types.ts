@@ -17,36 +17,6 @@ export interface CompilerContext {
 
   /** All devices in the episode */
   devices: DeviceConfig[];
-
-  /** Registry of available semantic anchors */
-  anchors: AnchorRegistry;
-}
-
-/**
- * Registry of semantic anchors available in the episode
- * Plugins can query this to find valid anchor IDs
- */
-export interface AnchorRegistry {
-  /** Get all anchor IDs */
-  list(): string[];
-
-  /** Check if anchor exists */
-  has(anchorId: string): boolean;
-
-  /** Get anchor by ID (if exists) */
-  get(anchorId: string): AnchorInfo | undefined;
-
-  /** Filter anchors by predicate */
-  filter(predicate: (anchor: AnchorInfo) => boolean): AnchorInfo[];
-}
-
-/**
- * Information about a semantic anchor
- */
-export interface AnchorInfo {
-  id: string;
-  deviceId?: string;
-  appId?: string;
 }
 
 /**
@@ -123,7 +93,7 @@ export interface CompilerPlugin {
    * Called during compilation Pass 2
    *
    * @param events - All IR events so far (from tracks + previous plugins)
-   * @param context - Compiler context (fps, anchors, devices, etc.)
+   * @param context - Compiler context (fps, duration, and devices)
    * @returns New events to add to IR
    */
   process(events: TrackEvent[], context: CompilerContext): TrackEvent[];

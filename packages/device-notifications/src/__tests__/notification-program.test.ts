@@ -376,7 +376,7 @@ describe("notification projection, locale, privacy, and themes", () => {
     expect(theme.geometry.cardRadius).toBeGreaterThan(0);
   });
 
-  it("projects grouped center cards, exact anchors, and Android status icons", () => {
+  it("projects grouped center cards, exact subjects, and Android status icons", () => {
     const program = prepare({
       devices: [device({ platform: "android" })],
       intents: [
@@ -396,7 +396,7 @@ describe("notification projection, locale, privacy, and themes", () => {
     expect(projection.center.groups).toMatchObject([
       { count: 2, items: [{ id: "two" }, { id: "one" }] },
     ]);
-    expect(projection.anchors.center).toEqual({
+    expect(projection.cinematicSubjects.center).toEqual({
       x: 0,
       y: 0,
       width: 1179,

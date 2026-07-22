@@ -14,7 +14,6 @@ const sourceRoots = [
   "packages/apps-whatsapp/src",
   "packages/apps-x/src",
   "packages/background/src",
-  "packages/device-camera/src",
   "packages/device-keyboard/src",
   "packages/device-notifications/src",
   "packages/devices/src",
@@ -50,7 +49,11 @@ function listSourceFiles(root) {
       if (entry.name === "__tests__" || entry.name === "dist") return [];
       return listSourceFiles(absolutePath);
     }
-    if (!/\.tsx?$/.test(entry.name) || /\.(?:test|spec)\.tsx?$/.test(entry.name)) return [];
+    if (
+      !/\.tsx?$/.test(entry.name) ||
+      /\.(?:test|spec)\.tsx?$/.test(entry.name)
+    )
+      return [];
     return [absolutePath];
   });
 }
@@ -61,13 +64,16 @@ function propertyName(node) {
 }
 
 function staticString(node) {
-  if (ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node)) return node.text;
+  if (ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node))
+    return node.text;
   if (ts.isTemplateExpression(node)) return node.getText();
   return null;
 }
 
 const issues = [];
-const files = sourceRoots.flatMap((root) => listSourceFiles(path.join(repoRoot, root)));
+const files = sourceRoots.flatMap((root) =>
+  listSourceFiles(path.join(repoRoot, root)),
+);
 
 for (const filePath of files) {
   const sourceText = fs.readFileSync(filePath, "utf8");
@@ -80,7 +86,9 @@ for (const filePath of files) {
   );
 
   const report = (node, message) => {
-    const position = sourceFile.getLineAndCharacterOfPosition(node.getStart(sourceFile));
+    const position = sourceFile.getLineAndCharacterOfPosition(
+      node.getStart(sourceFile),
+    );
     issues.push({
       file: path.relative(repoRoot, filePath),
       line: position.line + 1,
@@ -92,13 +100,19 @@ for (const filePath of files) {
   if (sourceText.includes("@keyframes")) {
     const index = sourceText.indexOf("@keyframes");
     const node = sourceFile.getTokenAtPosition(index);
-    report(node, "CSS keyframes use browser time; derive motion from frame and fps instead");
+    report(
+      node,
+      "CSS keyframes use browser time; derive motion from frame and fps instead",
+    );
   }
 
   const visit = (node) => {
     if (ts.isJsxOpeningElement(node) || ts.isJsxSelfClosingElement(node)) {
       if (node.tagName.getText(sourceFile) === "img") {
-        report(node, "native <img> does not block Remotion capture; use DeterministicImage");
+        report(
+          node,
+          "native <img> does not block Remotion capture; use DeterministicImage",
+        );
       }
     }
 
@@ -106,15 +120,34 @@ for (const filePath of files) {
       const name = propertyName(node.name);
       const value = staticString(node.initializer);
 
-      if (name && forbiddenAnimatedProperties.has(name) && value !== null && value !== "none") {
-        report(node, `CSS ${name} uses browser time; derive the value from frame and fps`);
+      if (
+        name &&
+        forbiddenAnimatedProperties.has(name) &&
+        value !== null &&
+        value !== "none"
+      ) {
+        report(
+          node,
+          `CSS ${name} uses browser time; derive the value from frame and fps`,
+        );
       }
 
-      if (name && forbiddenTransitionProperties.has(name) && value !== null && value !== "none") {
-        report(node, `CSS ${name} uses browser time; interpolate from timeline state instead`);
+      if (
+        name &&
+        forbiddenTransitionProperties.has(name) &&
+        value !== null &&
+        value !== "none"
+      ) {
+        report(
+          node,
+          `CSS ${name} uses browser time; interpolate from timeline state instead`,
+        );
       }
 
-      if ((name === "background" || name === "backgroundImage") && value?.includes("url(")) {
+      if (
+        (name === "background" || name === "backgroundImage") &&
+        value?.includes("url(")
+      ) {
         report(
           node,
           "CSS image URLs do not block frame capture; render the asset with DeterministicImage",
@@ -130,15 +163,23 @@ for (const filePath of files) {
 
 issues.sort(
   (left, right) =>
-    left.file.localeCompare(right.file) || left.line - right.line || left.column - right.column,
+    left.file.localeCompare(right.file) ||
+    left.line - right.line ||
+    left.column - right.column,
 );
 
 if (issues.length > 0) {
   for (const issue of issues) {
-    console.error(`${issue.file}:${issue.line}:${issue.column} ${issue.message}`);
+    console.error(
+      `${issue.file}:${issue.line}:${issue.column} ${issue.message}`,
+    );
   }
-  console.error(`Render determinism policy failed with ${issues.length} issue(s).`);
+  console.error(
+    `Render determinism policy failed with ${issues.length} issue(s).`,
+  );
   process.exit(1);
 }
 
-console.log(`Render determinism policy passed (${files.length} production source files checked).`);
+console.log(
+  `Render determinism policy passed (${files.length} production source files checked).`,
+);

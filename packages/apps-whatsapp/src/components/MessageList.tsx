@@ -1,7 +1,10 @@
 import React, { useMemo } from "react";
 import { ChatMessageItem } from "./ChatMessageItem.js";
 import { TypingIndicator } from "./TypingIndicator.js";
-import { GroupTypingIndicator, type TypingMember } from "./GroupTypingIndicator.js";
+import {
+  GroupTypingIndicator,
+  type TypingMember,
+} from "./GroupTypingIndicator.js";
 import { useTheme } from "../experience/ExperienceContext.js";
 import { getSenderColor } from "../config/color-utils.js";
 import type { WhatsAppThreadProjection } from "../thread/projector.js";
@@ -23,7 +26,7 @@ interface MessageListProps {
   isGroupChat?: boolean;
   bottomPadding?: number;
   activeGesture?: WhatsAppGestureState | null;
-  anchorMessageId?: string;
+  focusMessageId?: string;
 }
 
 /**
@@ -58,7 +61,7 @@ export const MessageList: React.FC<MessageListProps> = ({
   isGroupChat = false,
   bottomPadding = 100,
   activeGesture,
-  anchorMessageId,
+  focusMessageId,
 }) => {
   const theme = useTheme();
   const backgroundColor = theme.colors.chatBackground;
@@ -70,8 +73,8 @@ export const MessageList: React.FC<MessageListProps> = ({
   const listPaddingX = DEFAULT_LAYOUT_CONFIG.spacing.global.bubbleMargin;
   const listPaddingY = 0;
   const renderWindow = useMemo(
-    () => createWhatsAppThreadWindow(thread, { anchorMessageId }),
-    [anchorMessageId, thread],
+    () => createWhatsAppThreadWindow(thread, { focusMessageId }),
+    [focusMessageId, thread],
   );
   const renderedItems = useMemo(
     () =>
@@ -114,7 +117,7 @@ export const MessageList: React.FC<MessageListProps> = ({
   }, [renderedItems]);
   return (
     <div
-      data-anchor="list"
+      data-cinematic-subject="list"
       data-rendered-message-count={renderWindow.renderedMessageCount}
       data-hidden-before={renderWindow.hiddenBefore}
       data-hidden-after={renderWindow.hiddenAfter}
@@ -151,7 +154,9 @@ export const MessageList: React.FC<MessageListProps> = ({
             position={item.position}
             isGroupChat={isGroupChat}
             senderName={item.message.senderName ?? item.message.from}
-            senderColor={getSenderColor(item.message.senderName ?? item.message.from ?? "unknown")}
+            senderColor={getSenderColor(
+              item.message.senderName ?? item.message.from ?? "unknown",
+            )}
             showSenderName={item.showSenderName}
             messageOrder={item.order}
             gesture={activeGesture ?? undefined}

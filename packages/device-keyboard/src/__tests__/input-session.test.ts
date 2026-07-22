@@ -281,7 +281,7 @@ describe("canonical multilingual input sessions", () => {
     }
   });
 
-  it("projects viewport inset, stable anchors, and active keys without history", () => {
+  it("projects viewport inset, stable subject bounds, and active keys without history", () => {
     const session = prepareInputSession(intent({ text: "a" }));
     const insert = session.operations.find(
       (operation) => operation.type === "insert",
@@ -298,7 +298,7 @@ describe("canonical multilingual input sessions", () => {
     const projection = projectInputSession(session, insert?.at ?? 0, config);
     expect(projection.surface.activeKey).toBe("a");
     expect(projection.surface.progress).toBe(1);
-    expect(projection.surface.anchor).toEqual({
+    expect(projection.surface.bounds).toEqual({
       x: 0,
       y: 1_896,
       width: 1_290,

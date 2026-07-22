@@ -17,20 +17,24 @@ function entityRegion(region: SemanticRegion):
   const metadataMessageId = region.metadata?.messageId;
   if (
     region.tags.includes("message") &&
-    !region.tags.includes("message_fragment")
+    (region.tags.includes("message_me") ||
+      region.tags.includes("message_other"))
   ) {
     return { entityId: region.id, region: "bubble" };
   }
   if (typeof metadataMessageId !== "string" || metadataMessageId.length === 0) {
     return undefined;
   }
-  if (region.tags.includes("reply")) {
+  if (
+    region.id.startsWith("reply_") &&
+    region.tags.includes("message_fragment")
+  ) {
     return { entityId: metadataMessageId, region: "reply" };
   }
-  if (region.tags.includes("media")) {
+  if (region.id.startsWith("media_") && region.tags.includes("media")) {
     return { entityId: metadataMessageId, region: "media" };
   }
-  if (region.tags.includes("reactions")) {
+  if (region.id.startsWith("reactions_") && region.tags.includes("reactions")) {
     return { entityId: metadataMessageId, region: "reactions" };
   }
   return undefined;

@@ -19,6 +19,7 @@
     "smoke": "node --import tsx src/cli.ts smoke",
     "render": "node --import tsx src/cli.ts render",
     "artifact-urls": "node --import tsx src/cli.ts artifact-urls",
+    "camera": "node --import tsx src/cli.ts camera",
     "test": "vitest run"
   },
   "dependencies": {

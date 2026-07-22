@@ -10,7 +10,6 @@
 import type {
   TrackEvent,
   TrackEpisodeIR,
-  CameraTrackEvent,
   AudioTrackEvent,
   OSTrackEvent,
   MarkerTrackEvent,
@@ -22,7 +21,6 @@ import type {
   NotificationInteractionIR,
 } from "@tokovo/ir";
 import {
-  isCameraEvent,
   isAudioEvent,
   isOSEvent,
   isMarkerEvent,
@@ -48,7 +46,6 @@ import type {
   VoicePlaySegmentEvent,
   VoiceStopEvent,
 } from "@tokovo/core";
-import { cameraV2Lowering } from "@tokovo/device-camera";
 import { PluginLowererMissingError } from "./errors.js";
 
 // =============================================================================
@@ -91,9 +88,6 @@ export function lowerTrackEvent(
   event: TrackEvent,
   ctx: LoweringContext,
 ): RuntimeEvent[] {
-  if (isCameraEvent(event)) {
-    return cameraV2Lowering(event, { fps: ctx.fps }) as RuntimeEvent[];
-  }
   if (isAudioEvent(event)) {
     return lowerAudioEvent(event);
   }
@@ -156,9 +150,6 @@ function lowerAppEvent(
 
   throw new PluginLowererMissingError(appId);
 }
-
-// Camera lowering is now delegated to @tokovo/device-camera
-// See: cameraV2Lowering imported at top of file
 
 /**
  * Lower audio events.
@@ -407,7 +398,7 @@ function lowerDeviceEvent(event: TrackEvent): RuntimeEvent[] {
     kind: "DEVICE" as const,
     deviceId: (e.deviceId as string) ?? "device_1",
     silent: (e.silent as boolean | undefined) === true ? true : undefined,
-    _declarationOrder: (e._declarationOrder as number | undefined),
+    _declarationOrder: e._declarationOrder as number | undefined,
   };
 
   const type = e.type as string;
@@ -432,7 +423,9 @@ function lowerDeviceEvent(event: TrackEvent): RuntimeEvent[] {
       ];
 
     case "CLOSE_APP":
-      return [{ ...base, type: "CLOSE_APP", payload: {} } as DeviceRuntimeEvent];
+      return [
+        { ...base, type: "CLOSE_APP", payload: {} } as DeviceRuntimeEvent,
+      ];
 
     case "GO_HOME":
       return [
@@ -499,10 +492,14 @@ function lowerDeviceEvent(event: TrackEvent): RuntimeEvent[] {
           type: "SET_DYNAMIC_ISLAND",
           payload: {
             visible: Boolean(p.visible ?? e.visible ?? false),
-            presentation: (p.presentation ?? e.presentation ?? "idle") as string,
+            presentation: (p.presentation ??
+              e.presentation ??
+              "idle") as string,
             activity: (p.activity ?? e.activity ?? null) as string | null,
             appId: (p.appId ?? e.appId) as string | undefined,
-            content: (p.content ?? e.content) as Record<string, unknown> | undefined,
+            content: (p.content ?? e.content) as
+              | Record<string, unknown>
+              | undefined,
           },
         } as DeviceRuntimeEvent,
       ];
@@ -540,7 +537,9 @@ function lowerDeviceEvent(event: TrackEvent): RuntimeEvent[] {
           payload: {
             callerId: (p.callerId ?? e.callerId) as string,
             callerName: (p.callerName ?? e.callerName) as string | undefined,
-            callerAvatar: (p.callerAvatar ?? e.callerAvatar) as string | undefined,
+            callerAvatar: (p.callerAvatar ?? e.callerAvatar) as
+              | string
+              | undefined,
             isVideo: Boolean(p.isVideo ?? e.isVideo ?? false),
           },
         } as DeviceRuntimeEvent,

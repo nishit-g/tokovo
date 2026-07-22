@@ -23,7 +23,12 @@ import {
   formatWhatsAppNumber,
   type WhatsAppMessageKey,
 } from "../../localization/index.js";
-import { AppScaffold, SectionHeader, SettingsGroup, SettingsRow } from "../surfaces/index.js";
+import {
+  AppScaffold,
+  SectionHeader,
+  SettingsGroup,
+  SettingsRow,
+} from "../surfaces/index.js";
 
 export interface SettingsScreenProps {
   world: WorldState;
@@ -42,10 +47,7 @@ type Translator = (
   parameters?: Record<string, string | number>,
 ) => string;
 
-function privacySummary(
-  settings: WhatsAppSettings,
-  t: Translator,
-): string {
+function privacySummary(settings: WhatsAppSettings, t: Translator): string {
   const privacy = settings.privacy;
   if (!privacy) return t("settings.privacyDefault");
   const readReceipts = t(
@@ -59,19 +61,13 @@ function privacySummary(
   });
 }
 
-function localizeTheme(
-  theme: string | undefined,
-  t: Translator,
-): string {
+function localizeTheme(theme: string | undefined, t: Translator): string {
   if (theme === "light") return t("settings.lightTheme");
   if (theme === "dark") return t("settings.darkTheme");
   return t("settings.systemTheme");
 }
 
-export function SettingsScreen({
-  world,
-  safeAreaInsets,
-}: SettingsScreenProps) {
+export function SettingsScreen({ world, safeAreaInsets }: SettingsScreenProps) {
   const theme = useTheme();
   const { locale, t } = useWhatsAppLocale();
   const { uiTypography: typography } = theme;
@@ -117,7 +113,7 @@ export function SettingsScreen({
       </div>
 
       <div
-        data-anchor="settings_profile"
+        data-cinematic-subject="settings_profile"
         style={{
           minHeight: 78,
           margin: "0 16px 12px",
@@ -204,8 +200,7 @@ export function SettingsScreen({
           title={t("settings.chats")}
           subtitle={t("settings.chatsSummary", {
             theme: localizeTheme(settings.chats?.theme, t),
-            backup:
-              settings.chats?.backupLabel ?? t("settings.notConfigured"),
+            backup: settings.chats?.backupLabel ?? t("settings.notConfigured"),
           })}
         />
         <SettingsRow

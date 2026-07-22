@@ -6,7 +6,6 @@ import {
   getAnimationConfig,
   getRenderingConfig,
   getAudioConfig,
-  getCameraConfig,
   isDebugEnabled,
   ConfigValidationError,
 } from "../config/index.js";
@@ -20,17 +19,16 @@ describe("engine config", () => {
   });
 
   it("exposes config getters", () => {
-    expect(getTimingConfig().effectCleanupBuffer).toBeGreaterThan(0);
+    expect(getTimingConfig().defaultTransitionDuration).toBeGreaterThan(0);
     expect(getAnimationConfig().defaultDuration).toBeGreaterThan(0);
     expect(getRenderingConfig().maxEventsPerFrame).toBeGreaterThan(0);
     expect(getAudioConfig().defaultVolume).toBeGreaterThan(0);
-    expect(getCameraConfig().minZoom).toBeGreaterThan(0);
   });
 
   it("validates config overrides", () => {
-    expect(
-      () => createConfig({ rendering: { defaultFps: 0 } }),
-    ).toThrow(ConfigValidationError);
+    expect(() => createConfig({ rendering: { defaultFps: 0 } })).toThrow(
+      ConfigValidationError,
+    );
   });
 
   it("reads debug flags from custom config", () => {

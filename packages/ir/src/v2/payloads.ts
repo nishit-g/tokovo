@@ -34,117 +34,6 @@ export interface TrackMessageRef {
 }
 
 // =============================================================================
-// CAMERA PAYLOADS
-// =============================================================================
-
-export interface CameraPayloads {
-  SET: {
-    x?: number;
-    y?: number;
-    scale?: number;
-    rotation?: number;
-    originX?: number;
-    originY?: number;
-  };
-  ANIMATE_START: {
-    x?: number;
-    y?: number;
-    scale?: number;
-    rotation?: number;
-    originX?: number;
-    originY?: number;
-    easing: EasingType;
-  };
-  ANIMATE_END: Record<string, never>;
-  FOCUS: {
-    anchorId: string;
-    scale?: number;
-    padding?: number;
-    easing?: EasingType;
-  };
-  TRACK_START: {
-    anchorId: string;
-    preset?: "cinematic" | "drama" | "fast-beat" | "calm";
-    scale?: number;
-    smoothing?: number;
-    deadZonePx?: number;
-    maxVelocityPxPerSec?: number;
-    predictiveLookaheadFrames?: number;
-  };
-  TRACK_END: Record<string, never>;
-  SHAKE_START: {
-    intensityX: number;
-    intensityY: number;
-    frequency?: number;
-    decay?: number;
-  };
-  SHAKE_END: Record<string, never>;
-  RESET: {
-    easing?: EasingType;
-    spring?: string;
-  };
-  ZOOM: {
-    scale: number;
-    duration?: number;
-    easing?: EasingType;
-  };
-  SHAKE: {
-    intensityX: number;
-    intensityY: number;
-    duration?: number;
-    frequency?: number;
-    decay?: number;
-  };
-  ANCHOR_FOCUS: {
-    anchorId: string;
-    scale?: number;
-    padding?: number;
-    easing?: EasingType;
-    duration?: number;
-  };
-  ANCHOR_TRACK: {
-    anchorId: string;
-    preset?: "cinematic" | "drama" | "fast-beat" | "calm";
-    scale?: number;
-    smoothing?: number;
-    deadZonePx?: number;
-    maxVelocityPxPerSec?: number;
-    predictiveLookaheadFrames?: number;
-    duration?: number;
-  };
-  CUT: {
-    x?: number;
-    y?: number;
-    scale?: number;
-    anchorId?: string;
-  };
-  PUNCH_ZOOM: {
-    intensity: number;
-    direction: "in" | "out";
-    spring?: string;
-  };
-  DUTCH_TILT: {
-    angle: number;
-    spring?: string;
-  };
-  FLASH: {
-    color?: string;
-    intensity?: number;
-  };
-  WHIP_PAN: {
-    direction: "left" | "right" | "up" | "down";
-    blur?: number;
-  };
-  LAYOUT: {
-    mode: "SINGLE" | "SPLIT_HORIZONTAL" | "SPLIT_VERTICAL" | "PIP" | "split";
-    primaryDeviceId: string;
-    secondaryDeviceId?: string;
-    pipPosition?: "top-left" | "top-right" | "bottom-left" | "bottom-right";
-    pipScale?: number;
-  };
-}
-
-// =============================================================================
 // AUDIO PAYLOADS
 // =============================================================================
 
@@ -393,7 +282,6 @@ export interface AppPayloadRegistry {
  * System payloads - always available in IR.
  */
 export interface SystemPayloads {
-  camera: CameraPayloads;
   audio: AudioPayloads;
   os: OSPayloads;
   marker: MarkerPayloads;

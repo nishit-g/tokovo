@@ -7,18 +7,20 @@ import {
   createWhatsAppThreadWindow,
   DEFAULT_THREAD_RENDER_LIMIT,
 } from "../thread/window.js";
-import type {
-  WhatsAppConversation,
-  WhatsAppMessage,
-} from "../types/index.js";
+import type { WhatsAppConversation, WhatsAppMessage } from "../types/index.js";
 
 const MESSAGE_COUNT = 10_000;
 const COLD_PROJECTION_BUDGET_MS = 1_500;
 const COLD_LAYOUT_BUDGET_MS = 1_500;
 const HOT_PROJECTION_ITERATIONS = 1_000;
 const HOT_LAYOUT_ITERATIONS = 500;
-const HOT_PROJECTION_BUDGET_MS = 150;
-const HOT_LAYOUT_BUDGET_MS = 150;
+const HOT_PROJECTION_CPU_BUDGET_MS = 150;
+const HOT_LAYOUT_CPU_BUDGET_MS = 150;
+
+function elapsedCpuMs(start: NodeJS.CpuUsage): number {
+  const elapsed = process.cpuUsage(start);
+  return (elapsed.user + elapsed.system) / 1_000;
+}
 
 function createLongConversation(): WhatsAppConversation {
   const messages: WhatsAppMessage[] = Array.from(
@@ -71,24 +73,22 @@ describe("WhatsApp long-thread performance contract", () => {
     expect(coldProjectionMs).toBeLessThan(COLD_PROJECTION_BUDGET_MS);
 
     const latestWindow = createWhatsAppThreadWindow(projection);
-    expect(latestWindow.renderedMessageCount).toBe(
-      DEFAULT_THREAD_RENDER_LIMIT,
-    );
+    expect(latestWindow.renderedMessageCount).toBe(DEFAULT_THREAD_RENDER_LIMIT);
     expect(latestWindow.hiddenBefore).toBe(
       projection.messageCount - DEFAULT_THREAD_RENDER_LIMIT,
     );
     expect(latestWindow.hiddenAfter).toBe(0);
 
-    const anchoredWindow = createWhatsAppThreadWindow(projection, {
-      anchorMessageId: "message-5000",
+    const focusedWindow = createWhatsAppThreadWindow(projection, {
+      focusMessageId: "message-5000",
     });
-    expect(anchoredWindow.renderedMessageCount).toBe(
+    expect(focusedWindow.renderedMessageCount).toBe(
       DEFAULT_THREAD_RENDER_LIMIT,
     );
-    expect(anchoredWindow.hiddenBefore).toBeGreaterThan(0);
-    expect(anchoredWindow.hiddenAfter).toBeGreaterThan(0);
+    expect(focusedWindow.hiddenBefore).toBeGreaterThan(0);
+    expect(focusedWindow.hiddenAfter).toBeGreaterThan(0);
     expect(
-      anchoredWindow.blocks.some(
+      focusedWindow.blocks.some(
         (block) =>
           block.kind === "run" &&
           block.items.some((item) => item.message.id === "message-5000"),
@@ -113,27 +113,29 @@ describe("WhatsApp long-thread performance contract", () => {
     expect(coldLayoutMs).toBeLessThan(COLD_LAYOUT_BUDGET_MS);
 
     let projectionCacheStable = true;
-    const hotProjectionStartedAt = performance.now();
+    // CPU time enforces algorithmic cost without turning concurrent package
+    // scheduling pressure into a false performance regression.
+    const hotProjectionStartedAt = process.cpuUsage();
     for (let index = 0; index < HOT_PROJECTION_ITERATIONS; index += 1) {
       if (projectWhatsAppThread(projectionInput) !== projection) {
         projectionCacheStable = false;
         break;
       }
     }
-    const hotProjectionMs = performance.now() - hotProjectionStartedAt;
+    const hotProjectionCpuMs = elapsedCpuMs(hotProjectionStartedAt);
     expect(projectionCacheStable).toBe(true);
-    expect(hotProjectionMs).toBeLessThan(HOT_PROJECTION_BUDGET_MS);
+    expect(hotProjectionCpuMs).toBeLessThan(HOT_PROJECTION_CPU_BUDGET_MS);
 
     let layoutCacheStable = true;
-    const hotLayoutStartedAt = performance.now();
+    const hotLayoutStartedAt = process.cpuUsage();
     for (let index = 0; index < HOT_LAYOUT_ITERATIONS; index += 1) {
       if (computeConversationLayout(conversation, layoutOptions) !== layout) {
         layoutCacheStable = false;
         break;
       }
     }
-    const hotLayoutMs = performance.now() - hotLayoutStartedAt;
+    const hotLayoutCpuMs = elapsedCpuMs(hotLayoutStartedAt);
     expect(layoutCacheStable).toBe(true);
-    expect(hotLayoutMs).toBeLessThan(HOT_LAYOUT_BUDGET_MS);
+    expect(hotLayoutCpuMs).toBeLessThan(HOT_LAYOUT_CPU_BUDGET_MS);
   });
 });

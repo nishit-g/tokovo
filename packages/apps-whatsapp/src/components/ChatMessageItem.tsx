@@ -5,9 +5,15 @@ import {
   getMessageAccessibilityLabel,
   getReactionAccessibilityLabel,
 } from "../accessibility/index.js";
-import { useTheme, useWhatsAppLocale } from "../experience/ExperienceContext.js";
+import {
+  useTheme,
+  useWhatsAppLocale,
+} from "../experience/ExperienceContext.js";
 import { formatWhatsAppNumber } from "../localization/index.js";
-import type { MessageRunPosition, ProjectedThreadMessage } from "../thread/projector.js";
+import type {
+  MessageRunPosition,
+  ProjectedThreadMessage,
+} from "../thread/projector.js";
 import type { WhatsAppGestureState } from "../types/interactions.js";
 import { resolveDeliveryStage, type DeliveryStage } from "../utils/status.js";
 import { MessageBody } from "./MessageBody.js";
@@ -43,12 +49,17 @@ interface MessageChrome {
 }
 
 function resolveMessageChrome(message: ProjectedThreadMessage): MessageChrome {
-  const edgeMedia = ["image", "video", "gif", "location"].includes(message.type);
+  const edgeMedia = ["image", "video", "gif", "location"].includes(
+    message.type,
+  );
   const overlayFooter =
     message.type === "sticker" ||
     message.type === "gif" ||
-    ((message.type === "image" || message.type === "video") && !message.caption) ||
-    (message.type === "location" && !message.locationName && !message.locationAddress);
+    ((message.type === "image" || message.type === "video") &&
+      !message.caption) ||
+    (message.type === "location" &&
+      !message.locationName &&
+      !message.locationAddress);
   return {
     edgeMedia,
     inlineFooter: message.type === "text" && !overlayFooter,
@@ -57,26 +68,51 @@ function resolveMessageChrome(message: ProjectedThreadMessage): MessageChrome {
   };
 }
 
-function bubbleRadii(position: MessageRunPosition, isMe: boolean, radius: number): CSSProperties {
+function bubbleRadii(
+  position: MessageRunPosition,
+  isMe: boolean,
+  radius: number,
+): CSSProperties {
   const first = position === "single" || position === "start";
   const last = position === "single" || position === "end";
   const joined = Math.max(5, Math.round(radius * 0.34));
   const tail = Math.max(4, Math.round(radius * 0.28));
 
   return {
-    borderTopLeftRadius: !isMe && first ? tail : !isMe && !first ? joined : radius,
-    borderTopRightRadius: isMe && first ? tail : isMe && !first ? joined : radius,
+    borderTopLeftRadius:
+      !isMe && first ? tail : !isMe && !first ? joined : radius,
+    borderTopRightRadius:
+      isMe && first ? tail : isMe && !first ? joined : radius,
     borderBottomLeftRadius: !isMe && !last ? joined : radius,
     borderBottomRightRadius: isMe && !last ? joined : radius,
   };
 }
 
-function DeliveryGlyph({ stage, color }: { stage: DeliveryStage; color: string }) {
+function DeliveryGlyph({
+  stage,
+  color,
+}: {
+  stage: DeliveryStage;
+  color: string;
+}) {
   if (stage === "sending") {
     return (
       <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true">
-        <circle cx="6" cy="6" r="4.25" fill="none" stroke={color} strokeWidth="1" />
-        <path d="M6 3.3v3l2 1.1" fill="none" stroke={color} strokeWidth="1" strokeLinecap="round" />
+        <circle
+          cx="6"
+          cy="6"
+          r="4.25"
+          fill="none"
+          stroke={color}
+          strokeWidth="1"
+        />
+        <path
+          d="M6 3.3v3l2 1.1"
+          fill="none"
+          stroke={color}
+          strokeWidth="1"
+          strokeLinecap="round"
+        />
       </svg>
     );
   }
@@ -84,8 +120,20 @@ function DeliveryGlyph({ stage, color }: { stage: DeliveryStage; color: string }
   if (stage === "failed") {
     return (
       <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true">
-        <circle cx="7" cy="7" r="5.25" fill="none" stroke={color} strokeWidth="1.35" />
-        <path d="M7 3.8v4.1" stroke={color} strokeWidth="1.35" strokeLinecap="round" />
+        <circle
+          cx="7"
+          cy="7"
+          r="5.25"
+          fill="none"
+          stroke={color}
+          strokeWidth="1.35"
+        />
+        <path
+          d="M7 3.8v4.1"
+          stroke={color}
+          strokeWidth="1.35"
+          strokeLinecap="round"
+        />
         <circle cx="7" cy="10.2" r=".75" fill={color} />
       </svg>
     );
@@ -248,8 +296,10 @@ const MessageMetadata = memo(function MessageMetadata({
 
   return (
     <div
-      data-anchor="message-footer"
-      aria-label={isMe && deliveryStage ? t(`a11y.delivery.${deliveryStage}`) : undefined}
+      data-cinematic-subject="message-footer"
+      aria-label={
+        isMe && deliveryStage ? t(`a11y.delivery.${deliveryStage}`) : undefined
+      }
       style={{
         position: overlay || inline ? "absolute" : "relative",
         insetInlineEnd: overlay ? 6 : inline ? 0 : undefined,
@@ -274,7 +324,9 @@ const MessageMetadata = memo(function MessageMetadata({
       {message.edited && <span>{t("message.edited")}</span>}
       {message.timestamp && <span>{message.timestamp}</span>}
       {message.starred && <span style={{ fontSize: 9 }}>★</span>}
-      {isMe && deliveryStage && <DeliveryGlyph stage={deliveryStage} color={deliveryColor} />}
+      {isMe && deliveryStage && (
+        <DeliveryGlyph stage={deliveryStage} color={deliveryColor} />
+      )}
     </div>
   );
 });
@@ -292,7 +344,7 @@ const ReactionCluster = memo(function ReactionCluster({
 
   return (
     <div
-      data-anchor="reactions"
+      data-cinematic-subject="reactions"
       role="status"
       aria-label={getReactionAccessibilityLabel(message, locale)}
       style={{
@@ -325,7 +377,9 @@ const ReactionCluster = memo(function ReactionCluster({
             gap: 2,
             paddingInline: reaction.fromMe ? 3 : undefined,
             borderRadius: 8,
-            backgroundColor: reaction.fromMe ? `${theme.colors.accent}18` : undefined,
+            backgroundColor: reaction.fromMe
+              ? `${theme.colors.accent}18`
+              : undefined,
           }}
         >
           <span>{reaction.emoji}</span>
@@ -340,8 +394,18 @@ const ReactionCluster = memo(function ReactionCluster({
   );
 });
 
-function MetadataSlot({ children, edgeMedia }: { children: ReactNode; edgeMedia: boolean }) {
-  return <div style={{ padding: edgeMedia ? "5px 7px 0" : undefined }}>{children}</div>;
+function MetadataSlot({
+  children,
+  edgeMedia,
+}: {
+  children: ReactNode;
+  edgeMedia: boolean;
+}) {
+  return (
+    <div style={{ padding: edgeMedia ? "5px 7px 0" : undefined }}>
+      {children}
+    </div>
+  );
 }
 
 export const ChatMessageItem = memo(function ChatMessageItem({
@@ -384,14 +448,20 @@ export const ChatMessageItem = memo(function ChatMessageItem({
     viewportWidth,
     DEFAULT_LAYOUT_CONFIG,
   );
-  const bubbleWidth = calculateBubbleWidth(geometryInput, viewportWidth, DEFAULT_LAYOUT_CONFIG);
-  const reactionHeight = message.reactions?.length ? DEFAULT_LAYOUT_CONFIG.additions.reaction : 0;
+  const bubbleWidth = calculateBubbleWidth(
+    geometryInput,
+    viewportWidth,
+    DEFAULT_LAYOUT_CONFIG,
+  );
+  const reactionHeight = message.reactions?.length
+    ? DEFAULT_LAYOUT_CONFIG.additions.reaction
+    : 0;
   const bubbleHeight = Math.max(1, envelopeHeight - reactionHeight);
 
   if (message.type === "system" || message.type === "screenshot_alert") {
     return (
       <div
-        data-anchor="message"
+        data-cinematic-subject="message"
         data-message-id={message.id}
         data-layout-width={bubbleWidth}
         data-layout-height={envelopeHeight}
@@ -416,18 +486,25 @@ export const ChatMessageItem = memo(function ChatMessageItem({
   const deliveryStage = resolveDeliveryStage(message, currentFrame);
   const first = position === "single" || position === "start";
   const showTail = first && !chrome.sticker;
-  const showSender = showSenderName && isGroupChat && !isMe && Boolean(senderName);
+  const showSender =
+    showSenderName && isGroupChat && !isMe && Boolean(senderName);
   const activeGesture = gesture?.messageId === message.id ? gesture : undefined;
   const swipeProgress =
-    activeGesture?.gesture === "swipe_reply" ? Math.max(0, Math.min(1, activeGesture.progress)) : 0;
+    activeGesture?.gesture === "swipe_reply"
+      ? Math.max(0, Math.min(1, activeGesture.progress))
+      : 0;
   const swipeSign = direction === "rtl" ? -1 : 1;
   const longPressed = activeGesture?.gesture === "long_press";
-  const bubbleFill = isMe ? theme.colors.sentBubble : theme.colors.receivedBubble;
-  const bubbleBorder = isMe ? theme.colors.sentBubbleBorder : theme.colors.receivedBubbleBorder;
+  const bubbleFill = isMe
+    ? theme.colors.sentBubble
+    : theme.colors.receivedBubble;
+  const bubbleBorder = isMe
+    ? theme.colors.sentBubbleBorder
+    : theme.colors.receivedBubbleBorder;
 
   return (
     <div
-      data-anchor="message"
+      data-cinematic-subject="message"
       data-message-id={message.id}
       data-order={messageOrder}
       data-run-position={position}
@@ -464,7 +541,9 @@ export const ChatMessageItem = memo(function ChatMessageItem({
           overflow: "hidden",
           display: "flex",
           flexDirection: "column",
-          color: isMe ? theme.colors.sentBubbleText : theme.colors.receivedBubbleText,
+          color: isMe
+            ? theme.colors.sentBubbleText
+            : theme.colors.receivedBubbleText,
           backgroundColor: chrome.sticker ? "transparent" : bubbleFill,
           border: chrome.sticker ? undefined : `0.5px solid ${bubbleBorder}`,
           boxShadow: chrome.sticker ? undefined : theme.colors.bubbleShadow,
@@ -473,7 +552,9 @@ export const ChatMessageItem = memo(function ChatMessageItem({
             : chrome.edgeMedia
               ? 3
               : `${theme.spacing.messagePaddingVertical}px ${theme.spacing.messagePaddingHorizontal}px`,
-          outline: longPressed ? `2px solid ${theme.colors.accent}30` : undefined,
+          outline: longPressed
+            ? `2px solid ${theme.colors.accent}30`
+            : undefined,
           outlineOffset: longPressed ? 2 : undefined,
         }}
       >
@@ -503,7 +584,7 @@ export const ChatMessageItem = memo(function ChatMessageItem({
         )}
 
         {message.replyTo && (
-          <div data-anchor="reply">
+          <div data-cinematic-subject="reply">
             <MetadataSlot edgeMedia={chrome.edgeMedia}>
               <ReplyQuote replyTo={message.replyTo} isMyMessage={isMe} />
             </MetadataSlot>
@@ -514,7 +595,9 @@ export const ChatMessageItem = memo(function ChatMessageItem({
           <MessageBody
             message={message}
             isMe={isMe}
-            footerReserveWidth={chrome.inlineFooter ? (isMe ? 78 : 54) : undefined}
+            footerReserveWidth={
+              chrome.inlineFooter ? (isMe ? 78 : 54) : undefined
+            }
           />
           <MessageMetadata
             message={message}

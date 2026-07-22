@@ -1,18 +1,29 @@
-import type { PluginReducer, TokovoPluginContract, PluginViews } from "@tokovo/core";
+import type {
+  PluginReducer,
+  TokovoPluginContract,
+  PluginViews,
+} from "@tokovo/core";
 import type { PluginManagerClass } from "@tokovo/react";
 
-import { TYPEWRITER_APP_ID, TYPEWRITER_DISPLAY_NAME, TYPEWRITER_VERSION } from "./constants.js";
+import {
+  TYPEWRITER_APP_ID,
+  TYPEWRITER_DISPLAY_NAME,
+  TYPEWRITER_VERSION,
+} from "./constants.js";
 import { typewriterReducer } from "./runtime/reducer.js";
 import { createTypewriterInitialState } from "./runtime/state.js";
 import { TypewriterView } from "./ui/index.js";
 import { typewriterLowering } from "./lowering/index.js";
-import { TypewriterAnchorProvider } from "./anchors/provider.js";
+import { TypewriterCinematicSubjects } from "./camera/subjects.js";
+import { typewriterLayoutStrategies } from "./layout/index.js";
 
 const views: PluginViews = {
   AppRoot: TypewriterView,
 };
 
-export const TypewriterPlugin: TokovoPluginContract<typeof TYPEWRITER_APP_ID> & {
+export const TypewriterPlugin: TokovoPluginContract<
+  typeof TYPEWRITER_APP_ID
+> & {
   v2Lowering: typeof typewriterLowering;
 } = {
   id: TYPEWRITER_APP_ID,
@@ -51,12 +62,15 @@ export const TypewriterPlugin: TokovoPluginContract<typeof TYPEWRITER_APP_ID> & 
     designWidth: 1080,
   },
   v2Lowering: typewriterLowering,
-  anchorProvider: TypewriterAnchorProvider,
+  layouts: typewriterLayoutStrategies,
+  cinematicSubjects: TypewriterCinematicSubjects,
 };
 
 const registeredManagers = new WeakSet<PluginManagerClass>();
 
-export function registerTypewriterPlugin(pluginManager: PluginManagerClass): void {
+export function registerTypewriterPlugin(
+  pluginManager: PluginManagerClass,
+): void {
   if (registeredManagers.has(pluginManager)) return;
   registeredManagers.add(pluginManager);
   pluginManager.register(TypewriterPlugin);

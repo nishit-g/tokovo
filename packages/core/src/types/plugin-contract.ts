@@ -11,9 +11,7 @@
 
 import { RuntimeEvent } from "./runtime-event.js";
 import type { Platform } from "../tokens.js";
-import type { AnchorFraming } from "./anchor.js";
 import type { LayoutContext, LayoutState, ViewKind } from "./layout.js";
-import type { AnchorProvider } from "./anchor.js";
 import type { CinematicSubjectProvider } from "./cinematic-subject.js";
 import type { PluginAssetCollector } from "./asset-ref.js";
 
@@ -221,35 +219,7 @@ export interface DslExtension<Api = unknown> {
 }
 
 // =============================================================================
-// ANCHORS
-// =============================================================================
-
-/**
- * Anchor bounding box (normalized 0-1 coordinates)
- */
-export interface AnchorBounds {
-  x: number; // Center X (0-1)
-  y: number; // Center Y (0-1)
-  width: number; // Width (0-1)
-  height: number; // Height (0-1)
-}
-
-/**
- * Anchor provider function
- */
-export type PluginAnchorProvider = (
-  world: import("../types").WorldState,
-  deviceId: string,
-) => AnchorBounds | null;
-
-/**
- * Anchor registry for a plugin
- */
-export interface PluginAnchorRegistry {
-  providers: Record<string, PluginAnchorProvider>;
-  framing?: Record<string, AnchorFraming>;
-}
-
+// CINEMATIC SUBJECTS
 // =============================================================================
 // AUDIO RULES
 // =============================================================================
@@ -329,14 +299,6 @@ export interface TokovoPluginContract<AppId extends string = string> {
   // === TIER D: Compiler (OPTIONAL) ===
   compileHandlers?: unknown;
   collectAssetRefs?: PluginAssetCollector<AppId>;
-
-  // === Camera Anchors ===
-  anchors?: PluginAnchorRegistry;
-  /**
-   * Full anchor provider (layout-aware). Prefer this over `anchors` when you
-   * need semantic/layout-driven anchor rects (not just normalized bounds).
-   */
-  anchorProvider?: AnchorProvider;
 
   /** Exact, schema-versioned camera subjects from the app's canonical layout. */
   cinematicSubjects?: CinematicSubjectProvider;

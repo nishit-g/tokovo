@@ -40,17 +40,73 @@ export default defineEpisode({
       .snapshot("app_linkedin", "phone", {
         currentUserId: "me",
         users: [
-          { id: "me", name: "Mina Park", handle: "minapark", headline: "Brand storyteller for calmer launches", avatarUrl: "/avatars/avatar-priya.jpg", company: "Lantern", location: "Seoul", connections: 1204, followers: 21400, profileViews: 611, impressionCount: 17100 },
-          { id: "u1", name: "Riku Sato", handle: "rikusato", headline: "Illustration systems lead", avatarUrl: "/avatars/avatar-alex.jpg", company: "Freelance", location: "Kyoto", connections: 610, followers: 10300 },
+          {
+            id: "me",
+            name: "Mina Park",
+            handle: "minapark",
+            headline: "Brand storyteller for calmer launches",
+            avatarUrl: "/avatars/avatar-priya.jpg",
+            company: "Lantern",
+            location: "Seoul",
+            connections: 1204,
+            followers: 21400,
+            profileViews: 611,
+            impressionCount: 17100,
+          },
+          {
+            id: "u1",
+            name: "Riku Sato",
+            handle: "rikusato",
+            headline: "Illustration systems lead",
+            avatarUrl: "/avatars/avatar-alex.jpg",
+            company: "Freelance",
+            location: "Kyoto",
+            connections: 610,
+            followers: 10300,
+          },
         ],
         posts: [
-          { id: "li_storybook_1", authorId: "me", text: "A good launch can still feel quiet if the interface knows how to breathe.", createdAt: baseTs - 100000, media: { type: "image", urls: ["/placeholders/media.svg"], aspect: "wide" } },
+          {
+            id: "li_storybook_1",
+            authorId: "me",
+            text: "A good launch can still feel quiet if the interface knows how to breathe.",
+            createdAt: baseTs - 100000,
+            media: {
+              type: "image",
+              urls: ["/placeholders/media.svg"],
+              aspect: "wide",
+            },
+          },
         ],
         notifications: [
-          { id: "li_storybook_nt_1", type: "like", actorId: "u1", postId: "li_storybook_1", unread: true, createdAt: baseTs - 18000, title: "Riku Sato liked your post", body: "A good launch can still feel quiet..." },
+          {
+            id: "li_storybook_nt_1",
+            type: "like",
+            actorId: "u1",
+            postId: "li_storybook_1",
+            unread: true,
+            createdAt: baseTs - 18000,
+            title: "Riku Sato liked your post",
+            body: "A good launch can still feel quiet...",
+          },
         ],
-        threads: [{ id: "li_storybook_dm_1", participantIds: ["me", "u1"], title: "Riku Sato", unreadCount: 1 }],
-        messages: [{ id: "li_storybook_msg_1", threadId: "li_storybook_dm_1", senderId: "u1", text: "The new theme makes the feed feel gentler without losing density.", createdAt: baseTs - 12000 }],
+        threads: [
+          {
+            id: "li_storybook_dm_1",
+            participantIds: ["me", "u1"],
+            title: "Riku Sato",
+            unreadCount: 1,
+          },
+        ],
+        messages: [
+          {
+            id: "li_storybook_msg_1",
+            threadId: "li_storybook_dm_1",
+            senderId: "u1",
+            text: "The new theme makes the feed feel gentler without losing density.",
+            createdAt: baseTs - 12000,
+          },
+        ],
       })
       .linkedin("phone", (li) => {
         li.at("0.5s").setThemeMode("storybook");
@@ -66,13 +122,6 @@ export default defineEpisode({
           text: "Good. The whole point is warmth without losing seriousness.",
           createdAt: baseTs + 10000,
         });
-      })
-      .camera((cam) => {
-        cam.at("0s").focus("device", { scale: 1.01, duration: "0.35s" });
-        cam.at("1.7s").focus("post_card", { scale: 1.08, duration: "0.35s" });
-        cam.at("4.1s").focus("profile_header", { scale: 1.08, duration: "0.35s" });
-        cam.at("8.3s").focus("notification_row", { scale: 1.08, duration: "0.35s" });
-        cam.at("12.7s").focus("message_thread", { scale: 1.08, duration: "0.35s" });
       })
       .build();
   },

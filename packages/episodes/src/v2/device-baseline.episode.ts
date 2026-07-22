@@ -106,18 +106,5 @@ export default defineEpisode({
         x.at("12.0s").navigate("timeline");
         x.at("13.2s").navigate("tweet", { tweetId: "tw_1" });
       })
-      .camera((cam) => {
-        cam.at("0s").focus("device", { scale: 1.02, duration: "0.3s" });
-        cam
-          .at("0.7s")
-          .animate({ scale: 1.08, duration: "0.35s", easing: "easeOut" });
-        cam
-          .span("4.2s", "10.0s")
-          .trackCinematic("lastMessage", { scale: 1.14, smoothing: 0.18 });
-        cam.at("12.05s").focus("tweet_card", { scale: 1.1, duration: "0.4s" });
-        cam
-          .span("12.4s", "15.2s")
-          .trackCinematic("tweet_card", { scale: 1.12, smoothing: 0.16 });
-      })
       .build(),
 });

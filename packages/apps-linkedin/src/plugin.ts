@@ -1,12 +1,20 @@
-import type { TokovoPluginContract, PluginViews, PluginReducer } from "@tokovo/core";
+import type {
+  TokovoPluginContract,
+  PluginViews,
+  PluginReducer,
+} from "@tokovo/core";
 import type { PluginManagerClass } from "@tokovo/react";
-import { LINKEDIN_APP_ID, LINKEDIN_DISPLAY_NAME, LINKEDIN_VERSION } from "./constants.js";
+import {
+  LINKEDIN_APP_ID,
+  LINKEDIN_DISPLAY_NAME,
+  LINKEDIN_VERSION,
+} from "./constants.js";
 import { linkedInReducer } from "./runtime/reducer.js";
 import { createLinkedInInitialState } from "./runtime/state.js";
 import { LinkedInView } from "./ui/index.js";
 import { linkedInLowering } from "./lowering/index.js";
 import { linkedInLayoutStrategies } from "./layout/index.js";
-import { LinkedInAnchorProvider } from "./anchors/provider.js";
+import { LinkedInCinematicSubjects } from "./camera/subjects.js";
 import { collectLinkedInAssetRefs } from "./asset-refs.js";
 import { linkedInBootstrap } from "./bootstrap.js";
 import { linkedInAudioRules } from "./assets/audio-rules.js";
@@ -58,13 +66,15 @@ export const LinkedInPlugin: TokovoPluginContract<"app_linkedin"> & {
   layouts: linkedInLayoutStrategies,
   dsl: linkedInDsl,
   collectAssetRefs: collectLinkedInAssetRefs,
-  anchorProvider: LinkedInAnchorProvider,
+  cinematicSubjects: LinkedInCinematicSubjects,
   notificationAdapter: linkedInNotificationAdapter,
 };
 
 const registeredManagers = new WeakSet<PluginManagerClass>();
 
-export function registerLinkedInPlugin(pluginManager: PluginManagerClass): void {
+export function registerLinkedInPlugin(
+  pluginManager: PluginManagerClass,
+): void {
   if (registeredManagers.has(pluginManager)) return;
   registeredManagers.add(pluginManager);
   pluginManager.register(LinkedInPlugin);

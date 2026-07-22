@@ -1,13 +1,17 @@
 import type { PluginViews, TokovoPluginContract } from "@tokovo/core";
 import type { PluginManagerClass } from "@tokovo/react";
-import { INSTAGRAM_APP_ID, INSTAGRAM_DISPLAY_NAME, INSTAGRAM_VERSION } from "./constants.js";
+import {
+  INSTAGRAM_APP_ID,
+  INSTAGRAM_DISPLAY_NAME,
+  INSTAGRAM_VERSION,
+} from "./constants.js";
 import { instagramAssets, instagramAudioRules } from "./assets/index.js";
 import { InstagramView } from "./ui/index.js";
 import { instagramReducer } from "./runtime/reducer.js";
 import { createInstagramInitialState } from "./runtime/state.js";
 import { instagramLowering } from "./lowering/index.js";
 import { instagramLayoutStrategies } from "./layout/index.js";
-import { InstagramAnchorProvider } from "./anchors/provider.js";
+import { InstagramCinematicSubjects } from "./camera/subjects.js";
 import { instagramDsl, type InstagramDslApi } from "./dsl/extension.js";
 import { instagramNotificationAdapter } from "./notifications/adapter.js";
 import { instagramBootstrap } from "./bootstrap.js";
@@ -58,14 +62,16 @@ export const InstagramPlugin: TokovoPluginContract<"app_instagram"> & {
   audioRules: instagramAudioRules,
   v2Lowering: instagramLowering,
   layouts: instagramLayoutStrategies,
-  anchorProvider: InstagramAnchorProvider,
+  cinematicSubjects: InstagramCinematicSubjects,
   dsl: instagramDsl,
   notificationAdapter: instagramNotificationAdapter,
 };
 
 const registeredManagers = new WeakSet<PluginManagerClass>();
 
-export function registerInstagramPlugin(pluginManager: PluginManagerClass): void {
+export function registerInstagramPlugin(
+  pluginManager: PluginManagerClass,
+): void {
   if (registeredManagers.has(pluginManager)) return;
   registeredManagers.add(pluginManager);
   pluginManager.register(InstagramPlugin);

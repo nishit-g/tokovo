@@ -41,6 +41,7 @@ describe("compiler pipeline guarantees", () => {
           viewport: { x: 0, y: 0, width: 1080, height: 1920 },
           sourceStageNodeId: "root",
           zIndex: 0,
+          coveragePolicy: "allow-default",
           defaultRigId: "device",
         },
       ],
@@ -68,7 +69,10 @@ describe("compiler pipeline guarantees", () => {
       defaultCameraPlanId: cameraPlan.id,
     };
 
-    const prepared = prepareTrackEpisode(ir, [], { log: false, validate: true });
+    const prepared = prepareTrackEpisode(ir, [], {
+      log: false,
+      validate: true,
+    });
 
     expect(prepared.cinematics?.storySignature).toBe(prepared.eventSignature);
     expect(prepared.cinematics?.defaultCameraPlanId).toBe("editorial");
@@ -104,6 +108,7 @@ describe("compiler pipeline guarantees", () => {
               viewport: { x: 0, y: 0, width: 1080, height: 1920 },
               sourceStageNodeId: "ghost-node",
               zIndex: 0,
+              coveragePolicy: "allow-default",
               defaultRigId: "ghost-rig",
             },
           ],
@@ -111,7 +116,11 @@ describe("compiler pipeline guarantees", () => {
             {
               id: "ghost-rig",
               outputId: "main",
-              subject: { kind: "device", deviceId: "ghost", subjectId: "screen" },
+              subject: {
+                kind: "device",
+                deviceId: "ghost",
+                subjectId: "screen",
+              },
               composer: {
                 screenPosition: [0.5, 0.5],
                 targetFill: 0.8,
@@ -128,9 +137,9 @@ describe("compiler pipeline guarantees", () => {
       defaultCameraPlanId: "ghost-plan",
     };
 
-    expect(() => prepareTrackEpisode(ir, [], { log: false, validate: true })).toThrow(
-      /CINEMATIC_STAGE_DEVICE_MISSING.*ghost/,
-    );
+    expect(() =>
+      prepareTrackEpisode(ir, [], { log: false, validate: true }),
+    ).toThrow(/CINEMATIC_STAGE_DEVICE_MISSING.*ghost/);
   });
 
   it("prepares multilingual input as immutable random-access program data", () => {
@@ -202,9 +211,9 @@ describe("compiler pipeline guarantees", () => {
       ],
     });
 
-    expect(() => prepareTrackEpisode(ir, [], { log: false, validate: true })).toThrow(
-      /INPUT_SESSION_CONFLICT/,
-    );
+    expect(() =>
+      prepareTrackEpisode(ir, [], { log: false, validate: true }),
+    ).toThrow(/INPUT_SESSION_CONFLICT/);
   });
 
   it("applies stable same-frame ordering policy", () => {
@@ -298,11 +307,13 @@ describe("compiler pipeline guarantees", () => {
     });
 
     expect(preparedA.eventSignature).toBe(preparedB.eventSignature);
-    expect(preparedA.keyframedEventIndex?.frames).toEqual(preparedB.keyframedEventIndex?.frames);
+    expect(preparedA.keyframedEventIndex?.frames).toEqual(
+      preparedB.keyframedEventIndex?.frames,
+    );
     expect(preparedA.events).toEqual(preparedB.events);
   });
 
-  it("seeds camera layout with the first actual device id", () => {
+  it("keeps camera state out of the replay world", () => {
     const ir = createCanonicalTrackEpisodeIR({
       devices: [
         {
@@ -323,8 +334,11 @@ describe("compiler pipeline guarantees", () => {
       validate: true,
     });
 
-    expect(prepared.initialWorld.camera.activeDeviceId).toBe("phone");
-    expect(prepared.initialWorld.camera.layout?.primaryDeviceId).toBe("phone");
+    expect(Object.keys(prepared.initialWorld.devices)).toEqual([
+      "phone",
+      "career",
+    ]);
+    expect("camera" in prepared.initialWorld).toBe(false);
   });
 
   it("hydrates authored device OS state into the initial world", () => {
@@ -409,13 +423,13 @@ describe("compiler pipeline guarantees", () => {
         hydrate: ({ baseState, snapshot, initialView }: any) => ({
           ...baseState,
           conversations: Object.fromEntries(
-            (snapshot?.snapshot?.conversations ?? []).map((conversation: any) => [
-              conversation.id,
-              conversation,
-            ]),
+            (snapshot?.snapshot?.conversations ?? []).map(
+              (conversation: any) => [conversation.id, conversation],
+            ),
           ),
           currentScreen: initialView?.view?.screen ?? baseState.currentScreen,
-          viewMode: initialView?.view?.screen === "chat" ? "CHAT" : baseState.viewMode,
+          viewMode:
+            initialView?.view?.screen === "chat" ? "CHAT" : baseState.viewMode,
           conversationId: initialView?.view?.conversationId,
         }),
       },
@@ -450,7 +464,10 @@ describe("compiler pipeline guarantees", () => {
       validate: true,
     });
 
-    const app = prepared.initialWorld.appState.app_whatsapp as Record<string, unknown>;
+    const app = prepared.initialWorld.appState.app_whatsapp as Record<
+      string,
+      unknown
+    >;
     expect(app.viewMode).toBe("CHAT");
     expect(app.currentScreen).toBe("chat");
     expect(app.conversationId).toBe("dm_alex");
@@ -653,7 +670,10 @@ describe("compiler pipeline guarantees", () => {
 
     const prepared = prepareTrackEpisode(
       ir,
-      [createPlugin("app_whatsapp", "chats"), createPlugin("app_imessage", "list")],
+      [
+        createPlugin("app_whatsapp", "chats"),
+        createPlugin("app_imessage", "list"),
+      ],
       {
         log: false,
         validate: true,
@@ -692,7 +712,8 @@ describe("compiler pipeline guarantees", () => {
           },
           validate: ({ version, value }: any) => ({
             errors:
-              version === 2 && (value as Record<string, unknown>).migrated === true
+              version === 2 &&
+              (value as Record<string, unknown>).migrated === true
                 ? []
                 : ["snapshot was not migrated"],
           }),
@@ -746,7 +767,10 @@ describe("compiler pipeline guarantees", () => {
       validate: true,
     });
 
-    const app = prepared.initialWorld.appState.app_whatsapp as Record<string, unknown>;
+    const app = prepared.initialWorld.appState.app_whatsapp as Record<
+      string,
+      unknown
+    >;
     expect(app.viewMode).toBe("FEED");
     expect(app.currentScreen).toBe("chats");
     expect(app.conversationId).toBeUndefined();
@@ -1021,25 +1045,35 @@ describe("compiler pipeline guarantees", () => {
           kind: "DEVICE",
           type: "OPEN_APP",
           deviceId: "phone",
-          payload: expect.objectContaining({ appId: "app_chat", route: "thread" }),
+          payload: expect.objectContaining({
+            appId: "app_chat",
+            route: "thread",
+          }),
         }),
         expect.objectContaining({
           kind: "APP",
           appId: "app_chat",
           type: "MESSAGE_SEND",
-          payload: expect.objectContaining({ text: "ज़रूर 👋🏽", threadId: "dm" }),
+          payload: expect.objectContaining({
+            text: "ज़रूर 👋🏽",
+            threadId: "dm",
+          }),
         }),
       ]),
     );
-    expect(prepared.events.filter((event) => event.at === 30 && event.kind === "DEVICE")).toEqual(
-      [],
-    );
+    expect(
+      prepared.events.filter(
+        (event) => event.at === 30 && event.kind === "DEVICE",
+      ),
+    ).toEqual([]);
     const replyEvent = prepared.events.find(
       (event) => event.kind === "APP" && event.type === "MESSAGE_SEND",
     );
     expect(replyEvent).toBeDefined();
     expect(replyEvent).not.toHaveProperty("_declarationOrder");
-    const replyPayload = (replyEvent as { payload?: Record<string, unknown> } | undefined)?.payload;
+    const replyPayload = (
+      replyEvent as { payload?: Record<string, unknown> } | undefined
+    )?.payload;
     expect(replyPayload).not.toHaveProperty("notificationId");
     expect(replyPayload).not.toHaveProperty("actionId");
   });

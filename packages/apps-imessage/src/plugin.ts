@@ -1,12 +1,20 @@
-import type { TokovoPluginContract, PluginViews, PluginReducer } from "@tokovo/core";
+import type {
+  TokovoPluginContract,
+  PluginViews,
+  PluginReducer,
+} from "@tokovo/core";
 import type { PluginManagerClass } from "@tokovo/react";
-import { IMESSAGE_APP_ID, IMESSAGE_DISPLAY_NAME, IMESSAGE_VERSION } from "./constants.js";
+import {
+  IMESSAGE_APP_ID,
+  IMESSAGE_DISPLAY_NAME,
+  IMESSAGE_VERSION,
+} from "./constants.js";
 import { iMessageReducer } from "./runtime/reducer.js";
 import { createIMessageInitialState } from "./runtime/initial-state.js";
 import { IMessageView } from "./ui/index.js";
 import { iMessageV2Lowering } from "./lowering/index.js";
 import { iMessageLayoutStrategies } from "./layout/index.js";
-import { IMessageAnchorProvider } from "./anchors/provider.js";
+import { IMessageCinematicSubjects } from "./camera/subjects.js";
 import { iMessageBootstrap } from "./bootstrap.js";
 import { iMessageDsl, type IMessageDslApi } from "./dsl/index.js";
 import { collectIMessageAssetRefs } from "./asset-refs.js";
@@ -33,14 +41,22 @@ const iMessageAssets = {
 
 const iMessageAudioRules: NonNullable<TokovoPluginContract["audioRules"]> = [
   {
-    match: { kind: "APP", appId: IMESSAGE_APP_ID, type: "IMESSAGE_MESSAGE_SEND" },
+    match: {
+      kind: "APP",
+      appId: IMESSAGE_APP_ID,
+      type: "IMESSAGE_MESSAGE_SEND",
+    },
     action: "PLAY_ONE_SHOT",
     sound: "app_imessage.message_out",
     bus: "ui",
     duckMusic: true,
   },
   {
-    match: { kind: "APP", appId: IMESSAGE_APP_ID, type: "IMESSAGE_TYPING_START" },
+    match: {
+      kind: "APP",
+      appId: IMESSAGE_APP_ID,
+      type: "IMESSAGE_TYPING_START",
+    },
     action: "START_LOOP",
     sound: "app_imessage.typing_loop",
     bus: "sfx",
@@ -104,7 +120,7 @@ export const IMessagePlugin: TokovoPluginContract<"app_imessage"> & {
   audioRules: iMessageAudioRules,
   v2Lowering: iMessageV2Lowering,
   layouts: iMessageLayoutStrategies,
-  anchorProvider: IMessageAnchorProvider,
+  cinematicSubjects: IMessageCinematicSubjects,
   dsl: iMessageDsl,
   collectAssetRefs: collectIMessageAssetRefs,
   notificationAdapter: iMessageNotificationAdapter,
@@ -112,7 +128,9 @@ export const IMessagePlugin: TokovoPluginContract<"app_imessage"> & {
 
 const registeredManagers = new WeakSet<PluginManagerClass>();
 
-export function registerIMessagePlugin(pluginManager: PluginManagerClass): void {
+export function registerIMessagePlugin(
+  pluginManager: PluginManagerClass,
+): void {
   if (registeredManagers.has(pluginManager)) return;
   registeredManagers.add(pluginManager);
   pluginManager.register(IMessagePlugin);

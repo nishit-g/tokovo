@@ -65,14 +65,6 @@ const PluginAutoSoundRuleSchema = z.object({
   priority: z.number().optional(),
 });
 
-const AnchorProviderSchema = z
-  .object({
-    appId: z.string(),
-    getAnchors: z.function(),
-    framing: z.record(z.string(), z.unknown()).optional(),
-  })
-  .passthrough();
-
 const CinematicSubjectProviderSchema = z
   .object({
     ownerId: z.string(),
@@ -105,8 +97,6 @@ export const TokovoPluginSchema = z.object({
       icons: z.record(z.string(), z.string()).optional(),
     })
     .optional(),
-  anchors: z.record(z.string(), z.unknown()).optional(),
-  anchorProvider: AnchorProviderSchema.optional(),
   cinematicSubjects: CinematicSubjectProviderSchema.optional(),
   layouts: z.array(PluginLayoutStrategySchema).optional(),
   audioRules: z.array(PluginAutoSoundRuleSchema).optional(),
@@ -280,40 +270,6 @@ export function validatePluginDetailed<AppId extends string>(
           suggestion: `Use '${path.replace(/^\/+/, "")}'`,
         });
       }
-    }
-  }
-
-  if (plugin.anchors) {
-    if (
-      !plugin.anchors.providers ||
-      typeof plugin.anchors.providers !== "object"
-    ) {
-      warnings.push({
-        field: "anchors.providers",
-        message:
-          "Anchor providers should be an object mapping anchor IDs to provider functions",
-      });
-    }
-  }
-
-  if (plugin.anchorProvider) {
-    const provider = plugin.anchorProvider as unknown as {
-      appId?: unknown;
-      getAnchors?: unknown;
-    };
-    if (provider.appId !== plugin.id) {
-      warnings.push({
-        field: "anchorProvider.appId",
-        message: `Anchor provider appId should match plugin.id`,
-        suggestion: `Set anchorProvider.appId to '${plugin.id}'`,
-      });
-    }
-    if (typeof provider.getAnchors !== "function") {
-      errors.push({
-        field: "anchorProvider.getAnchors",
-        message:
-          "Anchor provider must implement getAnchors(world, layout, deviceId, context?)",
-      });
     }
   }
 

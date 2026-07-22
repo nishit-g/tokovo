@@ -1,27 +1,20 @@
 {
-    "extends": "../../tsconfig.lib.json",
-    "compilerOptions": {
-        "outDir": "dist",
-        "rootDir": "src",
-        "jsx": "react-jsx"
-    },
-    "references": [
-        { "path": "../camera" },
-        { "path": "../stage" },
-        { "path": "../core" },
-        { "path": "../compiler" },
-        { "path": "../device-camera" },
-        { "path": "../device-keyboard" },
-        { "path": "../devices" },
-        { "path": "../device-notifications" },
-        { "path": "../react" }
-    ],
-    "include": [
-        "src/**/*"
-    ],
-    "exclude": [
-        "src/**/*.test.ts",
-        "src/**/*.spec.ts",
-        "src/__tests__/**"
-    ]
+  "extends": "../../tsconfig.lib.json",
+  "compilerOptions": {
+    "outDir": "dist",
+    "rootDir": "src",
+    "jsx": "react-jsx"
+  },
+  "references": [
+    { "path": "../camera" },
+    { "path": "../stage" },
+    { "path": "../core" },
+    { "path": "../compiler" },
+    { "path": "../device-keyboard" },
+    { "path": "../devices" },
+    { "path": "../device-notifications" },
+    { "path": "../react" }
+  ],
+  "include": ["src/**/*"],
+  "exclude": ["src/**/*.test.ts", "src/**/*.spec.ts", "src/__tests__/**"]
 }

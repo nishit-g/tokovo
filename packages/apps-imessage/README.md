@@ -6,7 +6,7 @@
 
 - iMessage runtime reducer and initial state
 - iMessage React views
-- layout and anchor integration
+- layout and subject integration
 - audio rules where needed
 - track-builder and authoring helpers
 
@@ -14,4 +14,4 @@
 
 `viewMode` should always be present, and chat-specific state should only be considered active when the current conversation context is available.
 
-See `ANCHORS.md` for supported anchor IDs.
+See `CINEMATIC_SUBJECTS.md` for supported subject IDs.

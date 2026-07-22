@@ -18,7 +18,7 @@ describe("event utils", () => {
     { at: 5, kind: "APP", appId: "chat", type: "MESSAGE" } as any,
     { at: 5, kind: "AUDIO", deviceId: "phone", type: "PLAY" } as any,
     { at: 6, kind: "AUDIO", type: "PLAY" } as any,
-    { at: 7, kind: "CAMERA", deviceId: "tablet", type: "PAN" } as any,
+    { at: 7, kind: "DEVICE", deviceId: "tablet", type: "UNLOCK" } as any,
   ];
 
   it("indexes and retrieves events by frame", () => {
@@ -66,7 +66,13 @@ describe("event utils", () => {
     const sameFrame: TimelineEvent[] = [
       { at: 0, kind: "AUDIO", type: "PLAY", _declarationOrder: 2 } as any,
       { at: 0, kind: "DEVICE", type: "LOCK", _declarationOrder: 3 } as any,
-      { at: 0, kind: "APP", appId: "app", type: "OPEN", _declarationOrder: 1 } as any,
+      {
+        at: 0,
+        kind: "APP",
+        appId: "app",
+        type: "OPEN",
+        _declarationOrder: 1,
+      } as any,
     ];
 
     const index = createEventIndex(sameFrame);

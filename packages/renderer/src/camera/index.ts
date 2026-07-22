@@ -9,6 +9,10 @@ export { projectCinematicFrame } from "./projectCinematicFrame.js";
 
 export {
   CameraProjectionBackendError,
+  CameraProjectionPassRegistrationError,
+  CameraProjectionPassRegistry,
+  createBuiltinCameraProjectionPassRegistry,
   selectCameraProjectionBackend,
   type CameraProjectionBackend,
+  type CameraProjectionPassRegistration,
 } from "./projectionBackend.js";

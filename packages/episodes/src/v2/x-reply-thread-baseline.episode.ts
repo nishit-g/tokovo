@@ -20,15 +20,47 @@ export default defineEpisode({
       .device("phone", "iphone16", {
         app: "app_x",
         installedApps: ["app_x"],
-        os: { time: new Date("2025-06-26T12:04:00Z"), battery: 76, network: "5G" },
+        os: {
+          time: new Date("2025-06-26T12:04:00Z"),
+          battery: 76,
+          network: "5G",
+        },
       })
       .background({ type: "image", src: "/backgrounds/ambient-night.png" })
       .snapshot("app_x", "phone", {
         users: [
-          { id: "u_me", name: "Me", handle: "me", followers: 3400, following: 240, verified: null },
-          { id: "u_op", name: "OP", handle: "op", followers: 98000, following: 600, verified: "blue" },
-          { id: "u_1", name: "Rhea", handle: "rhea", followers: 12000, following: 980, verified: null },
-          { id: "u_2", name: "Omar", handle: "omar", followers: 8800, following: 420, verified: null },
+          {
+            id: "u_me",
+            name: "Me",
+            handle: "me",
+            followers: 3400,
+            following: 240,
+            verified: null,
+          },
+          {
+            id: "u_op",
+            name: "OP",
+            handle: "op",
+            followers: 98000,
+            following: 600,
+            verified: "blue",
+          },
+          {
+            id: "u_1",
+            name: "Rhea",
+            handle: "rhea",
+            followers: 12000,
+            following: 980,
+            verified: null,
+          },
+          {
+            id: "u_2",
+            name: "Omar",
+            handle: "omar",
+            followers: 8800,
+            following: 420,
+            verified: null,
+          },
         ],
         tweets: [
           {
@@ -76,14 +108,6 @@ export default defineEpisode({
           bookmarkCount: 80,
         });
         x.at("14.2s").navigate("timeline");
-      })
-      .camera((cam) => {
-        cam.at("0s").focus("device", { scale: 1.02, duration: "0.35s" });
-        cam.at("4.05s").focus("tweet_card", { scale: 1.1, duration: "0.45s" });
-        cam.span("4.1s", "9.2s").trackCinematic("metrics_row", { scale: 1.18, smoothing: 0.2 });
-        cam.at("10.05s").focus("device", { scale: 1.04, duration: "0.35s" });
-        cam.span("10.2s", "14.2s").trackCinematic("keyboard", { scale: 1.12, smoothing: 0.16 });
-        cam.at("14.3s").focus("tweet_card", { scale: 1.08, duration: "0.45s" });
       })
       .build(),
 });

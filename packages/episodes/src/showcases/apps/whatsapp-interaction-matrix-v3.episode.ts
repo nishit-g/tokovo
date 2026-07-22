@@ -151,7 +151,8 @@ export default defineEpisode({
             media: {
               type: "image",
               src: "/media/founder-whiteboard.jpg",
-              caption: "The release board is green. Shipping after the final replay.",
+              caption:
+                "The release board is green. Shipping after the final replay.",
             },
           },
           {
@@ -227,7 +228,10 @@ export default defineEpisode({
           },
           chats: { theme: "light", backupLabel: "Today, 6:22 PM" },
           notifications: { messageTone: "Note", mutedChats: 2 },
-          storage: { usedLabel: "2.4 GB used", autoDownloadLabel: "Wi-Fi only" },
+          storage: {
+            usedLabel: "2.4 GB used",
+            autoDownloadLabel: "Wi-Fi only",
+          },
         },
       })
       .snapshot("app_whatsapp", "android_arabic", {
@@ -312,7 +316,11 @@ export default defineEpisode({
             avatar: "/avatars/avatar-group.png",
             postedAt: baseTime - 40_000,
             viewed: false,
-            media: { type: "text", text: "جاهزون للنشر", backgroundColor: "#375F53" },
+            media: {
+              type: "text",
+              text: "جاهزون للنشر",
+              backgroundColor: "#375F53",
+            },
           },
           {
             id: "ar_status_2",
@@ -473,13 +481,6 @@ export default defineEpisode({
         wa.openSettings("36.2s");
         wa.switchTo("arabic_support", "39s");
         wa.openProfile("39.2s");
-      })
-      .camera((camera) => {
-        camera.at("0s").layout({
-          mode: "SPLIT_HORIZONTAL",
-          primaryDeviceId: "ios_english",
-          secondaryDeviceId: "android_arabic",
-        });
       })
       .build(),
 });

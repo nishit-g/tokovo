@@ -108,6 +108,15 @@ export interface PreparedCameraProgram {
   filterIndexById: Readonly<Record<string, number>>;
   /** Non-overlapping interval segments keep per-frame selection O(log n) without duplicating shots. */
   shotSegmentsByOutput: Readonly<Record<string, readonly CameraShotSegment[]>>;
+  coverageByOutput: Readonly<
+    Record<
+      string,
+      {
+        policy: CameraPlanIR["outputs"][number]["coveragePolicy"];
+        gaps: readonly { startFrame: number; endFrame: number }[];
+      }
+    >
+  >;
   /** Highest-fidelity backend required by any reachable rig or transition. */
   projectionBackendRequirement: "composited" | "texture";
   signature: string;
@@ -138,6 +147,8 @@ export interface CameraEvaluationTrace {
   selection: "shot" | "default-rig";
   shotId: string | null;
   rigId: string;
+  desiredPose: CameraPose2D;
+  finalPose: CameraPose2D;
   transition: CameraTransitionTrace | null;
   subjects: readonly {
     key: string;
@@ -158,6 +169,25 @@ export interface CameraEvaluationTrace {
       ownerId: string;
       regionId: string;
     }[];
+  } | null;
+  constraints: {
+    safeAreaInsets: {
+      top: number;
+      right: number;
+      bottom: number;
+      left: number;
+    };
+    effectiveViewport: CameraRectIR;
+  };
+  tracking: {
+    mode: "direct";
+    subjectKeys: readonly string[];
+  };
+  bakedTrajectory: {
+    interpolation: "linear" | "minimum-jerk";
+    fromFrame: number;
+    toFrame: number;
+    progress: number;
   } | null;
   projectionPassKinds: readonly CameraProjectionPass["kind"][];
 }

@@ -1,4 +1,6 @@
 import fs from "node:fs/promises";
+import { createReadStream } from "node:fs";
+import { createHash } from "node:crypto";
 
 import {
   createRenderArtifactPaths,
@@ -17,12 +19,19 @@ import { RenderLogger } from "./logger";
 import { assertRenderPreflight } from "./preflight";
 import { getRenderProfile, type RenderProfileId } from "./profiles";
 import { renderEpisodeMedia } from "./remotion";
+import {
+  explainEpisodeCameraFrame,
+  getEpisodeCameraArtifact,
+  getEpisodeCameraProgramManifests,
+} from "video-runner/camera-diagnostics";
 
 export type RenderEpisodeOptions = {
   episodeId: string;
   jobId: string;
   profile: RenderProfileId;
   cameraPlanId?: string;
+  /** Inclusive source frames for deterministic chunks and release probes. */
+  frameRange?: [number, number];
 };
 
 export type RenderEpisodeResult = {
@@ -38,6 +47,16 @@ async function statSize(filePath: string): Promise<number> {
   return stat.size;
 }
 
+async function sha256File(filePath: string): Promise<string> {
+  const hash = createHash("sha256");
+  for await (const chunk of createReadStream(filePath)) hash.update(chunk);
+  return hash.digest("hex");
+}
+
+async function writeJson(filePath: string, value: unknown): Promise<void> {
+  await fs.writeFile(filePath, `${JSON.stringify(value, null, 2)}\n`, "utf8");
+}
+
 function createArtifactRecord(input: {
   paths: Awaited<ReturnType<typeof createRenderArtifactPaths>>;
   sizeBytes: number;
@@ -50,10 +69,18 @@ function createArtifactRecord(input: {
       posterPath: input.paths.relativePosterPath,
       metadataPath: input.paths.relativeMetadataPath,
       logsPath: input.paths.relativeLogsPath,
+      cameraProgramPath: input.paths.relativeCameraProgramPath,
+      cameraDiagnosticsPath: input.paths.relativeCameraDiagnosticsPath,
+      projectionHashesPath: input.paths.relativeProjectionHashesPath,
+      cameraTracePath: input.paths.relativeCameraTracePath,
       videoUrl: null,
       posterUrl: null,
       metadataUrl: null,
       logsUrl: null,
+      cameraProgramUrl: null,
+      cameraDiagnosticsUrl: null,
+      projectionHashesUrl: null,
+      cameraTraceUrl: null,
       sizeBytes: input.sizeBytes,
     };
   }
@@ -66,10 +93,18 @@ function createArtifactRecord(input: {
     posterPath: input.uploadTargets.poster.locator,
     metadataPath: input.uploadTargets.metadata.locator,
     logsPath: input.uploadTargets.logs.locator,
+    cameraProgramPath: input.uploadTargets.cameraProgram.locator,
+    cameraDiagnosticsPath: input.uploadTargets.cameraDiagnostics.locator,
+    projectionHashesPath: input.uploadTargets.projectionHashes.locator,
+    cameraTracePath: input.uploadTargets.cameraTrace.locator,
     videoUrl: input.uploadTargets.video.publicUrl,
     posterUrl: input.uploadTargets.poster.publicUrl,
     metadataUrl: input.uploadTargets.metadata.publicUrl,
     logsUrl: input.uploadTargets.logs.publicUrl,
+    cameraProgramUrl: input.uploadTargets.cameraProgram.publicUrl,
+    cameraDiagnosticsUrl: input.uploadTargets.cameraDiagnostics.publicUrl,
+    projectionHashesUrl: input.uploadTargets.projectionHashes.publicUrl,
+    cameraTraceUrl: input.uploadTargets.cameraTrace.publicUrl,
     sizeBytes: input.sizeBytes,
   };
 }
@@ -91,6 +126,7 @@ export async function renderEpisodeArtifact(
     jobId: options.jobId,
     profile: profile.id,
   });
+  let camera: Awaited<ReturnType<typeof getEpisodeCameraArtifact>> | undefined;
 
   try {
     const preflightStart = Date.now();
@@ -100,23 +136,83 @@ export async function renderEpisodeArtifact(
       durationMs: preflightMs,
     });
 
+    camera = await getEpisodeCameraArtifact({
+      episodeId: options.episodeId,
+      cameraPlanId: options.cameraPlanId,
+    });
+    const cameraPrograms = await getEpisodeCameraProgramManifests(options.episodeId);
+    const diagnosticRange: readonly [number, number] = options.frameRange ?? [
+      0,
+      camera.program.durationInFrames - 1,
+    ];
+    const representativeFrames = [
+      diagnosticRange[0],
+      Math.floor((diagnosticRange[0] + diagnosticRange[1]) / 2),
+      diagnosticRange[1],
+    ].filter((frame, index, frames) => frame >= 0 && frames.indexOf(frame) === index);
+    const explanations = await Promise.all(
+      camera.program.outputs.flatMap((output) =>
+        representativeFrames.map((frame) =>
+          explainEpisodeCameraFrame({
+            episodeId: options.episodeId,
+            cameraPlanId: camera?.selectedCameraPlanId,
+            outputId: output.id,
+            frame,
+          }),
+        ),
+      ),
+    );
+    await writeJson(paths.cameraProgramPath, camera);
+    await writeJson(paths.cameraDiagnosticsPath, {
+      version: 1,
+      selectedCameraPlanId: camera.selectedCameraPlanId,
+      manifests: cameraPrograms,
+      representativeFrames,
+      explanations,
+    });
+    await fs.writeFile(
+      paths.cameraTracePath,
+      `${explanations
+        .map((explanation) => JSON.stringify({ kind: "explain", ...explanation }))
+        .join("\n")}\n`,
+      "utf8",
+    );
+
     const renderOutput = await renderEpisodeMedia({
       episodeId: options.episodeId,
       cameraPlanId: options.cameraPlanId,
       profile,
       outputLocation: paths.videoPath,
       posterLocation: paths.posterPath,
+      cameraTracePath: paths.cameraTracePath,
+      frameRange: options.frameRange,
       logger,
     });
 
     const sizeBytes = await statSize(paths.videoPath);
+    const [videoSha256, posterSha256] = await Promise.all([
+      sha256File(paths.videoPath),
+      sha256File(paths.posterPath),
+    ]);
+    await writeJson(paths.projectionHashesPath, {
+      version: 1,
+      cameraSignature: camera.program.signature,
+      sourceSignature: renderOutput.sourceSignature,
+      sourceFrameRange: renderOutput.sourceFrameRange,
+      files: {
+        video: { sha256: videoSha256, sizeBytes },
+        poster: {
+          sha256: posterSha256,
+          sizeBytes: await statSize(paths.posterPath),
+        },
+      },
+    });
     const uploadTargets = createR2ArtifactUploadTargets(paths.storagePrefix);
     const artifactRecord = createArtifactRecord({
       paths,
       sizeBytes,
       uploadTargets,
     });
-
     const metadata: RenderArtifactMetadata = {
       episodeId: options.episodeId,
       jobId: options.jobId,
@@ -126,8 +222,10 @@ export async function renderEpisodeArtifact(
       fps: renderOutput.composition.fps,
       width: renderOutput.composition.width,
       height: renderOutput.composition.height,
-      durationInFrames: renderOutput.composition.durationInFrames,
+      durationInFrames: renderOutput.sourceFrameRange[1] - renderOutput.sourceFrameRange[0] + 1,
+      sourceFrameRange: renderOutput.sourceFrameRange,
       sourceSignature: renderOutput.sourceSignature,
+      camera,
       artifact: artifactRecord,
       timingMs: {
         preflight: preflightMs,
@@ -167,6 +265,10 @@ export async function renderEpisodeArtifact(
         posterFilePath: paths.posterPath,
         metadataFilePath: paths.metadataPath,
         logsFilePath: paths.logsPath,
+        cameraProgramFilePath: paths.cameraProgramPath,
+        cameraDiagnosticsFilePath: paths.cameraDiagnosticsPath,
+        projectionHashesFilePath: paths.projectionHashesPath,
+        cameraTraceFilePath: paths.cameraTracePath,
         targets: uploadTargets,
       });
       await logger.info("storage.upload.done", "Uploaded render artifacts to R2", {
@@ -209,12 +311,21 @@ export async function renderEpisodeArtifact(
       },
     });
 
+    await writeJson(paths.cameraFailurePacketPath, {
+      version: 1,
+      episodeId: options.episodeId,
+      cameraPlanId: options.cameraPlanId ?? camera?.selectedCameraPlanId,
+      camera,
+      error: getRenderServiceErrorData(renderError),
+    }).catch(() => undefined);
+
     await logger.error("render.failed", renderError.message, {
       ...getRenderServiceErrorData(renderError),
       episodeId: options.episodeId,
       cameraPlanId: options.cameraPlanId,
       jobId: options.jobId,
       profile: profile.id,
+      cameraFailurePacketPath: paths.cameraFailurePacketPath,
     });
 
     throw renderError;

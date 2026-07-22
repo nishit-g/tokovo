@@ -17,7 +17,11 @@ import {
   type MessageType,
   type GapContext,
 } from "../config/index.js";
-import type { WhatsAppMessage, WhatsAppConversation, WhatsAppState } from "../types/index.js";
+import type {
+  WhatsAppMessage,
+  WhatsAppConversation,
+  WhatsAppState,
+} from "../types/index.js";
 import { computeConversationLayout, getLayoutCache } from "./cache.js";
 import { projectWhatsAppThread } from "../thread/projector.js";
 import { createWhatsAppThreadWindow } from "../thread/window.js";
@@ -39,7 +43,7 @@ type LayoutMessage = WhatsAppMessage;
  * - Group chat member awareness with interruption handling
  * - Per-message-type spacing overrides
  * - Fully configurable via MessageLayoutConfig
- * - Semantic Region Generation (Anchors)
+ * - Semantic Region Generation (Subjects)
  */
 export function computeChatLayout(
   ctx: LayoutContext,
@@ -51,9 +55,15 @@ export function computeChatLayout(
   // Physical-pixel scaling happens above the app surface in the renderer.
   const px = (value: number) => value;
 
-  const appState = (getAppStateForDevice(world, "app_whatsapp", ctx.activeDeviceId) ||
-    {}) as Partial<WhatsAppState>;
-  const conversations = (appState.conversations || {}) as Record<string, WhatsAppConversation>;
+  const appState = (getAppStateForDevice(
+    world,
+    "app_whatsapp",
+    ctx.activeDeviceId,
+  ) || {}) as Partial<WhatsAppState>;
+  const conversations = (appState.conversations || {}) as Record<
+    string,
+    WhatsAppConversation
+  >;
 
   if (!activeConversationId || !conversations[activeConversationId]) {
     return {
@@ -76,15 +86,17 @@ export function computeChatLayout(
     fps: world.config?.fps ?? 30,
     locale: appState.locale ?? "en-US",
   });
-  const viewportAnchorMessageId =
+  const viewportFocusMessageId =
     appState.threadViewport?.conversationId === activeConversationId
-      ? appState.threadViewport.anchorMessageId
+      ? appState.threadViewport.focusMessageId
       : undefined;
   const threadWindow = createWhatsAppThreadWindow(thread, {
-    anchorMessageId: viewportAnchorMessageId,
+    focusMessageId: viewportFocusMessageId,
   });
   const allMessages = threadWindow.blocks.flatMap((block) =>
-    block.kind === "system" ? [block.message] : block.items.map((item) => item.message),
+    block.kind === "system"
+      ? [block.message]
+      : block.items.map((item) => item.message),
   );
   const projectedConversation: WhatsAppConversation = {
     ...conversation,
@@ -136,7 +148,10 @@ export function computeChatLayout(
     let translateX = 0;
     const translateY = 0;
 
-    if (timeSinceAppear >= 0 && timeSinceAppear < config.animation.messageAppearDuration) {
+    if (
+      timeSinceAppear >= 0 &&
+      timeSinceAppear < config.animation.messageAppearDuration
+    ) {
       const progress = timeSinceAppear / config.animation.messageAppearDuration;
       const ease = applyEasing(progress, "easeOut");
       opacity = ease;
@@ -157,20 +172,24 @@ export function computeChatLayout(
       rect,
     };
 
-    const anchorId = msg.id;
-    semanticRegions[anchorId] = {
-      id: anchorId,
+    const subjectId = msg.id;
+    semanticRegions[subjectId] = {
+      id: subjectId,
       rect,
-      tags: ["message", msg.from === "me" ? "message_me" : "message_other", msgType],
+      tags: [
+        "message",
+        msg.from === "me" ? "message_me" : "message_other",
+        msgType,
+      ],
       metadata: {
         from: msg.from,
         type: msgType,
         timestamp: msg.timestamp,
       },
     };
-    semanticGroups["message"].push(anchorId);
+    semanticGroups["message"].push(subjectId);
     if (msgType === "system") {
-      semanticGroups["system"].push(anchorId);
+      semanticGroups["system"].push(subjectId);
     }
 
     const innerX = rect.x + px(8);
@@ -206,7 +225,9 @@ export function computeChatLayout(
 
     if (isMediaSemanticType) {
       const mediaHeightRatio =
-        rawMessageType === "voice" || rawMessageType === "document" || rawMessageType === "contact"
+        rawMessageType === "voice" ||
+        rawMessageType === "document" ||
+        rawMessageType === "contact"
           ? 0.44
           : rawMessageType === "location"
             ? 0.62
@@ -215,7 +236,10 @@ export function computeChatLayout(
         x: innerX,
         y: contentTop,
         width: innerWidth,
-        height: Math.max(px(32), Math.min(rect.height - px(16), rect.height * mediaHeightRatio)),
+        height: Math.max(
+          px(32),
+          Math.min(rect.height - px(16), rect.height * mediaHeightRatio),
+        ),
       };
       semanticRegions[`media_${msg.id}`] = {
         id: `media_${msg.id}`,
@@ -268,7 +292,9 @@ export function computeChatLayout(
 
     // Calculate gap before typing indicator
     const lastMsg =
-      lastVisibleIndex >= 0 ? (allMessages[lastVisibleIndex] as LayoutMessage) : undefined;
+      lastVisibleIndex >= 0
+        ? (allMessages[lastVisibleIndex] as LayoutMessage)
+        : undefined;
     if (lastMsg) {
       const prevForGap: MessageForGap = {
         type: lastMsg.type as MessageType,
@@ -313,10 +339,10 @@ export function computeChatLayout(
       rect,
     };
 
-    // --- SEMANTIC ANCHOR FOR TYPING ---
-    const typingAnchorId = "typing_indicator";
-    semanticRegions[typingAnchorId] = {
-      id: typingAnchorId,
+    // --- SEMANTIC SUBJECT FOR TYPING ---
+    const typingSubjectId = "typing_indicator";
+    semanticRegions[typingSubjectId] = {
+      id: typingSubjectId,
       rect,
       tags: ["typing", "indicator"],
     };
@@ -325,18 +351,22 @@ export function computeChatLayout(
   }
 
   const lastVisibleLayout =
-    lastMessageId !== undefined ? conversationLayout.messageLayouts.get(lastMessageId) : undefined;
+    lastMessageId !== undefined
+      ? conversationLayout.messageLayouts.get(lastMessageId)
+      : undefined;
   const lastVisibleBottom =
-    lastVisibleLayout?.y !== undefined && lastVisibleLayout?.height !== undefined
+    lastVisibleLayout?.y !== undefined &&
+    lastVisibleLayout?.height !== undefined
       ? lastVisibleLayout.y + lastVisibleLayout.height
       : config.spacing.global.topPadding;
   const rawContentBottom = Math.max(currentY, lastVisibleBottom);
   const messageBottomInset = px(chromeGeometry.messageBottomInset);
-  const viewportOffsetY = viewportHeight - messageBottomInset - rawContentBottom;
+  const viewportOffsetY =
+    viewportHeight - messageBottomInset - rawContentBottom;
 
   // The React thread is a bottom-aligned window, not a scrollable copy of the
   // full conversation. Translate every non-sticky chat region into those same
-  // viewport coordinates before exposing semantic anchors to the camera.
+  // viewport coordinates before exposing semantic subjects to the camera.
   for (const layout of Object.values(messageLayouts)) {
     layout.y += viewportOffsetY;
     if (layout.rect) {
@@ -357,12 +387,12 @@ export function computeChatLayout(
   }
 
   // ==========================================================
-  // INPUT AREA ANCHOR (Semantic only, not visual layout item)
+  // INPUT AREA SUBJECT (Semantic only, not visual layout item)
   // ==========================================================
   // Actually, Input Area is fixed to bottom of viewport usually, or below content?
   // In chat layout, contentHeight includes padding. Input area is separate.
   // Ideally, the InputArea component itself should report this, but since we compute layout here:
-  // We can define a "logical" input area anchor at the bottom of the viewport.
+  // We can define a "logical" input area subject at the bottom of the viewport.
 
   const INPUT_HEIGHT = px(UI_CONSTANTS.INPUT_MIN_HEIGHT + safeAreaBottom);
   const HEADER_HEIGHT = px(chromeGeometry.headerHeight);
@@ -471,7 +501,10 @@ function isOutgoing(message: LayoutMessage): boolean {
   return message.from === "me";
 }
 
-function findLastVisibleIndex(messages: WhatsAppMessage[], frame: number): number {
+function findLastVisibleIndex(
+  messages: WhatsAppMessage[],
+  frame: number,
+): number {
   if (messages.length === 0) return -1;
 
   let low = 0;

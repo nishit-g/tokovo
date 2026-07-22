@@ -3,6 +3,7 @@ import fsp from "node:fs/promises";
 import path from "node:path";
 
 import type { RenderProfileId } from "./profiles";
+import type { getEpisodeCameraArtifact } from "video-runner/camera-diagnostics";
 import { rendersRoot, repoRoot } from "./constants";
 
 export type RenderArtifactPaths = {
@@ -12,10 +13,19 @@ export type RenderArtifactPaths = {
   posterPath: string;
   metadataPath: string;
   logsPath: string;
+  cameraProgramPath: string;
+  cameraDiagnosticsPath: string;
+  projectionHashesPath: string;
+  cameraTracePath: string;
+  cameraFailurePacketPath: string;
   relativeVideoPath: string;
   relativePosterPath: string;
   relativeMetadataPath: string;
   relativeLogsPath: string;
+  relativeCameraProgramPath: string;
+  relativeCameraDiagnosticsPath: string;
+  relativeProjectionHashesPath: string;
+  relativeCameraTracePath: string;
 };
 
 export type RenderArtifactMetadata = {
@@ -28,7 +38,10 @@ export type RenderArtifactMetadata = {
   width: number;
   height: number;
   durationInFrames: number;
+  /** Inclusive episode-source frames represented by this artifact. */
+  sourceFrameRange: readonly [number, number];
   sourceSignature: string;
+  camera: Awaited<ReturnType<typeof getEpisodeCameraArtifact>>;
   artifact: {
     storageProvider: "local" | "r2";
     bucket?: string;
@@ -37,10 +50,18 @@ export type RenderArtifactMetadata = {
     posterPath: string;
     metadataPath: string;
     logsPath: string;
+    cameraProgramPath: string;
+    cameraDiagnosticsPath: string;
+    projectionHashesPath: string;
+    cameraTracePath: string;
     videoUrl?: string | null;
     posterUrl?: string | null;
     metadataUrl?: string | null;
     logsUrl?: string | null;
+    cameraProgramUrl?: string | null;
+    cameraDiagnosticsUrl?: string | null;
+    projectionHashesUrl?: string | null;
+    cameraTraceUrl?: string | null;
     sizeBytes: number;
   };
   timingMs: {
@@ -82,6 +103,11 @@ export async function createRenderArtifactPaths(input: {
   const posterPath = path.join(rootDir, "poster.png");
   const metadataPath = path.join(rootDir, "metadata.json");
   const logsPath = path.join(rootDir, "logs.ndjson");
+  const cameraProgramPath = path.join(rootDir, "camera-program.json");
+  const cameraDiagnosticsPath = path.join(rootDir, "camera-diagnostics.json");
+  const projectionHashesPath = path.join(rootDir, "projection-hashes.json");
+  const cameraTracePath = path.join(rootDir, "camera-trace.ndjson");
+  const cameraFailurePacketPath = path.join(rootDir, "camera-failure-packet.json");
 
   return {
     storagePrefix,
@@ -90,10 +116,19 @@ export async function createRenderArtifactPaths(input: {
     posterPath,
     metadataPath,
     logsPath,
+    cameraProgramPath,
+    cameraDiagnosticsPath,
+    projectionHashesPath,
+    cameraTracePath,
+    cameraFailurePacketPath,
     relativeVideoPath: path.relative(repoRoot, videoPath),
     relativePosterPath: path.relative(repoRoot, posterPath),
     relativeMetadataPath: path.relative(repoRoot, metadataPath),
     relativeLogsPath: path.relative(repoRoot, logsPath),
+    relativeCameraProgramPath: path.relative(repoRoot, cameraProgramPath),
+    relativeCameraDiagnosticsPath: path.relative(repoRoot, cameraDiagnosticsPath),
+    relativeProjectionHashesPath: path.relative(repoRoot, projectionHashesPath),
+    relativeCameraTracePath: path.relative(repoRoot, cameraTracePath),
   };
 }
 
@@ -134,6 +169,30 @@ export async function findLatestRenderArtifact(
           metadata.artifact.logsPath,
           metadata.artifact.logsUrl,
         );
+        if (metadata.artifact.cameraProgramPath) {
+          metadata.artifact.cameraProgramPath = resolveArtifactPath(
+            metadata.artifact.cameraProgramPath,
+            metadata.artifact.cameraProgramUrl,
+          );
+        }
+        if (metadata.artifact.cameraDiagnosticsPath) {
+          metadata.artifact.cameraDiagnosticsPath = resolveArtifactPath(
+            metadata.artifact.cameraDiagnosticsPath,
+            metadata.artifact.cameraDiagnosticsUrl,
+          );
+        }
+        if (metadata.artifact.projectionHashesPath) {
+          metadata.artifact.projectionHashesPath = resolveArtifactPath(
+            metadata.artifact.projectionHashesPath,
+            metadata.artifact.projectionHashesUrl,
+          );
+        }
+        if (metadata.artifact.cameraTracePath) {
+          metadata.artifact.cameraTracePath = resolveArtifactPath(
+            metadata.artifact.cameraTracePath,
+            metadata.artifact.cameraTraceUrl,
+          );
+        }
         const stat = await fsp.stat(metadataPath);
         return { metadata, mtimeMs: stat.mtimeMs };
       }),

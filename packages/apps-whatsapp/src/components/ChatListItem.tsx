@@ -207,7 +207,7 @@ export const ChatListItem = memo(function ChatListItem({
 
   return (
     <div
-      data-anchor="chat_row"
+      data-cinematic-subject="chat_row"
       role="listitem"
       aria-label={`${name}. ${lastMessage ?? ""}${
         hasUnread

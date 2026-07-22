@@ -16,7 +16,9 @@ type AnyRuntimeEvent = RuntimeEvent & {
   payload?: unknown;
 };
 
-function isAppEvent(e: AnyRuntimeEvent): e is AnyRuntimeEvent & { kind: "APP" } {
+function isAppEvent(
+  e: AnyRuntimeEvent,
+): e is AnyRuntimeEvent & { kind: "APP" } {
   return (e as { kind?: string }).kind === "APP";
 }
 
@@ -215,7 +217,7 @@ export function validateV1RuntimeEpisode(
         at: firstFrame,
         message:
           `X emits DM messages before entering a thread by frame ${firstFrame}. ` +
-          `This may be intentional (background DM arrival), but if camera/anchors target DM thread, ` +
+          `This may be intentional (background DM arrival), but if camera/subjects target DM thread, ` +
           `ensure you set screen=thread and activeThreadId before focusing.`,
       });
     }

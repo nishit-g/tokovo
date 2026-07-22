@@ -40,22 +40,53 @@ export default defineEpisode({
       .background({ type: "image", src: "/backgrounds/night-window.png" })
       .snapshot("app_whatsapp", "phone", {
         conversations: [
-          { id: "dm_record_v2", name: "Mina", avatar: "/avatars/avatar-maya.jpg", unreadCount: 1, isPinned: true },
+          {
+            id: "dm_record_v2",
+            name: "Mina",
+            avatar: "/avatars/avatar-maya.jpg",
+            unreadCount: 1,
+            isPinned: true,
+          },
         ],
       })
       .snapshot("app_x", "phone", {
         currentUserId: "u_me",
         users: [
-          { id: "u_me", name: "Me", handle: "narrativeops", followers: 12800, following: 420, verified: "blue" },
-          { id: "u_cam", name: "Cam Review", handle: "camreview", followers: 40200, following: 280, verified: null },
+          {
+            id: "u_me",
+            name: "Me",
+            handle: "narrativeops",
+            followers: 12800,
+            following: 420,
+            verified: "blue",
+          },
+          {
+            id: "u_cam",
+            name: "Cam Review",
+            handle: "camreview",
+            followers: 40200,
+            following: 280,
+            verified: null,
+          },
         ],
         tweets: [
-          { id: "tw_rec_1", authorId: "u_cam", text: "If your recording chrome looks fake, the whole video looks fake.", createdAt: new Date("2026-04-10T21:05:00Z").getTime(), viewCount: 21100, shareCount: 380, bookmarkCount: 1200 },
+          {
+            id: "tw_rec_1",
+            authorId: "u_cam",
+            text: "If your recording chrome looks fake, the whole video looks fake.",
+            createdAt: new Date("2026-04-10T21:05:00Z").getTime(),
+            viewCount: 21100,
+            shareCount: 380,
+            bookmarkCount: 1200,
+          },
         ],
       })
       .whatsapp("phone", "dm_record_v2", (wa) => {
         wa.switchTo("dm_record_v2", "0.8s");
-        wa.at("1.6s").receive("Mina", "Does the recording chrome survive app switches?");
+        wa.at("1.6s").receive(
+          "Mina",
+          "Does the recording chrome survive app switches?",
+        );
         wa.at("3.0s").send("It should feel like iOS, not a watermark.", {});
       })
       .x("phone", (x) => {
@@ -94,16 +125,6 @@ export default defineEpisode({
         d.at("24.4s").screenRecording(true, { presentation: "expanded" });
         d.at("27.0s").screenRecording(true, { presentation: "compact" });
         d.at("30.0s").screenRecording(false, { feedback: "2.4s" });
-      })
-      .camera((cam) => {
-        cam.at("0s").focus("device", { scale: 1.01, duration: "0.35s" });
-        cam.at("5.6s").focus("device", { scale: 1.04, duration: "0.25s" });
-        cam.at("7.1s").focus("dynamicIsland", { scale: 1.2, duration: "0.25s" });
-        cam.at("11.1s").focus("dynamicIsland", { scale: 1.16, duration: "0.3s" });
-        cam.at("13.9s").focus("tweet_card", { scale: 1.08, duration: "0.35s" });
-        cam.at("21.2s").focus("device", { scale: 1.02, duration: "0.35s" });
-        cam.at("24.5s").focus("dynamicIsland", { scale: 1.18, duration: "0.3s" });
-        cam.at("30.1s").focus("device", { scale: 1.03, duration: "0.3s" });
       })
       .build(),
 });

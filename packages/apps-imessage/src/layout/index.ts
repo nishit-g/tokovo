@@ -71,7 +71,7 @@ function computeIMessageFeedLayout(ctx: LayoutContext): FeedLayoutState {
       tags: ["list", "content"],
     };
   } else {
-    // Defensive: if state/viewMode mismatched, still emit list anchors.
+    // Defensive: if state/viewMode mismatched, still emit list subjects.
     regions.imessage_list_header = {
       id: "imessage_list_header",
       rect: rect(0, 0, w, headerH),
@@ -126,7 +126,12 @@ function computeIMessageChatLayout(ctx: LayoutContext): ChatLayoutState {
     },
     imessage_last_message: {
       id: "imessage_last_message",
-      rect: rect(px(16), threadY + Math.max(0, threadH - px(118)), Math.max(0, w - px(32)), px(70)),
+      rect: rect(
+        px(16),
+        threadY + Math.max(0, threadH - px(118)),
+        Math.max(0, w - px(32)),
+        px(70),
+      ),
       tags: ["thread", "message", "latest"],
     },
     imessage_composer: {
@@ -154,7 +159,9 @@ function computeIMessageChatLayout(ctx: LayoutContext): ChatLayoutState {
   };
 }
 
-function computeIMessageFullscreenLayout(ctx: LayoutContext): FullscreenLayoutState {
+function computeIMessageFullscreenLayout(
+  ctx: LayoutContext,
+): FullscreenLayoutState {
   const { viewportWidth: w, viewportHeight: h, safeAreaInsets, world } = ctx;
   const safeTop = safeAreaInsets?.top ?? 0;
   const safeBottom = safeAreaInsets?.bottom ?? 0;

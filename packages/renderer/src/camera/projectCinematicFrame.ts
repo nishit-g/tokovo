@@ -33,7 +33,9 @@ function deviceSubject(input: {
   };
 }
 
-function collectDeviceSubjects(layout: LayoutEngineOutput): readonly CinematicSubjectProjection[] {
+function collectDeviceSubjects(
+  layout: LayoutEngineOutput,
+): readonly CinematicSubjectProjection[] {
   const viewport = {
     x: 0,
     y: 0,
@@ -71,7 +73,9 @@ function collectDeviceSubjects(layout: LayoutEngineOutput): readonly CinematicSu
       }),
     );
   }
-  for (const [name, rect] of Object.entries(layout.notificationProjection?.anchors ?? {})) {
+  for (const [name, rect] of Object.entries(
+    layout.notificationProjection?.cinematicSubjects ?? {},
+  )) {
     if (!rect) continue;
     projections.push(
       deviceSubject({
@@ -82,7 +86,9 @@ function collectDeviceSubjects(layout: LayoutEngineOutput): readonly CinematicSu
       }),
     );
   }
-  for (const [name, rect] of Object.entries(layout.systemSurfaceProjection?.anchors ?? {})) {
+  for (const [name, rect] of Object.entries(
+    layout.systemSurfaceProjection?.cinematicSubjects ?? {},
+  )) {
     projections.push(
       deviceSubject({
         deviceId: layout.deviceId,
@@ -104,15 +110,28 @@ function scaleRect(rect: LayoutRect, scale: number): LayoutRect {
   };
 }
 
+function scaleRect2d(
+  rect: LayoutRect,
+  scaleX: number,
+  scaleY: number,
+): LayoutRect {
+  return {
+    x: rect.x * scaleX,
+    y: rect.y * scaleY,
+    width: rect.width * scaleX,
+    height: rect.height * scaleY,
+  };
+}
+
 function offsetRect(rect: LayoutRect, x: number, y: number): LayoutRect {
   return { ...rect, x: rect.x + x, y: rect.y + y };
 }
 
-/** Bridges exact per-device layout projections into stage/world subjects. */
+/** Bridges every exact per-device layout projection into one stage subject frame. */
 export function projectCinematicFrame(input: {
   frame: number;
   world: WorldState;
-  layout: LayoutEngineOutput;
+  layouts: readonly LayoutEngineOutput[];
   stage: EvaluatedStageFrame;
   registry: CinematicSubjectRegistryClass;
 }): CinematicSubjectFrame {
@@ -121,51 +140,81 @@ export function projectCinematicFrame(input: {
       `Stage frame ${input.stage.frame} does not match subject frame ${input.frame}.`,
     );
   }
-  const stageNode = input.stage.nodes.find(
-    (node) => node.source.kind === "device" && node.source.deviceId === input.layout.deviceId,
-  );
-  if (!stageNode) {
-    throw new Error(`No evaluated stage node owns device "${input.layout.deviceId}".`);
+  const seenDevices = new Set<string>();
+  const localSubjects: LocalCinematicSubject[] = [];
+  for (const layout of input.layouts) {
+    if (seenDevices.has(layout.deviceId)) {
+      throw new Error(
+        `Duplicate cinematic layout for device "${layout.deviceId}".`,
+      );
+    }
+    seenDevices.add(layout.deviceId);
+    const stageNode = input.stage.nodes.find(
+      (node) =>
+        node.source.kind === "device" &&
+        node.source.deviceId === layout.deviceId,
+    );
+    if (!stageNode) {
+      throw new Error(
+        `No evaluated stage node owns device "${layout.deviceId}".`,
+      );
+    }
+    const appSubjects = layout.appId
+      ? input.registry.project(
+          layout.appId,
+          input.world,
+          layout.layout,
+          layout.deviceId,
+        )
+      : [];
+    const projections = [...collectDeviceSubjects(layout), ...appSubjects];
+    const display = layout.profile.display;
+    const scaleX =
+      stageNode.localBounds.width / layout.profile.dimensions.width;
+    const scaleY =
+      stageNode.localBounds.height / layout.profile.dimensions.height;
+    for (const projection of projections) {
+      const screenRect =
+        projection.coordinateSpace === "app-logical"
+          ? scaleRect(projection.rect, layout.appLogicalScale)
+          : projection.rect;
+      const deviceRect =
+        projection.coordinateSpace === "device-body"
+          ? screenRect
+          : offsetRect(screenRect, display.x, display.y);
+      const localRect = offsetRect(
+        scaleRect2d(deviceRect, scaleX, scaleY),
+        stageNode.localBounds.x,
+        stageNode.localBounds.y,
+      );
+      const clippedScreenRect = projection.clippedRect
+        ? projection.coordinateSpace === "app-logical"
+          ? scaleRect(projection.clippedRect, layout.appLogicalScale)
+          : projection.clippedRect
+        : undefined;
+      const clippedDeviceRect = clippedScreenRect
+        ? projection.coordinateSpace === "device-body"
+          ? clippedScreenRect
+          : offsetRect(clippedScreenRect, display.x, display.y)
+        : undefined;
+      const clippedLocalRect = clippedDeviceRect
+        ? offsetRect(
+            scaleRect2d(clippedDeviceRect, scaleX, scaleY),
+            stageNode.localBounds.x,
+            stageNode.localBounds.y,
+          )
+        : undefined;
+      localSubjects.push({
+        ref: projection.ref,
+        localRect,
+        nodeId: stageNode.id,
+        visible: projection.visible,
+        clippedLocalRect,
+        sourceVersion: projection.sourceVersion,
+        provenance: projection.provenance,
+      });
+    }
   }
-  const appSubjects = input.layout.appId
-    ? input.registry.project(
-        input.layout.appId,
-        input.world,
-        input.layout.layout,
-        input.layout.deviceId,
-      )
-    : [];
-  const projections = [...collectDeviceSubjects(input.layout), ...appSubjects];
-  const display = input.layout.profile.display;
-  const localSubjects: LocalCinematicSubject[] = projections.map((projection) => {
-    const screenRect =
-      projection.coordinateSpace === "app-logical"
-        ? scaleRect(projection.rect, input.layout.appLogicalScale)
-        : projection.rect;
-    const localRect =
-      projection.coordinateSpace === "device-body"
-        ? screenRect
-        : offsetRect(screenRect, display.x, display.y);
-    const clippedScreenRect = projection.clippedRect
-      ? projection.coordinateSpace === "app-logical"
-        ? scaleRect(projection.clippedRect, input.layout.appLogicalScale)
-        : projection.clippedRect
-      : undefined;
-    const clippedLocalRect = clippedScreenRect
-      ? projection.coordinateSpace === "device-body"
-        ? clippedScreenRect
-        : offsetRect(clippedScreenRect, display.x, display.y)
-      : undefined;
-    return {
-      ref: projection.ref,
-      localRect,
-      nodeId: stageNode.id,
-      visible: projection.visible,
-      clippedLocalRect,
-      sourceVersion: projection.sourceVersion,
-      provenance: projection.provenance,
-    };
-  });
   return {
     frame: input.frame,
     subjects: projectCinematicSubjects(input.stage, localSubjects),

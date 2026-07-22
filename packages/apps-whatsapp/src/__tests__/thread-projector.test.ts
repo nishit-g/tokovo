@@ -1,10 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { projectWhatsAppThread } from "../thread/projector.js";
 import { createWhatsAppThreadWindow } from "../thread/window.js";
-import type {
-  WhatsAppConversation,
-  WhatsAppMessage,
-} from "../types/index.js";
+import type { WhatsAppConversation, WhatsAppMessage } from "../types/index.js";
 
 const baseTime = new Date("2026-07-20T10:00:00.000Z");
 
@@ -93,7 +90,7 @@ describe("WhatsApp thread projection", () => {
     expect(runs[1].items[0].position).toBe("single");
   });
 
-  it("fails loudly for duplicate IDs instead of producing ambiguous anchors", () => {
+  it("fails loudly for duplicate IDs instead of producing ambiguous subjects", () => {
     expect(() =>
       project([message("duplicate", "ava", 0), message("duplicate", "me", 1)]),
     ).toThrow('Duplicate WhatsApp message id "duplicate"');
@@ -146,10 +143,7 @@ describe("WhatsApp thread projection", () => {
 
   it("derives dates while inserting unread and disappearing system blocks", () => {
     const result = project(
-      [
-        message("read", "ava", 30),
-        message("unread", "noor", 60),
-      ],
+      [message("read", "ava", 30), message("unread", "noor", 60)],
       {
         unreadCount: 1,
         preferences: {
@@ -183,15 +177,15 @@ describe("WhatsApp thread projection", () => {
     if (run?.kind === "run") expect(run.isMe).toBe(true);
   });
 
-  it("fails loudly when a semantic render-window anchor is missing", () => {
+  it("fails loudly when a semantic render-window subject is missing", () => {
     const result = project([message("present", "ava", 0)]);
 
     expect(() =>
       createWhatsAppThreadWindow(result, {
-        anchorMessageId: "missing",
+        focusMessageId: "missing",
         maxMessages: 1,
       }),
-    ).toThrow('thread window anchor "missing" does not exist');
+    ).toThrow('thread window focus message "missing" does not exist');
 
     const largeResult = project(
       Array.from({ length: 8 }, (_, index) =>
@@ -200,9 +194,9 @@ describe("WhatsApp thread projection", () => {
     );
     expect(() =>
       createWhatsAppThreadWindow(largeResult, {
-        anchorMessageId: "missing",
+        focusMessageId: "missing",
         maxMessages: 3,
       }),
-    ).toThrow('thread window anchor "missing" does not exist');
+    ).toThrow('thread window focus message "missing" does not exist');
   });
 });

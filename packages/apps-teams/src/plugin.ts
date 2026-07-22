@@ -11,13 +11,12 @@ import { createTeamsInitialState } from "./runtime/initial-state.js";
 import { TeamsView } from "./ui/index.js";
 import { teamsV2Lowering } from "./lowering/index.js";
 import { teamsLayoutStrategies } from "./layout/index.js";
-import { TeamsAnchorProvider } from "./anchors/provider.js";
+import { TeamsCinematicSubjects } from "./camera/subjects.js";
 import { TEAMS_EVENT_TYPES } from "./schemas/index.js";
 import { teamsAudioRules } from "./assets/audio-rules.js";
 import { TeamsMetadata } from "./assets/metadata.js";
 import { teamsDsl, type TeamsDslApi } from "./dsl/index.js";
 import { collectTeamsAssetRefs } from "./asset-refs.js";
-import { TeamsBehavior } from "./camera/index.js";
 import { teamsNotificationAdapter } from "./notifications/adapter.js";
 import { teamsBootstrap } from "./bootstrap.js";
 
@@ -44,7 +43,6 @@ const teamsAssets = {
 
 export const TeamsPluginV2: TokovoPluginContract<"app_teams"> & {
   v2Lowering: typeof teamsV2Lowering;
-  behaviors: typeof TeamsBehavior;
   notificationAdapter: typeof teamsNotificationAdapter;
 } = {
   id: TEAMS_APP_ID,
@@ -63,9 +61,8 @@ export const TeamsPluginV2: TokovoPluginContract<"app_teams"> & {
   layouts: teamsLayoutStrategies,
   dsl: teamsDsl,
   collectAssetRefs: collectTeamsAssetRefs,
-  anchorProvider: TeamsAnchorProvider,
+  cinematicSubjects: TeamsCinematicSubjects,
   notificationAdapter: teamsNotificationAdapter,
-  behaviors: TeamsBehavior,
 };
 
 export const TeamsPlugin = TeamsPluginV2;

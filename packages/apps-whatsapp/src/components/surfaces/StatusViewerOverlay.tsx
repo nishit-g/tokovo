@@ -71,7 +71,7 @@ export function StatusViewerOverlay({
 
   return (
     <div
-      data-anchor="status_viewer"
+      data-cinematic-subject="status_viewer"
       role="dialog"
       aria-modal="true"
       aria-label={t("status.viewer")}
@@ -86,7 +86,7 @@ export function StatusViewerOverlay({
       }}
     >
       <div
-        data-anchor="status_content"
+        data-cinematic-subject="status_content"
         style={{ position: "absolute", inset: 0, overflow: "hidden" }}
       >
         {status.media.type === "text" ? (
@@ -143,7 +143,7 @@ export function StatusViewerOverlay({
       />
 
       <div
-        data-anchor="status_progress"
+        data-cinematic-subject="status_progress"
         style={{
           position: "absolute",
           insetInline: 10,
@@ -243,7 +243,12 @@ export function StatusViewerOverlay({
         <button
           type="button"
           aria-label={t("action.info")}
-          style={{ padding: 5, border: 0, color: "inherit", background: "transparent" }}
+          style={{
+            padding: 5,
+            border: 0,
+            color: "inherit",
+            background: "transparent",
+          }}
         >
           <MoreVertical size={22} aria-hidden="true" />
         </button>
@@ -266,7 +271,7 @@ export function StatusViewerOverlay({
       )}
 
       <div
-        data-anchor="status_reply"
+        data-cinematic-subject="status_reply"
         style={{
           position: "absolute",
           insetInline: 14,

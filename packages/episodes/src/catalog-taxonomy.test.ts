@@ -58,7 +58,7 @@ describe("release episode taxonomy", () => {
   });
 
   it("ships the full new-only curated wave", () => {
-    expect(appShowcaseEpisodes).toHaveLength(23);
+    expect(appShowcaseEpisodes).toHaveLength(22);
     expect(systemShowcaseEpisodes).toHaveLength(10);
     expect(storyEpisodes).toHaveLength(8);
   });

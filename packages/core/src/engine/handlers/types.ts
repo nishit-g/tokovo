@@ -34,7 +34,7 @@ export interface HandlerContext {
  * Each handler processes events of a specific kind.
  */
 export interface EventHandler<K extends string = string> {
-  /** The event kind this handler processes (e.g., "CAMERA", "AUDIO") */
+  /** The event kind this handler processes (e.g., "AUDIO", "DEVICE") */
   kind: K;
 
   /**
@@ -52,7 +52,6 @@ export interface EventHandler<K extends string = string> {
 // =============================================================================
 
 /** Camera event with typed kind */
-export type CameraEvent = TimelineEvent & { kind: "CAMERA" };
 
 /** Audio event with typed kind */
 export type AudioEvent = TimelineEvent & { kind: "AUDIO" };

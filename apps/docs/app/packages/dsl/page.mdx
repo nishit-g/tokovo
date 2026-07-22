@@ -7,7 +7,7 @@ The TypeScript authoring API for Tokovo episodes.
 - episode builders
 - device and OS setup
 - plugin-owned app snapshot and initial-view authoring
-- app-track, camera, audio, overlay, and device-track entrypoints
+- app-track, cinematic-program, audio, overlay, and device-track entrypoints
 - compiler-plugin wiring from authored episodes
 
 Use `@tokovo/dsl` for deterministic scene timing and sequencing.
@@ -26,10 +26,10 @@ Tokovo v1 does not use beat-based authoring. The authoring model is:
 - `view()` for explicit frame-0 app routing
 - named built-in app methods for app mutations after frame 0
 - `track()` as the low-level extension point for external app plugins
-- `camera()`, `audio()`, `overlay()`, `os()`, and `deviceTrack()` for supporting direction
+- `cinematics()` for immutable StageProgram and CameraPlan data
+- `audio()`, `overlay()`, `os()`, and `deviceTrack()` for supporting direction
 - `input()` for explicit field-scoped text sessions
 - `notificationTrack()` for notification delivery and interaction
-- `.use(...)` for optional compiler plugins such as automatic camera direction
 
 ## Bootstrap Rules
 
@@ -44,6 +44,6 @@ Checked-in episodes use the product-level builder from
 plumbing so episode authors never instantiate app track builders directly.
 
 The product-level layer also owns narrative composition: actors with per-app identities,
-scene-local timing, consistent conversation/social verbs, typed story handles, and
-automatic camera direction. These APIs lower into the same event IR as explicit tracks;
-they do not introduce a second runtime or nondeterministic scheduling model.
+scene-local timing, consistent conversation/social verbs, and typed story handles. Story APIs
+lower into event IR, while `cinematics()` stays an independently signed projection program; neither
+introduces a second runtime or nondeterministic scheduling model.

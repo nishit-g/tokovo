@@ -82,10 +82,19 @@ export default defineEpisode({
             shareCount: 1800,
             bookmarkCount: 5400,
             hashtags: ["launchnight", "founder"],
-            media: { type: "image", aspect: "wide", urls: ["/placeholders/media.svg"] },
+            media: {
+              type: "image",
+              aspect: "wide",
+              urls: ["/placeholders/media.svg"],
+            },
           },
         ],
-        threads: [{ id: "dm_founder_v2", participantIds: ["u_me", "u_founder_v2", "u_meme_v2"] }],
+        threads: [
+          {
+            id: "dm_founder_v2",
+            participantIds: ["u_me", "u_founder_v2", "u_meme_v2"],
+          },
+        ],
         messages: [
           {
             id: "msg_seed_founder_v2",
@@ -147,14 +156,6 @@ export default defineEpisode({
           createdAt: baseTs + 35000,
         });
         x.at("19.8s").navigate("profile", { userId: "u_founder_v2" });
-      })
-      .camera((cam) => {
-        cam.at("0s").focus("device", { scale: 1.02, duration: "0.35s" });
-        cam.at("3.1s").focus("tweet_card", { scale: 1.1, duration: "0.4s" });
-        cam.span("4.6s", "7.0s").trackCinematic("keyboard", { scale: 1.12, smoothing: 0.18 });
-        cam.at("9.3s").focus("notification_card", { scale: 1.08, duration: "0.35s" });
-        cam.at("13.1s").focus("dm_thread", { scale: 1.08, duration: "0.35s" });
-        cam.at("19.9s").focus("profile_header", { scale: 1.08, duration: "0.35s" });
       })
       .build();
   },

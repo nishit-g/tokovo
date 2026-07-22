@@ -34,51 +34,60 @@ export default defineEpisode({
         },
       })
       .background({ type: "image", src: "/backgrounds/soft-gradient.png" })
-      .imessage(
-        "phone",
-        "group_ex_v2",
-        (im) => {
-          im.at("0s").createConversation({
-            id: "group_ex_v2",
-            title: "Launch Weekend",
-            transport: "imessage",
-            isGroup: true,
-            participants: [{ id: "me", name: "Me", isMe: true }, { id: "kai", name: "Kai" }, { id: "mina", name: "Mina" }],
-          });
-          im.at("0.2s").createConversation({
-            id: "dm_mina_ex_v2",
-            title: "Mina",
-            transport: "imessage",
-            participants: [{ id: "me", name: "Me", isMe: true }, { id: "mina", name: "Mina" }],
-          });
-          im.at("1.0s").openConversation("group_ex_v2");
-          im.at("2.0s").receive("Kai", "Has anyone slept?");
-          im.at("3.2s").send("Sleep is a post-launch luxury.", { messageId: "im_ex_msg_1" });
-          im.at("5.0s").receiveMedia("Mina", [{ kind: "image", url: "/placeholders/media.svg" }], { messageId: "im_ex_media_1" });
-          im.at("6.4s").tapback({ messageId: "im_ex_media_1", type: "thumbsUp" });
-          im.at("8.0s").sendAudio({
-            url: "/audio/voice-memo.m4a",
-            duration: 9,
-            waveform: [0.2, 0.5, 0.7, 0.6, 0.8, 0.4, 0.5, 0.7],
-            messageId: "im_ex_audio_1",
-          });
-          im.at("10.2s").setScreen("list");
-          im.at("11.2s").openConversation("dm_mina_ex_v2");
-          im.at("12.0s").receive("Mina", "I need the honest answer, not the group answer.");
-          im.at("13.4s").send("Honest answer: the work is good and the launch copy is terrible.", { messageId: "im_ex_dm_1" });
-          im.at("15.2s").typing("Mina", true);
-          im.at("16.6s").typing("Mina", false);
-          im.at("17.0s").receive("Mina", "Perfect. That's the useful answer.");
-          im.at("19.0s").search("launch");
-          im.at("20.4s").clearSearch();
-          im.at("22.0s").read();
-        },
-      )
-      .camera((cam) => {
-        cam.at("0s").focus("message_list", { scale: 1.02, duration: "0.35s" });
-        cam.at("5.1s").focus("message_thread", { scale: 1.08, duration: "0.35s" });
-        cam.at("8.1s").focus("message_thread", { scale: 1.08, duration: "0.35s" });
-        cam.at("11.3s").focus("message_thread", { scale: 1.08, duration: "0.35s" });
+      .imessage("phone", "group_ex_v2", (im) => {
+        im.at("0s").createConversation({
+          id: "group_ex_v2",
+          title: "Launch Weekend",
+          transport: "imessage",
+          isGroup: true,
+          participants: [
+            { id: "me", name: "Me", isMe: true },
+            { id: "kai", name: "Kai" },
+            { id: "mina", name: "Mina" },
+          ],
+        });
+        im.at("0.2s").createConversation({
+          id: "dm_mina_ex_v2",
+          title: "Mina",
+          transport: "imessage",
+          participants: [
+            { id: "me", name: "Me", isMe: true },
+            { id: "mina", name: "Mina" },
+          ],
+        });
+        im.at("1.0s").openConversation("group_ex_v2");
+        im.at("2.0s").receive("Kai", "Has anyone slept?");
+        im.at("3.2s").send("Sleep is a post-launch luxury.", {
+          messageId: "im_ex_msg_1",
+        });
+        im.at("5.0s").receiveMedia(
+          "Mina",
+          [{ kind: "image", url: "/placeholders/media.svg" }],
+          { messageId: "im_ex_media_1" },
+        );
+        im.at("6.4s").tapback({ messageId: "im_ex_media_1", type: "thumbsUp" });
+        im.at("8.0s").sendAudio({
+          url: "/audio/voice-memo.m4a",
+          duration: 9,
+          waveform: [0.2, 0.5, 0.7, 0.6, 0.8, 0.4, 0.5, 0.7],
+          messageId: "im_ex_audio_1",
+        });
+        im.at("10.2s").setScreen("list");
+        im.at("11.2s").openConversation("dm_mina_ex_v2");
+        im.at("12.0s").receive(
+          "Mina",
+          "I need the honest answer, not the group answer.",
+        );
+        im.at("13.4s").send(
+          "Honest answer: the work is good and the launch copy is terrible.",
+          { messageId: "im_ex_dm_1" },
+        );
+        im.at("15.2s").typing("Mina", true);
+        im.at("16.6s").typing("Mina", false);
+        im.at("17.0s").receive("Mina", "Perfect. That's the useful answer.");
+        im.at("19.0s").search("launch");
+        im.at("20.4s").clearSearch();
+        im.at("22.0s").read();
       })
       .build(),
 });

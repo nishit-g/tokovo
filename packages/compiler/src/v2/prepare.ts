@@ -20,7 +20,6 @@ import type {
 } from "@tokovo/core";
 import {
   DEFAULT_AUDIO_STATE,
-  DEFAULT_CAMERA_STATE,
   DEFAULT_OS_STATE,
   createScopedLogger,
 } from "@tokovo/core";
@@ -276,7 +275,11 @@ function buildNotificationDeviceOperations(
     if (event.kind !== "DEVICE" && event.kind !== "OS") return;
     const deviceId = event.deviceId ?? fallbackDeviceId;
     if (!deviceId) return;
-    const base = { at: event.at, sequence: eventSequence(event, index), deviceId };
+    const base = {
+      at: event.at,
+      sequence: eventSequence(event, index),
+      deviceId,
+    };
     if (event.kind === "DEVICE") {
       switch (event.type) {
         case "LOCK":
@@ -301,7 +304,11 @@ function buildNotificationDeviceOperations(
       }
     }
     if (event.type === "SET_DND") {
-      operations.push({ ...base, type: "setDnd", enabled: event.payload.enabled });
+      operations.push({
+        ...base,
+        type: "setDnd",
+        enabled: event.payload.enabled,
+      });
     } else if (event.type === "SET_STATE" && event.payload.dnd !== undefined) {
       operations.push({ ...base, type: "setDnd", enabled: event.payload.dnd });
     }
@@ -316,9 +323,11 @@ function buildNotificationProgram(
 ): PreparedNotificationProgram {
   const adapters = new Map<string, NotificationAppAdapter>();
   for (const plugin of plugins) {
-    const adapter = (plugin as TokovoPlugin & {
-      notificationAdapter?: NotificationAppAdapter;
-    }).notificationAdapter;
+    const adapter = (
+      plugin as TokovoPlugin & {
+        notificationAdapter?: NotificationAppAdapter;
+      }
+    ).notificationAdapter;
     if (!adapter) continue;
     if (adapter.appId !== plugin.id) {
       throw new RuntimeValidationError(
@@ -403,7 +412,9 @@ function lowerNotificationActionEffects(
 
 function buildInputProgram(ir: TrackEpisodeIR): PreparedInputProgram {
   const intents = (ir.inputSessions ?? []).map((session) => {
-    const device = ir.devices.find((candidate) => candidate.id === session.deviceId);
+    const device = ir.devices.find(
+      (candidate) => candidate.id === session.deviceId,
+    );
     if (!device) {
       throw new RuntimeValidationError(
         `[prepareTrackEpisode] input session ${JSON.stringify(session.id ?? session.fieldId)} ` +
@@ -420,7 +431,10 @@ function buildInputProgram(ir: TrackEpisodeIR): PreparedInputProgram {
         ...session.keyboard,
         platform: session.keyboard?.platform ?? platform,
         appearance:
-          session.keyboard?.appearance ?? device.os?.appearance ?? device.appearance ?? "light",
+          session.keyboard?.appearance ??
+          device.os?.appearance ??
+          device.appearance ??
+          "light",
         locale: session.keyboard?.locale ?? session.locale ?? "en-US",
       },
     };
@@ -476,7 +490,9 @@ function buildInitialWorld(
         ...DEFAULT_OS_STATE,
         locale: device.os?.locale ?? DEFAULT_OS_STATE.locale,
         appearance:
-          device.os?.appearance ?? device.appearance ?? DEFAULT_OS_STATE.appearance,
+          device.os?.appearance ??
+          device.appearance ??
+          DEFAULT_OS_STATE.appearance,
         hourCycle: device.os?.hourCycle,
         lockScreenWallpaper: device.os?.lockScreenWallpaper,
         clock,
@@ -523,18 +539,6 @@ function buildInitialWorld(
     } as DeviceState;
   }
 
-  const firstDeviceId = ir.devices[0]?.id || "main_phone";
-  const camera = {
-    ...DEFAULT_CAMERA_STATE,
-    activeDeviceId: firstDeviceId,
-    layout: {
-      ...(DEFAULT_CAMERA_STATE.layout ?? {
-        mode: "SINGLE",
-        primaryDeviceId: firstDeviceId,
-      }),
-      primaryDeviceId: firstDeviceId,
-    },
-  };
   const audio = { ...DEFAULT_AUDIO_STATE };
 
   const pluginsById = new Map<string, TokovoPlugin>(
@@ -709,7 +713,6 @@ function buildInitialWorld(
     devices,
     appState,
     ...(Object.keys(appStateByDevice).length > 0 ? { appStateByDevice } : {}),
-    camera,
     audio,
   };
 

@@ -24,7 +24,7 @@ import type {
 
 export interface WhatsAppThreadViewportState {
   conversationId: string;
-  anchorMessageId: string;
+  focusMessageId: string;
   reason: "unread" | "message";
 }
 

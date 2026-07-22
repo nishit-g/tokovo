@@ -37,7 +37,7 @@ export default defineEpisode({
     id: "os-surface-mega-exhaustive",
     title: "Tokovo OS Surface Mega Episode",
     description:
-      "One deterministic proof spanning four native OS themes, localized lock and home surfaces, semantic camera anchors, multilingual input, notification policy, privacy, grouping, center state, and a real quick-reply action.",
+      "One deterministic proof spanning four native OS themes, localized lock and home surfaces, cinematic subjects, multilingual input, notification policy, privacy, grouping, center state, and a real quick-reply action.",
     category: "showcase",
     catalogType: "system_showcase",
     visibility: "public",
@@ -55,7 +55,7 @@ export default defineEpisode({
       "rtl",
       "ime",
       "themes",
-      "semantic-anchors",
+      "cinematic-subjects",
     ],
   },
   config: {
@@ -219,11 +219,9 @@ export default defineEpisode({
         device
           .at("6.7s")
           .goHome({ transition: { durationFrames: 16, style: "iosZoom" } });
-        device
-          .at("24.7s")
-          .openApp("app_whatsapp", {
-            transition: { durationFrames: 16, style: "iosZoom" },
-          });
+        device.at("24.7s").openApp("app_whatsapp", {
+          transition: { durationFrames: 16, style: "iosZoom" },
+        });
         device.at("60s").lock();
       })
       .deviceTrack("android_dark_ar", (device) => {
@@ -231,33 +229,27 @@ export default defineEpisode({
         device
           .at("6.7s")
           .goHome({ transition: { durationFrames: 16, style: "iosZoom" } });
-        device
-          .at("33.2s")
-          .openApp("app_whatsapp", {
-            transition: { durationFrames: 14, style: "iosZoom" },
-          });
+        device.at("33.2s").openApp("app_whatsapp", {
+          transition: { durationFrames: 14, style: "iosZoom" },
+        });
       })
       .deviceTrack("ios_dark_ja", (device) => {
         device.at("20s").unlock();
         device
           .at("20.7s")
           .goHome({ transition: { durationFrames: 16, style: "iosZoom" } });
-        device
-          .at("42.7s")
-          .openApp("app_whatsapp", {
-            transition: { durationFrames: 16, style: "iosZoom" },
-          });
+        device.at("42.7s").openApp("app_whatsapp", {
+          transition: { durationFrames: 16, style: "iosZoom" },
+        });
       })
       .deviceTrack("android_light_en", (device) => {
         device.at("20s").unlock();
         device
           .at("20.7s")
           .goHome({ transition: { durationFrames: 14, style: "iosZoom" } });
-        device
-          .at("51.7s")
-          .openApp("app_whatsapp", {
-            transition: { durationFrames: 14, style: "iosZoom" },
-          });
+        device.at("51.7s").openApp("app_whatsapp", {
+          transition: { durationFrames: 14, style: "iosZoom" },
+        });
       })
       .notificationTrack("ios_light_hi", (notifications) => {
         notifications.at("0.8s").deliver({
@@ -509,93 +501,6 @@ export default defineEpisode({
         ],
         expectedFinalValue: "Ship the fix 🔥🚀",
         keyboard: { appearance: "light", returnKey: "send" },
-      })
-      .camera((camera) => {
-        camera.at("0s").layout({
-          mode: "SPLIT_HORIZONTAL",
-          primaryDeviceId: "ios_light_hi",
-          secondaryDeviceId: "android_dark_ar",
-        });
-        camera
-          .at("0.3s")
-          .focus("lockscreen.clock", { scale: 1.03, duration: "0.35s" });
-        camera.span("1s", "4.8s").trackCinematic("notification.lockScreen", {
-          scale: 1.08,
-          smoothing: 0.18,
-        });
-        camera
-          .at("7.4s")
-          .layout({ mode: "SINGLE", primaryDeviceId: "ios_light_hi" });
-        camera
-          .at("7.6s")
-          .focus("homescreen.grid", { scale: 1.05, duration: "0.35s" });
-        camera
-          .at("10.3s")
-          .focus("homescreen.dock", { scale: 1.07, duration: "0.35s" });
-        camera
-          .at("12s")
-          .layout({ mode: "SINGLE", primaryDeviceId: "android_dark_ar" });
-        camera
-          .at("12.2s")
-          .focus("homescreen.search", { scale: 1.07, duration: "0.35s" });
-        camera.at("14s").layout({
-          mode: "SPLIT_HORIZONTAL",
-          primaryDeviceId: "ios_dark_ja",
-          secondaryDeviceId: "android_light_en",
-        });
-        camera
-          .at("14.3s")
-          .focus("lockscreen.clock", { scale: 1.03, duration: "0.3s" });
-        camera.span("15s", "18.8s").trackCinematic("notification.lockScreen", {
-          scale: 1.08,
-          smoothing: 0.18,
-        });
-        camera
-          .at("21.2s")
-          .layout({ mode: "SINGLE", primaryDeviceId: "ios_dark_ja" });
-        camera
-          .at("21.4s")
-          .focus("homescreen.grid", { scale: 1.05, duration: "0.35s" });
-        camera
-          .at("24s")
-          .layout({ mode: "SINGLE", primaryDeviceId: "ios_light_hi" });
-        camera
-          .span("25.8s", "32s")
-          .trackCinematic("keyboard", { scale: 1.08, smoothing: 0.16 });
-        camera
-          .at("32.8s")
-          .layout({ mode: "SINGLE", primaryDeviceId: "android_dark_ar" });
-        camera
-          .span("34.2s", "41s")
-          .trackCinematic("keyboard", { scale: 1.08, smoothing: 0.16 });
-        camera
-          .at("42.3s")
-          .layout({ mode: "SINGLE", primaryDeviceId: "ios_dark_ja" });
-        camera
-          .span("43.8s", "50s")
-          .trackCinematic("keyboard", { scale: 1.08, smoothing: 0.16 });
-        camera
-          .at("51.3s")
-          .layout({ mode: "SINGLE", primaryDeviceId: "android_light_en" });
-        camera
-          .span("52.8s", "59s")
-          .trackCinematic("keyboard", { scale: 1.08, smoothing: 0.16 });
-        camera
-          .at("60s")
-          .layout({ mode: "SINGLE", primaryDeviceId: "ios_light_hi" });
-        camera
-          .at("62s")
-          .focus("notification.center", { scale: 1.06, duration: "0.35s" });
-        camera
-          .at("65s")
-          .layout({ mode: "SINGLE", primaryDeviceId: "android_dark_ar" });
-        camera
-          .at("66s")
-          .focus("notification.center", { scale: 1.06, duration: "0.3s" });
-        camera
-          .at("68.85s")
-          .focus("lastMessage", { scale: 1.08, duration: "0.35s" });
-        camera.at("70.5s").focus("device", { scale: 1.01, duration: "0.35s" });
       })
       .build(),
 });

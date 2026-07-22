@@ -169,60 +169,6 @@ export function isGroupMemberRemovedEvent(
 }
 
 // =============================================================================
-// CAMERA EVENT GUARDS
-// =============================================================================
-
-export function isCameraEvent(
-  e: TimelineEvent,
-): e is TimelineEvent & { kind: "CAMERA" } {
-  return e.kind === "CAMERA";
-}
-
-export function isZoomEvent(e: TimelineEvent): e is TimelineEvent & {
-  kind: "CAMERA";
-  type: "ZOOM";
-  scale: number;
-  originX?: number;
-  originY?: number;
-  duration: number;
-  deviceId?: string;
-} {
-  return e.kind === "CAMERA" && e.type === "ZOOM";
-}
-
-export function isPanEvent(e: TimelineEvent): e is TimelineEvent & {
-  kind: "CAMERA";
-  type: "PAN";
-  translateX: number;
-  translateY: number;
-  duration: number;
-  deviceId?: string;
-} {
-  return e.kind === "CAMERA" && e.type === "PAN";
-}
-
-export function isShakeEvent(e: TimelineEvent): e is TimelineEvent & {
-  kind: "CAMERA";
-  type: "SHAKE";
-  intensity: number;
-  frequency: number;
-  duration: number;
-  deviceId?: string;
-} {
-  return e.kind === "CAMERA" && e.type === "SHAKE";
-}
-
-export function isLayoutEvent(e: TimelineEvent): e is TimelineEvent & {
-  kind: "CAMERA";
-  type: "LAYOUT";
-  mode: string;
-  primaryDeviceId: string;
-  secondaryDeviceId?: string;
-} {
-  return e.kind === "CAMERA" && e.type === "LAYOUT";
-}
-
-// =============================================================================
 // AUDIO EVENT GUARDS
 // =============================================================================
 
@@ -281,7 +227,7 @@ export function isEventForDevice(e: TimelineEvent, deviceId: string): boolean {
   if (e.kind === "DEVICE") {
     return eventWithDevice.deviceId === deviceId;
   }
-  if (e.kind === "CAMERA" || e.kind === "AUDIO") {
+  if (e.kind === "AUDIO") {
     return eventWithDevice.deviceId === deviceId || !eventWithDevice.deviceId;
   }
   return true;

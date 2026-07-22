@@ -3,7 +3,6 @@ import { z } from "zod";
 // Validation schema for config - prevents invalid values that cause runtime errors
 const TokovoConfigSchema = z.object({
   timing: z.object({
-    effectCleanupBuffer: z.number().int().min(1),
     defaultTransitionDuration: z.number().int().min(1),
   }),
   animation: z.object({
@@ -24,13 +23,6 @@ const TokovoConfigSchema = z.object({
     duckedVolume: z.number().min(0).max(1),
     fadeOutDuration: z.number().int().min(0),
   }),
-  camera: z.object({
-    defaultZoom: z.number().min(0.1),
-    minZoom: z.number().min(0.1),
-    maxZoom: z.number().min(0.1),
-    panSpeed: z.number().min(0),
-    followLag: z.number().min(0).max(1),
-  }),
   debug: z.object({
     logEvents: z.boolean(),
     logPerformance: z.boolean(),
@@ -43,11 +35,7 @@ function deepFreeze<T>(value: T): T {
     Object.freeze(value);
     for (const key of Object.keys(value)) {
       const child = (value as Record<string, unknown>)[key];
-      if (
-        child &&
-        typeof child === "object" &&
-        !Object.isFrozen(child)
-      ) {
+      if (child && typeof child === "object" && !Object.isFrozen(child)) {
         deepFreeze(child);
       }
     }
@@ -57,7 +45,6 @@ function deepFreeze<T>(value: T): T {
 
 export const TokovoConfig = deepFreeze({
   timing: {
-    effectCleanupBuffer: 30,
     defaultTransitionDuration: 30,
   },
 
@@ -80,15 +67,6 @@ export const TokovoConfig = deepFreeze({
     defaultVolume: 1.0,
     duckedVolume: 0.3,
     fadeOutDuration: 500,
-  },
-
-
-  camera: {
-    defaultZoom: 1.0,
-    minZoom: 0.5,
-    maxZoom: 2.0,
-    panSpeed: 0.1,
-    followLag: 0.85,
   },
 
   debug: {
@@ -156,34 +134,20 @@ export function createConfig(
   return deepFreeze(merged);
 }
 
-export function getTimingConfig(
-  config: TokovoConfigType = TokovoConfig,
-) {
+export function getTimingConfig(config: TokovoConfigType = TokovoConfig) {
   return config.timing;
 }
 
-export function getAnimationConfig(
-  config: TokovoConfigType = TokovoConfig,
-) {
+export function getAnimationConfig(config: TokovoConfigType = TokovoConfig) {
   return config.animation;
 }
 
-export function getRenderingConfig(
-  config: TokovoConfigType = TokovoConfig,
-) {
+export function getRenderingConfig(config: TokovoConfigType = TokovoConfig) {
   return config.rendering;
 }
 
-export function getAudioConfig(
-  config: TokovoConfigType = TokovoConfig,
-) {
+export function getAudioConfig(config: TokovoConfigType = TokovoConfig) {
   return config.audio;
-}
-
-export function getCameraConfig(
-  config: TokovoConfigType = TokovoConfig,
-) {
-  return config.camera;
 }
 
 export function isDebugEnabled(

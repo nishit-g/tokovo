@@ -34,7 +34,6 @@
         "@tokovo/background#dev",
         "@tokovo/compiler#dev",
         "@tokovo/core#dev",
-        "@tokovo/device-camera#dev",
         "@tokovo/device-keyboard#dev",
         "@tokovo/device-notifications#dev",
         "@tokovo/devices#dev",

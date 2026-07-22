@@ -21,7 +21,11 @@ export default defineEpisode({
   build: () => {
     const baseTs = new Date("2026-04-10T23:30:00Z").getTime();
 
-    return episode("x-story-v2", { fps: 30, duration: "32s", title: "X Story V2" })
+    return episode("x-story-v2", {
+      fps: 30,
+      duration: "32s",
+      title: "X Story V2",
+    })
       .device("phone", "iphone16", {
         app: "app_x",
         os: {
@@ -33,15 +37,57 @@ export default defineEpisode({
       .snapshot("app_x", "phone", {
         currentUserId: "u_me",
         users: [
-          { id: "u_me", name: "Me", handle: "nadiaops", followers: 18200, following: 520, verified: "blue" },
-          { id: "u_founder_story", name: "Founder", handle: "earnestfounder", followers: 84000, following: 122, verified: "gold" },
-          { id: "u_banter_story", name: "Banter Thread", handle: "banterthread", followers: 47000, following: 310, verified: null },
+          {
+            id: "u_me",
+            name: "Me",
+            handle: "nadiaops",
+            followers: 18200,
+            following: 520,
+            verified: "blue",
+          },
+          {
+            id: "u_founder_story",
+            name: "Founder",
+            handle: "earnestfounder",
+            followers: 84000,
+            following: 122,
+            verified: "gold",
+          },
+          {
+            id: "u_banter_story",
+            name: "Banter Thread",
+            handle: "banterthread",
+            followers: 47000,
+            following: 310,
+            verified: null,
+          },
         ],
         tweets: [
-          { id: "tw_story_hook_v2", authorId: "u_founder_story", text: "If your team has work-life balance at launch, you probably do not want it badly enough.", createdAt: baseTs - 80000, viewCount: 121000, shareCount: 2600, bookmarkCount: 5100 },
+          {
+            id: "tw_story_hook_v2",
+            authorId: "u_founder_story",
+            text: "If your team has work-life balance at launch, you probably do not want it badly enough.",
+            createdAt: baseTs - 80000,
+            viewCount: 121000,
+            shareCount: 2600,
+            bookmarkCount: 5100,
+          },
         ],
-        threads: [{ id: "dm_story_x_v2", participantIds: ["u_me", "u_founder_story", "u_banter_story"] }],
-        messages: [{ id: "msg_story_x_1", threadId: "dm_story_x_v2", senderId: "u_founder_story", text: "Tell me honestly if this lands wrong.", createdAt: baseTs - 12000 }],
+        threads: [
+          {
+            id: "dm_story_x_v2",
+            participantIds: ["u_me", "u_founder_story", "u_banter_story"],
+          },
+        ],
+        messages: [
+          {
+            id: "msg_story_x_1",
+            threadId: "dm_story_x_v2",
+            senderId: "u_founder_story",
+            text: "Tell me honestly if this lands wrong.",
+            createdAt: baseTs - 12000,
+          },
+        ],
       })
       .view("app_x", "phone", { screen: "timeline" })
       .x("phone", (x) => {
@@ -53,7 +99,12 @@ export default defineEpisode({
           text: "This lands like a labor violation wearing a hoodie.",
           createdAt: baseTs + 12000,
         });
-        x.at("5.6s").addNotification({ id: "nt_story_x_1", type: "repost", actorId: "u_banter_story", tweetId: "tw_story_reply_v2" });
+        x.at("5.6s").addNotification({
+          id: "nt_story_x_1",
+          type: "repost",
+          actorId: "u_banter_story",
+          tweetId: "tw_story_reply_v2",
+        });
         x.at("6.6s").navigate("notifications");
         x.at("8.4s").navigate("messages");
         x.at("9.6s").navigate("thread", { threadId: "dm_story_x_v2" });
@@ -71,12 +122,6 @@ export default defineEpisode({
           text: "Delete the thread and pretend you were hacked by sincerity.",
           createdAt: baseTs + 26000,
         });
-      })
-      .camera((cam) => {
-        cam.at("1.3s").focus("tweet_card", { scale: 1.1, duration: "0.35s" });
-        cam.span("3.0s", "5.2s").trackCinematic("keyboard", { scale: 1.12, smoothing: 0.18 });
-        cam.at("6.7s").focus("notification_card", { scale: 1.08, duration: "0.35s" });
-        cam.at("9.7s").focus("dm_thread", { scale: 1.08, duration: "0.35s" });
       })
       .build();
   },

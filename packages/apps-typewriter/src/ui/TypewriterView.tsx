@@ -1,23 +1,38 @@
 import React, { useMemo } from "react";
+import type { FullscreenLayoutState } from "@tokovo/core";
 import type { AppViewProps } from "@tokovo/react";
-import { Easing, interpolate, useVideoConfig } from "remotion";
+import { Easing, interpolate } from "remotion";
 
 import { TYPEWRITER_APP_ID } from "../constants.js";
-import type { TypewriterGlyph, TypewriterPage, TypewriterState } from "../runtime/state.js";
+import type {
+  TypewriterGlyph,
+  TypewriterPage,
+  TypewriterState,
+} from "../runtime/state.js";
 import { resolveTypewriterTheme } from "../theme/resolve.js";
-import { computeTypewriterGeometry } from "../anchors/geometry.js";
-import { TYPEWRITER_KEYBOARD_ROWS, type TypewriterKeyId } from "../keyboard/index.js";
+import { computeTypewriterGeometry } from "../layout/geometry.js";
+import {
+  TYPEWRITER_KEYBOARD_ROWS,
+  type TypewriterKeyId,
+} from "../keyboard/index.js";
 import { hashStringToU32, mulberry32 } from "../utils/prng.js";
 
 function useTypewriterState(world: AppViewProps["world"]): TypewriterState {
-  const raw = world.appState?.[TYPEWRITER_APP_ID] as TypewriterState | undefined;
+  const raw = world.appState?.[TYPEWRITER_APP_ID] as
+    | TypewriterState
+    | undefined;
   return (
     raw ?? {
       viewMode: "FULLSCREEN",
       meta: {},
       pages: [{ index: 0, cells: [] }],
       cursor: { page: 0, row: 0, col: 0 },
-      settings: { maxCols: 44, maxRows: 26, wrap: "word", bellColsFromRight: 5 },
+      settings: {
+        maxCols: 44,
+        maxRows: 26,
+        wrap: "word",
+        bellColsFromRight: 5,
+      },
       seed: 1337,
       theme: { preset: "classic" },
       fx: { pressedKeys: {} },
@@ -25,12 +40,20 @@ function useTypewriterState(world: AppViewProps["world"]): TypewriterState {
   );
 }
 
-function isHot(frame: number | undefined, t: number, windowFrames: number): boolean {
+function isHot(
+  frame: number | undefined,
+  t: number,
+  windowFrames: number,
+): boolean {
   if (typeof frame !== "number") return false;
   return t >= frame && t < frame + windowFrames;
 }
 
-function hotProgress(frame: number | undefined, t: number, windowFrames: number): number {
+function hotProgress(
+  frame: number | undefined,
+  t: number,
+  windowFrames: number,
+): number {
   if (typeof frame !== "number") return 0;
   if (t < frame) return 0;
   if (t >= frame + windowFrames) return 0;
@@ -38,24 +61,51 @@ function hotProgress(frame: number | undefined, t: number, windowFrames: number)
   return 1 - Math.pow(1 - p, 3);
 }
 
-export const TypewriterView: React.FC<AppViewProps> = ({ world, t = 0 }) => {
+export const TypewriterView: React.FC<AppViewProps> = ({
+  world,
+  t = 0,
+  layout,
+}) => {
   const s = useTypewriterState(world);
-  const video = useVideoConfig();
+  const fullscreenLayout = layout as FullscreenLayoutState | undefined;
+  const viewportWidth = fullscreenLayout?.meta?.viewportWidth;
+  const viewportHeight = fullscreenLayout?.meta?.viewportHeight;
+  if (typeof viewportWidth !== "number" || typeof viewportHeight !== "number") {
+    throw new Error(
+      "TYPEWRITER_LAYOUT_MISSING: TypewriterView requires its canonical FULLSCREEN layout.",
+    );
+  }
 
   const theme = useMemo(
-    () => resolveTypewriterTheme({ config: s.theme, video: { width: video.width, height: video.height } }),
-    [s.theme, video.height, video.width],
+    () =>
+      resolveTypewriterTheme({
+        config: s.theme,
+        video: { width: viewportWidth, height: viewportHeight },
+      }),
+    [s.theme, viewportHeight, viewportWidth],
   );
 
   const geom = useMemo(
-    () => computeTypewriterGeometry({ width: video.width, height: video.height }, theme),
-    [theme, video.height, video.width],
+    () =>
+      computeTypewriterGeometry(
+        { width: viewportWidth, height: viewportHeight },
+        theme,
+      ),
+    [theme, viewportHeight, viewportWidth],
   );
 
   const keyHot = isHot(s.fx.lastKeyFrame, t, theme.motion.keyPressFrames);
-  const carriageHot = isHot(s.fx.lastCarriageFrame, t, theme.motion.carriageReturnFrames);
+  const carriageHot = isHot(
+    s.fx.lastCarriageFrame,
+    t,
+    theme.motion.carriageReturnFrames,
+  );
   const shakeP = hotProgress(s.fx.lastKeyFrame, t, theme.motion.keyPressFrames);
-  const carriageP = hotProgress(s.fx.lastCarriageFrame, t, theme.motion.carriageReturnFrames);
+  const carriageP = hotProgress(
+    s.fx.lastCarriageFrame,
+    t,
+    theme.motion.carriageReturnFrames,
+  );
 
   const pageIndex = Math.max(0, Math.floor(s.cursor.page ?? 0));
   const rows = Math.max(1, Math.floor(theme.layout.maxRows));
@@ -68,19 +118,34 @@ export const TypewriterView: React.FC<AppViewProps> = ({ world, t = 0 }) => {
       ? page.cells
       : new Array<TypewriterGlyph | null>(total).fill(null);
 
-  const cursorRow = Math.max(0, Math.min(rows - 1, Math.floor(s.cursor.row ?? 0)));
-  const cursorCol = Math.max(0, Math.min(cols - 1, Math.floor(s.cursor.col ?? 0)));
+  const cursorRow = Math.max(
+    0,
+    Math.min(rows - 1, Math.floor(s.cursor.row ?? 0)),
+  );
+  const cursorCol = Math.max(
+    0,
+    Math.min(cols - 1, Math.floor(s.cursor.col ?? 0)),
+  );
 
-  const stageShakeX = keyHot ? Math.sin(t * 0.9) * theme.motion.deskShakePx * shakeP : 0;
-  const stageShakeY = keyHot ? Math.cos(t * 1.1) * theme.motion.deskShakePx * 0.7 * shakeP : 0;
-  const stageShakeR = keyHot ? Math.sin(t * 0.7) * theme.motion.deskShakeDeg * shakeP : 0;
+  const stageShakeX = keyHot
+    ? Math.sin(t * 0.9) * theme.motion.deskShakePx * shakeP
+    : 0;
+  const stageShakeY = keyHot
+    ? Math.cos(t * 1.1) * theme.motion.deskShakePx * 0.7 * shakeP
+    : 0;
+  const stageShakeR = keyHot
+    ? Math.sin(t * 0.7) * theme.motion.deskShakeDeg * shakeP
+    : 0;
   const idleSway = Math.sin(t / 180) * theme.motion.idleSwayDeg;
 
   const carriageFromCol = s.fx.lastCarriageFromCol ?? cursorCol;
   const carriageFromP = carriageFromCol / Math.max(1, theme.layout.maxCols - 1);
   const carriageToP = cursorCol / Math.max(1, theme.layout.maxCols - 1);
   const carriagePosP = carriageHot
-    ? interpolate(carriageP, [0, 1], [carriageFromP, 0], { extrapolateLeft: "clamp", extrapolateRight: "clamp" })
+    ? interpolate(carriageP, [0, 1], [carriageFromP, 0], {
+        extrapolateLeft: "clamp",
+        extrapolateRight: "clamp",
+      })
     : carriageToP;
 
   const paperTransform = `rotate(${theme.paper.rotationDeg + stageShakeR + idleSway}deg) translate(${stageShakeX}px, ${stageShakeY}px)`;
@@ -99,7 +164,12 @@ export const TypewriterView: React.FC<AppViewProps> = ({ world, t = 0 }) => {
       stackLift: theme.text.lineHeightPx * 0.9 * eased,
       showStack: true,
     };
-  }, [s.fx.pageFeedAnim, t, theme.motion.paperFeedFrames, theme.text.lineHeightPx]);
+  }, [
+    s.fx.pageFeedAnim,
+    t,
+    theme.motion.paperFeedFrames,
+    theme.text.lineHeightPx,
+  ]);
 
   return (
     <div style={rootStyle}>
@@ -220,10 +290,38 @@ export const TypewriterView: React.FC<AppViewProps> = ({ world, t = 0 }) => {
               lineHeight: `${theme.text.metaLineHeightPx}px`,
             }}
           >
-            <MetaRow label="To:" labelW={theme.text.metaLabelWidthPx} labelColor={theme.text.metaLabelColor} valueColor={theme.text.metaValueColor} gapPx={10} value={s.meta.to ?? ""} />
-            <MetaRow label="From:" labelW={theme.text.metaLabelWidthPx} labelColor={theme.text.metaLabelColor} valueColor={theme.text.metaValueColor} gapPx={10} value={s.meta.from ?? ""} />
-            <MetaRow label="Date:" labelW={theme.text.metaLabelWidthPx} labelColor={theme.text.metaLabelColor} valueColor={theme.text.metaValueColor} gapPx={10} value={s.meta.date ?? ""} />
-            <MetaRow label="Subject:" labelW={theme.text.metaLabelWidthPx} labelColor={theme.text.metaLabelColor} valueColor={theme.text.metaValueColor} gapPx={10} value={s.meta.subject ?? ""} />
+            <MetaRow
+              label="To:"
+              labelW={theme.text.metaLabelWidthPx}
+              labelColor={theme.text.metaLabelColor}
+              valueColor={theme.text.metaValueColor}
+              gapPx={10}
+              value={s.meta.to ?? ""}
+            />
+            <MetaRow
+              label="From:"
+              labelW={theme.text.metaLabelWidthPx}
+              labelColor={theme.text.metaLabelColor}
+              valueColor={theme.text.metaValueColor}
+              gapPx={10}
+              value={s.meta.from ?? ""}
+            />
+            <MetaRow
+              label="Date:"
+              labelW={theme.text.metaLabelWidthPx}
+              labelColor={theme.text.metaLabelColor}
+              valueColor={theme.text.metaValueColor}
+              gapPx={10}
+              value={s.meta.date ?? ""}
+            />
+            <MetaRow
+              label="Subject:"
+              labelW={theme.text.metaLabelWidthPx}
+              labelColor={theme.text.metaLabelColor}
+              valueColor={theme.text.metaValueColor}
+              gapPx={10}
+              value={s.meta.subject ?? ""}
+            />
           </div>
 
           <div
@@ -341,7 +439,10 @@ export const TypewriterView: React.FC<AppViewProps> = ({ world, t = 0 }) => {
               ...carriageTrackStyle,
               left: theme.typewriter.bodySidePadPx,
               right: theme.typewriter.bodySidePadPx,
-              top: theme.typewriter.bodyTopPadPx + theme.typewriter.plateHeightPx + 10,
+              top:
+                theme.typewriter.bodyTopPadPx +
+                theme.typewriter.plateHeightPx +
+                10,
               height: theme.typewriter.carriage.trackHeightPx,
               borderRadius: theme.typewriter.carriage.trackRadiusPx,
               opacity: 0.9,
@@ -371,12 +472,18 @@ export const TypewriterView: React.FC<AppViewProps> = ({ world, t = 0 }) => {
               ...keysWrapStyle,
               left: theme.typewriter.bodySidePadPx,
               right: theme.typewriter.bodySidePadPx,
-              top: theme.typewriter.bodyTopPadPx + theme.typewriter.plateHeightPx + theme.typewriter.keyAreaTopOffsetPx,
+              top:
+                theme.typewriter.bodyTopPadPx +
+                theme.typewriter.plateHeightPx +
+                theme.typewriter.keyAreaTopOffsetPx,
               bottom: theme.typewriter.keyAreaBottomInsetPx,
             }}
           >
             {TYPEWRITER_KEYBOARD_ROWS.map((row, ri) => (
-              <div key={ri} style={{ ...keysRowStyle, gap: theme.typewriter.keys.gapPx }}>
+              <div
+                key={ri}
+                style={{ ...keysRowStyle, gap: theme.typewriter.keys.gapPx }}
+              >
                 {row.map((k) => (
                   <KeyCap
                     key={k.id}
@@ -423,9 +530,26 @@ function MetaRow(props: {
   valueColor: string;
 }) {
   return (
-    <div style={{ display: "flex", gap: props.gapPx, alignItems: "baseline", marginBottom: 6 }}>
-      <span style={{ width: props.labelW, color: props.labelColor }}>{props.label}</span>
-      <span style={{ flex: 1, color: props.valueColor, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+    <div
+      style={{
+        display: "flex",
+        gap: props.gapPx,
+        alignItems: "baseline",
+        marginBottom: 6,
+      }}
+    >
+      <span style={{ width: props.labelW, color: props.labelColor }}>
+        {props.label}
+      </span>
+      <span
+        style={{
+          flex: 1,
+          color: props.valueColor,
+          whiteSpace: "nowrap",
+          overflow: "hidden",
+          textOverflow: "ellipsis",
+        }}
+      >
         {props.value}
       </span>
     </div>
@@ -467,16 +591,35 @@ function KeyCap(props: {
         style={{
           position: "absolute",
           inset: 1,
-          borderRadius: Math.max(0, props.tokens.typewriter.keys.keyRadiusPx - 1),
+          borderRadius: Math.max(
+            0,
+            props.tokens.typewriter.keys.keyRadiusPx - 1,
+          ),
           border: `1px solid rgba(255,255,255,${props.tokens.typewriter.keys.keyRingOpacity * (down ? 0.25 : 1)})`,
           opacity: props.tokens.typewriter.keys.keyRingOpacity,
           pointerEvents: "none",
           mixBlendMode: "screen",
         }}
       />
-      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 2, lineHeight: 1 }}>
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          gap: 2,
+          lineHeight: 1,
+        }}
+      >
         {props.shiftedLabel && (
-          <div style={{ fontSize: Math.max(10, props.tokens.typewriter.keys.keyFontSizePx - 3), color: props.tokens.typewriter.keys.legendSecondaryColor }}>
+          <div
+            style={{
+              fontSize: Math.max(
+                10,
+                props.tokens.typewriter.keys.keyFontSizePx - 3,
+              ),
+              color: props.tokens.typewriter.keys.legendSecondaryColor,
+            }}
+          >
             {props.shiftedLabel}
           </div>
         )}
@@ -487,7 +630,8 @@ function KeyCap(props: {
           position: "absolute",
           inset: 0,
           borderRadius: props.tokens.typewriter.keys.keyRadiusPx,
-          background: "radial-gradient(120px 40px at 30% 15%, rgba(255,255,255,0.14), transparent 60%)",
+          background:
+            "radial-gradient(120px 40px at 30% 15%, rgba(255,255,255,0.14), transparent 60%)",
           opacity: down ? 0.4 : 1,
           pointerEvents: "none",
         }}
@@ -497,8 +641,10 @@ function KeyCap(props: {
           position: "absolute",
           inset: 0,
           borderRadius: props.tokens.typewriter.keys.keyRadiusPx,
-          background: "linear-gradient(180deg, rgba(0,0,0,0.25), transparent 40%, rgba(0,0,0,0.25))",
-          opacity: props.tokens.typewriter.keys.keyInsetOpacity * (down ? 0.65 : 1),
+          background:
+            "linear-gradient(180deg, rgba(0,0,0,0.25), transparent 40%, rgba(0,0,0,0.25))",
+          opacity:
+            props.tokens.typewriter.keys.keyInsetOpacity * (down ? 0.65 : 1),
           pointerEvents: "none",
           mixBlendMode: "multiply",
         }}
@@ -523,7 +669,7 @@ function renderGrid(input: {
     for (let c = 0; c < input.cols; c++) {
       const idx = r * input.cols + c;
       const g = input.cells[idx];
-      const isBlank = !g || (typeof g.ch !== "string" || g.ch.length === 0);
+      const isBlank = !g || typeof g.ch !== "string" || g.ch.length === 0;
       const ch = isBlank ? " " : g.ch;
       const typedAt = isBlank ? -99999 : g.typedAt;
       row.push(
@@ -576,7 +722,8 @@ function glyphStyle(input: {
   }
 
   const age = input.frame - input.typedAt;
-  const baseSeed = (input.seed ^ input.themeSeed ^ hashStringToU32(`${input.ch}`)) >>> 0;
+  const baseSeed =
+    (input.seed ^ input.themeSeed ^ hashStringToU32(`${input.ch}`)) >>> 0;
   const rng = mulberry32(baseSeed);
   const rot = (rng() - 0.5) * 1.6;
   const y = (rng() - 0.5) * 2.4;
@@ -626,7 +773,8 @@ const paperShadowStyle: React.CSSProperties = {
 const paperStackSheetStyle: React.CSSProperties = {
   position: "absolute",
   inset: 0,
-  background: "linear-gradient(180deg, rgba(255,255,255,0.72), rgba(245,245,242,0.55))",
+  background:
+    "linear-gradient(180deg, rgba(255,255,255,0.72), rgba(245,245,242,0.55))",
   boxShadow: "0 10px 30px rgba(0,0,0,0.22)",
   pointerEvents: "none",
 };
@@ -735,7 +883,8 @@ const typewriterBodyStyle: React.CSSProperties = {
 
 const typewriterTopPlateStyle: React.CSSProperties = {
   position: "absolute",
-  background: "linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0.02))",
+  background:
+    "linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0.02))",
 };
 
 const keysWrapStyle: React.CSSProperties = {
@@ -758,13 +907,15 @@ const keyStyle: React.CSSProperties = {
   display: "flex",
   alignItems: "center",
   justifyContent: "center",
-  fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
+  fontFamily:
+    "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
   userSelect: "none",
 };
 
 const carriageTrackStyle: React.CSSProperties = {
   position: "absolute",
-  background: "linear-gradient(180deg, rgba(255,255,255,0.06), rgba(0,0,0,0.12))",
+  background:
+    "linear-gradient(180deg, rgba(255,255,255,0.06), rgba(0,0,0,0.12))",
   border: "1px solid rgba(255,255,255,0.06)",
   overflow: "hidden",
 };

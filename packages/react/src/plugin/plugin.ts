@@ -7,7 +7,7 @@
  * - Sound effects
  * - Audio rules
  * - Platform-specific layouts
- * - Semantic Anchors (Framing)
+ * - Semantic Subjects (Framing)
  */
 
 import type { ReactElement } from "react";
@@ -16,8 +16,6 @@ import type {
   BackgroundAppState,
   AppReducer,
   Platform,
-  PluginAnchorRegistry,
-  AnchorProvider,
   TokovoPluginContract,
   PluginViews,
   PluginReducer,
@@ -197,77 +195,6 @@ export class PluginManagerClass {
       };
       this.registries.metadata.register(plugin.id, meta);
       cleanups.push(() => this.registries.metadata.unregister(plugin.id));
-
-      if (plugin.anchorProvider) {
-        // Prefer full layout-aware anchor providers when available.
-        this.registries.anchors.register(
-          plugin.anchorProvider as unknown as AnchorProvider,
-        );
-        cleanups.push(() => this.registries.anchors.unregister(plugin.id));
-      } else if (plugin.anchors && "providers" in plugin.anchors) {
-        const anchorRegistry = plugin.anchors as PluginAnchorRegistry;
-        const defaultFraming = {
-          anchorPoint: { x: 0.5, y: 0.5 },
-          paddingPx: 50,
-        };
-        // Merge framing keys from BOTH providers and framing. Many plugins only
-        // ship a `default` provider but define framing for many semantic anchors.
-        const framingKeys = new Set<string>([
-          ...Object.keys(anchorRegistry.providers ?? {}),
-          ...Object.keys(anchorRegistry.framing ?? {}),
-        ]);
-        const mergedFraming = Object.fromEntries(
-          Array.from(framingKeys).map((anchorName) => [
-            anchorName,
-            anchorRegistry.framing?.[anchorName] ?? defaultFraming,
-          ]),
-        );
-
-        this.registries.anchors.register({
-          appId: plugin.id,
-          framing: mergedFraming,
-          getAnchors: (
-            world: WorldState,
-            _layout: unknown,
-            deviceId: string,
-            context,
-          ) => {
-            const device = world.devices?.[deviceId];
-            const profileDims = context?.getDeviceProfile?.(
-              device?.profileId,
-            )?.dimensions;
-            const dims = profileDims ??
-              device?.screenDimensions ?? {
-                width: 430,
-                height: 932,
-              };
-
-            const anchors: Record<
-              string,
-              { x: number; y: number; width: number; height: number }
-            > = {};
-            for (const [anchorName, provider] of Object.entries(
-              anchorRegistry.providers,
-            )) {
-              const bounds = provider(world, deviceId);
-              if (!bounds) continue;
-              anchors[anchorName] = {
-                x: bounds.x * dims.width,
-                y: bounds.y * dims.height,
-                width: bounds.width * dims.width,
-                height: bounds.height * dims.height,
-              };
-            }
-
-            return {
-              anchors,
-              deviceId,
-              appId: plugin.id,
-            };
-          },
-        });
-        cleanups.push(() => this.registries.anchors.unregister(plugin.id));
-      }
 
       if (plugin.cinematicSubjects) {
         this.registries.cinematicSubjects.register(plugin.cinematicSubjects);

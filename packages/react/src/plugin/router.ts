@@ -1,10 +1,5 @@
-import type { Rect } from "@tokovo/core";
 import { PluginManagerClass } from "./plugin.js";
-import type {
-  TokovoPluginContract,
-  PluginLayoutConstants,
-} from "@tokovo/core";
-import type { WorldState } from "@tokovo/core";
+import type { TokovoPluginContract, PluginLayoutConstants } from "@tokovo/core";
 import type { PluginRegistries } from "./registries.js";
 
 export interface PluginAccessor {
@@ -15,7 +10,6 @@ export interface PluginAccessor {
   getReducer(): ReturnType<PluginRegistries["reducers"]["getAppReducer"]>;
   getEventKinds(): string[];
   getSound(key: string): string | undefined;
-  getAnchor(anchorId: string, world: WorldState, deviceId: string): Rect | null;
   getLayoutConstants(): PluginLayoutConstants | undefined;
   getInitialState(): unknown;
 }
@@ -25,10 +19,7 @@ export class PluginRouterClass {
   private pluginManager: PluginManagerClass;
   private registries: PluginRegistries;
 
-  constructor(
-    pluginManager: PluginManagerClass,
-    registries: PluginRegistries,
-  ) {
+  constructor(pluginManager: PluginManagerClass, registries: PluginRegistries) {
     this.pluginManager = pluginManager;
     this.registries = registries;
   }
@@ -57,19 +48,10 @@ export class PluginRouterClass {
 
       getReducer: () => this.registries.reducers.getAppReducer(appId),
 
-      getEventKinds: () =>
-        this.registries.reducers.getEventKindsForApp(appId),
+      getEventKinds: () => this.registries.reducers.getEventKindsForApp(appId),
 
       getSound: (key: string) =>
         this.registries.sounds.getNamespaced(appId, key),
-
-      getAnchor: (anchorId: string, world: WorldState, deviceId: string) => {
-        return this.registries.anchors.resolveAnchor(
-          anchorId,
-          world,
-          deviceId,
-        );
-      },
 
       getLayoutConstants: () => plugin.layoutConstants,
 

@@ -5,7 +5,6 @@
  */
 
 import type { DeviceId, DeviceState } from "./device.js";
-import type { BaseCameraState } from "./camera.js";
 import type { AudioState, VideoConfig } from "./audio.js";
 
 // =============================================================================
@@ -56,7 +55,6 @@ export interface WorldState {
   appStateByDevice?: Record<DeviceId, Record<string, unknown>>;
 
   // Engine primitives
-  camera: BaseCameraState;
   audio: AudioState;
   config?: VideoConfig;
 

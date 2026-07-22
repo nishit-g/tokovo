@@ -1,22 +1,4 @@
-import { DeviceProfile, CameraDeviceConfig } from "../types.js";
-
-/**
- * Pixel camera configuration
- * - Medium pan speed for balanced feel
- * - Medium follow lag for responsive tracking
- * - Slightly wider zoom range for Android
- */
-const PixelCamera: CameraDeviceConfig = {
-  minZoom: 0.85,
-  maxZoom: 1.2,
-  panSpeed: "medium",
-  followLag: "medium",
-  snapThreshold: 45,
-  safeAreaTop: 90, // Status bar
-  safeAreaBottom: 48, // Navigation bar/gesture area
-  followLagFactor: 0.5, // Balanced lag
-  panSpeedMultiplier: 1.0,
-};
+import { DeviceProfile } from "../types.js";
 
 /**
  * Pixel 7 Pro Device Profile
@@ -48,7 +30,6 @@ export const PixelProfile: DeviceProfile = {
     left: 0,
     right: 0,
   },
-  camera: PixelCamera,
   pixelDensity: 3,
 
   // Android uses status bar for background app indicators

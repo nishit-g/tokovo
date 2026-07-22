@@ -158,8 +158,6 @@ export interface VoiceConfig {
 // DIRECTOR STYLE
 // =============================================================================
 
-export type DirectorStyle = "ViralDramaV1" | "Cinematic" | "Documentary";
-
 // =============================================================================
 // BACKGROUND CONFIG (from @tokovo/background)
 // =============================================================================
@@ -171,18 +169,18 @@ export type DirectorStyle = "ViralDramaV1" | "Cinematic" | "Documentary";
 export type BackgroundConfigIR =
   | string // Preset ID like "ambient-night"
   | {
-    type: "solid" | "gradient" | "image" | "video" | "particles" | "ambient";
-    color?: string;
-    gradient?: string;
-    src?: string;
-    preset?: string;
-    blur?: number;
-    opacity?: number;
-    scale?: number;
-    position?: "cover" | "contain" | "fill" | "center";
-    loop?: boolean;
-    playbackRate?: number;
-  };
+      type: "solid" | "gradient" | "image" | "video" | "particles" | "ambient";
+      color?: string;
+      gradient?: string;
+      src?: string;
+      preset?: string;
+      blur?: number;
+      opacity?: number;
+      scale?: number;
+      position?: "cover" | "contain" | "fill" | "center";
+      loop?: boolean;
+      playbackRate?: number;
+    };
 
 // =============================================================================
 // HAND PERFORMANCE CONFIG
@@ -329,9 +327,6 @@ export interface TrackEpisodeIR {
 
   /** Section markers for debugging */
   sections: Section[];
-
-  /** Optional director style for auto-camera */
-  director?: DirectorStyle;
 
   /** Voice configuration for narration/dialogue */
   voice?: VoiceConfig;

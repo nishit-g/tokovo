@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { produce } from "immer";
 import type { RuntimeEvent, WorldState } from "@tokovo/core";
-import { DEFAULT_AUDIO_STATE, DEFAULT_BASE_CAMERA_STATE } from "@tokovo/core";
+import { DEFAULT_AUDIO_STATE } from "@tokovo/core";
 import { linkedInReducer } from "../runtime/reducer.js";
 import { createLinkedInInitialState } from "../runtime/state.js";
 
@@ -11,7 +11,6 @@ function createTestWorldState(): WorldState {
       app_linkedin: createLinkedInInitialState(),
     },
     devices: {},
-    camera: DEFAULT_BASE_CAMERA_STATE,
     audio: DEFAULT_AUDIO_STATE,
   } as WorldState;
 }

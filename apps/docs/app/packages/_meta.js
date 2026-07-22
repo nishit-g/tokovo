@@ -5,7 +5,7 @@ const meta = {
   compiler: "@tokovo/compiler",
   episodes: "@tokovo/episodes",
   devices: "@tokovo/devices",
-  "device-camera": "@tokovo/device-camera",
+  camera: "@tokovo/camera",
   "device-keyboard": "@tokovo/device-keyboard",
   "device-notifications": "@tokovo/device-notifications",
   overlay: "@tokovo/overlay",

@@ -1,12 +1,6 @@
 import type { WorldState } from "@tokovo/core";
 import { DeterministicImage } from "@tokovo/react";
-import {
-  BellRing,
-  ChevronRight,
-  Megaphone,
-  Plus,
-  Users,
-} from "lucide-react";
+import { BellRing, ChevronRight, Megaphone, Plus, Users } from "lucide-react";
 import {
   useTheme,
   useWhatsAppLocale,
@@ -102,7 +96,7 @@ function CommunityGroupRow({
         >
           {isAnnouncement
             ? t("communities.announcements")
-            : conversation.name ?? fallbackGroupName}
+            : (conversation.name ?? fallbackGroupName)}
         </div>
         <div
           style={{
@@ -231,7 +225,9 @@ function CommunityCard({
           <ChevronRight
             size={17}
             color={theme.colors.timestamp}
-            style={{ transform: direction === "rtl" ? "scaleX(-1)" : undefined }}
+            style={{
+              transform: direction === "rtl" ? "scaleX(-1)" : undefined,
+            }}
           />
         </div>
       </div>
@@ -348,15 +344,17 @@ export function CommunitiesScreen({
       </div>
 
       <SectionHeader title={t("communities.yours")} />
-      <div data-anchor="communities_list">
+      <div data-cinematic-subject="communities_list">
         {communities.length > 0 ? (
-          communities.slice(0, 2).map((community) => (
-            <CommunityCard
-              key={community.id}
-              community={community}
-              conversations={conversations}
-            />
-          ))
+          communities
+            .slice(0, 2)
+            .map((community) => (
+              <CommunityCard
+                key={community.id}
+                community={community}
+                conversations={conversations}
+              />
+            ))
         ) : (
           <EmptyState
             icon={<Users size={28} />}

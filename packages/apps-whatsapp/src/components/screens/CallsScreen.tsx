@@ -13,10 +13,7 @@ import {
   useTheme,
   useWhatsAppLocale,
 } from "../../experience/ExperienceContext.js";
-import type {
-  WhatsAppCallLogEntry,
-  WhatsAppState,
-} from "../../types/index.js";
+import type { WhatsAppCallLogEntry, WhatsAppState } from "../../types/index.js";
 import {
   formatConversationListTimestamp,
   getBaseTime,
@@ -177,11 +174,13 @@ export function CallsScreen({ world, safeAreaInsets }: CallsScreenProps) {
   const callLog = [...(state.callLog ?? [])].sort(
     (left, right) => right.startedAt - left.startedAt,
   );
-  const favorites = [...new Map(
-    callLog
-      .filter((entry) => entry.direction !== "missed")
-      .map((entry) => [entry.name, entry] as const),
-  ).values()].slice(0, 3);
+  const favorites = [
+    ...new Map(
+      callLog
+        .filter((entry) => entry.direction !== "missed")
+        .map((entry) => [entry.name, entry] as const),
+    ).values(),
+  ].slice(0, 3);
   const missedCount = callLog.filter(
     (entry) => entry.direction === "missed",
   ).length;
@@ -252,7 +251,10 @@ export function CallsScreen({ world, safeAreaInsets }: CallsScreenProps) {
 
       {favorites.length > 0 && (
         <>
-          <SectionHeader title={t("calls.favorites")} action={t("action.edit")} />
+          <SectionHeader
+            title={t("calls.favorites")}
+            action={t("action.edit")}
+          />
           <div
             style={{
               height: 88,
@@ -285,7 +287,11 @@ export function CallsScreen({ world, safeAreaInsets }: CallsScreenProps) {
                   <DeterministicImage
                     src={resolveAvatarWithFallback(entry.avatar, entry.name)}
                     alt={entry.name}
-                    style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                    style={{
+                      width: "100%",
+                      height: "100%",
+                      objectFit: "cover",
+                    }}
                   />
                 </div>
                 <span
@@ -312,11 +318,13 @@ export function CallsScreen({ world, safeAreaInsets }: CallsScreenProps) {
         title={t("calls.recent")}
         action={callLog.length ? t("action.edit") : undefined}
       />
-      <div data-anchor="calls_list">
+      <div data-cinematic-subject="calls_list">
         {callLog.length > 0 ? (
-          callLog.slice(0, 6).map((entry) => (
-            <CallRow key={entry.id} entry={entry} baseTime={baseTime} />
-          ))
+          callLog
+            .slice(0, 6)
+            .map((entry) => (
+              <CallRow key={entry.id} entry={entry} baseTime={baseTime} />
+            ))
         ) : (
           <EmptyState
             icon={<Phone size={28} />}

@@ -76,6 +76,16 @@ function parseProbes(raw) {
   });
 }
 
+function assertDefaultGoldenCoverage(probes, goldenManifest) {
+  const probeKeys = new Set(probes.map((probe) => `${probe.episodeId}@${probe.frame}`));
+  const orphanedGoldens = [...goldenManifest.keys()].filter((key) => !probeKeys.has(key));
+  if (orphanedGoldens.length > 0) {
+    throw new Error(
+      `Golden manifest contains unexecuted default probes: ${orphanedGoldens.join(", ")}`,
+    );
+  }
+}
+
 async function readGoldenManifest() {
   let raw;
   try {
@@ -201,8 +211,10 @@ async function preserveGoldenFailure(probe, expectedPath, actualPath, comparison
 }
 
 async function main() {
-  const probes = parseProbes(process.env.TOKOVO_DETERMINISM_PROBES);
+  const customProbeInput = process.env.TOKOVO_DETERMINISM_PROBES;
+  const probes = parseProbes(customProbeInput);
   const goldenManifest = await readGoldenManifest();
+  if (!customProbeInput) assertDefaultGoldenCoverage(probes, goldenManifest);
   const updateGoldens = process.env.TOKOVO_UPDATE_RENDER_GOLDENS === "1";
   const chromiumGl = process.env.TOKOVO_DETERMINISM_GL ?? "swangle";
   const channelTolerance = Number(process.env.TOKOVO_DETERMINISM_CHANNEL_TOLERANCE ?? "1");

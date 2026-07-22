@@ -27,7 +27,6 @@ const WORKSPACE_INPUT_DIRS = [
   "packages/camera/src",
   "packages/compiler/src",
   "packages/core/src",
-  "packages/device-camera/src",
   "packages/device-keyboard/src",
   "packages/device-notifications/src",
   "packages/devices/src",
@@ -41,7 +40,7 @@ const WORKSPACE_INPUT_DIRS = [
   "packages/voice/src",
 ];
 
-const STAGE_PAINTER_INPUT_DIRS = [
+const CAMERA_LAYER_PAINTER_INPUT_DIRS = [
   "apps/video-runner/src",
   "apps/video-runner/public",
   "packages/apps-imessage/dist",
@@ -52,21 +51,24 @@ const STAGE_PAINTER_INPUT_DIRS = [
   "packages/apps-typewriter/dist",
   "packages/apps-whatsapp/dist",
   "packages/apps-x/dist",
+  "packages/background/dist",
   "packages/compiler/dist",
   "packages/core/dist",
-  "packages/device-camera/dist",
   "packages/device-keyboard/dist",
   "packages/device-notifications/dist",
   "packages/devices/dist",
   "packages/ir/dist",
+  "packages/overlay/dist",
   "packages/react/dist",
   "packages/renderer/dist",
   "packages/stage/dist",
+  "packages/voice/dist",
 ];
 
-const STAGE_PAINTER_PACKAGE_FILES = STAGE_PAINTER_INPUT_DIRS.filter((entry) =>
-  entry.startsWith("packages/"),
-).map((entry) => `${entry.slice(0, -"dist".length)}package.json`);
+const CAMERA_LAYER_PAINTER_PACKAGE_FILES =
+  CAMERA_LAYER_PAINTER_INPUT_DIRS.filter((entry) =>
+    entry.startsWith("packages/"),
+  ).map((entry) => `${entry.slice(0, -"dist".length)}package.json`);
 
 const IGNORED_SEGMENTS = new Set([
   "node_modules",
@@ -81,8 +83,8 @@ const IGNORED_SEGMENTS = new Set([
 
 let cachedStatFingerprint = "";
 let cachedSourceSignature = "";
-let cachedStagePainterStatFingerprint = "";
-let cachedStagePainterSourceSignature = "";
+let cachedCameraLayerPainterStatFingerprint = "";
+let cachedCameraLayerPainterSourceSignature = "";
 
 function toPosixPath(filePath: string): string {
   return filePath.split(path.sep).join("/");
@@ -130,7 +132,9 @@ function walkFiles(rootDir: string, files: string[]): void {
 function buildFileSignature(filePath: string): string {
   const stat = fs.statSync(filePath);
   const relativePath = toPosixPath(path.relative(repoRoot, filePath));
-  const contentHash = createHash("sha256").update(fs.readFileSync(filePath)).digest("hex");
+  const contentHash = createHash("sha256")
+    .update(fs.readFileSync(filePath))
+    .digest("hex");
   return `${relativePath}:${stat.size}:${contentHash}`;
 }
 
@@ -145,26 +149,26 @@ export function getBundleInputManifest(): {
   directories: string[];
 } {
   return {
-    files: ROOT_INPUT_FILES.map((entry) => path.join(repoRoot, entry)).filter((entry) =>
-      fs.existsSync(entry),
+    files: ROOT_INPUT_FILES.map((entry) => path.join(repoRoot, entry)).filter(
+      (entry) => fs.existsSync(entry),
     ),
-    directories: WORKSPACE_INPUT_DIRS.map((entry) => path.join(repoRoot, entry)).filter((entry) =>
-      fs.existsSync(entry),
-    ),
+    directories: WORKSPACE_INPUT_DIRS.map((entry) =>
+      path.join(repoRoot, entry),
+    ).filter((entry) => fs.existsSync(entry)),
   };
 }
 
-export function getStagePainterInputManifest(): {
+export function getCameraLayerPainterInputManifest(): {
   files: string[];
   directories: string[];
 } {
   return {
-    files: [...ROOT_INPUT_FILES, ...STAGE_PAINTER_PACKAGE_FILES]
+    files: [...ROOT_INPUT_FILES, ...CAMERA_LAYER_PAINTER_PACKAGE_FILES]
       .map((entry) => path.join(repoRoot, entry))
       .filter((entry) => fs.existsSync(entry)),
-    directories: STAGE_PAINTER_INPUT_DIRS.map((entry) => path.join(repoRoot, entry)).filter(
-      (entry) => fs.existsSync(entry),
-    ),
+    directories: CAMERA_LAYER_PAINTER_INPUT_DIRS.map((entry) =>
+      path.join(repoRoot, entry),
+    ).filter((entry) => fs.existsSync(entry)),
   };
 }
 
@@ -190,8 +194,8 @@ export function createBundleSourceSignature(): string {
   return cachedSourceSignature;
 }
 
-export function createStagePainterSourceSignature(): string {
-  const manifest = getStagePainterInputManifest();
+export function createCameraLayerPainterSourceSignature(): string {
+  const manifest = getCameraLayerPainterInputManifest();
   const inputFiles = [...manifest.files];
   for (const directory of manifest.directories) {
     walkFiles(directory, inputFiles);
@@ -199,14 +203,17 @@ export function createStagePainterSourceSignature(): string {
 
   inputFiles.sort();
   const statFingerprint = inputFiles.map(buildFileStatFingerprint).join("\n");
-  if (cachedStagePainterSourceSignature && cachedStagePainterStatFingerprint === statFingerprint) {
-    return cachedStagePainterSourceSignature;
+  if (
+    cachedCameraLayerPainterSourceSignature &&
+    cachedCameraLayerPainterStatFingerprint === statFingerprint
+  ) {
+    return cachedCameraLayerPainterSourceSignature;
   }
 
-  cachedStagePainterStatFingerprint = statFingerprint;
-  cachedStagePainterSourceSignature = createHash("sha256")
+  cachedCameraLayerPainterStatFingerprint = statFingerprint;
+  cachedCameraLayerPainterSourceSignature = createHash("sha256")
     .update(inputFiles.map(buildFileSignature).join("\n"))
     .digest("hex")
     .slice(0, 32);
-  return cachedStagePainterSourceSignature;
+  return cachedCameraLayerPainterSourceSignature;
 }

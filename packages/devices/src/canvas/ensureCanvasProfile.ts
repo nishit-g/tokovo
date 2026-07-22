@@ -25,17 +25,6 @@ function createCanvasProfile(id: string, dim: CanvasDimensions): DeviceProfile {
     },
     pixelDensity: 1,
     safeArea: { top: 0, bottom: 0, left: 0, right: 0 },
-    camera: {
-      minZoom: 1.0,
-      maxZoom: 2.5,
-      panSpeed: "medium",
-      followLag: "medium",
-      snapThreshold: 8,
-      safeAreaTop: 0,
-      safeAreaBottom: 0,
-      followLagFactor: 0.45,
-      panSpeedMultiplier: 1.0,
-    },
   };
 }
 

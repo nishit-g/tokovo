@@ -48,7 +48,7 @@ direction, and curated catalogs all live in checked-in TypeScript.
 
 ### 4. Plugins Own App Semantics
 
-App packages own their bootstrap schemas, reducers, selectors, lowering, layouts, anchors, and UI.
+App packages own their bootstrap schemas, reducers, selectors, lowering, layouts, subjects, and UI.
 The compiler orchestrates them; it does not invent app-domain state.
 
 ## Authoring Model
@@ -113,7 +113,7 @@ Each app plugin owns:
 - bootstrap validation and hydration
 - runtime reducer and selectors
 - DSL entrypoints and lowering
-- layouts and semantic anchors
+- layouts and semantic subjects
 - UI surfaces
 
 When an app package grows large, it must expose explicit domain entrypoints instead of pushing all
@@ -171,7 +171,7 @@ That applies to:
 
 - app plugins in `video-runner` and render runtimes
 - episode catalogs in runner registries
-- anchors, behaviors, and lowering contracts
+- subjects, behaviors, and lowering contracts
 
 If a plugin is not registered, Tokovo should fail loudly rather than guess.
 
@@ -218,7 +218,7 @@ That includes:
 - keyboard lift and safe-area behavior
 
 These surfaces should scale from device logical metrics, not hardcoded render-pixel guesses.
-Camera direction targets semantic regions such as `lockscreen.clock`,
+Camera direction targets cinematic subjects such as `lockscreen.clock`,
 `homescreen.grid`, `homescreen.dock`, `notification.center`, and `keyboard`.
 
 Dynamic Island and screen-recording chrome are device-owned projections. The runtime

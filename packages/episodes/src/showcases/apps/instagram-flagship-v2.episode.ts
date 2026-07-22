@@ -40,28 +40,79 @@ export default defineEpisode({
       .snapshot("app_instagram", "phone", {
         currentUserId: "ig_me",
         users: [
-          { id: "ig_me", username: "mira.studio", displayName: "Mira Studio", bio: "Quiet frames, louder comments.", avatarUrl: "/avatars/avatar-zoe.jpg", followers: 124000, following: 620, verified: true },
-          { id: "ig_noa", username: "noa.frames", displayName: "Noa Frames", bio: "Edits and panic management.", avatarUrl: "/avatars/avatar-priya.jpg", followers: 18400, following: 240 },
+          {
+            id: "ig_me",
+            username: "mira.studio",
+            displayName: "Mira Studio",
+            bio: "Quiet frames, louder comments.",
+            avatarUrl: "/avatars/avatar-zoe.jpg",
+            followers: 124000,
+            following: 620,
+            verified: true,
+          },
+          {
+            id: "ig_noa",
+            username: "noa.frames",
+            displayName: "Noa Frames",
+            bio: "Edits and panic management.",
+            avatarUrl: "/avatars/avatar-priya.jpg",
+            followers: 18400,
+            following: 240,
+          },
         ],
         follows: [{ followerId: "ig_me", followingId: "ig_noa" }],
         posts: [
-          { id: "ig_flag_1", authorId: "ig_me", imageUrl: "/placeholders/media.svg", caption: "Teaser frame. No context. Just pressure.", createdAt: baseTs - 150000, location: "Bengaluru", likeCount: 8200, commentCount: 242, aspect: "portrait" },
+          {
+            id: "ig_flag_1",
+            authorId: "ig_me",
+            imageUrl: "/placeholders/media.svg",
+            caption: "Teaser frame. No context. Just pressure.",
+            createdAt: baseTs - 150000,
+            location: "Bengaluru",
+            likeCount: 8200,
+            commentCount: 242,
+            aspect: "portrait",
+          },
         ],
         storySets: [
           {
             id: "ig_storyset_flag",
             userId: "ig_noa",
             items: [
-              { id: "ig_story_flag_1", authorId: "ig_noa", mediaUrl: "/placeholders/media.svg", createdAt: baseTs - 90000, accentColor: "#ff8246" },
-              { id: "ig_story_flag_2", authorId: "ig_noa", mediaUrl: "/placeholders/media.svg", createdAt: baseTs - 85000, accentColor: "#f7b267" },
+              {
+                id: "ig_story_flag_1",
+                authorId: "ig_noa",
+                mediaUrl: "/placeholders/media.svg",
+                createdAt: baseTs - 90000,
+                accentColor: "#ff8246",
+              },
+              {
+                id: "ig_story_flag_2",
+                authorId: "ig_noa",
+                mediaUrl: "/placeholders/media.svg",
+                createdAt: baseTs - 85000,
+                accentColor: "#f7b267",
+              },
             ],
           },
         ],
         threads: [
-          { id: "ig_dm_flag_1", participantIds: ["ig_me", "ig_noa"], title: "Noa Frames", unreadCount: 1, pinned: true },
+          {
+            id: "ig_dm_flag_1",
+            participantIds: ["ig_me", "ig_noa"],
+            title: "Noa Frames",
+            unreadCount: 1,
+            pinned: true,
+          },
         ],
         messages: [
-          { id: "ig_dm_seed_1", threadId: "ig_dm_flag_1", senderId: "ig_noa", text: "Comments are forming factions already.", createdAt: baseTs - 20000 },
+          {
+            id: "ig_dm_seed_1",
+            threadId: "ig_dm_flag_1",
+            senderId: "ig_noa",
+            text: "Comments are forming factions already.",
+            createdAt: baseTs - 20000,
+          },
         ],
       })
       .instagram("phone", (ig) => {
@@ -110,15 +161,6 @@ export default defineEpisode({
           location: "Bengaluru",
           aspect: "portrait",
         });
-      })
-      .camera((cam) => {
-        cam.at("0s").focus("feed", { scale: 1.02, duration: "0.35s" });
-        cam.at("3.1s").focus("story_viewer", { scale: 1.08, duration: "0.35s" });
-        cam.span("6.0s", "8.8s").trackCinematic("keyboard", { scale: 1.1, smoothing: 0.18 });
-        cam.at("9.3s").focus("dm_thread", { scale: 1.08, duration: "0.35s" });
-        cam.at("13.3s").focus("notification_row", { scale: 1.08, duration: "0.35s" });
-        cam.at("15.9s").focus("profile_header", { scale: 1.08, duration: "0.35s" });
-        cam.at("18.9s").focus("composer", { scale: 1.08, duration: "0.35s" });
       })
       .build();
   },

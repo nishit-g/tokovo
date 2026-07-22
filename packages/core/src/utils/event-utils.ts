@@ -37,8 +37,7 @@ export interface KeyframedEventIndex extends EventIndex {
 export const EVENT_KIND_PRIORITY: Record<string, number> = {
   DEVICE: 1,
   APP: 2,
-  CAMERA: 3,
-  AUDIO: 4,
+  AUDIO: 3,
 };
 
 export function getEventKindPriority(kind: string): number {
@@ -242,7 +241,9 @@ export function getEventsUpToKeyframed(
     return baseEvents;
   }
 
-  const merged = new Array<TimelineEvent>(baseEvents.length + additional.length);
+  const merged = new Array<TimelineEvent>(
+    baseEvents.length + additional.length,
+  );
   for (let i = 0; i < baseEvents.length; i++) {
     merged[i] = baseEvents[i];
   }
@@ -324,7 +325,7 @@ export function filterEventsForDevice(
   return events.filter((e) => {
     const eventWithDevice = e as EventWithDeviceId;
     if (e.kind === "DEVICE") return eventWithDevice.deviceId === deviceId;
-    if (e.kind === "CAMERA" || e.kind === "AUDIO") {
+    if (e.kind === "AUDIO") {
       const d = eventWithDevice.deviceId;
       return !d || d === deviceId;
     }

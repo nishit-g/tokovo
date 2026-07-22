@@ -1,7 +1,7 @@
 import deviceRealismExhaustive from "./device-realism-exhaustive.episode.js";
 import notificationCenterExhaustive from "./notification-center-exhaustive.episode.js";
 import notificationSystemExhaustive from "./notification-system-exhaustive.episode.js";
-import cameraAnchorExhaustive from "./camera-anchor-exhaustive.episode.js";
+import cinematicSubjectExhaustive from "./cinematic-subject-exhaustive.episode.js";
 import keyboardInputExhaustive from "./keyboard-input-exhaustive.episode.js";
 import multiDeviceExhaustive from "./multi-device-exhaustive.episode.js";
 import socialLaunchMultiDevice from "./social-launch-multi-device.episode.js";
@@ -16,7 +16,7 @@ export const fixedSystemShowcaseEpisodes = [
   callScreenExhaustive,
   notificationCenterExhaustive,
   notificationSystemExhaustive,
-  cameraAnchorExhaustive,
+  cinematicSubjectExhaustive,
   keyboardInputExhaustive,
   socialLaunchMultiDevice,
   multiDeviceExhaustive,

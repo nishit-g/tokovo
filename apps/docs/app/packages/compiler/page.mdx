@@ -7,7 +7,8 @@ The compilation layer between authored episode input and runtime replay.
 - lower authored events and tracks into runtime data
 - validate and migrate plugin-owned snapshots and initial views
 - hydrate initial world state through plugin bootstrap contracts
-- host compile-time plugins such as camera and typing-indicator helpers
+- host compile-time plugins such as typing-indicator helpers
+- prepare stage and camera programs independently from story replay
 - prepare explicit input sessions into a deterministic input program
 - prepare notification intents, policy, interactions, and typed action effects into an
   immutable notification program
@@ -21,7 +22,6 @@ snapshot/view schemas; it does not synthesize chats, feeds, or threads on behalf
 - lowering helpers: `lowerTrackEvent`, `lowerTrackEvents`, `lowerEpisode`
 - plugin contracts: `CompilerPlugin`, `CompilerContext`
 - built-in plugins:
-  - `CameraDirectorPlugin`
   - `AudioDirectorPlugin`
   - `OSDirectorPlugin`
   - `TypingIndicatorPlugin`

@@ -18,7 +18,14 @@ const mockRegistries = {
       type: "phone",
       platform: "ios",
       dimensions: { width: 393, height: 852 },
-      display: { x: 0, y: 0, width: 393, height: 852, ppi: 460, cornerRadius: 55 },
+      display: {
+        x: 0,
+        y: 0,
+        width: 393,
+        height: 852,
+        ppi: 460,
+        cornerRadius: 55,
+      },
       pixelDensity: 3,
       safeArea: { top: 59, bottom: 34, left: 0, right: 0 },
     }),
@@ -68,11 +75,6 @@ function createTestWorld(overrides: Partial<WorldState> = {}): WorldState {
         },
       },
     },
-    camera: {
-      activeDeviceId: "device_1",
-      transform: { x: 0, y: 0, scale: 1, rotation: 0 },
-      activeEffects: [],
-    },
     audio: { activeSounds: [], musicBed: null },
     ...overrides,
   } as unknown as WorldState;
@@ -93,8 +95,16 @@ describe("LayoutEngine", () => {
 
       // Simulate two calls with same inputs
       // In real usage, useLayoutEngine would be called, but we test the logic
-      const worldSignature1 = computeTestWorldSignature(world, "device_1", "app_whatsapp");
-      const worldSignature2 = computeTestWorldSignature(world, "device_1", "app_whatsapp");
+      const worldSignature1 = computeTestWorldSignature(
+        world,
+        "device_1",
+        "app_whatsapp",
+      );
+      const worldSignature2 = computeTestWorldSignature(
+        world,
+        "device_1",
+        "app_whatsapp",
+      );
 
       expect(worldSignature1).toBe(worldSignature2);
     });
@@ -121,8 +131,16 @@ describe("LayoutEngine", () => {
         },
       } as Partial<WorldState>);
 
-      const sig1 = computeTestWorldSignature(world1, "device_1", "app_whatsapp");
-      const sig2 = computeTestWorldSignature(world2, "device_1", "app_whatsapp");
+      const sig1 = computeTestWorldSignature(
+        world1,
+        "device_1",
+        "app_whatsapp",
+      );
+      const sig2 = computeTestWorldSignature(
+        world2,
+        "device_1",
+        "app_whatsapp",
+      );
 
       expect(sig1).not.toBe(sig2);
     });
@@ -140,7 +158,11 @@ describe("LayoutEngine", () => {
         },
       } as Partial<WorldState>);
 
-      const sig1 = computeTestWorldSignature(world1, "device_1", "app_whatsapp");
+      const sig1 = computeTestWorldSignature(
+        world1,
+        "device_1",
+        "app_whatsapp",
+      );
       const sig2 = computeTestWorldSignature(world2, "device_1", undefined);
 
       expect(sig1).not.toBe(sig2);
@@ -222,8 +244,14 @@ describe("LayoutEngine", () => {
       safeAreaInsets: { top: 0, right: 0, bottom: 0, left: 0 },
     };
 
-    const left = computeLayout({ ...baseContext, activeDeviceId: "left" }, registry);
-    const right = computeLayout({ ...baseContext, activeDeviceId: "right" }, registry);
+    const left = computeLayout(
+      { ...baseContext, activeDeviceId: "left" },
+      registry,
+    );
+    const right = computeLayout(
+      { ...baseContext, activeDeviceId: "right" },
+      registry,
+    );
 
     expect(left.meta?.label).toBe("LEFT");
     expect(right.meta?.label).toBe("RIGHT");
@@ -240,7 +268,9 @@ function computeTestWorldSignature(
   appId: string | undefined,
 ): string {
   const device = world.devices[deviceId];
-  const appState = appId ? (world.appState as Record<string, unknown>)?.[appId] : undefined;
+  const appState = appId
+    ? (world.appState as Record<string, unknown>)?.[appId]
+    : undefined;
 
   const parts = [
     deviceId,
@@ -251,10 +281,12 @@ function computeTestWorldSignature(
     (appState as { viewMode?: string } | undefined)?.viewMode ?? "",
   ];
 
-  const conversationId = (appState as { conversationId?: string } | undefined)?.conversationId;
+  const conversationId = (appState as { conversationId?: string } | undefined)
+    ?.conversationId;
   if (conversationId && appState) {
-    const conversations = (appState as { conversations?: Record<string, { messages?: unknown[] }> })
-      .conversations;
+    const conversations = (
+      appState as { conversations?: Record<string, { messages?: unknown[] }> }
+    ).conversations;
     const convo = conversations?.[conversationId];
     if (convo?.messages) {
       parts.push(String(convo.messages.length));

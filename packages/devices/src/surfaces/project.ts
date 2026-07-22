@@ -1,4 +1,4 @@
-import type { DeviceOSState, HomeScreenConfig, Rect } from "@tokovo/core";
+import type { DeviceOSState, HomeScreenConfig, LayoutRect } from "@tokovo/core";
 import type { DeviceProfile } from "../types.js";
 import type {
   HomeScreenProjection,
@@ -21,7 +21,7 @@ function wallpaperProjection(
   return { kind: isImage ? "image" : "css", value, scrim };
 }
 
-function rect(x: number, y: number, width: number, height: number): Rect {
+function rect(x: number, y: number, width: number, height: number): LayoutRect {
   return { x, y, width, height };
 }
 
@@ -49,11 +49,17 @@ export function projectLockscreen(input: {
   const resolved = resolveOS(input.os);
   const theme = getSystemSurfaceTheme(input.profile, resolved.appearance);
   const strings = getSystemLocalizedStrings(resolved.clock, resolved.locale);
-  const time = formatSystemTime(resolved.clock, resolved.locale, resolved.hourCycle);
+  const time = formatSystemTime(
+    resolved.clock,
+    resolved.locale,
+    resolved.hourCycle,
+  );
   const [hours = "", minutes = ""] = time.split(":");
   const lock = theme.geometry.lock;
   const clockHeight =
-    theme.platform === "android" ? lock.androidClockSize * 1.72 : lock.clockSize * 1.05;
+    theme.platform === "android"
+      ? lock.androidClockSize * 1.72
+      : lock.clockSize * 1.05;
 
   return {
     kind: "lockscreen",
@@ -68,7 +74,7 @@ export function projectLockscreen(input: {
       theme.wallpaper,
       theme.wallpaperScrim,
     ),
-    anchors: {
+    cinematicSubjects: {
       "lockscreen.clock": rect(
         theme.geometry.pointScale * 20,
         lock.clockTop,
@@ -92,19 +98,24 @@ export function projectHomeScreen(input: {
   activePage?: number;
 }): HomeScreenProjection {
   if (input.config.pages.length === 0) {
-    throw new Error("SYSTEM_HOME_INVALID: a home screen must contain at least one page.");
+    throw new Error(
+      "SYSTEM_HOME_INVALID: a home screen must contain at least one page.",
+    );
   }
   const resolved = resolveOS(input.os);
   const theme = getSystemSurfaceTheme(input.profile, resolved.appearance);
   const strings = getSystemLocalizedStrings(resolved.clock, resolved.locale);
-  const activePage = Math.max(0, Math.min(input.activePage ?? 0, input.config.pages.length - 1));
+  const activePage = Math.max(
+    0,
+    Math.min(input.activePage ?? 0, input.config.pages.length - 1),
+  );
   const pageItems = input.config.pages[activePage]?.apps ?? [];
   const home = theme.geometry.home;
   const gridBottom =
     theme.platform === "ios"
       ? home.pageDotsBottom + home.searchHeight
       : home.searchBottom + home.searchHeight + home.rowGap;
-  const anchors: Record<string, Rect> = {
+  const cinematicSubjects: Record<string, LayoutRect> = {
     "homescreen.grid": rect(
       home.gridPaddingX,
       home.gridTop,
@@ -118,7 +129,9 @@ export function projectHomeScreen(input: {
       home.dockHeight,
     ),
     "homescreen.search": rect(
-      theme.platform === "ios" ? input.profile.display.width * 0.4 : home.gridPaddingX,
+      theme.platform === "ios"
+        ? input.profile.display.width * 0.4
+        : home.gridPaddingX,
       input.profile.display.height - home.searchBottom - home.searchHeight,
       theme.platform === "ios"
         ? input.profile.display.width * 0.2
@@ -127,8 +140,10 @@ export function projectHomeScreen(input: {
     ),
   };
 
-  const cellWidth = (input.profile.display.width - home.gridPaddingX * 2) / home.gridColumns;
-  const cellHeight = home.iconSize + home.labelGap + home.labelSize + home.rowGap;
+  const cellWidth =
+    (input.profile.display.width - home.gridPaddingX * 2) / home.gridColumns;
+  const cellHeight =
+    home.iconSize + home.labelGap + home.labelSize + home.rowGap;
   pageItems.forEach((item, index) => {
     if (!("appId" in item)) return;
     const visualIndex =
@@ -138,7 +153,7 @@ export function projectHomeScreen(input: {
         : index;
     const column = visualIndex % home.gridColumns;
     const row = Math.floor(visualIndex / home.gridColumns);
-    anchors[`homescreen.icon:${item.appId}`] = rect(
+    cinematicSubjects[`homescreen.icon:${item.appId}`] = rect(
       home.gridPaddingX + column * cellWidth + (cellWidth - home.iconSize) / 2,
       home.gridTop + row * cellHeight,
       home.iconSize,
@@ -152,12 +167,16 @@ export function projectHomeScreen(input: {
     locale: resolved.locale,
     direction: strings.direction,
     strings,
-    wallpaper: wallpaperProjection(input.config.wallpaper, theme.wallpaper, theme.wallpaperScrim),
+    wallpaper: wallpaperProjection(
+      input.config.wallpaper,
+      theme.wallpaper,
+      theme.wallpaperScrim,
+    ),
     activePage,
     pageCount: input.config.pages.length,
     pageItems,
     dock: input.config.dock,
     config: input.config,
-    anchors,
+    cinematicSubjects,
   };
 }

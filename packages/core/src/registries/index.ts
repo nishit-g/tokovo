@@ -11,7 +11,3 @@ export type { Registry } from "./factory.js";
 // Sound Registry
 export { createSoundRegistry } from "./sound.js";
 export type { SoundRegistryAPI } from "./sound.js";
-
-// Behavior Registry
-export { createBehaviorRegistry } from "./behavior.js";
-export type { CameraIntent, AppBehavior, BehaviorRegistryAPI } from "./behavior.js";
