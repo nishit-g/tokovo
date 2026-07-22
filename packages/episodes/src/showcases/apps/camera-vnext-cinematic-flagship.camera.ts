@@ -1,12 +1,10 @@
-import type {
-  CameraLensIR,
-  CameraModifierIR,
-  CameraPlanIR,
-  CameraRigIR,
-  CameraShotIR,
-  CinematicSubjectRefIR,
-  EpisodeCinematicsIR,
-} from "@tokovo/ir";
+import {
+  cameraSubject,
+  cinematicProgram,
+  type CinematicPlanBuilder,
+  type CinematicShotBuilder,
+} from "@tokovo/dsl";
+import type { CinematicSubjectRefIR } from "@tokovo/ir";
 
 const FPS = 60;
 const DURATION_IN_FRAMES = 1440;
@@ -14,428 +12,376 @@ const MAIN_OUTPUT_ID = "portrait-main";
 const PIP_OUTPUT_ID = "message-pip";
 const DEVICE_ID = "director-phone";
 const APP_ID = "app_whatsapp";
+const BODY_WIDTH = 1350;
+const BODY_HEIGHT = 2856;
 
-const device = (subjectId: string): CinematicSubjectRefIR => ({
-  kind: "device",
-  deviceId: DEVICE_ID,
-  subjectId,
-});
+const device = (subjectId: string): CinematicSubjectRefIR =>
+  cameraSubject.device(DEVICE_ID, subjectId);
 
-const semantic = (subjectId: string): CinematicSubjectRefIR => ({
-  kind: "semantic",
-  deviceId: DEVICE_ID,
-  appId: APP_ID,
-  subjectId,
-});
+const semantic = (subjectId: string): CinematicSubjectRefIR =>
+  cameraSubject.semantic(DEVICE_ID, APP_ID, subjectId);
 
 const message = (
   entityId: string,
   region: "bubble" | "reply" | "media" | "reactions" = "bubble",
-): CinematicSubjectRefIR => ({
-  kind: "entity",
-  deviceId: DEVICE_ID,
-  appId: APP_ID,
-  entityType: "message",
-  entityId,
-  region,
-});
+): CinematicSubjectRefIR => cameraSubject.entity(DEVICE_ID, APP_ID, "message", entityId, region);
 
-const conversationGroup: CinematicSubjectRefIR = {
-  kind: "group",
-  members: [semantic("header"), semantic("last-message"), semantic("input_area")],
-};
+const conversationGroup = cameraSubject.group(
+  semantic("header"),
+  semantic("last-message"),
+  semantic("input_area"),
+);
 
-type RigSpec = {
-  subject: CinematicSubjectRefIR;
-  screenPosition: readonly [number, number];
-  targetFill: number;
-  fillMode: CameraRigIR["composer"]["fillMode"];
-  paddingPx: number;
-  minScale: number;
-  maxScale: number;
-  motion: NonNullable<CameraRigIR["motion"]>;
-  lensId?: string;
-  modifierIds?: readonly string[];
-};
-
-const rigSpecs = {
-  neutral: {
-    subject: device("body"),
-    screenPosition: [0.5, 0.5],
-    targetFill: 0.83,
-    fillMode: "contain",
-    paddingPx: 24,
-    minScale: 0.45,
-    maxScale: 0.72,
-    motion: { type: "minimum-jerk", durationFrames: 34 },
-  },
-  opening: {
-    subject: device("body"),
-    screenPosition: [0.5, 0.51],
-    targetFill: 0.79,
-    fillMode: "contain",
-    paddingPx: 32,
-    minScale: 0.43,
-    maxScale: 0.7,
-    motion: { type: "minimum-jerk", durationFrames: 42 },
-    lensId: "opening-perspective",
-    modifierIds: ["quiet-breathing"],
-  },
-  header: {
-    subject: semantic("header"),
-    screenPosition: [0.5, 0.25],
-    targetFill: 0.72,
-    fillMode: "width",
-    paddingPx: 28,
-    minScale: 0.55,
-    maxScale: 0.9,
-    motion: { type: "minimum-jerk", durationFrames: 28 },
-    lensId: "header-barrel",
-  },
-  keyboardFisheye: {
-    subject: device("keyboard"),
-    screenPosition: [0.5, 0.7],
-    targetFill: 0.77,
-    fillMode: "width",
-    paddingPx: 24,
-    minScale: 0.58,
-    maxScale: 0.84,
-    motion: { type: "critically-damped", responseFrames: 24 },
-    lensId: "typing-fisheye",
-  },
-  keyboardAnamorphic: {
-    subject: device("keyboard"),
-    screenPosition: [0.5, 0.69],
-    targetFill: 0.79,
-    fillMode: "width",
-    paddingPx: 20,
-    minScale: 0.58,
-    maxScale: 0.86,
-    motion: { type: "critically-damped", responseFrames: 22 },
-    lensId: "keyboard-edge-stretch",
-  },
-  sentMessage: {
-    subject: message("director_reply"),
-    screenPosition: [0.52, 0.61],
-    targetFill: 0.52,
-    fillMode: "width",
-    paddingPx: 42,
-    minScale: 0.66,
-    maxScale: 1.32,
-    motion: { type: "critically-damped", responseFrames: 26 },
-    modifierIds: ["quiet-breathing"],
-  },
-  notificationWhip: {
-    subject: device("notification.banner"),
-    screenPosition: [0.5, 0.2],
-    targetFill: 0.73,
-    fillMode: "width",
-    paddingPx: 24,
-    minScale: 0.54,
-    maxScale: 0.92,
-    motion: { type: "whip", durationFrames: 20, direction: "left" },
-  },
-  media: {
-    subject: message("launch_board", "media"),
-    screenPosition: [0.5, 0.55],
-    targetFill: 0.58,
-    fillMode: "contain",
-    paddingPx: 34,
-    minScale: 0.63,
-    maxScale: 1.2,
-    motion: { type: "minimum-jerk", durationFrames: 30 },
-    lensId: "media-perspective",
-  },
-  navigation: {
-    subject: device("screen"),
-    screenPosition: [0.5, 0.5],
-    targetFill: 0.88,
-    fillMode: "contain",
-    paddingPx: 14,
-    minScale: 0.5,
-    maxScale: 0.76,
-    motion: { type: "minimum-jerk", durationFrames: 32 },
-    lensId: "navigation-edge-stretch",
-  },
-  conversation: {
-    subject: conversationGroup,
-    screenPosition: [0.5, 0.5],
-    targetFill: 0.84,
-    fillMode: "contain",
-    paddingPx: 30,
-    minScale: 0.5,
-    maxScale: 0.78,
-    motion: { type: "minimum-jerk", durationFrames: 36 },
-  },
-} satisfies Record<string, RigSpec>;
-
-type RigId = keyof typeof rigSpecs;
-
-function buildRigs(kinetic: boolean): CameraRigIR[] {
-  const mainRigs = (Object.entries(rigSpecs) as [RigId, RigSpec][]).map(
-    ([id, spec]): CameraRigIR => ({
-      id,
+function addOutputs(camera: CinematicPlanBuilder): void {
+  camera
+    .output(MAIN_OUTPUT_ID, {
+      viewport: { x: 0, y: 0, width: 1080, height: 1920 },
+      defaultRigId: "neutral",
+    })
+    .output(PIP_OUTPUT_ID, {
+      viewport: { x: 570, y: 250, width: 480, height: 220 },
+      zIndex: 20,
+      clipRadiusPx: 32,
+      shadow: { offsetX: 0, offsetY: 18, blurPx: 28, opacity: 0.58 },
+      defaultRigId: "pip-hidden",
+    })
+    .rig("neutral", {
       outputId: MAIN_OUTPUT_ID,
-      subject: spec.subject,
+      subject: device("body"),
       composer: {
-        screenPosition: spec.screenPosition,
-        targetFill: spec.targetFill,
-        fillMode: spec.fillMode,
-        paddingPx: spec.paddingPx,
-        minScale: spec.minScale,
-        maxScale: spec.maxScale,
+        screenPosition: [0.5, 0.5],
+        targetFill: 0.83,
+        fillMode: "contain",
+        paddingPx: 24,
+        minScale: 0.45,
+        maxScale: 0.72,
       },
       framingGuard: {
         subject: device("body"),
         paddingPx: 28,
         screenPosition: [0.5, 0.5],
       },
-      motion:
-        !kinetic && spec.motion.type === "whip"
-          ? { type: "minimum-jerk", durationFrames: 30 }
-          : spec.motion,
-      ...(kinetic && spec.lensId ? { lensId: spec.lensId } : {}),
-      ...(kinetic && spec.modifierIds ? { modifierIds: spec.modifierIds } : {}),
-    }),
-  );
-  const pipComposer = {
-    screenPosition: [0.5, 0.4] as const,
-    targetFill: 0.9,
-    fillMode: "width" as const,
-    paddingPx: 14,
-    minScale: 0.38,
-    maxScale: 0.72,
-  };
-  return [
-    ...mainRigs,
-    {
-      id: "pip-hidden",
+      motion: { type: "minimum-jerk", durationFrames: 34 },
+    })
+    .rig("pip-hidden", {
       outputId: PIP_OUTPUT_ID,
       subject: device("screen"),
-      composer: pipComposer,
+      composer: {
+        screenPosition: [0.5, 0.4],
+        targetFill: 0.9,
+        fillMode: "width",
+        paddingPx: 14,
+        minScale: 0.38,
+        maxScale: 0.72,
+      },
       opacity: 0,
       motion: { type: "minimum-jerk", durationFrames: 24 },
-    },
-    {
-      id: "pip-message",
-      outputId: PIP_OUTPUT_ID,
-      subject: message("director_reply"),
-      composer: pipComposer,
-      opacity: 0.96,
-      motion: { type: "minimum-jerk", durationFrames: 26 },
-    },
-  ];
+    });
 }
 
-function fallbackFor(rigId: RigId): CinematicSubjectRefIR {
-  if (rigId === "keyboardFisheye" || rigId === "keyboardAnamorphic") {
-    return semantic("input_area");
-  }
-  if (rigId === "notificationWhip" || rigId === "media" || rigId === "sentMessage") {
-    return device("screen");
-  }
-  return device("body");
-}
-
-function mainShot(
-  id: string,
-  startFrame: number,
-  endFrame: number,
-  rigId: RigId,
-  declarationOrder: number,
-): CameraShotIR {
-  return {
-    id,
-    outputId: MAIN_OUTPUT_ID,
-    startFrame,
-    endFrame,
-    rigId,
-    priority: 10,
-    declarationOrder,
-    blendIn: {
-      durationFrames: rigId === "notificationWhip" ? 20 : 28,
-      curve: "minimum-jerk",
-    },
-    missingSubjectPolicy:
-      rigId === "neutral" || rigId === "opening" || rigId === "navigation"
-        ? { type: "error" }
-        : { type: "use-explicit", fallback: fallbackFor(rigId) },
-    source: "authored",
-  };
-}
-
-const shots: CameraShotIR[] = [
-  mainShot("oblique-stage-open", 0, 120, "opening", 0),
-  mainShot("barrel-header-arrival", 120, 240, "header", 1),
-  mainShot("fisheye-keyboard-entry", 240, 390, "keyboardFisheye", 2),
-  mainShot("anamorphic-keyboard-run", 390, 540, "keyboardAnamorphic", 3),
-  mainShot("exact-sent-message", 540, 636, "sentMessage", 4),
-  mainShot("notification-whip", 636, 750, "notificationWhip", 5),
-  mainShot("exact-media-reframe", 750, 930, "media", 6),
-  mainShot("semantic-navigation", 930, 1140, "navigation", 7),
-  mainShot("conversation-group-settle", 1140, 1320, "conversation", 8),
-  mainShot("neutral-final", 1320, DURATION_IN_FRAMES, "neutral", 9),
-  {
-    id: "pip-message-hold",
-    outputId: PIP_OUTPUT_ID,
-    startFrame: 540,
-    endFrame: 636,
-    rigId: "pip-message",
-    priority: 10,
-    declarationOrder: 10,
-    blendIn: { durationFrames: 28, curve: "minimum-jerk" },
-    missingSubjectPolicy: { type: "use-explicit", fallback: device("screen") },
-    source: "authored",
-  },
-  {
-    id: "pip-message-fade",
-    outputId: PIP_OUTPUT_ID,
-    startFrame: 636,
-    endFrame: 672,
-    rigId: "pip-hidden",
-    priority: 10,
-    declarationOrder: 11,
-    blendIn: { durationFrames: 24, curve: "minimum-jerk" },
-    missingSubjectPolicy: { type: "error" },
-    source: "authored",
-  },
-];
-
-const lenses: CameraLensIR[] = [
-  {
-    id: "opening-perspective",
-    modelId: "perspective-tilt",
-    modelVersion: 1,
-    parameters: {
-      tiltXDeg: 5.5,
-      tiltYDeg: -3.2,
-      perspectivePx: 1750,
-      cropCompensation: 1.035,
-    },
-  },
-  {
-    id: "header-barrel",
-    modelId: "wide-angle-barrel",
-    modelVersion: 1,
-    parameters: {
+function addOptics(camera: CinematicPlanBuilder): void {
+  camera
+    .lens("header-barrel", "wide-angle-barrel", {
       center: [0.5, 0.3],
       strength: 0.105,
       radius: 1.12,
       cropCompensation: 1.035,
-    },
-  },
-  {
-    id: "typing-fisheye",
-    modelId: "fisheye",
-    modelVersion: 1,
-    parameters: {
+    })
+    .lens("typing-fisheye", "fisheye", {
       center: [0.5, 0.7],
       strength: 0.12,
       radius: 1.16,
       cropCompensation: 1.045,
-    },
-  },
-  {
-    id: "keyboard-edge-stretch",
-    modelId: "anamorphic-edge-stretch",
-    modelVersion: 1,
-    parameters: {
+    })
+    .lens("keyboard-edge-stretch", "anamorphic-edge-stretch", {
       axis: "horizontal",
       strength: 0.115,
       edgeStart: 0.72,
       cropCompensation: 1.035,
-    },
-  },
-  {
-    id: "media-perspective",
-    modelId: "perspective-tilt",
-    modelVersion: 1,
-    parameters: {
-      tiltXDeg: -2.8,
-      tiltYDeg: 3.6,
-      perspectivePx: 1900,
-      cropCompensation: 1.025,
-    },
-  },
-  {
-    id: "navigation-edge-stretch",
-    modelId: "anamorphic-edge-stretch",
-    modelVersion: 1,
-    parameters: {
+    })
+    .lens("navigation-edge-stretch", "anamorphic-edge-stretch", {
       axis: "vertical",
       strength: 0.08,
       edgeStart: 0.78,
       cropCompensation: 1.025,
-    },
-  },
-];
-
-const modifiers: CameraModifierIR[] = [
-  {
-    id: "quiet-breathing",
-    modelId: "lens-breathing",
-    modelVersion: 1,
-    parameters: { amount: 0.0045, periodFrames: 240 },
-  },
-];
-
-function plan(id: string, kinetic: boolean): CameraPlanIR {
-  return {
-    version: 1,
-    id,
-    fps: FPS,
-    durationInFrames: DURATION_IN_FRAMES,
-    outputs: [
-      {
-        id: MAIN_OUTPUT_ID,
-        viewport: { x: 0, y: 0, width: 1080, height: 1920 },
-        sourceStageNodeId: "stage.root",
-        zIndex: 0,
-        defaultRigId: "neutral",
-      },
-      {
-        id: PIP_OUTPUT_ID,
-        viewport: { x: 570, y: 250, width: 480, height: 220 },
-        sourceStageNodeId: "stage.root",
-        zIndex: 20,
-        clipRadiusPx: 32,
-        shadow: { offsetX: 0, offsetY: 18, blurPx: 28, opacity: 0.58 },
-        defaultRigId: "pip-hidden",
-      },
-    ],
-    rigs: buildRigs(kinetic),
-    shots,
-    lenses: kinetic ? lenses : [],
-    modifiers: kinetic ? modifiers : [],
-  };
+    })
+    .modifier("quiet-breathing", "lens-breathing", {
+      amount: 0.0045,
+      periodFrames: 240,
+    })
+    .filter("cool-studio", "color-grade", {
+      brightness: -0.018,
+      contrast: 1.06,
+      saturation: 0.94,
+      gamma: 0.98,
+      temperature: -0.08,
+      tint: 0.025,
+    })
+    .filter("typing-focus", "color-grade", {
+      brightness: -0.01,
+      contrast: 1.1,
+      saturation: 0.91,
+      gamma: 0.97,
+      temperature: -0.04,
+      tint: 0.03,
+    })
+    .filter("media-proof", "color-grade", {
+      brightness: 0.012,
+      contrast: 1.12,
+      saturation: 1.04,
+      gamma: 1.01,
+      temperature: 0.05,
+      tint: 0.01,
+    });
 }
 
-const restrainedPlan = plan("restrained", false);
-const kineticPlan = plan("kinetic", true);
+function guardBody(shot: CinematicShotBuilder): CinematicShotBuilder {
+  return shot.guard(device("body"), {
+    paddingPx: 28,
+    screenPosition: [0.5, 0.5],
+  });
+}
 
-export const cameraVNextCinematicFlagshipCinematics: EpisodeCinematicsIR = {
-  stageProgram: {
-    version: 1,
-    rootNodeId: "stage.root",
-    nodes: [
-      {
-        id: "stage.root",
-        source: { kind: "group" },
-        localBounds: { x: 0, y: 0, width: 1290, height: 2796 },
-        initialTransform: { a: 1, b: 0, c: 0, d: 1, tx: 0, ty: 0 },
-        zIndex: 0,
-      },
-      {
-        id: "device.director-phone",
-        parentId: "stage.root",
-        source: { kind: "device", deviceId: DEVICE_ID },
-        localBounds: { x: 0, y: 0, width: 1290, height: 2796 },
-        initialTransform: { a: 1, b: 0, c: 0, d: 1, tx: 0, ty: 0 },
-        zIndex: 10,
-      },
-    ],
-    transformKeyframes: [],
+function addMainShots(camera: CinematicPlanBuilder, kinetic: boolean): void {
+  camera
+    .shot("oblique-stage-open", MAIN_OUTPUT_ID, 0, 120, (shot) => {
+      guardBody(shot)
+        .target(device("body"))
+        .frame({
+          screenPosition: [0.5, 0.51],
+          targetFill: 0.79,
+          fillMode: "contain",
+          paddingPx: 32,
+          minScale: 0.43,
+          maxScale: 0.7,
+        })
+        .modifiers("quiet-breathing")
+        .filters("cool-studio");
+      if (kinetic) {
+        shot.orbit({
+          duration: 42,
+          amount: 0.34,
+          yawDeg: -3.2,
+          pitchDeg: 5.5,
+          perspectivePx: 1750,
+          cropCompensation: 1.035,
+        });
+      } else {
+        shot.dollyIn({ duration: 42, toFill: 0.79, amount: 0.18 });
+      }
+    })
+    .shot("barrel-header-arrival", MAIN_OUTPUT_ID, 120, 240, (shot) => {
+      guardBody(shot)
+        .target(semantic("header"))
+        .frame({
+          screenPosition: [0.5, 0.25],
+          targetFill: 0.72,
+          fillMode: "width",
+          paddingPx: 28,
+          minScale: 0.55,
+          maxScale: 0.9,
+        })
+        .fallback(device("body"))
+        .filters("cool-studio")
+        .dollyIn({ duration: 28, toFill: 0.72, amount: 0.22 });
+      if (kinetic) shot.lens("header-barrel");
+    })
+    .shot("fisheye-keyboard-entry", MAIN_OUTPUT_ID, 240, 390, (shot) => {
+      guardBody(shot)
+        .target(device("keyboard"))
+        .frame({
+          screenPosition: [0.5, 0.7],
+          targetFill: 0.77,
+          fillMode: "width",
+          paddingPx: 24,
+          minScale: 0.58,
+          maxScale: 0.84,
+        })
+        .fallback(semantic("input_area"))
+        .filters("typing-focus")
+        .dollyIn({ duration: 24, toFill: 0.77, amount: 0.2 });
+      if (kinetic) shot.lens("typing-fisheye");
+    })
+    .shot("anamorphic-keyboard-run", MAIN_OUTPUT_ID, 390, 540, (shot) => {
+      guardBody(shot)
+        .target(device("keyboard"))
+        .frame({
+          screenPosition: [0.5, 0.69],
+          targetFill: 0.79,
+          fillMode: "width",
+          paddingPx: 20,
+          minScale: 0.58,
+          maxScale: 0.86,
+        })
+        .fallback(semantic("input_area"))
+        .filters("typing-focus")
+        .truckLeft({ duration: 22, amount: 0.026 });
+      if (kinetic) shot.lens("keyboard-edge-stretch");
+    })
+    .shot("exact-sent-message", MAIN_OUTPUT_ID, 540, 636, (shot) => {
+      guardBody(shot)
+        .target(message("director_reply"))
+        .frame({
+          screenPosition: [0.52, 0.61],
+          targetFill: 0.52,
+          fillMode: "width",
+          paddingPx: 42,
+          minScale: 0.66,
+          maxScale: 1.32,
+        })
+        .fallback(device("screen"))
+        .modifiers("quiet-breathing")
+        .filters("cool-studio")
+        .dollyIn({ duration: 26, toFill: 0.52, amount: 0.14 });
+    })
+    .shot("notification-whip", MAIN_OUTPUT_ID, 636, 750, (shot) => {
+      guardBody(shot)
+        .target(device("notification.banner"))
+        .frame({
+          screenPosition: [0.5, 0.2],
+          targetFill: 0.73,
+          fillMode: "width",
+          paddingPx: 24,
+          minScale: 0.54,
+          maxScale: 0.92,
+        })
+        .fallback(device("screen"))
+        .filters("cool-studio");
+      if (kinetic) shot.whip("left", 20);
+      else shot.settle(30);
+    })
+    .shot("exact-media-reframe", MAIN_OUTPUT_ID, 750, 930, (shot) => {
+      guardBody(shot)
+        .target(message("launch_board", "media"))
+        .frame({
+          screenPosition: [0.5, 0.55],
+          targetFill: 0.58,
+          fillMode: "contain",
+          paddingPx: 34,
+          minScale: 0.63,
+          maxScale: 1.2,
+        })
+        .fallback(device("screen"))
+        .filters("media-proof");
+      if (kinetic) {
+        shot.orbit({
+          duration: 30,
+          amount: 0.24,
+          yawDeg: 3.6,
+          pitchDeg: -2.8,
+          perspectivePx: 1900,
+          cropCompensation: 1.025,
+        });
+      } else {
+        shot.dollyOut({ duration: 30, toFill: 0.58, amount: 0.12 });
+      }
+    })
+    .shot("semantic-navigation", MAIN_OUTPUT_ID, 930, 1140, (shot) => {
+      guardBody(shot)
+        .target(device("screen"))
+        .frame({
+          screenPosition: [0.5, 0.5],
+          targetFill: 0.88,
+          fillMode: "contain",
+          paddingPx: 14,
+          minScale: 0.5,
+          maxScale: 0.76,
+        })
+        .filters("cool-studio")
+        .craneUp({ duration: 32, amount: 0.022, toFill: 0.88 });
+      if (kinetic) shot.lens("navigation-edge-stretch");
+    })
+    .shot("conversation-group-settle", MAIN_OUTPUT_ID, 1140, 1320, (shot) => {
+      guardBody(shot)
+        .target(conversationGroup)
+        .frame({
+          screenPosition: [0.5, 0.5],
+          targetFill: 0.84,
+          fillMode: "contain",
+          paddingPx: 30,
+          minScale: 0.5,
+          maxScale: 0.78,
+        })
+        .fallback(device("body"))
+        .filters("cool-studio")
+        .dollyOut({ duration: 36, toFill: 0.84, amount: 0.1 });
+    })
+    .shot("neutral-final", MAIN_OUTPUT_ID, 1320, DURATION_IN_FRAMES, (shot) => {
+      guardBody(shot)
+        .target(device("body"))
+        .frame({
+          screenPosition: [0.5, 0.5],
+          targetFill: 0.83,
+          fillMode: "contain",
+          paddingPx: 24,
+          minScale: 0.45,
+          maxScale: 0.72,
+        })
+        .dollyOut({ duration: 34, toFill: 0.83, amount: 0.08 });
+    });
+}
+
+function addPipShots(camera: CinematicPlanBuilder): void {
+  camera
+    .shot("pip-message-hold", PIP_OUTPUT_ID, 540, 636, (shot) =>
+      shot
+        .target(message("director_reply"))
+        .frame({
+          screenPosition: [0.5, 0.4],
+          targetFill: 0.9,
+          fillMode: "width",
+          paddingPx: 14,
+          minScale: 0.38,
+          maxScale: 0.72,
+        })
+        .fallback(device("screen"))
+        .opacity(0.96)
+        .priority(10)
+        .filters("cool-studio")
+        .dollyIn({ duration: 28, toFill: 0.9, amount: 0.1 }),
+    )
+    .shot("pip-message-fade", PIP_OUTPUT_ID, 636, 672, (shot) =>
+      shot
+        .target(device("screen"))
+        .frame({
+          screenPosition: [0.5, 0.4],
+          targetFill: 0.9,
+          fillMode: "width",
+          paddingPx: 14,
+          minScale: 0.38,
+          maxScale: 0.72,
+        })
+        .opacity(0)
+        .settle(24),
+    );
+}
+
+function addPlan(camera: CinematicPlanBuilder, kinetic: boolean): void {
+  addOutputs(camera);
+  addOptics(camera);
+  addMainShots(camera, kinetic);
+  addPipShots(camera);
+}
+
+export const cameraVNextCinematicFlagshipCinematics = cinematicProgram(
+  {
+    fps: FPS,
+    duration: DURATION_IN_FRAMES,
+    stage: {
+      width: BODY_WIDTH,
+      height: BODY_HEIGHT,
+      devices: [
+        {
+          deviceId: DEVICE_ID,
+          width: BODY_WIDTH,
+          height: BODY_HEIGHT,
+        },
+      ],
+    },
   },
-  cameraPlans: [restrainedPlan, kineticPlan],
-  defaultCameraPlanId: kineticPlan.id,
-};
+  (cinema) => {
+    cinema
+      .plan("restrained", (camera) => addPlan(camera, false))
+      .plan("kinetic", (camera) => addPlan(camera, true), { default: true });
+  },
+);

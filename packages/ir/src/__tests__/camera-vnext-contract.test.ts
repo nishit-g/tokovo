@@ -43,6 +43,7 @@ describe("Camera VNext IR", () => {
       shots: [],
       lenses: [],
       modifiers: [],
+      filters: [],
     };
     const stage: StageProgramIR = {
       version: 1,
@@ -98,6 +99,7 @@ describe("Camera VNext IR", () => {
       shots: [],
       lenses: [],
       modifiers: [],
+      filters: [],
     });
 
     expect(() =>

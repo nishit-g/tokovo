@@ -1,15 +1,11 @@
 import { describe, expect, it } from "vitest";
-import {
-  createCinematicSubjectRegistry,
-  type LayoutState,
-  type WorldState,
-} from "@tokovo/core";
+import { createCinematicSubjectRegistry, type LayoutState, type WorldState } from "@tokovo/core";
 import { evaluateStageFrame, prepareStageProgram } from "@tokovo/stage";
 import type { LayoutEngineOutput } from "../engines/useLayoutEngine.js";
 import { projectCinematicFrame } from "../camera/projectCinematicFrame.js";
 
 describe("cinematic coordinate-space bridge", () => {
-  it("maps app-logical subjects through the same scale as AppSurface", () => {
+  it("maps app-logical subjects through the display inset and the same scale as AppSurface", () => {
     const registry = createCinematicSubjectRegistry();
     registry.register({
       ownerId: "app_test",
@@ -68,6 +64,14 @@ describe("cinematic coordinate-space bridge", () => {
       layout: { kind: "FEED", meta: {} } as LayoutState,
       profile: {
         dimensions: { width: 1179, height: 2556 },
+        display: {
+          x: 24,
+          y: 30,
+          width: 1131,
+          height: 2496,
+          ppi: 460,
+          cornerRadius: 150,
+        },
       },
     } as LayoutEngineOutput;
 
@@ -80,10 +84,18 @@ describe("cinematic coordinate-space bridge", () => {
     });
 
     const message = projected.subjects.find(
-      (subject) =>
-        subject.ref.kind === "semantic" && subject.ref.subjectId === "message",
+      (subject) => subject.ref.kind === "semantic" && subject.ref.subjectId === "message",
     );
-    expect(message?.localRect).toEqual({ x: 30, y: 60, width: 300, height: 120 });
-    expect(message?.worldRect).toEqual({ x: 80, y: 130, width: 300, height: 120 });
+    expect(message?.localRect).toEqual({ x: 54, y: 90, width: 300, height: 120 });
+    expect(message?.worldRect).toEqual({ x: 104, y: 160, width: 300, height: 120 });
+
+    const body = projected.subjects.find(
+      (subject) => subject.ref.kind === "device" && subject.ref.subjectId === "body",
+    );
+    const screen = projected.subjects.find(
+      (subject) => subject.ref.kind === "device" && subject.ref.subjectId === "screen",
+    );
+    expect(body?.localRect).toEqual({ x: 0, y: 0, width: 1179, height: 2556 });
+    expect(screen?.localRect).toEqual({ x: 24, y: 30, width: 1131, height: 2496 });
   });
 });

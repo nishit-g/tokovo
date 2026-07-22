@@ -158,11 +158,11 @@ export default defineEpisode({
           preset: "topLeft",
           durationFrames: 108,
         });
-        overlay.at("4.05s").receipt("02 · FISHEYE → ANAMORPHIC KEYBOARD", {
+        overlay.at("4.05s").receipt("02 · FISHEYE → ANAMORPHIC", {
           preset: "topLeft",
           durationFrames: 264,
         });
-        overlay.at("9.05s").receipt("INDEPENDENT MESSAGE PIP · SAME STORY", {
+        overlay.at("9.05s").receipt("INDEPENDENT PIP · SAME STORY", {
           preset: "topLeft",
           durationFrames: 90,
         });
@@ -170,7 +170,7 @@ export default defineEpisode({
           preset: "topLeft",
           durationFrames: 102,
         });
-        overlay.at("12.55s").caption("04 · ENTITY-LOCKED MEDIA REFRAME", {
+        overlay.at("12.55s").caption("04 · ENTITY-LOCKED MEDIA", {
           durationFrames: 132,
         });
         overlay.at("16.1s").caption("05 · SEMANTIC NAVIGATION", {

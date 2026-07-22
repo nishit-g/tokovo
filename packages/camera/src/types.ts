@@ -1,4 +1,11 @@
-import type { CameraPlanIR, CameraRectIR, CameraRigIR, CameraShotIR, JsonObject } from "@tokovo/ir";
+import type {
+  CameraMovementIntentIR,
+  CameraPlanIR,
+  CameraRectIR,
+  CameraRigIR,
+  CameraShotIR,
+  JsonObject,
+} from "@tokovo/ir";
 import type { StageProjectedCinematicSubject } from "@tokovo/stage";
 
 /** Row-major 3x3 projective matrix. */
@@ -66,6 +73,15 @@ export type CameraProjectionPass =
       spreadPx: number;
       samples: number;
       decay: number;
+    }
+  | {
+      kind: "color-grade";
+      brightness: number;
+      contrast: number;
+      saturation: number;
+      gamma: number;
+      temperature: number;
+      tint: number;
     };
 
 export interface CameraDiagnostic {
@@ -97,6 +113,7 @@ export interface CameraTransitionTrace {
   curve: "linear" | "smoothstep" | "minimum-jerk" | "critically-damped";
   progress: number;
   whipActive: boolean;
+  movementIntent: CameraMovementIntentIR | null;
 }
 
 export interface CameraEvaluationTrace {
@@ -177,6 +194,14 @@ export interface CameraLensModel {
   id: string;
   version: number;
   /** Declared capability keeps render routing explicit for third-party models. */
+  projectionBackendRequirement: "composited" | "texture";
+  validate(parameters: JsonObject): readonly string[];
+  evaluate(context: LensModelContext): readonly CameraProjectionPass[];
+}
+
+export interface CameraFilterModel {
+  id: string;
+  version: number;
   projectionBackendRequirement: "composited" | "texture";
   validate(parameters: JsonObject): readonly string[];
   evaluate(context: LensModelContext): readonly CameraProjectionPass[];

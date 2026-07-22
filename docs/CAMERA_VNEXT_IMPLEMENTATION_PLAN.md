@@ -565,6 +565,43 @@ connect multi-device stage painting: `EpisodeRenderer` still rejects a Camera VN
 more than one device, and the old event-camera system remains for unmigrated episodes until the
 repository-wide hard cut.
 
+### Typed direction, physical display, and grading checkpoint — 2026-07-22
+
+The flagship camera surface is now authorable without constructing raw CameraPlan IR, and the
+device geometry seen by camera matches the physical device painter:
+
+- `cinematicProgram`, `cameraSubject`, and typed plan/shot builders own stage, outputs, rigs, shots,
+  lenses, modifiers, and filters as JSON-safe episode data;
+- typed movement verbs cover dolly, truck, pedestal, pan, tilt, roll, crane, orbit, cut, settle, and
+  whip, with authored movement intent retained in deterministic trace data;
+- `orbit` is explicitly a projective 2.5D plate movement today, leaving a stable intent boundary for
+  a future true multi-plane renderer without pretending current output has 3D parallax;
+- deterministic color-grade filters are explicitly registered, validated, interpolated, traced,
+  previewed, and executed by named FFmpeg filters after geometric projection and before smear;
+- iPhone and Pixel profiles now distinguish physical body bounds from an inset display aperture;
+  app, keyboard, notification, and OS geometry uses display dimensions while device-body subjects
+  remain in body space;
+- the flagship is authored entirely with the new builder and includes restrained and kinetic plans,
+  four geometric lens looks, breathing and smear modifiers, three grades, an independent message
+  PIP, semantic/entity targeting, and a clean neutral landing.
+
+Evidence at this checkpoint:
+
+- the complete 1440-frame kinetic episode rendered and decoded at 1080x1920/60 with H.264 video and
+  AAC audio;
+- full-resolution inspection covered the oblique opening, fisheye keyboard, notification whip,
+  projective media reframe, semantic navigation, and final neutral settle;
+- the display is visibly inset inside the body/glass rail at both wide and close framing, with no
+  episode-authored bezel compensation;
+- renderer coordinate-space regression coverage proves body-space geometry remains at the origin
+  while screen/app geometry receives the exact profile display inset;
+- DSL: 13 tests passing; camera: 17; IR: 8; episodes: 17; renderer: 12; render service: 20.
+
+This checkpoint does not claim repository-wide legacy deletion. Forty-seven episode files still
+author event-camera choreography, and multi-device VNext painting remains intentionally fail-closed.
+Deleting the old package before those two migrations would silently remove direction from shipped
+episodes, so Phase 10 remains gated rather than being papered over with a compatibility adapter.
+
 ### Phase 0: Architecture lock and renderer feasibility
 
 Status: In progress
@@ -861,7 +898,7 @@ Delete:
 - [ ] old renderer hook and debug types;
 - [ ] camera runtime plugin manifest entry;
 - [ ] old camera CLI and migration commands;
-- [ ] Camera V1 reference documentation;
+- [x] Camera V1 reference documentation (deleted and replaced by `docs/CAMERA_REFERENCE.md`);
 - [ ] obsolete mechanical tests;
 - [ ] every `@tokovo/device-camera` package dependency and TypeScript reference.
 

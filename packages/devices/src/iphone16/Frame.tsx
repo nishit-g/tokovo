@@ -16,6 +16,7 @@ export const iPhone16Frame: React.FC<FrameProps> = ({
   homeIndicatorTheme = "light",
 }) => {
   const { width, height } = iPhone16Profile.dimensions;
+  const display = iPhone16Profile.display;
   const C = iPhone16Constants;
   const metrics = getIOSChromeMetrics(iPhone16Profile);
 
@@ -24,7 +25,7 @@ export const iPhone16Frame: React.FC<FrameProps> = ({
       width,
       height,
       background: "linear-gradient(145deg, #25252a 0%, #0b0b0d 30%, #050506 72%, #1b1b1f 100%)",
-      borderRadius: C.CORNER_RADIUS,
+      borderRadius: C.BODY_CORNER_RADIUS,
       filter:
         "drop-shadow(0 1px 1px rgba(255, 255, 255, 0.08)) drop-shadow(0 24px 34px rgba(0, 0, 0, 0.58))",
       position: "relative" as const,
@@ -39,21 +40,38 @@ export const iPhone16Frame: React.FC<FrameProps> = ({
     () => ({
       position: "absolute" as const,
       inset: 0,
-      border: `${C.BEZEL_WIDTH}px solid rgba(7, 8, 10, 0.985)`,
-      borderRadius: C.CORNER_RADIUS,
+      border: "1px solid rgba(7, 8, 10, 0.985)",
+      borderRadius: C.BODY_CORNER_RADIUS,
       boxShadow: "inset 0 0 0 1px rgba(0, 0, 0, 0.88), inset 0 1px 0 rgba(255, 255, 255, 0.055)",
       boxSizing: "border-box" as const,
       pointerEvents: "none" as const,
       zIndex: 9998,
     }),
-    [C.BEZEL_WIDTH, C.CORNER_RADIUS],
+    [C.BODY_CORNER_RADIUS],
+  );
+
+  const displayStyle = useMemo(
+    () => ({
+      position: "absolute" as const,
+      left: display.x,
+      top: display.y,
+      width: display.width,
+      height: display.height,
+      borderRadius: display.cornerRadius,
+      backgroundColor: "#000",
+      boxShadow: "0 0 0 1px rgba(0, 0, 0, 0.96), inset 0 0 1px rgba(255, 255, 255, 0.025)",
+      overflow: "hidden" as const,
+      display: "flex" as const,
+      flexDirection: "column" as const,
+    }),
+    [display],
   );
 
   const frontGlassStyle = useMemo(
     () => ({
       position: "absolute" as const,
       inset: 0,
-      borderRadius: C.CORNER_RADIUS,
+      borderRadius: C.BODY_CORNER_RADIUS,
       background:
         "linear-gradient(145deg, rgba(255, 255, 255, 0.018) 0%, rgba(255, 255, 255, 0) 24%, rgba(255, 255, 255, 0) 76%, rgba(255, 255, 255, 0.008) 100%)",
       boxShadow:
@@ -61,7 +79,7 @@ export const iPhone16Frame: React.FC<FrameProps> = ({
       pointerEvents: "none" as const,
       zIndex: 9997,
     }),
-    [C.CORNER_RADIUS],
+    [C.BODY_CORNER_RADIUS],
   );
 
   const statusBarAreaStyle = useMemo(
@@ -103,12 +121,12 @@ export const iPhone16Frame: React.FC<FrameProps> = ({
       flexDirection: "column" as const,
       position: "relative" as const,
       overflow: "hidden" as const,
-      borderRadius: C.CORNER_RADIUS,
-      clipPath: `inset(0px round ${C.CORNER_RADIUS}px)`,
+      borderRadius: display.cornerRadius,
+      clipPath: `inset(0px round ${display.cornerRadius}px)`,
       transform: "translateZ(0)",
       willChange: "transform" as const,
     }),
-    [],
+    [display.cornerRadius],
   );
 
   const homeIndicatorStyle = useMemo(
@@ -136,11 +154,13 @@ export const iPhone16Frame: React.FC<FrameProps> = ({
 
   return (
     <div style={containerStyle}>
-      <div style={statusBarAreaStyle}>{statusBar}</div>
-      {dynamicIsland ?? <div style={dynamicIslandStyle} />}
-      <div style={screenStyle}>
-        {children}
-        {homeIndicatorTheme !== "hidden" ? <div style={homeIndicatorStyle} /> : null}
+      <div style={displayStyle}>
+        <div style={statusBarAreaStyle}>{statusBar}</div>
+        {dynamicIsland ?? <div style={dynamicIslandStyle} />}
+        <div style={screenStyle}>
+          {children}
+          {homeIndicatorTheme !== "hidden" ? <div style={homeIndicatorStyle} /> : null}
+        </div>
       </div>
       <div aria-hidden style={frontGlassStyle} />
       <div aria-hidden style={physicalFrameStyle} />

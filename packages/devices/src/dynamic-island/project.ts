@@ -6,10 +6,7 @@ import type {
 } from "@tokovo/core";
 import type { DeviceProfile } from "../types.js";
 import { getIOSChromeMetrics } from "../ios/chrome-metrics.js";
-import {
-  directionForLocale,
-  localizeSystemDigits,
-} from "../surfaces/localization.js";
+import { directionForLocale, localizeSystemDigits } from "../surfaces/localization.js";
 import type {
   DynamicIslandGeometry,
   DynamicIslandProjection,
@@ -62,9 +59,7 @@ const COPY: Record<"en" | "hi" | "ar" | "ja", DynamicIslandCopy> = {
 
 function languageFor(locale: string): keyof typeof COPY {
   const language = locale.trim().toLowerCase().split(/[-_]/u)[0];
-  return language === "hi" || language === "ar" || language === "ja"
-    ? language
-    : "en";
+  return language === "hi" || language === "ar" || language === "ja" ? language : "en";
 }
 
 function clamp01(value: number): number {
@@ -78,9 +73,7 @@ function easeOutQuint(value: number): number {
 
 function easeInOutCubic(value: number): number {
   const progress = clamp01(value);
-  return progress < 0.5
-    ? 4 * progress ** 3
-    : 1 - (-2 * progress + 2) ** 3 / 2;
+  return progress < 0.5 ? 4 * progress ** 3 : 1 - (-2 * progress + 2) ** 3 / 2;
 }
 
 function lerp(from: number, to: number, progress: number): number {
@@ -105,10 +98,7 @@ type GeometryKind =
   | ScreenRecordingPresentation
   | DynamicIslandPresentation;
 
-function geometryFor(
-  profile: DeviceProfile,
-  kind: GeometryKind,
-): DynamicIslandGeometry {
+function geometryFor(profile: DeviceProfile, kind: GeometryKind): DynamicIslandGeometry {
   const chrome = getIOSChromeMetrics(profile);
   const island = chrome.dynamicIsland;
   if (!island) {
@@ -176,10 +166,7 @@ function interpolateGeometry(
   };
 }
 
-function suppressesStatusBar(
-  profile: DeviceProfile,
-  geometry: DynamicIslandGeometry,
-): boolean {
+function suppressesStatusBar(profile: DeviceProfile, geometry: DynamicIslandGeometry): boolean {
   const island = getIOSChromeMetrics(profile).dynamicIsland;
   return Boolean(island && geometry.width > island.compactWidth + 0.5);
 }
@@ -202,7 +189,7 @@ function completionBanner(
   const enter = clamp01((currentFrame - recording.captureStoppedAtFrame) / 10);
   const exit = clamp01((recording.feedbackEndsAtFrame - currentFrame) / 10);
   const progress = easeOutQuint(Math.min(enter, exit));
-  const width = profile.dimensions.width - 24 * scale;
+  const width = profile.display.width - 24 * scale;
   return {
     progress,
     left: 12 * scale,
@@ -229,10 +216,8 @@ function recordingProjection(input: {
   const metrics = getIOSChromeMetrics(profile).dynamicIsland;
   if (!metrics) throw new Error(`Missing Dynamic Island metrics for ${profile.id}`);
 
-  const isCountdown =
-    recording.isCapturing && currentFrame < recording.captureStartedAtFrame;
-  const isActive =
-    recording.isCapturing && currentFrame >= recording.captureStartedAtFrame;
+  const isCountdown = recording.isCapturing && currentFrame < recording.captureStartedAtFrame;
+  const isActive = recording.isCapturing && currentFrame >= recording.captureStartedAtFrame;
   const geometryKindForPresentation = (
     presentation: ScreenRecordingPresentation | "idle" | "countdown",
   ): GeometryKind =>
@@ -257,14 +242,11 @@ function recordingProjection(input: {
       currentFrame - recording.captureStartedAtFrame < metrics.morphFrames &&
       recording.presentationChangedAtFrame <= recording.captureStartedAtFrame
     ) {
-      previousKind = recording.requestedAtFrame === recording.captureStartedAtFrame
-        ? "idle"
-        : "countdown";
+      previousKind =
+        recording.requestedAtFrame === recording.captureStartedAtFrame ? "idle" : "countdown";
       changedAt = recording.captureStartedAtFrame;
     } else {
-      previousKind = geometryKindForPresentation(
-        recording.previousPresentation ?? "compact",
-      );
+      previousKind = geometryKindForPresentation(recording.previousPresentation ?? "compact");
     }
   } else {
     previousKind = geometryKindForPresentation(
@@ -277,20 +259,11 @@ function recordingProjection(input: {
     (currentFrame - changedAt) / Math.max(1, metrics.morphFrames),
   );
   const target = geometryFor(profile, targetKind);
-  const geometry = interpolateGeometry(
-    geometryFor(profile, previousKind),
-    target,
-    morphProgress,
-  );
+  const geometry = interpolateGeometry(geometryFor(profile, previousKind), target, morphProgress);
   const isHidden = isActive && recording.presentation === "hidden";
   const phase = isCountdown ? "countdown" : isActive && !isHidden ? "recording" : "idle";
   const countdown = isCountdown
-    ? Math.max(
-        1,
-        Math.ceil(
-          (recording.captureStartedAtFrame - currentFrame) / Math.max(1, fps),
-        ),
-      )
+    ? Math.max(1, Math.ceil((recording.captureStartedAtFrame - currentFrame) / Math.max(1, fps)))
     : undefined;
   const elapsed = isActive
     ? formatElapsed(currentFrame - recording.captureStartedAtFrame, fps, locale)
@@ -310,19 +283,12 @@ function recordingProjection(input: {
         ? undefined
         : {
             countdownValue:
-              countdown === undefined
-                ? undefined
-                : localizeSystemDigits(String(countdown), locale),
+              countdown === undefined ? undefined : localizeSystemDigits(String(countdown), locale),
             elapsedLabel: elapsed,
             title,
             microphoneEnabled: recording.microphoneEnabled,
           },
-    completionBanner: completionBanner(
-      profile,
-      recording,
-      currentFrame,
-      copy,
-    ),
+    completionBanner: completionBanner(profile, recording, currentFrame, copy),
     accessibilityLabel:
       phase === "recording" && elapsed
         ? `${title}, ${elapsed}`
@@ -368,9 +334,7 @@ export function projectDynamicIsland(input: {
 
   const islandState = input.dynamicIsland;
   const activity = islandState?.visible === false ? null : islandState?.activity;
-  const presentation = activity
-    ? (islandState?.presentation ?? "compact")
-    : "idle";
+  const presentation = activity ? (islandState?.presentation ?? "compact") : "idle";
   const metrics = getIOSChromeMetrics(input.profile).dynamicIsland;
   if (!metrics) return null;
   const changedAt = islandState?.updatedAtFrame ?? input.currentFrame - metrics.morphFrames;
@@ -384,10 +348,7 @@ export function projectDynamicIsland(input: {
   );
 
   const supportedActivity =
-    activity === "music" ||
-    activity === "call" ||
-    activity === "timer" ||
-    activity === "location"
+    activity === "music" || activity === "call" || activity === "timer" || activity === "location"
       ? activity
       : undefined;
   const title = supportedActivity

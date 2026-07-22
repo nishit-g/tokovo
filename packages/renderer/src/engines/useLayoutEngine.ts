@@ -129,7 +129,7 @@ const FALLBACK_PROFILE: DeviceProfile = {
   type: "phone",
   platform: "ios",
   dimensions: { width: 393, height: 852 },
-  screen: { width: 393, height: 852, ppi: 460, cornerRadius: 0 },
+  display: { x: 0, y: 0, width: 393, height: 852, ppi: 460, cornerRadius: 0 },
   pixelDensity: 3,
   safeArea: { top: 0, bottom: 0, left: 0, right: 0 },
 };
@@ -164,7 +164,7 @@ function buildNullLayoutOutput(profile: DeviceProfile): LayoutEngineOutput {
     profile,
     variant: profile.platform,
     appLogicalScale: 1,
-    effectiveViewportHeight: profile.dimensions.height,
+    effectiveViewportHeight: profile.display.height,
     isError: true,
   };
 }
@@ -209,7 +209,15 @@ function computeWorldSignature(
     device?.homeScreen?.wallpaper ?? "",
     device?.homeScreen
       ? device.homeScreen.pages
-          .map((page) => page.apps.map((item) => "appId" in item ? `${item.appId}:${item.badge ?? 0}` : `folder:${item.name}:${item.apps.length}`).join(","))
+          .map((page) =>
+            page.apps
+              .map((item) =>
+                "appId" in item
+                  ? `${item.appId}:${item.badge ?? 0}`
+                  : `folder:${item.name}:${item.apps.length}`,
+              )
+              .join(","),
+          )
           .join("|")
       : "",
     // For chat apps, include conversation and message count
@@ -277,12 +285,7 @@ export function useLayoutEngine(input: LayoutEngineInput): LayoutEngineOutput {
 
     const appId = device.foregroundAppId;
     const projectedInputSession = input.inputProgram
-      ? findInputSessionForProjection(
-          input.inputProgram,
-          deviceId,
-          t,
-          effectiveFps,
-        )
+      ? findInputSessionForProjection(input.inputProgram, deviceId, t, effectiveFps)
       : undefined;
     // INCREMENTAL CACHE CHECK
     // If world signature hasn't changed for this frame, return cached result
@@ -395,17 +398,13 @@ export function useLayoutEngine(input: LayoutEngineInput): LayoutEngineOutput {
     const appDesignWidth = appId
       ? (registries.plugins.metadata.get(appId).designWidth ?? 393)
       : undefined;
-    const appLogicalScale = appDesignWidth
-      ? profile.dimensions.width / appDesignWidth
-      : 1;
+    const appLogicalScale = appDesignWidth ? profile.display.width / appDesignWidth : 1;
     const notificationProjection = input.notificationProgram
       ? projectNotifications(input.notificationProgram, deviceId, t, {
-          viewportWidth: profile.dimensions.width,
-          viewportHeight: profile.dimensions.height,
+          viewportWidth: profile.display.width,
+          viewportHeight: profile.display.height,
           pointScale,
-          safeAreaTop:
-            (profile.safeArea?.top ?? profile.camera?.safeAreaTop ?? 0) /
-            pointScale,
+          safeAreaTop: (profile.safeArea?.top ?? profile.camera?.safeAreaTop ?? 0) / pointScale,
         })
       : undefined;
     const variant: "ios" | "android" = profile.platform;
@@ -428,22 +427,20 @@ export function useLayoutEngine(input: LayoutEngineInput): LayoutEngineOutput {
           themeId: projectedInputSession.keyboard.themeId,
         })
       : undefined;
-    const inputProjection = projectedInputSession && inputExperience
-      ? projectInputSession(projectedInputSession, t, {
-          fps: effectiveFps,
-          viewportWidth: profile.dimensions.width,
-          viewportHeight: profile.dimensions.height,
-          keyboardHeight:
-            inputExperience.theme.geometry.height *
-            (profile.pixelDensity || 1),
-        })
-      : undefined;
+    const inputProjection =
+      projectedInputSession && inputExperience
+        ? projectInputSession(projectedInputSession, t, {
+            fps: effectiveFps,
+            viewportWidth: profile.display.width,
+            viewportHeight: profile.display.height,
+            keyboardHeight: inputExperience.theme.geometry.height * (profile.pixelDensity || 1),
+          })
+        : undefined;
     const keyboardHeight = inputProjection?.surface.viewportInset ?? 0;
 
     // 5. Compute effective viewport height (shrinks when keyboard visible)
     const effectiveViewportHeight =
-      profile.dimensions.height / appLogicalScale -
-      keyboardHeight / appLogicalScale;
+      profile.display.height / appLogicalScale - keyboardHeight / appLogicalScale;
     const logicalSafeAreaInsets = {
       top: (profile.safeArea?.top ?? 0) / appLogicalScale,
       bottom: (profile.safeArea?.bottom ?? 0) / appLogicalScale,
@@ -460,7 +457,7 @@ export function useLayoutEngine(input: LayoutEngineInput): LayoutEngineOutput {
       viewKind,
       activeConversationId,
       activeStoryId,
-      viewportWidth: profile.dimensions.width / appLogicalScale,
+      viewportWidth: profile.display.width / appLogicalScale,
       viewportHeight: effectiveViewportHeight,
       safeAreaInsets: logicalSafeAreaInsets,
       layoutCache: input.layoutCache,

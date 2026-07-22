@@ -1,7 +1,8 @@
 import type { DeviceProfile } from "../types.js";
 import type { SystemAppearance, SystemSurfaceTheme } from "./contract.js";
 
-const IOS_FONT = '"Noto Sans Variable", "Noto Sans Arabic Variable", -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif';
+const IOS_FONT =
+  '"Noto Sans Variable", "Noto Sans Arabic Variable", -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif';
 const ANDROID_FONT = '"Noto Sans Variable", "Noto Sans Arabic Variable", Roboto, sans-serif';
 
 function px(profile: DeviceProfile, points: number): number {
@@ -56,8 +57,12 @@ export function getSystemSurfaceTheme(
         ? "radial-gradient(circle at 72% 18%, #364477 0 12%, transparent 42%), radial-gradient(circle at 18% 76%, #402f61 0 13%, transparent 45%), linear-gradient(155deg, #08090d 0%, #141827 58%, #090a0f 100%)"
         : "radial-gradient(circle at 20% 20%, #283453 0 16%, transparent 42%), radial-gradient(circle at 82% 72%, #432c4b 0 15%, transparent 44%), linear-gradient(145deg, #111318 0%, #1b1d24 100%)",
     wallpaperScrim: light
-      ? ios ? "rgba(255, 255, 255, 0.08)" : "rgba(255, 255, 255, 0.12)"
-      : ios ? "rgba(0, 0, 0, 0.08)" : "rgba(0, 0, 0, 0.14)",
+      ? ios
+        ? "rgba(255, 255, 255, 0.08)"
+        : "rgba(255, 255, 255, 0.12)"
+      : ios
+        ? "rgba(0, 0, 0, 0.08)"
+        : "rgba(0, 0, 0, 0.14)",
     geometry: {
       pointScale,
       lock: ios
@@ -94,7 +99,7 @@ export function getSystemSurfaceTheme(
             labelSize: px(profile, 11.5),
             labelGap: px(profile, 5),
             dockHeight: px(profile, 92),
-            dockWidth: profile.dimensions.width - px(profile, 26),
+            dockWidth: profile.display.width - px(profile, 26),
             dockBottom: px(profile, 17),
             dockRadius: px(profile, 30),
             dockIconSize: px(profile, 60),
@@ -117,7 +122,7 @@ export function getSystemSurfaceTheme(
             labelSize: px(profile, 11),
             labelGap: px(profile, 5),
             dockHeight: px(profile, 74),
-            dockWidth: profile.dimensions.width - px(profile, 20),
+            dockWidth: profile.display.width - px(profile, 20),
             dockBottom: px(profile, 18),
             dockRadius: px(profile, 28),
             dockIconSize: px(profile, 56),
@@ -131,4 +136,3 @@ export function getSystemSurfaceTheme(
     },
   };
 }
-

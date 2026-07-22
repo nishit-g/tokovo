@@ -52,9 +52,8 @@ export function projectLockscreen(input: {
   const time = formatSystemTime(resolved.clock, resolved.locale, resolved.hourCycle);
   const [hours = "", minutes = ""] = time.split(":");
   const lock = theme.geometry.lock;
-  const clockHeight = theme.platform === "android"
-    ? lock.androidClockSize * 1.72
-    : lock.clockSize * 1.05;
+  const clockHeight =
+    theme.platform === "android" ? lock.androidClockSize * 1.72 : lock.clockSize * 1.05;
 
   return {
     kind: "lockscreen",
@@ -73,13 +72,13 @@ export function projectLockscreen(input: {
       "lockscreen.clock": rect(
         theme.geometry.pointScale * 20,
         lock.clockTop,
-        input.profile.dimensions.width - theme.geometry.pointScale * 40,
+        input.profile.display.width - theme.geometry.pointScale * 40,
         clockHeight,
       ),
       "lockscreen.controls": rect(
         0,
-        input.profile.dimensions.height - lock.controlsBottom - lock.controlSize,
-        input.profile.dimensions.width,
+        input.profile.display.height - lock.controlsBottom - lock.controlSize,
+        input.profile.display.width,
         lock.controlSize,
       ),
     },
@@ -101,35 +100,42 @@ export function projectHomeScreen(input: {
   const activePage = Math.max(0, Math.min(input.activePage ?? 0, input.config.pages.length - 1));
   const pageItems = input.config.pages[activePage]?.apps ?? [];
   const home = theme.geometry.home;
-  const gridBottom = theme.platform === "ios" ? home.pageDotsBottom + home.searchHeight : home.searchBottom + home.searchHeight + home.rowGap;
+  const gridBottom =
+    theme.platform === "ios"
+      ? home.pageDotsBottom + home.searchHeight
+      : home.searchBottom + home.searchHeight + home.rowGap;
   const anchors: Record<string, Rect> = {
     "homescreen.grid": rect(
       home.gridPaddingX,
       home.gridTop,
-      input.profile.dimensions.width - home.gridPaddingX * 2,
-      Math.max(0, input.profile.dimensions.height - home.gridTop - gridBottom),
+      input.profile.display.width - home.gridPaddingX * 2,
+      Math.max(0, input.profile.display.height - home.gridTop - gridBottom),
     ),
     "homescreen.dock": rect(
-      (input.profile.dimensions.width - home.dockWidth) / 2,
-      input.profile.dimensions.height - home.dockBottom - home.dockHeight,
+      (input.profile.display.width - home.dockWidth) / 2,
+      input.profile.display.height - home.dockBottom - home.dockHeight,
       home.dockWidth,
       home.dockHeight,
     ),
     "homescreen.search": rect(
-      theme.platform === "ios" ? input.profile.dimensions.width * 0.4 : home.gridPaddingX,
-      input.profile.dimensions.height - home.searchBottom - home.searchHeight,
-      theme.platform === "ios" ? input.profile.dimensions.width * 0.2 : input.profile.dimensions.width - home.gridPaddingX * 2,
+      theme.platform === "ios" ? input.profile.display.width * 0.4 : home.gridPaddingX,
+      input.profile.display.height - home.searchBottom - home.searchHeight,
+      theme.platform === "ios"
+        ? input.profile.display.width * 0.2
+        : input.profile.display.width - home.gridPaddingX * 2,
       home.searchHeight,
     ),
   };
 
-  const cellWidth = (input.profile.dimensions.width - home.gridPaddingX * 2) / home.gridColumns;
+  const cellWidth = (input.profile.display.width - home.gridPaddingX * 2) / home.gridColumns;
   const cellHeight = home.iconSize + home.labelGap + home.labelSize + home.rowGap;
   pageItems.forEach((item, index) => {
     if (!("appId" in item)) return;
-    const visualIndex = strings.direction === "rtl"
-      ? Math.floor(index / home.gridColumns) * home.gridColumns + (home.gridColumns - 1 - (index % home.gridColumns))
-      : index;
+    const visualIndex =
+      strings.direction === "rtl"
+        ? Math.floor(index / home.gridColumns) * home.gridColumns +
+          (home.gridColumns - 1 - (index % home.gridColumns))
+        : index;
     const column = visualIndex % home.gridColumns;
     const row = Math.floor(visualIndex / home.gridColumns);
     anchors[`homescreen.icon:${item.appId}`] = rect(

@@ -51,6 +51,7 @@ function camera(id: string, targetFill: number): CameraPlanIR {
     shots: [],
     lenses: [],
     modifiers: [],
+    filters: [],
   };
 }
 
@@ -82,9 +83,7 @@ describe("prepared cinematic envelope", () => {
 
     expect(second.storySignature).toBe(first.storySignature);
     expect(second.stageSignature).toBe(first.stageSignature);
-    expect(second.cameraSignatures.dramatic).not.toBe(
-      first.cameraSignatures.calm,
-    );
+    expect(second.cameraSignatures.dramatic).not.toBe(first.cameraSignatures.calm);
   });
 
   it("fails when an output observes a nonexistent stage node", () => {

@@ -36,12 +36,23 @@ describe("Camera VNext cinematic flagship", () => {
       }),
       expect.objectContaining({ id: "portrait-main", zIndex: 0 }),
     ]);
+    const pipShot = kinetic?.plan.shots.find(
+      (shot) => shot.outputId === "message-pip" && shot.id === "pip-message-hold",
+    );
+    expect(pipShot?.rigId).toBe("pip-message-hold.rig");
+    expect(kinetic?.plan.rigs.find((rig) => rig.id === pipShot?.rigId)).not.toHaveProperty(
+      "lensId",
+    );
+    expect(kinetic?.plan.filters.map((filter) => filter.id)).toEqual([
+      "cool-studio",
+      "media-proof",
+      "typing-focus",
+    ]);
     expect(
-      kinetic?.plan.shots.some(
-        (shot) => shot.outputId === "message-pip" && shot.rigId === "pip-message",
-      ),
-    ).toBe(true);
-    expect(kinetic?.plan.rigs.find((rig) => rig.id === "pip-message")).not.toHaveProperty("lensId");
+      kinetic?.plan.rigs
+        .map((rig) => rig.motion?.intent?.kind)
+        .filter((kind): kind is NonNullable<typeof kind> => Boolean(kind)),
+    ).toEqual(expect.arrayContaining(["dolly-in", "dolly-out", "truck-left", "crane-up", "orbit"]));
     expect(ir.events.some((event) => event.kind === "CAMERA")).toBe(false);
   });
 });

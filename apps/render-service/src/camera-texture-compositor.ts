@@ -18,12 +18,13 @@ const MAP_WIDTH = 512;
 const MAP_HEIGHT = 512;
 const PNG_SIGNATURE = Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]);
 
-type DistortionPass = Exclude<
+type DistortionPass = Extract<
   CameraProjectionPass,
-  { kind: "directional-smear" } | { kind: "projective-warp" }
+  { kind: "radial-warp" } | { kind: "fisheye-warp" } | { kind: "anamorphic-edge-stretch" }
 >;
 type ProjectivePass = Extract<CameraProjectionPass, { kind: "projective-warp" }>;
 type SmearPass = Extract<CameraProjectionPass, { kind: "directional-smear" }>;
+type GradePass = Extract<CameraProjectionPass, { kind: "color-grade" }>;
 type CaptureOutput = CameraTextureProjectionCapture["outputs"][number];
 
 export interface PerspectiveCorners {
@@ -92,7 +93,9 @@ export function composeWarpDisplacement(input: {
   let sourceY = input.y;
   const passes = input.passes.filter(
     (pass): pass is DistortionPass =>
-      pass.kind !== "directional-smear" && pass.kind !== "projective-warp",
+      pass.kind === "radial-warp" ||
+      pass.kind === "fisheye-warp" ||
+      pass.kind === "anamorphic-edge-stretch",
   );
   // A later displacement samples the already-displaced result, so compose
   // sampling coordinates in reverse painter order instead of merely summing.
@@ -312,6 +315,31 @@ function dominantSmear(output: CaptureOutput): SmearPass | null {
   );
 }
 
+function resolvedGrade(output: CaptureOutput): GradePass {
+  return output.projectionPasses
+    .filter((pass): pass is GradePass => pass.kind === "color-grade")
+    .reduce<GradePass>(
+      (grade, pass) => ({
+        kind: "color-grade",
+        brightness: clamp(grade.brightness + pass.brightness, -0.3, 0.3),
+        contrast: clamp(grade.contrast * pass.contrast, 0.5, 1.8),
+        saturation: clamp(grade.saturation * pass.saturation, 0, 2.5),
+        gamma: clamp(grade.gamma * pass.gamma, 0.5, 2),
+        temperature: clamp(grade.temperature + pass.temperature, -1, 1),
+        tint: clamp(grade.tint + pass.tint, -1, 1),
+      }),
+      {
+        kind: "color-grade",
+        brightness: 0,
+        contrast: 1,
+        saturation: 1,
+        gamma: 1,
+        temperature: 0,
+        tint: 0,
+      },
+    );
+}
+
 function commandNumber(value: number): string {
   const normalized = Math.abs(value) < 1e-8 ? 0 : value;
   return normalized.toFixed(6).replace(/\.?0+$/, "");
@@ -343,6 +371,7 @@ export function createCameraCommandFile(
       const timestamp = (sequenceIndex / fps).toFixed(9);
       const commands = orderedOutputs(capture).flatMap((output, outputIndex) => {
         const smear = dominantSmear(output);
+        const grade = resolvedGrade(output);
         const length = smear
           ? Math.max(1e-6, Math.hypot(smear.direction[0], smear.direction[1]))
           : 1;
@@ -358,6 +387,9 @@ export function createCameraCommandFile(
         const offsetX = directionX * spread * 0.18;
         const offsetY = directionY * spread * 0.18;
         const corners = createPerspectiveCorners(capture, output.outputId);
+        const redGain = 1 + grade.temperature * 0.12 + grade.tint * 0.035;
+        const greenGain = 1 - grade.tint * 0.08;
+        const blueGain = 1 - grade.temperature * 0.12 + grade.tint * 0.035;
         return [
           ...perspectiveCommands(filterTarget("perspective", "camera", outputIndex), corners),
           `${filterTarget("gblur", "smear", outputIndex)} sigma ${commandNumber(sigmaX)}`,
@@ -366,6 +398,13 @@ export function createCameraCommandFile(
           `${filterTarget("colorchannelmixer", "smear_alpha", outputIndex)} aa ${commandNumber(alpha)}`,
           `${filterTarget("overlay", "smear_overlay", outputIndex)} x ${commandNumber(offsetX)}`,
           `${filterTarget("overlay", "smear_overlay", outputIndex)} y ${commandNumber(offsetY)}`,
+          `${filterTarget("eq", "grade", outputIndex)} brightness ${commandNumber(grade.brightness)}`,
+          `${filterTarget("eq", "grade", outputIndex)} contrast ${commandNumber(grade.contrast)}`,
+          `${filterTarget("eq", "grade", outputIndex)} saturation ${commandNumber(grade.saturation)}`,
+          `${filterTarget("eq", "grade", outputIndex)} gamma ${commandNumber(grade.gamma)}`,
+          `${filterTarget("colorchannelmixer", "grade_rgb", outputIndex)} rr ${commandNumber(redGain)}`,
+          `${filterTarget("colorchannelmixer", "grade_rgb", outputIndex)} gg ${commandNumber(greenGain)}`,
+          `${filterTarget("colorchannelmixer", "grade_rgb", outputIndex)} bb ${commandNumber(blueGain)}`,
         ];
       });
       return `${timestamp} [enter] ${commands.join(", ")};`;
@@ -599,7 +638,8 @@ export function createTextureFilterGraph(input: {
       );
     }
     graph.push(
-      `[warped_${outputIndex}]split=2[crisp_source_${outputIndex}][smear_source_${outputIndex}]`,
+      `[warped_${outputIndex}]eq@tokovo_grade_${outputIndex}=brightness=0:contrast=1:saturation=1:gamma=1,colorchannelmixer@tokovo_grade_rgb_${outputIndex}=rr=1:gg=1:bb=1:aa=1,format=rgba[graded_${outputIndex}]`,
+      `[graded_${outputIndex}]split=2[crisp_source_${outputIndex}][smear_source_${outputIndex}]`,
       `[smear_source_${outputIndex}]gblur@tokovo_smear_${outputIndex}=sigma=0.2:sigmaV=0.2:steps=2:planes=15,colorchannelmixer@tokovo_smear_alpha_${outputIndex}=aa=0[smear_${outputIndex}]`,
       `[crisp_source_${outputIndex}][smear_${outputIndex}]overlay@tokovo_smear_overlay_${outputIndex}=x=0:y=0:format=auto:alpha=straight,format=rgba[optical_unmasked_${outputIndex}]`,
     );

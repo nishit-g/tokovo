@@ -104,6 +104,7 @@ function createPlan(): CameraPlanIR {
       },
     ],
     modifiers: [],
+    filters: [],
   };
 }
 
@@ -531,6 +532,7 @@ describe("camera output evaluation", () => {
           parameters: { amount: 0.04, periodFrames: 120 },
         },
       ],
+      filters: [],
       rigs: source.rigs.map((rig) =>
         rig.id === "message-close"
           ? {
@@ -567,11 +569,59 @@ describe("camera output evaluation", () => {
         sourceRigId: "establishing",
         targetRigId: "message-close",
         whipActive: true,
+        movementIntent: null,
       }),
     );
     expect(evaluate(90).projectionPasses.some((pass) => pass.kind === "directional-smear")).toBe(
       false,
     );
     expect(evaluate(105)).toEqual(evaluate(105));
+  });
+
+  it("evaluates named color filters independently from lens geometry", () => {
+    const registries = createBuiltinCameraRegistries();
+    const source = createPlan();
+    const plan: CameraPlanIR = {
+      ...source,
+      filters: [
+        {
+          id: "cool-night",
+          modelId: "color-grade",
+          modelVersion: 1,
+          parameters: {
+            brightness: -0.03,
+            contrast: 1.12,
+            saturation: 0.9,
+            gamma: 0.96,
+            temperature: -0.14,
+            tint: 0.04,
+          },
+        },
+      ],
+      rigs: source.rigs.map((rig) =>
+        rig.id === "message-close" ? { ...rig, filterIds: ["cool-night"] } : rig,
+      ),
+    };
+    const program = prepareCameraPlan(plan, registries);
+    const output = evaluateCameraOutput(
+      {
+        program,
+        outputId: "main",
+        frame: 120,
+        subjectFrame: createSubjectFrame(120),
+        mode: "render",
+      },
+      registries,
+    );
+
+    expect(output.projectionPasses).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          kind: "color-grade",
+          contrast: 1.12,
+          temperature: -0.14,
+        }),
+      ]),
+    );
   });
 });

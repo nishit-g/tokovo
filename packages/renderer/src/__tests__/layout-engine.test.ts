@@ -18,7 +18,7 @@ const mockRegistries = {
       type: "phone",
       platform: "ios",
       dimensions: { width: 393, height: 852 },
-      screen: { width: 393, height: 852, ppi: 460, cornerRadius: 55 },
+      display: { x: 0, y: 0, width: 393, height: 852, ppi: 460, cornerRadius: 55 },
       pixelDensity: 3,
       safeArea: { top: 59, bottom: 34, left: 0, right: 0 },
     }),

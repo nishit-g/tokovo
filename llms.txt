@@ -17,7 +17,7 @@ Tokovo is a deterministic TypeScript monorepo for authoring, previewing, and ren
 
 - Architecture: https://github.com/nishit-g/tokovo/blob/master/docs/ARCHITECTURE.md
 - V1 stability bar: https://github.com/nishit-g/tokovo/blob/master/docs/V1_STABILITY.md
-- Camera reference: https://github.com/nishit-g/tokovo/blob/master/docs/CAMERA_V1_REFERENCE.md
+- Camera reference: https://github.com/nishit-g/tokovo/blob/master/docs/CAMERA_REFERENCE.md
 - Public release checklist: https://github.com/nishit-g/tokovo/blob/master/docs/operations/public-release.md
 - Release operations: https://github.com/nishit-g/tokovo/blob/master/docs/operations/release.md
 - Asset licenses: https://github.com/nishit-g/tokovo/blob/master/ASSET_LICENSES.md

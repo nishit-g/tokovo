@@ -145,6 +145,7 @@ function plan(input: {
   shots: CameraShotIR[];
   lenses: CameraPlanIR["lenses"];
   modifiers?: CameraPlanIR["modifiers"];
+  filters?: CameraPlanIR["filters"];
 }): CameraPlanIR {
   return {
     version: 1,
@@ -164,6 +165,7 @@ function plan(input: {
     shots: input.shots,
     lenses: input.lenses,
     modifiers: input.modifiers ?? [],
+    filters: input.filters ?? [],
   };
 }
 
@@ -288,7 +290,7 @@ export const whatsappFlagshipCinematics: EpisodeCinematicsIR = {
       {
         id: "stage.root",
         source: { kind: "group" },
-        localBounds: { x: 0, y: 0, width: 1290, height: 2796 },
+        localBounds: { x: 0, y: 0, width: 1350, height: 2856 },
         initialTransform: { a: 1, b: 0, c: 0, d: 1, tx: 0, ty: 0 },
         zIndex: 0,
       },
@@ -296,7 +298,7 @@ export const whatsappFlagshipCinematics: EpisodeCinematicsIR = {
         id: "device.phone",
         parentId: "stage.root",
         source: { kind: "device", deviceId: DEVICE_ID },
-        localBounds: { x: 0, y: 0, width: 1290, height: 2796 },
+        localBounds: { x: 0, y: 0, width: 1350, height: 2856 },
         initialTransform: { a: 1, b: 0, c: 0, d: 1, tx: 0, ty: 0 },
         zIndex: 10,
       },

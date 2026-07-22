@@ -1,5 +1,6 @@
 import type { JsonObject, JsonValue } from "@tokovo/ir";
 import type { CameraLensModel, CameraProjectionPass } from "./types.js";
+import { CameraFilterRegistry, createBuiltinCameraFilterRegistry } from "./filters.js";
 import { CameraModifierRegistry, createBuiltinCameraModifierRegistry } from "./modifiers.js";
 
 function numberParameter(parameters: JsonObject, key: string, fallback: number): number {
@@ -118,6 +119,7 @@ export class CameraLensRegistry {
 export interface CameraRegistries {
   lenses: CameraLensRegistry;
   modifiers: CameraModifierRegistry;
+  filters: CameraFilterRegistry;
 }
 
 const wideAngleBarrel: CameraLensModel = {
@@ -259,5 +261,6 @@ export function createBuiltinCameraRegistries(): CameraRegistries {
   return {
     lenses: createBuiltinCameraLensRegistry(),
     modifiers: createBuiltinCameraModifierRegistry(),
+    filters: createBuiltinCameraFilterRegistry(),
   };
 }

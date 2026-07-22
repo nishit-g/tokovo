@@ -88,22 +88,49 @@ export interface CameraFramingGuardIR {
   screenPosition?: readonly [number, number];
 }
 
+export interface CameraMovementIntentIR {
+  kind:
+    | "dolly-in"
+    | "dolly-out"
+    | "truck-left"
+    | "truck-right"
+    | "pedestal-up"
+    | "pedestal-down"
+    | "pan-left"
+    | "pan-right"
+    | "tilt-up"
+    | "tilt-down"
+    | "roll"
+    | "crane-up"
+    | "crane-down"
+    | "orbit";
+  /** Normalized authored intensity, normally in the 0..1 range. */
+  amount?: number;
+  /** Projective orbit direction where applicable. */
+  yawDeg?: number;
+  pitchDeg?: number;
+}
+
 export type CameraMotionProfileIR =
   | {
       type: "cut";
+      intent?: CameraMovementIntentIR;
     }
   | {
       type: "minimum-jerk";
       durationFrames: number;
+      intent?: CameraMovementIntentIR;
     }
   | {
       type: "critically-damped";
       responseFrames: number;
+      intent?: CameraMovementIntentIR;
     }
   | {
       type: "whip";
       durationFrames: number;
       direction: "left" | "right" | "up" | "down" | readonly [number, number];
+      intent?: CameraMovementIntentIR;
     };
 
 export interface CameraBlendIR {
@@ -123,6 +150,14 @@ export interface CameraLensIR {
 }
 
 export interface CameraModifierIR {
+  id: string;
+  modelId: string;
+  modelVersion: number;
+  parameters: JsonObject;
+}
+
+/** Named deterministic image treatment resolved through the filter registry. */
+export interface CameraFilterIR {
   id: string;
   modelId: string;
   modelVersion: number;
@@ -157,6 +192,7 @@ export interface CameraRigIR {
   opacity?: number;
   lensId?: string;
   modifierIds?: readonly string[];
+  filterIds?: readonly string[];
   motion?: CameraMotionProfileIR;
 }
 
@@ -183,6 +219,7 @@ export interface CameraPlanIR {
   shots: readonly CameraShotIR[];
   lenses: readonly CameraLensIR[];
   modifiers: readonly CameraModifierIR[];
+  filters: readonly CameraFilterIR[];
 }
 
 export interface CinematicSubjectSchemaIR {

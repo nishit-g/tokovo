@@ -128,6 +128,18 @@ export interface SafeAreaInsets {
   right: number;
 }
 
+/** Physical display aperture inside the outer device body. */
+export interface DeviceDisplayGeometry {
+  /** Display origin in device-body coordinates. */
+  x: number;
+  y: number;
+  /** Native display pixel dimensions used by apps and OS surfaces. */
+  width: number;
+  height: number;
+  ppi: number;
+  cornerRadius: number;
+}
+
 export interface DeviceProfile {
   id: string;
   name: string;
@@ -138,12 +150,8 @@ export interface DeviceProfile {
     height: number;
     depth?: number;
   };
-  screen: {
-    width: number;
-    height: number;
-    ppi: number;
-    cornerRadius: number;
-  };
+  /** Display aperture. It must not be conflated with the physical body bounds. */
+  display: DeviceDisplayGeometry;
   pixelDensity: number;
   safeArea: SafeAreaInsets;
   /** Camera behavior configuration (uses defaults if not specified) */

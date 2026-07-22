@@ -34,6 +34,16 @@ const home: HomeScreenConfig = {
 };
 
 describe("canonical system surfaces", () => {
+  it.each([iPhone16Profile, PixelProfile])(
+    "keeps the display aperture physically inset inside %s",
+    (profile) => {
+      expect(profile.display.x).toBeGreaterThan(0);
+      expect(profile.display.y).toBeGreaterThan(0);
+      expect(profile.dimensions.width).toBe(profile.display.x * 2 + profile.display.width);
+      expect(profile.dimensions.height).toBe(profile.display.y * 2 + profile.display.height);
+    },
+  );
+
   it.each([
     [iPhone16Profile, "light"],
     [iPhone16Profile, "dark"],
@@ -72,22 +82,30 @@ describe("canonical system surfaces", () => {
     expect(first.anchors["homescreen.grid"]).toBeDefined();
     expect(first.anchors["homescreen.dock"]).toBeDefined();
     expect(first.anchors["homescreen.icon:app_whatsapp"]).toBeDefined();
+    expect(
+      first.anchors["homescreen.dock"].y + first.anchors["homescreen.dock"].height,
+    ).toBeLessThan(iPhone16Profile.display.height);
   });
 
   it("mirrors authored home icon anchors for RTL locales", () => {
     const ltr = projectHomeScreen({ profile: PixelProfile, os: os(), config: home });
-    const rtl = projectHomeScreen({ profile: PixelProfile, os: os({ locale: "ar-SA" }), config: home });
+    const rtl = projectHomeScreen({
+      profile: PixelProfile,
+      os: os({ locale: "ar-SA" }),
+      config: home,
+    });
     expect(rtl.anchors["homescreen.icon:app_whatsapp"].x).toBeGreaterThan(
       ltr.anchors["homescreen.icon:app_whatsapp"].x,
     );
   });
 
   it("fails loudly for an invalid page-less home screen", () => {
-    expect(() => projectHomeScreen({
-      profile: PixelProfile,
-      os: os(),
-      config: { pages: [], dock: [] },
-    })).toThrow("SYSTEM_HOME_INVALID");
+    expect(() =>
+      projectHomeScreen({
+        profile: PixelProfile,
+        os: os(),
+        config: { pages: [], dock: [] },
+      }),
+    ).toThrow("SYSTEM_HOME_INVALID");
   });
 });
-

@@ -75,5 +75,5 @@ pnpm verify:release
 - `CONTRIBUTING.md`: contributor workflow and PR checklist.
 - `docs/ARCHITECTURE.md`: runtime and package boundaries.
 - `docs/V1_STABILITY.md`: v1 readiness bar.
-- `docs/CAMERA_V1_REFERENCE.md`: camera authoring rules.
+- `docs/CAMERA_REFERENCE.md`: current cinematic authoring rules.
 - `apps/docs/app/showcase/page.mdx`: showcase catalog and render commands.

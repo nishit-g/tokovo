@@ -356,6 +356,49 @@ function ProjectionFilterDefinition(props: {
       );
       currentInput = outputResult;
       passIndex += 1;
+      continue;
+    }
+
+    if (pass.kind === "color-grade") {
+      const transferResult = `grade-transfer-${passIndex}`;
+      const saturationResult = `grade-saturation-${passIndex}`;
+      const redGain = 1 + pass.temperature * 0.12 + pass.tint * 0.035;
+      const greenGain = 1 - pass.tint * 0.08;
+      const blueGain = 1 - pass.temperature * 0.12 + pass.tint * 0.035;
+      const offset = pass.brightness + (1 - pass.contrast) * 0.5;
+      const exponent = 1 / Math.max(0.01, pass.gamma);
+      primitives.push(
+        <feComponentTransfer key={transferResult} in={currentInput} result={transferResult}>
+          <feFuncR
+            type="gamma"
+            amplitude={pass.contrast * redGain}
+            exponent={exponent}
+            offset={offset}
+          />
+          <feFuncG
+            type="gamma"
+            amplitude={pass.contrast * greenGain}
+            exponent={exponent}
+            offset={offset}
+          />
+          <feFuncB
+            type="gamma"
+            amplitude={pass.contrast * blueGain}
+            exponent={exponent}
+            offset={offset}
+          />
+          <feFuncA type="identity" />
+        </feComponentTransfer>,
+        <feColorMatrix
+          key={saturationResult}
+          in={transferResult}
+          type="saturate"
+          values={String(pass.saturation)}
+          result={saturationResult}
+        />,
+      );
+      currentInput = saturationResult;
+      passIndex += 1;
     }
   }
 

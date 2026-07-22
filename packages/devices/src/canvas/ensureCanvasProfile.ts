@@ -15,7 +15,9 @@ function createCanvasProfile(id: string, dim: CanvasDimensions): DeviceProfile {
     type: "desktop",
     platform: "ios",
     dimensions: { width: dim.width, height: dim.height },
-    screen: {
+    display: {
+      x: 0,
+      y: 0,
       width: dim.width,
       height: dim.height,
       ppi: 1,
@@ -72,4 +74,3 @@ export function ensureCanvasProfile(
 export function resolveCanvasProfileId(dim: CanvasDimensions): string {
   return toCanvasProfileId(dim);
 }
-

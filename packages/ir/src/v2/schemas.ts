@@ -70,18 +70,44 @@ const CameraComposerSchema = z
   })
   .strict();
 
+const CameraMovementIntentSchema = z
+  .object({
+    kind: z.enum([
+      "dolly-in",
+      "dolly-out",
+      "truck-left",
+      "truck-right",
+      "pedestal-up",
+      "pedestal-down",
+      "pan-left",
+      "pan-right",
+      "tilt-up",
+      "tilt-down",
+      "roll",
+      "crane-up",
+      "crane-down",
+      "orbit",
+    ]),
+    amount: z.number().finite().nonnegative().max(4).optional(),
+    yawDeg: z.number().finite().min(-60).max(60).optional(),
+    pitchDeg: z.number().finite().min(-60).max(60).optional(),
+  })
+  .strict();
+
 const CameraMotionProfileSchema = z.discriminatedUnion("type", [
-  z.object({ type: z.literal("cut") }).strict(),
+  z.object({ type: z.literal("cut"), intent: CameraMovementIntentSchema.optional() }).strict(),
   z
     .object({
       type: z.literal("minimum-jerk"),
       durationFrames: z.number().int().positive(),
+      intent: CameraMovementIntentSchema.optional(),
     })
     .strict(),
   z
     .object({
       type: z.literal("critically-damped"),
       responseFrames: z.number().int().positive(),
+      intent: CameraMovementIntentSchema.optional(),
     })
     .strict(),
   z
@@ -92,6 +118,7 @@ const CameraMotionProfileSchema = z.discriminatedUnion("type", [
         z.enum(["left", "right", "up", "down"]),
         z.tuple([z.number().finite(), z.number().finite()]),
       ]),
+      intent: CameraMovementIntentSchema.optional(),
     })
     .strict(),
 ]);
@@ -154,6 +181,7 @@ export const CameraPlanSchema: z.ZodType<import("./camera-vnext.js").CameraPlanI
             opacity: z.number().finite().min(0).max(1).optional(),
             lensId: z.string().min(1).optional(),
             modifierIds: z.array(z.string().min(1)).optional(),
+            filterIds: z.array(z.string().min(1)).optional(),
             motion: CameraMotionProfileSchema.optional(),
           })
           .strict(),
@@ -186,6 +214,16 @@ export const CameraPlanSchema: z.ZodType<import("./camera-vnext.js").CameraPlanI
         .strict(),
     ),
     modifiers: z.array(
+      z
+        .object({
+          id: z.string().min(1),
+          modelId: z.string().min(1),
+          modelVersion: z.number().int().positive(),
+          parameters: z.record(z.string(), z.json()),
+        })
+        .strict(),
+    ),
+    filters: z.array(
       z
         .object({
           id: z.string().min(1),

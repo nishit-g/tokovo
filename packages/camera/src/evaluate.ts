@@ -167,10 +167,27 @@ function evaluateRigFrame(input: {
     projectionPasses,
     modifiers,
   });
+  const filterPasses = (input.evaluation.rig.filterIds ?? []).flatMap((filterId) => {
+    const filter = input.program.plan.filters.find((candidate) => candidate.id === filterId);
+    if (!filter) {
+      throw new Error(`Prepared camera rig references missing filter "${filterId}".`);
+    }
+    const model = input.registries.filters.get(filter.modelId, filter.modelVersion);
+    if (!model) {
+      throw new Error(
+        `Prepared camera filter model "${filter.modelId}@${filter.modelVersion}" is missing.`,
+      );
+    }
+    return model.evaluate({
+      frame: input.frame,
+      fps: input.program.plan.fps,
+      parameters: filter.parameters,
+    });
+  });
   return {
     ...input.evaluation,
     pose: modified.pose,
-    projectionPasses: modified.projectionPasses,
+    projectionPasses: [...modified.projectionPasses, ...filterPasses],
   };
 }
 
@@ -203,6 +220,16 @@ function scaleProjectionPass(
       };
     case "directional-smear":
       return { ...pass, spreadPx: pass.spreadPx * mix };
+    case "color-grade":
+      return {
+        ...pass,
+        brightness: pass.brightness * mix,
+        contrast: 1 + (pass.contrast - 1) * mix,
+        saturation: 1 + (pass.saturation - 1) * mix,
+        gamma: 1 + (pass.gamma - 1) * mix,
+        temperature: pass.temperature * mix,
+        tint: pass.tint * mix,
+      };
   }
 }
 
@@ -492,6 +519,7 @@ export function evaluateCameraOutput(
       curve: transition.curve,
       progress,
       whipActive: transition.whipDirection !== undefined && progress > 0 && progress < 1,
+      movementIntent: selected.rig.motion?.intent ?? null,
     };
   }
 

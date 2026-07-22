@@ -9,6 +9,6 @@ export const iPhone16Shell: DeviceShell = {
   id: "iphone16",
   FrameComponent: iPhone16Frame as FrameComponent,
   StatusBarComponent: StatusBar as StatusBarStrategyComponent,
-  cornerRadius: iPhone16Profile.screen.cornerRadius,
+  cornerRadius: iPhone16Profile.display.cornerRadius,
   hasDynamicIsland: true,
 };

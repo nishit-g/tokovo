@@ -231,6 +231,15 @@ describe("camera smear and FFmpeg graph", () => {
             samples: 6,
             decay: 0.68,
           },
+          {
+            kind: "color-grade",
+            brightness: 0.03,
+            contrast: 1.12,
+            saturation: 0.9,
+            gamma: 0.98,
+            temperature: 0.2,
+            tint: -0.1,
+          },
         ]),
       ],
       30,
@@ -242,6 +251,11 @@ describe("camera smear and FFmpeg graph", () => {
     expect(commands).toContain("colorchannelmixer@tokovo_camera_opacity_0 aa");
     expect(commands).toContain("colorchannelmixer@tokovo_smear_alpha_0 aa");
     expect(commands).toContain("overlay@tokovo_smear_overlay_0 x");
+    expect(commands).toContain("eq@tokovo_grade_0 brightness 0.03");
+    expect(commands).toContain("eq@tokovo_grade_0 contrast 1.12");
+    expect(commands).toContain("colorchannelmixer@tokovo_grade_rgb_0 rr 1.0205");
+    expect(commands).toContain("colorchannelmixer@tokovo_grade_rgb_0 gg 1.008");
+    expect(commands).toContain("colorchannelmixer@tokovo_grade_rgb_0 bb 0.9725");
   });
 
   it("timestamps a focused source range from local zero", () => {
@@ -269,6 +283,10 @@ describe("camera smear and FFmpeg graph", () => {
     expect(graph).toContain(
       "[framed_0]format=rgba,colorchannelmixer@tokovo_camera_opacity_0=aa=1[warped_0]",
     );
+    expect(graph).toContain(
+      "[warped_0]eq@tokovo_grade_0=brightness=0:contrast=1:saturation=1:gamma=1,colorchannelmixer@tokovo_grade_rgb_0=rr=1:gg=1:bb=1:aa=1,format=rgba[graded_0]",
+    );
+    expect(graph).toContain("[graded_0]split=2[crisp_source_0][smear_source_0]");
     expect(graph).toContain("[optical_clipped_0]null[optical_0]");
     expect(graph).not.toContain("alphamerge");
     expect(graph).not.toContain("alphaextract");

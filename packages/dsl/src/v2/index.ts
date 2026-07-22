@@ -18,17 +18,27 @@ export {
   HandPerformancePointBuilder,
   HandPerformanceSpanBuilder,
 } from "./hand-performance-track.js";
-export type {
-  HandCueOptions,
-  HandTapOptions,
-  HandSwipeOptions,
-} from "./hand-performance-track.js";
+export type { HandCueOptions, HandTapOptions, HandSwipeOptions } from "./hand-performance-track.js";
+
+export { CameraTrackBuilder, CameraPointBuilder, CameraSpanBuilder } from "./camera-track.js";
 
 export {
-  CameraTrackBuilder,
-  CameraPointBuilder,
-  CameraSpanBuilder,
-} from "./camera-track.js";
+  cameraSubject,
+  cinematicProgram,
+  CinematicPlanBuilder,
+  CinematicProgramBuilder,
+  CinematicShotBuilder,
+} from "./cinematics.js";
+export type {
+  CameraDollyOptions,
+  CameraMovementOptions,
+  CameraOrbitOptions,
+  CameraOutputOptions,
+  CameraRigOptions,
+  CameraShotFrameOptions,
+  CinematicProgramOptions,
+  CinematicStageDevice,
+} from "./cinematics.js";
 export type {
   CameraSetOptions,
   CameraAnimateOptions,
@@ -46,31 +56,14 @@ export type {
   CameraTarget,
 } from "./camera-track.js";
 
-export {
-  AudioTrackBuilder,
-  AudioPointBuilder,
-  AudioSpanBuilder,
-} from "./audio-track.js";
-export type {
-  BgmOptions,
-  PlayOptions,
-  CrossfadeOptions,
-  FadeOutOptions,
-} from "./audio-track.js";
+export { AudioTrackBuilder, AudioPointBuilder, AudioSpanBuilder } from "./audio-track.js";
+export type { BgmOptions, PlayOptions, CrossfadeOptions, FadeOutOptions } from "./audio-track.js";
 
 export { OSTrackBuilder, OSPointBuilder } from "./os-track.js";
-export type {
-  OSStateOptions,
-  BatteryOptions,
-  NetworkOptions,
-} from "./os-track.js";
+export type { OSStateOptions, BatteryOptions, NetworkOptions } from "./os-track.js";
 
 export { DeviceTrackBuilderV2, DevicePointBuilderV2 } from "./device-track.js";
-export type {
-  DeviceEventMetaOptions,
-  SfxOverride,
-  TransitionOptions,
-} from "./device-track.js";
+export type { DeviceEventMetaOptions, SfxOverride, TransitionOptions } from "./device-track.js";
 
 export { OverlayTrackBuilder, OverlayPointBuilder } from "./overlay-track.js";
 

@@ -3,7 +3,7 @@
 Status: Accepted; hard-cut implementation in progress
 Audience: engine, compiler, renderer, app-plugin, episode-authoring, and tooling maintainers
 Scope: deterministic 2D cinematography across one or more simulated devices
-Supersedes: the current effect-oriented camera architecture and docs/CAMERA_V1_REFERENCE.md at the
+Supersedes: the former effect-oriented camera architecture and camera v1 reference at the
 hard cutover
 Implementation plan: docs/CAMERA_VNEXT_IMPLEMENTATION_PLAN.md
 
@@ -2449,7 +2449,7 @@ manifests and cache keys.
 
 When VNext becomes the current implementation:
 
-- delete docs/CAMERA_V1_REFERENCE.md
+- replace the camera v1 reference with the current `docs/CAMERA_REFERENCE.md`
 - update docs/ARCHITECTURE.md
 - update docs/V1_STABILITY.md
 - update apps/docs/app/guides/cinematic-camera/page.mdx

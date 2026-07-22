@@ -7,8 +7,8 @@ function fallbackPointScale(profile: DeviceProfile): number {
   return Math.max(
     1,
     Math.min(
-      profile.dimensions.width / IOS_REFERENCE_WIDTH_POINTS,
-      profile.dimensions.height / IOS_REFERENCE_HEIGHT_POINTS,
+      profile.display.width / IOS_REFERENCE_WIDTH_POINTS,
+      profile.display.height / IOS_REFERENCE_HEIGHT_POINTS,
     ),
   );
 }
@@ -23,15 +23,12 @@ export function getIOSLogicalDimensions(profile: DeviceProfile): {
 } {
   const pointScale = getIOSPointScale(profile);
   return {
-    width: profile.dimensions.width / pointScale,
-    height: profile.dimensions.height / pointScale,
+    width: profile.display.width / pointScale,
+    height: profile.display.height / pointScale,
   };
 }
 
-export function pointsToDevicePx(
-  profile: DeviceProfile,
-  points: number,
-): number {
+export function pointsToDevicePx(profile: DeviceProfile, points: number): number {
   return points * getIOSPointScale(profile);
 }
 
@@ -98,8 +95,7 @@ export function getIOSChromeMetrics(profile: DeviceProfile): IOSChromeMetrics {
         recordingExpandedHeight: toPx(78),
         recordingExpandedCornerRadius: toPx(39),
         compactHeight: profile.dynamicIsland.collapsedHeight,
-        expandedCornerRadius:
-          profile.dynamicIsland.expandedCornerRadius ?? toPx(44),
+        expandedCornerRadius: profile.dynamicIsland.expandedCornerRadius ?? toPx(44),
         sensorPillWidth: toPx(74),
         sensorPillHeight: toPx(27),
         cameraLensSize: toPx(21),

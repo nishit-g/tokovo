@@ -9,11 +9,7 @@ export {
   cameraPoseToViewMatrix,
 } from "./matrix.js";
 
-export {
-  solveComposer,
-  minimumJerk,
-  interpolateCameraPose,
-} from "./composer.js";
+export { solveComposer, minimumJerk, interpolateCameraPose } from "./composer.js";
 
 export {
   CameraLensRegistry,
@@ -22,17 +18,15 @@ export {
 } from "./lenses.js";
 export type { CameraRegistries } from "./lenses.js";
 
+export { CameraFilterRegistry, createBuiltinCameraFilterRegistry } from "./filters.js";
+
 export {
   CameraModifierRegistry,
   createBuiltinCameraModifierRegistry,
   applyCameraModifiers,
 } from "./modifiers.js";
 
-export {
-  CameraPreparationError,
-  prepareCameraPlan,
-  getRigById,
-} from "./program.js";
+export { CameraPreparationError, prepareCameraPlan, getRigById } from "./program.js";
 
 export { CameraEvaluationError, evaluateCameraOutput } from "./evaluate.js";
 
@@ -49,6 +43,7 @@ export type {
   EvaluatedCameraOutput,
   LensModelContext,
   CameraLensModel,
+  CameraFilterModel,
   CameraModifierResult,
   CameraModifierContext,
   CameraModifierModel,

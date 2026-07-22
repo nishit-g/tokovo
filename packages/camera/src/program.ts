@@ -1,4 +1,10 @@
-import type { CameraLensIR, CameraPlanIR, CameraRigIR, CameraShotIR } from "@tokovo/ir";
+import type {
+  CameraFilterIR,
+  CameraLensIR,
+  CameraPlanIR,
+  CameraRigIR,
+  CameraShotIR,
+} from "@tokovo/ir";
 import { CameraPlanSchema } from "@tokovo/ir";
 import type { CameraRegistries } from "./lenses.js";
 import type { CameraDiagnostic, PreparedCameraProgram } from "./types.js";
@@ -99,6 +105,26 @@ function validateLens(
   );
 }
 
+function validateFilter(
+  planId: string,
+  filter: CameraFilterIR,
+  registries: CameraRegistries,
+): CameraDiagnostic[] {
+  const model = registries.filters.get(filter.modelId, filter.modelVersion);
+  if (!model) {
+    return [
+      diagnostic(
+        planId,
+        "CAM_FILTER_MODEL_MISSING",
+        `Filter model "${filter.modelId}@${filter.modelVersion}" is not registered.`,
+      ),
+    ];
+  }
+  return model
+    .validate(filter.parameters)
+    .map((message) => diagnostic(planId, "CAM_FILTER_PARAMETERS_INVALID", message));
+}
+
 function sortPlan(plan: CameraPlanIR): CameraPlanIR {
   return {
     ...plan,
@@ -114,6 +140,7 @@ function sortPlan(plan: CameraPlanIR): CameraPlanIR {
     ),
     lenses: [...plan.lenses].sort((a, b) => a.id.localeCompare(b.id)),
     modifiers: [...plan.modifiers].sort((a, b) => a.id.localeCompare(b.id)),
+    filters: [...plan.filters].sort((a, b) => a.id.localeCompare(b.id)),
   };
 }
 
@@ -176,6 +203,7 @@ export function prepareCameraPlan(
     ["shot", plan.shots],
     ["lens", plan.lenses],
     ["modifier", plan.modifiers],
+    ["filter", plan.filters],
   ] as const;
   for (const [category, items] of categories) {
     for (const id of duplicateIds(items)) {
@@ -189,6 +217,7 @@ export function prepareCameraPlan(
   const rigsById = new Map(plan.rigs.map((rig) => [rig.id, rig] as const));
   const lensIds = new Set(plan.lenses.map((lens) => lens.id));
   const modifierIds = new Set(plan.modifiers.map((modifier) => modifier.id));
+  const filterIds = new Set(plan.filters.map((filter) => filter.id));
 
   for (const output of plan.outputs) {
     const defaultRig = rigsById.get(output.defaultRigId);
@@ -268,6 +297,18 @@ export function prepareCameraPlan(
         );
       }
     }
+    for (const filterId of rig.filterIds ?? []) {
+      if (!filterIds.has(filterId)) {
+        diagnostics.push(
+          diagnostic(
+            plan.id,
+            "CAM_RIG_FILTER_MISSING",
+            `Rig "${rig.id}" references missing filter "${filterId}".`,
+            { rigId: rig.id },
+          ),
+        );
+      }
+    }
     if (
       rig.composer.minScale !== undefined &&
       rig.composer.maxScale !== undefined &&
@@ -303,6 +344,10 @@ export function prepareCameraPlan(
     for (const message of model.validate(modifier.parameters)) {
       diagnostics.push(diagnostic(plan.id, "CAM_MODIFIER_PARAMETERS_INVALID", message));
     }
+  }
+
+  for (const filter of plan.filters) {
+    diagnostics.push(...validateFilter(plan.id, filter, registries));
   }
 
   for (const shot of plan.shots) {
@@ -417,6 +462,13 @@ export function prepareCameraPlan(
     const reachableModifierIds = new Set(reachableRigs.flatMap((rig) => rig.modifierIds ?? []));
     for (const modifier of plan.modifiers.filter((entry) => reachableModifierIds.has(entry.id))) {
       const model = registries.modifiers.get(modifier.modelId, modifier.modelVersion);
+      if (model?.projectionBackendRequirement === "texture") {
+        return "texture";
+      }
+    }
+    const reachableFilterIds = new Set(reachableRigs.flatMap((rig) => rig.filterIds ?? []));
+    for (const filter of plan.filters.filter((entry) => reachableFilterIds.has(entry.id))) {
+      const model = registries.filters.get(filter.modelId, filter.modelVersion);
       if (model?.projectionBackendRequirement === "texture") {
         return "texture";
       }

@@ -30,10 +30,13 @@ export const PixelProfile: DeviceProfile = {
   type: "phone",
   platform: "android",
   dimensions: {
-    width: 1080,
-    height: 2400,
+    width: 1116,
+    height: 2436,
+    depth: 24,
   },
-  screen: {
+  display: {
+    x: 18,
+    y: 18,
     width: 1080,
     height: 2400,
     ppi: 512,

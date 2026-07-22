@@ -470,16 +470,16 @@ const TokovoRendererInner: React.FC<TokovoRendererProps> = ({
                     typeof device.profileId === "string" && device.profileId.startsWith("canvas-");
                   // Canvas devices should render 1:1 in video pixel coordinates.
                   const designWidth = isCanvasProfile
-                    ? profile.dimensions.width
+                    ? profile.display.width
                     : pluginAssets?.designWidth || 393;
-                  const scale = profile.dimensions.width / designWidth;
+                  const scale = profile.display.width / designWidth;
 
                   baseContent = (
                     <AppErrorBoundary appId={appId}>
                       <AppSurface
                         designWidth={designWidth}
-                        targetWidth={profile.dimensions.width}
-                        targetHeight={profile.dimensions.height}
+                        targetWidth={profile.display.width}
+                        targetHeight={profile.display.height}
                         backgroundColor={undefined}
                       >
                         <TokovoProvider

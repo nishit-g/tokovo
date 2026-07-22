@@ -1,15 +1,11 @@
-import type {
-  CameraRectIR,
-  CinematicSubjectRefIR,
-  CinematicSubjectSchemaIR,
-} from "@tokovo/ir";
+import type { CameraRectIR, CinematicSubjectRefIR, CinematicSubjectSchemaIR } from "@tokovo/ir";
 import type { WorldState } from "./world-state.js";
 
 /** Exact app/device geometry emitted from the same headless layout that paints the UI. */
 export interface CinematicSubjectProjection {
   ref: CinematicSubjectRefIR;
   rect: CameraRectIR;
-  coordinateSpace: "app-logical" | "device-screen";
+  coordinateSpace: "app-logical" | "device-screen" | "device-body";
   visible: boolean;
   clippedRect?: CameraRectIR;
   sourceVersion: number;
