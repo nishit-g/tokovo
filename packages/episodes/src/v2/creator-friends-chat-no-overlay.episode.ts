@@ -30,6 +30,7 @@ export default defineEpisode({
         },
       })
       .snapshot("app_x", "phone", {
+        schemaVersion: 2,
         users: [
           {
             id: "u_me",
@@ -61,25 +62,25 @@ export default defineEpisode({
             id: "tw_op",
             authorId: "u_op",
             text: "The studio said 'minor timing adjustment' and somehow turned it into a whole launch-day cliffhanger.",
+            createdAt: new Date("2025-07-12T19:18:00Z").getTime(),
             viewCount: 310000,
             shareCount: 6200,
             bookmarkCount: 21000,
           },
-        ],
-        replies: [
           {
             id: "tw_r1",
             authorId: "u_r1",
             text: "Every delay becomes episode structure when the receipts are already public.",
             replyToId: "tw_op",
+            createdAt: new Date("2025-07-12T19:19:00Z").getTime(),
             viewCount: 132000,
             shareCount: 2100,
             bookmarkCount: 7200,
           },
         ],
         currentUserId: "u_me",
-      })
-      .view("app_x", "phone", { screen: "timeline" })
+      }, { version: 2 })
+      .view("app_x", "phone", { schemaVersion: 2, screen: "timeline" }, { version: 2 })
       .snapshot("app_whatsapp", "phone", {
         conversations: [
           {
@@ -162,6 +163,7 @@ export default defineEpisode({
         x.at("16.2s").postTweet({
           authorId: "u_me",
           text: "Launch-day timing was deliberate. The episode needed a second act.",
+          createdAt: new Date("2025-07-12T19:21:16Z").getTime(),
           viewCount: 2400,
           shareCount: 70,
           bookmarkCount: 180,

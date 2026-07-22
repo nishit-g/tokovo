@@ -1,211 +1,64 @@
-import { describe, it, expect } from "vitest";
+import { describe, expect, it } from "vitest";
 import {
-  getNotificationBadgeCount,
-  getXState,
-  getTimelineTweets,
-  getActiveTweet,
-  getTweetsByAuthor,
-  getUnreadThreadCount,
+  findXState,
+  requireXState,
+  selectActiveThread,
+  selectActiveTweet,
+  selectDMThreads,
+  selectNotificationBadgeCount,
+  selectThreadMessages,
+  selectTimelineTweets,
 } from "../runtime/selectors.js";
-import { createXInitialState, type XTweet } from "../runtime/state.js";
-import type { WorldState } from "@tokovo/core";
-import { createDefaultAudioState } from "@tokovo/core";
+import { createTestState, createTestWorld, testTweet, testUser } from "./helpers.js";
 
-const baseTweet = (override: Partial<XTweet>): XTweet => ({
-  id: "tw-1",
-  authorId: "u1",
-  text: "A",
-  createdAt: 0,
-  replyIds: [],
-  likedBy: [],
-  likeCount: 0,
-  repostCount: 0,
-  viewCount: 0,
-  bookmarkCount: 0,
-  shareCount: 0,
-  hashtags: [],
-  mentions: [],
-  ...override,
-});
-
-describe("X Selectors", () => {
-  it("getXState returns plugin state", () => {
-    const world: WorldState = {
-      appInstances: {
-        "phone:app_x": createXInitialState(),
-      },
-      capabilityState: {},
-      devices: {},
-      audio: createDefaultAudioState(),
-    } as WorldState;
-
-    const state = getXState(world, "phone");
-    expect(state).toBeDefined();
-    expect(state?.tweets).toEqual([]);
+describe("X VNext selectors", () => {
+  it("separates optional app lookup from required rendering state", () => {
+    const world = createTestWorld();
+    expect(findXState(world, "phone")).toBeDefined();
+    expect(findXState(world, "missing")).toBeUndefined();
+    expect(() => requireXState(world, "missing")).toThrow();
   });
 
-  it("getTimelineTweets returns tweets ordered by timeline", () => {
-    const world: WorldState = {
-      appInstances: {
-        "phone:app_x": {
-          ...createXInitialState(),
-          tweets: [baseTweet({ id: "tw-1" })],
-          timeline: ["tw-1"],
-        },
-      },
-      capabilityState: {},
-      devices: {},
-      audio: createDefaultAudioState(),
-    } as WorldState;
-
-    const tweets = getTimelineTweets(world, "phone");
-    expect(tweets).toHaveLength(1);
-    expect(tweets[0].id).toBe("tw-1");
+  it("reads normalized timeline order and following membership", () => {
+    const state = createTestState();
+    state.usersById.u_third = testUser("u_third");
+    state.tweetsById.tw_2 = testTweet("tw_2", { authorId: "u_third" });
+    state.timelineIds = ["tw_2", "tw_1"];
+    state.timelineTab = "following";
+    expect(selectTimelineTweets(createTestWorld(state), "phone").map((tweet) => tweet.id)).toEqual(["tw_1"]);
   });
 
-  it("getActiveTweet returns active tweet", () => {
-    const world: WorldState = {
-      appInstances: {
-        "phone:app_x": {
-          ...createXInitialState(),
-          tweets: [baseTweet({ id: "tw-2" })],
-          activeTweetId: "tw-2",
-        },
-      },
-      capabilityState: {},
-      devices: {},
-      audio: createDefaultAudioState(),
-    } as WorldState;
-
-    const tweet = getActiveTweet(world, "phone");
-    expect(tweet?.id).toBe("tw-2");
+  it("throws when an ordered index references a missing entity", () => {
+    const state = createTestState();
+    state.timelineIds.push("ghost");
+    expect(() => selectTimelineTweets(createTestWorld(state), "phone")).toThrow(/X_TWEET_MISSING/);
   });
 
-  it("getTweetsByAuthor returns authored tweets sorted by createdAt desc", () => {
-    const world: WorldState = {
-      appInstances: {
-        "phone:app_x": {
-          ...createXInitialState(),
-          tweets: [
-            baseTweet({ id: "tw-1", authorId: "u1", createdAt: 100 }),
-            baseTweet({ id: "tw-2", authorId: "u2", createdAt: 200 }),
-            baseTweet({ id: "tw-3", authorId: "u1", createdAt: 300 }),
-          ],
-          timeline: ["tw-2"],
-        },
-      },
-      capabilityState: {},
-      devices: {},
-      audio: createDefaultAudioState(),
-    } as WorldState;
-
-    const tweets = getTweetsByAuthor(world, "phone", "u1");
-    expect(tweets.map((tweet) => tweet.id)).toEqual(["tw-3", "tw-1"]);
+  it("requires route targets for active selectors", () => {
+    const state = createTestState();
+    expect(() => selectActiveTweet(createTestWorld(state), "phone")).toThrow(/X_ROUTE_TARGET_REQUIRED/);
+    state.route = { screen: "tweet", tweetId: "tw_1" };
+    expect(selectActiveTweet(createTestWorld(state), "phone").id).toBe("tw_1");
+    state.route = { screen: "thread", threadId: "dm_1" };
+    expect(selectActiveThread(createTestWorld(state), "phone").id).toBe("dm_1");
   });
 
-  it("getTimelineTweets respects following tab", () => {
-    const world: WorldState = {
-      appInstances: {
-        "phone:app_x": {
-          ...createXInitialState(),
-          currentUserId: "u1",
-          timelineTab: "following",
-          users: [
-            {
-              id: "u1",
-              name: "A",
-              handle: "a",
-              followers: 0,
-              following: 1,
-              followerIds: [],
-              followingIds: ["u2"],
-              verified: null,
-            },
-            {
-              id: "u2",
-              name: "B",
-              handle: "b",
-              followers: 0,
-              following: 0,
-              followerIds: [],
-              followingIds: [],
-              verified: null,
-            },
-            {
-              id: "u3",
-              name: "C",
-              handle: "c",
-              followers: 0,
-              following: 0,
-              followerIds: [],
-              followingIds: [],
-              verified: null,
-            },
-          ],
-          tweets: [
-            baseTweet({ id: "tw-1", authorId: "u2", createdAt: 200 }),
-            baseTweet({ id: "tw-2", authorId: "u3", createdAt: 100 }),
-          ],
-          timeline: ["tw-1", "tw-2"],
-        },
-      },
-      capabilityState: {},
-      devices: {},
-      audio: createDefaultAudioState(),
-    } as WorldState;
-
-    expect(getTimelineTweets(world, "phone").map((tweet) => tweet.id)).toEqual(["tw-1"]);
+  it("preserves canonical thread and message ordering", () => {
+    const world = createTestWorld();
+    expect(selectDMThreads(world, "phone").map((thread) => thread.id)).toEqual(["dm_1"]);
+    expect(selectThreadMessages(world, "phone", "dm_1").map((message) => message.id)).toEqual(["msg_1"]);
   });
 
-  it("derives notification badge and unread thread totals", () => {
-    const world: WorldState = {
-      appInstances: {
-        "phone:app_x": {
-          ...createXInitialState(),
-          notifications: [
-            {
-              id: "n1",
-              type: "mention",
-              actorId: "u2",
-              createdAt: 0,
-              read: false,
-            },
-            {
-              id: "n2",
-              type: "follow",
-              actorId: "u3",
-              createdAt: 0,
-              read: true,
-            },
-          ],
-          dmThreads: [
-            {
-              id: "dm-1",
-              participantIds: ["u1", "u2"],
-              messageIds: [],
-              unreadCount: 2,
-              pinned: false,
-              typingUserId: null,
-              lastMessageAt: 1,
-            },
-            {
-              id: "dm-2",
-              participantIds: ["u1", "u3"],
-              messageIds: [],
-              unreadCount: 1,
-              pinned: true,
-              typingUserId: null,
-              lastMessageAt: 2,
-            },
-          ],
-        },
-      },
-      capabilityState: {},
-      devices: {},
-      audio: createDefaultAudioState(),
-    } as WorldState;
-
-    expect(getNotificationBadgeCount(world, "phone")).toBe(1);
-    expect(getUnreadThreadCount(world, "phone")).toBe(3);
+  it("derives unread totals without fallback state", () => {
+    const state = createTestState();
+    state.notificationsById.nt_1 = {
+      id: "nt_1",
+      type: "mention",
+      actorId: "u_other",
+      createdAt: state.tweetsById.tw_1.createdAt,
+      read: false,
+    };
+    state.notificationIds = ["nt_1"];
+    expect(selectNotificationBadgeCount(createTestWorld(state), "phone")).toBe(1);
   });
 });

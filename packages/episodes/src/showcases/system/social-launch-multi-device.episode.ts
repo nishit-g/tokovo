@@ -48,6 +48,8 @@ export default defineEpisode({
       })
       .device("audience_phone", "pixel", {
         app: "app_x",
+        appearance: "dark",
+        theme: "x-dim",
         installedApps: ["app_x"],
         os: {
           time: new Date("2026-07-20T20:42:00Z"),
@@ -98,6 +100,7 @@ export default defineEpisode({
       })
       .view("app_whatsapp", "creator_phone", { screen: "chats" })
       .snapshot("app_x", "audience_phone", {
+        schemaVersion: 2,
         currentUserId: "x_viewer",
         users: [
           {
@@ -151,12 +154,12 @@ export default defineEpisode({
             bookmarkCount: 12_400,
           },
         ],
-      })
+      }, { version: 2 })
       .view("app_x", "audience_phone", {
+        schemaVersion: 2,
         screen: "timeline",
         timelineTab: "forYou",
-        themeMode: "dark",
-      })
+      }, { version: 2 })
       .snapshot("app_instagram", "creator_phone", {
         currentUserId: "ig_creator",
         users: [

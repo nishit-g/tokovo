@@ -93,6 +93,7 @@ export default defineEpisode({
         ],
       })
       .snapshot("app_x", "phone", {
+        schemaVersion: 2,
         currentUserId: "u_me",
         users: [
           {
@@ -123,7 +124,7 @@ export default defineEpisode({
             bookmarkCount: 2100,
           },
         ],
-      })
+      }, { version: 2 })
       .deviceTrack("phone", (d) => {
         d.at("3.0s").unlock();
         d.at("3.7s").openApp("app_whatsapp", {

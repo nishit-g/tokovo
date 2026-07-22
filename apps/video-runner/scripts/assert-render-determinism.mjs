@@ -72,6 +72,19 @@ const defaultProbes = [
   { episodeId: "os-surface-mega-exhaustive", frame: 1650 },
   { episodeId: "os-surface-mega-exhaustive", frame: 1995 },
   { episodeId: "os-surface-mega-exhaustive", frame: 2115 },
+  // X VNext: reviewed native UI states across media, notifications, direct
+  // messages, keyboard composition, publishing, polls, video and profile.
+  { episodeId: "x-cinematic-flagship", frame: 180 },
+  { episodeId: "x-cinematic-flagship", frame: 330 },
+  { episodeId: "x-cinematic-flagship", frame: 500 },
+  { episodeId: "x-cinematic-flagship", frame: 690 },
+  { episodeId: "x-cinematic-flagship", frame: 840 },
+  { episodeId: "x-cinematic-flagship", frame: 960 },
+  { episodeId: "x-cinematic-flagship", frame: 1080 },
+  { episodeId: "x-cinematic-flagship", frame: 1200 },
+  // One frame proves iOS light, Android dim/RTL and iOS lights-out/Devanagari
+  // share a centered, native-platform composition without theme mutation.
+  { episodeId: "x-native-theme-matrix-vnext", frame: 90 },
 ];
 
 function parseProbes(raw) {

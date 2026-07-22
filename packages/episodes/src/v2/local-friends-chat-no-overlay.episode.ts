@@ -27,6 +27,7 @@ export default defineEpisode({
         },
       })
       .snapshot("app_x", "phone", {
+        schemaVersion: 2,
         users: [
           {
             id: "u_me",
@@ -58,25 +59,25 @@ export default defineEpisode({
             id: "tw_op",
             authorId: "u_op",
             text: "The teaser tried to look casual, but the whole timeline noticed the edit.",
+            createdAt: new Date("2025-06-26T21:38:00Z").getTime(),
             viewCount: 220000,
             shareCount: 5200,
             bookmarkCount: 16000,
           },
-        ],
-        replies: [
           {
             id: "tw_r1",
             authorId: "u_r1",
             text: "When a casual post has three camera moves, it is not casual anymore.",
             replyToId: "tw_op",
+            createdAt: new Date("2025-06-26T21:39:00Z").getTime(),
             viewCount: 98000,
             shareCount: 1500,
             bookmarkCount: 5100,
           },
         ],
         currentUserId: "u_me",
-      })
-      .view("app_x", "phone", { screen: "timeline" })
+      }, { version: 2 })
+      .view("app_x", "phone", { schemaVersion: 2, screen: "timeline" }, { version: 2 })
       .snapshot("app_whatsapp", "phone", {
         conversations: [
           {
@@ -163,6 +164,7 @@ export default defineEpisode({
         x.at("18.0s").postTweet({
           authorId: "u_me",
           text: "The teaser was a setup. Watch the next cut before judging the first frame.",
+          createdAt: new Date("2025-06-26T21:41:18Z").getTime(),
           viewCount: 1200,
           shareCount: 32,
           bookmarkCount: 88,

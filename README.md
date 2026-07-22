@@ -68,7 +68,7 @@ Then try app-specific showcases:
 ```bash
 EPISODE_ID=whatsapp-interaction-matrix-v3 pnpm --filter video-runner render:fast
 EPISODE_ID=instagram-flagship-v2 pnpm --filter video-runner render:fast
-EPISODE_ID=x-flagship-v2 pnpm --filter video-runner render:fast
+EPISODE_ID=x-cinematic-flagship pnpm --filter video-runner render:fast
 EPISODE_ID=typewriter-flagship-v2 pnpm --filter video-runner render:fast
 ```
 
@@ -126,7 +126,7 @@ These are good first renders when checking the v1 target surface:
 | `multi-device-exhaustive`        | parallel phones, split pacing, screen recording, cross-app continuity                     |
 | `whatsapp-interaction-matrix-v3` | two devices, RTL, message/media lifecycle, gestures, Status, calls, communities, settings |
 | `instagram-flagship-v2`          | story, DM, profile, creator-facing pacing                                                 |
-| `x-flagship-v2`                  | timeline, post detail, replies, notifications                                             |
+| `x-cinematic-flagship`           | entity-directed X cinema, keyboard, notifications, DMs, polls, video, and profiles         |
 | `typewriter-flagship-v2`         | typewriter app, procedural sound effects, text timing                                     |
 | `screen-recording-exhaustive`    | OS chrome and screen-recording realism                                                    |
 

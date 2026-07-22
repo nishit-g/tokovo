@@ -1,473 +1,521 @@
 import {
   requireAppStateForDevice,
-  type WorldState,
   type PluginReducer,
   type RuntimeEvent,
+  type WorldState,
 } from "@tokovo/core";
-import type {
-  ProfileTab,
-  TimelineTab,
-  XDMMessage,
-  XDMThread,
-  XNotification,
-  XRoute,
-  XState,
-  XTweet,
-  XUser,
+import { z } from "zod";
+import {
+  formatXSchemaIssues,
+  xComposerStatusInputSchema,
+  xDMDeliveryInputSchema,
+  xIdSchema,
+  xMediaPlaybackInputSchema,
+  xMessageInputSchema,
+  xNotificationInputSchema,
+  xNotificationsTabSchema,
+  xProfileTabSchema,
+  xPollVoteInputSchema,
+  xScreenSchema,
+  xThreadInputSchema,
+  xTimelineTabSchema,
+  xTweetInputSchema,
+  xUserInputSchema,
+} from "../contract/schemas.js";
+import {
+  X_STATE_SCHEMA_VERSION,
+  type XDMMessage,
+  type XDMThread,
+  type XNotification,
+  type XRoute,
+  type XState,
+  type XTweet,
+  type XUser,
 } from "./state.js";
 
-function ensureMutableArray<T>(value: T[] | undefined | null): T[] {
-  if (!Array.isArray(value)) return [];
-  // Some seed payloads may carry frozen arrays. Avoid runtime reducer crashes.
-  return Object.isExtensible(value) ? value : [...value];
-}
+const relationSchema = z
+  .object({ followerId: xIdSchema, followingId: xIdSchema })
+  .strict();
+const userTargetSchema = z.object({ userId: xIdSchema }).strict();
+const tweetTargetSchema = z.object({ tweetId: xIdSchema }).strict();
+const tweetActorSchema = z
+  .object({ tweetId: xIdSchema, userId: xIdSchema })
+  .strict();
+const routeSchema = z
+  .object({
+    screen: xScreenSchema,
+    tweetId: xIdSchema.optional(),
+    userId: xIdSchema.optional(),
+    threadId: xIdSchema.optional(),
+  })
+  .strict()
+  .superRefine((route, context) => {
+    const expected =
+      route.screen === "tweet"
+        ? "tweetId"
+        : route.screen === "profile"
+          ? "userId"
+          : route.screen === "thread"
+            ? "threadId"
+            : null;
+    if (expected && !route[expected]) {
+      context.addIssue({ code: "custom", message: `${route.screen} requires ${expected}`, path: [expected] });
+    }
+    for (const target of ["tweetId", "userId", "threadId"] as const) {
+      if (route[target] && target !== expected) {
+        context.addIssue({ code: "custom", message: `${target} is invalid for ${route.screen}`, path: [target] });
+      }
+    }
+  });
+const draftSchema = z.object({ text: z.string().max(25_000) }).strict();
+const threadDraftSchema = z
+  .object({ threadId: xIdSchema, text: z.string().max(25_000) })
+  .strict();
+const threadTypingSchema = z
+  .object({ threadId: xIdSchema, userId: xIdSchema.nullable() })
+  .strict();
+const timelineTabPayloadSchema = z.object({ tab: xTimelineTabSchema }).strict();
+const profileTabPayloadSchema = z.object({ tab: xProfileTabSchema }).strict();
+const notificationsTabPayloadSchema = z.object({ tab: xNotificationsTabSchema }).strict();
+const emptyPayloadSchema = z.object({}).strict();
 
-function ensureMutableRecord<T extends Record<string, unknown>>(
-  value: T | undefined | null,
-): T {
-  if (!value || typeof value !== "object") return {} as T;
-  return Object.isExtensible(value) ? value : { ...value };
-}
-
-function syncViewMode(state: XState): void {
-  // Canonical screen-to-view mapping (required by LayoutEngine).
-  // - compose: FULLSCREEN
-  // - DM thread: CHAT
-  // - everything else: FEED
-  if (state.currentScreen === "compose") {
-    state.viewMode = "FULLSCREEN";
-    state.conversationId = undefined;
-    return;
+function parsePayload<T>(event: { type: string; payload: unknown }, schema: z.ZodType<T>): T {
+  const result = schema.safeParse(event.payload);
+  if (!result.success) {
+    const detail = formatXSchemaIssues(result.error, `event.${event.type}.payload`).join("; ");
+    throw new Error(`X_EVENT_PAYLOAD_INVALID: ${detail}`);
   }
-  if (state.currentScreen === "thread") {
-    state.viewMode = "CHAT";
-    state.conversationId = state.activeThreadId ?? undefined;
-    return;
-  }
-  state.viewMode = "FEED";
-  state.conversationId = undefined;
+  return result.data;
 }
 
-function getAppState(draft: WorldState, deviceId: string): XState {
+function getState(draft: WorldState, deviceId: string): XState {
   const state = requireAppStateForDevice<XState>(draft, "app_x", deviceId);
-  state.users = ensureMutableArray(state.users);
-  state.tweets = ensureMutableArray(state.tweets);
-  state.timeline = ensureMutableArray(state.timeline);
-  state.notifications = ensureMutableArray(state.notifications);
-  state.dmThreads = ensureMutableArray(state.dmThreads);
-  state.dmMessages = ensureMutableArray(state.dmMessages);
-  state.composeDraft ??= "";
-  state.currentScreen ??= "timeline";
-  state.activeTweetId ??= null;
-  state.activeUserId ??= null;
-  state.activeThreadId ??= null;
-  state.currentUserId ??= null;
-  state.notificationsTab ??= "all";
-  state.timelineTab ??= "forYou";
-  state.profileTab ??= "posts";
-  state.navigationStack ??= [];
-  state.lastNavFrame ??= 0;
-  state.statusBarTheme ??= "dark";
-  state.themeMode ??= "dark";
-  state.threadDrafts = ensureMutableRecord(state.threadDrafts);
-  state.viewMode ??= "FEED";
-  state.conversationId ??= undefined;
-  for (const notification of state.notifications) {
-    notification.read ??= false;
+  if (state.schemaVersion !== X_STATE_SCHEMA_VERSION) {
+    throw new Error(
+      `X_STATE_VERSION_UNSUPPORTED: expected ${X_STATE_SCHEMA_VERSION}, received ${String(state.schemaVersion)}`,
+    );
   }
-  for (const thread of state.dmThreads) {
-    thread.unreadCount ??= 0;
-    thread.pinned ??= false;
-    thread.typingUserId ??= null;
-    thread.lastMessageAt ??= null;
-  }
-  syncViewMode(state);
   return state;
 }
 
-function ensureUserDefaults(payload: Partial<XUser>): XUser {
-  return {
-    id: payload.id ?? "user-unknown",
-    name: payload.name ?? "Unknown",
-    handle: payload.handle ?? "unknown",
-    bio: payload.bio,
-    avatarUrl: payload.avatarUrl,
-    followers: payload.followers ?? 0,
-    following: payload.following ?? 0,
-    followerIds: Array.isArray(payload.followerIds)
-      ? [...payload.followerIds]
-      : [],
-    followingIds: Array.isArray(payload.followingIds)
-      ? [...payload.followingIds]
-      : [],
-    verified: payload.verified ?? null,
-  };
+function requireUser(state: XState, id: string, context: string): XUser {
+  const user = state.usersById[id];
+  if (!user) throw new Error(`X_USER_MISSING: ${context} references unknown user "${id}"`);
+  return user;
 }
 
-function buildRoute(state: XState): XRoute {
-  return {
-    screen: state.currentScreen,
-    tweetId: state.activeTweetId ?? undefined,
-    userId: state.activeUserId ?? undefined,
-    threadId: state.activeThreadId ?? undefined,
-  };
+function requireTweet(state: XState, id: string, context: string): XTweet {
+  const tweet = state.tweetsById[id];
+  if (!tweet) throw new Error(`X_TWEET_MISSING: ${context} references unknown tweet "${id}"`);
+  return tweet;
 }
 
-function routesEqual(a: XRoute, b: XRoute): boolean {
+function requireThread(state: XState, id: string, context: string): XDMThread {
+  const thread = state.dmThreadsById[id];
+  if (!thread) throw new Error(`X_THREAD_MISSING: ${context} references unknown thread "${id}"`);
+  return thread;
+}
+
+function routesEqual(left: XRoute, right: XRoute): boolean {
   return (
-    a.screen === b.screen &&
-    a.tweetId === b.tweetId &&
-    a.userId === b.userId &&
-    a.threadId === b.threadId
+    left.screen === right.screen &&
+    left.tweetId === right.tweetId &&
+    left.userId === right.userId &&
+    left.threadId === right.threadId
   );
 }
 
-function insertTopLevelTweetByCreatedAt(
+function syncViewMode(state: XState): void {
+  if (state.route.screen === "compose") {
+    state.viewMode = "FULLSCREEN";
+    state.conversationId = undefined;
+  } else if (state.route.screen === "thread") {
+    state.viewMode = "CHAT";
+    state.conversationId = state.route.threadId;
+  } else {
+    state.viewMode = "FEED";
+    state.conversationId = undefined;
+  }
+}
+
+function validateRouteReferences(state: XState, route: XRoute): void {
+  if (route.tweetId) requireTweet(state, route.tweetId, "route.tweetId");
+  if (route.userId) requireUser(state, route.userId, "route.userId");
+  if (route.threadId) requireThread(state, route.threadId, "route.threadId");
+}
+
+function setRoute(
   state: XState,
-  tweetId: string,
-  createdAt: number,
+  route: XRoute,
+  atFrame: number,
+  direction: "forward" | "back",
 ): void {
-  const existingIndex = state.timeline.indexOf(tweetId);
-  if (existingIndex >= 0) {
-    state.timeline.splice(existingIndex, 1);
+  validateRouteReferences(state, route);
+  const previous = { ...state.route };
+  if (routesEqual(previous, route)) return;
+  if (direction === "forward") state.navigationStack.push(previous);
+  state.route = route;
+  state.lastTransition = { from: previous, to: { ...route }, atFrame, direction };
+  if (route.screen === "notifications") {
+    for (const id of state.notificationIds) state.notificationsById[id].read = true;
   }
+  if (route.screen === "thread" && route.threadId) {
+    state.dmThreadsById[route.threadId].unreadCount = 0;
+  }
+  syncViewMode(state);
+}
 
-  const insertAt = state.timeline.findIndex((id) => {
-    const existingTweet = state.tweets.find((t) => t.id === id);
-    if (!existingTweet) return false;
-    return existingTweet.createdAt < createdAt;
+function insertTimelineTweet(state: XState, tweetId: string): void {
+  const createdAt = state.tweetsById[tweetId].createdAt;
+  const insertAt = state.timelineIds.findIndex((existingId) => {
+    const existing = state.tweetsById[existingId];
+    return existing.createdAt < createdAt ||
+      (existing.createdAt === createdAt && existingId.localeCompare(tweetId) > 0);
   });
-
-  if (insertAt >= 0) {
-    state.timeline.splice(insertAt, 0, tweetId);
-    return;
-  }
-  state.timeline.push(tweetId);
+  if (insertAt < 0) state.timelineIds.push(tweetId);
+  else state.timelineIds.splice(insertAt, 0, tweetId);
 }
 
-function markNotificationsRead(state: XState): void {
-  for (const notification of state.notifications) {
-    notification.read = true;
-  }
+function insertNotification(state: XState, notificationId: string): void {
+  const createdAt = state.notificationsById[notificationId].createdAt;
+  const insertAt = state.notificationIds.findIndex((existingId) => {
+    const existing = state.notificationsById[existingId];
+    return existing.createdAt < createdAt ||
+      (existing.createdAt === createdAt && existingId.localeCompare(notificationId) > 0);
+  });
+  if (insertAt < 0) state.notificationIds.push(notificationId);
+  else state.notificationIds.splice(insertAt, 0, notificationId);
 }
 
-function markThreadRead(state: XState, threadId: string | null | undefined): void {
-  if (!threadId) return;
-  const thread = state.dmThreads.find((item) => item.id === threadId);
-  if (!thread) return;
-  thread.unreadCount = 0;
+function sortThreads(state: XState): void {
+  state.dmThreadIds.sort((leftId, rightId) => {
+    const left = state.dmThreadsById[leftId];
+    const right = state.dmThreadsById[rightId];
+    if (left.pinned !== right.pinned) return left.pinned ? -1 : 1;
+    const difference = (right.lastMessageAt ?? 0) - (left.lastMessageAt ?? 0);
+    return difference === 0 ? leftId.localeCompare(rightId) : difference;
+  });
 }
 
-function getThreadById(state: XState, threadId: string): XDMThread | undefined {
-  return state.dmThreads.find((thread) => thread.id === threadId);
+function toUser(input: z.infer<typeof xUserInputSchema>): XUser {
+  return {
+    ...input,
+    followers: input.followers ?? 0,
+    following: input.following ?? 0,
+    followerIds: [],
+    followingIds: [],
+    verified: input.verified ?? null,
+  };
+}
+
+function toTweet(input: z.infer<typeof xTweetInputSchema>): XTweet {
+  const pollVotes = input.poll?.options.reduce((total, option) => total + option.votes, 0) ?? 0;
+  return {
+    ...input,
+    media: input.media
+      ? {
+          ...input.media,
+          urls: [...input.media.urls],
+          sensitive: input.media.sensitive ?? false,
+          playback: input.media.type === "video" ? { state: "idle", progress: 0 } : null,
+        }
+      : undefined,
+    poll: input.poll
+      ? {
+          ...input.poll,
+          options: input.poll.options.map((option) => ({ ...option })),
+          totalVotes: input.poll.totalVotes ?? pollVotes,
+          selectedOptionId: input.poll.selectedOptionId ?? null,
+        }
+      : undefined,
+    hashtags: [...(input.hashtags ?? [])],
+    mentions: [...(input.mentions ?? [])],
+    likeCount: input.likeCount ?? input.likedBy?.length ?? 0,
+    repostCount: input.repostCount ?? 0,
+    replyIds: [],
+    likedBy: [...(input.likedBy ?? [])],
+    bookmarkedBy: [...(input.bookmarkedBy ?? [])],
+    sharedBy: [...(input.sharedBy ?? [])],
+    viewCount: input.viewCount ?? 0,
+    bookmarkCount: input.bookmarkCount ?? input.bookmarkedBy?.length ?? 0,
+    shareCount: input.shareCount ?? input.sharedBy?.length ?? 0,
+  };
 }
 
 export const xReducer: PluginReducer<"app_x"> = (
   draft: WorldState,
   event: RuntimeEvent & { kind: "APP"; appId: "app_x"; deviceId: string },
 ) => {
-  const appState = getAppState(draft, event.deviceId);
+  const state = getState(draft, event.deviceId);
 
   switch (event.type) {
     case "ADD_USER": {
-      const payload = event.payload as Partial<XUser>;
-      const existing = appState.users.find((u) => u.id === payload.id);
-      if (existing) {
-        Object.assign(existing, ensureUserDefaults({ ...existing, ...payload }));
-      } else {
-        appState.users.push(ensureUserDefaults(payload));
-      }
+      const input = parsePayload(event, xUserInputSchema);
+      if (state.usersById[input.id]) throw new Error(`X_USER_DUPLICATE: user "${input.id}" already exists`);
+      state.usersById[input.id] = toUser(input);
       break;
     }
     case "SET_CURRENT_USER": {
-      const payload = event.payload as { userId: string };
-      appState.currentUserId = payload.userId;
+      const { userId } = parsePayload(event, userTargetSchema);
+      requireUser(state, userId, "SET_CURRENT_USER");
+      state.currentUserId = userId;
       break;
     }
     case "FOLLOW_USER": {
-      const payload = event.payload as { followerId: string; followingId: string };
-      const follower = appState.users.find((u) => u.id === payload.followerId);
-      const following = appState.users.find((u) => u.id === payload.followingId);
-      if (follower && !follower.followingIds.includes(payload.followingId)) {
-        follower.followingIds.push(payload.followingId);
+      const { followerId, followingId } = parsePayload(event, relationSchema);
+      if (followerId === followingId) throw new Error("X_FOLLOW_SELF: a user cannot follow itself");
+      const follower = requireUser(state, followerId, "FOLLOW_USER.followerId");
+      const following = requireUser(state, followingId, "FOLLOW_USER.followingId");
+      if (!follower.followingIds.includes(followingId)) {
+        follower.followingIds.push(followingId);
+        following.followerIds.push(followerId);
         follower.following += 1;
-      }
-      if (following && !following.followerIds.includes(payload.followerId)) {
-        following.followerIds.push(payload.followerId);
         following.followers += 1;
       }
       break;
     }
     case "UNFOLLOW_USER": {
-      const payload = event.payload as { followerId: string; followingId: string };
-      const follower = appState.users.find((u) => u.id === payload.followerId);
-      const following = appState.users.find((u) => u.id === payload.followingId);
-      if (follower) {
-        const hadRelationship = follower.followingIds.includes(payload.followingId);
-        if (hadRelationship) {
-          follower.followingIds = follower.followingIds.filter((id) => id !== payload.followingId);
-          follower.following = Math.max(0, follower.following - 1);
-        }
-      }
-      if (following) {
-        const hadRelationship = following.followerIds.includes(payload.followerId);
-        if (hadRelationship) {
-          following.followerIds = following.followerIds.filter((id) => id !== payload.followerId);
-          following.followers = Math.max(0, following.followers - 1);
-        }
+      const { followerId, followingId } = parsePayload(event, relationSchema);
+      const follower = requireUser(state, followerId, "UNFOLLOW_USER.followerId");
+      const following = requireUser(state, followingId, "UNFOLLOW_USER.followingId");
+      if (follower.followingIds.includes(followingId)) {
+        follower.followingIds = follower.followingIds.filter((id) => id !== followingId);
+        following.followerIds = following.followerIds.filter((id) => id !== followerId);
+        follower.following -= 1;
+        following.followers -= 1;
       }
       break;
     }
     case "ADD_TWEET": {
-      const payload = event.payload as Partial<XTweet> & {
-        id: string;
-        authorId: string;
-        text?: string;
-        createdAt: number;
-        replyToId?: string;
-        repostOfId?: string;
-        quoteTweetId?: string;
-      };
-
-      const tweet: XTweet = {
-        id: payload.id,
-        authorId: payload.authorId,
-        text: payload.text ?? "",
-        createdAt: payload.createdAt,
-        replyToId: payload.replyToId,
-        repostOfId: payload.repostOfId,
-        quoteTweetId: payload.quoteTweetId,
-        media: payload.media,
-        linkPreview: payload.linkPreview,
-        poll: payload.poll,
-        hashtags: Array.isArray(payload.hashtags) ? [...payload.hashtags] : [],
-        mentions: Array.isArray(payload.mentions) ? [...payload.mentions] : [],
-        likeCount: payload.likeCount ?? 0,
-        repostCount: payload.repostCount ?? 0,
-        replyIds: Array.isArray(payload.replyIds) ? [...payload.replyIds] : [],
-        likedBy: Array.isArray(payload.likedBy) ? [...payload.likedBy] : [],
-        viewCount: payload.viewCount ?? 0,
-        bookmarkCount: payload.bookmarkCount ?? 0,
-        shareCount: payload.shareCount ?? 0,
-      };
-      const existingIndex = appState.tweets.findIndex((item) => item.id === tweet.id);
-      if (existingIndex >= 0) {
-        appState.tweets.splice(existingIndex, 1, tweet);
-      } else {
-        appState.tweets.push(tweet);
-      }
-      const shouldAppearInTimeline = !tweet.replyToId;
-      if (shouldAppearInTimeline) {
-        insertTopLevelTweetByCreatedAt(appState, tweet.id, tweet.createdAt);
-      }
-
-      if (tweet.replyToId) {
-        const parent = appState.tweets.find((t) => t.id === tweet.replyToId);
-        if (parent && !parent.replyIds.includes(tweet.id)) parent.replyIds.push(tweet.id);
-      }
-
-      if (tweet.repostOfId) {
-        const original = appState.tweets.find((t) => t.id === tweet.repostOfId);
-        if (original) original.repostCount += 1;
-      }
+      const input = parsePayload(event, xTweetInputSchema);
+      if (state.tweetsById[input.id]) throw new Error(`X_TWEET_DUPLICATE: tweet "${input.id}" already exists`);
+      requireUser(state, input.authorId, "ADD_TWEET.authorId");
+      if (input.replyToId) requireTweet(state, input.replyToId, "ADD_TWEET.replyToId");
+      if (input.repostOfId) requireTweet(state, input.repostOfId, "ADD_TWEET.repostOfId");
+      if (input.quoteTweetId) requireTweet(state, input.quoteTweetId, "ADD_TWEET.quoteTweetId");
+      input.likedBy?.forEach((id) => requireUser(state, id, "ADD_TWEET.likedBy"));
+      input.bookmarkedBy?.forEach((id) => requireUser(state, id, "ADD_TWEET.bookmarkedBy"));
+      input.sharedBy?.forEach((id) => requireUser(state, id, "ADD_TWEET.sharedBy"));
+      const tweet = toTweet(input);
+      state.tweetsById[tweet.id] = tweet;
+      if (tweet.replyToId) state.tweetsById[tweet.replyToId].replyIds.push(tweet.id);
+      else insertTimelineTweet(state, tweet.id);
+      if (tweet.repostOfId) state.tweetsById[tweet.repostOfId].repostCount += 1;
       break;
     }
     case "LIKE_TWEET": {
-      const payload = event.payload as { tweetId: string; userId: string };
-      const tweet = appState.tweets.find((t) => t.id === payload.tweetId);
-      if (tweet && !tweet.likedBy.includes(payload.userId)) {
-        tweet.likedBy.push(payload.userId);
+      const { tweetId, userId } = parsePayload(event, tweetActorSchema);
+      const tweet = requireTweet(state, tweetId, "LIKE_TWEET.tweetId");
+      requireUser(state, userId, "LIKE_TWEET.userId");
+      if (!tweet.likedBy.includes(userId)) {
+        tweet.likedBy.push(userId);
         tweet.likeCount += 1;
       }
       break;
     }
+    case "UNLIKE_TWEET": {
+      const { tweetId, userId } = parsePayload(event, tweetActorSchema);
+      const tweet = requireTweet(state, tweetId, "UNLIKE_TWEET.tweetId");
+      requireUser(state, userId, "UNLIKE_TWEET.userId");
+      if (tweet.likedBy.includes(userId)) {
+        tweet.likedBy = tweet.likedBy.filter((id) => id !== userId);
+        tweet.likeCount = Math.max(0, tweet.likeCount - 1);
+      }
+      break;
+    }
     case "VIEW_TWEET": {
-      const payload = event.payload as { tweetId: string };
-      const tweet = appState.tweets.find((t) => t.id === payload.tweetId);
-      if (tweet) tweet.viewCount += 1;
+      const { tweetId } = parsePayload(event, tweetTargetSchema);
+      requireTweet(state, tweetId, "VIEW_TWEET.tweetId").viewCount += 1;
       break;
     }
     case "BOOKMARK_TWEET": {
-      const payload = event.payload as { tweetId: string };
-      const tweet = appState.tweets.find((t) => t.id === payload.tweetId);
-      if (tweet) tweet.bookmarkCount += 1;
+      const { tweetId, userId } = parsePayload(event, tweetActorSchema);
+      const tweet = requireTweet(state, tweetId, "BOOKMARK_TWEET.tweetId");
+      requireUser(state, userId, "BOOKMARK_TWEET.userId");
+      if (!tweet.bookmarkedBy.includes(userId)) {
+        tweet.bookmarkedBy.push(userId);
+        tweet.bookmarkCount += 1;
+      }
+      break;
+    }
+    case "UNBOOKMARK_TWEET": {
+      const { tweetId, userId } = parsePayload(event, tweetActorSchema);
+      const tweet = requireTweet(state, tweetId, "UNBOOKMARK_TWEET.tweetId");
+      requireUser(state, userId, "UNBOOKMARK_TWEET.userId");
+      if (tweet.bookmarkedBy.includes(userId)) {
+        tweet.bookmarkedBy = tweet.bookmarkedBy.filter((id) => id !== userId);
+        tweet.bookmarkCount = Math.max(0, tweet.bookmarkCount - 1);
+      }
       break;
     }
     case "SHARE_TWEET": {
-      const payload = event.payload as { tweetId: string };
-      const tweet = appState.tweets.find((t) => t.id === payload.tweetId);
-      if (tweet) tweet.shareCount += 1;
+      const { tweetId, userId } = parsePayload(event, tweetActorSchema);
+      const tweet = requireTweet(state, tweetId, "SHARE_TWEET.tweetId");
+      requireUser(state, userId, "SHARE_TWEET.userId");
+      if (!tweet.sharedBy.includes(userId)) {
+        tweet.sharedBy.push(userId);
+        tweet.shareCount += 1;
+      }
+      break;
+    }
+    case "VOTE_POLL": {
+      const { tweetId, userId, optionId } = parsePayload(event, xPollVoteInputSchema);
+      const tweet = requireTweet(state, tweetId, "VOTE_POLL.tweetId");
+      requireUser(state, userId, "VOTE_POLL.userId");
+      if (state.currentUserId !== userId) {
+        throw new Error(`X_POLL_VOTER_NOT_CURRENT: user "${userId}" is not the current user`);
+      }
+      if (!tweet.poll) throw new Error(`X_POLL_MISSING: tweet "${tweetId}" has no poll`);
+      const option = tweet.poll.options.find((candidate) => candidate.id === optionId);
+      if (!option) throw new Error(`X_POLL_OPTION_MISSING: poll on tweet "${tweetId}" has no option "${optionId}"`);
+      if (!tweet.poll.selectedOptionId) {
+        tweet.poll.selectedOptionId = optionId;
+        option.votes += 1;
+        tweet.poll.totalVotes += 1;
+      } else if (tweet.poll.selectedOptionId !== optionId) {
+        throw new Error(`X_POLL_ALREADY_VOTED: poll on tweet "${tweetId}" already has a selection`);
+      }
+      break;
+    }
+    case "SET_MEDIA_PLAYBACK": {
+      const { tweetId, state: playbackState, progress } = parsePayload(event, xMediaPlaybackInputSchema);
+      const tweet = requireTweet(state, tweetId, "SET_MEDIA_PLAYBACK.tweetId");
+      if (!tweet.media || tweet.media.type !== "video" || !tweet.media.playback) {
+        throw new Error(`X_VIDEO_MISSING: tweet "${tweetId}" does not contain video media`);
+      }
+      tweet.media.playback = { state: playbackState, progress };
       break;
     }
     case "SET_SCREEN": {
-      const payload = event.payload as {
-        screen: XState["currentScreen"];
-        tweetId?: string;
-        userId?: string;
-        threadId?: string;
-      };
-      const currentRoute = buildRoute(appState);
-      const nextRoute: XRoute = {
-        screen: payload.screen,
-        tweetId: payload.tweetId,
-        userId: payload.userId,
-        threadId: payload.threadId,
-      };
-
-      if (!routesEqual(currentRoute, nextRoute)) {
-        appState.navigationStack.push(currentRoute);
-      }
-
-      appState.currentScreen = payload.screen;
-      appState.activeTweetId = payload.tweetId ?? null;
-      appState.activeUserId = payload.userId ?? null;
-      appState.activeThreadId = payload.threadId ?? null;
-      appState.lastNavFrame = event.at;
-      if (payload.screen === "notifications") {
-        markNotificationsRead(appState);
-      }
-      if (payload.screen === "thread") {
-        markThreadRead(appState, payload.threadId ?? null);
-      }
-      syncViewMode(appState);
+      setRoute(state, parsePayload(event, routeSchema), event.at, "forward");
       break;
     }
     case "NAVIGATE_BACK": {
-      const previous = appState.navigationStack.pop();
-      if (previous) {
-        appState.currentScreen = previous.screen;
-        appState.activeTweetId = previous.tweetId ?? null;
-        appState.activeUserId = previous.userId ?? null;
-        appState.activeThreadId = previous.threadId ?? null;
-        appState.lastNavFrame = event.at;
-        syncViewMode(appState);
-      }
-      break;
-    }
-    case "SET_ACTIVE_TWEET": {
-      const payload = event.payload as { tweetId: string | null };
-      appState.activeTweetId = payload.tweetId;
-      break;
-    }
-    case "SET_ACTIVE_USER": {
-      const payload = event.payload as { userId: string | null };
-      appState.activeUserId = payload.userId;
-      break;
-    }
-    case "SET_ACTIVE_THREAD": {
-      const payload = event.payload as { threadId: string | null };
-      appState.activeThreadId = payload.threadId;
-      markThreadRead(appState, payload.threadId);
-      syncViewMode(appState);
+      parsePayload(event, emptyPayloadSchema);
+      const previous = state.navigationStack.pop();
+      if (previous) setRoute(state, previous, event.at, "back");
       break;
     }
     case "SET_COMPOSE_DRAFT": {
-      const payload = event.payload as { text: string };
-      appState.composeDraft = payload.text;
-      break;
-    }
-    case "SET_THREAD_DRAFT": {
-      const payload = event.payload as { threadId: string; text: string };
-      appState.threadDrafts[payload.threadId] = payload.text;
-      break;
-    }
-    case "SET_THREAD_TYPING": {
-      const payload = event.payload as { threadId: string; userId: string | null };
-      const thread = getThreadById(appState, payload.threadId);
-      if (thread) {
-        thread.typingUserId = payload.userId;
+      state.composer.draft = parsePayload(event, draftSchema).text;
+      if (state.composer.status === "failed") {
+        state.composer.status = "idle";
+        state.composer.error = null;
       }
       break;
     }
+    case "SET_COMPOSER_STATUS": {
+      const input = parsePayload(event, xComposerStatusInputSchema);
+      state.composer.status = input.status;
+      state.composer.error = input.error ?? null;
+      break;
+    }
+    case "SET_THREAD_DRAFT": {
+      const { threadId, text } = parsePayload(event, threadDraftSchema);
+      requireThread(state, threadId, "SET_THREAD_DRAFT.threadId");
+      state.threadDrafts[threadId] = text;
+      break;
+    }
+    case "SET_THREAD_TYPING": {
+      const { threadId, userId } = parsePayload(event, threadTypingSchema);
+      const thread = requireThread(state, threadId, "SET_THREAD_TYPING.threadId");
+      if (userId) {
+        requireUser(state, userId, "SET_THREAD_TYPING.userId");
+        if (!thread.participantIds.includes(userId)) {
+          throw new Error(`X_THREAD_PARTICIPANT_REQUIRED: user "${userId}" is not in thread "${threadId}"`);
+        }
+      }
+      thread.typingUserId = userId;
+      break;
+    }
     case "SET_TIMELINE_TAB": {
-      const payload = event.payload as { tab: TimelineTab };
-      appState.timelineTab = payload.tab;
+      state.timelineTab = parsePayload(event, timelineTabPayloadSchema).tab;
       break;
     }
     case "SET_PROFILE_TAB": {
-      const payload = event.payload as { tab: ProfileTab };
-      appState.profileTab = payload.tab;
+      state.profileTab = parsePayload(event, profileTabPayloadSchema).tab;
       break;
     }
     case "SET_NOTIFICATIONS_TAB": {
-      const payload = event.payload as { tab: XState["notificationsTab"] };
-      appState.notificationsTab = payload.tab;
-      if (appState.currentScreen === "notifications") {
-        markNotificationsRead(appState);
+      state.notificationsTab = parsePayload(event, notificationsTabPayloadSchema).tab;
+      if (state.route.screen === "notifications") {
+        for (const id of state.notificationIds) state.notificationsById[id].read = true;
       }
       break;
     }
     case "ADD_NOTIFICATION": {
-      const payload = event.payload as XNotification;
-      appState.notifications = appState.notifications.filter((item) => item.id !== payload.id);
-      appState.notifications.unshift({
-        ...payload,
-        read:
-          payload.read ??
-          appState.currentScreen === "notifications",
-      });
+      const input = parsePayload(event, xNotificationInputSchema);
+      if (state.notificationsById[input.id]) {
+        throw new Error(`X_NOTIFICATION_DUPLICATE: notification "${input.id}" already exists`);
+      }
+      requireUser(state, input.actorId, "ADD_NOTIFICATION.actorId");
+      if (input.tweetId) requireTweet(state, input.tweetId, "ADD_NOTIFICATION.tweetId");
+      const notification: XNotification = {
+        ...input,
+        read: input.read ?? state.route.screen === "notifications",
+      };
+      state.notificationsById[input.id] = notification;
+      insertNotification(state, input.id);
       break;
     }
     case "ADD_DM_THREAD": {
-      const payload = event.payload as XDMThread;
-      const existing = appState.dmThreads.find((t) => t.id === payload.id);
-      if (existing) {
-        existing.participantIds = Array.isArray(payload.participantIds)
-          ? [...payload.participantIds]
-          : existing.participantIds;
-        existing.title = payload.title ?? existing.title;
-        existing.unreadCount = payload.unreadCount ?? existing.unreadCount;
-        existing.pinned = payload.pinned ?? existing.pinned;
-      } else {
-        appState.dmThreads.push({
-          ...payload,
-          // Payload arrays can be frozen (seed data). Clone to keep reducer safe.
-          participantIds: Array.isArray(payload.participantIds)
-            ? [...payload.participantIds]
-            : [],
-          messageIds: Array.isArray(payload.messageIds) ? [...payload.messageIds] : [],
-          title: payload.title,
-          unreadCount: payload.unreadCount ?? 0,
-          pinned: payload.pinned ?? false,
-          typingUserId: payload.typingUserId ?? null,
-          lastMessageAt: payload.lastMessageAt ?? null,
-        });
+      const input = parsePayload(event, xThreadInputSchema);
+      if (state.dmThreadsById[input.id]) throw new Error(`X_THREAD_DUPLICATE: thread "${input.id}" already exists`);
+      const participants = new Set(input.participantIds);
+      if (participants.size !== input.participantIds.length) {
+        throw new Error(`X_THREAD_PARTICIPANT_DUPLICATE: thread "${input.id}" repeats a participant`);
       }
+      input.participantIds.forEach((id) => requireUser(state, id, "ADD_DM_THREAD.participantIds"));
+      const thread: XDMThread = {
+        id: input.id,
+        participantIds: [...input.participantIds],
+        messageIds: [],
+        title: input.title,
+        unreadCount: input.unreadCount ?? 0,
+        pinned: input.pinned ?? false,
+        typingUserId: null,
+        lastMessageAt: null,
+      };
+      state.dmThreadsById[input.id] = thread;
+      state.dmThreadIds.push(input.id);
+      state.threadScrollYById[input.id] = 0;
+      sortThreads(state);
       break;
     }
     case "ADD_DM_MESSAGE": {
-      const payload = event.payload as XDMMessage;
-      // Defensive: some upstream seed data / previous frames may contain frozen arrays.
-      appState.dmMessages = ensureMutableArray(appState.dmMessages);
-      if (!appState.dmMessages.find((message) => message.id === payload.id)) {
-        appState.dmMessages.push(payload);
+      const input = parsePayload(event, xMessageInputSchema);
+      if (state.dmMessagesById[input.id]) throw new Error(`X_MESSAGE_DUPLICATE: message "${input.id}" already exists`);
+      const thread = requireThread(state, input.threadId, "ADD_DM_MESSAGE.threadId");
+      requireUser(state, input.senderId, "ADD_DM_MESSAGE.senderId");
+      if (!thread.participantIds.includes(input.senderId)) {
+        throw new Error(`X_THREAD_PARTICIPANT_REQUIRED: user "${input.senderId}" is not in thread "${input.threadId}"`);
       }
-      const thread = appState.dmThreads.find((t) => t.id === payload.threadId);
-      if (thread) {
-        thread.messageIds = ensureMutableArray(thread.messageIds);
-        if (!thread.messageIds.includes(payload.id)) {
-          thread.messageIds.push(payload.id);
-        }
-        thread.lastMessageAt =
-          thread.lastMessageAt === null || thread.lastMessageAt === undefined
-            ? payload.createdAt
-            : Math.max(thread.lastMessageAt, payload.createdAt);
-        if (thread.typingUserId === payload.senderId) {
-          thread.typingUserId = null;
-        }
-        const isActiveThread =
-          appState.currentScreen === "thread" &&
-          appState.activeThreadId === payload.threadId;
-        if (payload.senderId !== appState.currentUserId && !isActiveThread) {
-          thread.unreadCount += 1;
-        }
-      }
+      const message: XDMMessage = { ...input, delivery: input.delivery ?? "sent" };
+      state.dmMessagesById[input.id] = message;
+      const insertAt = thread.messageIds.findIndex((id) => {
+        const existing = state.dmMessagesById[id];
+        return existing.createdAt > message.createdAt ||
+          (existing.createdAt === message.createdAt && id.localeCompare(message.id) > 0);
+      });
+      if (insertAt < 0) thread.messageIds.push(message.id);
+      else thread.messageIds.splice(insertAt, 0, message.id);
+      thread.lastMessageAt = Math.max(thread.lastMessageAt ?? 0, message.createdAt);
+      if (thread.typingUserId === message.senderId) thread.typingUserId = null;
+      const active = state.route.screen === "thread" && state.route.threadId === thread.id;
+      if (message.senderId !== state.currentUserId && !active) thread.unreadCount += 1;
+      sortThreads(state);
       break;
     }
-    case "SET_THEME_MODE": {
-      const payload = event.payload as { mode: "dark" | "light" | "storybook" };
-      appState.themeMode = payload.mode;
+    case "SET_DM_DELIVERY": {
+      const { messageId, delivery } = parsePayload(event, xDMDeliveryInputSchema);
+      const message = state.dmMessagesById[messageId];
+      if (!message) throw new Error(`X_MESSAGE_MISSING: SET_DM_DELIVERY references unknown message "${messageId}"`);
+      message.delivery = delivery;
       break;
     }
+    default:
+      throw new Error(`X_EVENT_TYPE_UNSUPPORTED: "${event.type}"`);
   }
+
+  state.layoutRevision += 1;
 };

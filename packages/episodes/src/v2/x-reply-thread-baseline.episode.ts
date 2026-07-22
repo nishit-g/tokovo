@@ -28,6 +28,7 @@ export default defineEpisode({
       })
       .background({ type: "image", src: "/backgrounds/ambient-night.png" })
       .snapshot("app_x", "phone", {
+        schemaVersion: 2,
         users: [
           {
             id: "u_me",
@@ -67,17 +68,17 @@ export default defineEpisode({
             id: "tw_op",
             authorId: "u_op",
             text: "I never lie. I just remix the truth.",
+            createdAt: new Date("2025-06-26T12:01:00Z").getTime(),
             viewCount: 214000,
             shareCount: 4100,
             bookmarkCount: 18000,
           },
-        ],
-        replies: [
           {
             id: "tw_r1",
             authorId: "u_1",
             text: "DJ Cap back on the decks.",
             replyToId: "tw_op",
+            createdAt: new Date("2025-06-26T12:02:00Z").getTime(),
             viewCount: 82000,
             shareCount: 1100,
             bookmarkCount: 3600,
@@ -87,14 +88,15 @@ export default defineEpisode({
             authorId: "u_2",
             text: "Remix is crazy. That's just lying with reverb.",
             replyToId: "tw_op",
+            createdAt: new Date("2025-06-26T12:03:00Z").getTime(),
             viewCount: 76000,
             shareCount: 900,
             bookmarkCount: 3100,
           },
         ],
         currentUserId: "u_me",
-      })
-      .view("app_x", "phone", { screen: "timeline" })
+      }, { version: 2 })
+      .view("app_x", "phone", { schemaVersion: 2, screen: "timeline" }, { version: 2 })
       .x("phone", (x) => {
         x.at("4.0s").navigate("tweet", { tweetId: "tw_op" });
 
@@ -103,6 +105,7 @@ export default defineEpisode({
         x.at("14.0s").postTweet({
           authorId: "u_me",
           text: "He said 'remix' like honesty is a playlist.",
+          createdAt: new Date("2025-06-26T12:04:14Z").getTime(),
           viewCount: 1200,
           shareCount: 24,
           bookmarkCount: 80,

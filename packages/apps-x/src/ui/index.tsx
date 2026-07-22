@@ -1,47 +1,78 @@
-import React from "react";
-import {
-  requireAppStateForDevice,
-  type PluginViewProps,
-} from "@tokovo/core";
-import type { XState } from "../runtime/state.js";
-import { getThemeMode } from "../runtime/selectors.js";
-import { XThemeProvider } from "./ThemeContext.js";
-import { Timeline } from "./Timeline.js";
-import { TweetDetail } from "./TweetDetail.js";
-import { Compose } from "./Compose.js";
-import { Profile } from "./Profile.js";
-import { Notifications } from "./Notifications.js";
-import { Messages } from "./Messages.js";
-import { MessageThread } from "./MessageThread.js";
+import React, { useMemo } from "react";
+import { type PluginViewProps } from "@tokovo/core";
+import { useTime } from "@tokovo/react";
+import { XExperienceProvider } from "../experience/context.js";
+import { resolveXExperience } from "../experience/resolver.js";
+import { renderXScreen } from "../presentation/router.js";
+import { requireXState } from "../runtime/selectors.js";
 
-export const XView: React.FC<PluginViewProps> = ({ world, deviceId, t }) => {
-  const appState = requireAppStateForDevice<XState>(world, "app_x", deviceId);
-  const screen = appState.currentScreen;
-  const themeMode = getThemeMode(world, deviceId);
-
-  const renderScreen = () => {
-    switch (screen) {
-      case "tweet":
-        return <TweetDetail world={world} deviceId={deviceId} t={t} />;
-      case "compose":
-        return <Compose world={world} deviceId={deviceId} t={t} />;
-      case "profile":
-        return <Profile world={world} deviceId={deviceId} />;
-      case "notifications":
-        return <Notifications world={world} deviceId={deviceId} />;
-      case "messages":
-        return <Messages world={world} deviceId={deviceId} />;
-      case "thread":
-        return <MessageThread world={world} deviceId={deviceId} t={t} />;
-      case "timeline":
-      default:
-        return <Timeline world={world} deviceId={deviceId} />;
-    }
-  };
+export const XView: React.FC<PluginViewProps> = ({
+  world,
+  deviceId,
+  platform,
+  width,
+  height,
+  appViewport,
+}) => {
+  const frame = useTime();
+  const device = world.devices[deviceId];
+  if (!device) throw new Error(`X_DEVICE_MISSING: "${deviceId}" is not in world state`);
+  const state = requireXState(world, deviceId);
+  const appearance = device.appAppearance ?? device.os.appearance;
+  const experience = useMemo(
+    () => resolveXExperience({
+      platform,
+      appearance,
+      themeId: device.appTheme,
+      locale: state.locale,
+      reducedMotion: device.os.motion === "reduced",
+      increasedContrast: device.os.contrast === "increased",
+      textScale: device.os.textScale,
+    }),
+    [appearance, device.appTheme, device.os.contrast, device.os.motion, device.os.textScale, platform, state.locale],
+  );
+  const transition = state.lastTransition;
+  const duration = experience.motion.routeFrames;
+  const progress = !transition || duration === 0
+    ? 1
+    : Math.min(1, Math.max(0, (frame - transition.atFrame) / duration));
+  const eased = 1 - Math.pow(1 - progress, 3);
+  const direction = transition?.direction === "back" ? -1 : 1;
 
   return (
-    <XThemeProvider mode={themeMode}>
-      {renderScreen()}
-    </XThemeProvider>
+    <XExperienceProvider experience={experience}>
+      <div
+        role="application"
+        aria-label={experience.t("appName")}
+        lang={experience.locale}
+        dir={experience.direction}
+        data-x-platform={experience.platform}
+        data-x-appearance={experience.appearance}
+        data-x-theme={experience.themeId}
+        style={{
+          width: "100%",
+          height: "100%",
+          paddingTop: appViewport.interactiveInsets.top,
+          paddingBottom: appViewport.interactiveInsets.bottom,
+          boxSizing: "border-box",
+          overflow: "hidden",
+          background: experience.colors.background,
+          color: experience.colors.text,
+          fontFamily: experience.type.family,
+          textRendering: "geometricPrecision",
+        }}
+      >
+        <div style={{ width: "100%", height: "100%", opacity: eased, transform: `translateX(${direction * (1 - eased) * 10}px)`, overflow: "hidden" }}>
+          {renderXScreen(state.route, {
+            world,
+            deviceId,
+            width,
+            height: Math.max(0, height - appViewport.interactiveInsets.top - appViewport.interactiveInsets.bottom),
+          })}
+        </div>
+      </div>
+    </XExperienceProvider>
   );
 };
+
+export const ui = { XView };

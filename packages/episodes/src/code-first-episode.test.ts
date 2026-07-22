@@ -143,10 +143,12 @@ describe("canonical code-first app tracks", () => {
       region: "bubble",
     });
     expect(postSubject).toEqual({
-      kind: "semantic",
+      kind: "entity",
       deviceId: "phone",
       appId: "app_x",
-      subjectId: "tweet_card",
+      entityType: "tweet",
+      entityId: "post_reaction",
+      region: "card",
     });
     expect(ir.sections).toEqual([
       { id: "reveal", startFrame: 60, endFrame: 210 },

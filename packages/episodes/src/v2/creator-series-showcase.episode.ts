@@ -8,7 +8,7 @@ import { episode } from "../code-first-episode.js";
  * - heads-up notification banner (device-owned subject)
  * - app switching transitions (WhatsApp -> X -> iMessage -> lock again)
  * - keyboard typing + camera tracking keyboard (device-owned subject)
- * - app semantic subjects (lastMessage, tweet_card, etc.)
+ * - exact app entity subjects (message bubbles, post cards, etc.)
  *
  * This is intentionally "a bit long" so creators can fork it as a base template.
  */
@@ -77,6 +77,7 @@ export default defineEpisode({
       })
       .background({ type: "image", src: "/backgrounds/cozy-bedroom.png" })
       .snapshot("app_x", "phone", {
+        schemaVersion: 2,
         users: [
           {
             id: "u_me",
@@ -116,17 +117,17 @@ export default defineEpisode({
             id: "tw_op",
             authorId: "u_op",
             text: "I never lie. I just remix the truth.",
+            createdAt: new Date("2025-06-26T21:38:00Z").getTime(),
             viewCount: 214000,
             shareCount: 4100,
             bookmarkCount: 18000,
           },
-        ],
-        replies: [
           {
             id: "tw_r1",
             authorId: "u_1",
             text: "DJ Cap back on the decks.",
             replyToId: "tw_op",
+            createdAt: new Date("2025-06-26T21:39:00Z").getTime(),
             viewCount: 82000,
             shareCount: 1100,
             bookmarkCount: 3600,
@@ -136,14 +137,15 @@ export default defineEpisode({
             authorId: "u_2",
             text: "Remix is crazy. That's just lying with reverb.",
             replyToId: "tw_op",
+            createdAt: new Date("2025-06-26T21:40:00Z").getTime(),
             viewCount: 76000,
             shareCount: 900,
             bookmarkCount: 3100,
           },
         ],
         currentUserId: "u_me",
-      })
-      .view("app_x", "phone", { screen: "timeline" })
+      }, { version: 2 })
+      .view("app_x", "phone", { schemaVersion: 2, screen: "timeline" }, { version: 2 })
 
       .overlay((ov) => {
         ov.at("0.0s").hook("Wake up. It started.", {
@@ -263,6 +265,7 @@ export default defineEpisode({
         x.at("44.0s").postTweet({
           authorId: "u_me",
           text: "He said 'remix' like honesty is a playlist.",
+          createdAt: new Date("2025-06-26T21:41:44Z").getTime(),
           viewCount: 1800,
           shareCount: 34,
           bookmarkCount: 120,

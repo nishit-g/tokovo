@@ -62,6 +62,7 @@ export default defineEpisode({
         });
       })
       .snapshot("app_x", "phone", {
+        schemaVersion: 2,
         users: [
           {
             id: "u_me",
@@ -85,13 +86,14 @@ export default defineEpisode({
             id: "tw_1",
             authorId: "u_him",
             text: "Receipts at 10.",
+            createdAt: new Date("2025-06-26T09:39:00Z").getTime(),
             viewCount: 84000,
             shareCount: 1400,
             bookmarkCount: 5200,
           },
         ],
-      })
-      .view("app_x", "phone", { screen: "timeline" })
+      }, { version: 2 })
+      .view("app_x", "phone", { schemaVersion: 2, screen: "timeline" }, { version: 2 })
       .x("phone", (x) => {
         x.at("12.0s").navigate("timeline");
         x.at("13.2s").navigate("tweet", { tweetId: "tw_1" });

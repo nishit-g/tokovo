@@ -13,7 +13,6 @@ import type {
   TweetReplyPayload,
   TweetQuotePayload,
   TweetRepostPayload,
-  XThemeMode,
 } from "../types/index.js";
 
 type GetDeclarationOrder = () => number;
@@ -49,11 +48,11 @@ type ReplyInput = Omit<TweetReplyPayload, "id"> & { id?: string };
 type QuoteInput = Omit<TweetQuotePayload, "id"> & { id?: string };
 type NotificationInput = {
   id?: string;
-  type: "like" | "repost" | "reply" | "follow" | "mention";
+  type: "like" | "repost" | "reply" | "follow" | "mention" | "verified";
   actorId: string;
   tweetId?: string;
   isMention?: boolean;
-  createdAt?: number;
+  createdAt: number;
   title?: string;
   body?: string;
   read?: boolean;
@@ -102,6 +101,10 @@ class XPointBuilder {
       handle: data.handle,
       bio: data.bio,
       avatarUrl: data.avatarUrl,
+      bannerUrl: data.bannerUrl,
+      location: data.location,
+      website: data.website,
+      joinedAt: data.joinedAt,
       followers: data.followers,
       following: data.following,
       verified: data.verified ?? null,
@@ -132,9 +135,14 @@ class XPointBuilder {
       hashtags: data.hashtags,
       mentions: data.mentions,
       quoteTweetId: data.quoteTweetId,
+      likeCount: data.likeCount,
+      repostCount: data.repostCount,
       viewCount: data.viewCount,
       bookmarkCount: data.bookmarkCount,
       shareCount: data.shareCount,
+      likedBy: data.likedBy,
+      bookmarkedBy: data.bookmarkedBy,
+      sharedBy: data.sharedBy,
     }));
   }
 
@@ -151,9 +159,14 @@ class XPointBuilder {
       hashtags: data.hashtags,
       mentions: data.mentions,
       quoteTweetId: data.quoteTweetId,
+      likeCount: data.likeCount,
+      repostCount: data.repostCount,
       viewCount: data.viewCount,
       bookmarkCount: data.bookmarkCount,
       shareCount: data.shareCount,
+      likedBy: data.likedBy,
+      bookmarkedBy: data.bookmarkedBy,
+      sharedBy: data.sharedBy,
     }));
   }
 
@@ -169,9 +182,14 @@ class XPointBuilder {
       poll: data.poll,
       hashtags: data.hashtags,
       mentions: data.mentions,
+      likeCount: data.likeCount,
+      repostCount: data.repostCount,
       viewCount: data.viewCount,
       bookmarkCount: data.bookmarkCount,
       shareCount: data.shareCount,
+      likedBy: data.likedBy,
+      bookmarkedBy: data.bookmarkedBy,
+      sharedBy: data.sharedBy,
     }));
   }
 
@@ -189,6 +207,10 @@ class XPointBuilder {
     this._push("TWEET_LIKE", { tweetId, userId });
   }
 
+  unlikeTweet(tweetId: string, userId: string): void {
+    this._push("TWEET_UNLIKE", { tweetId, userId });
+  }
+
   viewTweet(tweetId: string): void {
     this._push("TWEET_VIEW", { tweetId });
   }
@@ -197,8 +219,20 @@ class XPointBuilder {
     this._push("TWEET_BOOKMARK", { tweetId, userId });
   }
 
+  unbookmarkTweet(tweetId: string, userId: string): void {
+    this._push("TWEET_UNBOOKMARK", { tweetId, userId });
+  }
+
   shareTweet(tweetId: string, userId: string): void {
     this._push("TWEET_SHARE", { tweetId, userId });
+  }
+
+  votePoll(tweetId: string, userId: string, optionId: string): void {
+    this._push("TWEET_POLL_VOTE", { tweetId, userId, optionId });
+  }
+
+  setMediaPlayback(tweetId: string, state: "idle" | "playing" | "paused" | "complete", progress: number): void {
+    this._push("TWEET_MEDIA_PLAYBACK", { tweetId, state, progress });
   }
 
   navigate(screen: XScreen, opts: { tweetId?: string; userId?: string; threadId?: string } = {}): void {
@@ -211,6 +245,10 @@ class XPointBuilder {
 
   setComposeDraft(text: string): void {
     this._push("SET_COMPOSE_DRAFT", { text });
+  }
+
+  setComposerStatus(status: "idle" | "sending" | "failed", error?: string): void {
+    this._push("SET_COMPOSER_STATUS", { status, error });
   }
 
   setThreadDraft(threadId: string, text: string): void {
@@ -272,7 +310,8 @@ class XPointBuilder {
     threadId: string;
     senderId: string;
     text: string;
-    createdAt?: number;
+    createdAt: number;
+    delivery?: "sending" | "sent" | "failed";
   }): void {
     this._push("DM_SEND", (order) => ({
       id: data.id ?? createMessageId(this._frame, order),
@@ -280,11 +319,12 @@ class XPointBuilder {
       senderId: data.senderId,
       text: data.text,
       createdAt: data.createdAt,
+      delivery: data.delivery,
     }));
   }
 
-  setThemeMode(mode: XThemeMode): void {
-    this._push("SET_THEME_MODE", { mode });
+  setMessageDelivery(messageId: string, delivery: "sending" | "sent" | "failed"): void {
+    this._push("DM_SET_DELIVERY", { messageId, delivery });
   }
 }
 

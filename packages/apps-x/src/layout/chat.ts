@@ -1,74 +1,76 @@
-import type { ChatLayoutState, LayoutContext, SemanticRegion } from "@tokovo/core";
-import { xSpacing } from "../config/tokens.js";
-import { buildSemantic, createPx, rect } from "./shared.js";
+import type {
+  ChatLayoutState,
+  ChatMessageLayout,
+  LayoutContext,
+  SemanticRegion,
+} from "@tokovo/core";
+import { projectXThread } from "./project.js";
+import {
+  requireUser,
+  selectActiveThread,
+  selectThreadMessages,
+} from "../runtime/selectors.js";
+import { rect, region, resolveXLayoutEnvironment, semantic } from "./shared.js";
 
 export function computeXChatLayout(ctx: LayoutContext): ChatLayoutState {
-  const { viewportWidth: w, viewportHeight: h, appViewport } = ctx;
-  const contentTop = appViewport.interactiveInsets.top;
-  const contentBottom = appViewport.interactiveInsets.bottom;
-  const px = createPx(w);
+  const { viewportWidth: width, viewportHeight: height, appViewport } = ctx;
+  const top = appViewport.interactiveInsets.top;
+  const bottom = appViewport.interactiveInsets.bottom;
+  const { state, experience } = resolveXLayoutEnvironment(ctx);
+  const thread = selectActiveThread(ctx.world, ctx.activeDeviceId);
+  if (ctx.activeConversationId && ctx.activeConversationId !== thread.id) {
+    throw new Error(`X_CHAT_CONTEXT_MISMATCH: layout requested "${ctx.activeConversationId}" while route targets "${thread.id}"`);
+  }
+  const messages = selectThreadMessages(ctx.world, ctx.activeDeviceId, thread.id);
+  const composerHeight = experience.metrics.composerHeight + 10;
+  const headerY = top;
+  const threadY = headerY + experience.metrics.headerHeight;
+  const composerY = height - bottom - composerHeight;
+  const threadHeight = Math.max(0, composerY - threadY);
+  const projection = projectXThread({ state, threadId: thread.id, messages, width, viewportHeight: threadHeight });
+  const regions: Record<string, SemanticRegion> = {};
+  const groups: Record<string, string[]> = { message: [] };
+  const messageLayouts: Record<string, ChatMessageLayout> = {};
 
-  const headerH = contentTop + px(xSpacing.headerHeight);
-  const composerH = px(112);
-  const composerY = Math.max(0, h - contentBottom - composerH);
-  const threadY = headerH;
-  const threadH = Math.max(0, composerY - threadY);
+  region(regions, "x.thread.header", rect(0, headerY, width, experience.metrics.headerHeight), ["thread", "header", "sticky"], { sticky: true });
+  region(regions, "x.thread.messages", rect(0, threadY, width, threadHeight), ["thread", "messages"]);
+  region(regions, "x.thread.composer", rect(0, composerY, width, composerHeight), ["thread", "composer", "sticky"], { sticky: true });
 
-  const regions: Record<string, SemanticRegion> = {
-    device: { id: "device", rect: rect(0, 0, w, h), tags: ["device"] },
-    app: { id: "app", rect: rect(0, 0, w, h), tags: ["app"] },
-    thread_header: {
-      id: "thread_header",
-      rect: rect(0, 0, w, headerH),
-      tags: ["header", "sticky"],
-      metadata: { sticky: true },
-    },
-    dm_thread: {
-      id: "dm_thread",
-      rect: rect(0, threadY, w, threadH),
-      tags: ["dm", "thread"],
-    },
-    dm_message_latest: {
-      id: "dm_message_latest",
-      rect: rect(
-        px(xSpacing.screenPadding),
-        threadY + Math.max(0, threadH - px(116)),
-        w - px(xSpacing.screenPadding) * 2,
-        px(72),
-      ),
-      tags: ["dm", "message", "latest"],
-    },
-    reply_composer: {
-      id: "reply_composer",
-      rect: rect(0, composerY, w, composerH),
-      tags: ["composer", "sticky"],
-      metadata: { sticky: true },
-    },
-    reply_input: {
-      id: "reply_input",
-      rect: rect(
-        px(xSpacing.screenPadding),
-        composerY + px(16),
-        w - px(xSpacing.screenPadding) * 2 - px(68),
-        px(44),
-      ),
-      tags: ["composer", "input"],
-    },
-    reply_send_button: {
-      id: "reply_send_button",
-      rect: rect(w - px(xSpacing.screenPadding) - px(56), composerY + px(16), px(56), px(44)),
-      tags: ["composer", "send"],
-    },
-  };
+  for (const item of projection.visibleItems) {
+    const self = item.message.senderId === state.currentUserId;
+    requireUser(state, item.message.senderId, `message "${item.id}" senderId`);
+    const bubbleX = self ? width - 12 - item.bubbleWidth : 44;
+    const bubbleY = threadY + item.y - projection.viewportStart;
+    const bubbleRect = rect(bubbleX, bubbleY, item.bubbleWidth, item.height);
+    messageLayouts[item.id] = {
+      id: item.id,
+      y: bubbleY,
+      height: item.height,
+      opacity: 1,
+      translateY: 0,
+      translateX: 0,
+      rect: bubbleRect,
+    };
+    const id = `x.dm.${thread.id}.message.${item.id}`;
+    region(regions, id, bubbleRect, ["dm", "message", self ? "outgoing" : "incoming"], { entityType: "message", entityId: item.id, entityRegion: "bubble", threadId: thread.id });
+    groups.message.push(id);
+  }
+
+  if (thread.typingUserId) {
+    region(regions, "x.thread.typing", rect(44, composerY - 44, 54, 36), ["thread", "typing"]);
+  }
 
   return {
     kind: "CHAT",
     cacheHint: "static",
-    scrollY: 0,
-    contentHeight: h,
-    isAtBottom: true,
-    messageLayouts: {},
-    meta: {},
-    semantic: buildSemantic(regions),
+    scrollY: state.threadScrollYById[thread.id],
+    contentHeight: projection.contentHeight,
+    isAtBottom: (state.threadScrollYById[thread.id] ?? 0) === 0,
+    messageLayouts,
+    meta: {
+      lastMessageId: projection.visibleItems.at(-1)?.id,
+      isGroupChat: thread.participantIds.length > 2,
+    },
+    semantic: semantic(regions, groups),
   };
 }

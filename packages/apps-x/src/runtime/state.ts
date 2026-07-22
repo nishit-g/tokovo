@@ -1,11 +1,19 @@
 import type { ViewKind } from "@tokovo/core";
 
+export const X_STATE_SCHEMA_VERSION = 2 as const;
+
+export type XLocale = "en-US" | "ar-SA" | "hi-IN";
+
 export interface XUser {
   id: string;
   name: string;
   handle: string;
   bio?: string;
   avatarUrl?: string;
+  bannerUrl?: string;
+  location?: string;
+  website?: string;
+  joinedAt?: number;
   followers: number;
   following: number;
   followerIds: string[];
@@ -14,9 +22,16 @@ export interface XUser {
 }
 
 export interface XMedia {
-  type: "image" | "video" | "link" | "poll";
-  urls?: string[];
-  aspect?: "square" | "wide" | "tall";
+  type: "image" | "video";
+  urls: string[];
+  aspect: "square" | "wide" | "tall";
+  alt?: string;
+  posterUrl?: string;
+  sensitive: boolean;
+  playback: {
+    state: "idle" | "playing" | "paused" | "complete";
+    progress: number;
+  } | null;
 }
 
 export interface XLinkPreview {
@@ -28,6 +43,7 @@ export interface XLinkPreview {
 }
 
 export interface XPollOption {
+  id: string;
   label: string;
   votes: number;
 }
@@ -36,6 +52,7 @@ export interface XPoll {
   options: XPollOption[];
   totalVotes: number;
   endsAt?: number;
+  selectedOptionId: string | null;
 }
 
 export interface XTweet {
@@ -55,6 +72,8 @@ export interface XTweet {
   repostCount: number;
   replyIds: string[];
   likedBy: string[];
+  bookmarkedBy: string[];
+  sharedBy: string[];
   viewCount: number;
   bookmarkCount: number;
   shareCount: number;
@@ -65,7 +84,8 @@ export type NotificationType =
   | "repost"
   | "reply"
   | "follow"
-  | "mention";
+  | "mention"
+  | "verified";
 
 export interface XNotification {
   id: string;
@@ -96,6 +116,7 @@ export interface XDMMessage {
   senderId: string;
   text: string;
   createdAt: number;
+  delivery: "sending" | "sent" | "failed";
 }
 
 export type XScreen =
@@ -107,7 +128,7 @@ export type XScreen =
   | "messages"
   | "thread";
 
-export type NotificationsTab = "all" | "mentions";
+export type NotificationsTab = "all" | "verified" | "mentions";
 export type TimelineTab = "forYou" | "following";
 export type ProfileTab = "posts" | "replies" | "media" | "likes";
 
@@ -118,58 +139,73 @@ export interface XRoute {
   threadId?: string;
 }
 
-export type XThemeMode = "dark" | "light" | "storybook";
+export interface XRouteTransition {
+  from: XRoute;
+  to: XRoute;
+  atFrame: number;
+  direction: "forward" | "back";
+}
+
+export interface XComposerState {
+  draft: string;
+  status: "idle" | "sending" | "failed";
+  error: string | null;
+}
 
 export interface XState {
+  schemaVersion: typeof X_STATE_SCHEMA_VERSION;
+  layoutRevision: number;
+  locale: XLocale;
   /** Required by the Tokovo LayoutEngine. */
   viewMode: ViewKind;
   /** Required when viewMode === "CHAT". */
   conversationId?: string;
-  users: XUser[];
-  tweets: XTweet[];
-  timeline: string[];
-  notifications: XNotification[];
-  dmThreads: XDMThread[];
-  dmMessages: XDMMessage[];
-  currentScreen: XScreen;
-  activeTweetId: string | null;
-  activeUserId: string | null;
-  activeThreadId: string | null;
+  usersById: Record<string, XUser>;
+  tweetsById: Record<string, XTweet>;
+  timelineIds: string[];
+  notificationsById: Record<string, XNotification>;
+  notificationIds: string[];
+  dmThreadsById: Record<string, XDMThread>;
+  dmThreadIds: string[];
+  dmMessagesById: Record<string, XDMMessage>;
+  route: XRoute;
   currentUserId: string | null;
-  composeDraft: string;
+  composer: XComposerState;
   threadDrafts: Record<string, string>;
   notificationsTab: NotificationsTab;
   timelineTab: TimelineTab;
   profileTab: ProfileTab;
   navigationStack: XRoute[];
-  lastNavFrame: number;
-  statusBarTheme?: "light" | "dark";
-  themeMode: XThemeMode;
+  lastTransition: XRouteTransition | null;
+  feedScrollY: number;
+  threadScrollYById: Record<string, number>;
 }
 
 export function createXInitialState(): XState {
   return {
+    schemaVersion: X_STATE_SCHEMA_VERSION,
+    layoutRevision: 0,
+    locale: "en-US",
     viewMode: "FEED",
     conversationId: undefined,
-    users: [],
-    tweets: [],
-    timeline: [],
-    notifications: [],
-    dmThreads: [],
-    dmMessages: [],
-    currentScreen: "timeline",
-    activeTweetId: null,
-    activeUserId: null,
-    activeThreadId: null,
+    usersById: {},
+    tweetsById: {},
+    timelineIds: [],
+    notificationsById: {},
+    notificationIds: [],
+    dmThreadsById: {},
+    dmThreadIds: [],
+    dmMessagesById: {},
+    route: { screen: "timeline" },
     currentUserId: null,
-    composeDraft: "",
+    composer: { draft: "", status: "idle", error: null },
     threadDrafts: {},
     notificationsTab: "all",
     timelineTab: "forYou",
     profileTab: "posts",
     navigationStack: [],
-    lastNavFrame: 0,
-    statusBarTheme: "dark",
-    themeMode: "dark",
+    lastTransition: null,
+    feedScrollY: 0,
+    threadScrollYById: {},
   };
 }

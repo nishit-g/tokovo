@@ -1,16 +1,24 @@
 # @tokovo/apps-x
 
-The X plugin package for Tokovo.
+The hard-cut X VNext plugin package for deterministic Tokovo episodes.
 
 ## Responsibilities
 
-- X runtime reducer and initial state
-- snapshot and initial-view schema ownership
-- bootstrap validation and hydration
-- feed, tweet detail, notifications, messages, and profile surfaces
-- subject integration
-- authoring helpers and track builder support
-- notification adapter and theme support
+- normalized schema V2 state with strict snapshot, view, event, and reference validation
+- iOS/Android presentation with native light, dim, and lights-out experiences
+- English, Arabic RTL, and Hindi localization
+- timeline, post detail, compose, notifications, profile, DM inbox, and DM thread surfaces
+- bounded feed/thread projection for large authored datasets
+- stable semantic and exact-entity camera subjects
+- typed authoring, notification adapter, semantic audio, and complete asset collection
+
+The package does not migrate or silently repair V1 data. Repository episodes author version 2 explicitly; an installed app without seeded content receives a canonical empty V2 state.
+
+## Showcase proofs
+
+- `x-cinematic-flagship`: the public 42-second cinematic episode
+- `x-interaction-matrix-vnext`: platform and interaction lifecycle coverage
+- `x-native-theme-matrix-vnext`: light, dim, lights-out, English, Arabic RTL, and Hindi
 
 ## Key Exports
 

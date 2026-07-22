@@ -10,12 +10,17 @@ export type XEventType =
   | "TWEET_REPOST"
   | "TWEET_QUOTE"
   | "TWEET_LIKE"
+  | "TWEET_UNLIKE"
   | "TWEET_VIEW"
   | "TWEET_BOOKMARK"
+  | "TWEET_UNBOOKMARK"
   | "TWEET_SHARE"
+  | "TWEET_POLL_VOTE"
+  | "TWEET_MEDIA_PLAYBACK"
   | "NAVIGATE"
   | "NAVIGATE_BACK"
   | "SET_COMPOSE_DRAFT"
+  | "SET_COMPOSER_STATUS"
   | "SET_THREAD_DRAFT"
   | "SET_THREAD_TYPING"
   | "SET_TIMELINE_TAB"
@@ -24,7 +29,7 @@ export type XEventType =
   | "NOTIFICATION_ADD"
   | "DM_THREAD_CREATE"
   | "DM_SEND"
-  | "SET_THEME_MODE";
+  | "DM_SET_DELIVERY";
 
 export type XEventKind =
   | "ADD_USER"
@@ -33,14 +38,16 @@ export type XEventKind =
   | "UNFOLLOW_USER"
   | "ADD_TWEET"
   | "LIKE_TWEET"
+  | "UNLIKE_TWEET"
   | "VIEW_TWEET"
   | "BOOKMARK_TWEET"
+  | "UNBOOKMARK_TWEET"
   | "SHARE_TWEET"
+  | "VOTE_POLL"
+  | "SET_MEDIA_PLAYBACK"
   | "SET_SCREEN"
-  | "SET_ACTIVE_TWEET"
-  | "SET_ACTIVE_USER"
-  | "SET_ACTIVE_THREAD"
   | "SET_COMPOSE_DRAFT"
+  | "SET_COMPOSER_STATUS"
   | "SET_THREAD_DRAFT"
   | "SET_THREAD_TYPING"
   | "SET_TIMELINE_TAB"
@@ -49,8 +56,8 @@ export type XEventKind =
   | "ADD_NOTIFICATION"
   | "ADD_DM_THREAD"
   | "ADD_DM_MESSAGE"
-  | "NAVIGATE_BACK"
-  | "SET_THEME_MODE";
+  | "SET_DM_DELIVERY"
+  | "NAVIGATE_BACK";
 
 export type XScreen =
   | "timeline"
@@ -61,17 +68,18 @@ export type XScreen =
   | "messages"
   | "thread";
 
-export type NotificationsTab = "all" | "mentions";
+export type NotificationsTab = "all" | "verified" | "mentions";
 export type TimelineTab = "forYou" | "following";
 export type ProfileTab = "posts" | "replies" | "media" | "likes";
-export type XThemeMode = "dark" | "light" | "storybook";
-
-export type MediaType = "image" | "video" | "link" | "poll";
+export type MediaType = "image" | "video";
 
 export interface MediaPayload {
   type: MediaType;
-  urls?: string[];
-  aspect?: "square" | "wide" | "tall";
+  urls: string[];
+  aspect: "square" | "wide" | "tall";
+  alt?: string;
+  posterUrl?: string;
+  sensitive?: boolean;
 }
 
 export interface LinkPreviewPayload {
@@ -83,6 +91,7 @@ export interface LinkPreviewPayload {
 }
 
 export interface PollOptionPayload {
+  id: string;
   label: string;
   votes: number;
 }
@@ -91,6 +100,7 @@ export interface PollPayload {
   options: PollOptionPayload[];
   totalVotes?: number;
   endsAt?: number;
+  selectedOptionId?: string;
 }
 
 export interface UserCreatePayload {
@@ -99,6 +109,10 @@ export interface UserCreatePayload {
   handle: string;
   bio?: string;
   avatarUrl?: string;
+  bannerUrl?: string;
+  location?: string;
+  website?: string;
+  joinedAt?: number;
   followers?: number;
   following?: number;
   verified?: "blue" | "gold" | "grey" | null;
@@ -117,16 +131,21 @@ export interface TweetBasePayload {
   id: string;
   authorId: string;
   text: string;
-  createdAt?: number;
+  createdAt: number;
   media?: MediaPayload;
   linkPreview?: LinkPreviewPayload;
   poll?: PollPayload;
   hashtags?: string[];
   mentions?: string[];
   quoteTweetId?: string;
+  likeCount?: number;
+  repostCount?: number;
   viewCount?: number;
   bookmarkCount?: number;
   shareCount?: number;
+  likedBy?: string[];
+  bookmarkedBy?: string[];
+  sharedBy?: string[];
 }
 
 export type TweetCreatePayload = TweetBasePayload;
@@ -140,7 +159,7 @@ export interface TweetRepostPayload {
   authorId: string;
   repostOfId: string;
   text?: string;
-  createdAt?: number;
+  createdAt: number;
 }
 
 export interface TweetQuotePayload extends TweetBasePayload {
@@ -150,6 +169,18 @@ export interface TweetQuotePayload extends TweetBasePayload {
 export interface TweetLikePayload {
   tweetId: string;
   userId: string;
+}
+
+export interface TweetPollVotePayload {
+  tweetId: string;
+  userId: string;
+  optionId: string;
+}
+
+export interface TweetMediaPlaybackPayload {
+  tweetId: string;
+  state: "idle" | "playing" | "paused" | "complete";
+  progress: number;
 }
 
 export interface TweetViewPayload {
@@ -175,6 +206,11 @@ export interface NavigatePayload {
 
 export interface ComposeDraftPayload {
   text: string;
+}
+
+export interface ComposerStatusPayload {
+  status: "idle" | "sending" | "failed";
+  error?: string;
 }
 
 export interface ThreadDraftPayload {
@@ -204,7 +240,8 @@ export type NotificationType =
   | "repost"
   | "reply"
   | "follow"
-  | "mention";
+  | "mention"
+  | "verified";
 
 export interface NotificationAddPayload {
   id: string;
@@ -212,7 +249,7 @@ export interface NotificationAddPayload {
   actorId: string;
   tweetId?: string;
   isMention?: boolean;
-  createdAt?: number;
+  createdAt: number;
   title?: string;
   body?: string;
   read?: boolean;
@@ -231,7 +268,13 @@ export interface DMSendPayload {
   threadId: string;
   senderId: string;
   text: string;
-  createdAt?: number;
+  createdAt: number;
+  delivery?: "sending" | "sent" | "failed";
+}
+
+export interface DMDeliveryPayload {
+  messageId: string;
+  delivery: "sending" | "sent" | "failed";
 }
 
 export type XEventPayloadMap = {
@@ -244,12 +287,17 @@ export type XEventPayloadMap = {
   TWEET_REPOST: TweetRepostPayload;
   TWEET_QUOTE: TweetQuotePayload;
   TWEET_LIKE: TweetLikePayload;
+  TWEET_UNLIKE: TweetLikePayload;
   TWEET_VIEW: TweetViewPayload;
   TWEET_BOOKMARK: TweetBookmarkPayload;
+  TWEET_UNBOOKMARK: TweetBookmarkPayload;
   TWEET_SHARE: TweetSharePayload;
+  TWEET_POLL_VOTE: TweetPollVotePayload;
+  TWEET_MEDIA_PLAYBACK: TweetMediaPlaybackPayload;
   NAVIGATE: NavigatePayload;
   NAVIGATE_BACK: Record<string, never>;
   SET_COMPOSE_DRAFT: ComposeDraftPayload;
+  SET_COMPOSER_STATUS: ComposerStatusPayload;
   SET_THREAD_DRAFT: ThreadDraftPayload;
   SET_THREAD_TYPING: ThreadTypingPayload;
   SET_TIMELINE_TAB: TimelineTabPayload;
@@ -258,7 +306,7 @@ export type XEventPayloadMap = {
   NOTIFICATION_ADD: NotificationAddPayload;
   DM_THREAD_CREATE: DMThreadCreatePayload;
   DM_SEND: DMSendPayload;
-  SET_THEME_MODE: { mode: XThemeMode };
+  DM_SET_DELIVERY: DMDeliveryPayload;
 };
 
 export type XTrackEventFor<T extends XEventType> = TrackEventBase & {

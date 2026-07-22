@@ -1,11 +1,11 @@
-import xExhaustiveV2 from "./x-exhaustive-v2.episode.js";
-import xFlagshipV2 from "./x-flagship-v2.episode.js";
-import xThemeStorybookV2 from "./x-theme-storybook-v2.episode.js";
+import xCinematicFlagship from "./x-cinematic-flagship.episode.js";
+import xInteractionMatrixVNext from "./x-interaction-matrix-vnext.episode.js";
+import xNativeThemeMatrixVNext from "./x-native-theme-matrix-vnext.episode.js";
 
 export const xShowcaseEpisodes = [
-  xFlagshipV2,
-  xExhaustiveV2,
-  xThemeStorybookV2,
+  xCinematicFlagship,
+  xInteractionMatrixVNext,
+  xNativeThemeMatrixVNext,
 ];
 
 export default xShowcaseEpisodes;

@@ -20,11 +20,14 @@ export type {
   TweetRepostPayload,
   TweetQuotePayload,
   TweetLikePayload,
+  TweetPollVotePayload,
+  TweetMediaPlaybackPayload,
   TweetViewPayload,
   TweetBookmarkPayload,
   TweetSharePayload,
   NavigatePayload,
   ComposeDraftPayload,
+  ComposerStatusPayload,
   ThreadDraftPayload,
   ThreadTypingPayload,
   TimelineTabPayload,
@@ -33,9 +36,9 @@ export type {
   NotificationAddPayload,
   DMThreadCreatePayload,
   DMSendPayload,
+  DMDeliveryPayload,
   TimelineTab,
   ProfileTab,
-  XThemeMode,
 } from "./events.js";
 
 import "./module-augmentation.js";

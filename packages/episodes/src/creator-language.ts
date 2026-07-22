@@ -94,6 +94,8 @@ export interface SceneOptions {
 
 export interface ConversationMessageOptions {
   id?: string;
+  /** Deterministic epoch milliseconds. X derives one from scene time when omitted. */
+  createdAt?: number;
   silent?: boolean;
   replyTo?: MessageHandle;
   hold?: string | number;
@@ -177,14 +179,28 @@ function createHandle<K extends StoryHandleKind>(input: {
     snapchat: { message: "snapchat_last_message" },
     teams: { message: "teams_thread" },
     typewriter: { message: "textArea" },
-    x: {
-      message: "dm_message_latest",
-      post: "tweet_card",
-      comment: "tweet_card",
-    },
+    x: {},
   };
   const subject: CinematicSubjectRefIR =
-    input.app === "whatsapp" && input.kind === "message"
+    input.app === "x" && input.kind === "message"
+      ? {
+          kind: "entity",
+          deviceId: input.deviceId,
+          appId: resolvedAppId,
+          entityType: "message",
+          entityId: input.id,
+          region: "bubble",
+        }
+      : input.app === "x" && (input.kind === "post" || input.kind === "comment")
+        ? {
+            kind: "entity",
+            deviceId: input.deviceId,
+            appId: resolvedAppId,
+            entityType: "tweet",
+            entityId: input.id,
+            region: "card",
+          }
+      : input.app === "whatsapp" && input.kind === "message"
       ? {
           kind: "entity",
           deviceId: input.deviceId,
@@ -426,6 +442,11 @@ export class SceneBuilder {
     return this.startFrame + this.cursor;
   }
 
+  /** Stable high-level authoring clock for surfaces that require real epoch milliseconds. */
+  epochAt(frame: number): number {
+    return Date.UTC(2026, 0, 1) + Math.round((frame / this.fps) * 1_000);
+  }
+
   at(time: string | number): this {
     this.cursor = typeof time === "number" ? time : parseTimeToFrames(time, this.fps);
     this.assertInBounds();
@@ -630,6 +651,7 @@ export class SceneBuilder {
                 threadId: options.conversationId,
                 senderId: currentIdentity.id,
                 text,
+                createdAt: message.createdAt ?? this.epochAt(frame),
               }),
             receive: (frame, id, from, text, message) =>
               track.at(frame).addDMMessage({
@@ -637,6 +659,7 @@ export class SceneBuilder {
                 threadId: options.conversationId,
                 senderId: from.id,
                 text,
+                createdAt: message.createdAt ?? this.epochAt(frame),
               }),
           }),
         );
@@ -654,6 +677,7 @@ export class SceneBuilder {
                 threadId: options.conversationId,
                 senderId: currentIdentity.id,
                 text,
+                createdAt: message.createdAt ?? this.epochAt(frame),
               }),
             receive: (frame, id, from, text, message) =>
               track.at(frame).sendDM({
@@ -661,6 +685,7 @@ export class SceneBuilder {
                 threadId: options.conversationId,
                 senderId: from.id,
                 text,
+                createdAt: message.createdAt ?? this.epochAt(frame),
               }),
           }),
         );
@@ -678,6 +703,7 @@ export class SceneBuilder {
                 threadId: options.conversationId,
                 senderId: currentIdentity.id,
                 text,
+                createdAt: message.createdAt ?? this.epochAt(frame),
               }),
             receive: (frame, id, from, text, message) =>
               track.at(frame).sendMessage({
@@ -685,6 +711,7 @@ export class SceneBuilder {
                 threadId: options.conversationId,
                 senderId: from.id,
                 text,
+                createdAt: message.createdAt ?? this.epochAt(frame),
               }),
           }),
         );
@@ -747,7 +774,7 @@ export class SceneBuilder {
                   id,
                   authorId: authorRef.id,
                   text,
-                  createdAt: post.createdAt,
+                  createdAt: post.createdAt ?? this.epochAt(frame),
                 }),
               comment: (frame, id, post, authorRef, text, comment) =>
                 track.at(frame).comment({
@@ -755,7 +782,7 @@ export class SceneBuilder {
                   postId: post.id,
                   authorId: authorRef.id,
                   text,
-                  createdAt: comment.createdAt,
+                  createdAt: comment.createdAt ?? this.epochAt(frame),
                 }),
               open: (frame, post) => track.at(frame).navigate("post", { postId: post.id }),
             },
@@ -775,7 +802,7 @@ export class SceneBuilder {
                   id,
                   authorId: authorRef.id,
                   text,
-                  createdAt: post.createdAt,
+                  createdAt: post.createdAt ?? this.epochAt(frame),
                 }),
               comment: (frame, id, post, authorRef, text, comment) =>
                 track.at(frame).replyTweet({
@@ -783,7 +810,7 @@ export class SceneBuilder {
                   replyToId: post.id,
                   authorId: authorRef.id,
                   text,
-                  createdAt: comment.createdAt,
+                  createdAt: comment.createdAt ?? this.epochAt(frame),
                 }),
               open: (frame, post) => track.at(frame).navigate("tweet", { tweetId: post.id }),
             },

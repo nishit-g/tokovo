@@ -2,206 +2,128 @@ import { describe, expect, it } from "vitest";
 import type { RuntimeEvent } from "@tokovo/core";
 import type { NotificationIntentIR } from "@tokovo/ir";
 import { xLowering } from "../lowering/index.js";
+import { BASE_TIME } from "./helpers.js";
 
-function createContext(intents: NotificationIntentIR[] = []) {
+function context(intents: NotificationIntentIR[] = []) {
   return {
     emitNotification: (intent: NotificationIntentIR) => intents.push(intent),
     emitNotificationInteraction: () => undefined,
   };
 }
 
-function lower(event: Record<string, unknown>, ctx = createContext()): RuntimeEvent[] {
-  return xLowering.lower(event as any, ctx);
+function lower(event: Record<string, unknown>, intents: NotificationIntentIR[] = []): RuntimeEvent[] {
+  return xLowering.lower(event as never, context(intents));
 }
 
-function appEvents(events: RuntimeEvent[], type: string): RuntimeEvent[] {
-  return events.filter(
-    (event) => event.kind === "APP" && event.appId === "app_x" && event.type === type,
-  );
+function payload(events: RuntimeEvent[], type: string): Record<string, unknown> {
+  const event = events.find((candidate) => candidate.kind === "APP" && candidate.type === type) as { payload?: Record<string, unknown> } | undefined;
+  if (!event?.payload) throw new Error(`Missing ${type}`);
+  return event.payload;
 }
 
-function appPayload(events: RuntimeEvent[], type: string): Record<string, unknown> | undefined {
-  const event = appEvents(events, type)[0] as { payload?: Record<string, unknown> } | undefined;
-  return event?.payload;
-}
-
-describe("X lowering", () => {
-  it("does not auto-increment views on NAVIGATE with tweetId", () => {
+describe("X VNext lowering", () => {
+  it("lowers navigation as one canonical route event", () => {
     const events = lower({
       at: 20,
       kind: "APP",
       appId: "app_x",
       type: "NAVIGATE",
-      deviceId: "device-1",
-      payload: { screen: "tweet", tweetId: "tw-1" },
+      deviceId: "phone",
+      payload: { screen: "tweet", tweetId: "tw_1" },
     });
-
-    expect(appEvents(events, "SET_SCREEN")).toHaveLength(1);
-    expect(appEvents(events, "SET_ACTIVE_TWEET")).toHaveLength(1);
-    expect(appEvents(events, "VIEW_TWEET")).toHaveLength(0);
+    expect(events).toHaveLength(1);
+    expect(events[0]).toMatchObject({ kind: "APP", type: "SET_SCREEN" });
   });
 
-  it("lowers creates directly to ADD_TWEET", () => {
+  it("preserves explicit epoch milliseconds for posts", () => {
     const events = lower({
       at: 30,
       kind: "APP",
       appId: "app_x",
       type: "TWEET_CREATE",
-      deviceId: "device-1",
-      payload: {
-        id: "tw-1",
-        authorId: "u1",
-        text: "hello",
-      },
+      deviceId: "phone",
+      payload: { id: "tw_2", authorId: "u_me", text: "hello", createdAt: BASE_TIME },
     });
-
-    expect(appEvents(events, "ADD_TWEET")).toHaveLength(1);
-    expect(events.some((event) => event.kind === "DEVICE")).toBe(false);
+    expect(payload(events, "ADD_TWEET").createdAt).toBe(BASE_TIME);
   });
 
-  it("preserves create, reply, and quote semantics after compose navigation", () => {
-    const ctx = createContext();
-    lower(
-      {
-        at: 10,
-        kind: "APP",
-        appId: "app_x",
-        type: "NAVIGATE",
-        deviceId: "device-1",
-        payload: { screen: "compose" },
-      },
-      ctx,
-    );
-
-    const createEvents = lower(
-      {
-        at: 30,
-        kind: "APP",
-        appId: "app_x",
-        type: "TWEET_CREATE",
-        deviceId: "device-1",
-        payload: {
-          id: "tw-create",
-          authorId: "u1",
-          text: "create",
-        },
-      },
-      ctx,
-    );
-
-    const replyEvents = lower(
-      {
-        at: 60,
-        kind: "APP",
-        appId: "app_x",
-        type: "TWEET_REPLY",
-        deviceId: "device-1",
-        payload: {
-          id: "tw-reply",
-          authorId: "u1",
-          text: "reply",
-          replyToId: "tw-create",
-        },
-      },
-      ctx,
-    );
-
-    const quoteEvents = lower(
-      {
-        at: 90,
-        kind: "APP",
-        appId: "app_x",
-        type: "TWEET_QUOTE",
-        deviceId: "device-1",
-        payload: {
-          id: "tw-quote",
-          authorId: "u1",
-          text: "quote",
-          quoteTweetId: "tw-create",
-        },
-      },
-      ctx,
-    );
-
-    expect(createEvents.some((event) => event.kind === "DEVICE")).toBe(false);
-    expect(replyEvents.some((event) => event.kind === "DEVICE")).toBe(false);
-    expect(quoteEvents.some((event) => event.kind === "DEVICE")).toBe(false);
-
-    expect((appPayload(replyEvents, "ADD_TWEET") as { replyToId?: string } | undefined)?.replyToId).toBe(
-      "tw-create",
-    );
-    expect(
-      (appPayload(quoteEvents, "ADD_TWEET") as { quoteTweetId?: string } | undefined)?.quoteTweetId,
-    ).toBe("tw-create");
+  it.each([
+    ["TWEET_UNLIKE", "UNLIKE_TWEET", { tweetId: "tw_1", userId: "u_me" }],
+    ["TWEET_UNBOOKMARK", "UNBOOKMARK_TWEET", { tweetId: "tw_1", userId: "u_me" }],
+    ["TWEET_POLL_VOTE", "VOTE_POLL", { tweetId: "tw_1", userId: "u_me", optionId: "a" }],
+    ["TWEET_MEDIA_PLAYBACK", "SET_MEDIA_PLAYBACK", { tweetId: "tw_1", state: "playing", progress: 0.5 }],
+    ["SET_COMPOSER_STATUS", "SET_COMPOSER_STATUS", { status: "sending" }],
+    ["DM_SET_DELIVERY", "SET_DM_DELIVERY", { messageId: "msg_1", delivery: "sent" }],
+  ])("lowers %s to %s", (authoredType, runtimeType, eventPayload) => {
+    const events = lower({
+      at: 30,
+      kind: "APP",
+      appId: "app_x",
+      type: authoredType,
+      deviceId: "phone",
+      payload: eventPayload,
+    });
+    expect(events).toEqual([expect.objectContaining({ type: runtimeType, payload: eventPayload })]);
   });
 
-  it("preserves replies after opening tweet detail", () => {
-    const ctx = createContext();
-    lower(
-      {
-        at: 10,
-        kind: "APP",
-        appId: "app_x",
-        type: "NAVIGATE",
-        deviceId: "device-1",
-        payload: { screen: "tweet", tweetId: "tw-1" },
-      },
-      ctx,
-    );
-
-    const events = lower(
-      {
-        at: 30,
-        kind: "APP",
-        appId: "app_x",
-        type: "TWEET_REPLY",
-        deviceId: "device-1",
-        payload: {
-          id: "tw-2",
-          authorId: "u1",
-          text: "reply",
-          replyToId: "tw-1",
-        },
-      },
-      ctx,
-    );
-
-    expect(events.some((event) => event.kind === "DEVICE")).toBe(false);
-    expect((appPayload(events, "ADD_TWEET") as { replyToId?: string } | undefined)?.replyToId).toBe(
-      "tw-1",
-    );
+  it("rejects missing or frame-like timestamps", () => {
+    const base = {
+      at: 30,
+      kind: "APP",
+      appId: "app_x",
+      type: "TWEET_CREATE",
+      deviceId: "phone",
+    };
+    expect(() => lower({ ...base, payload: { id: "tw_2", authorId: "u_me", text: "hello" } })).toThrow(/X_TRACK_PAYLOAD_INVALID/);
+    expect(() => lower({ ...base, payload: { id: "tw_2", authorId: "u_me", text: "hello", createdAt: 30 } })).toThrow(/epoch milliseconds/);
   });
 
-  it("lowers app activity and emits one semantic notification intent", () => {
+  it("rejects X events without a device instead of dropping them", () => {
+    expect(() => lower({
+      at: 1,
+      kind: "APP",
+      appId: "app_x",
+      type: "NAVIGATE",
+      payload: { screen: "timeline" },
+    })).toThrow(/X_EVENT_DEVICE_REQUIRED/);
+  });
+
+  it("emits one semantic notification intent and one app event", () => {
     const intents: NotificationIntentIR[] = [];
     const events = lower({
       at: 40,
       kind: "APP",
       appId: "app_x",
       type: "NOTIFICATION_ADD",
-      deviceId: "device-1",
+      deviceId: "phone",
       payload: {
-        id: "nt-1",
+        id: "nt_1",
         type: "mention",
-        actorId: "u2",
-        tweetId: "tw-1",
+        actorId: "u_other",
+        tweetId: "tw_1",
+        createdAt: BASE_TIME,
         title: "Avery mentioned you",
         body: "Check the thread",
       },
-    }, createContext(intents));
+    }, intents);
+    expect(events).toHaveLength(1);
+    expect(events[0]).toMatchObject({ type: "ADD_NOTIFICATION" });
+    expect(intents).toMatchObject([{
+      id: "nt_1",
+      deviceId: "phone",
+      appId: "app_x",
+      content: { title: "Avery mentioned you", body: "Check the thread" },
+    }]);
+  });
 
-    expect(appEvents(events, "ADD_NOTIFICATION")).toHaveLength(1);
-    expect(events.some((event) => event.kind === "DEVICE")).toBe(false);
-    expect(intents).toMatchObject([
-      {
-        id: "nt-1",
-        deviceId: "device-1",
-        appId: "app_x",
-        content: {
-          title: "Avery mentioned you",
-          body: "Check the thread",
-        },
-      },
-    ]);
+  it("rejects unknown owned track types", () => {
+    expect(() => lower({
+      at: 1,
+      kind: "APP",
+      appId: "app_x",
+      type: "OLD_LEGACY_EVENT",
+      deviceId: "phone",
+      payload: {},
+    })).toThrow(/X_TRACK_TYPE_UNSUPPORTED/);
   });
 });

@@ -1,27 +1,18 @@
-import { describe, it, expect } from "vitest";
-import type { LayoutContext, ViewKind, WorldState } from "@tokovo/core";
-import { createAppViewportFrame, createDefaultAudioState } from "@tokovo/core";
+import { describe, expect, it } from "vitest";
+import { createAppViewportFrame, type LayoutContext, type ViewKind, type WorldState } from "@tokovo/core";
+import { XCinematicSubjects } from "../camera/subjects.js";
 import { xLayoutStrategies } from "../layout/index.js";
-import { createXInitialState, type XScreen } from "../runtime/state.js";
+import { measureXMessage, measureXPost } from "../layout/measure.js";
+import type { XState } from "../runtime/state.js";
+import { BASE_TIME, createTestState, createTestWorld } from "./helpers.js";
 
-function computeLayoutFor(screen: XScreen, viewKind: ViewKind) {
-  const appState = {
-    ...createXInitialState(),
-    currentScreen: screen,
-    viewMode: viewKind,
-  };
-  const world = {
-    appInstances: { "phone:app_x": appState },
-    capabilityState: {},
-    devices: {},
-    audio: createDefaultAudioState(),
-  } as WorldState;
-
-  const ctx: LayoutContext = {
+function context(world: WorldState, viewKind: ViewKind): LayoutContext {
+  return {
     world,
-    t: 0,
+    t: 60,
     activeDeviceId: "phone",
     activeAppId: "app_x",
+    activeConversationId: viewKind === "CHAT" ? "dm_1" : undefined,
     platform: "ios",
     viewKind,
     viewportWidth: 393,
@@ -31,109 +22,93 @@ function computeLayoutFor(screen: XScreen, viewKind: ViewKind) {
       height: 852,
       interactiveInsets: { top: 47, bottom: 34 },
     }),
-    layoutCache: undefined,
   };
-
-  const strat = xLayoutStrategies.find((s) => s.viewKind === viewKind);
-  if (!strat) throw new Error(`Missing x layout strategy for ${viewKind}`);
-  return strat.computeLayout(ctx) as any;
 }
 
-function expectHasSubjects(layout: any, ids: string[]) {
-  expect(layout.semantic?.regions).toBeTruthy();
-  for (const id of ids) {
-    expect(layout.semantic.regions[id], `missing region ${id}`).toBeTruthy();
-  }
+function layoutFor(state: XState, viewKind: ViewKind) {
+  const world = createTestWorld(state);
+  const strategy = xLayoutStrategies.find((candidate) => candidate.viewKind === viewKind);
+  if (!strategy) throw new Error(`Missing ${viewKind} layout`);
+  const layout = strategy.computeLayout(context(world, viewKind));
+  return { layout, world };
 }
 
-describe("X semantic subjects (layout-driven)", () => {
-  it("timeline includes expected subjects", () => {
-    const layout = computeLayoutFor("timeline", "FEED");
-    expectHasSubjects(layout, [
-      "device",
-      "app",
-      "nav_bar",
-      "timeline_header",
-      "timeline_tabs",
-      "timeline_feed",
-      "tweet_card",
-      "timeline_primary_row",
-      "timeline_primary_avatar",
-      "timeline_primary_content",
-      "timeline_primary_media",
-      "metrics_row",
-      "timeline_primary_actions",
-      "compose_fab",
-    ]);
+describe("X VNext canonical layout and cinematic subjects", () => {
+  it("projects exact entity regions for a visible timeline post", () => {
+    const state = createTestState();
+    state.tweetsById.tw_1.media = {
+      type: "image",
+      urls: ["/media/x-test.jpg"],
+      aspect: "wide",
+      sensitive: false,
+      playback: null,
+    };
+    const { layout, world } = layoutFor(state, "FEED");
+    const measurement = measureXPost(state.tweetsById.tw_1, 393);
+    const post = layout.semantic?.regions["x.post.tw_1"];
+    expect(post?.rect.height).toBe(measurement.totalHeight);
+    expect(layout.semantic?.regions["x.post.tw_1.media"]).toBeDefined();
+    const projected = XCinematicSubjects.project(world, layout, "phone");
+    expect(projected).toContainEqual(expect.objectContaining({
+      ref: expect.objectContaining({
+        kind: "entity",
+        entityType: "tweet",
+        entityId: "tw_1",
+        region: "media",
+      }),
+      rect: layout.semantic?.regions["x.post.tw_1.media"].rect,
+      sourceVersion: 2,
+    }));
   });
 
-  it("notifications includes expected subjects", () => {
-    const layout = computeLayoutFor("notifications", "FEED");
-    expectHasSubjects(layout, [
-      "device",
-      "app",
-      "nav_bar",
-      "timeline_header",
-      "notifications_list",
-      "notifications_row_0",
-      "notifications_row_0_avatar",
-      "notifications_row_0_content",
-    ]);
+  it("does not emit removed singleton geometry", () => {
+    const { layout } = layoutFor(createTestState(), "FEED");
+    expect(layout.semantic?.regions.tweet_card).toBeUndefined();
+    expect(layout.semantic?.regions.dm_message_latest).toBeUndefined();
+    expect(layout.semantic?.regions["x.timeline.feed"]).toBeDefined();
   });
 
-  it("messages includes expected subjects", () => {
-    const layout = computeLayoutFor("messages", "FEED");
-    expectHasSubjects(layout, [
-      "device",
-      "app",
-      "nav_bar",
-      "timeline_header",
-      "dm_thread",
-      "dm_row_0",
-      "dm_row_0_avatar",
-      "dm_row_0_content",
-    ]);
+  it("publishes notification and DM thread entity rows", () => {
+    const notifications = createTestState();
+    notifications.route = { screen: "notifications" };
+    notifications.notificationsById.nt_1 = {
+      id: "nt_1",
+      type: "mention",
+      actorId: "u_other",
+      tweetId: "tw_1",
+      createdAt: BASE_TIME,
+      read: false,
+    };
+    notifications.notificationIds = ["nt_1"];
+    expect(layoutFor(notifications, "FEED").layout.semantic?.regions["x.notification.nt_1"]).toBeDefined();
+
+    const messages = createTestState();
+    messages.route = { screen: "messages" };
+    expect(layoutFor(messages, "FEED").layout.semantic?.regions["x.dm.dm_1"]).toBeDefined();
   });
 
-  it("thread includes expected subjects", () => {
-    const layout = computeLayoutFor("thread", "CHAT");
-    expectHasSubjects(layout, [
-      "device",
-      "app",
-      "thread_header",
-      "dm_thread",
-      "dm_message_latest",
-      "reply_composer",
-      "reply_input",
-      "reply_send_button",
-    ]);
+  it("matches thread message measurement and entity projection", () => {
+    const state = createTestState();
+    state.route = { screen: "thread", threadId: "dm_1" };
+    state.viewMode = "CHAT";
+    state.conversationId = "dm_1";
+    const { layout, world } = layoutFor(state, "CHAT");
+    const expected = measureXMessage(state.dmMessagesById.msg_1.text, 393);
+    expect((layout as any).messageLayouts.msg_1.height).toBe(expected.height);
+    expect(layout.semantic?.regions["x.dm.dm_1.message.msg_1"]).toBeDefined();
+    expect(XCinematicSubjects.project(world, layout, "phone")).toContainEqual(
+      expect.objectContaining({
+        ref: expect.objectContaining({ kind: "entity", entityType: "message", entityId: "msg_1", region: "bubble" }),
+      }),
+    );
   });
 
-  it("compose includes expected subjects", () => {
-    const layout = computeLayoutFor("compose", "FULLSCREEN");
-    expectHasSubjects(layout, [
-      "device",
-      "app",
-      "compose_header",
-      "reply_composer",
-      "compose_editor",
-      "compose_footer",
-    ]);
-  });
-
-  it("tweet detail includes focused detail subjects", () => {
-    const layout = computeLayoutFor("tweet", "FEED");
-    expectHasSubjects(layout, [
-      "device",
-      "app",
-      "timeline_header",
-      "tweet_card",
-      "tweet_detail_header",
-      "tweet_detail_body",
-      "tweet_detail_media",
-      "tweet_detail_quote",
-      "metrics_row",
-      "reply_composer",
-    ]);
+  it("publishes compose regions only from fullscreen layout", () => {
+    const state = createTestState();
+    state.route = { screen: "compose" };
+    state.viewMode = "FULLSCREEN";
+    const { layout } = layoutFor(state, "FULLSCREEN");
+    expect(layout.semantic?.regions["x.composer.editor"]).toBeDefined();
+    expect(layout.semantic?.regions["x.composer.actions"]).toBeDefined();
   });
 });

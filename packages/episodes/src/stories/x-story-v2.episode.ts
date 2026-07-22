@@ -35,6 +35,7 @@ export default defineEpisode({
         },
       })
       .snapshot("app_x", "phone", {
+        schemaVersion: 2,
         currentUserId: "u_me",
         users: [
           {
@@ -88,8 +89,8 @@ export default defineEpisode({
             createdAt: baseTs - 12000,
           },
         ],
-      })
-      .view("app_x", "phone", { screen: "timeline" })
+      }, { version: 2 })
+      .view("app_x", "phone", { schemaVersion: 2, screen: "timeline" }, { version: 2 })
       .x("phone", (x) => {
         x.at("1.2s").navigate("tweet", { tweetId: "tw_story_hook_v2" });
         x.at("3.0s").replyTweet({
@@ -104,6 +105,7 @@ export default defineEpisode({
           type: "repost",
           actorId: "u_banter_story",
           tweetId: "tw_story_reply_v2",
+          createdAt: baseTs + 18_000,
         });
         x.at("6.6s").navigate("notifications");
         x.at("8.4s").navigate("messages");

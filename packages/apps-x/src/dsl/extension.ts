@@ -1,4 +1,10 @@
 import type { DslExtension } from "@tokovo/core";
+import type {
+  DMSendPayload,
+  NotificationAddPayload,
+  TweetCreatePayload,
+  TweetReplyPayload,
+} from "../types/index.js";
 
 interface XBeatBuilder {
   ops: Array<Record<string, unknown>>;
@@ -8,14 +14,16 @@ export interface XDslApi {
   openTimeline(): void;
   openTweet(tweetId: string): void;
   openProfile(userId: string): void;
-  openNotifications(tab?: "all" | "mentions"): void;
+  openNotifications(tab?: "all" | "verified" | "mentions"): void;
   openMessages(): void;
   openThread(threadId: string): void;
   compose(text?: string): void;
-  post(authorId: string, text: string): void;
-  reply(authorId: string, replyToId: string, text: string): void;
-  notify(type: "like" | "repost" | "reply" | "follow" | "mention", actorId: string, tweetId?: string): void;
-  dm(threadId: string, senderId: string, text: string): void;
+  post(payload: TweetCreatePayload): void;
+  reply(payload: TweetReplyPayload): void;
+  notify(payload: NotificationAddPayload): void;
+  dm(payload: DMSendPayload): void;
+  setComposerStatus(status: "idle" | "sending" | "failed", error?: string): void;
+  setMessageDelivery(messageId: string, delivery: "sending" | "sent" | "failed"): void;
 }
 
 function appEvent(type: string, payload: Record<string, unknown>): Record<string, unknown> {
@@ -28,74 +36,32 @@ function appEvent(type: string, payload: Record<string, unknown>): Record<string
 }
 
 export const xDsl: DslExtension<XDslApi> = {
-  createApi: (builderUnknown: unknown): XDslApi => {
+  createApi(builderUnknown: unknown): XDslApi {
     const builder = builderUnknown as XBeatBuilder;
+    const push = (type: string, payload: Record<string, unknown>): void => {
+      builder.ops.push(appEvent(type, payload));
+    };
 
     return {
-      openTimeline: () => {
-        builder.ops.push(appEvent("NAVIGATE", { screen: "timeline" }));
-      },
-      openTweet: (tweetId: string) => {
-        builder.ops.push(appEvent("NAVIGATE", { screen: "tweet", tweetId }));
-      },
-      openProfile: (userId: string) => {
-        builder.ops.push(appEvent("NAVIGATE", { screen: "profile", userId }));
-      },
+      openTimeline: () => push("NAVIGATE", { screen: "timeline" }),
+      openTweet: (tweetId) => push("NAVIGATE", { screen: "tweet", tweetId }),
+      openProfile: (userId) => push("NAVIGATE", { screen: "profile", userId }),
       openNotifications: (tab = "all") => {
-        builder.ops.push(appEvent("NAVIGATE", { screen: "notifications" }));
-        builder.ops.push(appEvent("SET_NOTIFICATIONS_TAB", { tab }));
+        push("NAVIGATE", { screen: "notifications" });
+        push("SET_NOTIFICATIONS_TAB", { tab });
       },
-      openMessages: () => {
-        builder.ops.push(appEvent("NAVIGATE", { screen: "messages" }));
-      },
-      openThread: (threadId: string) => {
-        builder.ops.push(appEvent("NAVIGATE", { screen: "thread", threadId }));
-      },
+      openMessages: () => push("NAVIGATE", { screen: "messages" }),
+      openThread: (threadId) => push("NAVIGATE", { screen: "thread", threadId }),
       compose: (text = "") => {
-        builder.ops.push(appEvent("NAVIGATE", { screen: "compose" }));
-        if (text.length > 0) {
-          builder.ops.push(appEvent("SET_COMPOSE_DRAFT", { text }));
-        }
+        push("NAVIGATE", { screen: "compose" });
+        push("SET_COMPOSE_DRAFT", { text });
       },
-      post: (authorId: string, text: string) => {
-        builder.ops.push(
-          appEvent("TWEET_CREATE", {
-            id: `dsl_tweet_${builder.ops.length}`,
-            authorId,
-            text,
-          }),
-        );
-      },
-      reply: (authorId: string, replyToId: string, text: string) => {
-        builder.ops.push(
-          appEvent("TWEET_REPLY", {
-            id: `dsl_reply_${builder.ops.length}`,
-            authorId,
-            replyToId,
-            text,
-          }),
-        );
-      },
-      notify: (type, actorId, tweetId) => {
-        builder.ops.push(
-          appEvent("NOTIFICATION_ADD", {
-            id: `dsl_notification_${builder.ops.length}`,
-            type,
-            actorId,
-            tweetId,
-          }),
-        );
-      },
-      dm: (threadId, senderId, text) => {
-        builder.ops.push(
-          appEvent("DM_SEND", {
-            id: `dsl_dm_${builder.ops.length}`,
-            threadId,
-            senderId,
-            text,
-          }),
-        );
-      },
+      setComposerStatus: (status, error) => push("SET_COMPOSER_STATUS", { status, error }),
+      setMessageDelivery: (messageId, delivery) => push("DM_SET_DELIVERY", { messageId, delivery }),
+      post: (payload) => push("TWEET_CREATE", { ...payload }),
+      reply: (payload) => push("TWEET_REPLY", { ...payload }),
+      notify: (payload) => push("NOTIFICATION_ADD", { ...payload }),
+      dm: (payload) => push("DM_SEND", { ...payload }),
     };
   },
 };

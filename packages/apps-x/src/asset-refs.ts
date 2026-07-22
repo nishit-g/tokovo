@@ -5,19 +5,13 @@ import {
 } from "@tokovo/core";
 import type { XState, XTweet, XUser } from "./runtime/state.js";
 
-const MAX_TIMELINE_TWEETS = 4;
-const MAX_NOTIFICATIONS = 6;
-
 function createRef(
   src: string | undefined,
   kind: EpisodeAssetRef["kind"],
   usage: EpisodeAssetRef["usage"],
   priority: number,
 ): EpisodeAssetRef | null {
-  if (!src) {
-    return null;
-  }
-
+  if (!src) return null;
   return {
     id: "",
     src,
@@ -32,46 +26,27 @@ function createRef(
   };
 }
 
-function pushUserAvatar(refs: EpisodeAssetRef[], user: XUser | undefined): void {
-  const ref = createRef(user?.avatarUrl, "image", "avatar", 78);
-  if (ref) {
-    refs.push(ref);
-  }
+function pushUserAssets(refs: EpisodeAssetRef[], user: XUser): void {
+  const avatar = createRef(user.avatarUrl, "image", "avatar", 82);
+  const banner = createRef(user.bannerUrl, "image", "background", 66);
+  if (avatar) refs.push(avatar);
+  if (banner) refs.push(banner);
 }
 
-function pushTweetAssets(
-  refs: EpisodeAssetRef[],
-  tweet: XTweet | undefined,
-  usersById: Map<string, XUser>,
-): void {
-  if (!tweet) {
-    return;
-  }
-
-  pushUserAvatar(refs, usersById.get(tweet.authorId));
-
-  const mediaType = tweet.media?.type;
+function pushTweetAssets(refs: EpisodeAssetRef[], tweet: XTweet): void {
   for (const url of tweet.media?.urls ?? []) {
     const ref = createRef(
       url,
-      mediaType === "video" ? "video" : "image",
+      tweet.media?.type === "video" ? "video" : "image",
       "message-media",
-      mediaType === "video" ? 74 : 70,
+      tweet.media?.type === "video" ? 76 : 72,
     );
-    if (ref) {
-      refs.push(ref);
-    }
+    if (ref) refs.push(ref);
   }
-
-  const linkPreviewRef = createRef(
-    tweet.linkPreview?.imageUrl,
-    "image",
-    "link-preview",
-    58,
-  );
-  if (linkPreviewRef) {
-    refs.push(linkPreviewRef);
-  }
+  const poster = createRef(tweet.media?.posterUrl, "image", "message-media", 78);
+  const preview = createRef(tweet.linkPreview?.imageUrl, "image", "link-preview", 64);
+  if (poster) refs.push(poster);
+  if (preview) refs.push(preview);
 }
 
 export const collectXAssetRefs: PluginAssetCollector<"app_x"> = ({
@@ -79,57 +54,13 @@ export const collectXAssetRefs: PluginAssetCollector<"app_x"> = ({
   deviceId,
 }) => {
   const state = getAppStateForDevice<XState>(initialWorld, "app_x", deviceId);
-  if (!state) {
-    return [];
+  if (!state) return [];
+  if (state.schemaVersion !== 2) {
+    throw new Error(`X_STATE_VERSION_UNSUPPORTED: asset collection received ${String(state.schemaVersion)}`);
   }
 
   const refs: EpisodeAssetRef[] = [];
-  const usersById = new Map(state.users.map((user) => [user.id, user]));
-  const tweetsById = new Map(state.tweets.map((tweet) => [tweet.id, tweet]));
-
-  pushUserAvatar(refs, state.currentUserId ? usersById.get(state.currentUserId) : undefined);
-
-  switch (state.currentScreen) {
-    case "timeline":
-      for (const tweetId of state.timeline.slice(0, MAX_TIMELINE_TWEETS)) {
-        pushTweetAssets(refs, tweetsById.get(tweetId), usersById);
-      }
-      break;
-    case "tweet": {
-      const activeTweet = state.activeTweetId
-        ? tweetsById.get(state.activeTweetId)
-        : undefined;
-      pushTweetAssets(refs, activeTweet, usersById);
-      for (const replyId of activeTweet?.replyIds.slice(0, MAX_TIMELINE_TWEETS) ?? []) {
-        pushTweetAssets(refs, tweetsById.get(replyId), usersById);
-      }
-      break;
-    }
-    case "profile":
-      pushUserAvatar(refs, state.activeUserId ? usersById.get(state.activeUserId) : undefined);
-      break;
-    case "notifications":
-      for (const notification of state.notifications.slice(0, MAX_NOTIFICATIONS)) {
-        pushUserAvatar(refs, usersById.get(notification.actorId));
-      }
-      break;
-    case "messages":
-    case "thread": {
-      const thread = state.activeThreadId
-        ? state.dmThreads.find((item) => item.id === state.activeThreadId)
-        : undefined;
-      for (const participantId of thread?.participantIds ?? []) {
-        if (participantId === state.currentUserId) {
-          continue;
-        }
-        pushUserAvatar(refs, usersById.get(participantId));
-      }
-      break;
-    }
-    case "compose":
-    default:
-      break;
-  }
-
+  Object.values(state.usersById).forEach((user) => pushUserAssets(refs, user));
+  Object.values(state.tweetsById).forEach((tweet) => pushTweetAssets(refs, tweet));
   return refs;
 };

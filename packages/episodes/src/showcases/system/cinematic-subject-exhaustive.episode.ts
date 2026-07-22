@@ -56,6 +56,7 @@ export default defineEpisode({
         ],
       })
       .snapshot("app_x", "phone", {
+        schemaVersion: 2,
         currentUserId: "u_me",
         users: [
           {
@@ -86,7 +87,7 @@ export default defineEpisode({
             bookmarkCount: 1100,
           },
         ],
-      })
+      }, { version: 2 })
       .deviceTrack("phone", (d) => {
         d.at("17.0s").openApp("app_x", {
           transition: { durationFrames: 18, style: "platform-default" },

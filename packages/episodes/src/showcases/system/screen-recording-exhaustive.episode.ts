@@ -50,6 +50,7 @@ export default defineEpisode({
         ],
       })
       .snapshot("app_x", "phone", {
+        schemaVersion: 2,
         currentUserId: "u_me",
         users: [
           {
@@ -80,7 +81,7 @@ export default defineEpisode({
             bookmarkCount: 1200,
           },
         ],
-      })
+      }, { version: 2 })
       .whatsapp("phone", "dm_record_v2", (wa) => {
         wa.switchTo("dm_record_v2", "0.8s");
         wa.at("1.6s").receive("Mina", "Does the recording chrome survive app switches?");

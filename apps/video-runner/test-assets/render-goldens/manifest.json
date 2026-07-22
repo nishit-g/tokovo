@@ -248,6 +248,60 @@
       "frame": 2115,
       "file": "system/os-surface-mega-frame-2115.png",
       "channelTolerance": 3
+    },
+    {
+      "episodeId": "x-cinematic-flagship",
+      "frame": 180,
+      "file": "x/cinematic-flagship-media-frame-180.png",
+      "channelTolerance": 3
+    },
+    {
+      "episodeId": "x-cinematic-flagship",
+      "frame": 330,
+      "file": "x/cinematic-flagship-notifications-frame-330.png",
+      "channelTolerance": 3
+    },
+    {
+      "episodeId": "x-cinematic-flagship",
+      "frame": 500,
+      "file": "x/cinematic-flagship-dm-frame-500.png",
+      "channelTolerance": 3
+    },
+    {
+      "episodeId": "x-cinematic-flagship",
+      "frame": 690,
+      "file": "x/cinematic-flagship-composer-frame-690.png",
+      "channelTolerance": 3
+    },
+    {
+      "episodeId": "x-cinematic-flagship",
+      "frame": 840,
+      "file": "x/cinematic-flagship-published-frame-840.png",
+      "channelTolerance": 3
+    },
+    {
+      "episodeId": "x-cinematic-flagship",
+      "frame": 960,
+      "file": "x/cinematic-flagship-poll-frame-960.png",
+      "channelTolerance": 3
+    },
+    {
+      "episodeId": "x-cinematic-flagship",
+      "frame": 1080,
+      "file": "x/cinematic-flagship-video-frame-1080.png",
+      "channelTolerance": 3
+    },
+    {
+      "episodeId": "x-cinematic-flagship",
+      "frame": 1200,
+      "file": "x/cinematic-flagship-profile-frame-1200.png",
+      "channelTolerance": 3
+    },
+    {
+      "episodeId": "x-native-theme-matrix-vnext",
+      "frame": 90,
+      "file": "x/native-theme-matrix-frame-90.png",
+      "channelTolerance": 3
     }
   ]
 }

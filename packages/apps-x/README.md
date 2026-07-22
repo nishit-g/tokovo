@@ -1,17 +1,18 @@
-# @tokovo/apps-x
+# `@tokovo/apps-x`
 
-`@tokovo/apps-x` is the X plugin package for Tokovo.
+The X VNext runtime plugin for deterministic Tokovo episodes.
 
-## Responsibilities
+## Contract
 
-- X runtime reducer and initial state
-- X React views
-- feed, thread, and compose layout support
-- subject integration for camera work
-- track-builder and authoring helpers
+- schema version 2 snapshots and views; invalid or frame-like timestamps fail before replay
+- normalized users, posts, notifications, DM threads, and messages with explicit reference validation
+- deterministic interaction lifecycles for reactions, polls, video, composer delivery, and DM delivery
+- platform-aware iOS and Android metrics with native light, dim, and lights-out themes
+- English, Arabic RTL, and Hindi localization
+- bounded feed and thread projection for large authored datasets
+- semantic and exact-entity camera subjects derived from the headless layout model
+- semantic audio IDs and complete asset collection
 
-## State Contract
+The package does not migrate or repair V1 data. Repository-owned episodes must declare snapshot and view version 2. An installed app without authored data hydrates a canonical empty V2 state.
 
-`viewMode` should always be present. Thread-focused state should only be considered active when the current thread context is available.
-
-See `CINEMATIC_SUBJECTS.md` for subject IDs.
+See [CINEMATIC_SUBJECTS.md](./CINEMATIC_SUBJECTS.md) for camera targets and `docs/X_VNEXT_ARCHITECTURE.md` for the hard-cut architecture.

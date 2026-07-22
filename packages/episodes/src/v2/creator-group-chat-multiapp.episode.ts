@@ -27,6 +27,7 @@ export default defineEpisode({
         },
       })
       .snapshot("app_x", "phone", {
+        schemaVersion: 2,
         users: [
           {
             id: "u_me",
@@ -66,17 +67,17 @@ export default defineEpisode({
             id: "tw_op",
             authorId: "u_op",
             text: "The studio called it 'strategic timing' and now the audience is editing the recap for them.",
+            createdAt: new Date("2025-06-26T21:38:00Z").getTime(),
             viewCount: 180000,
             shareCount: 3100,
             bookmarkCount: 12000,
           },
-        ],
-        replies: [
           {
             id: "tw_r1",
             authorId: "u_1",
             text: "If the audience can quote the delay, it is already part of the episode.",
             replyToId: "tw_op",
+            createdAt: new Date("2025-06-26T21:39:00Z").getTime(),
             viewCount: 92000,
             shareCount: 1100,
             bookmarkCount: 3600,
@@ -86,14 +87,15 @@ export default defineEpisode({
             authorId: "u_2",
             text: "The second act wrote itself. Now the team has to land the response.",
             replyToId: "tw_op",
+            createdAt: new Date("2025-06-26T21:40:00Z").getTime(),
             viewCount: 76000,
             shareCount: 900,
             bookmarkCount: 3100,
           },
         ],
         currentUserId: "u_me",
-      })
-      .view("app_x", "phone", { screen: "timeline" })
+      }, { version: 2 })
+      .view("app_x", "phone", { schemaVersion: 2, screen: "timeline" }, { version: 2 })
       .snapshot("app_whatsapp", "phone", {
         conversations: [
           {
@@ -220,6 +222,7 @@ export default defineEpisode({
           x.at("10s").postTweet({
             authorId: "u_me",
             text: "Strategic timing means the reveal lands when the audience is already watching.",
+            createdAt: new Date("2025-06-26T21:41:10Z").getTime(),
             viewCount: 1900,
             shareCount: 40,
             bookmarkCount: 130,

@@ -1,304 +1,193 @@
-import {
-  requireAppStateForDevice,
-  type FeedLayoutState,
-  type LayoutContext,
-  type SemanticRegion,
+import type {
+  FeedItemLayout,
+  FeedLayoutState,
+  LayoutContext,
+  SemanticRegion,
 } from "@tokovo/core";
-import type { XState } from "../runtime/state.js";
-import { xSpacing } from "../config/tokens.js";
-import { buildSemantic, createPx, rect } from "./shared.js";
+import { measureXPost, X_PROFILE_HEADER_HEIGHT } from "./measure.js";
+import { projectXFeed } from "./project.js";
+import {
+  requireTweet,
+  requireUser,
+  selectDMThreads,
+  selectTimelineTweets,
+  selectVisibleNotifications,
+} from "../runtime/selectors.js";
+import { rect, region, resolveXLayoutEnvironment, semantic } from "./shared.js";
 
 export function computeXFeedLayout(ctx: LayoutContext): FeedLayoutState {
-  const { viewportWidth: w, viewportHeight: h, appViewport, world } = ctx;
-  const contentTop = appViewport.interactiveInsets.top;
-  const contentBottom = appViewport.interactiveInsets.bottom;
-  const px = createPx(w);
-
-  const state = requireAppStateForDevice<XState>(
-    world,
-    "app_x",
-    ctx.activeDeviceId,
-  );
-  const screen = state.currentScreen ?? "timeline";
-
-  const navHeight = px(xSpacing.navHeight);
-  const headerBase = px(xSpacing.headerHeight);
-  const tabBarHeight = px(xSpacing.tabBarHeight);
-  const screenPad = px(xSpacing.screenPadding);
-  const navY = Math.max(0, h - contentBottom - navHeight);
-  const feedWidth = Math.max(0, w - screenPad * 2);
-  const avatarSize = px(xSpacing.avatarSize);
-  const avatarGap = px(xSpacing.avatarGap);
-  const fabSize = px(xSpacing.fabSize);
-  const fabX = Math.max(0, w - screenPad - fabSize);
-  const fabY = Math.max(0, navY - screenPad - fabSize);
-
-  const headerH =
-    screen === "timeline" || screen === "notifications" || screen === "messages"
-      ? contentTop + headerBase + tabBarHeight
-      : contentTop + headerBase;
-  const feedY = headerH;
-  const feedH = Math.max(0, navY - feedY);
-  const tweetCardY = feedY + px(10);
-  const tweetCardH = Math.min(px(328), Math.max(px(208), feedH * 0.42));
-  const metricsRowH = px(44);
-  const contentX = screenPad + avatarSize + avatarGap;
-
-  const regions: Record<string, SemanticRegion> = {
-    device: { id: "device", rect: rect(0, 0, w, h), tags: ["device"] },
-    app: { id: "app", rect: rect(0, 0, w, h), tags: ["app"] },
-    nav_bar: {
-      id: "nav_bar",
-      rect: rect(0, navY, w, navHeight),
-      tags: ["nav", "sticky"],
-      metadata: { sticky: true },
-    },
+  const { viewportWidth: width, viewportHeight: height, appViewport } = ctx;
+  const top = appViewport.interactiveInsets.top;
+  const bottom = appViewport.interactiveInsets.bottom;
+  const { state, experience } = resolveXLayoutEnvironment(ctx);
+  const regions: Record<string, SemanticRegion> = {};
+  const groups: Record<string, string[]> = {
+    post: [],
+    media: [],
+    notification: [],
+    thread: [],
   };
+  const itemLayouts: Record<string, FeedItemLayout> = {};
+  const headerHeight = experience.metrics.headerHeight;
+  const navHeight = experience.metrics.navHeight;
+  const navY = height - bottom - navHeight;
+  let contentHeight = height;
+  let firstVisibleItemId: string | undefined;
+  let lastVisibleItemId: string | undefined;
 
-  if (screen === "timeline") {
-    regions.timeline_header = {
-      id: "timeline_header",
-      rect: rect(0, 0, w, contentTop + headerBase),
-      tags: ["header", "sticky"],
-      metadata: { sticky: true },
-    };
-    regions.timeline_tabs = {
-      id: "timeline_tabs",
-      rect: rect(0, contentTop + headerBase, w, tabBarHeight),
-      tags: ["tabs", "sticky"],
-      metadata: { sticky: true },
-    };
-    regions.timeline_feed = {
-      id: "timeline_feed",
-      rect: rect(0, feedY, w, feedH),
-      tags: ["feed", "scroll"],
-    };
-    regions.tweet_card = {
-      id: "tweet_card",
-      rect: rect(screenPad, tweetCardY, feedWidth, tweetCardH),
-      tags: ["tweet", "card"],
-    };
-    regions.timeline_primary_row = {
-      id: "timeline_primary_row",
-      rect: rect(screenPad, tweetCardY, feedWidth, tweetCardH),
-      tags: ["tweet", "row", "primary"],
-    };
-    regions.timeline_primary_avatar = {
-      id: "timeline_primary_avatar",
-      rect: rect(screenPad, tweetCardY + px(4), avatarSize, avatarSize),
-      tags: ["tweet", "avatar"],
-    };
-    regions.timeline_primary_content = {
-      id: "timeline_primary_content",
-      rect: rect(
-        contentX,
-        tweetCardY + px(4),
-        Math.max(0, w - contentX - screenPad),
-        Math.max(0, tweetCardH - px(72)),
-      ),
-      tags: ["tweet", "content"],
-    };
-    regions.timeline_primary_media = {
-      id: "timeline_primary_media",
-      rect: rect(
-        contentX,
-        tweetCardY + px(90),
-        Math.max(0, w - contentX - screenPad),
-        Math.max(px(96), tweetCardH * 0.42),
-      ),
-      tags: ["tweet", "media"],
-    };
-    regions.metrics_row = {
-      id: "metrics_row",
-      rect: rect(
-        contentX,
-        tweetCardY + tweetCardH - metricsRowH - px(6),
-        Math.max(0, w - contentX - screenPad),
-        metricsRowH,
-      ),
-      tags: ["tweet", "metrics"],
-    };
-    regions.timeline_primary_actions = {
-      id: "timeline_primary_actions",
-      rect: regions.metrics_row.rect,
-      tags: ["tweet", "actions"],
-    };
-    regions.compose_fab = {
-      id: "compose_fab",
-      rect: rect(fabX, fabY, fabSize, fabSize),
-      tags: ["compose", "fab", "sticky"],
-      metadata: { sticky: true },
-    };
-  }
+  region(regions, "x.app", rect(0, 0, width, height), ["app"]);
 
-  if (screen === "tweet") {
-    const detailCardH = Math.min(px(440), Math.max(px(260), feedH * 0.56));
-    regions.timeline_header = {
-      id: "timeline_header",
-      rect: rect(0, 0, w, contentTop + headerBase),
-      tags: ["header", "sticky"],
-      metadata: { sticky: true },
-    };
-    regions.tweet_card = {
-      id: "tweet_card",
-      rect: rect(screenPad, feedY + px(12), feedWidth, detailCardH),
-      tags: ["tweet", "detail"],
-    };
-    regions.tweet_detail_header = {
-      id: "tweet_detail_header",
-      rect: rect(screenPad, feedY + px(18), feedWidth, px(62)),
-      tags: ["tweet", "detail", "header"],
-    };
-    regions.tweet_detail_body = {
-      id: "tweet_detail_body",
-      rect: rect(screenPad, feedY + px(86), feedWidth, Math.max(px(96), detailCardH * 0.26)),
-      tags: ["tweet", "detail", "body"],
-    };
-    regions.tweet_detail_media = {
-      id: "tweet_detail_media",
-      rect: rect(screenPad, feedY + px(188), feedWidth, Math.max(px(120), detailCardH * 0.24)),
-      tags: ["tweet", "detail", "media"],
-    };
-    regions.tweet_detail_quote = {
-      id: "tweet_detail_quote",
-      rect: rect(screenPad, feedY + px(260), feedWidth, px(102)),
-      tags: ["tweet", "detail", "quote"],
-    };
-    regions.metrics_row = {
-      id: "metrics_row",
-      rect: rect(screenPad, feedY + detailCardH - metricsRowH, feedWidth, metricsRowH),
-      tags: ["tweet", "metrics"],
-    };
-    regions.reply_composer = {
-      id: "reply_composer",
-      rect: rect(0, navY - px(98), w, px(98)),
-      tags: ["composer", "sticky"],
-      metadata: { sticky: true },
-    };
-  }
+  if (state.route.screen === "timeline") {
+    const tabsHeight = 48;
+    const headerY = top;
+    const tabsY = headerY + headerHeight;
+    const feedY = tabsY + tabsHeight;
+    const feedHeight = Math.max(0, navY - feedY);
+    const tweets = selectTimelineTweets(ctx.world, ctx.activeDeviceId);
+    const projection = projectXFeed({
+      state,
+      tweets,
+      width,
+      viewportHeight: feedHeight,
+      scrollY: state.feedScrollY,
+    });
+    contentHeight = projection.contentHeight;
 
-  if (screen === "notifications") {
-    regions.timeline_header = {
-      id: "timeline_header",
-      rect: rect(0, 0, w, contentTop + headerBase),
-      tags: ["header", "sticky"],
-      metadata: { sticky: true },
-    };
-    regions.timeline_tabs = {
-      id: "timeline_tabs",
-      rect: rect(0, contentTop + headerBase, w, tabBarHeight),
-      tags: ["tabs", "sticky"],
-      metadata: { sticky: true },
-    };
-    regions.notifications_list = {
-      id: "notifications_list",
-      rect: rect(0, feedY, w, feedH),
-      tags: ["notifications", "list"],
-    };
-    regions.notifications_row_0 = {
-      id: "notifications_row_0",
-      rect: rect(screenPad, feedY + px(6), feedWidth, px(92)),
-      tags: ["notifications", "row"],
-    };
-    regions.notifications_row_0_avatar = {
-      id: "notifications_row_0_avatar",
-      rect: rect(screenPad + px(42), feedY + px(30), px(34), px(34)),
-      tags: ["notifications", "avatar"],
-    };
-    regions.notifications_row_0_content = {
-      id: "notifications_row_0_content",
-      rect: rect(screenPad + px(90), feedY + px(20), Math.max(0, w - screenPad - px(90)), px(58)),
-      tags: ["notifications", "content"],
-    };
-  }
+    region(regions, "x.timeline.header", rect(0, headerY, width, headerHeight), ["header", "sticky"], { sticky: true });
+    region(regions, "x.timeline.tabs", rect(0, tabsY, width, tabsHeight), ["tabs", "sticky"], { sticky: true });
+    region(regions, "x.timeline.feed", rect(0, feedY, width, feedHeight), ["feed", "scroll"]);
+    region(regions, "x.nav.primary", rect(0, navY, width, navHeight), ["nav", "sticky"], { sticky: true });
+    region(regions, "x.compose.fab", rect(width - 72, navY - 72, 54, 54), ["compose", "fab", "sticky"], { sticky: true });
 
-  if (screen === "messages") {
-    regions.timeline_header = {
-      id: "timeline_header",
-      rect: rect(0, 0, w, contentTop + headerBase),
-      tags: ["header", "sticky"],
-      metadata: { sticky: true },
-    };
-    regions.message_search = {
-      id: "message_search",
-      rect: rect(screenPad, feedY + px(8), feedWidth, px(44)),
-      tags: ["messages", "search"],
-    };
-    regions.message_requests = {
-      id: "message_requests",
-      rect: rect(screenPad, feedY + px(62), feedWidth, px(64)),
-      tags: ["messages", "requests"],
-    };
-    regions.dm_thread = {
-      id: "dm_thread",
-      rect: rect(0, feedY + px(136), w, Math.max(0, feedH - px(136))),
-      tags: ["dm", "list"],
-    };
-    regions.dm_row_0 = {
-      id: "dm_row_0",
-      rect: rect(screenPad, feedY + px(144), feedWidth, px(78)),
-      tags: ["dm", "row"],
-    };
-    regions.dm_row_0_avatar = {
-      id: "dm_row_0_avatar",
-      rect: rect(screenPad, feedY + px(156), px(48), px(48)),
-      tags: ["dm", "avatar"],
-    };
-    regions.dm_row_0_content = {
-      id: "dm_row_0_content",
-      rect: rect(
-        screenPad + px(60),
-        feedY + px(154),
-        Math.max(0, w - screenPad * 2 - px(60)),
-        px(50),
-      ),
-      tags: ["dm", "content"],
-    };
-    regions.compose_fab = {
-      id: "compose_fab",
-      rect: rect(fabX, fabY, fabSize, fabSize),
-      tags: ["compose", "fab", "sticky"],
-      metadata: { sticky: true },
-    };
-  }
+    for (const item of projection.visibleItems) {
+      const cardY = feedY + item.y - state.feedScrollY;
+      const tweet = item.tweet.repostOfId
+        ? requireTweet(state, item.tweet.repostOfId, `tweet "${item.tweet.id}" repostOfId`)
+        : item.tweet;
+      const measurementSource = item.tweet.repostOfId
+        ? { ...tweet, repostOfId: item.tweet.repostOfId }
+        : tweet;
+      const measurement = measureXPost(measurementSource, width);
+      const cardId = `x.post.${item.id}`;
+      const topPadding = experience.metrics.postPaddingY;
+      const authorY = cardY + topPadding + measurement.repostLabelHeight;
+      const contentX = 16 + experience.metrics.avatar + 12;
+      const contentWidth = width - contentX - 16;
+      const bodyY = authorY + measurement.headerHeight + (measurement.bodyHeight > 0 ? 5 : 0);
+      const attachmentY = bodyY + measurement.bodyHeight + (measurement.attachmentHeight > 0 ? 10 : 0);
+      const metricsY = cardY + measurement.totalHeight - measurement.metricsHeight - topPadding;
 
-  if (screen === "profile") {
-    regions.profile_header = {
-      id: "profile_header",
-      rect: rect(0, 0, w, contentTop + headerBase),
-      tags: ["profile", "header", "sticky"],
-      metadata: { sticky: true },
-    };
-    regions.profile_banner = {
-      id: "profile_banner",
-      rect: rect(0, feedY, w, px(xSpacing.bannerHeight)),
-      tags: ["profile", "banner"],
-    };
-    regions.profile_avatar = {
-      id: "profile_avatar",
-      rect: rect(screenPad, feedY + px(xSpacing.bannerHeight) - px(36), px(82), px(82)),
-      tags: ["profile", "avatar"],
-    };
-    regions.profile_tabs = {
-      id: "profile_tabs",
-      rect: rect(0, feedY + px(xSpacing.bannerHeight) + px(156), w, tabBarHeight),
-      tags: ["profile", "tabs"],
-    };
-    regions.timeline_feed = {
-      id: "timeline_feed",
-      rect: rect(0, feedY + px(xSpacing.bannerHeight) + px(200), w, Math.max(0, feedH - px(200))),
-      tags: ["profile", "feed"],
-    };
+      itemLayouts[item.id] = {
+        id: item.id,
+        y: cardY,
+        height: measurement.totalHeight,
+        opacity: 1,
+        translateY: 0,
+        scale: 1,
+      };
+      region(regions, cardId, rect(0, cardY, width, measurement.totalHeight), ["post", "card"], { entityType: "tweet", entityId: item.id, entityRegion: "card" });
+      region(regions, `${cardId}.author`, rect(contentX, authorY, contentWidth, measurement.headerHeight), ["post", "author"], { entityType: "tweet", entityId: item.id, entityRegion: "author" });
+      if (measurement.bodyHeight > 0) {
+        region(regions, `${cardId}.body`, rect(contentX, bodyY, contentWidth, measurement.bodyHeight), ["post", "body"], { entityType: "tweet", entityId: item.id, entityRegion: "body" });
+      }
+      if (measurement.attachmentHeight > 0) {
+        const attachmentRegion = tweet.media ? "media" : tweet.poll ? "poll" : tweet.quoteTweetId ? "quote" : "link";
+        const attachmentId = `${cardId}.${attachmentRegion}`;
+        region(regions, attachmentId, rect(contentX, attachmentY, contentWidth, measurement.attachmentHeight), ["post", attachmentRegion], { entityType: "tweet", entityId: item.id, entityRegion: attachmentRegion });
+        groups.media.push(attachmentId);
+      }
+      region(regions, `${cardId}.metrics`, rect(contentX, metricsY, contentWidth, measurement.metricsHeight), ["post", "metrics"], { entityType: "tweet", entityId: item.id, entityRegion: "metrics" });
+      groups.post.push(cardId);
+    }
+    firstVisibleItemId = projection.visibleItems[0]?.id;
+    lastVisibleItemId = projection.visibleItems.at(-1)?.id;
+  } else if (state.route.screen === "tweet") {
+    const headerY = top;
+    const contentY = headerY + headerHeight;
+    const tweetId = state.route.tweetId;
+    if (!tweetId) throw new Error("X_ROUTE_TWEET_ID_REQUIRED");
+    const tweet = requireTweet(state, tweetId, "route.tweetId");
+    const measurement = measureXPost(tweet, width, true);
+    const cardId = `x.post.${tweet.id}`;
+    const cardY = contentY;
+    const authorY = cardY + 12;
+    const bodyY = authorY + measurement.headerHeight + (measurement.bodyHeight > 0 ? 5 : 0);
+    const attachmentY = bodyY + measurement.bodyHeight + (measurement.attachmentHeight > 0 ? 10 : 0);
+    region(regions, "x.tweet.header", rect(0, headerY, width, headerHeight), ["header", "sticky"], { sticky: true });
+    region(regions, cardId, rect(0, cardY, width, measurement.totalHeight), ["post", "detail"], { entityType: "tweet", entityId: tweet.id, entityRegion: "card" });
+    region(regions, `${cardId}.author`, rect(16, authorY, width - 32, measurement.headerHeight), ["post", "author"], { entityType: "tweet", entityId: tweet.id, entityRegion: "author" });
+    if (measurement.bodyHeight > 0) region(regions, `${cardId}.body`, rect(16, bodyY, width - 32, measurement.bodyHeight), ["post", "body"], { entityType: "tweet", entityId: tweet.id, entityRegion: "body" });
+    if (measurement.attachmentHeight > 0) {
+      const attachmentRegion = tweet.media ? "media" : tweet.poll ? "poll" : tweet.quoteTweetId ? "quote" : "link";
+      region(regions, `${cardId}.${attachmentRegion}`, rect(16, attachmentY, width - 32, measurement.attachmentHeight), ["post", attachmentRegion], { entityType: "tweet", entityId: tweet.id, entityRegion: attachmentRegion });
+    }
+    region(regions, `${cardId}.metrics`, rect(16, cardY + measurement.totalHeight - measurement.metricsHeight - 12, width - 32, measurement.metricsHeight), ["post", "metrics"], { entityType: "tweet", entityId: tweet.id, entityRegion: "metrics" });
+    region(regions, "x.reply.composer", rect(0, cardY + measurement.totalHeight, width, 56), ["reply", "composer"]);
+    region(regions, "x.nav.primary", rect(0, navY, width, navHeight), ["nav", "sticky"], { sticky: true });
+    groups.post.push(cardId);
+    contentHeight = measurement.totalHeight + 56;
+    firstVisibleItemId = tweet.id;
+    lastVisibleItemId = tweet.id;
+  } else if (state.route.screen === "notifications") {
+    const tabsHeight = 48;
+    const listY = top + headerHeight + tabsHeight;
+    const listHeight = Math.max(0, navY - listY);
+    region(regions, "x.notifications.header", rect(0, top, width, headerHeight), ["header", "sticky"], { sticky: true });
+    region(regions, "x.notifications.tabs", rect(0, top + headerHeight, width, tabsHeight), ["tabs", "sticky"], { sticky: true });
+    region(regions, "x.notifications.list", rect(0, listY, width, listHeight), ["notifications", "list"]);
+    region(regions, "x.nav.primary", rect(0, navY, width, navHeight), ["nav", "sticky"], { sticky: true });
+    let y = listY;
+    for (const notification of selectVisibleNotifications(ctx.world, ctx.activeDeviceId)) {
+      const rowHeight = notification.tweetId ? 116 : 88;
+      if (y <= listY + listHeight + 160) {
+        const id = `x.notification.${notification.id}`;
+        region(regions, id, rect(0, y, width, rowHeight), ["notification", notification.type], { entityType: "notification", entityId: notification.id, entityRegion: "row" });
+        groups.notification.push(id);
+      }
+      y += rowHeight;
+    }
+    contentHeight = y - listY;
+  } else if (state.route.screen === "messages") {
+    const listY = top + headerHeight;
+    const listHeight = Math.max(0, navY - listY);
+    region(regions, "x.messages.header", rect(0, top, width, headerHeight), ["header", "sticky"], { sticky: true });
+    region(regions, "x.messages.list", rect(0, listY, width, listHeight), ["messages", "list"]);
+    region(regions, "x.nav.primary", rect(0, navY, width, navHeight), ["nav", "sticky"], { sticky: true });
+    const threads = selectDMThreads(ctx.world, ctx.activeDeviceId);
+    threads.slice(0, Math.ceil(listHeight / 74) + 2).forEach((thread, index) => {
+      const id = `x.dm.${thread.id}`;
+      region(regions, id, rect(0, listY + index * 74, width, 74), ["dm", "thread"], { entityType: "dm-thread", entityId: thread.id, entityRegion: "row" });
+      groups.thread.push(id);
+    });
+    contentHeight = threads.length * 74;
+  } else if (state.route.screen === "profile") {
+    const userId = state.route.userId;
+    if (!userId) throw new Error("X_ROUTE_USER_ID_REQUIRED");
+    const user = requireUser(state, userId, "route.userId");
+    const profileHeight = X_PROFILE_HEADER_HEIGHT;
+    const sectionY = top + headerHeight;
+    const tabsY = sectionY + profileHeight;
+    const feedY = tabsY + 48;
+    region(regions, "x.profile.app-header", rect(0, top, width, headerHeight), ["header", "sticky"], { sticky: true });
+    region(regions, `x.profile.${user.id}.header`, rect(0, sectionY, width, profileHeight), ["profile", "header"], { entityType: "profile", entityId: user.id, entityRegion: "header" });
+    region(regions, `x.profile.${user.id}.banner`, rect(0, sectionY, width, 124), ["profile", "banner"], { entityType: "profile", entityId: user.id, entityRegion: "banner" });
+    region(regions, `x.profile.${user.id}.avatar`, rect(16, sectionY + 84, 84, 84), ["profile", "avatar"], { entityType: "profile", entityId: user.id, entityRegion: "avatar" });
+    region(regions, "x.profile.tabs", rect(0, tabsY, width, 48), ["profile", "tabs"]);
+    region(regions, "x.profile.feed", rect(0, feedY, width, Math.max(0, navY - feedY)), ["profile", "feed"]);
+    region(regions, "x.nav.primary", rect(0, navY, width, navHeight), ["nav", "sticky"], { sticky: true });
+    contentHeight = profileHeight;
+  } else {
+    throw new Error(`X_FEED_SCREEN_UNSUPPORTED: "${state.route.screen}"`);
   }
 
   return {
     kind: "FEED",
     cacheHint: "static",
-    scrollY: 0,
-    contentHeight: h,
+    scrollY: state.feedScrollY,
+    contentHeight,
     isAtBottom: false,
-    itemLayouts: {},
-    meta: {},
-    semantic: buildSemantic(regions),
+    itemLayouts,
+    meta: { firstVisibleItemId, lastVisibleItemId },
+    semantic: semantic(regions, groups),
   };
 }

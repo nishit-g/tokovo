@@ -56,6 +56,7 @@ export default defineEpisode({
         ],
       })
       .snapshot("app_x", "phone_right", {
+        schemaVersion: 2,
         currentUserId: "u_me",
         users: [
           {
@@ -86,7 +87,7 @@ export default defineEpisode({
             bookmarkCount: 9200,
           },
         ],
-      })
+      }, { version: 2 })
       .whatsapp("phone_left", "dm_left", (wa) => {
         wa.switchTo("dm_left", "1.0s");
         wa.at("2.0s").receive("Riya", "Please tell me you saw X.");
