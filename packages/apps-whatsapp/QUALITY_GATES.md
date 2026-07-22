@@ -63,6 +63,6 @@ visual or product completeness.
 ## Release evidence
 
 - Package typecheck, tests, architecture tests, benchmarks, episode validation,
-  full solution typecheck, lint, and release verification pass on Node 22 or 24.
+  full solution typecheck, lint, and release verification pass on the exact mise-pinned runtime.
 - The final multi-device showcase is rendered from checked-in episode data and
   exercises the same golden-covered state matrix used by CI.

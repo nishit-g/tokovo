@@ -6,14 +6,21 @@ Thanks for helping improve Tokovo. This repo is a TypeScript monorepo for determ
 
 Requirements:
 
-- Node.js 22 or 24
-- pnpm 10.28.2
+- mise
+- the Node.js and pnpm versions pinned in `.mise.toml`
 
 Install dependencies:
 
 ```bash
-pnpm install
+mise install
+mise exec -- node --version
+mise exec -- pnpm --version
+mise exec -- pnpm install
 ```
+
+Activate mise in your interactive shell for normal `pnpm` commands. CI agents and other
+non-interactive shells should keep the explicit `mise exec --` prefix. Strict engine checks make an
+unsupported Node version fail immediately instead of continuing with a warning.
 
 Run local development:
 

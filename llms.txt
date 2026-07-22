@@ -41,6 +41,6 @@ Tokovo is a deterministic TypeScript monorepo for authoring, previewing, and ren
 - Canonical agent instructions live in `AGENTS.md`.
 - Claude-specific entrypoint lives in `CLAUDE.md`.
 - Reusable repo skill lives in `.skills/tokovo-authoring/SKILL.md`.
-- Use Node.js 22 or 24 and pnpm 10.28.2.
+- Use the exact Node.js and pnpm versions in `.mise.toml`; run non-interactive commands through `mise exec --`.
 - The canonical release gate is `pnpm verify:release`.
 - Generated renders and local outputs should not be committed unless they are intentional docs showcase assets.

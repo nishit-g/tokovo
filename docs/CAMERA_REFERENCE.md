@@ -103,6 +103,11 @@ Never compensate for the hardware rail with episode-authored pixel offsets.
 Missing-subject behavior must be explicit: fail, skip the shot, or use one explicit fallback
 subject. There is no heuristic chain that invents a broader target.
 
+Authoring fails immediately with `CinematicAuthoringError` when IDs collide, a shot leaves the
+episode interval, a default rig belongs to the wrong output, or a rig references undeclared camera
+data. Preparation performs the independent schema/registry validation required for raw IR and
+non-DSL producers; release behavior never assumes the builder was used.
+
 ## Movement vocabulary
 
 Shots expose typed movement verbs: `dollyIn`, `dollyOut`, `truckLeft`, `truckRight`, `pedestalUp`,
@@ -132,13 +137,19 @@ stage signatures must remain stable while the camera signature changes. Evaluati
 the selected plan, output, shot, rig, movement intent, resolved subject provenance, framing guard,
 and ordered projection passes.
 
+Preparation compiles definitions into JSON-safe integer indexes and non-overlapping shot intervals.
+Runtime selection uses those indexes and does not scan or sort the authored plan per frame.
+
 Verify hero work with a real render:
 
 ```bash
 EPISODE_ID=camera-vnext-cinematic-flagship \
 CAMERA_PLAN_ID=kinetic \
-pnpm --filter video-runner render:fast
+mise exec -- pnpm --filter video-runner render:fast
 ```
 
-Inspect the opening, peak distortion, transition, notification, close-up, and final neutral frames.
-Tests alone cannot prove clipping, typography, physical screen inset, or clean optical settlement.
+`render:fast` is a watchable preview and may use the deterministic reference painter. A review or
+release artifact with texture-only passes must use `mise exec -- pnpm render:episode`; the direct
+Remotion path fails closed instead of silently approximating release pixels. Inspect the opening,
+peak distortion, transition, notification, close-up, and final neutral frames. Tests alone cannot
+prove clipping, typography, physical screen inset, or clean optical settlement.

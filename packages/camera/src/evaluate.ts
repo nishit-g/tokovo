@@ -10,7 +10,14 @@ import { interpolateCameraPose, minimumJerk, solveComposer } from "./composer.js
 import type { CameraRegistries } from "./lenses.js";
 import { applyCameraModifiers } from "./modifiers.js";
 import { cameraPoseToViewMatrix } from "./matrix.js";
-import { getRigById } from "./program.js";
+import {
+  getFilterById,
+  getLensById,
+  getModifierById,
+  getOutputById,
+  getRigById,
+} from "./program.js";
+import { cinematicSubjectKey } from "./subjects.js";
 import type {
   CameraDiagnostic,
   CameraTransitionTrace,
@@ -22,19 +29,6 @@ import type {
   CameraPose2D,
   CameraProjectionPass,
 } from "./types.js";
-
-function subjectKey(ref: CinematicSubjectRefIR): string {
-  switch (ref.kind) {
-    case "semantic":
-      return `semantic:${ref.deviceId}:${ref.appId}:${ref.subjectId}`;
-    case "entity":
-      return `entity:${ref.deviceId}:${ref.appId}:${ref.entityType}:${ref.entityId}:${ref.region}`;
-    case "device":
-      return `device:${ref.deviceId}:${ref.subjectId}`;
-    case "group":
-      return `group:${ref.members.map(subjectKey).join("|")}`;
-  }
-}
 
 function unionRects(rects: readonly CameraRectIR[]): CameraRectIR {
   const minimumX = Math.min(...rects.map((rect) => rect.x));
@@ -49,24 +43,26 @@ function unionRects(rects: readonly CameraRectIR[]): CameraRectIR {
   };
 }
 
+type SubjectIndex = ReadonlyMap<string, ResolvedCinematicSubject>;
+
 function resolveSubjects(
   ref: CinematicSubjectRefIR,
-  available: readonly ResolvedCinematicSubject[],
+  available: SubjectIndex,
 ): readonly ResolvedCinematicSubject[] | undefined {
   if (ref.kind === "group") {
     const memberGroups = ref.members.map((member) => resolveSubjects(member, available));
     if (memberGroups.some((members) => members === undefined)) return undefined;
     return memberGroups.flatMap((members) => members ?? []);
   }
-  const key = subjectKey(ref);
-  const resolved = available.find((subject) => subjectKey(subject.ref) === key);
+  const key = cinematicSubjectKey(ref);
+  const resolved = available.get(key);
   return resolved?.visible ? [resolved] : undefined;
 }
 
 function resolveWithPolicy(input: {
   ref: CinematicSubjectRefIR;
   policy: CameraMissingSubjectPolicyIR;
-  available: readonly ResolvedCinematicSubject[];
+  available: SubjectIndex;
 }): readonly ResolvedCinematicSubject[] | undefined {
   const direct = resolveSubjects(input.ref, input.available);
   if (direct) return direct;
@@ -81,30 +77,47 @@ function selectShots(
   outputId: string,
   frame: number,
 ): readonly CameraShotIR[] {
-  return (program.shotsByOutput[outputId] ?? [])
-    .filter((shot) => frame >= shot.startFrame && frame < shot.endFrame)
-    .sort(
-      (left, right) =>
-        right.priority - left.priority ||
-        left.declarationOrder - right.declarationOrder ||
-        left.id.localeCompare(right.id),
-    );
+  const segments = program.shotSegmentsByOutput[outputId] ?? [];
+  let minimum = 0;
+  let maximum = segments.length - 1;
+  while (minimum <= maximum) {
+    const middle = (minimum + maximum) >>> 1;
+    const segment = segments[middle];
+    if (frame < segment.startFrame) {
+      maximum = middle - 1;
+      continue;
+    }
+    if (frame >= segment.endFrame) {
+      minimum = middle + 1;
+      continue;
+    }
+    return segment.shotIndexes.map((index) => program.plan.shots[index]);
+  }
+  return [];
 }
+
+type CameraRigResolution =
+  | { status: "resolved"; evaluation: CameraRigEvaluation }
+  | { status: "subject-missing" }
+  | { status: "framing-guard-missing" };
 
 function evaluateRig(
   rig: CameraRigIR,
   policy: CameraMissingSubjectPolicyIR,
-  available: readonly ResolvedCinematicSubject[],
-): CameraRigEvaluation | undefined {
+  available: SubjectIndex,
+): CameraRigResolution {
   const subjects = resolveWithPolicy({ ref: rig.subject, policy, available });
-  if (!subjects) return undefined;
+  if (!subjects) return { status: "subject-missing" };
   const framingGuardSubjects = rig.framingGuard
     ? resolveSubjects(rig.framingGuard.subject, available)
     : [];
   if (rig.framingGuard && !framingGuardSubjects) {
-    throw new Error(`Camera rig "${rig.id}" could not resolve its framing guard subject.`);
+    return { status: "framing-guard-missing" };
   }
-  return { rig, subjects, framingGuardSubjects: framingGuardSubjects ?? [] };
+  return {
+    status: "resolved",
+    evaluation: { rig, subjects, framingGuardSubjects: framingGuardSubjects ?? [] },
+  };
 }
 
 interface EvaluatedRigFrame extends CameraRigEvaluation {
@@ -136,9 +149,29 @@ function evaluateRigFrame(input: {
     opacity: input.evaluation.rig.opacity,
   });
   const lens = input.evaluation.rig.lensId
-    ? input.program.plan.lenses.find((candidate) => candidate.id === input.evaluation.rig.lensId)
+    ? getLensById(input.program, input.evaluation.rig.lensId)
     : undefined;
+  if (input.evaluation.rig.lensId && !lens) {
+    throwPreparedDefinitionMissing({
+      program: input.program,
+      outputId: input.output.id,
+      frame: input.frame,
+      rigId: input.evaluation.rig.id,
+      kind: "lens",
+      id: input.evaluation.rig.lensId,
+    });
+  }
   const lensModel = lens ? input.registries.lenses.get(lens.modelId, lens.modelVersion) : undefined;
+  if (lens && !lensModel) {
+    throwPreparedModelMissing({
+      program: input.program,
+      outputId: input.output.id,
+      frame: input.frame,
+      rigId: input.evaluation.rig.id,
+      kind: "lens",
+      id: `${lens.modelId}@${lens.modelVersion}`,
+    });
+  }
   const projectionPasses =
     lensModel && lens
       ? lensModel.evaluate({
@@ -148,15 +181,27 @@ function evaluateRigFrame(input: {
         })
       : [];
   const modifiers = (input.evaluation.rig.modifierIds ?? []).map((modifierId) => {
-    const modifier = input.program.plan.modifiers.find((candidate) => candidate.id === modifierId);
+    const modifier = getModifierById(input.program, modifierId);
     if (!modifier) {
-      throw new Error(`Prepared camera rig references missing modifier "${modifierId}".`);
+      throwPreparedDefinitionMissing({
+        program: input.program,
+        outputId: input.output.id,
+        frame: input.frame,
+        rigId: input.evaluation.rig.id,
+        kind: "modifier",
+        id: modifierId,
+      });
     }
     const model = input.registries.modifiers.get(modifier.modelId, modifier.modelVersion);
     if (!model) {
-      throw new Error(
-        `Prepared camera modifier model "${modifier.modelId}@${modifier.modelVersion}" is missing.`,
-      );
+      throwPreparedModelMissing({
+        program: input.program,
+        outputId: input.output.id,
+        frame: input.frame,
+        rigId: input.evaluation.rig.id,
+        kind: "modifier",
+        id: `${modifier.modelId}@${modifier.modelVersion}`,
+      });
     }
     return { model, parameters: modifier.parameters };
   });
@@ -168,15 +213,27 @@ function evaluateRigFrame(input: {
     modifiers,
   });
   const filterPasses = (input.evaluation.rig.filterIds ?? []).flatMap((filterId) => {
-    const filter = input.program.plan.filters.find((candidate) => candidate.id === filterId);
+    const filter = getFilterById(input.program, filterId);
     if (!filter) {
-      throw new Error(`Prepared camera rig references missing filter "${filterId}".`);
+      throwPreparedDefinitionMissing({
+        program: input.program,
+        outputId: input.output.id,
+        frame: input.frame,
+        rigId: input.evaluation.rig.id,
+        kind: "filter",
+        id: filterId,
+      });
     }
     const model = input.registries.filters.get(filter.modelId, filter.modelVersion);
     if (!model) {
-      throw new Error(
-        `Prepared camera filter model "${filter.modelId}@${filter.modelVersion}" is missing.`,
-      );
+      throwPreparedModelMissing({
+        program: input.program,
+        outputId: input.output.id,
+        frame: input.frame,
+        rigId: input.evaluation.rig.id,
+        kind: "filter",
+        id: `${filter.modelId}@${filter.modelVersion}`,
+      });
     }
     return model.evaluate({
       frame: input.frame,
@@ -269,19 +326,21 @@ function resolvePreviousRig(input: {
   program: PreparedCameraProgram;
   output: CameraOutputIR;
   shot: CameraShotIR;
-  available: readonly ResolvedCinematicSubject[];
-}): CameraRigEvaluation | undefined {
+  available: SubjectIndex;
+}): CameraRigResolution {
   const previousFrame = input.shot.startFrame - 1;
   if (previousFrame >= 0) {
     for (const previousShot of selectShots(input.program, input.output.id, previousFrame)) {
       const rig = getRigById(input.program, previousShot.rigId);
       if (!rig) continue;
-      const evaluated = evaluateRig(rig, previousShot.missingSubjectPolicy, input.available);
-      if (evaluated) return evaluated;
+      const resolution = evaluateRig(rig, previousShot.missingSubjectPolicy, input.available);
+      if (resolution.status !== "subject-missing") return resolution;
     }
   }
   const defaultRig = getRigById(input.program, input.output.defaultRigId);
-  return defaultRig ? evaluateRig(defaultRig, { type: "error" }, input.available) : undefined;
+  return defaultRig
+    ? evaluateRig(defaultRig, { type: "error" }, input.available)
+    : { status: "subject-missing" };
 }
 
 function transitionForShot(
@@ -356,6 +415,40 @@ function diagnostic(input: {
   };
 }
 
+function throwPreparedDefinitionMissing(input: {
+  program: PreparedCameraProgram;
+  outputId: string;
+  frame: number;
+  rigId: string;
+  kind: "lens" | "modifier" | "filter";
+  id: string;
+}): never {
+  throw new CameraEvaluationError([
+    diagnostic({
+      ...input,
+      code: "CAM_PREPARED_DEFINITION_MISSING",
+      message: `Prepared camera ${input.kind} "${input.id}" is missing.`,
+    }),
+  ]);
+}
+
+function throwPreparedModelMissing(input: {
+  program: PreparedCameraProgram;
+  outputId: string;
+  frame: number;
+  rigId: string;
+  kind: "lens" | "modifier" | "filter";
+  id: string;
+}): never {
+  throw new CameraEvaluationError([
+    diagnostic({
+      ...input,
+      code: "CAM_PREPARED_MODEL_MISSING",
+      message: `Prepared camera ${input.kind} model "${input.id}" is not registered.`,
+    }),
+  ]);
+}
+
 export class CameraEvaluationError extends Error {
   readonly diagnostics: readonly CameraDiagnostic[];
 
@@ -382,7 +475,7 @@ export function evaluateCameraOutput(
       }),
     ]);
   }
-  const output = program.plan.outputs.find((candidate) => candidate.id === outputId);
+  const output = getOutputById(program, outputId);
   if (!output) {
     throw new CameraEvaluationError([
       diagnostic({
@@ -405,10 +498,10 @@ export function evaluateCameraOutput(
       }),
     ]);
   }
-  const seenSubjectKeys = new Set<string>();
+  const subjectIndex = new Map<string, ResolvedCinematicSubject>();
   for (const subject of subjectFrame.subjects) {
-    const key = subjectKey(subject.ref);
-    if (seenSubjectKeys.has(key)) {
+    const key = cinematicSubjectKey(subject.ref);
+    if (subjectIndex.has(key)) {
       throw new CameraEvaluationError([
         diagnostic({
           program,
@@ -419,7 +512,7 @@ export function evaluateCameraOutput(
         }),
       ]);
     }
-    seenSubjectKeys.add(key);
+    subjectIndex.set(key, subject);
   }
 
   let activeShot: CameraShotIR | undefined;
@@ -427,11 +520,24 @@ export function evaluateCameraOutput(
   for (const shot of selectShots(program, outputId, frame)) {
     const rig = getRigById(program, shot.rigId);
     if (!rig) continue;
-    const evaluated = evaluateRig(rig, shot.missingSubjectPolicy, subjectFrame.subjects);
-    if (evaluated) {
+    const resolution = evaluateRig(rig, shot.missingSubjectPolicy, subjectIndex);
+    if (resolution.status === "resolved") {
       activeShot = shot;
-      selected = evaluated;
+      selected = resolution.evaluation;
       break;
+    }
+    if (resolution.status === "framing-guard-missing") {
+      throw new CameraEvaluationError([
+        diagnostic({
+          program,
+          outputId,
+          frame,
+          code: "CAM_FRAMING_GUARD_SUBJECT_MISSING",
+          message: `Shot "${shot.id}" could not resolve rig "${rig.id}" framing guard.`,
+          shotId: shot.id,
+          rigId: rig.id,
+        }),
+      ]);
     }
     if (shot.missingSubjectPolicy.type === "error") {
       throw new CameraEvaluationError([
@@ -451,9 +557,22 @@ export function evaluateCameraOutput(
   if (!selected) {
     const defaultRig = getRigById(program, output.defaultRigId);
     const defaultPolicy: CameraMissingSubjectPolicyIR = { type: "error" };
-    selected = defaultRig
-      ? evaluateRig(defaultRig, defaultPolicy, subjectFrame.subjects)
-      : undefined;
+    const resolution = defaultRig
+      ? evaluateRig(defaultRig, defaultPolicy, subjectIndex)
+      : { status: "subject-missing" as const };
+    if (resolution.status === "framing-guard-missing") {
+      throw new CameraEvaluationError([
+        diagnostic({
+          program,
+          outputId,
+          frame,
+          code: "CAM_DEFAULT_FRAMING_GUARD_SUBJECT_MISSING",
+          message: `Output "${outputId}" could not resolve default rig "${output.defaultRigId}" framing guard.`,
+          rigId: output.defaultRigId,
+        }),
+      ]);
+    }
+    selected = resolution.status === "resolved" ? resolution.evaluation : undefined;
     if (!selected) {
       throw new CameraEvaluationError([
         diagnostic({
@@ -492,15 +611,28 @@ export function evaluateCameraOutput(
         program,
         output,
         shot: activeShot,
-        available: subjectFrame.subjects,
+        available: subjectIndex,
       });
-      if (previous) {
-        sourceRigId = previous.rig.id;
+      if (previous.status === "framing-guard-missing") {
+        throw new CameraEvaluationError([
+          diagnostic({
+            program,
+            outputId,
+            frame,
+            code: "CAM_TRANSITION_SOURCE_GUARD_SUBJECT_MISSING",
+            message: `Shot "${activeShot.id}" could not resolve its transition source framing guard.`,
+            shotId: activeShot.id,
+            rigId: selected.rig.id,
+          }),
+        ]);
+      }
+      if (previous.status === "resolved") {
+        sourceRigId = previous.evaluation.rig.id;
         const source = evaluateRigFrame({
           program,
           output,
           frame,
-          evaluation: previous,
+          evaluation: previous.evaluation,
           registries,
         });
         pose = interpolateCameraPose(source.pose, target.pose, progress, "linear");
@@ -546,7 +678,7 @@ export function evaluateCameraOutput(
       rigId: selected.rig.id,
       transition: transitionTrace,
       subjects: selected.subjects.map((subject) => ({
-        key: subjectKey(subject.ref),
+        key: cinematicSubjectKey(subject.ref),
         nodeId: subject.nodeId,
         worldRect: subject.worldRect,
         sourceVersion: subject.sourceVersion,
@@ -558,7 +690,7 @@ export function evaluateCameraOutput(
             paddingPx: selected.rig.framingGuard.paddingPx ?? 0,
             screenPosition: selected.rig.framingGuard.screenPosition ?? null,
             subjects: selected.framingGuardSubjects.map((subject) => ({
-              key: subjectKey(subject.ref),
+              key: cinematicSubjectKey(subject.ref),
               nodeId: subject.nodeId,
               worldRect: subject.worldRect,
               sourceVersion: subject.sourceVersion,

@@ -1,34 +1,5 @@
-import type { JsonObject } from "@tokovo/ir";
+import { numberParameter, rejectUnknownParameters, requireRange } from "./parameters.js";
 import type { CameraFilterModel, CameraProjectionPass } from "./types.js";
-
-function numberParameter(parameters: JsonObject, key: string, fallback: number): number {
-  const value = parameters[key];
-  return typeof value === "number" && Number.isFinite(value) ? value : fallback;
-}
-
-function requireRange(
-  parameters: JsonObject,
-  key: string,
-  minimum: number,
-  maximum: number,
-): string[] {
-  const value = parameters[key];
-  if (value === undefined) return [];
-  if (typeof value !== "number" || !Number.isFinite(value)) {
-    return [`${key} must be a finite number`];
-  }
-  return value < minimum || value > maximum
-    ? [`${key} must be between ${minimum} and ${maximum}`]
-    : [];
-}
-
-function rejectUnknownParameters(parameters: JsonObject, allowed: readonly string[]): string[] {
-  const known = new Set(allowed);
-  return Object.keys(parameters)
-    .filter((key) => !known.has(key))
-    .sort()
-    .map((key) => `unknown parameter "${key}"`);
-}
 
 export class CameraFilterRegistry {
   readonly #models = new Map<string, CameraFilterModel>();

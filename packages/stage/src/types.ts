@@ -15,10 +15,15 @@ export interface StageDiagnostic {
 }
 
 export interface PreparedStageProgram {
-  version: 1;
+  version: 2;
   program: StageProgramIR;
   nodesById: Readonly<Record<string, StageNodeIR>>;
+  /** Topological evaluation order. */
   nodeOrder: readonly string[];
+  /** Stable z-order used to paint evaluated nodes without sorting every frame. */
+  paintOrder: readonly string[];
+  /** Compact indexes into `program.transformKeyframes`, grouped by node. */
+  keyframeIndexesByNode: Readonly<Record<string, readonly number[]>>;
   signature: string;
   diagnostics: readonly StageDiagnostic[];
 }

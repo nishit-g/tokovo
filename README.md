@@ -75,9 +75,10 @@ EPISODE_ID=typewriter-flagship-v2 pnpm --filter video-runner render:fast
 ## First 10 Minutes
 
 ```bash
-pnpm install
-pnpm validate
-EPISODE_ID=v2-creator-series-showcase pnpm --filter video-runner render:fast
+mise install
+mise exec -- pnpm install
+mise exec -- pnpm validate
+EPISODE_ID=v2-creator-series-showcase mise exec -- pnpm --filter video-runner render:fast
 ```
 
 For interactive preview:
@@ -90,14 +91,18 @@ pnpm --filter video-runner dev
 
 Requirements:
 
-- Node.js 22 or 24
-- pnpm 10.28.2
+- mise
+- the exact Node.js and pnpm versions pinned in `.mise.toml`
 
-Install dependencies:
+Install the toolchain and dependencies:
 
 ```bash
-pnpm install
+mise install
+mise exec -- pnpm install
 ```
+
+Activate mise in your interactive shell to use the shorter `pnpm ...` commands below. In CI and
+other non-interactive shells, keep the explicit `mise exec --` prefix.
 
 Open the main development surfaces:
 

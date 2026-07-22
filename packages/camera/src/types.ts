@@ -3,7 +3,6 @@ import type {
   CameraPlanIR,
   CameraRectIR,
   CameraRigIR,
-  CameraShotIR,
   JsonObject,
 } from "@tokovo/ir";
 import type { StageProjectedCinematicSubject } from "@tokovo/stage";
@@ -93,17 +92,33 @@ export interface CameraDiagnostic {
   shotId?: string;
   rigId?: string;
   lensId?: string;
+  modifierId?: string;
+  filterId?: string;
   frame?: number;
 }
 
 export interface PreparedCameraProgram {
-  version: 1;
+  version: 2;
   plan: CameraPlanIR;
-  shotsByOutput: Readonly<Record<string, readonly CameraShotIR[]>>;
+  /** Compact JSON-safe indexes into the sorted plan arrays. */
+  outputIndexById: Readonly<Record<string, number>>;
+  rigIndexById: Readonly<Record<string, number>>;
+  lensIndexById: Readonly<Record<string, number>>;
+  modifierIndexById: Readonly<Record<string, number>>;
+  filterIndexById: Readonly<Record<string, number>>;
+  /** Non-overlapping interval segments keep per-frame selection O(log n) without duplicating shots. */
+  shotSegmentsByOutput: Readonly<Record<string, readonly CameraShotSegment[]>>;
   /** Highest-fidelity backend required by any reachable rig or transition. */
   projectionBackendRequirement: "composited" | "texture";
   signature: string;
   diagnostics: readonly CameraDiagnostic[];
+}
+
+export interface CameraShotSegment {
+  startFrame: number;
+  endFrame: number;
+  /** Indexes into `plan.shots`, already ordered by camera selection precedence. */
+  shotIndexes: readonly number[];
 }
 
 export interface CameraTransitionTrace {

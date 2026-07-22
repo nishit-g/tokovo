@@ -1,13 +1,17 @@
 import type {
   CameraFilterIR,
   CameraLensIR,
+  CameraModifierIR,
+  CameraOutputIR,
   CameraPlanIR,
   CameraRigIR,
   CameraShotIR,
+  CinematicSubjectRefIR,
 } from "@tokovo/ir";
 import { CameraPlanSchema } from "@tokovo/ir";
 import type { CameraRegistries } from "./lenses.js";
-import type { CameraDiagnostic, PreparedCameraProgram } from "./types.js";
+import type { CameraDiagnostic, CameraShotSegment, PreparedCameraProgram } from "./types.js";
+import { cinematicSubjectKey } from "./subjects.js";
 
 export class CameraPreparationError extends Error {
   readonly diagnostics: readonly CameraDiagnostic[];
@@ -117,12 +121,41 @@ function validateFilter(
         planId,
         "CAM_FILTER_MODEL_MISSING",
         `Filter model "${filter.modelId}@${filter.modelVersion}" is not registered.`,
+        { filterId: filter.id },
       ),
     ];
   }
   return model
     .validate(filter.parameters)
-    .map((message) => diagnostic(planId, "CAM_FILTER_PARAMETERS_INVALID", message));
+    .map((message) =>
+      diagnostic(planId, "CAM_FILTER_PARAMETERS_INVALID", message, { filterId: filter.id }),
+    );
+}
+
+function validateSubjectGroups(
+  planId: string,
+  ref: CinematicSubjectRefIR,
+  fields: Partial<CameraDiagnostic>,
+): CameraDiagnostic[] {
+  if (ref.kind !== "group") return [];
+  const diagnostics: CameraDiagnostic[] = [];
+  const seen = new Set<string>();
+  for (const member of ref.members) {
+    const key = cinematicSubjectKey(member);
+    if (seen.has(key)) {
+      diagnostics.push(
+        diagnostic(
+          planId,
+          "CAM_SUBJECT_GROUP_MEMBER_DUPLICATE",
+          `Cinematic subject group contains duplicate member "${key}".`,
+          fields,
+        ),
+      );
+    }
+    seen.add(key);
+    diagnostics.push(...validateSubjectGroups(planId, member, fields));
+  }
+  return diagnostics;
 }
 
 function sortPlan(plan: CameraPlanIR): CameraPlanIR {
@@ -142,6 +175,71 @@ function sortPlan(plan: CameraPlanIR): CameraPlanIR {
     modifiers: [...plan.modifiers].sort((a, b) => a.id.localeCompare(b.id)),
     filters: [...plan.filters].sort((a, b) => a.id.localeCompare(b.id)),
   };
+}
+
+function indexById<T extends { id: string }>(
+  items: readonly T[],
+): Readonly<Record<string, number>> {
+  return Object.fromEntries(items.map((item, index) => [item.id, index] as const));
+}
+
+function getIndexedDefinition<T>(
+  items: readonly T[],
+  indexes: Readonly<Record<string, number>>,
+  id: string,
+): T | undefined {
+  if (!Object.prototype.hasOwnProperty.call(indexes, id)) return undefined;
+  const index = indexes[id];
+  return Number.isInteger(index) ? items[index] : undefined;
+}
+
+function compareShotSelection(left: CameraShotIR, right: CameraShotIR): number {
+  return (
+    right.priority - left.priority ||
+    left.declarationOrder - right.declarationOrder ||
+    left.id.localeCompare(right.id)
+  );
+}
+
+function buildShotSegments(
+  plan: CameraPlanIR,
+): Readonly<Record<string, readonly CameraShotSegment[]>> {
+  const segmentsByOutput: Record<string, readonly CameraShotSegment[]> = {};
+  for (const output of plan.outputs) {
+    const starts = new Map<number, number[]>();
+    const ends = new Map<number, number[]>();
+    const boundaries = new Set([0, plan.durationInFrames]);
+    for (const [shotIndex, shot] of plan.shots.entries()) {
+      if (shot.outputId !== output.id) continue;
+      const startIndexes = starts.get(shot.startFrame) ?? [];
+      startIndexes.push(shotIndex);
+      starts.set(shot.startFrame, startIndexes);
+      const endIndexes = ends.get(shot.endFrame) ?? [];
+      endIndexes.push(shotIndex);
+      ends.set(shot.endFrame, endIndexes);
+      boundaries.add(shot.startFrame);
+      boundaries.add(shot.endFrame);
+    }
+
+    const orderedBoundaries = [...boundaries].sort((left, right) => left - right);
+    const active = new Set<number>();
+    const segments: CameraShotSegment[] = [];
+    for (let index = 0; index < orderedBoundaries.length - 1; index += 1) {
+      const startFrame = orderedBoundaries[index];
+      const endFrame = orderedBoundaries[index + 1];
+      for (const shotIndex of ends.get(startFrame) ?? []) active.delete(shotIndex);
+      for (const shotIndex of starts.get(startFrame) ?? []) active.add(shotIndex);
+      segments.push({
+        startFrame,
+        endFrame,
+        shotIndexes: [...active].sort((left, right) =>
+          compareShotSelection(plan.shots[left], plan.shots[right]),
+        ),
+      });
+    }
+    segmentsByOutput[output.id] = segments;
+  }
+  return segmentsByOutput;
 }
 
 export function prepareCameraPlan(
@@ -259,6 +357,12 @@ export function prepareCameraPlan(
   }
 
   for (const rig of plan.rigs) {
+    diagnostics.push(...validateSubjectGroups(plan.id, rig.subject, { rigId: rig.id }));
+    if (rig.framingGuard) {
+      diagnostics.push(
+        ...validateSubjectGroups(plan.id, rig.framingGuard.subject, { rigId: rig.id }),
+      );
+    }
     if (!outputIds.has(rig.outputId)) {
       diagnostics.push(
         diagnostic(
@@ -337,12 +441,17 @@ export function prepareCameraPlan(
           plan.id,
           "CAM_MODIFIER_MODEL_MISSING",
           `Modifier model "${modifier.modelId}@${modifier.modelVersion}" is not registered.`,
+          { modifierId: modifier.id },
         ),
       );
       continue;
     }
     for (const message of model.validate(modifier.parameters)) {
-      diagnostics.push(diagnostic(plan.id, "CAM_MODIFIER_PARAMETERS_INVALID", message));
+      diagnostics.push(
+        diagnostic(plan.id, "CAM_MODIFIER_PARAMETERS_INVALID", message, {
+          modifierId: modifier.id,
+        }),
+      );
     }
   }
 
@@ -351,6 +460,14 @@ export function prepareCameraPlan(
   }
 
   for (const shot of plan.shots) {
+    if (shot.missingSubjectPolicy.type === "use-explicit") {
+      diagnostics.push(
+        ...validateSubjectGroups(plan.id, shot.missingSubjectPolicy.fallback, {
+          outputId: shot.outputId,
+          shotId: shot.id,
+        }),
+      );
+    }
     const rig = rigsById.get(shot.rigId);
     if (
       !Number.isInteger(shot.startFrame) ||
@@ -435,12 +552,12 @@ export function prepareCameraPlan(
     throw new CameraPreparationError(diagnostics);
   }
 
-  const shotsByOutput = Object.fromEntries(
-    plan.outputs.map((output) => [
-      output.id,
-      plan.shots.filter((shot) => shot.outputId === output.id),
-    ]),
-  );
+  const outputIndexById = indexById(plan.outputs);
+  const rigIndexById = indexById(plan.rigs);
+  const lensIndexById = indexById(plan.lenses);
+  const modifierIndexById = indexById(plan.modifiers);
+  const filterIndexById = indexById(plan.filters);
+  const shotSegmentsByOutput = buildShotSegments(plan);
   const projectionBackendRequirement = ((): "composited" | "texture" => {
     const reachableRigIds = new Set([
       ...plan.outputs.map((output) => output.defaultRigId),
@@ -477,9 +594,14 @@ export function prepareCameraPlan(
   })();
   const signature = hashString(stableSerialize(plan));
   return {
-    version: 1,
+    version: 2,
     plan,
-    shotsByOutput,
+    outputIndexById,
+    rigIndexById,
+    lensIndexById,
+    modifierIndexById,
+    filterIndexById,
+    shotSegmentsByOutput,
     projectionBackendRequirement,
     signature,
     diagnostics,
@@ -487,5 +609,33 @@ export function prepareCameraPlan(
 }
 
 export function getRigById(program: PreparedCameraProgram, rigId: string): CameraRigIR | undefined {
-  return program.plan.rigs.find((rig) => rig.id === rigId);
+  return getIndexedDefinition(program.plan.rigs, program.rigIndexById, rigId);
+}
+
+export function getOutputById(
+  program: PreparedCameraProgram,
+  outputId: string,
+): CameraOutputIR | undefined {
+  return getIndexedDefinition(program.plan.outputs, program.outputIndexById, outputId);
+}
+
+export function getLensById(
+  program: PreparedCameraProgram,
+  lensId: string,
+): CameraLensIR | undefined {
+  return getIndexedDefinition(program.plan.lenses, program.lensIndexById, lensId);
+}
+
+export function getModifierById(
+  program: PreparedCameraProgram,
+  modifierId: string,
+): CameraModifierIR | undefined {
+  return getIndexedDefinition(program.plan.modifiers, program.modifierIndexById, modifierId);
+}
+
+export function getFilterById(
+  program: PreparedCameraProgram,
+  filterId: string,
+): CameraFilterIR | undefined {
+  return getIndexedDefinition(program.plan.filters, program.filterIndexById, filterId);
 }

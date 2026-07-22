@@ -950,22 +950,35 @@ export interface CameraShotClip {
 - gaps use an explicit output default or are validation errors
 - overlaps require deterministic priority or an explicit blend relationship
 
-### Camera program
+### Prepared camera program
 
 ```ts
-export interface CameraProgram {
-  version: number;
-  outputs: readonly CameraOutputDefinition[];
-  rigs: readonly CameraRigDefinition[];
-  shotsByOutput: Readonly<Record<string, readonly CameraShotClip[]>>;
-  modifiers: readonly CameraModifierDefinition[];
+export interface PreparedCameraProgram {
+  version: 2;
+  plan: CameraPlan;
+  outputIndexById: Readonly<Record<string, number>>;
+  rigIndexById: Readonly<Record<string, number>>;
+  lensIndexById: Readonly<Record<string, number>>;
+  modifierIndexById: Readonly<Record<string, number>>;
+  filterIndexById: Readonly<Record<string, number>>;
+  shotSegmentsByOutput: Readonly<Record<string, readonly CameraShotSegment[]>>;
+  projectionBackendRequirement: "composited" | "texture";
+  signature: string;
   diagnostics: readonly CameraCompileDiagnostic[];
+}
+
+export interface CameraShotSegment {
+  startFrame: number;
+  endFrame: number;
+  shotIndexes: readonly number[];
 }
 ```
 
-Serialized program contracts use sorted arrays and records, not Maps. Preparation may build private
-in-memory maps and interval indexes. The prepared episode owns the program; it is never reconstructed
-from runtime effects during rendering.
+The authored plan remains sorted structured data. Preparation serializes compact integer indexes and
+non-overlapping interval segments rather than Maps, functions, or duplicated definition objects.
+Active shot indexes are already ordered by selection precedence, so evaluation performs one binary
+search and no per-frame plan scan or sort. The prepared episode owns the program; it is never
+reconstructed from runtime effects during rendering.
 
 ### Shot selection
 

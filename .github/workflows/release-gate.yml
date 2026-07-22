@@ -9,31 +9,22 @@ on:
 
 jobs:
   verify-release:
-    name: Verify release (Node ${{ matrix.node-version }})
+    name: Verify release (mise toolchain)
     runs-on: ubuntu-latest
     timeout-minutes: 45
-    strategy:
-      fail-fast: false
-      matrix:
-        node-version: [22, 24]
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up pnpm
-        uses: pnpm/action-setup@v4
+      - name: Install the pinned toolchain
+        uses: jdx/mise-action@v4
         with:
-          version: 10.28.2
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ matrix.node-version }}
-          cache: pnpm
+          install: true
+          cache: true
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: mise exec -- pnpm install --frozen-lockfile
 
       - name: Verify release
-        run: pnpm verify:release
+        run: mise exec -- pnpm verify:release

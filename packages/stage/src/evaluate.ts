@@ -22,8 +22,7 @@ function interpolateMatrix(
   to: StageMatrix2DIR,
   progress: number,
 ): StageMatrix2DIR {
-  const interpolate = (left: number, right: number): number =>
-    left + (right - left) * progress;
+  const interpolate = (left: number, right: number): number => left + (right - left) * progress;
   return {
     a: interpolate(from.a, to.a),
     b: interpolate(from.b, to.b),
@@ -50,25 +49,35 @@ function evaluateLocalTransform(input: {
   initial: StageMatrix2DIR;
   frame: number;
   keyframes: readonly StageTransformKeyframeIR[];
+  keyframeIndexes: readonly number[];
 }): StageMatrix2DIR {
-  const targetIndex = input.keyframes.findIndex(
-    (keyframe) => keyframe.frame >= input.frame,
-  );
-  if (targetIndex < 0) {
-    return input.keyframes.at(-1)?.transform ?? input.initial;
+  let minimum = 0;
+  let maximum = input.keyframeIndexes.length - 1;
+  let localTargetIndex = input.keyframeIndexes.length;
+  while (minimum <= maximum) {
+    const middle = (minimum + maximum) >>> 1;
+    const keyframe = input.keyframes[input.keyframeIndexes[middle]];
+    if (keyframe.frame >= input.frame) {
+      localTargetIndex = middle;
+      maximum = middle - 1;
+    } else {
+      minimum = middle + 1;
+    }
   }
-  const target = input.keyframes[targetIndex];
+  if (localTargetIndex >= input.keyframeIndexes.length) {
+    const lastIndex = input.keyframeIndexes.at(-1);
+    return lastIndex === undefined ? input.initial : input.keyframes[lastIndex].transform;
+  }
+  const target = input.keyframes[input.keyframeIndexes[localTargetIndex]];
   if (target.frame === input.frame) return target.transform;
-  const previous = input.keyframes[targetIndex - 1];
+  const previousIndex = input.keyframeIndexes[localTargetIndex - 1];
+  const previous = previousIndex === undefined ? undefined : input.keyframes[previousIndex];
   const fromTransform = previous?.transform ?? input.initial;
   const fromFrame = previous?.frame ?? 0;
-  if (target.interpolation === "hold" || target.frame <= fromFrame)
-    return fromTransform;
+  if (target.interpolation === "hold" || target.frame <= fromFrame) return fromTransform;
   const rawProgress = (input.frame - fromFrame) / (target.frame - fromFrame);
   const progress =
-    target.interpolation === "minimum-jerk"
-      ? minimumJerk(rawProgress)
-      : clamp(rawProgress, 0, 1);
+    target.interpolation === "minimum-jerk" ? minimumJerk(rawProgress) : clamp(rawProgress, 0, 1);
   return interpolateMatrix(fromTransform, target.transform, progress);
 }
 
@@ -82,13 +91,11 @@ export function evaluateStageFrame(
   const evaluatedById = new Map<string, EvaluatedStageNode>();
   for (const nodeId of prepared.nodeOrder) {
     const node = prepared.nodesById[nodeId];
-    const keyframes = prepared.program.transformKeyframes.filter(
-      (keyframe) => keyframe.nodeId === nodeId,
-    );
     const localTransform = evaluateLocalTransform({
       initial: node.initialTransform,
       frame,
-      keyframes,
+      keyframes: prepared.program.transformKeyframes,
+      keyframeIndexes: prepared.keyframeIndexesByNode[nodeId] ?? [],
     });
     const parent = node.parentId ? evaluatedById.get(node.parentId) : undefined;
     const worldTransform = parent
@@ -108,10 +115,7 @@ export function evaluateStageFrame(
   return {
     frame,
     rootNodeId: prepared.program.rootNodeId,
-    nodes: [...evaluatedById.values()].sort(
-      (left, right) =>
-        left.zIndex - right.zIndex || left.id.localeCompare(right.id),
-    ),
+    nodes: prepared.paintOrder.map((nodeId) => evaluatedById.get(nodeId)!),
     diagnostics: [],
   };
 }
@@ -128,8 +132,7 @@ export function projectCinematicSubjects(
         `Cinematic subject references missing evaluated stage node "${subject.nodeId}".`,
       );
     }
-    const hasClip =
-      subject.clippedLocalRect !== undefined || node.clip !== undefined;
+    const hasClip = subject.clippedLocalRect !== undefined || node.clip !== undefined;
     const subjectClip = subject.clippedLocalRect ?? subject.localRect;
     const clippedLocalRect = node.clip
       ? intersectRects(subjectClip, node.clip)

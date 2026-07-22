@@ -1,6 +1,6 @@
 import { CameraPlanSchema } from "@tokovo/ir";
 import { describe, expect, it } from "vitest";
-import { cameraSubject, cinematicProgram } from "./cinematics.js";
+import { cameraSubject, CinematicAuthoringError, cinematicProgram } from "./cinematics.js";
 
 describe("Camera VNext authoring", () => {
   it("authors traceable movement, lenses, filters and physical stage geometry", () => {
@@ -90,5 +90,75 @@ describe("Camera VNext authoring", () => {
       height: 2856,
     });
     expect(JSON.stringify(program)).not.toContain("undefined");
+  });
+
+  it("fails during authoring on duplicate ids and invalid cross-references", () => {
+    const options = {
+      fps: 60,
+      duration: "2s",
+      stage: {
+        width: 1350,
+        height: 2856,
+        devices: [{ deviceId: "phone", width: 1350, height: 2856 }],
+      },
+    } as const;
+    const body = cameraSubject.device("phone", "body");
+
+    expect(() =>
+      cinematicProgram(options, (cinema) => {
+        cinema.plan("duplicate", (camera) => {
+          camera
+            .output("main", {
+              viewport: { x: 0, y: 0, width: 1080, height: 1920 },
+              defaultRigId: "neutral",
+            })
+            .output("main", {
+              viewport: { x: 0, y: 0, width: 1080, height: 1920 },
+              defaultRigId: "neutral",
+            })
+            .rig("neutral", {
+              outputId: "main",
+              subject: body,
+              composer: {
+                screenPosition: [0.5, 0.5],
+                targetFill: 0.8,
+                fillMode: "contain",
+              },
+            });
+        });
+      }),
+    ).toThrowError(expect.objectContaining({ code: "CINEMATIC_ID_DUPLICATE" }));
+
+    expect(() =>
+      cinematicProgram(options, (cinema) => {
+        cinema.plan("missing-default", (camera) => {
+          camera.output("main", {
+            viewport: { x: 0, y: 0, width: 1080, height: 1920 },
+            defaultRigId: "ghost",
+          });
+        });
+      }),
+    ).toThrowError(expect.objectContaining({ code: "CINEMATIC_DEFAULT_RIG_INVALID" }));
+  });
+
+  it("exposes stable authoring errors for invalid subject and stage data", () => {
+    expect(() => cameraSubject.device("", "body")).toThrow(CinematicAuthoringError);
+    expect(() =>
+      cinematicProgram(
+        {
+          fps: 60,
+          duration: "2s",
+          stage: {
+            width: 1350,
+            height: 2856,
+            devices: [
+              { deviceId: "phone", width: 1350, height: 2856 },
+              { deviceId: "phone", width: 1350, height: 2856 },
+            ],
+          },
+        },
+        () => {},
+      ),
+    ).toThrowError(expect.objectContaining({ code: "CINEMATIC_ID_DUPLICATE" }));
   });
 });

@@ -16,10 +16,12 @@ export interface CinematicProgramsIR {
 }
 
 export interface PreparedCinematicPrograms {
-  version: 1;
+  version: 2;
   storySignature: string;
   stageProgram: PreparedStageProgram;
   cameraPrograms: readonly PreparedCameraProgram[];
+  /** JSON-safe O(1) plan selection without duplicating prepared programs. */
+  cameraProgramIndexById: Readonly<Record<string, number>>;
   defaultCameraPlanId: string;
   stageSignature: string;
   cameraSignatures: Readonly<Record<string, string>>;
@@ -45,10 +47,7 @@ export function prepareCinematicPrograms(
       "Cinematic program fps must be a positive integer.",
     );
   }
-  if (
-    !Number.isInteger(input.durationInFrames) ||
-    input.durationInFrames <= 0
-  ) {
+  if (!Number.isInteger(input.durationInFrames) || input.durationInFrames <= 0) {
     throw new CinematicProgramPreparationError(
       "CINEMATIC_DURATION_INVALID",
       "Cinematic duration must be a positive integer.",
@@ -77,9 +76,7 @@ export function prepareCinematicPrograms(
       `Stage keyframe for "${outOfRangeStageKeyframe.nodeId}" at frame ${outOfRangeStageKeyframe.frame} is outside the episode.`,
     );
   }
-  const stageNodeIds = new Set(
-    preparedStage.program.nodes.map((node) => node.id),
-  );
+  const stageNodeIds = new Set(preparedStage.program.nodes.map((node) => node.id));
   const seenPlanIds = new Set<string>();
   const cameraPrograms = input.cameraPlans.map((plan) => {
     if (seenPlanIds.has(plan.id)) {
@@ -89,10 +86,7 @@ export function prepareCinematicPrograms(
       );
     }
     seenPlanIds.add(plan.id);
-    if (
-      plan.fps !== input.fps ||
-      plan.durationInFrames !== input.durationInFrames
-    ) {
+    if (plan.fps !== input.fps || plan.durationInFrames !== input.durationInFrames) {
       throw new CinematicProgramPreparationError(
         "CINEMATIC_CAMERA_TIMING_MISMATCH",
         `CameraPlan "${plan.id}" timing must match the episode.`,
@@ -116,10 +110,13 @@ export function prepareCinematicPrograms(
   }
 
   return {
-    version: 1,
+    version: 2,
     storySignature: input.storySignature,
     stageProgram: preparedStage,
     cameraPrograms,
+    cameraProgramIndexById: Object.fromEntries(
+      cameraPrograms.map((program, index) => [program.plan.id, index] as const),
+    ),
     defaultCameraPlanId: input.defaultCameraPlanId,
     stageSignature: preparedStage.signature,
     cameraSignatures: Object.fromEntries(
@@ -134,11 +131,15 @@ export function selectPreparedCameraProgram(
   prepared: PreparedCinematicPrograms,
   cameraPlanId = prepared.defaultCameraPlanId,
 ): PreparedCameraProgram {
-  const program = prepared.cameraPrograms.find(
-    (candidate) => candidate.plan.id === cameraPlanId,
-  );
+  const index = Object.prototype.hasOwnProperty.call(prepared.cameraProgramIndexById, cameraPlanId)
+    ? prepared.cameraProgramIndexById[cameraPlanId]
+    : undefined;
+  const program = index === undefined ? undefined : prepared.cameraPrograms[index];
   if (!program) {
-    throw new Error(`Prepared CameraPlan "${cameraPlanId}" does not exist.`);
+    throw new CinematicProgramPreparationError(
+      "CINEMATIC_CAMERA_PLAN_NOT_PREPARED",
+      `Prepared CameraPlan "${cameraPlanId}" does not exist.`,
+    );
   }
   return program;
 }

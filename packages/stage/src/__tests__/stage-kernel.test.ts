@@ -43,9 +43,7 @@ describe("stage preparation", () => {
   it("sorts declarations into a stable signature and rejects parent cycles", () => {
     const source = createProgram();
     const reordered = { ...source, nodes: [...source.nodes].reverse() };
-    expect(prepareStageProgram(source).signature).toBe(
-      prepareStageProgram(reordered).signature,
-    );
+    expect(prepareStageProgram(source).signature).toBe(prepareStageProgram(reordered).signature);
 
     const cyclic: StageProgramIR = {
       ...source,
@@ -55,22 +53,42 @@ describe("stage preparation", () => {
     };
     expect(() => prepareStageProgram(cyclic)).toThrow(StagePreparationError);
   });
+
+  it("does not treat inherited record keys as declared stage nodes", () => {
+    const source = createProgram();
+    expect(() =>
+      prepareStageProgram({
+        ...source,
+        rootNodeId: "constructor",
+      }),
+    ).toThrowError(
+      expect.objectContaining({
+        diagnostics: expect.arrayContaining([
+          expect.objectContaining({ code: "STAGE_ROOT_MISSING" }),
+        ]),
+      }),
+    );
+  });
+
+  it("precomputes compact keyframe and paint indexes as JSON-safe data", () => {
+    const prepared = prepareStageProgram(createProgram());
+    expect(prepared.version).toBe(2);
+    expect(prepared.keyframeIndexesByNode).toEqual({ phone: [0], root: [] });
+    expect(prepared.paintOrder).toEqual(["root", "phone"]);
+    expect(JSON.parse(JSON.stringify(prepared))).toEqual(prepared);
+  });
 });
 
 describe("stage evaluation", () => {
   it("interpolates independently of frame evaluation order", () => {
     const prepared = prepareStageProgram(createProgram());
-    const sequential = [0, 15, 30, 45, 60].map((frame) =>
-      evaluateStageFrame(prepared, frame),
-    );
+    const sequential = [0, 15, 30, 45, 60].map((frame) => evaluateStageFrame(prepared, frame));
     for (const frame of [60, 15, 45, 0, 30]) {
       expect(evaluateStageFrame(prepared, frame)).toEqual(
         sequential.find((entry) => entry.frame === frame),
       );
     }
-    const midpoint = evaluateStageFrame(prepared, 30).nodes.find(
-      (node) => node.id === "phone",
-    );
+    const midpoint = evaluateStageFrame(prepared, 30).nodes.find((node) => node.id === "phone");
     expect(midpoint?.localTransform.tx).toBeCloseTo(300, 8);
     expect(midpoint?.localTransform.ty).toBeCloseTo(300, 8);
   });
@@ -107,9 +125,7 @@ describe("stage evaluation", () => {
     const prepared = prepareStageProgram({
       ...source,
       nodes: source.nodes.map((node) =>
-        node.id === "phone"
-          ? { ...node, clip: { x: 0, y: 0, width: 100, height: 100 } }
-          : node,
+        node.id === "phone" ? { ...node, clip: { x: 0, y: 0, width: 100, height: 100 } } : node,
       ),
     });
     const frame = evaluateStageFrame(prepared, 0);

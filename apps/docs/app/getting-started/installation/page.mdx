@@ -4,8 +4,7 @@ Get the Tokovo monorepo running locally.
 
 ## Prerequisites
 
-- Node.js 22 or 24
-- pnpm 10.28.2
+- mise
 - Git
 
 ## Clone
@@ -18,8 +17,15 @@ cd tokovo
 ## Install Dependencies
 
 ```bash
-pnpm install
+mise install
+mise exec -- node --version
+mise exec -- pnpm --version
+mise exec -- pnpm install
 ```
+
+`.mise.toml` is the single source of truth for the exact Node.js and pnpm versions. Activate mise in
+your interactive shell to use plain `pnpm ...` commands; use `mise exec -- pnpm ...` in CI and other
+non-interactive shells.
 
 ## Main Apps
 

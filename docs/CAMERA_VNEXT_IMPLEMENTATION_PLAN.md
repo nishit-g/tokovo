@@ -602,6 +602,52 @@ author event-camera choreography, and multi-device VNext painting remains intent
 Deleting the old package before those two migrations would silently remove direction from shipped
 episodes, so Phase 10 remains gated rather than being papered over with a compatibility adapter.
 
+### Enterprise contract and hot-path checkpoint — 2026-07-22
+
+The VNext authoring, preparation, stage, and evaluation boundaries now pay validation and indexing
+cost once instead of repeating authoring work for every rendered frame:
+
+- cinematic builders reject empty/duplicate IDs, invalid stage data, out-of-range shots, missing
+  outputs, invalid default rigs, and missing lens/modifier/filter references with stable authoring
+  error codes before an episode reaches preparation;
+- prepared camera program v2 stores compact integer indexes for outputs, rigs, lenses, modifiers,
+  and filters, plus non-overlapping shot segments ordered by selection precedence;
+- camera shot selection uses binary search over prepared intervals. It performs no per-frame shot
+  filtering or sorting;
+- prepared stage program v2 stores topological order, stable paint order, and compact keyframe
+  indexes per node. Stage evaluation performs no per-node keyframe filtering or per-frame z-sort;
+- subject frames are indexed once per output evaluation and use collision-safe length-prefixed
+  identities in selection, trace, and diagnostics;
+- duplicate members in structured subject groups fail preparation instead of producing ambiguous
+  trace and framing behavior;
+- missing framing guards, prepared definitions, and runtime model registrations produce stable
+  camera diagnostics rather than generic errors;
+- lens, modifier, and filter parameter handling shares one strict internal validation utility, so
+  extensions use identical finite/range/unknown-key behavior;
+- every new prepared index is JSON-safe and covered by serialization round-trip tests; it contains
+  integers and IDs rather than Maps, functions, or duplicated definition objects.
+
+Local synthetic sanity measurements on the exact mise-pinned Node.js 22.22.0 runtime:
+
+- a 2,000-shot plan prepared 2,000 interval segments in 37.5ms; after warm-up, 20,000 complete
+  output evaluations averaged approximately 0.81µs each;
+- a 101-node stage with 10,000 transform keyframes prepared in 31.2ms; 1,000 complete stage-frame
+  evaluations averaged approximately 22.3µs each.
+
+End-to-end evidence on the same pinned runtime:
+
+- the complete 1,440-frame kinetic cut rendered as a 540x960/60 watchable preview with H.264 video,
+  AAC audio, and SHA-256 `c2072fc8a9ae951b93d5d6c8239ba13b0d811dc3a9a9d380e462f75544b25228`;
+- full-resolution frame 840 rendered at 1080x1920 with SHA-256
+  `56f70a4e9feb5e11fb25877528546ac455c14a0a3823c7db27e92ce31205f249`;
+- direct release rendering rejected the first texture-only lens pass as designed. Watchable preview
+  and release texture composition remain separate, and release pixels must flow through the offline
+  render-service compositor.
+
+These measurements validate the algorithmic shape against the current sub-0.2ms camera selection
+and sub-2ms stage/camera budgets. They do not replace repeatable CI benchmarks, real episode
+profiling, or end-to-end renderer measurements.
+
 ### Phase 0: Architecture lock and renderer feasibility
 
 Status: In progress

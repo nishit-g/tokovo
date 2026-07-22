@@ -84,6 +84,9 @@ describe("prepared cinematic envelope", () => {
     expect(second.storySignature).toBe(first.storySignature);
     expect(second.stageSignature).toBe(first.stageSignature);
     expect(second.cameraSignatures.dramatic).not.toBe(first.cameraSignatures.calm);
+    expect(first.version).toBe(2);
+    expect(first.cameraProgramIndexById).toEqual({ calm: 0 });
+    expect(JSON.parse(JSON.stringify(first))).toEqual(first);
   });
 
   it("fails when an output observes a nonexistent stage node", () => {

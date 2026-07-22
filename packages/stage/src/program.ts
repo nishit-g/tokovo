@@ -1,8 +1,4 @@
-import {
-  StageProgramSchema,
-  type StageNodeIR,
-  type StageProgramIR,
-} from "@tokovo/ir";
+import { StageProgramSchema, type StageNodeIR, type StageProgramIR } from "@tokovo/ir";
 import type { PreparedStageProgram, StageDiagnostic } from "./types.js";
 
 export class StagePreparationError extends Error {
@@ -40,23 +36,20 @@ function hashString(value: string): string {
   return (hash >>> 0).toString(16).padStart(8, "0");
 }
 
-function diagnostic(
-  code: string,
-  message: string,
-  nodeId?: string,
-): StageDiagnostic {
+function diagnostic(code: string, message: string, nodeId?: string): StageDiagnostic {
   return { code, severity: "error", message, nodeId };
+}
+
+function hasOwnNode(nodesById: Readonly<Record<string, StageNodeIR>>, nodeId: string): boolean {
+  return Object.prototype.hasOwnProperty.call(nodesById, nodeId);
 }
 
 function sortedProgram(source: StageProgramIR): StageProgramIR {
   return {
     ...source,
-    nodes: [...source.nodes].sort((left, right) =>
-      left.id.localeCompare(right.id),
-    ),
+    nodes: [...source.nodes].sort((left, right) => left.id.localeCompare(right.id)),
     transformKeyframes: [...source.transformKeyframes].sort(
-      (left, right) =>
-        left.nodeId.localeCompare(right.nodeId) || left.frame - right.frame,
+      (left, right) => left.nodeId.localeCompare(right.nodeId) || left.frame - right.frame,
     ),
   };
 }
@@ -82,8 +75,8 @@ function topologicalOrder(
       );
       return;
     }
+    if (!hasOwnNode(nodesById, nodeId)) return;
     const node = nodesById[nodeId];
-    if (!node) return;
     visiting.add(nodeId);
     if (node.parentId) visit(node.parentId);
     visiting.delete(nodeId);
@@ -96,37 +89,31 @@ function topologicalOrder(
   return order;
 }
 
-export function prepareStageProgram(
-  source: StageProgramIR,
-): PreparedStageProgram {
+export function prepareStageProgram(source: StageProgramIR): PreparedStageProgram {
   const diagnostics: StageDiagnostic[] = [];
   const parsed = StageProgramSchema.safeParse(source);
   if (!parsed.success) {
     for (const issue of parsed.error.issues) {
       diagnostics.push(
-        diagnostic(
-          "STAGE_SCHEMA_INVALID",
-          `${issue.path.join(".") || "stage"}: ${issue.message}`,
-        ),
+        diagnostic("STAGE_SCHEMA_INVALID", `${issue.path.join(".") || "stage"}: ${issue.message}`),
       );
     }
     throw new StagePreparationError(diagnostics);
   }
   const program = sortedProgram(parsed.data);
-  const nodesById: Record<string, StageNodeIR> = {};
+  const seenNodeIds = new Set<string>();
   for (const node of program.nodes) {
-    if (nodesById[node.id]) {
+    if (seenNodeIds.has(node.id)) {
       diagnostics.push(
-        diagnostic(
-          "STAGE_NODE_DUPLICATE",
-          `Duplicate stage node id "${node.id}".`,
-          node.id,
-        ),
+        diagnostic("STAGE_NODE_DUPLICATE", `Duplicate stage node id "${node.id}".`, node.id),
       );
     }
-    nodesById[node.id] = node;
+    seenNodeIds.add(node.id);
   }
-  if (!nodesById[program.rootNodeId]) {
+  const nodesById: Readonly<Record<string, StageNodeIR>> = Object.fromEntries(
+    program.nodes.map((node) => [node.id, node] as const),
+  );
+  if (!hasOwnNode(nodesById, program.rootNodeId)) {
     diagnostics.push(
       diagnostic(
         "STAGE_ROOT_MISSING",
@@ -136,7 +123,7 @@ export function prepareStageProgram(
     );
   }
   for (const node of program.nodes) {
-    if (node.parentId && !nodesById[node.parentId]) {
+    if (node.parentId && !hasOwnNode(nodesById, node.parentId)) {
       diagnostics.push(
         diagnostic(
           "STAGE_PARENT_MISSING",
@@ -157,7 +144,7 @@ export function prepareStageProgram(
   }
   const seenKeyframes = new Set<string>();
   for (const keyframe of program.transformKeyframes) {
-    if (!nodesById[keyframe.nodeId]) {
+    if (!hasOwnNode(nodesById, keyframe.nodeId)) {
       diagnostics.push(
         diagnostic(
           "STAGE_KEYFRAME_NODE_MISSING",
@@ -179,20 +166,28 @@ export function prepareStageProgram(
     seenKeyframes.add(key);
   }
 
-  const nodeOrder = topologicalOrder(
-    program.rootNodeId,
-    nodesById,
-    diagnostics,
-  );
+  const nodeOrder = topologicalOrder(program.rootNodeId, nodesById, diagnostics);
   if (diagnostics.some((entry) => entry.severity === "error")) {
     throw new StagePreparationError(diagnostics);
   }
 
+  const paintOrder = [...program.nodes]
+    .sort((left, right) => left.zIndex - right.zIndex || left.id.localeCompare(right.id))
+    .map((node) => node.id);
+  const keyframeIndexesByNode = Object.fromEntries(
+    program.nodes.map((node) => [node.id, [] as number[]] as const),
+  );
+  for (const [keyframeIndex, keyframe] of program.transformKeyframes.entries()) {
+    keyframeIndexesByNode[keyframe.nodeId]?.push(keyframeIndex);
+  }
+
   return {
-    version: 1,
+    version: 2,
     program,
     nodesById,
     nodeOrder,
+    paintOrder,
+    keyframeIndexesByNode,
     signature: hashString(stableSerialize(program)),
     diagnostics,
   };

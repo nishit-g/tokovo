@@ -16,16 +16,70 @@ import type {
   StageNodeIR,
   StageProgramIR,
 } from "@tokovo/ir";
+import { CameraPlanSchema, StageProgramSchema } from "@tokovo/ir";
 import { parseDurationToFrames, parseTimeToFrames } from "./utils/time.js";
 
 type Time = string | number;
 
+export class CinematicAuthoringError extends Error {
+  readonly code: string;
+
+  constructor(code: string, message: string) {
+    super(message);
+    this.name = "CinematicAuthoringError";
+    this.code = code;
+  }
+}
+
+function requireIdentifier(value: string, label: string): string {
+  if (typeof value !== "string" || value.trim().length === 0) {
+    throw new CinematicAuthoringError(
+      "CINEMATIC_ID_INVALID",
+      `${label} must be a non-empty string.`,
+    );
+  }
+  return value;
+}
+
+function claimIdentifier(category: string, id: string, ids: Set<string>): void {
+  requireIdentifier(id, `${category} id`);
+  if (ids.has(id)) {
+    throw new CinematicAuthoringError(
+      "CINEMATIC_ID_DUPLICATE",
+      `Duplicate ${category} id "${id}".`,
+    );
+  }
+  ids.add(id);
+}
+
+function invalidContract(
+  code: string,
+  label: string,
+  issues: readonly { path: PropertyKey[]; message: string }[],
+): never {
+  throw new CinematicAuthoringError(
+    code,
+    `${label} is invalid: ${issues
+      .map((issue) => `${issue.path.join(".") || label}: ${issue.message}`)
+      .join(" | ")}`,
+  );
+}
+
 export const cameraSubject = {
   device(deviceId: string, subjectId: string): CinematicSubjectRefIR {
-    return { kind: "device", deviceId, subjectId };
+    return {
+      kind: "device",
+      deviceId: requireIdentifier(deviceId, "Device id"),
+      subjectId: requireIdentifier(subjectId, "Subject id"),
+    };
   },
   semantic(deviceId: string, appId: string, subjectId: string): CinematicSubjectRefIR {
-    return { kind: "semantic", deviceId, appId, subjectId };
+    return {
+      kind: "semantic",
+      deviceId: requireIdentifier(deviceId, "Device id"),
+      appId: requireIdentifier(appId, "App id"),
+      subjectId: requireIdentifier(subjectId, "Subject id"),
+    };
   },
   entity(
     deviceId: string,
@@ -34,10 +88,22 @@ export const cameraSubject = {
     entityId: string,
     region: string,
   ): CinematicSubjectRefIR {
-    return { kind: "entity", deviceId, appId, entityType, entityId, region };
+    return {
+      kind: "entity",
+      deviceId: requireIdentifier(deviceId, "Device id"),
+      appId: requireIdentifier(appId, "App id"),
+      entityType: requireIdentifier(entityType, "Entity type"),
+      entityId: requireIdentifier(entityId, "Entity id"),
+      region: requireIdentifier(region, "Entity region"),
+    };
   },
   group(...members: CinematicSubjectRefIR[]): CinematicSubjectRefIR {
-    if (members.length === 0) throw new Error("A cinematic subject group cannot be empty.");
+    if (members.length === 0) {
+      throw new CinematicAuthoringError(
+        "CINEMATIC_SUBJECT_GROUP_EMPTY",
+        "A cinematic subject group cannot be empty.",
+      );
+    }
     return { kind: "group", members };
   },
 };
@@ -107,9 +173,39 @@ export interface CameraOrbitOptions extends CameraMovementOptions {
 }
 
 function stageProgram(input: CinematicProgramOptions["stage"]): StageProgramIR {
-  if ("version" in input) return input;
+  if ("version" in input) {
+    const parsed = StageProgramSchema.safeParse(input);
+    if (!parsed.success) {
+      invalidContract("CINEMATIC_STAGE_INVALID", "StageProgram", parsed.error.issues);
+    }
+    return parsed.data;
+  }
+  if (
+    !Number.isFinite(input.width) ||
+    input.width <= 0 ||
+    !Number.isFinite(input.height) ||
+    input.height <= 0
+  ) {
+    throw new CinematicAuthoringError(
+      "CINEMATIC_STAGE_INVALID",
+      "Stage width and height must be positive finite numbers.",
+    );
+  }
+  if (input.devices.length === 0) {
+    throw new CinematicAuthoringError(
+      "CINEMATIC_STAGE_EMPTY",
+      "Cinematic stage requires at least one device.",
+    );
+  }
   const rootNodeId = "stage.root";
   const identity = { a: 1, b: 0, c: 0, d: 1, tx: 0, ty: 0 } as const;
+  const deviceIds = new Set<string>();
+  const nodeIds = new Set<string>([rootNodeId]);
+  for (const device of input.devices) {
+    claimIdentifier("stage device", device.deviceId, deviceIds);
+    const nodeId = device.nodeId ?? `device.${device.deviceId}`;
+    claimIdentifier("stage node", nodeId, nodeIds);
+  }
   const nodes: StageNodeIR[] = [
     {
       id: rootNodeId,
@@ -134,7 +230,16 @@ function stageProgram(input: CinematicProgramOptions["stage"]): StageProgramIR {
       }),
     ),
   ];
-  return { version: 1, rootNodeId, nodes, transformKeyframes: [] };
+  const parsed = StageProgramSchema.safeParse({
+    version: 1,
+    rootNodeId,
+    nodes,
+    transformKeyframes: [],
+  });
+  if (!parsed.success) {
+    invalidContract("CINEMATIC_STAGE_INVALID", "Generated StageProgram", parsed.error.issues);
+  }
+  return parsed.data;
 }
 
 function movement(
@@ -413,7 +518,12 @@ export class CinematicShotBuilder {
     rig: CameraRigIR;
     shot: CameraShotIR;
   } {
-    if (!this.#subject) throw new Error(`Camera shot "${this.#id}" is missing a target.`);
+    if (!this.#subject) {
+      throw new CinematicAuthoringError(
+        "CINEMATIC_SHOT_TARGET_MISSING",
+        `Camera shot "${this.#id}" is missing a target.`,
+      );
+    }
     const rigId = `${this.#id}.rig`;
     const durationFrames = input.endFrame - input.startFrame;
     const blendDuration =
@@ -467,15 +577,22 @@ export class CinematicPlanBuilder {
   readonly #lenses: CameraLensIR[] = [];
   readonly #modifiers: CameraModifierIR[] = [];
   readonly #filters: CameraFilterIR[] = [];
+  readonly #outputIds = new Set<string>();
+  readonly #rigIds = new Set<string>();
+  readonly #shotIds = new Set<string>();
+  readonly #lensIds = new Set<string>();
+  readonly #modifierIds = new Set<string>();
+  readonly #filterIds = new Set<string>();
   #declarationOrder = 0;
 
   constructor(id: string, fps: number, durationInFrames: number) {
-    this.#id = id;
+    this.#id = requireIdentifier(id, "CameraPlan id");
     this.#fps = fps;
     this.#durationInFrames = durationInFrames;
   }
 
   output(id: string, options: CameraOutputOptions): this {
+    claimIdentifier("camera output", id, this.#outputIds);
     this.#outputs.push({
       id,
       viewport: options.viewport,
@@ -494,27 +611,24 @@ export class CinematicPlanBuilder {
   }
 
   private registerLens(lens: CameraLensIR): void {
-    const existing = this.#lenses.find((candidate) => candidate.id === lens.id);
-    if (existing) {
-      if (JSON.stringify(existing) !== JSON.stringify(lens)) {
-        throw new Error(`Camera lens "${lens.id}" was declared with conflicting data.`);
-      }
-      return;
-    }
+    claimIdentifier("camera lens", lens.id, this.#lensIds);
     this.#lenses.push(lens);
   }
 
   modifier(id: string, modelId: string, parameters: JsonObject, modelVersion = 1): this {
+    claimIdentifier("camera modifier", id, this.#modifierIds);
     this.#modifiers.push({ id, modelId, modelVersion, parameters });
     return this;
   }
 
   filter(id: string, modelId: string, parameters: JsonObject, modelVersion = 1): this {
+    claimIdentifier("camera filter", id, this.#filterIds);
     this.#filters.push({ id, modelId, modelVersion, parameters });
     return this;
   }
 
   rig(id: string, options: CameraRigOptions): this {
+    claimIdentifier("camera rig", id, this.#rigIds);
     this.#rigs.push({ id, ...options });
     return this;
   }
@@ -526,10 +640,20 @@ export class CinematicPlanBuilder {
     end: Time,
     configure: (shot: CinematicShotBuilder) => void,
   ): this {
+    claimIdentifier("camera shot", id, this.#shotIds);
     const startFrame = parseTimeToFrames(start, this.#fps);
     const endFrame = parseTimeToFrames(end, this.#fps);
     if (endFrame <= startFrame) {
-      throw new Error(`Camera shot "${id}" must end after it starts.`);
+      throw new CinematicAuthoringError(
+        "CINEMATIC_SHOT_INTERVAL_INVALID",
+        `Camera shot "${id}" must end after it starts.`,
+      );
+    }
+    if (startFrame < 0 || endFrame > this.#durationInFrames) {
+      throw new CinematicAuthoringError(
+        "CINEMATIC_SHOT_INTERVAL_INVALID",
+        `Camera shot "${id}" must stay within [0, ${this.#durationInFrames}).`,
+      );
     }
     const builder = new CinematicShotBuilder({
       fps: this.#fps,
@@ -544,13 +668,68 @@ export class CinematicPlanBuilder {
       endFrame,
       declarationOrder: this.#declarationOrder++,
     });
+    claimIdentifier("camera rig", built.rig.id, this.#rigIds);
     this.#rigs.push(built.rig);
     this.#shots.push(built.shot);
     return this;
   }
 
   build(): import("@tokovo/ir").CameraPlanIR {
-    return {
+    if (this.#outputs.length === 0) {
+      throw new CinematicAuthoringError(
+        "CINEMATIC_OUTPUTS_EMPTY",
+        `CameraPlan "${this.#id}" requires at least one output.`,
+      );
+    }
+    const rigsById = new Map(this.#rigs.map((rig) => [rig.id, rig] as const));
+    for (const output of this.#outputs) {
+      const rig = rigsById.get(output.defaultRigId);
+      if (!rig || rig.outputId !== output.id) {
+        throw new CinematicAuthoringError(
+          "CINEMATIC_DEFAULT_RIG_INVALID",
+          `Output "${output.id}" requires default rig "${output.defaultRigId}" owned by that output.`,
+        );
+      }
+    }
+    for (const rig of this.#rigs) {
+      if (!this.#outputIds.has(rig.outputId)) {
+        throw new CinematicAuthoringError(
+          "CINEMATIC_RIG_OUTPUT_MISSING",
+          `Rig "${rig.id}" references missing output "${rig.outputId}".`,
+        );
+      }
+      if (rig.lensId && !this.#lensIds.has(rig.lensId)) {
+        throw new CinematicAuthoringError(
+          "CINEMATIC_RIG_LENS_MISSING",
+          `Rig "${rig.id}" references missing lens "${rig.lensId}".`,
+        );
+      }
+      for (const modifierId of rig.modifierIds ?? []) {
+        if (!this.#modifierIds.has(modifierId)) {
+          throw new CinematicAuthoringError(
+            "CINEMATIC_RIG_MODIFIER_MISSING",
+            `Rig "${rig.id}" references missing modifier "${modifierId}".`,
+          );
+        }
+      }
+      for (const filterId of rig.filterIds ?? []) {
+        if (!this.#filterIds.has(filterId)) {
+          throw new CinematicAuthoringError(
+            "CINEMATIC_RIG_FILTER_MISSING",
+            `Rig "${rig.id}" references missing filter "${filterId}".`,
+          );
+        }
+      }
+    }
+    for (const shot of this.#shots) {
+      if (!this.#outputIds.has(shot.outputId) || !rigsById.has(shot.rigId)) {
+        throw new CinematicAuthoringError(
+          "CINEMATIC_SHOT_REFERENCE_MISSING",
+          `Shot "${shot.id}" references an undeclared output or rig.`,
+        );
+      }
+    }
+    const plan = {
       version: 1,
       id: this.#id,
       fps: this.#fps,
@@ -561,7 +740,16 @@ export class CinematicPlanBuilder {
       lenses: this.#lenses,
       modifiers: this.#modifiers,
       filters: this.#filters,
-    };
+    } as const;
+    const parsed = CameraPlanSchema.safeParse(plan);
+    if (!parsed.success) {
+      invalidContract(
+        "CINEMATIC_CAMERA_PLAN_INVALID",
+        `CameraPlan "${this.#id}"`,
+        parsed.error.issues,
+      );
+    }
+    return parsed.data;
   }
 }
 
@@ -570,11 +758,24 @@ export class CinematicProgramBuilder {
   readonly #durationInFrames: number;
   readonly #stageProgram: StageProgramIR;
   readonly #plans: import("@tokovo/ir").CameraPlanIR[] = [];
+  readonly #planIds = new Set<string>();
   #defaultPlanId?: string;
 
   constructor(options: CinematicProgramOptions) {
+    if (!Number.isInteger(options.fps) || options.fps <= 0) {
+      throw new CinematicAuthoringError(
+        "CINEMATIC_FPS_INVALID",
+        "Cinematic fps must be a positive integer.",
+      );
+    }
     this.#fps = options.fps;
     this.#durationInFrames = parseTimeToFrames(options.duration, options.fps);
+    if (!Number.isInteger(this.#durationInFrames) || this.#durationInFrames <= 0) {
+      throw new CinematicAuthoringError(
+        "CINEMATIC_DURATION_INVALID",
+        "Cinematic duration must resolve to a positive frame count.",
+      );
+    }
     this.#stageProgram = stageProgram(options.stage);
   }
 
@@ -583,6 +784,7 @@ export class CinematicProgramBuilder {
     configure: (plan: CinematicPlanBuilder) => void,
     options: { default?: boolean } = {},
   ): this {
+    claimIdentifier("CameraPlan", id, this.#planIds);
     const builder = new CinematicPlanBuilder(id, this.#fps, this.#durationInFrames);
     configure(builder);
     this.#plans.push(builder.build());
@@ -591,14 +793,22 @@ export class CinematicProgramBuilder {
   }
 
   defaultPlan(id: string): this {
-    this.#defaultPlanId = id;
+    this.#defaultPlanId = requireIdentifier(id, "Default CameraPlan id");
     return this;
   }
 
   build(): EpisodeCinematicsIR {
-    if (this.#plans.length === 0) throw new Error("Cinematics requires at least one camera plan.");
+    if (this.#plans.length === 0) {
+      throw new CinematicAuthoringError(
+        "CINEMATIC_CAMERA_PLANS_EMPTY",
+        "Cinematics requires at least one camera plan.",
+      );
+    }
     if (!this.#defaultPlanId || !this.#plans.some((plan) => plan.id === this.#defaultPlanId)) {
-      throw new Error(`Default camera plan "${this.#defaultPlanId ?? ""}" is not declared.`);
+      throw new CinematicAuthoringError(
+        "CINEMATIC_DEFAULT_PLAN_MISSING",
+        `Default camera plan "${this.#defaultPlanId ?? ""}" is not declared.`,
+      );
     }
     return {
       stageProgram: this.#stageProgram,

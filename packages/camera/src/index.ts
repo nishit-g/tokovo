@@ -29,6 +29,7 @@ export {
 export { CameraPreparationError, prepareCameraPlan, getRigById } from "./program.js";
 
 export { CameraEvaluationError, evaluateCameraOutput } from "./evaluate.js";
+export { cinematicSubjectKey } from "./subjects.js";
 
 export type {
   Matrix3,
@@ -37,6 +38,7 @@ export type {
   CinematicSubjectFrame,
   CameraProjectionPass,
   CameraDiagnostic,
+  CameraShotSegment,
   CameraTransitionTrace,
   CameraEvaluationTrace,
   PreparedCameraProgram,

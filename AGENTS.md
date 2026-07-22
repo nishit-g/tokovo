@@ -24,9 +24,12 @@ This repository is a TypeScript monorepo for Tokovo, an AI-native studio for mul
 
 ## Commands
 
-Use `pnpm` with Node.js 22 or 24.
+Use the repository mise toolchain. `.mise.toml` is the single source of truth and pins Node.js
+22.22.0 plus pnpm 10.28.2. Run `mise install` once; in non-interactive shells use
+`mise exec -- pnpm ...` so commands cannot fall through to a system Node installation.
 
 ```bash
+mise install
 pnpm install
 pnpm validate
 pnpm --filter video-runner dev

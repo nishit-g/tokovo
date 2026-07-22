@@ -25,6 +25,7 @@ export { CameraTrackBuilder, CameraPointBuilder, CameraSpanBuilder } from "./cam
 export {
   cameraSubject,
   cinematicProgram,
+  CinematicAuthoringError,
   CinematicPlanBuilder,
   CinematicProgramBuilder,
   CinematicShotBuilder,

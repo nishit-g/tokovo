@@ -4,6 +4,7 @@ import {
   CameraEvaluationError,
   CameraPreparationError,
   applyMatrix3,
+  cinematicSubjectKey,
   createBuiltinCameraRegistries,
   evaluateCameraOutput,
   interpolateCameraPose,
@@ -357,6 +358,61 @@ describe("camera program preparation", () => {
       /unknown parameter "strenght"/,
     );
   });
+
+  it("precomputes compact JSON-safe definition and interval indexes", () => {
+    const program = prepareCameraPlan(createPlan(), createBuiltinCameraRegistries());
+
+    expect(program.version).toBe(2);
+    expect(program.outputIndexById).toEqual({ main: 0 });
+    expect(program.rigIndexById).toEqual({ establishing: 0, "message-close": 1 });
+    expect(program.lensIndexById).toEqual({ "typing-fisheye": 0 });
+    expect(program.shotSegmentsByOutput.main).toEqual([
+      { startFrame: 0, endFrame: 60, shotIndexes: [] },
+      { startFrame: 60, endFrame: 180, shotIndexes: [0] },
+      { startFrame: 180, endFrame: 240, shotIndexes: [] },
+    ]);
+    expect(JSON.parse(JSON.stringify(program))).toEqual(program);
+  });
+
+  it("uses collision-safe subject identities and rejects duplicate group members", () => {
+    expect(
+      cinematicSubjectKey({
+        kind: "semantic",
+        deviceId: "a:b",
+        appId: "c",
+        subjectId: "d",
+      }),
+    ).not.toBe(
+      cinematicSubjectKey({
+        kind: "semantic",
+        deviceId: "a",
+        appId: "b:c",
+        subjectId: "d",
+      }),
+    );
+
+    const source = createPlan();
+    const invalid: CameraPlanIR = {
+      ...source,
+      rigs: source.rigs.map((rig) =>
+        rig.id === "message-close"
+          ? {
+              ...rig,
+              subject: { kind: "group" as const, members: [messageSubject, messageSubject] },
+            }
+          : rig,
+      ),
+    };
+    try {
+      prepareCameraPlan(invalid, createBuiltinCameraRegistries());
+      throw new Error("Expected duplicate group member validation to fail.");
+    } catch (error) {
+      expect(error).toBeInstanceOf(CameraPreparationError);
+      expect((error as CameraPreparationError).diagnostics[0]?.code).toBe(
+        "CAM_SUBJECT_GROUP_MEMBER_DUPLICATE",
+      );
+    }
+  });
 });
 
 describe("camera output evaluation", () => {
@@ -443,6 +499,46 @@ describe("camera output evaluation", () => {
         registries,
       ),
     ).toThrow(CameraEvaluationError);
+  });
+
+  it("reports a missing framing guard through a stable evaluation diagnostic", () => {
+    const registries = createBuiltinCameraRegistries();
+    const source = createPlan();
+    const program = prepareCameraPlan(
+      {
+        ...source,
+        rigs: source.rigs.map((rig) =>
+          rig.id === "message-close"
+            ? {
+                ...rig,
+                framingGuard: {
+                  subject: { kind: "device" as const, deviceId: "phone", subjectId: "body" },
+                },
+              }
+            : rig,
+        ),
+      },
+      registries,
+    );
+
+    try {
+      evaluateCameraOutput(
+        {
+          program,
+          outputId: "main",
+          frame: 90,
+          subjectFrame: createSubjectFrame(90),
+          mode: "render",
+        },
+        registries,
+      );
+      throw new Error("Expected camera evaluation to fail.");
+    } catch (error) {
+      expect(error).toBeInstanceOf(CameraEvaluationError);
+      expect((error as CameraEvaluationError).diagnostics[0]?.code).toBe(
+        "CAM_FRAMING_GUARD_SUBJECT_MISSING",
+      );
+    }
   });
 
   it("rejects out-of-range frames and duplicate exact subjects", () => {
