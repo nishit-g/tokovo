@@ -75,9 +75,80 @@ describe("canonical code-first app tracks", () => {
     const program = prepareInputProgram(
       (ir.inputSessions ?? []).map((session) => ({ ...session, fps: ir.fps })),
     );
-    expect(program.sessions[0]?.operations.map((operation) => operation.type)).toEqual(
-      expect.arrayContaining(["focus", "insert", "setSelection", "replaceRange", "submit", "blur"]),
+    expect(
+      program.sessions[0]?.operations.map((operation) => operation.type),
+    ).toEqual(
+      expect.arrayContaining([
+        "focus",
+        "insert",
+        "setSelection",
+        "replaceRange",
+        "submit",
+        "blur",
+      ]),
     );
+  });
+
+  it("binds X post, reply, and DM typing to their exact canonical fields", () => {
+    const ir = episode("x-semantic-input", { fps: 30, duration: "8s" })
+      .device("phone", "iphone16", { app: "app_x" })
+      .x("phone", (x) => {
+        x.at("3s").postTweet(
+          {
+            id: "tw_launch",
+            authorId: "u_me",
+            text: "Launch now",
+            createdAt: 1_782_000_000_000,
+          },
+          { input: { duration: "2s", style: "fast" } },
+        );
+        x.at("5s").replyTweet(
+          {
+            id: "tw_reply",
+            authorId: "u_me",
+            replyToId: "tw_launch",
+            text: "On it",
+            createdAt: 1_782_000_002_000,
+          },
+          { input: { duration: "1.5s", style: "fast" } },
+        );
+        x.at("7s").sendMessage(
+          {
+            id: "msg_launch",
+            threadId: "dm_launch",
+            senderId: "u_me",
+            text: "Ship it",
+            createdAt: 1_782_000_004_000,
+          },
+          { input: { duration: "1.5s", style: "fast" } },
+        );
+      })
+      .build();
+
+    expect(ir.events.map((event) => event.type)).toEqual([
+      "TWEET_CREATE",
+      "TWEET_REPLY",
+      "DM_SEND",
+    ]);
+    expect(
+      ir.inputSessions?.map((session) => ({
+        fieldId: session.fieldId,
+        submitAtFrame: session.submitAtFrame,
+        returnKey: session.keyboard.returnKey,
+      })),
+    ).toEqual([
+      { fieldId: "post", submitAtFrame: 90, returnKey: "return" },
+      {
+        fieldId: "tweet:tw_launch:reply",
+        submitAtFrame: 150,
+        returnKey: "return",
+      },
+      {
+        fieldId: "thread:dm_launch:composer",
+        submitAtFrame: 210,
+        returnKey: "send",
+      },
+    ]);
   });
 
   it("authors scene-local time, reusable cast identities, handles, and camera intent", () => {
@@ -108,22 +179,29 @@ describe("canonical code-first app tracks", () => {
           },
           (chat) => {
             chat.open().wait("1s");
-            const reveal = chat.receive(people.riya, "You should probably see this.", {
-              hold: "1.5s",
-            });
+            const reveal = chat.receive(
+              people.riya,
+              "You should probably see this.",
+              {
+                hold: "1.5s",
+              },
+            );
             revealSubject = reveal.subject;
             chat.reply("That explains everything.", reveal, {});
           },
         );
       })
       .scene("reaction", { at: "8s", duration: "3s" }, (scene) => {
-        scene.social({ app: "x", deviceId: "phone", currentActor: people.me }, (social) => {
-          const post = social.post("A normal day online.", {
-            id: "post_reaction",
-          });
-          postSubject = post.subject;
-          social.wait("1s").comment(post, people.riya, "Define normal.");
-        });
+        scene.social(
+          { app: "x", deviceId: "phone", currentActor: people.me },
+          (social) => {
+            const post = social.post("A normal day online.", {
+              id: "post_reaction",
+            });
+            postSubject = post.subject;
+            social.wait("1s").comment(post, people.riya, "Define normal.");
+          },
+        );
       })
       .build();
 
@@ -131,9 +209,11 @@ describe("canonical code-first app tracks", () => {
       id: "riya",
       name: "Riya G.",
     });
-    expect(ir.events.filter((event) => event.kind === "APP").map((event) => event.at)).toEqual([
-      60, 90, 135, 240, 270,
-    ]);
+    expect(
+      ir.events
+        .filter((event) => event.kind === "APP")
+        .map((event) => event.at),
+    ).toEqual([60, 90, 135, 240, 270]);
     expect(revealSubject).toEqual({
       kind: "entity",
       deviceId: "phone",
@@ -269,19 +349,28 @@ describe("canonical code-first app tracks", () => {
     const ir = episode("social-surfaces", { fps: 30, duration: "3s" })
       .scene("all feeds", { at: "0s", duration: "2s" }, (scene) => {
         for (const app of ["instagram", "linkedin", "x"] as const) {
-          scene.social({ app, deviceId: "phone", currentActor: me }, (social) => {
-            const post = social.post(`post on ${app}`, {
-              ...(app === "instagram" ? { mediaUrl: "/media/founder-whiteboard.jpg" } : {}),
-            });
-            social.comment(post, riya, `reply on ${app}`);
-            social.open(post);
-          });
+          scene.social(
+            { app, deviceId: "phone", currentActor: me },
+            (social) => {
+              const post = social.post(`post on ${app}`, {
+                ...(app === "instagram"
+                  ? { mediaUrl: "/media/founder-whiteboard.jpg" }
+                  : {}),
+              });
+              social.comment(post, riya, `reply on ${app}`);
+              social.open(post);
+            },
+          );
         }
       })
       .build();
 
     expect(
-      new Set(ir.events.filter((event) => event.kind === "APP").map((event) => event.appId)),
+      new Set(
+        ir.events
+          .filter((event) => event.kind === "APP")
+          .map((event) => event.appId),
+      ),
     ).toEqual(new Set(["app_instagram", "app_linkedin", "app_x"]));
   });
 

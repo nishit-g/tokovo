@@ -42,9 +42,18 @@ describe("The Last Frame", () => {
       (event) => event.kind === "APP" && event.appId === "app_x",
     );
     expect(xEvents.some((event) => event.type === "TWEET_REPLY")).toBe(true);
-    expect(xEvents.filter((event) => event.type === "DM_SEND")).toHaveLength(5);
+    expect(xEvents.filter((event) => event.type === "DM_SEND")).toHaveLength(2);
+    expect(xEvents.filter((event) => event.type === "DM_RECEIVE")).toHaveLength(
+      3,
+    );
+    expect(xEvents.some((event) => event.type === "DM_REACT")).toBe(true);
+    expect(xEvents.some((event) => event.type === "SET_SCROLL")).toBe(true);
     expect(xEvents.some((event) => event.type === "TWEET_CREATE")).toBe(true);
     expect(ir.notificationIntents).toHaveLength(1);
-    expect(ir.inputSessions).toHaveLength(1);
+    expect(ir.inputSessions?.map((session) => session.fieldId)).toEqual([
+      "thread:x_launch_ops:composer",
+      "thread:x_launch_ops:composer",
+      "post",
+    ]);
   });
 });

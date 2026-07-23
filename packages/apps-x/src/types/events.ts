@@ -22,13 +22,18 @@ export type XEventType =
   | "SET_COMPOSE_DRAFT"
   | "SET_COMPOSER_STATUS"
   | "SET_THREAD_DRAFT"
-  | "SET_THREAD_TYPING"
+  | "SET_SCROLL"
+  | "DM_TYPING_START"
+  | "DM_TYPING_STOP"
   | "SET_TIMELINE_TAB"
   | "SET_PROFILE_TAB"
   | "SET_NOTIFICATIONS_TAB"
   | "NOTIFICATION_ADD"
   | "DM_THREAD_CREATE"
   | "DM_SEND"
+  | "DM_RECEIVE"
+  | "DM_REACT"
+  | "DM_UNREACT"
   | "DM_SET_DELIVERY";
 
 export type XEventKind =
@@ -49,13 +54,18 @@ export type XEventKind =
   | "SET_COMPOSE_DRAFT"
   | "SET_COMPOSER_STATUS"
   | "SET_THREAD_DRAFT"
-  | "SET_THREAD_TYPING"
+  | "SET_SCROLL"
+  | "START_DM_TYPING"
+  | "STOP_DM_TYPING"
   | "SET_TIMELINE_TAB"
   | "SET_PROFILE_TAB"
   | "SET_NOTIFICATIONS_TAB"
   | "ADD_NOTIFICATION"
   | "ADD_DM_THREAD"
-  | "ADD_DM_MESSAGE"
+  | "ADD_DM_MESSAGE_OUTGOING"
+  | "ADD_DM_MESSAGE_INCOMING"
+  | "ADD_DM_REACTION"
+  | "REMOVE_DM_REACTION"
   | "SET_DM_DELIVERY"
   | "NAVIGATE_BACK";
 
@@ -218,9 +228,23 @@ export interface ThreadDraftPayload {
   text: string;
 }
 
-export interface ThreadTypingPayload {
+export interface DMThreadActorPayload {
   threadId: string;
-  userId: string | null;
+  userId: string;
+}
+
+export type XScrollSurface =
+  | "timeline"
+  | "tweet"
+  | "notifications"
+  | "messages"
+  | "profile"
+  | "thread";
+
+export interface XScrollPayload {
+  surface: XScrollSurface;
+  offset: number;
+  targetId?: string;
 }
 
 export interface TimelineTabPayload {
@@ -269,12 +293,21 @@ export interface DMSendPayload {
   senderId: string;
   text: string;
   createdAt: number;
-  delivery?: "sending" | "sent" | "failed";
+  replyToMessageId?: string;
+  delivery?: "sending" | "sent" | "delivered" | "read" | "failed";
+}
+
+export type DMReceivePayload = Omit<DMSendPayload, "delivery">;
+
+export interface DMReactionPayload {
+  messageId: string;
+  userId: string;
+  emoji: string;
 }
 
 export interface DMDeliveryPayload {
   messageId: string;
-  delivery: "sending" | "sent" | "failed";
+  delivery: "sending" | "sent" | "delivered" | "read" | "failed";
 }
 
 export type XEventPayloadMap = {
@@ -299,13 +332,18 @@ export type XEventPayloadMap = {
   SET_COMPOSE_DRAFT: ComposeDraftPayload;
   SET_COMPOSER_STATUS: ComposerStatusPayload;
   SET_THREAD_DRAFT: ThreadDraftPayload;
-  SET_THREAD_TYPING: ThreadTypingPayload;
+  SET_SCROLL: XScrollPayload;
+  DM_TYPING_START: DMThreadActorPayload;
+  DM_TYPING_STOP: DMThreadActorPayload;
   SET_TIMELINE_TAB: TimelineTabPayload;
   SET_PROFILE_TAB: ProfileTabPayload;
   SET_NOTIFICATIONS_TAB: NotificationsTabPayload;
   NOTIFICATION_ADD: NotificationAddPayload;
   DM_THREAD_CREATE: DMThreadCreatePayload;
   DM_SEND: DMSendPayload;
+  DM_RECEIVE: DMReceivePayload;
+  DM_REACT: DMReactionPayload;
+  DM_UNREACT: DMReactionPayload;
   DM_SET_DELIVERY: DMDeliveryPayload;
 };
 

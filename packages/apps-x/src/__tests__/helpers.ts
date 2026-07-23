@@ -5,7 +5,12 @@ import {
   type WorldState,
 } from "@tokovo/core";
 import { produce } from "immer";
-import { createXInitialState, type XState, type XTweet, type XUser } from "../runtime/state.js";
+import {
+  createXInitialState,
+  type XState,
+  type XTweet,
+  type XUser,
+} from "../runtime/state.js";
 import { xReducer } from "../runtime/reducer.js";
 
 export const BASE_TIME = Date.UTC(2026, 6, 23, 10, 0, 0);
@@ -58,7 +63,7 @@ export function createTestState(): XState {
     messageIds: ["msg_1"],
     unreadCount: 0,
     pinned: false,
-    typingUserId: null,
+    typingUserIds: [],
     lastMessageAt: BASE_TIME - 30_000,
   };
   state.dmThreadIds = ["dm_1"];
@@ -68,9 +73,10 @@ export function createTestState(): XState {
     senderId: "u_other",
     text: "The first cut is ready.",
     createdAt: BASE_TIME - 30_000,
-    delivery: "sent",
+    reactions: [],
+    delivery: "read",
   };
-  state.threadScrollYById.dm_1 = 0;
+  state.scroll.threadFromBottomById.dm_1 = 0;
   return state;
 }
 

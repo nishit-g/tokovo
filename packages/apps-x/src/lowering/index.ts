@@ -12,16 +12,25 @@ import {
 import type { XTrackEvent } from "../types/index.js";
 
 export interface XLoweringHandler {
-  lower: (event: TrackEvent, context: NotificationIntentEmitter) => RuntimeEvent[];
+  lower: (
+    event: TrackEvent,
+    context: NotificationIntentEmitter,
+  ) => RuntimeEvent[];
 }
 
 function isXEvent(event: TrackEvent): event is XTrackEvent {
   return event.kind === "APP" && event.appId === "app_x";
 }
 
-function runtimeEvent(event: XTrackEvent, type: string, payload: unknown): RuntimeEvent {
+function runtimeEvent(
+  event: XTrackEvent,
+  type: string,
+  payload: unknown,
+): RuntimeEvent {
   if (!event.deviceId) {
-    throw new Error("X_EVENT_DEVICE_REQUIRED: lowered X events require deviceId");
+    throw new Error(
+      "X_EVENT_DEVICE_REQUIRED: lowered X events require deviceId",
+    );
   }
   return {
     at: event.at,
@@ -40,7 +49,10 @@ function parseOwnedPayload<T>(
 ): T {
   const result = schema.safeParse(payload);
   if (!result.success) {
-    const detail = formatXSchemaIssues(result.error, `track.${type}.payload`).join("; ");
+    const detail = formatXSchemaIssues(
+      result.error,
+      `track.${type}.payload`,
+    ).join("; ");
     throw new Error(`X_TRACK_PAYLOAD_INVALID: ${detail}`);
   }
   return result.data;
@@ -69,12 +81,18 @@ export const xLowering: XLoweringHandler = {
   lower(event: TrackEvent, context: NotificationIntentEmitter): RuntimeEvent[] {
     if (!isXEvent(event)) return [];
     if (!event.deviceId) {
-      throw new Error("X_EVENT_DEVICE_REQUIRED: lowered X events require deviceId");
+      throw new Error(
+        "X_EVENT_DEVICE_REQUIRED: lowered X events require deviceId",
+      );
     }
 
     switch (event.type) {
       case "USER_CREATE": {
-        const payload = parseOwnedPayload(event.type, event.payload, xUserInputSchema);
+        const payload = parseOwnedPayload(
+          event.type,
+          event.payload,
+          xUserInputSchema,
+        );
         return [runtimeEvent(event, "ADD_USER", payload)];
       }
       case "SET_CURRENT_USER":
@@ -86,7 +104,11 @@ export const xLowering: XLoweringHandler = {
       case "TWEET_CREATE":
       case "TWEET_REPLY":
       case "TWEET_QUOTE": {
-        const payload = parseOwnedPayload(event.type, event.payload, xTweetInputSchema);
+        const payload = parseOwnedPayload(
+          event.type,
+          event.payload,
+          xTweetInputSchema,
+        );
         return [runtimeEvent(event, "ADD_TWEET", payload)];
       }
       case "TWEET_REPOST": {
@@ -129,8 +151,12 @@ export const xLowering: XLoweringHandler = {
         return [runtimeEvent(event, "SET_COMPOSER_STATUS", event.payload)];
       case "SET_THREAD_DRAFT":
         return [runtimeEvent(event, "SET_THREAD_DRAFT", event.payload)];
-      case "SET_THREAD_TYPING":
-        return [runtimeEvent(event, "SET_THREAD_TYPING", event.payload)];
+      case "SET_SCROLL":
+        return [runtimeEvent(event, "SET_SCROLL", event.payload)];
+      case "DM_TYPING_START":
+        return [runtimeEvent(event, "START_DM_TYPING", event.payload)];
+      case "DM_TYPING_STOP":
+        return [runtimeEvent(event, "STOP_DM_TYPING", event.payload)];
       case "SET_TIMELINE_TAB":
         return [runtimeEvent(event, "SET_TIMELINE_TAB", event.payload)];
       case "SET_PROFILE_TAB":
@@ -138,7 +164,11 @@ export const xLowering: XLoweringHandler = {
       case "SET_NOTIFICATIONS_TAB":
         return [runtimeEvent(event, "SET_NOTIFICATIONS_TAB", event.payload)];
       case "NOTIFICATION_ADD": {
-        const payload = parseOwnedPayload(event.type, event.payload, xNotificationInputSchema);
+        const payload = parseOwnedPayload(
+          event.type,
+          event.payload,
+          xNotificationInputSchema,
+        );
         const body = payload.body ?? notificationCopy(payload.type);
         const threadId = payload.tweetId
           ? `tweet:${payload.tweetId}`
@@ -166,17 +196,39 @@ export const xLowering: XLoweringHandler = {
         return [runtimeEvent(event, "ADD_NOTIFICATION", payload)];
       }
       case "DM_THREAD_CREATE": {
-        const payload = parseOwnedPayload(event.type, event.payload, xThreadInputSchema);
+        const payload = parseOwnedPayload(
+          event.type,
+          event.payload,
+          xThreadInputSchema,
+        );
         return [runtimeEvent(event, "ADD_DM_THREAD", payload)];
       }
       case "DM_SEND": {
-        const payload = parseOwnedPayload(event.type, event.payload, xMessageInputSchema);
-        return [runtimeEvent(event, "ADD_DM_MESSAGE", payload)];
+        const payload = parseOwnedPayload(
+          event.type,
+          event.payload,
+          xMessageInputSchema,
+        );
+        return [runtimeEvent(event, "ADD_DM_MESSAGE_OUTGOING", payload)];
       }
+      case "DM_RECEIVE": {
+        const payload = parseOwnedPayload(
+          event.type,
+          event.payload,
+          xMessageInputSchema,
+        );
+        return [runtimeEvent(event, "ADD_DM_MESSAGE_INCOMING", payload)];
+      }
+      case "DM_REACT":
+        return [runtimeEvent(event, "ADD_DM_REACTION", event.payload)];
+      case "DM_UNREACT":
+        return [runtimeEvent(event, "REMOVE_DM_REACTION", event.payload)];
       case "DM_SET_DELIVERY":
         return [runtimeEvent(event, "SET_DM_DELIVERY", event.payload)];
       default:
-        throw new Error(`X_TRACK_TYPE_UNSUPPORTED: "${(event as { type: string }).type}"`);
+        throw new Error(
+          `X_TRACK_TYPE_UNSUPPORTED: "${(event as { type: string }).type}"`,
+        );
     }
   },
 };

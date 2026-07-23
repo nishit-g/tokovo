@@ -62,7 +62,17 @@ export const XView: React.FC<PluginViewProps> = ({
           textRendering: "geometricPrecision",
         }}
       >
-        <div style={{ width: "100%", height: "100%", opacity: eased, transform: `translateX(${direction * (1 - eased) * 10}px)`, overflow: "hidden" }}>
+        <div
+          style={{
+            width: "100%",
+            height: "100%",
+            // Runtime state contains only the active route, so fading from zero
+            // would reveal the app background rather than the outgoing screen.
+            // Keep every authored frame readable and use position for the cue.
+            transform: `translateX(${direction * (1 - eased) * 10}px)`,
+            overflow: "hidden",
+          }}
+        >
           {renderXScreen(state.route, {
             world,
             deviceId,

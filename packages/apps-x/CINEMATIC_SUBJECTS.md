@@ -6,7 +6,7 @@ X VNext projects versioned cinematic subjects from the same deterministic layout
 
 - application and navigation: `x.app`, `x.nav.primary`
 - timeline: `x.timeline.header`, `x.timeline.tabs`, `x.timeline.feed`, `x.compose.fab`
-- post detail: `x.tweet.header`, `x.reply.composer`
+- post detail: `x.tweet.header`, `x.tweet.conversation`, `x.reply.composer`
 - notifications: `x.notifications.header`, `x.notifications.tabs`, `x.notifications.list`
 - messages: `x.messages.header`, `x.messages.list`
 - DM thread: `x.thread.header`, `x.thread.messages`, `x.thread.composer`, `x.thread.typing`
@@ -19,12 +19,12 @@ Use `cameraSubject.semantic(deviceId, "app_x", subjectId)` for these stable surf
 
 Use `cameraSubject.entity(deviceId, "app_x", entityType, entityId, region)` when the shot must follow a specific authored entity.
 
-| Entity type | Regions |
-| --- | --- |
-| `tweet` | `card`, `author`, `body`, `media`, `poll`, `quote`, `link`, `metrics` |
-| `notification` | `row` |
-| `profile` | `header`, `banner`, `avatar` |
-| `dm-thread` | `row` |
-| `message` | `bubble` |
+| Entity type    | Regions                                                               |
+| -------------- | --------------------------------------------------------------------- |
+| `tweet`        | `card`, `author`, `body`, `media`, `poll`, `quote`, `link`, `metrics` |
+| `notification` | `row`                                                                 |
+| `profile`      | `header`, `banner`, `avatar`                                          |
+| `dm-thread`    | `row`                                                                 |
+| `message`      | `bubble`                                                              |
 
 Projection coordinates are app-logical. Missing subjects remain missing and must be handled by an explicit shot fallback. There are no singleton aliases such as `tweet_card` or `dm_message_latest`.

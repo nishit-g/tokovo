@@ -8,7 +8,10 @@ export const xCountSchema = z.number().int().nonnegative().finite();
 export const xEpochMsSchema = z
   .number()
   .int()
-  .min(MIN_AUTHORED_EPOCH_MS, "must be epoch milliseconds on or after 2000-01-01")
+  .min(
+    MIN_AUTHORED_EPOCH_MS,
+    "must be epoch milliseconds on or after 2000-01-01",
+  )
   .max(MAX_AUTHORED_EPOCH_MS, "must be epoch milliseconds before 2100-01-01")
   .finite();
 
@@ -38,7 +41,11 @@ export const xUserInputSchema = z
   .object({
     id: xIdSchema,
     name: z.string().trim().min(1),
-    handle: z.string().trim().min(1).regex(/^[A-Za-z0-9_]+$/),
+    handle: z
+      .string()
+      .trim()
+      .min(1)
+      .regex(/^[A-Za-z0-9_]+$/),
     bio: z.string().max(240).optional(),
     avatarUrl: z.string().trim().min(1).optional(),
     bannerUrl: z.string().trim().min(1).optional(),
@@ -155,7 +162,10 @@ export const xTweetInputSchema = z
   })
   .strict()
   .superRefine((tweet, context) => {
-    const attachmentCount = Number(Boolean(tweet.media)) + Number(Boolean(tweet.linkPreview)) + Number(Boolean(tweet.poll));
+    const attachmentCount =
+      Number(Boolean(tweet.media)) +
+      Number(Boolean(tweet.linkPreview)) +
+      Number(Boolean(tweet.poll));
     if (attachmentCount > 1) {
       context.addIssue({
         code: "custom",
@@ -202,9 +212,42 @@ export const xMessageInputSchema = z
     senderId: xIdSchema,
     text: z.string().trim().min(1).max(25_000),
     createdAt: xEpochMsSchema,
-    delivery: z.enum(["sending", "sent", "failed"]).optional(),
+    replyToMessageId: xIdSchema.optional(),
+    reactions: z
+      .array(
+        z
+          .object({
+            emoji: z.string().trim().min(1).max(16),
+            userIds: z.array(xIdSchema).min(1),
+          })
+          .strict(),
+      )
+      .optional(),
+    delivery: z
+      .enum(["sending", "sent", "delivered", "read", "failed"])
+      .optional(),
   })
-  .strict();
+  .strict()
+  .superRefine((message, context) => {
+    const emoji = new Set<string>();
+    message.reactions?.forEach((reaction, index) => {
+      if (emoji.has(reaction.emoji)) {
+        context.addIssue({
+          code: "custom",
+          message: `duplicates reaction ${JSON.stringify(reaction.emoji)}`,
+          path: ["reactions", index, "emoji"],
+        });
+      }
+      emoji.add(reaction.emoji);
+      if (new Set(reaction.userIds).size !== reaction.userIds.length) {
+        context.addIssue({
+          code: "custom",
+          message: "userIds contains duplicates",
+          path: ["reactions", index, "userIds"],
+        });
+      }
+    });
+  });
 
 export const xPollVoteInputSchema = z
   .object({
@@ -223,10 +266,18 @@ export const xMediaPlaybackInputSchema = z
   .strict()
   .superRefine((playback, context) => {
     if (playback.state === "idle" && playback.progress !== 0) {
-      context.addIssue({ code: "custom", message: "idle playback requires progress 0", path: ["progress"] });
+      context.addIssue({
+        code: "custom",
+        message: "idle playback requires progress 0",
+        path: ["progress"],
+      });
     }
     if (playback.state === "complete" && playback.progress !== 1) {
-      context.addIssue({ code: "custom", message: "complete playback requires progress 1", path: ["progress"] });
+      context.addIssue({
+        code: "custom",
+        message: "complete playback requires progress 1",
+        path: ["progress"],
+      });
     }
   });
 
@@ -238,17 +289,25 @@ export const xComposerStatusInputSchema = z
   .strict()
   .superRefine((composer, context) => {
     if (composer.status === "failed" && !composer.error) {
-      context.addIssue({ code: "custom", message: "failed composer status requires error", path: ["error"] });
+      context.addIssue({
+        code: "custom",
+        message: "failed composer status requires error",
+        path: ["error"],
+      });
     }
     if (composer.status !== "failed" && composer.error) {
-      context.addIssue({ code: "custom", message: `${composer.status} composer status cannot include error`, path: ["error"] });
+      context.addIssue({
+        code: "custom",
+        message: `${composer.status} composer status cannot include error`,
+        path: ["error"],
+      });
     }
   });
 
 export const xDMDeliveryInputSchema = z
   .object({
     messageId: xIdSchema,
-    delivery: z.enum(["sending", "sent", "failed"]),
+    delivery: z.enum(["sending", "sent", "delivered", "read", "failed"]),
   })
   .strict();
 
@@ -264,9 +323,7 @@ export const xSnapshotSchema = z
     messages: z.array(xMessageInputSchema).optional(),
     follows: z
       .array(
-        z
-          .object({ followerId: xIdSchema, followingId: xIdSchema })
-          .strict(),
+        z.object({ followerId: xIdSchema, followingId: xIdSchema }).strict(),
       )
       .optional(),
   })
@@ -289,17 +346,25 @@ export const xInitialViewSchema = z
       .superRefine((composer, context) => {
         const status = composer.status ?? "idle";
         if (status === "failed" && !composer.error) {
-          context.addIssue({ code: "custom", message: "failed composer status requires error", path: ["error"] });
+          context.addIssue({
+            code: "custom",
+            message: "failed composer status requires error",
+            path: ["error"],
+          });
         }
         if (status !== "failed" && composer.error) {
-          context.addIssue({ code: "custom", message: `${status} composer status cannot include error`, path: ["error"] });
+          context.addIssue({
+            code: "custom",
+            message: `${status} composer status cannot include error`,
+            path: ["error"],
+          });
         }
       })
       .optional(),
     timelineTab: xTimelineTabSchema.optional(),
     profileTab: xProfileTabSchema.optional(),
     notificationsTab: xNotificationsTabSchema.optional(),
-    feedScrollY: z.number().finite().nonnegative().optional(),
+    scrollY: z.number().finite().nonnegative().optional(),
   })
   .strict()
   .superRefine((view, context) => {
@@ -334,7 +399,8 @@ export type XInitialViewInput = z.infer<typeof xInitialViewSchema>;
 
 export function formatXSchemaIssues(error: z.ZodError, root: string): string[] {
   return error.issues.map((issue) => {
-    const path = issue.path.length > 0 ? `${root}.${issue.path.join(".")}` : root;
+    const path =
+      issue.path.length > 0 ? `${root}.${issue.path.join(".")}` : root;
     return `${path}: ${issue.message}`;
   });
 }

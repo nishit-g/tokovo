@@ -158,6 +158,7 @@ export default defineEpisode({
           repostCount: 804,
         });
         x.at("4.4s").navigate("tweet", { tweetId: "x_launch_post" });
+        x.at("4.45s").scrollTweetTo("x_launch_post", 264);
         x.at("8.2s").addNotification({
           id: "x_queue_alert",
           type: "mention",
@@ -171,59 +172,80 @@ export default defineEpisode({
         x.at("9.0s").navigate("notifications");
         x.at("11.5s").navigate("messages");
         x.at("12.3s").navigate("thread", { threadId: "x_launch_ops" });
-        x.at("12.8s").setThreadTyping("x_launch_ops", "x_noa");
-        x.at("13.8s").sendMessage({
+        x.at("12.8s").startTyping("x_launch_ops", "x_noa");
+        x.at("13.8s").receiveMessage({
           id: "x_msg_token",
           threadId: "x_launch_ops",
           senderId: "x_noa",
           text: "The publish token was used from your laptop.",
           createdAt: baseTime + 13_800,
         });
-        x.at("13.9s").setThreadTyping("x_launch_ops", null);
-        x.at("16.4s").sendMessage({
-          id: "x_msg_stage",
-          threadId: "x_launch_ops",
-          senderId: "x_mira",
-          text: "My laptop is on the stage.",
-          createdAt: baseTime + 16_400,
-          delivery: "sending",
-        });
-        x.at("16.9s").setMessageDelivery("x_msg_stage", "sent");
-        x.at("18.6s").sendMessage({
+        x.at("16.4s").sendMessage(
+          {
+            id: "x_msg_stage",
+            threadId: "x_launch_ops",
+            senderId: "x_mira",
+            text: "My laptop is on the stage.",
+            createdAt: baseTime + 16_400,
+            delivery: "sending",
+          },
+          {
+            input: { duration: "2s", style: "fast", id: "x-stage-dm-input" },
+          },
+        );
+        x.at("16.7s").setMessageDelivery("x_msg_stage", "sent");
+        x.at("16.9s").setMessageDelivery("x_msg_stage", "delivered");
+        x.at("18.6s").receiveMessage({
           id: "x_msg_kill",
           threadId: "x_launch_ops",
           senderId: "x_noa",
           text: "Then I kill the token and pull the post.",
           createdAt: baseTime + 18_600,
         });
-        x.at("20.8s").sendMessage({
-          id: "x_msg_hold",
-          threadId: "x_launch_ops",
-          senderId: "x_mira",
-          text: "Don't. Leave it live.",
-          createdAt: baseTime + 20_800,
-        });
-        x.at("22.4s").sendMessage({
+        x.at("20.8s").sendMessage(
+          {
+            id: "x_msg_hold",
+            threadId: "x_launch_ops",
+            senderId: "x_mira",
+            text: "Don't. Leave it live.",
+            createdAt: baseTime + 20_800,
+            replyToMessageId: "x_msg_kill",
+            delivery: "sending",
+          },
+          {
+            input: { duration: "1.6s", style: "fast", id: "x-hold-dm-input" },
+          },
+        );
+        x.at("20.95s").setMessageDelivery("x_msg_hold", "sent");
+        x.at("21.15s").setMessageDelivery("x_msg_hold", "delivered");
+        x.at("21.55s").reactToMessage("x_msg_hold", "x_noa", "⚡");
+        x.at("22.4s").receiveMessage({
           id: "x_msg_why",
           threadId: "x_launch_ops",
           senderId: "x_noa",
           text: "Why?",
           createdAt: baseTime + 22_400,
+          replyToMessageId: "x_msg_hold",
         });
         x.at("24.2s").navigate("compose");
-        x.at("26.4s").setComposeDraft("If you found the private build,");
-        x.at("28.2s").setComposeDraft(
-          "If you found the private build, stay until",
-        );
-        x.at("30.1s").setComposeDraft(revealText);
         x.at("30.5s").setComposerStatus("sending");
-        x.at("31.0s").postTweet({
-          id: "x_last_frame",
-          authorId: "x_mira",
-          text: revealText,
-          createdAt: baseTime + 31_000,
-          hashtags: ["OrbitLive"],
-        });
+        x.at("31.0s").postTweet(
+          {
+            id: "x_last_frame",
+            authorId: "x_mira",
+            text: revealText,
+            createdAt: baseTime + 31_000,
+            hashtags: ["OrbitLive"],
+          },
+          {
+            input: {
+              duration: "6.2s",
+              id: "x-last-frame-compose",
+              style: "fast",
+              keyboard: { appearance: "dark" },
+            },
+          },
+        );
         x.at("31.1s").setComposerStatus("idle");
         x.at("31.2s").navigate("tweet", { tweetId: "x_last_frame" });
         x.at("34.2s").addNotification({
@@ -235,18 +257,6 @@ export default defineEpisode({
           title: "Noa replied",
           body: "Wait. You knew?",
         });
-      })
-      .input("phone", "composer", {
-        id: "x-last-frame-compose",
-        appId: "app_x",
-        at: "24.8s",
-        until: "30.7s",
-        submitAt: "30.5s",
-        locale: "en-US",
-        text: revealText,
-        expectedFinalValue: revealText,
-        cadence: { style: "fast" },
-        keyboard: { appearance: "dark", returnKey: "send" },
       })
       .notificationTrack("phone", (notifications) => {
         notifications.at("34.2s").deliver({

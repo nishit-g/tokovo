@@ -13,13 +13,28 @@ function normalizedDirectories(directories: readonly string[]): string[] {
 }
 
 describe("render source manifests", () => {
-  it("tracks Camera VNext kernels in the complete bundle", () => {
+  it("tracks authored sources and the compiled modules consumed by the bundle", () => {
     const directories = normalizedDirectories(
       getBundleInputManifest().directories,
     );
     expect(
       directories.some((directory) =>
         directory.endsWith("/packages/camera/src"),
+      ),
+    ).toBe(true);
+    expect(
+      directories.some((directory) =>
+        directory.endsWith("/packages/camera/dist"),
+      ),
+    ).toBe(true);
+    expect(
+      directories.some((directory) =>
+        directory.endsWith("/packages/episodes/dist"),
+      ),
+    ).toBe(true);
+    expect(
+      directories.some((directory) =>
+        directory.endsWith("/packages/visual-system/dist"),
       ),
     ).toBe(true);
     expect(

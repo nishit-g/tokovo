@@ -106,8 +106,15 @@ export interface XDMThread {
   title?: string;
   unreadCount: number;
   pinned: boolean;
-  typingUserId: string | null;
+  typingUserIds: string[];
   lastMessageAt: number | null;
+}
+
+export type XDMDelivery = "sending" | "sent" | "delivered" | "read" | "failed";
+
+export interface XDMReaction {
+  emoji: string;
+  userIds: string[];
 }
 
 export interface XDMMessage {
@@ -116,7 +123,33 @@ export interface XDMMessage {
   senderId: string;
   text: string;
   createdAt: number;
-  delivery: "sending" | "sent" | "failed";
+  replyToMessageId?: string;
+  reactions: XDMReaction[];
+  delivery: XDMDelivery;
+}
+
+export interface XScrollState {
+  timeline: number;
+  tweetById: Record<string, number>;
+  notifications: number;
+  messages: number;
+  profileById: Record<string, number>;
+  threadFromBottomById: Record<string, number>;
+}
+
+export interface XRecentInteraction {
+  type:
+    | "like"
+    | "unlike"
+    | "bookmark"
+    | "unbookmark"
+    | "share"
+    | "poll"
+    | "follow"
+    | "unfollow"
+    | "dm-reaction";
+  targetId: string;
+  atFrame: number;
 }
 
 export type XScreen =
@@ -177,8 +210,8 @@ export interface XState {
   profileTab: ProfileTab;
   navigationStack: XRoute[];
   lastTransition: XRouteTransition | null;
-  feedScrollY: number;
-  threadScrollYById: Record<string, number>;
+  scroll: XScrollState;
+  recentInteraction: XRecentInteraction | null;
 }
 
 export function createXInitialState(): XState {
@@ -205,7 +238,14 @@ export function createXInitialState(): XState {
     profileTab: "posts",
     navigationStack: [],
     lastTransition: null,
-    feedScrollY: 0,
-    threadScrollYById: {},
+    scroll: {
+      timeline: 0,
+      tweetById: {},
+      notifications: 0,
+      messages: 0,
+      profileById: {},
+      threadFromBottomById: {},
+    },
+    recentInteraction: null,
   };
 }

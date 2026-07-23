@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { createAppViewportFrame, type LayoutContext, type ViewKind, type WorldState } from "@tokovo/core";
+import {
+  createAppViewportFrame,
+  type LayoutContext,
+  type ViewKind,
+  type WorldState,
+} from "@tokovo/core";
 import { XCinematicSubjects } from "../camera/subjects.js";
 import { xLayoutStrategies } from "../layout/index.js";
 import { measureXMessage, measureXPost } from "../layout/measure.js";
@@ -27,7 +32,9 @@ function context(world: WorldState, viewKind: ViewKind): LayoutContext {
 
 function layoutFor(state: XState, viewKind: ViewKind) {
   const world = createTestWorld(state);
-  const strategy = xLayoutStrategies.find((candidate) => candidate.viewKind === viewKind);
+  const strategy = xLayoutStrategies.find(
+    (candidate) => candidate.viewKind === viewKind,
+  );
   if (!strategy) throw new Error(`Missing ${viewKind} layout`);
   const layout = strategy.computeLayout(context(world, viewKind));
   return { layout, world };
@@ -49,16 +56,18 @@ describe("X VNext canonical layout and cinematic subjects", () => {
     expect(post?.rect.height).toBe(measurement.totalHeight);
     expect(layout.semantic?.regions["x.post.tw_1.media"]).toBeDefined();
     const projected = XCinematicSubjects.project(world, layout, "phone");
-    expect(projected).toContainEqual(expect.objectContaining({
-      ref: expect.objectContaining({
-        kind: "entity",
-        entityType: "tweet",
-        entityId: "tw_1",
-        region: "media",
+    expect(projected).toContainEqual(
+      expect.objectContaining({
+        ref: expect.objectContaining({
+          kind: "entity",
+          entityType: "tweet",
+          entityId: "tw_1",
+          region: "media",
+        }),
+        rect: layout.semantic?.regions["x.post.tw_1.media"].rect,
+        sourceVersion: 2,
       }),
-      rect: layout.semantic?.regions["x.post.tw_1.media"].rect,
-      sourceVersion: 2,
-    }));
+    );
   });
 
   it("does not emit removed singleton geometry", () => {
@@ -80,11 +89,17 @@ describe("X VNext canonical layout and cinematic subjects", () => {
       read: false,
     };
     notifications.notificationIds = ["nt_1"];
-    expect(layoutFor(notifications, "FEED").layout.semantic?.regions["x.notification.nt_1"]).toBeDefined();
+    expect(
+      layoutFor(notifications, "FEED").layout.semantic?.regions[
+        "x.notification.nt_1"
+      ],
+    ).toBeDefined();
 
     const messages = createTestState();
     messages.route = { screen: "messages" };
-    expect(layoutFor(messages, "FEED").layout.semantic?.regions["x.dm.dm_1"]).toBeDefined();
+    expect(
+      layoutFor(messages, "FEED").layout.semantic?.regions["x.dm.dm_1"],
+    ).toBeDefined();
   });
 
   it("matches thread message measurement and entity projection", () => {
@@ -93,12 +108,61 @@ describe("X VNext canonical layout and cinematic subjects", () => {
     state.viewMode = "CHAT";
     state.conversationId = "dm_1";
     const { layout, world } = layoutFor(state, "CHAT");
-    const expected = measureXMessage(state.dmMessagesById.msg_1.text, 393);
+    const withoutReceipt = measureXMessage(
+      state.dmMessagesById.msg_1.text,
+      393,
+    );
+    const expected = measureXMessage(state.dmMessagesById.msg_1.text, 393, {
+      hasReceipt: true,
+    });
+    expect(expected.receiptHeight).toBe(15);
+    expect(expected.bubbleHeight).toBe(
+      withoutReceipt.bubbleHeight + expected.receiptHeight,
+    );
     expect((layout as any).messageLayouts.msg_1.height).toBe(expected.height);
     expect(layout.semantic?.regions["x.dm.dm_1.message.msg_1"]).toBeDefined();
     expect(XCinematicSubjects.project(world, layout, "phone")).toContainEqual(
       expect.objectContaining({
-        ref: expect.objectContaining({ kind: "entity", entityType: "message", entityId: "msg_1", region: "bubble" }),
+        ref: expect.objectContaining({
+          kind: "entity",
+          entityType: "message",
+          entityId: "msg_1",
+          region: "bubble",
+        }),
+      }),
+    );
+  });
+
+  it("publishes exact nested reply entities and moves them with authored conversation scroll", () => {
+    const state = createTestState();
+    state.route = { screen: "tweet", tweetId: "tw_1" };
+    state.tweetsById.tw_reply = {
+      ...state.tweetsById.tw_1,
+      id: "tw_reply",
+      text: "A camera-addressable reply.",
+      replyToId: "tw_1",
+      replyIds: [],
+      createdAt: BASE_TIME,
+    };
+    state.tweetsById.tw_1.replyIds = ["tw_reply"];
+    const unscrolled = layoutFor(state, "FEED").layout;
+    const replyRegion = unscrolled.semantic?.regions["x.post.tw_reply"];
+    if (!replyRegion) throw new Error("Missing reply region before scroll");
+    const before = replyRegion.rect.y;
+    state.scroll.tweetById.tw_1 = 180;
+    const { layout, world } = layoutFor(state, "FEED");
+    expect(layout.semantic?.regions["x.tweet.conversation"]).toBeDefined();
+    expect(layout.semantic?.regions["x.post.tw_reply"].rect.y).toBe(
+      before - 180,
+    );
+    expect(XCinematicSubjects.project(world, layout, "phone")).toContainEqual(
+      expect.objectContaining({
+        ref: expect.objectContaining({
+          kind: "entity",
+          entityType: "tweet",
+          entityId: "tw_reply",
+          region: "card",
+        }),
       }),
     );
   });

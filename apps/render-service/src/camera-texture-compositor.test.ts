@@ -239,16 +239,16 @@ describe("camera perspective and optical maps", () => {
 describe("camera smear and FFmpeg graph", () => {
   it("partitions full releases into contiguous bounded chunks", () => {
     expect(createCompositorFrameChunks(0)).toEqual([]);
-    expect(createCompositorFrameChunks(121)).toEqual([
-      { index: 0, startFrame: 0, endFrame: 120 },
-      { index: 1, startFrame: 120, endFrame: 121 },
+    expect(createCompositorFrameChunks(31)).toEqual([
+      { index: 0, startFrame: 0, endFrame: 30 },
+      { index: 1, startFrame: 30, endFrame: 31 },
     ]);
     const full = createCompositorFrameChunks(1080);
-    expect(full).toHaveLength(9);
-    expect(full[0]).toEqual({ index: 0, startFrame: 0, endFrame: 120 });
+    expect(full).toHaveLength(36);
+    expect(full[0]).toEqual({ index: 0, startFrame: 0, endFrame: 30 });
     expect(full.at(-1)).toEqual({
-      index: 8,
-      startFrame: 960,
+      index: 35,
+      startFrame: 1050,
       endFrame: 1080,
     });
     expect(() => createCompositorFrameChunks(1.5)).toThrow("CHUNK_FRAME_COUNT_INVALID");
@@ -340,11 +340,35 @@ describe("camera smear and FFmpeg graph", () => {
     expect(graph).toContain(
       "colorchannelmixer@tokovo_grade_rgb_0=rr=1:gg=1:bb=1:aa=1,format=rgba[graded_0]",
     );
-    expect(graph).toContain("[graded_0]split=2[crisp_source_0][smear_source_0]");
+    expect(graph).toContain("[graded_0]null[optical_unmasked_0]");
+    expect(graph).not.toContain("gblur@tokovo_smear_0");
     expect(graph).toContain("[optical_clipped_0]null[optical_0]");
     expect(graph).not.toContain("alphamerge");
     expect(graph).not.toContain("alphaextract");
     expect(graph).not.toContain("remap");
+  });
+
+  it("materializes the expensive smear pipeline only when a frame uses it", () => {
+    const graph = createTextureFilterGraph({
+      commandDirectory: "/tmp/tokovo",
+      captures: [
+        capture(0, [
+          {
+            kind: "directional-smear",
+            direction: [1, 0],
+            spreadPx: 18,
+            samples: 6,
+            decay: 0.6,
+          },
+        ]),
+      ],
+      width: 1080,
+      height: 1920,
+    });
+
+    expect(graph).toContain("[graded_0]split=2[crisp_source_0][smear_source_0]");
+    expect(graph).toContain("gblur@tokovo_smear_0");
+    expect(graph).toContain("overlay@tokovo_smear_overlay_0");
   });
 
   it("routes optics discovered after the first frame through a prepared map input", () => {

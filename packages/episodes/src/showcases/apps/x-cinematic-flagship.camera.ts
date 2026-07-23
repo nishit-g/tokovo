@@ -118,12 +118,12 @@ function direction(camera: CinematicPlanBuilder, kinetic: boolean): void {
     })
     .shot("dm-delivery", OUTPUT, 420, 600, (shot) => {
       frame(shot, entity("message", "x_msg_reply", "bubble"), {
-        position: [0.5, 0.45], fill: 0.48, mode: "width", min: 0.42, max: 1.08,
+        position: [0.5, 0.45], fill: 0.58, mode: "width", min: 0.48, max: 1.16,
       })
         .fallback(semantic("x.thread.messages"))
         .fallback(screen())
         .filters("studio-neutral")
-        .dollyOut({ duration: 26, toFill: 0.48, amount: 0.055 });
+        .dollyOut({ duration: 26, toFill: 0.58, amount: 0.045 });
     })
     .shot("composer-keyboard", OUTPUT, 600, 780, (shot) => {
       frame(shot, keyboard(), {

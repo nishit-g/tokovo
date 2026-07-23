@@ -8,14 +8,24 @@ import {
 } from "../../runtime/selectors.js";
 import { useXExperience } from "../../experience/context.js";
 import { Avatar } from "../primitives/Avatar.js";
-import { BottomNav, EmptyState, IconButton, TabBar } from "../primitives/Chrome.js";
+import {
+  BottomNav,
+  EmptyState,
+  IconButton,
+  TabBar,
+} from "../primitives/Chrome.js";
 import { XIcon, XLogo } from "../primitives/Icon.js";
 import { PostCard } from "../posts/PostCard.js";
 import { projectXFeed } from "../../layout/project.js";
 import type { XScreenProps } from "./types.js";
 import { requireDeviceClock } from "./types.js";
 
-export const TimelineScreen: React.FC<XScreenProps> = ({ world, deviceId, width, height }) => {
+export const TimelineScreen: React.FC<XScreenProps> = ({
+  world,
+  deviceId,
+  width,
+  height,
+}) => {
   const experience = useXExperience();
   const state = requireXState(world, deviceId);
   const tweets = selectTimelineTweets(world, deviceId);
@@ -23,11 +33,31 @@ export const TimelineScreen: React.FC<XScreenProps> = ({ world, deviceId, width,
   const nowMs = requireDeviceClock(world, deviceId);
   const notificationBadge = selectNotificationBadgeCount(world, deviceId);
   const messageBadge = selectUnreadThreadCount(world, deviceId);
-  const feedHeight = Math.max(0, height - experience.metrics.headerHeight - 48 - experience.metrics.navHeight);
-  const projection = projectXFeed({ state, tweets, width, viewportHeight: feedHeight, scrollY: state.feedScrollY });
+  const feedHeight = Math.max(
+    0,
+    height -
+      experience.metrics.headerHeight -
+      48 -
+      experience.metrics.navHeight,
+  );
+  const projection = projectXFeed({
+    state,
+    tweets,
+    width,
+    viewportHeight: feedHeight,
+    scrollY: state.scroll.timeline,
+  });
 
   return (
-    <div style={{ height: "100%", minHeight: 0, display: "flex", flexDirection: "column", background: experience.colors.background }}>
+    <div
+      style={{
+        height: "100%",
+        minHeight: 0,
+        display: "flex",
+        flexDirection: "column",
+        background: experience.colors.background,
+      }}
+    >
       <header
         data-x-anchor="x.timeline.header"
         style={{
@@ -43,9 +73,15 @@ export const TimelineScreen: React.FC<XScreenProps> = ({ world, deviceId, width,
         }}
       >
         <div style={{ display: "grid", placeItems: "center" }}>
-          {currentUser ? <Avatar user={currentUser} size={32} /> : <XIcon name="user" size={22} />}
+          {currentUser ? (
+            <Avatar user={currentUser} size={32} />
+          ) : (
+            <XIcon name="user" size={22} />
+          )}
         </div>
-        <div style={{ display: "grid", placeItems: "center" }}><XLogo size={24} /></div>
+        <div style={{ display: "grid", placeItems: "center" }}>
+          <XLogo size={24} />
+        </div>
         <IconButton icon="sparkle" label="Timeline settings" size={20} />
       </header>
       <TabBar
@@ -56,17 +92,49 @@ export const TimelineScreen: React.FC<XScreenProps> = ({ world, deviceId, width,
         ]}
       />
 
-      <div data-x-anchor="x.timeline.feed" style={{ flex: 1, minHeight: 0, overflow: "hidden", position: "relative" }}>
+      <div
+        data-x-anchor="x.timeline.feed"
+        style={{
+          flex: 1,
+          minHeight: 0,
+          overflow: "hidden",
+          position: "relative",
+        }}
+      >
         {tweets.length > 0 ? (
-          <div style={{ height: projection.contentHeight, transform: `translateY(${-state.feedScrollY}px)`, willChange: "transform", position: "relative" }}>
+          <div
+            style={{
+              height: projection.contentHeight,
+              transform: `translateY(${-state.scroll.timeline}px)`,
+              willChange: "transform",
+              position: "relative",
+            }}
+          >
             {projection.visibleItems.map((item) => (
-              <div key={item.id} style={{ position: "absolute", top: item.y, insetInline: 0, height: item.height }}>
-                <PostCard state={state} tweet={item.tweet} width={width} nowMs={nowMs} />
+              <div
+                key={item.id}
+                style={{
+                  position: "absolute",
+                  top: item.y,
+                  insetInline: 0,
+                  height: item.height,
+                }}
+              >
+                <PostCard
+                  state={state}
+                  tweet={item.tweet}
+                  width={width}
+                  nowMs={nowMs}
+                />
               </div>
             ))}
           </div>
         ) : (
-          <EmptyState icon="home" title={experience.t("emptyTimelineTitle")} body={experience.t("emptyTimelineBody")} />
+          <EmptyState
+            icon="home"
+            title={experience.t("emptyTimelineTitle")}
+            body={experience.t("emptyTimelineBody")}
+          />
         )}
         <div
           data-x-anchor="x.compose.fab"
@@ -82,13 +150,20 @@ export const TimelineScreen: React.FC<XScreenProps> = ({ world, deviceId, width,
             placeItems: "center",
             color: "#fff",
             background: experience.colors.accent,
-            boxShadow: experience.appearance === "dark" ? "0 8px 24px rgba(0,0,0,.42)" : "0 8px 24px rgba(15,20,25,.2)",
+            boxShadow:
+              experience.appearance === "dark"
+                ? "0 8px 24px rgba(0,0,0,.42)"
+                : "0 8px 24px rgba(15,20,25,.2)",
           }}
         >
           <XIcon name="plus" size={26} color="#fff" strokeWidth={2.2} />
         </div>
       </div>
-      <BottomNav active="home" notificationBadge={notificationBadge} messageBadge={messageBadge} />
+      <BottomNav
+        active="home"
+        notificationBadge={notificationBadge}
+        messageBadge={messageBadge}
+      />
     </div>
   );
 };

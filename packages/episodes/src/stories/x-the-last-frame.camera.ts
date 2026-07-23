@@ -105,12 +105,12 @@ function registerLook(camera: CinematicPlanBuilder): void {
 
 function direct(camera: CinematicPlanBuilder, optical: boolean): void {
   camera
-    .shot("stage-before-the-leak", OUTPUT, 0, 120, (shot) => {
+    .shot("stage-before-the-leak", OUTPUT, 0, 132, (shot) => {
       frame(shot, body(), { fill: 0.84, max: 1.12, padding: 58 })
         .filters("launch-night")
         .dollyIn({ duration: 42, toFill: 0.84, amount: 0.06 });
     })
-    .shot("the-reply", OUTPUT, 120, 270, (shot) => {
+    .shot("the-reply", OUTPUT, 132, 270, (shot) => {
       frame(shot, entity("tweet", "x_intrusion_reply", "card"), {
         position: [0.5, 0.52],
         fill: 0.68,
@@ -123,7 +123,7 @@ function direct(camera: CinematicPlanBuilder, optical: boolean): void {
         .dollyIn({ duration: 28, toFill: 0.68, amount: 0.075 });
       if (optical) shot.lens("evidence-wide").modifiers("held-breath");
     })
-    .shot("queue-alert", OUTPUT, 270, 375, (shot) => {
+    .shot("queue-alert", OUTPUT, 270, 327, (shot) => {
       frame(shot, entity("notification", "x_queue_alert", "row"), {
         position: [0.5, 0.38],
         fill: 0.7,
@@ -136,7 +136,17 @@ function direct(camera: CinematicPlanBuilder, optical: boolean): void {
         .settle(18);
       if (optical) shot.lens("notification-pressure");
     })
-    .shot("token-evidence", OUTPUT, 375, 510, (shot) => {
+    .shot("messages-bridge", OUTPUT, 327, 375, (shot) => {
+      frame(shot, body(), { fill: 0.84, max: 1, padding: 58 })
+        .filters("evidence-cold")
+        .settle(18);
+    })
+    .shot("thread-establishing", OUTPUT, 375, 414, (shot) => {
+      frame(shot, screen(), { fill: 0.84, max: 1, padding: 58 })
+        .filters("evidence-cold")
+        .settle(24);
+    })
+    .shot("token-evidence", OUTPUT, 414, 510, (shot) => {
       frame(shot, entity("message", "x_msg_token", "bubble"), {
         position: [0.5, 0.44],
         fill: 0.47,
@@ -149,7 +159,32 @@ function direct(camera: CinematicPlanBuilder, optical: boolean): void {
         .truckLeft({ duration: 24, amount: 0.012 });
       if (optical) shot.modifiers("held-breath");
     })
-    .shot("leave-it-live", OUTPUT, 510, 675, (shot) => {
+    .shot("stage-denial", OUTPUT, 510, 576, (shot) => {
+      frame(shot, entity("message", "x_msg_stage", "bubble"), {
+        position: [0.5, 0.54],
+        fill: 0.48,
+        mode: "width",
+        min: 0.42,
+        max: 1.06,
+      })
+        .fallback(semantic("x.thread.messages"))
+        .filters("launch-night")
+        .settle(14);
+    })
+    .shot("type-the-decision", OUTPUT, 576, 624, (shot) => {
+      frame(shot, keyboard(), {
+        position: [0.5, 0.72],
+        fill: 0.8,
+        mode: "width",
+        min: 0.44,
+        max: 1.2,
+      })
+        .fallback(semantic("x.thread.composer"))
+        .filters("launch-night")
+        .dollyIn({ duration: 20, toFill: 0.8, amount: 0.04 });
+      if (optical) shot.lens("keyboard-focus");
+    })
+    .shot("leave-it-live", OUTPUT, 624, 675, (shot) => {
       frame(shot, entity("message", "x_msg_hold", "bubble"), {
         position: [0.5, 0.56],
         fill: 0.48,
@@ -161,7 +196,35 @@ function direct(camera: CinematicPlanBuilder, optical: boolean): void {
         .filters("launch-night")
         .dollyOut({ duration: 26, toFill: 0.48, amount: 0.045 });
     })
-    .shot("type-the-reveal", OUTPUT, 675, 930, (shot) => {
+    .shot("why", OUTPUT, 675, 708, (shot) => {
+      frame(shot, entity("message", "x_msg_why", "bubble"), {
+        position: [0.5, 0.5],
+        fill: 0.42,
+        mode: "width",
+        min: 0.4,
+        max: 1.04,
+      })
+        .fallback(semantic("x.thread.messages"))
+        .filters("launch-night")
+        .settle(16);
+    })
+    .shot("compose-bridge", OUTPUT, 708, 726, (shot) => {
+      frame(shot, body(), { fill: 0.84, max: 1, padding: 58 })
+        .filters("launch-night")
+        .settle(18);
+    })
+    .shot("compose-the-reveal", OUTPUT, 726, 744, (shot) => {
+      frame(shot, semantic("x.composer.editor"), {
+        position: [0.5, 0.43],
+        fill: 0.65,
+        mode: "width",
+        min: 0.42,
+        max: 1.14,
+      })
+        .fallback(screen())
+        .filters("launch-night");
+    })
+    .shot("type-the-reveal", OUTPUT, 744, 912, (shot) => {
       frame(shot, keyboard(), {
         position: [0.5, 0.72],
         fill: 0.81,
@@ -174,7 +237,12 @@ function direct(camera: CinematicPlanBuilder, optical: boolean): void {
         .dollyIn({ duration: 30, toFill: 0.81, amount: 0.055 });
       if (optical) shot.lens("keyboard-focus").modifiers("held-breath");
     })
-    .shot("the-last-frame", OUTPUT, 930, 1035, (shot) => {
+    .shot("publish-bridge", OUTPUT, 912, 946, (shot) => {
+      frame(shot, body(), { fill: 0.84, max: 1, padding: 58 })
+        .filters("launch-night")
+        .settle(24);
+    })
+    .shot("the-last-frame", OUTPUT, 946, 1035, (shot) => {
       frame(shot, entity("tweet", "x_last_frame", "card"), {
         position: [0.5, 0.46],
         fill: 0.67,

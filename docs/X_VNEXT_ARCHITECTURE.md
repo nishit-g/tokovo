@@ -59,11 +59,19 @@ interface XStateV2 {
   navigationStack: XRoute[];
   currentUserId: string | null;
   composer: XComposerState;
+  threadDrafts: Record<string, string>;
   timelineTab: "forYou" | "following";
   notificationsTab: "all" | "verified" | "mentions";
   profileTab: "posts" | "replies" | "media" | "likes";
-  feedScrollY: number;
-  threadScrollYById: Record<string, number>;
+  scroll: {
+    timeline: number;
+    tweetById: Record<string, number>;
+    notifications: number;
+    messages: number;
+    profileById: Record<string, number>;
+    threadFromBottomById: Record<string, number>;
+  };
+  recentInteraction: XRecentInteraction | null;
   lastTransition: XRouteTransition | null;
 }
 ```
@@ -105,7 +113,6 @@ flowchart LR
 ├── components/
 │   ├── primitives/ app-owned icons, text, avatar, controls, materials
 │   ├── posts/      post, media, poll, quote, metrics, thread line
-│   ├── dm/         inbox row, bubble, composer, typing
 │   └── screens/    timeline, detail, compose, notifications, profile, DMs
 ├── layout/         pure canonical layout projection and render windows
 ├── anchors/        versioned entity anchor IDs
@@ -113,8 +120,6 @@ flowchart LR
 ├── lowering/       authored events -> strict runtime events
 ├── dsl/            typed authoring facade
 ├── notifications/  semantic device notification adapter
-├── assets/         declared icons, audio, and provenance
-├── accessibility/  labels and semantics
 └── localization/   deterministic copy, numbers, and timestamps
 ```
 
@@ -125,6 +130,7 @@ App semantics do not enter the compiler, core, renderer, or episode overlay laye
 ```mermaid
 sequenceDiagram
   participant Episode as "Episode DSL"
+  participant Input as "Canonical input session"
   participant Lower as "X lowering"
   participant Core as "Headless runtime"
   participant State as "Canonical X state"
@@ -132,7 +138,9 @@ sequenceDiagram
   participant View as "X painters"
   participant Camera as "Camera VNext"
 
-  Episode->>Lower: "typed event with explicit IDs and createdAt"
+  Episode->>Input: "structured post, reply, or outgoing DM input"
+  Input-->>View: "live field value + device keyboard"
+  Episode->>Lower: "typed submit event with explicit IDs and createdAt"
   Lower->>Lower: "validate owned payload"
   Lower->>Core: "runtime event"
   Core->>State: "strict reducer mutation"
@@ -142,6 +150,16 @@ sequenceDiagram
   View-->>Camera: "deterministic painted frame"
 ```
 
+Input fields are public semantic IDs, not a shared `composer` string:
+
+```text
+post
+tweet:{tweetId}:reply
+thread:{threadId}:composer
+```
+
+The X DSL creates input sessions through the canonical episode builder. The screen reads that same session via `useInputField`, and the authored post/reply/DM event is the submit boundary. Manual draft jumps are reserved for intentionally prefilled or failed-draft states; they are not a typing animation mechanism.
+
 ## Domain scope
 
 VNext owns these complete flows:
@@ -149,11 +167,11 @@ VNext owns these complete flows:
 - For You and Following timelines
 - original post, reply, quote, repost, like, bookmark, share, and view metrics
 - image grid, video poster/playback state, link card, poll voting, and sensitive-media cover
-- conversation detail with parent context and reply tree
+- conversation detail with oldest-first ancestors, focused post, stable nested descendants, authored scroll, and exact reply entity anchors
 - compose and reply compose with deterministic character count, media attachment, send, failure, and retry states
 - notifications for likes, reposts, replies, follows, mentions, and verified activity
 - profile header and Posts/Replies/Media/Likes tabs
-- DM inbox, pinned/unread threads, message thread, drafts, typing, delivery/failure state
+- DM inbox, pinned/unread threads, outgoing versus incoming semantics, per-thread drafts, concurrent typing participants, replies, emoji reactions, unread rules, and sending/sent/delivered/read/failed delivery state
 
 Search, Spaces, Communities, Premium purchase, and live Grok responses are out of VNext scope until their state and episode value are specified. They must not appear as non-functional chrome.
 
@@ -165,6 +183,7 @@ All IDs are namespaced and entity-addressable:
 x.nav.primary
 x.timeline.header
 x.timeline.feed
+x.tweet.conversation
 x.post.{postId}
 x.post.{postId}.author
 x.post.{postId}.body
@@ -177,6 +196,8 @@ x.dm.{threadId}
 x.dm.{threadId}.message.{messageId}
 x.composer.editor
 x.composer.actions
+x.reply.composer
+x.thread.typing
 ```
 
 Legacy singleton names such as `tweet_card` and `dm_message_latest` are removed. Episode code targets semantic entity IDs through exported helpers, not raw DOM selectors.
@@ -204,17 +225,17 @@ The layout engine computes only the visible render window plus overscan. Long fe
 
 Required before VNext is complete:
 
-| Area | Proof |
-| --- | --- |
-| Strictness | invalid snapshot, duplicate IDs, unknown references, missing timestamps, malformed event payloads |
-| Runtime | every event, navigation invariant, failure/retry, notification and DM unread behavior |
-| Layout | exact entity rectangles, anchor absence, render-window bounds, narrow/wide device widths |
-| Experience | iOS/Android × light/dim/lights-out × en/ar/hi |
-| Accessibility | localized labels, roles, direction, contrast/touch-target token tests |
-| Performance | 10k-post timeline and 10k-message thread budget |
-| Determinism | arbitrary frame order and two fresh browser processes |
-| Visual | reviewed flagship frames and approved golden matrix |
-| Episode | one cinematic flagship, one exhaustive interaction matrix, and one native theme matrix |
+| Area          | Proof                                                                                             |
+| ------------- | ------------------------------------------------------------------------------------------------- |
+| Strictness    | invalid snapshot, duplicate IDs, unknown references, missing timestamps, malformed event payloads |
+| Runtime       | every event, navigation invariant, failure/retry, notification and DM unread behavior             |
+| Layout        | exact entity rectangles, anchor absence, render-window bounds, narrow/wide device widths          |
+| Experience    | iOS/Android × light/dim/lights-out × en/ar/hi                                                     |
+| Accessibility | localized labels, roles, direction, contrast/touch-target token tests                             |
+| Performance   | 10k-post timeline and 10k-message thread budget                                                   |
+| Determinism   | arbitrary frame order and two fresh browser processes                                             |
+| Visual        | reviewed flagship frames and approved golden matrix                                               |
+| Episode       | one cinematic flagship, one exhaustive interaction matrix, and one native theme matrix            |
 
 Golden images are added only after visual review. They prove an approved target, not merely repeatability.
 

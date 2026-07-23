@@ -19,7 +19,7 @@ import {
   createCameraLayerPainterSourceSignature,
 } from "./bundle-manifest";
 import { getBrowserExecutable, getPublicAssetBaseUrl } from "./env";
-import { createRenderServiceError } from "./errors";
+import { createRenderServiceError, toRenderServiceError } from "./errors";
 import { type RenderLogger } from "./logger";
 import { type RenderProfile } from "./profiles";
 import { createPresignedAssetUrlMap } from "./storage";
@@ -524,19 +524,6 @@ export async function renderEpisodeMedia(input: {
           })),
         ),
       );
-      await input.logger.info("camera.quality.measured", "Measured camera temporal quality", {
-        passed: cameraQuality.passed,
-        sampleCount: cameraQuality.sampleCount,
-        violationCount: cameraQuality.violations.length,
-      });
-      if (input.profile.id === "release" && !cameraQuality.passed) {
-        throw createRenderServiceError({
-          code: "CAMERA_TEMPORAL_QUALITY_FAILED",
-          stage: "camera-texture-render",
-          message: `Release camera quality gate failed with ${cameraQuality.violations.length} violation(s).`,
-          details: { cameraQuality },
-        });
-      }
       if (input.cameraTracePath) {
         await fs.promises.writeFile(
           input.cameraTracePath,
@@ -545,6 +532,20 @@ export async function renderEpisodeMedia(input: {
             .join("\n")}\n`,
           "utf8",
         );
+      }
+      await input.logger.info("camera.quality.measured", "Measured camera temporal quality", {
+        passed: cameraQuality.passed,
+        sampleCount: cameraQuality.sampleCount,
+        violationCount: cameraQuality.violations.length,
+        violations: cameraQuality.violations,
+      });
+      if (input.profile.id === "release" && !cameraQuality.passed) {
+        throw createRenderServiceError({
+          code: "CAMERA_TEMPORAL_QUALITY_FAILED",
+          stage: "camera-texture-render",
+          message: `Release camera quality gate failed with ${cameraQuality.violations.length} violation(s).`,
+          details: { cameraQuality },
+        });
       }
       await compositeCameraTexture({
         captures,
@@ -591,7 +592,7 @@ export async function renderEpisodeMedia(input: {
         cameraQuality,
       };
     } catch (error) {
-      throw createRenderServiceError({
+      throw toRenderServiceError(error, {
         code: "CAM_TEXTURE_RENDER_FAILED",
         stage: "camera-texture-render",
         message: `Texture camera render failed for plan "${selectedCameraProgram.plan.id}"`,
@@ -600,7 +601,6 @@ export async function renderEpisodeMedia(input: {
           cameraPlanId: selectedCameraProgram.plan.id,
           cameraSignature: selectedCameraProgram.signature,
         },
-        cause: error instanceof Error ? error : undefined,
       });
     } finally {
       if (process.env.TOKOVO_KEEP_CAMERA_WORKDIR === "1") {

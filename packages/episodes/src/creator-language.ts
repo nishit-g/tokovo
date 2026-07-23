@@ -44,7 +44,9 @@ export interface ActorRef {
   readonly id: string;
   readonly name: string;
   readonly avatar?: string;
-  identity(app: BuiltInApp): Required<Pick<ActorIdentity, "id" | "name">> & ActorIdentity;
+  identity(
+    app: BuiltInApp,
+  ): Required<Pick<ActorIdentity, "id" | "name">> & ActorIdentity;
 }
 
 export function actor(id: string, profile: ActorProfile): ActorRef {
@@ -66,7 +68,9 @@ export function actor(id: string, profile: ActorProfile): ActorRef {
   });
 }
 
-export function cast<const T extends Record<string, ActorRef>>(actors: T): Readonly<T> {
+export function cast<const T extends Record<string, ActorRef>>(
+  actors: T,
+): Readonly<T> {
   return Object.freeze({ ...actors });
 }
 
@@ -163,7 +167,10 @@ function createHandle<K extends StoryHandleKind>(input: {
   frame: number;
 }): StoryHandle<K> {
   const resolvedAppId = appId(input.app);
-  const semanticSubjectByKind: Record<BuiltInApp, Partial<Record<StoryHandleKind, string>>> = {
+  const semanticSubjectByKind: Record<
+    BuiltInApp,
+    Partial<Record<StoryHandleKind, string>>
+  > = {
     whatsapp: { message: "lastMessage" },
     imessage: { message: "imessage_last_message" },
     instagram: {
@@ -200,21 +207,21 @@ function createHandle<K extends StoryHandleKind>(input: {
             entityId: input.id,
             region: "card",
           }
-      : input.app === "whatsapp" && input.kind === "message"
-      ? {
-          kind: "entity",
-          deviceId: input.deviceId,
-          appId: resolvedAppId,
-          entityType: "message",
-          entityId: input.id,
-          region: "bubble",
-        }
-      : {
-          kind: "semantic",
-          deviceId: input.deviceId,
-          appId: resolvedAppId,
-          subjectId: semanticSubjectByKind[input.app][input.kind] ?? "app",
-        };
+        : input.app === "whatsapp" && input.kind === "message"
+          ? {
+              kind: "entity",
+              deviceId: input.deviceId,
+              appId: resolvedAppId,
+              entityType: "message",
+              entityId: input.id,
+              region: "bubble",
+            }
+          : {
+              kind: "semantic",
+              deviceId: input.deviceId,
+              appId: resolvedAppId,
+              subjectId: semanticSubjectByKind[input.app][input.kind] ?? "app",
+            };
   return Object.freeze({
     ...input,
     appId: resolvedAppId,
@@ -230,7 +237,11 @@ function createHandle<K extends StoryHandleKind>(input: {
   });
 }
 
-function scopeTrack<T extends TimedTrack>(track: T, offset: number, fps: number): T {
+function scopeTrack<T extends TimedTrack>(
+  track: T,
+  offset: number,
+  fps: number,
+): T {
   const absolute = (time: string | number) =>
     offset + (typeof time === "number" ? time : parseTimeToFrames(time, fps));
 
@@ -249,15 +260,25 @@ function scopeTrack<T extends TimedTrack>(track: T, offset: number, fps: number)
   });
 }
 
-function actorIdentity(value: ActorRef | string, app: BuiltInApp): { id: string; name: string } {
-  return typeof value === "string" ? { id: value, name: value } : value.identity(app);
+function actorIdentity(
+  value: ActorRef | string,
+  app: BuiltInApp,
+): { id: string; name: string } {
+  return typeof value === "string"
+    ? { id: value, name: value }
+    : value.identity(app);
 }
 
 interface ConversationEmitter {
   app: ConversationOptions["app"];
   deviceId: string;
   open(frame: number): void;
-  send(frame: number, id: string, text: string, options: ConversationMessageOptions): void;
+  send(
+    frame: number,
+    id: string,
+    text: string,
+    options: ConversationMessageOptions,
+  ): void;
   receive(
     frame: number,
     id: string,
@@ -310,7 +331,13 @@ export class SceneConversation {
   ): MessageHandle {
     const id = options.id ?? this.scene.nextId("message");
     const frame = this.scene.absoluteNow;
-    this.emitter.receive(frame, id, actorIdentity(from, this.emitter.app), text, options);
+    this.emitter.receive(
+      frame,
+      id,
+      actorIdentity(from, this.emitter.app),
+      text,
+      options,
+    );
     const handle = createHandle({
       id,
       kind: "message",
@@ -322,7 +349,11 @@ export class SceneConversation {
     return handle;
   }
 
-  reply(text: string, to: MessageHandle, options: ConversationMessageOptions = {}): MessageHandle {
+  reply(
+    text: string,
+    to: MessageHandle,
+    options: ConversationMessageOptions = {},
+  ): MessageHandle {
     if (to.app !== this.emitter.app || to.deviceId !== this.emitter.deviceId) {
       throw new Error(
         `Cannot reply on ${this.emitter.app}/${this.emitter.deviceId} to a handle from ${to.app}/${to.deviceId}`,
@@ -373,7 +404,10 @@ export class SceneSocial {
   post(text: string, options: SocialPostOptions = {}): PostHandle {
     const id = options.id ?? this.scene.nextId("post");
     const frame = this.scene.absoluteNow;
-    const author = actorIdentity(options.author ?? this.currentActor, this.emitter.app);
+    const author = actorIdentity(
+      options.author ?? this.currentActor,
+      this.emitter.app,
+    );
     this.emitter.post(frame, id, author, text, options);
     const handle = createHandle({
       id,
@@ -395,7 +429,14 @@ export class SceneSocial {
     this.assertPostBelongsHere(post);
     const id = options.id ?? this.scene.nextId("comment");
     const frame = this.scene.absoluteNow;
-    this.emitter.comment(frame, id, post, actorIdentity(from, this.emitter.app), text, options);
+    this.emitter.comment(
+      frame,
+      id,
+      post,
+      actorIdentity(from, this.emitter.app),
+      text,
+      options,
+    );
     const handle = createHandle({
       id,
       kind: "comment",
@@ -414,7 +455,10 @@ export class SceneSocial {
   }
 
   private assertPostBelongsHere(post: PostHandle): void {
-    if (post.app !== this.emitter.app || post.deviceId !== this.emitter.deviceId) {
+    if (
+      post.app !== this.emitter.app ||
+      post.deviceId !== this.emitter.deviceId
+    ) {
       throw new Error(
         `Cannot use a ${post.app}/${post.deviceId} post handle on ${this.emitter.app}/${this.emitter.deviceId}`,
       );
@@ -448,14 +492,17 @@ export class SceneBuilder {
   }
 
   at(time: string | number): this {
-    this.cursor = typeof time === "number" ? time : parseTimeToFrames(time, this.fps);
+    this.cursor =
+      typeof time === "number" ? time : parseTimeToFrames(time, this.fps);
     this.assertInBounds();
     return this;
   }
 
   wait(duration: string | number): this {
     this.cursor +=
-      typeof duration === "number" ? duration : parseDurationToFrames(duration, this.fps);
+      typeof duration === "number"
+        ? duration
+        : parseDurationToFrames(duration, this.fps);
     this.assertInBounds();
     return this;
   }
@@ -465,8 +512,12 @@ export class SceneBuilder {
   }
 
   private assertInBounds(): void {
-    if (this.cursor < 0) throw new Error(`Scene "${this.id}" cannot seek before its start`);
-    if (this.durationFrames !== undefined && this.cursor > this.durationFrames) {
+    if (this.cursor < 0)
+      throw new Error(`Scene "${this.id}" cannot seek before its start`);
+    if (
+      this.durationFrames !== undefined &&
+      this.cursor > this.durationFrames
+    ) {
       throw new Error(
         `Scene "${this.id}" cursor ${this.cursor} exceeds its ${this.durationFrames}-frame duration`,
       );
@@ -482,7 +533,9 @@ export class SceneBuilder {
     conversationId: string,
     fn: (track: WhatsAppTrackBuilder) => void,
   ): this {
-    this.episode.whatsapp(deviceId, conversationId, (track) => fn(this.scoped(track)));
+    this.episode.whatsapp(deviceId, conversationId, (track) =>
+      fn(this.scoped(track)),
+    );
     return this;
   }
 
@@ -491,7 +544,9 @@ export class SceneBuilder {
     conversationId: string,
     fn: (track: IMessageTrackBuilder) => void,
   ): this {
-    this.episode.imessage(deviceId, conversationId, (track) => fn(this.scoped(track)));
+    this.episode.imessage(deviceId, conversationId, (track) =>
+      fn(this.scoped(track)),
+    );
     return this;
   }
 
@@ -500,11 +555,16 @@ export class SceneBuilder {
     conversationId: string,
     fn: (track: SnapchatTrackBuilder) => void,
   ): this {
-    this.episode.snapchat(deviceId, conversationId, (track) => fn(this.scoped(track)));
+    this.episode.snapchat(deviceId, conversationId, (track) =>
+      fn(this.scoped(track)),
+    );
     return this;
   }
 
-  instagram(deviceId: string, fn: (track: InstagramTrackBuilder) => void): this {
+  instagram(
+    deviceId: string,
+    fn: (track: InstagramTrackBuilder) => void,
+  ): this {
     this.episode.instagram(deviceId, (track) => fn(this.scoped(track)));
     return this;
   }
@@ -514,7 +574,10 @@ export class SceneBuilder {
     return this;
   }
 
-  teams(deviceId: string, fn: (track: InstanceType<typeof TeamsTrackBuilder>) => void): this {
+  teams(
+    deviceId: string,
+    fn: (track: InstanceType<typeof TeamsTrackBuilder>) => void,
+  ): this {
     this.episode.teams(deviceId, (track) => fn(this.scoped(track)));
     return this;
   }
@@ -524,7 +587,10 @@ export class SceneBuilder {
     return this;
   }
 
-  typewriter(deviceId: string, fn: (track: TypewriterTrackBuilder) => void): this {
+  typewriter(
+    deviceId: string,
+    fn: (track: TypewriterTrackBuilder) => void,
+  ): this {
     this.episode.typewriter(deviceId, (track) => fn(this.scoped(track)));
     return this;
   }
@@ -539,12 +605,18 @@ export class SceneBuilder {
     return this;
   }
 
-  deviceTrack(deviceId: string, fn: (track: DeviceTrackBuilderV2) => void): this {
+  deviceTrack(
+    deviceId: string,
+    fn: (track: DeviceTrackBuilderV2) => void,
+  ): this {
     this.episode.deviceTrack(deviceId, (track) => fn(this.scoped(track)));
     return this;
   }
 
-  conversation(options: ConversationOptions, fn: (conversation: SceneConversation) => void): this {
+  conversation(
+    options: ConversationOptions,
+    fn: (conversation: SceneConversation) => void,
+  ): this {
     const current = options.currentActor ?? actor("me", { name: "Me" });
     const currentIdentity = actorIdentity(current, options.app);
     const common = {
@@ -553,60 +625,84 @@ export class SceneBuilder {
     } as const;
 
     if (options.app === "whatsapp") {
-      this.episode.whatsapp(options.deviceId, options.conversationId, (track) => {
-        fn(
-          new SceneConversation(this, {
-            ...common,
-            open: (frame) => track.switchTo(options.conversationId, frame),
-            send: (frame, id, text, message) =>
-              track.at(frame).send(text, {
-                messageId: id,
-                silent: message.silent,
-                replyTo: message.replyTo ? { messageId: message.replyTo.id } : undefined,
-              }),
-            receive: (frame, id, from, text, message) =>
-              track.at(frame).receive(from.name, text, {
-                messageId: id,
-                silent: message.silent,
-                replyTo: message.replyTo ? { messageId: message.replyTo.id } : undefined,
-              }),
-          }),
-        );
-      });
+      this.episode.whatsapp(
+        options.deviceId,
+        options.conversationId,
+        (track) => {
+          fn(
+            new SceneConversation(this, {
+              ...common,
+              open: (frame) => track.switchTo(options.conversationId, frame),
+              send: (frame, id, text, message) =>
+                track.at(frame).send(text, {
+                  messageId: id,
+                  silent: message.silent,
+                  replyTo: message.replyTo
+                    ? { messageId: message.replyTo.id }
+                    : undefined,
+                }),
+              receive: (frame, id, from, text, message) =>
+                track.at(frame).receive(from.name, text, {
+                  messageId: id,
+                  silent: message.silent,
+                  replyTo: message.replyTo
+                    ? { messageId: message.replyTo.id }
+                    : undefined,
+                }),
+            }),
+          );
+        },
+      );
     } else if (options.app === "imessage") {
-      this.episode.imessage(options.deviceId, options.conversationId, (track) => {
-        fn(
-          new SceneConversation(this, {
-            ...common,
-            open: (frame) => track.at(frame).openConversation(options.conversationId),
-            send: (frame, id, text, message) =>
-              track.at(frame).send(text, {
-                ...message,
-                messageId: id,
-                replyTo: message.replyTo ? { id: message.replyTo.id } : undefined,
-              }),
-            receive: (frame, id, from, text, message) =>
-              track.at(frame).receive(from.name, text, {
-                ...message,
-                messageId: id,
-                replyTo: message.replyTo ? { id: message.replyTo.id } : undefined,
-              }),
-          }),
-        );
-      });
+      this.episode.imessage(
+        options.deviceId,
+        options.conversationId,
+        (track) => {
+          fn(
+            new SceneConversation(this, {
+              ...common,
+              open: (frame) =>
+                track.at(frame).openConversation(options.conversationId),
+              send: (frame, id, text, message) =>
+                track.at(frame).send(text, {
+                  ...message,
+                  messageId: id,
+                  replyTo: message.replyTo
+                    ? { id: message.replyTo.id }
+                    : undefined,
+                }),
+              receive: (frame, id, from, text, message) =>
+                track.at(frame).receive(from.name, text, {
+                  ...message,
+                  messageId: id,
+                  replyTo: message.replyTo
+                    ? { id: message.replyTo.id }
+                    : undefined,
+                }),
+            }),
+          );
+        },
+      );
     } else if (options.app === "snapchat") {
-      this.episode.snapchat(options.deviceId, options.conversationId, (track) => {
-        fn(
-          new SceneConversation(this, {
-            ...common,
-            open: (frame) => track.at(frame).openConversation(options.conversationId),
-            send: (frame, id, text, message) =>
-              track.at(frame).send(text, { ...message, messageId: id }),
-            receive: (frame, id, from, text, message) =>
-              track.at(frame).receive(from.name, text, { ...message, messageId: id }),
-          }),
-        );
-      });
+      this.episode.snapchat(
+        options.deviceId,
+        options.conversationId,
+        (track) => {
+          fn(
+            new SceneConversation(this, {
+              ...common,
+              open: (frame) =>
+                track.at(frame).openConversation(options.conversationId),
+              send: (frame, id, text, message) =>
+                track.at(frame).send(text, { ...message, messageId: id }),
+              receive: (frame, id, from, text, message) =>
+                track
+                  .at(frame)
+                  .receive(from.name, text, { ...message, messageId: id }),
+            }),
+          );
+        },
+      );
     } else if (options.app === "teams") {
       const target = options.target ?? {
         kind: "dm",
@@ -644,7 +740,9 @@ export class SceneBuilder {
           new SceneConversation(this, {
             ...common,
             open: (frame) =>
-              track.at(frame).navigate("thread", { threadId: options.conversationId }),
+              track
+                .at(frame)
+                .navigate("thread", { threadId: options.conversationId }),
             send: (frame, id, text, message) =>
               track.at(frame).addDMMessage({
                 id,
@@ -670,7 +768,9 @@ export class SceneBuilder {
           new SceneConversation(this, {
             ...common,
             open: (frame) =>
-              track.at(frame).navigate("thread", { threadId: options.conversationId }),
+              track
+                .at(frame)
+                .navigate("thread", { threadId: options.conversationId }),
             send: (frame, id, text, message) =>
               track.at(frame).sendDM({
                 id,
@@ -696,7 +796,9 @@ export class SceneBuilder {
           new SceneConversation(this, {
             ...common,
             open: (frame) =>
-              track.at(frame).navigate("thread", { threadId: options.conversationId }),
+              track
+                .at(frame)
+                .navigate("thread", { threadId: options.conversationId }),
             send: (frame, id, text, message) =>
               track.at(frame).sendMessage({
                 id,
@@ -704,14 +806,16 @@ export class SceneBuilder {
                 senderId: currentIdentity.id,
                 text,
                 createdAt: message.createdAt ?? this.epochAt(frame),
+                replyToMessageId: message.replyTo?.id,
               }),
             receive: (frame, id, from, text, message) =>
-              track.at(frame).sendMessage({
+              track.at(frame).receiveMessage({
                 id,
                 threadId: options.conversationId,
                 senderId: from.id,
                 text,
                 createdAt: message.createdAt ?? this.epochAt(frame),
+                replyToMessageId: message.replyTo?.id,
               }),
           }),
         );
@@ -756,7 +860,8 @@ export class SceneBuilder {
                   text,
                   createdAt: comment.createdAt,
                 }),
-              open: (frame, post) => track.at(frame).navigate("home", { postId: post.id }),
+              open: (frame, post) =>
+                track.at(frame).navigate("home", { postId: post.id }),
             },
             options.currentActor,
           ),
@@ -784,7 +889,8 @@ export class SceneBuilder {
                   text,
                   createdAt: comment.createdAt ?? this.epochAt(frame),
                 }),
-              open: (frame, post) => track.at(frame).navigate("post", { postId: post.id }),
+              open: (frame, post) =>
+                track.at(frame).navigate("post", { postId: post.id }),
             },
             options.currentActor,
           ),
@@ -812,7 +918,8 @@ export class SceneBuilder {
                   text,
                   createdAt: comment.createdAt ?? this.epochAt(frame),
                 }),
-              open: (frame, post) => track.at(frame).navigate("tweet", { tweetId: post.id }),
+              open: (frame, post) =>
+                track.at(frame).navigate("tweet", { tweetId: post.id }),
             },
             options.currentActor,
           ),
@@ -832,7 +939,9 @@ export function createScene(
 ): void {
   if (!id.trim()) throw new Error("Scene id must not be empty");
   const startFrame =
-    typeof options.at === "number" ? options.at : parseTimeToFrames(options.at, fps);
+    typeof options.at === "number"
+      ? options.at
+      : parseTimeToFrames(options.at, fps);
   const durationFrames =
     options.duration === undefined
       ? undefined
@@ -840,7 +949,8 @@ export function createScene(
         ? options.duration
         : parseDurationToFrames(options.duration, fps);
 
-  if (startFrame < 0) throw new Error(`Scene "${id}" cannot start before frame 0`);
+  if (startFrame < 0)
+    throw new Error(`Scene "${id}" cannot start before frame 0`);
   if (durationFrames !== undefined && durationFrames <= 0) {
     throw new Error(`Scene "${id}" duration must be greater than 0`);
   }

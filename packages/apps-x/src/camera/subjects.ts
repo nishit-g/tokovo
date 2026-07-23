@@ -16,6 +16,7 @@ const semanticIds = [
   "x.timeline.feed",
   "x.compose.fab",
   "x.tweet.header",
+  "x.tweet.conversation",
   "x.reply.composer",
   "x.notifications.header",
   "x.notifications.tabs",
@@ -35,7 +36,10 @@ const semanticIds = [
   "x.composer.actions",
 ] as const;
 
-function projection(region: SemanticRegion, deviceId: string): CinematicSubjectProjection {
+function projection(
+  region: SemanticRegion,
+  deviceId: string,
+): CinematicSubjectProjection {
   const entityType = region.metadata?.entityType;
   const entityId = region.metadata?.entityId;
   const entityRegion = region.metadata?.entityRegion;
@@ -74,7 +78,16 @@ export const XCinematicSubjects: CinematicSubjectProvider = {
     ownerId: APP_ID,
     semanticSubjectIds: [...semanticIds],
     entityRegions: {
-      tweet: ["card", "author", "body", "media", "poll", "quote", "link", "metrics"],
+      tweet: [
+        "card",
+        "author",
+        "body",
+        "media",
+        "poll",
+        "quote",
+        "link",
+        "metrics",
+      ],
       notification: ["row"],
       profile: ["header", "banner", "avatar"],
       "dm-thread": ["row"],
@@ -84,6 +97,8 @@ export const XCinematicSubjects: CinematicSubjectProvider = {
   project(_world, layout, deviceId) {
     const semanticLayout = (layout as LayoutState | undefined)?.semantic;
     if (!semanticLayout) return [];
-    return Object.values(semanticLayout.regions).map((region) => projection(region, deviceId));
+    return Object.values(semanticLayout.regions).map((region) =>
+      projection(region, deviceId),
+    );
   },
 };

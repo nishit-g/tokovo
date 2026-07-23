@@ -13,13 +13,22 @@ function snapshot(override: Partial<XSnapshot> = {}): XSnapshot {
       { id: "u_other", name: "Avery", handle: "avery", verified: "blue" },
     ],
     tweets: [
-      { id: "tw_1", authorId: "u_other", text: "Canonical.", createdAt: BASE_TIME },
+      {
+        id: "tw_1",
+        authorId: "u_other",
+        text: "Canonical.",
+        createdAt: BASE_TIME,
+      },
     ],
-    threads: [
-      { id: "dm_1", participantIds: ["u_me", "u_other"] },
-    ],
+    threads: [{ id: "dm_1", participantIds: ["u_me", "u_other"] }],
     messages: [
-      { id: "msg_1", threadId: "dm_1", senderId: "u_other", text: "Ready.", createdAt: BASE_TIME },
+      {
+        id: "msg_1",
+        threadId: "dm_1",
+        senderId: "u_other",
+        text: "Ready.",
+        createdAt: BASE_TIME,
+      },
     ],
     ...override,
   };
@@ -32,18 +41,22 @@ function context(data?: XSnapshot, view?: XInitialView) {
     device: { id: "phone", app: "app_x", profile: "iphone16" } as never,
     ir: { id: "x-test", devices: [], timeline: [] } as never,
     baseState: createXInitialState(),
-    snapshot: data ? {
-      appId: "app_x" as const,
-      deviceId: "phone",
-      snapshotVersion: 2,
-      snapshot: data,
-    } : undefined,
-    initialView: view ? {
-      appId: "app_x" as const,
-      deviceId: "phone",
-      viewVersion: 2,
-      view,
-    } : undefined,
+    snapshot: data
+      ? {
+          appId: "app_x" as const,
+          deviceId: "phone",
+          snapshotVersion: 2,
+          snapshot: data,
+        }
+      : undefined,
+    initialView: view
+      ? {
+          appId: "app_x" as const,
+          deviceId: "phone",
+          viewVersion: 2,
+          view,
+        }
+      : undefined,
   };
 }
 
@@ -63,18 +76,24 @@ describe("X VNext bootstrap", () => {
   it("requires schema version 2 and explicit epoch timestamps", () => {
     const validate = xBootstrap.snapshot?.validate;
     if (!validate) throw new Error("X_TEST_SNAPSHOT_VALIDATOR_MISSING");
-    expect(validate({ appId: "app_x", deviceId: "phone", value: { users: [] } } as never).errors ?? []).toEqual(
-      expect.arrayContaining([expect.stringMatching(/schemaVersion/)]),
-    );
-    expect(validate({
-      appId: "app_x",
-      deviceId: "phone",
-      value: {
-        schemaVersion: 2,
-        users: [{ id: "u", name: "User", handle: "user" }],
-        tweets: [{ id: "tw", authorId: "u", text: "bad", createdAt: 30 }],
-      },
-    } as never).errors?.join(" ") ?? "").toMatch(/epoch milliseconds/);
+    expect(
+      validate({
+        appId: "app_x",
+        deviceId: "phone",
+        value: { users: [] },
+      } as never).errors ?? [],
+    ).toEqual(expect.arrayContaining([expect.stringMatching(/schemaVersion/)]));
+    expect(
+      validate({
+        appId: "app_x",
+        deviceId: "phone",
+        value: {
+          schemaVersion: 2,
+          users: [{ id: "u", name: "User", handle: "user" }],
+          tweets: [{ id: "tw", authorId: "u", text: "bad", createdAt: 30 }],
+        },
+      } as never).errors?.join(" ") ?? "",
+    ).toMatch(/epoch milliseconds/);
   });
 
   it("rejects duplicate IDs and cross-entity reference failures", () => {
@@ -83,7 +102,9 @@ describe("X VNext bootstrap", () => {
         { id: "u_me", name: "Mira", handle: "mira" },
         { id: "u_me", name: "Duplicate", handle: "duplicate" },
       ],
-      tweets: [{ id: "tw_1", authorId: "ghost", text: "Bad", createdAt: BASE_TIME }],
+      tweets: [
+        { id: "tw_1", authorId: "ghost", text: "Bad", createdAt: BASE_TIME },
+      ],
     });
     const result = xBootstrap.validate?.(context(data) as never);
     expect((result?.errors ?? []).join(" ")).toMatch(/duplicates "u_me"/);
@@ -93,11 +114,13 @@ describe("X VNext bootstrap", () => {
   it("hydrates authoring arrays into one normalized canonical state", () => {
     const hydrate = xBootstrap.hydrate;
     if (!hydrate) throw new Error("X_TEST_BOOTSTRAP_HYDRATE_MISSING");
-    const state = hydrate(context(snapshot(), {
-      schemaVersion: 2,
-      screen: "thread",
-      threadId: "dm_1",
-    }) as never);
+    const state = hydrate(
+      context(snapshot(), {
+        schemaVersion: 2,
+        screen: "thread",
+        threadId: "dm_1",
+      }) as never,
+    );
     expect(state).toMatchObject({
       schemaVersion: 2,
       viewMode: "CHAT",
@@ -108,7 +131,26 @@ describe("X VNext bootstrap", () => {
     });
     expect(state.usersById.u_other.handle).toBe("avery");
     expect(state.dmThreadsById.dm_1.messageIds).toEqual(["msg_1"]);
-    expect(state.dmMessagesById.msg_1.delivery).toBe("sent");
+    expect(state.dmMessagesById.msg_1.delivery).toBe("read");
+  });
+
+  it("rejects outgoing-only delivery states on incoming snapshot messages", () => {
+    const data = snapshot({
+      messages: [
+        {
+          id: "msg_1",
+          threadId: "dm_1",
+          senderId: "u_other",
+          text: "Impossible delivery",
+          createdAt: BASE_TIME,
+          delivery: "sending",
+        },
+      ],
+    });
+    const result = xBootstrap.validate?.(context(data) as never);
+    expect((result?.errors ?? []).join(" ")).toMatch(
+      /delivery must be read or omitted for an incoming message/,
+    );
   });
 
   it("requires route-specific targets in initial views", () => {

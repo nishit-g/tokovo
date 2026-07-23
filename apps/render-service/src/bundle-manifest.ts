@@ -12,33 +12,42 @@ const ROOT_INPUT_FILES = [
   "tsconfig.base.json",
 ];
 
+const WORKSPACE_PACKAGE_DIRS = [
+  "packages/apps-imessage",
+  "packages/apps-instagram",
+  "packages/apps-linkedin",
+  "packages/apps-snapchat",
+  "packages/apps-teams",
+  "packages/apps-typewriter",
+  "packages/apps-whatsapp",
+  "packages/apps-x",
+  "packages/background",
+  "packages/camera",
+  "packages/compiler",
+  "packages/core",
+  "packages/device-keyboard",
+  "packages/device-notifications",
+  "packages/devices",
+  "packages/dsl",
+  "packages/episodes",
+  "packages/ir",
+  "packages/overlay",
+  "packages/react",
+  "packages/renderer",
+  "packages/stage",
+  "packages/visual-system",
+  "packages/voice",
+];
+
 const WORKSPACE_INPUT_DIRS = [
   "apps/video-runner/src",
   "apps/video-runner/public",
-  "packages/apps-imessage/src",
-  "packages/apps-instagram/src",
-  "packages/apps-linkedin/src",
-  "packages/apps-snapchat/src",
-  "packages/apps-teams/src",
-  "packages/apps-typewriter/src",
-  "packages/apps-whatsapp/src",
-  "packages/apps-x/src",
-  "packages/background/src",
-  "packages/camera/src",
-  "packages/compiler/src",
-  "packages/core/src",
-  "packages/device-keyboard/src",
-  "packages/device-notifications/src",
-  "packages/devices/src",
-  "packages/dsl/src",
-  "packages/episodes/src",
-  "packages/ir/src",
-  "packages/overlay/src",
-  "packages/react/src",
-  "packages/renderer/src",
-  "packages/stage/src",
-  "packages/voice/src",
+  ...WORKSPACE_PACKAGE_DIRS.flatMap((entry) => [`${entry}/src`, `${entry}/dist`]),
 ];
+
+const WORKSPACE_PACKAGE_FILES = WORKSPACE_PACKAGE_DIRS.map(
+  (entry) => `${entry}/package.json`,
+);
 
 const CAMERA_LAYER_PAINTER_INPUT_DIRS = [
   "apps/video-runner/src",
@@ -149,9 +158,9 @@ export function getBundleInputManifest(): {
   directories: string[];
 } {
   return {
-    files: ROOT_INPUT_FILES.map((entry) => path.join(repoRoot, entry)).filter(
-      (entry) => fs.existsSync(entry),
-    ),
+    files: [...ROOT_INPUT_FILES, ...WORKSPACE_PACKAGE_FILES]
+      .map((entry) => path.join(repoRoot, entry))
+      .filter((entry) => fs.existsSync(entry)),
     directories: WORKSPACE_INPUT_DIRS.map((entry) =>
       path.join(repoRoot, entry),
     ).filter((entry) => fs.existsSync(entry)),

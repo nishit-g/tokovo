@@ -15,7 +15,16 @@ export default defineEpisode({
     appId: "app_x",
     visibility: "public",
     sortOrder: 96,
-    tags: ["x", "camera", "cinematic-subjects", "keyboard", "notifications", "dm", "poll", "video"],
+    tags: [
+      "x",
+      "camera",
+      "cinematic-subjects",
+      "keyboard",
+      "notifications",
+      "dm",
+      "poll",
+      "video",
+    ],
   },
   config: {
     format: "1080x1920",
@@ -37,139 +46,149 @@ export default defineEpisode({
       })
       .background({ type: "image", src: "/backgrounds/dark-studio.png" })
       .cinematics(xCinematicFlagship)
-      .snapshot("app_x", "phone", {
-        schemaVersion: 2,
-        locale: "en-US",
-        currentUserId: "x_me",
-        users: [
-          {
-            id: "x_me",
-            name: "Mira Chen",
-            handle: "miramakes",
-            bio: "Building the product. Showing the receipts.",
-            bannerUrl: "/media/launch-board.svg",
-            location: "San Francisco",
-            website: "miramakes.example",
-            joinedAt: baseTime - 82_000_000_000,
-            followers: 128_400,
-            following: 612,
-            verified: "blue",
-          },
-          {
-            id: "x_creator",
-            name: "Noa Frames",
-            handle: "noaframes",
-            bio: "Product films, quiet cameras, sharp cuts.",
-            bannerUrl: "/media/founder-whiteboard.jpg",
-            location: "London",
-            website: "noaframes.example",
-            joinedAt: baseTime - 112_000_000_000,
-            followers: 482_000,
-            following: 341,
-            verified: "gold",
-          },
-          {
-            id: "x_editor",
-            name: "Ava Stone",
-            handle: "avacuts",
-            bio: "Editing launch night in real time.",
-            followers: 74_200,
-            following: 508,
-            verified: null,
-          },
-        ],
-        follows: [
-          { followerId: "x_me", followingId: "x_creator" },
-          { followerId: "x_me", followingId: "x_editor" },
-        ],
-        tweets: [
-          {
-            id: "x_launch_cut",
-            authorId: "x_creator",
-            text: "The best launch film does not look expensive. It looks inevitable.",
-            createdAt: baseTime - 130_000,
-            media: {
-              type: "image",
-              urls: ["/media/founder-whiteboard.jpg"],
-              aspect: "wide",
-              alt: "A launch storyboard arranged on a whiteboard",
+      .snapshot(
+        "app_x",
+        "phone",
+        {
+          schemaVersion: 2,
+          locale: "en-US",
+          currentUserId: "x_me",
+          users: [
+            {
+              id: "x_me",
+              name: "Mira Chen",
+              handle: "miramakes",
+              bio: "Building the product. Showing the receipts.",
+              bannerUrl: "/media/launch-board.svg",
+              location: "San Francisco",
+              website: "miramakes.example",
+              joinedAt: baseTime - 82_000_000_000,
+              followers: 128_400,
+              following: 612,
+              verified: "blue",
             },
-            hashtags: ["productfilm", "launchday"],
-            likeCount: 18_200,
-            repostCount: 2_940,
-            viewCount: 1_420_000,
-            bookmarkCount: 9_840,
-            shareCount: 4_220,
-          },
-          {
-            id: "x_poll",
-            authorId: "x_editor",
-            text: "Which cut earns the first five seconds?",
-            createdAt: baseTime - 92_000,
-            poll: {
-              options: [
-                { id: "close", label: "The human close-up", votes: 642 },
-                { id: "wide", label: "The product wide", votes: 511 },
-                { id: "screen", label: "The screen recording", votes: 287 },
-              ],
-              totalVotes: 1_440,
-              endsAt: baseTime + 82_800_000,
+            {
+              id: "x_creator",
+              name: "Noa Frames",
+              handle: "noaframes",
+              bio: "Product films, quiet cameras, sharp cuts.",
+              bannerUrl: "/media/founder-whiteboard.jpg",
+              location: "London",
+              website: "noaframes.example",
+              joinedAt: baseTime - 112_000_000_000,
+              followers: 482_000,
+              following: 341,
+              verified: "gold",
             },
-            viewCount: 92_400,
-            likeCount: 2_810,
-            repostCount: 312,
-          },
-          {
-            id: "x_video",
-            authorId: "x_creator",
-            text: "The clean cut, without the launch-night noise.",
-            createdAt: baseTime - 58_000,
-            media: {
-              type: "video",
-              urls: ["/media/launch-clip.mp4"],
-              posterUrl: "/media/launch-board.svg",
-              aspect: "wide",
-              alt: "A short product launch film",
+            {
+              id: "x_editor",
+              name: "Ava Stone",
+              handle: "avacuts",
+              bio: "Editing launch night in real time.",
+              followers: 74_200,
+              following: 508,
+              verified: null,
             },
-            viewCount: 841_200,
-            likeCount: 41_600,
-            repostCount: 7_420,
-            bookmarkCount: 18_300,
-          },
-        ],
-        notifications: [
-          {
-            id: "x_nt_seed",
-            type: "follow",
-            actorId: "x_editor",
-            createdAt: baseTime - 34_000,
-            read: false,
-          },
-        ],
-        threads: [
-          {
-            id: "x_launch_room",
-            participantIds: ["x_me", "x_creator", "x_editor"],
-            title: "Launch film",
-            unreadCount: 1,
-            pinned: true,
-          },
-        ],
-        messages: [
-          {
-            id: "x_msg_seed",
-            threadId: "x_launch_room",
-            senderId: "x_creator",
-            text: "The clean export is up. No more caveats.",
-            createdAt: baseTime - 28_000,
-          },
-        ],
-      }, { version: 2 })
-      .view("app_x", "phone", {
-        schemaVersion: 2,
-        screen: "timeline",
-        timelineTab: "forYou",
-      }, { version: 2 })
+          ],
+          follows: [
+            { followerId: "x_me", followingId: "x_creator" },
+            { followerId: "x_me", followingId: "x_editor" },
+          ],
+          tweets: [
+            {
+              id: "x_launch_cut",
+              authorId: "x_creator",
+              text: "The best launch film does not look expensive. It looks inevitable.",
+              createdAt: baseTime - 130_000,
+              media: {
+                type: "image",
+                urls: ["/media/founder-whiteboard.jpg"],
+                aspect: "wide",
+                alt: "A launch storyboard arranged on a whiteboard",
+              },
+              hashtags: ["productfilm", "launchday"],
+              likeCount: 18_200,
+              repostCount: 2_940,
+              viewCount: 1_420_000,
+              bookmarkCount: 9_840,
+              shareCount: 4_220,
+            },
+            {
+              id: "x_poll",
+              authorId: "x_editor",
+              text: "Which cut earns the first five seconds?",
+              createdAt: baseTime - 92_000,
+              poll: {
+                options: [
+                  { id: "close", label: "The human close-up", votes: 642 },
+                  { id: "wide", label: "The product wide", votes: 511 },
+                  { id: "screen", label: "The screen recording", votes: 287 },
+                ],
+                totalVotes: 1_440,
+                endsAt: baseTime + 82_800_000,
+              },
+              viewCount: 92_400,
+              likeCount: 2_810,
+              repostCount: 312,
+            },
+            {
+              id: "x_video",
+              authorId: "x_creator",
+              text: "The clean cut, without the launch-night noise.",
+              createdAt: baseTime - 58_000,
+              media: {
+                type: "video",
+                urls: ["/media/launch-clip.mp4"],
+                posterUrl: "/media/launch-board.svg",
+                aspect: "wide",
+                alt: "A short product launch film",
+              },
+              viewCount: 841_200,
+              likeCount: 41_600,
+              repostCount: 7_420,
+              bookmarkCount: 18_300,
+            },
+          ],
+          notifications: [
+            {
+              id: "x_nt_seed",
+              type: "follow",
+              actorId: "x_editor",
+              createdAt: baseTime - 34_000,
+              read: false,
+            },
+          ],
+          threads: [
+            {
+              id: "x_launch_room",
+              participantIds: ["x_me", "x_creator", "x_editor"],
+              title: "Launch film",
+              unreadCount: 1,
+              pinned: true,
+            },
+          ],
+          messages: [
+            {
+              id: "x_msg_seed",
+              threadId: "x_launch_room",
+              senderId: "x_creator",
+              text: "The clean export is up. No more caveats.",
+              createdAt: baseTime - 28_000,
+            },
+          ],
+        },
+        { version: 2 },
+      )
+      .view(
+        "app_x",
+        "phone",
+        {
+          schemaVersion: 2,
+          screen: "timeline",
+          timelineTab: "forYou",
+        },
+        { version: 2 },
+      )
       .x("phone", (x) => {
         x.at("1.2s").setTimelineTab("following");
         x.at("2.1s").setTimelineTab("forYou");
@@ -188,21 +207,26 @@ export default defineEpisode({
         x.at("8.7s").navigate("notifications");
         x.at("9.4s").setNotificationsTab("mentions");
         x.at("10.4s").setNotificationsTab("all");
-        x.at("12.2s").navigate("messages");
-        x.at("13.0s").navigate("thread", { threadId: "x_launch_room" });
-        x.at("13.5s").setThreadTyping("x_launch_room", "x_editor");
-        x.at("14.2s").sendMessage({
-          id: "x_msg_reply",
-          threadId: "x_launch_room",
-          senderId: "x_me",
-          text: "Ship the clean cut. Let the product carry the frame.",
-          createdAt: baseTime + 14_200,
-          delivery: "sending",
-        });
+        x.at("12.1s").navigate("messages");
+        x.at("12.2s").navigate("thread", { threadId: "x_launch_room" });
+        x.at("13.5s").startTyping("x_launch_room", "x_editor");
+        x.at("14.2s").sendMessage(
+          {
+            id: "x_msg_reply",
+            threadId: "x_launch_room",
+            senderId: "x_me",
+            text: "Ship the clean cut. Let the product carry the frame.",
+            createdAt: baseTime + 14_200,
+            delivery: "sending",
+          },
+          {
+            input: { duration: "2s", style: "fast", id: "x-flagship-dm-input" },
+          },
+        );
         x.at("15.0s").setMessageDelivery("x_msg_reply", "failed");
         x.at("16.1s").setMessageDelivery("x_msg_reply", "sending");
         x.at("16.8s").setMessageDelivery("x_msg_reply", "sent");
-        x.at("17.4s").sendMessage({
+        x.at("17.4s").receiveMessage({
           id: "x_msg_editor",
           threadId: "x_launch_room",
           senderId: "x_editor",
@@ -210,18 +234,28 @@ export default defineEpisode({
           createdAt: baseTime + 17_400,
         });
         x.at("19.7s").navigate("compose");
-        x.at("20.2s").setComposeDraft("Good product films do not shout.");
-        x.at("22.2s").setComposeDraft("Good product films do not shout. They make the next step obvious.");
-        x.at("24.4s").setComposerStatus("failed", "Connection interrupted. Your draft is safe.");
-        x.at("25.0s").setComposeDraft("Good product films do not shout. They make the next step obvious.");
+        x.at("24.4s").setComposerStatus(
+          "failed",
+          "Connection interrupted. Your draft is safe.",
+        );
         x.at("25.4s").setComposerStatus("sending");
-        x.at("26.0s").postTweet({
-          id: "x_authored_post",
-          authorId: "x_me",
-          text: "Good product films do not shout. They make the next step obvious.",
-          createdAt: baseTime + 26_000,
-          hashtags: ["productfilm"],
-        });
+        x.at("26.0s").postTweet(
+          {
+            id: "x_authored_post",
+            authorId: "x_me",
+            text: "Good product films do not shout. They make the next step obvious.",
+            createdAt: baseTime + 26_000,
+            hashtags: ["productfilm"],
+          },
+          {
+            input: {
+              duration: "5.8s",
+              id: "x-flagship-compose",
+              style: "fast",
+              keyboard: { appearance: "dark" },
+            },
+          },
+        );
         x.at("26.1s").setComposerStatus("idle");
         x.at("26.3s").navigate("tweet", { tweetId: "x_authored_post" });
         x.at("29.8s").navigate("tweet", { tweetId: "x_poll" });
@@ -232,18 +266,6 @@ export default defineEpisode({
         x.at("37.8s").navigate("profile", { userId: "x_creator" });
         x.at("39.0s").setProfileTab("media");
         x.at("40.2s").setProfileTab("posts");
-      })
-      .input("phone", "composer", {
-        id: "x-flagship-compose",
-        appId: "app_x",
-        at: "20.2s",
-        until: "25.7s",
-        submitAt: "25.4s",
-        locale: "en-US",
-        text: "Good product films do not shout. They make the next step obvious.",
-        expectedFinalValue: "Good product films do not shout. They make the next step obvious.",
-        cadence: { style: "fast" },
-        keyboard: { appearance: "dark", returnKey: "send" },
       })
       .build(),
 });

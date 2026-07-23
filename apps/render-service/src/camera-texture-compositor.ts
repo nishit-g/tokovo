@@ -16,7 +16,10 @@ import type { RenderProfile } from "./profiles";
 
 const MAP_WIDTH = 512;
 const MAP_HEIGHT = 512;
-const COMPOSITOR_CHUNK_FRAMES = 120;
+// Perspective is represented as eight frame-step expressions. Keeping chunks
+// to one second bounds both expression-tree size and FFmpeg filter memory even
+// when every frame has a unique camera pose.
+const COMPOSITOR_CHUNK_FRAMES = 30;
 const PNG_SIGNATURE = Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]);
 
 type DistortionPass = Extract<
@@ -835,6 +838,12 @@ function hasOpticalDisplacement(output: CaptureOutput): boolean {
   );
 }
 
+function hasDirectionalSmear(output: CaptureOutput): boolean {
+  return output.projectionPasses.some(
+    (pass) => pass.kind === "directional-smear" && pass.spreadPx > 0,
+  );
+}
+
 export function createTextureFilterGraph(input: {
   commandDirectory: string;
   captures: readonly CameraTextureProjectionCapture[];
@@ -856,6 +865,15 @@ export function createTextureFilterGraph(input: {
       .map((output) => output.outputId);
   const opticalOutputIndex = new Map(
     opticalOutputIds.map((outputId, index) => [outputId, index] as const),
+  );
+  const smearOutputIds = new Set(
+    outputs
+      .filter((output) =>
+        input.captures.some((capture) =>
+          hasDirectionalSmear(getOutput(capture, output.outputId)),
+        ),
+      )
+      .map((output) => output.outputId),
   );
   for (const outputId of opticalOutputIds) {
     if (!outputs.some((output) => output.outputId === outputId)) {
@@ -904,11 +922,19 @@ export function createTextureFilterGraph(input: {
     }
     graph.push(
       `[warped_${outputIndex}]${commandFilter(input.commandDirectory, outputIndex, "grade-eq")},eq@tokovo_grade_${outputIndex}=brightness=0:contrast=1:saturation=1:gamma=1,${commandFilter(input.commandDirectory, outputIndex, "grade-rgb")},colorchannelmixer@tokovo_grade_rgb_${outputIndex}=rr=1:gg=1:bb=1:aa=1,format=rgba[graded_${outputIndex}]`,
-      `[graded_${outputIndex}]split=2[crisp_source_${outputIndex}][smear_source_${outputIndex}]`,
-      `[smear_source_${outputIndex}]${commandFilter(input.commandDirectory, outputIndex, "smear-shape")},gblur@tokovo_smear_${outputIndex}=sigma=0.2:sigmaV=0.2:steps=2:planes=15,${commandFilter(input.commandDirectory, outputIndex, "smear-alpha")},colorchannelmixer@tokovo_smear_alpha_${outputIndex}=aa=0[smear_${outputIndex}]`,
-      `[crisp_source_${outputIndex}]${commandFilter(input.commandDirectory, outputIndex, "smear-overlay")}[crisp_commanded_${outputIndex}]`,
-      `[crisp_commanded_${outputIndex}][smear_${outputIndex}]overlay@tokovo_smear_overlay_${outputIndex}=x=0:y=0:format=auto:alpha=straight,format=rgba[optical_unmasked_${outputIndex}]`,
     );
+    if (smearOutputIds.has(output.outputId)) {
+      graph.push(
+        `[graded_${outputIndex}]split=2[crisp_source_${outputIndex}][smear_source_${outputIndex}]`,
+        `[smear_source_${outputIndex}]${commandFilter(input.commandDirectory, outputIndex, "smear-shape")},gblur@tokovo_smear_${outputIndex}=sigma=0.2:sigmaV=0.2:steps=2:planes=15,${commandFilter(input.commandDirectory, outputIndex, "smear-alpha")},colorchannelmixer@tokovo_smear_alpha_${outputIndex}=aa=0[smear_${outputIndex}]`,
+        `[crisp_source_${outputIndex}]${commandFilter(input.commandDirectory, outputIndex, "smear-overlay")}[crisp_commanded_${outputIndex}]`,
+        `[crisp_commanded_${outputIndex}][smear_${outputIndex}]overlay@tokovo_smear_overlay_${outputIndex}=x=0:y=0:format=auto:alpha=straight,format=rgba[optical_unmasked_${outputIndex}]`,
+      );
+    } else {
+      graph.push(
+        `[graded_${outputIndex}]null[optical_unmasked_${outputIndex}]`,
+      );
+    }
     const roundedClip = roundedClipFilter({
       radius: output.clipRadiusPx,
       width: viewport.width,

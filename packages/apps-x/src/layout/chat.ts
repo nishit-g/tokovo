@@ -19,22 +19,49 @@ export function computeXChatLayout(ctx: LayoutContext): ChatLayoutState {
   const { state, experience } = resolveXLayoutEnvironment(ctx);
   const thread = selectActiveThread(ctx.world, ctx.activeDeviceId);
   if (ctx.activeConversationId && ctx.activeConversationId !== thread.id) {
-    throw new Error(`X_CHAT_CONTEXT_MISMATCH: layout requested "${ctx.activeConversationId}" while route targets "${thread.id}"`);
+    throw new Error(
+      `X_CHAT_CONTEXT_MISMATCH: layout requested "${ctx.activeConversationId}" while route targets "${thread.id}"`,
+    );
   }
-  const messages = selectThreadMessages(ctx.world, ctx.activeDeviceId, thread.id);
+  const messages = selectThreadMessages(
+    ctx.world,
+    ctx.activeDeviceId,
+    thread.id,
+  );
   const composerHeight = experience.metrics.composerHeight + 10;
   const headerY = top;
   const threadY = headerY + experience.metrics.headerHeight;
   const composerY = height - bottom - composerHeight;
   const threadHeight = Math.max(0, composerY - threadY);
-  const projection = projectXThread({ state, threadId: thread.id, messages, width, viewportHeight: threadHeight });
+  const projection = projectXThread({
+    state,
+    threadId: thread.id,
+    messages,
+    width,
+    viewportHeight: threadHeight,
+  });
   const regions: Record<string, SemanticRegion> = {};
   const groups: Record<string, string[]> = { message: [] };
   const messageLayouts: Record<string, ChatMessageLayout> = {};
 
-  region(regions, "x.thread.header", rect(0, headerY, width, experience.metrics.headerHeight), ["thread", "header", "sticky"], { sticky: true });
-  region(regions, "x.thread.messages", rect(0, threadY, width, threadHeight), ["thread", "messages"]);
-  region(regions, "x.thread.composer", rect(0, composerY, width, composerHeight), ["thread", "composer", "sticky"], { sticky: true });
+  region(
+    regions,
+    "x.thread.header",
+    rect(0, headerY, width, experience.metrics.headerHeight),
+    ["thread", "header", "sticky"],
+    { sticky: true },
+  );
+  region(regions, "x.thread.messages", rect(0, threadY, width, threadHeight), [
+    "thread",
+    "messages",
+  ]);
+  region(
+    regions,
+    "x.thread.composer",
+    rect(0, composerY, width, composerHeight),
+    ["thread", "composer", "sticky"],
+    { sticky: true },
+  );
 
   for (const item of projection.visibleItems) {
     const self = item.message.senderId === state.currentUserId;
@@ -52,20 +79,34 @@ export function computeXChatLayout(ctx: LayoutContext): ChatLayoutState {
       rect: bubbleRect,
     };
     const id = `x.dm.${thread.id}.message.${item.id}`;
-    region(regions, id, bubbleRect, ["dm", "message", self ? "outgoing" : "incoming"], { entityType: "message", entityId: item.id, entityRegion: "bubble", threadId: thread.id });
+    region(
+      regions,
+      id,
+      bubbleRect,
+      ["dm", "message", self ? "outgoing" : "incoming"],
+      {
+        entityType: "message",
+        entityId: item.id,
+        entityRegion: "bubble",
+        threadId: thread.id,
+      },
+    );
     groups.message.push(id);
   }
 
-  if (thread.typingUserId) {
-    region(regions, "x.thread.typing", rect(44, composerY - 44, 54, 36), ["thread", "typing"]);
+  if (thread.typingUserIds.length > 0) {
+    region(regions, "x.thread.typing", rect(44, composerY - 44, 54, 36), [
+      "thread",
+      "typing",
+    ]);
   }
 
   return {
     kind: "CHAT",
     cacheHint: "static",
-    scrollY: state.threadScrollYById[thread.id],
+    scrollY: state.scroll.threadFromBottomById[thread.id],
     contentHeight: projection.contentHeight,
-    isAtBottom: (state.threadScrollYById[thread.id] ?? 0) === 0,
+    isAtBottom: (state.scroll.threadFromBottomById[thread.id] ?? 0) === 0,
     messageLayouts,
     meta: {
       lastMessageId: projection.visibleItems.at(-1)?.id,

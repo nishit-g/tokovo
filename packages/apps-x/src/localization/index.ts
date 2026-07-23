@@ -43,14 +43,23 @@ const copy = {
     sensitiveBody: "This media may contain sensitive content.",
     show: "Show",
     emptyTimelineTitle: "Welcome to your timeline",
-    emptyTimelineBody: "When people you follow post, their updates will appear here.",
+    emptyTimelineBody:
+      "When people you follow post, their updates will appear here.",
     emptyNotificationsTitle: "Nothing to see—yet",
-    emptyNotificationsBody: "From likes to reposts and more, this is where all the action happens.",
+    emptyNotificationsBody:
+      "From likes to reposts and more, this is where all the action happens.",
     emptyMessagesTitle: "Welcome to your inbox",
-    emptyMessagesBody: "Drop a line, share posts and more with private conversations.",
+    emptyMessagesBody:
+      "Drop a line, share posts and more with private conversations.",
     newMessage: "New message",
     send: "Send",
     typing: "typing…",
+    peopleTyping: "people typing…",
+    sending: "Sending…",
+    sent: "Sent",
+    delivered: "Delivered",
+    read: "Seen",
+    replyingToMessage: "Replying to",
     failed: "Not sent. Tap to retry.",
     pinned: "Pinned",
     unread: "unread",
@@ -111,6 +120,12 @@ const copy = {
     newMessage: "رسالة جديدة",
     send: "إرسال",
     typing: "يكتب…",
+    peopleTyping: "يكتبون…",
+    sending: "جارٍ الإرسال…",
+    sent: "تم الإرسال",
+    delivered: "تم التسليم",
+    read: "شوهدت",
+    replyingToMessage: "ردًا على",
     failed: "لم تُرسل. اضغط لإعادة المحاولة.",
     pinned: "مثبّت",
     unread: "غير مقروء",
@@ -163,7 +178,8 @@ const copy = {
     sensitiveBody: "इस मीडिया में संवेदनशील सामग्री हो सकती है।",
     show: "दिखाएँ",
     emptyTimelineTitle: "आपकी टाइमलाइन में स्वागत है",
-    emptyTimelineBody: "जिन लोगों को आप फ़ॉलो करते हैं उनकी पोस्ट यहाँ दिखेंगी।",
+    emptyTimelineBody:
+      "जिन लोगों को आप फ़ॉलो करते हैं उनकी पोस्ट यहाँ दिखेंगी।",
     emptyNotificationsTitle: "अभी यहाँ कुछ नहीं है",
     emptyNotificationsBody: "लाइक, रीपोस्ट और दूसरी गतिविधियाँ यहाँ दिखेंगी।",
     emptyMessagesTitle: "आपके इनबॉक्स में स्वागत है",
@@ -171,6 +187,12 @@ const copy = {
     newMessage: "नया मैसेज",
     send: "भेजें",
     typing: "लिख रहे हैं…",
+    peopleTyping: "लोग लिख रहे हैं…",
+    sending: "भेजा जा रहा है…",
+    sent: "भेज दिया",
+    delivered: "डिलीवर हुआ",
+    read: "देखा गया",
+    replyingToMessage: "इसका जवाब",
     failed: "नहीं भेजा गया। फिर कोशिश करें।",
     pinned: "पिन किया हुआ",
     unread: "अनरीड",
@@ -202,16 +224,30 @@ export function formatXCount(value: number, locale: XLocale): string {
   }).format(value);
 }
 
-export function formatXTimestamp(value: number, nowMs: number, locale: XLocale): string {
+export function formatXTimestamp(
+  value: number,
+  nowMs: number,
+  locale: XLocale,
+): string {
   const elapsed = Math.max(0, Math.floor((nowMs - value) / 1_000));
-  const units = locale === "ar-SA"
-    ? { second: "ث", minute: "د", hour: "س" }
-    : locale === "hi-IN"
-      ? { second: "से", minute: "मि", hour: "घं" }
-      : { second: "s", minute: "m", hour: "h" };
-  if (elapsed < 60) return new Intl.NumberFormat(locale).format(elapsed) + units.second;
-  if (elapsed < 3_600) return new Intl.NumberFormat(locale).format(Math.floor(elapsed / 60)) + units.minute;
-  if (elapsed < 86_400) return new Intl.NumberFormat(locale).format(Math.floor(elapsed / 3_600)) + units.hour;
+  const units =
+    locale === "ar-SA"
+      ? { second: "ث", minute: "د", hour: "س" }
+      : locale === "hi-IN"
+        ? { second: "से", minute: "मि", hour: "घं" }
+        : { second: "s", minute: "m", hour: "h" };
+  if (elapsed < 60)
+    return new Intl.NumberFormat(locale).format(elapsed) + units.second;
+  if (elapsed < 3_600)
+    return (
+      new Intl.NumberFormat(locale).format(Math.floor(elapsed / 60)) +
+      units.minute
+    );
+  if (elapsed < 86_400)
+    return (
+      new Intl.NumberFormat(locale).format(Math.floor(elapsed / 3_600)) +
+      units.hour
+    );
   return new Intl.DateTimeFormat(locale, {
     month: "short",
     day: "numeric",

@@ -17,7 +17,11 @@ import {
   type WhatsAppTrackBuilder,
   type WhatsAppSendInputIntent,
 } from "@tokovo/apps-whatsapp";
-import { XTrackBuilder } from "@tokovo/apps-x";
+import {
+  createXTrackBuilder,
+  type XInputIntent,
+  type XTrackBuilder,
+} from "@tokovo/apps-x";
 import { TypewriterTrackBuilder } from "@tokovo/apps-typewriter";
 import {
   episode as baseEpisode,
@@ -86,27 +90,43 @@ function findGraphemeSequence(
 ): number {
   if (needle.length === 0) return -1;
   for (let start = 0; start <= haystack.length - needle.length; start++) {
-    if (needle.every((grapheme, index) => haystack[start + index] === grapheme)) {
+    if (
+      needle.every((grapheme, index) => haystack[start + index] === grapheme)
+    ) {
       return start;
     }
   }
   return -1;
 }
 
-function addWhatsAppInputSession(
+interface StructuredInputIntent {
+  deviceId: string;
+  fieldId: string;
+  submitFrame: number;
+  text: string;
+  input: WhatsAppSendInputIntent["input"] | XInputIntent["input"];
+}
+
+function addStructuredInputSession(
   ep: EpisodeBuilder,
   fps: number,
-  intent: WhatsAppSendInputIntent,
+  intent: StructuredInputIntent,
+  appId: "app_whatsapp" | "app_x",
+  errorPrefix: "WHATSAPP" | "X",
+  returnKey: "return" | "send",
 ): void {
-  const { input, sendFrame, text } = intent;
+  const { input, submitFrame, text } = intent;
   const locale = input.keyboard?.locale ?? input.locale ?? "en-US";
   const typedText = input.correction?.typed ?? text;
   const typedGraphemes = splitGraphemes(typedText, locale);
   if (typedGraphemes.length === 0) {
-    throw new Error("WHATSAPP_INPUT_EMPTY: a structured input send requires text.");
+    throw new Error(
+      `${errorPrefix}_INPUT_EMPTY: a structured input send requires text.`,
+    );
   }
 
-  const correctionPauseFrames = input.correction?.pauseFrames ?? Math.max(1, Math.round(fps * 0.2));
+  const correctionPauseFrames =
+    input.correction?.pauseFrames ?? Math.max(1, Math.round(fps * 0.2));
   const cadenceStyle = input.style ?? input.cadence?.style ?? "natural";
   let cadence: InputCadenceIR = {
     ...input.cadence,
@@ -116,22 +136,27 @@ function addWhatsAppInputSession(
 
   if (input.duration !== undefined) {
     durationFrames = parseTimeToFrames(input.duration, fps);
-    const focusLeadFrames = cadence.focusLeadFrames ?? Math.max(1, Math.round(fps * 0.25));
+    const focusLeadFrames =
+      cadence.focusLeadFrames ?? Math.max(1, Math.round(fps * 0.25));
     const correctionFixedFrames = input.correction
       ? correctionPauseFrames + 1
       : 0;
     const pacedOperations = typedGraphemes.length + (input.correction ? 1 : 0);
-    const pacingBudget = durationFrames - focusLeadFrames - correctionFixedFrames;
+    const pacingBudget =
+      durationFrames - focusLeadFrames - correctionFixedFrames;
     if (pacingBudget < pacedOperations) {
       throw new Error(
-        `WHATSAPP_INPUT_TIMING_OVERFLOW: ${durationFrames} frames cannot fit ` +
-          `${pacedOperations} edit operations before the send at frame ${sendFrame}.`,
+        `${errorPrefix}_INPUT_TIMING_OVERFLOW: ${durationFrames} frames cannot fit ` +
+          `${pacedOperations} edit operations before the send at frame ${submitFrame}.`,
       );
     }
     cadence = {
       ...cadence,
       focusLeadFrames,
-      framesPerGrapheme: Math.max(1, Math.floor(pacingBudget / pacedOperations)),
+      framesPerGrapheme: Math.max(
+        1,
+        Math.floor(pacingBudget / pacedOperations),
+      ),
       varianceFrames: 0,
       punctuationPauseFrames: 0,
     };
@@ -149,10 +174,10 @@ function addWhatsAppInputSession(
         : 0);
   }
 
-  const startFrame = sendFrame - durationFrames;
+  const startFrame = submitFrame - durationFrames;
   if (startFrame < 0) {
     throw new Error(
-      `WHATSAPP_INPUT_TIMING_OVERFLOW: input for the send at frame ${sendFrame} ` +
+      `${errorPrefix}_INPUT_TIMING_OVERFLOW: input for the send at frame ${submitFrame} ` +
         `would need to start at frame ${startFrame}. Move the send later or shorten the duration.`,
     );
   }
@@ -166,7 +191,7 @@ function addWhatsAppInputSession(
     );
     if (replacementStart < 0) {
       throw new Error(
-        `WHATSAPP_INPUT_CORRECTION_MISMATCH: ${JSON.stringify(input.correction.replace)} ` +
+        `${errorPrefix}_INPUT_CORRECTION_MISMATCH: ${JSON.stringify(input.correction.replace)} ` +
           `is not present in ${JSON.stringify(typedText)}.`,
       );
     }
@@ -178,7 +203,7 @@ function addWhatsAppInputSession(
     );
     if (corrected.join("") !== text) {
       throw new Error(
-        `WHATSAPP_INPUT_CORRECTION_MISMATCH: correction produces ${JSON.stringify(corrected.join(""))} ` +
+        `${errorPrefix}_INPUT_CORRECTION_MISMATCH: correction produces ${JSON.stringify(corrected.join(""))} ` +
           `instead of the sent text ${JSON.stringify(text)}.`,
       );
     }
@@ -196,10 +221,10 @@ function addWhatsAppInputSession(
 
   const options: InputSessionOptions = {
     id: input.id,
-    appId: "app_whatsapp",
+    appId,
     at: startFrame,
-    submitAt: sendFrame,
-    until: sendFrame + Math.max(5, Math.round(fps * 0.25)),
+    submitAt: submitFrame,
+    until: submitFrame + Math.max(5, Math.round(fps * 0.25)),
     expectedFinalValue: text,
     seed: input.seed,
     source: input.source,
@@ -207,12 +232,42 @@ function addWhatsAppInputSession(
     direction: input.direction,
     keyboard: {
       ...input.keyboard,
-      returnKey: "send",
+      returnKey,
     },
     cadence,
     ...(script ? { script } : { text }),
   };
   ep.input(intent.deviceId, intent.fieldId, options);
+}
+
+function addWhatsAppInputSession(
+  ep: EpisodeBuilder,
+  fps: number,
+  intent: WhatsAppSendInputIntent,
+): void {
+  addStructuredInputSession(
+    ep,
+    fps,
+    { ...intent, submitFrame: intent.sendFrame },
+    "app_whatsapp",
+    "WHATSAPP",
+    "send",
+  );
+}
+
+function addXInputSession(
+  ep: EpisodeBuilder,
+  fps: number,
+  intent: XInputIntent,
+): void {
+  addStructuredInputSession(
+    ep,
+    fps,
+    intent,
+    "app_x",
+    "X",
+    intent.fieldId.startsWith("thread:") ? "send" : "return",
+  );
 }
 
 export type CodeFirstEpisodeBuilder = EpisodeBuilder & {
@@ -338,7 +393,10 @@ export function episode(
   ep.x = (deviceId, fn) =>
     ep.track(
       "app_x",
-      (getOrder) => new XTrackBuilder(config.fps, deviceId, getOrder),
+      (getOrder) =>
+        createXTrackBuilder(config.fps, deviceId, getOrder, (intent) =>
+          addXInputSession(ep, config.fps, intent),
+        ),
       fn,
     ) as CodeFirstEpisodeBuilder;
 
