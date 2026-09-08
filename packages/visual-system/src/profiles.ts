@@ -572,6 +572,20 @@ export const BACKDROP_PROFILES: Readonly<Record<BackdropProfileId, BackdropProfi
         "radial-gradient(circle at 14% 68%, rgba(0,194,203,.2), transparent 32%), radial-gradient(circle at 84% 24%, rgba(218,62,143,.18), transparent 34%), linear-gradient(150deg, #110f1d 0%, #0a1018 55%, #100d17 100%)",
     },
   },
+  "signal-pop": {
+    id: "signal-pop",
+    visualEnergy: "expressive",
+    orientation: "orientation-free",
+    subjectSafeRegions: [{ x: 0.08, y: 0.08, width: 0.84, height: 0.84 }],
+    minimumSubjectContrast: 4.2,
+    permitsTextOrSignage: false,
+    parallaxDepth: 0.14,
+    paint: {
+      kind: "gradient",
+      gradient:
+        "radial-gradient(circle at 8% 22%, rgba(22,184,201,.46), transparent 29%), radial-gradient(circle at 91% 18%, rgba(118,80,189,.48), transparent 31%), radial-gradient(circle at 12% 84%, rgba(241,107,79,.36), transparent 30%), radial-gradient(circle at 91% 82%, rgba(229,161,59,.32), transparent 29%), linear-gradient(145deg, #171c31 0%, #101528 52%, #171329 100%)",
+    },
+  },
 };
 
 export function requireBackdropProfile(id: BackdropProfileId): BackdropProfile {

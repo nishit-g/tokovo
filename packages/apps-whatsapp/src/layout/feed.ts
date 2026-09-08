@@ -1,12 +1,21 @@
-import type { FeedLayoutState, LayoutContext, LayoutRect, SemanticRegion } from "@tokovo/core";
+import type {
+  FeedLayoutState,
+  LayoutContext,
+  LayoutRect,
+  SemanticRegion,
+} from "@tokovo/core";
 import { requireAppStateForDevice } from "@tokovo/core";
 
 import type { WhatsAppState } from "../types/index.js";
 import type { WhatsAppConversation } from "../types/conversation.js";
 import { resolveWhatsAppExperience } from "../experience/resolver.js";
 import type { WhatsAppThemeId } from "../theme/index.js";
-
-const DESIGN_WIDTH = 393;
+import { WHATSAPP_INTERACTION_TOKENS as tokens } from "../theme/index.js";
+import {
+  compareConversations,
+  matchesChatFilter,
+  selectScreenScroll,
+} from "../runtime/selectors.js";
 
 function rect(x: number, y: number, width: number, height: number): LayoutRect {
   return { x, y, width, height };
@@ -24,16 +33,21 @@ function semantic(regions: Record<string, SemanticRegion>) {
  * rather than pixel-perfect DOM replication.
  */
 export function computeFeedLayout(ctx: LayoutContext): FeedLayoutState {
-  const { viewportWidth: w, viewportHeight: h, appViewport, world, activeDeviceId } = ctx;
+  const {
+    viewportWidth: w,
+    viewportHeight: h,
+    appViewport,
+    world,
+    activeDeviceId,
+  } = ctx;
   const contentTop = appViewport.interactiveInsets.top;
   const contentBottom = appViewport.interactiveInsets.bottom;
 
-  // All WhatsApp UI is authored for a 393pt design width. Renderer scales it.
-  const scale = w / DESIGN_WIDTH;
-  const px = (v: number) => v * scale;
   const device = world.devices[activeDeviceId];
   if (!device) {
-    throw new Error(`WHATSAPP_LAYOUT_DEVICE_MISSING: "${activeDeviceId}" is not in world state.`);
+    throw new Error(
+      `WHATSAPP_LAYOUT_DEVICE_MISSING: "${activeDeviceId}" is not in world state.`,
+    );
   }
   const state = requireAppStateForDevice<WhatsAppState>(
     world,
@@ -56,7 +70,7 @@ export function computeFeedLayout(ctx: LayoutContext): FeedLayoutState {
     screen === "communities" ||
     screen === "settings";
 
-  const tabBarH = hasTabBar ? px(waSpacing.tabBarHeight) + contentBottom : 0;
+  const tabBarH = hasTabBar ? waSpacing.tabBarHeight + contentBottom : 0;
   const tabBarY = Math.max(0, h - tabBarH);
 
   const headerH = (() => {
@@ -69,11 +83,14 @@ export function computeFeedLayout(ctx: LayoutContext): FeedLayoutState {
       const titleBlock = 54;
       const searchBlock = waSpacing.searchBarHeight + 10;
       const chipsBlock = waSpacing.filterChipHeight + 12;
-      return contentTop + px(waSpacing.navBarHeight + titleBlock + searchBlock + chipsBlock);
+      return (
+        contentTop +
+        (waSpacing.navBarHeight + titleBlock + searchBlock + chipsBlock)
+      );
     }
 
     // Other tab screens use a simple top bar below the platform content inset.
-    return contentTop + px(waSpacing.navBarHeight);
+    return contentTop + waSpacing.navBarHeight;
   })();
 
   const bottomLimit = hasTabBar ? tabBarY : Math.max(0, h - contentBottom);
@@ -100,14 +117,12 @@ export function computeFeedLayout(ctx: LayoutContext): FeedLayoutState {
 
   if (screen === "chats") {
     const visibleConversations = conversations
-      .filter((conv) => !conv.isArchived)
-      .sort((a, b) => {
-        if (a.isPinned && !b.isPinned) return -1;
-        if (!a.isPinned && b.isPinned) return 1;
-        return (b.lastMessageAt ?? 0) - (a.lastMessageAt ?? 0);
-      });
-    const archivedCount = conversations.filter((conv) => conv.isArchived).length;
-    const rowHeight = px(waSpacing.chatListItemHeight);
+      .filter((conv) => matchesChatFilter(conv, state.chatFilter))
+      .sort(compareConversations);
+    const archivedCount = conversations.filter(
+      (conv) => conv.isArchived,
+    ).length;
+    const rowHeight = waSpacing.chatListItemHeight;
     let listY = contentY;
 
     regions.chat_list_header = {
@@ -122,7 +137,7 @@ export function computeFeedLayout(ctx: LayoutContext): FeedLayoutState {
       tags: ["list"],
     };
 
-    if (archivedCount > 0) {
+    if (archivedCount > 0 && state.chatFilter === "all") {
       regions.archived_row = {
         id: "archived_row",
         rect: rect(0, listY, w, rowHeight),
@@ -131,7 +146,7 @@ export function computeFeedLayout(ctx: LayoutContext): FeedLayoutState {
       listY += rowHeight;
     }
 
-    visibleConversations.slice(0, 8).forEach((conv, index) => {
+    visibleConversations.forEach((conv, index) => {
       const rowId = `chat_row_${conv.id}`;
       const rowRect = rect(0, listY + index * rowHeight, w, rowHeight);
       regions[rowId] = {
@@ -142,28 +157,31 @@ export function computeFeedLayout(ctx: LayoutContext): FeedLayoutState {
       };
       regions[`${rowId}_avatar`] = {
         id: `${rowId}_avatar`,
-        rect: rect(px(16), rowRect.y + px(10), px(56), px(56)),
+        rect: rect(16, rowRect.y + 10, 56, 56),
         tags: ["avatar", "chat"],
         metadata: { conversationId: conv.id, index },
       };
       regions[`${rowId}_title`] = {
         id: `${rowId}_title`,
-        rect: rect(px(88), rowRect.y + px(14), px(190), px(20)),
+        rect: rect(88, rowRect.y + 14, 190, 20),
         tags: ["title", "chat"],
         metadata: { conversationId: conv.id, index },
       };
       regions[`${rowId}_preview`] = {
         id: `${rowId}_preview`,
-        rect: rect(px(88), rowRect.y + px(38), px(220), px(18)),
+        rect: rect(88, rowRect.y + 38, 220, 18),
         tags: ["preview", "chat"],
         metadata: { conversationId: conv.id, index },
       };
     });
   } else if (screen === "updates") {
-    const statusSectionTop = contentY + px(34);
-    const statusSectionHeight = px(102);
-    const statusSectionBottom = Math.min(bottomLimit, statusSectionTop + statusSectionHeight);
-    const channelsTop = Math.min(bottomLimit, statusSectionBottom + px(34));
+    const statusSectionTop = contentY + 34;
+    const statusSectionHeight = 102;
+    const statusSectionBottom = Math.min(
+      bottomLimit,
+      statusSectionTop + statusSectionHeight,
+    );
+    const channelsTop = Math.min(bottomLimit, statusSectionBottom + 34);
     const channelsHeight = Math.max(0, bottomLimit - channelsTop);
     const statusAuthors = [
       ...new Map(
@@ -171,13 +189,13 @@ export function computeFeedLayout(ctx: LayoutContext): FeedLayoutState {
           .sort((left, right) => right.postedAt - left.postedAt)
           .map((status) => [status.authorId, status] as const),
       ).values(),
-    ].slice(0, 4);
-    const channels = [...(state.channels ?? [])]
-      .sort((left, right) => {
-        if (left.followed !== right.followed) return left.followed ? -1 : 1;
-        return (right.latestUpdate?.postedAt ?? 0) - (left.latestUpdate?.postedAt ?? 0);
-      })
-      .slice(0, 4);
+    ];
+    const channels = [...(state.channels ?? [])].sort((left, right) => {
+      if (left.followed !== right.followed) return left.followed ? -1 : 1;
+      return (
+        (right.latestUpdate?.postedAt ?? 0) - (left.latestUpdate?.postedAt ?? 0)
+      );
+    });
 
     regions.updates_header = {
       id: "updates_header",
@@ -188,9 +206,9 @@ export function computeFeedLayout(ctx: LayoutContext): FeedLayoutState {
     regions.updates_status_strip = {
       id: "updates_status_strip",
       rect: rect(
-        px(16),
+        16,
         statusSectionTop,
-        w - px(32),
+        w - 32,
         Math.max(0, statusSectionBottom - statusSectionTop),
       ),
       tags: ["list", "status", "updates"],
@@ -206,22 +224,22 @@ export function computeFeedLayout(ctx: LayoutContext): FeedLayoutState {
       tags: ["list", "updates"],
     };
 
-    const statusCardWidth = px(66);
-    const statusGap = px(15);
-    const statusCardY = statusSectionTop + px(4);
-    const statusStartX = px(16);
+    const statusCardWidth = 66;
+    const statusGap = 15;
+    const statusCardY = statusSectionTop + 4;
+    const statusStartX = 16;
     statusAuthors.forEach((status, index) => {
       const cardX = statusStartX + index * (statusCardWidth + statusGap);
       regions[`updates_status_${status.authorId}`] = {
         id: `updates_status_${status.authorId}`,
-        rect: rect(cardX, statusCardY, statusCardWidth, px(90)),
+        rect: rect(cardX, statusCardY, statusCardWidth, 90),
         tags: ["status_card", "updates"],
         metadata: { authorId: status.authorId, index },
       };
     });
 
     const channelRowY = channelsTop;
-    const channelRowHeight = px(78);
+    const channelRowHeight = 78;
     channels.forEach((channel, index) => {
       const baseY = channelRowY + index * channelRowHeight;
       if (baseY + channelRowHeight > bottomLimit) return;
@@ -234,19 +252,19 @@ export function computeFeedLayout(ctx: LayoutContext): FeedLayoutState {
       };
       regions[`${rowId}_avatar`] = {
         id: `${rowId}_avatar`,
-        rect: rect(px(16), baseY + px(13), px(52), px(52)),
+        rect: rect(16, baseY + 13, 52, 52),
         tags: ["avatar", "channel"],
         metadata: { channelId: channel.id, index },
       };
       regions[`${rowId}_text`] = {
         id: `${rowId}_text`,
-        rect: rect(px(79), baseY + px(10), px(210), px(52)),
+        rect: rect(79, baseY + 10, 210, 52),
         tags: ["content", "channel"],
         metadata: { channelId: channel.id, index },
       };
       regions[`${rowId}_cta`] = {
         id: `${rowId}_cta`,
-        rect: rect(w - px(104), baseY + px(24), px(72), px(28)),
+        rect: rect(w - 104, baseY + 24, 72, 28),
         tags: ["cta", "channel"],
         metadata: { channelId: channel.id, index },
       };
@@ -265,14 +283,26 @@ export function computeFeedLayout(ctx: LayoutContext): FeedLayoutState {
     };
     regions.calls_link = {
       id: "calls_link",
-      rect: rect(px(16), contentY + px(14), w - px(32), px(58)),
+      rect: rect(
+        16,
+        contentY + tokens.callLinkMarginTop,
+        w - 32,
+        tokens.callLinkHeight,
+      ),
       tags: ["action", "calls"],
     };
-    const callRowsTop = contentY + px(92);
-    const callRowHeight = px(66);
+    const callRowsTop =
+      contentY +
+      tokens.callLinkMarginTop +
+      tokens.callLinkHeight +
+      tokens.callLinkMarginBottom +
+      tokens.sectionHeaderHeight +
+      (conversations.some((chat) => chat.isFavorite)
+        ? tokens.sectionHeaderHeight + tokens.favoritesHeight
+        : 0);
+    const callRowHeight = tokens.callRowHeight;
     [...(state.callLog ?? [])]
       .sort((left, right) => right.startedAt - left.startedAt)
-      .slice(0, 6)
       .forEach((entry, index) => {
         const rowId = `call_row_${entry.id}`;
         regions[rowId] = {
@@ -296,20 +326,20 @@ export function computeFeedLayout(ctx: LayoutContext): FeedLayoutState {
     };
     regions.communities_new = {
       id: "communities_new",
-      rect: rect(px(16), contentY + px(14), w - px(32), px(70)),
+      rect: rect(16, contentY + 14, w - 32, 70),
       tags: ["action", "community"],
     };
-    const communityTop = contentY + px(110);
-    const communityHeight = px(152);
+    const communityTop = contentY + 110;
+    const communityHeight = 152;
     (state.communities ?? []).slice(0, 3).forEach((community, index) => {
       const rowId = `community_${community.id}`;
       regions[rowId] = {
         id: rowId,
         rect: rect(
-          px(16),
+          16,
           communityTop + index * communityHeight,
-          w - px(32),
-          communityHeight - px(10),
+          w - 32,
+          communityHeight - 10,
         ),
         tags: ["card", "community"],
         metadata: { communityId: community.id, index },
@@ -329,12 +359,12 @@ export function computeFeedLayout(ctx: LayoutContext): FeedLayoutState {
     };
     regions.settings_search = {
       id: "settings_search",
-      rect: rect(px(16), contentY + px(10), w - px(32), px(34)),
+      rect: rect(16, contentY + 10, w - 32, 34),
       tags: ["search", "settings"],
     };
     regions.settings_profile = {
       id: "settings_profile",
-      rect: rect(px(16), contentY + px(52), w - px(32), px(78)),
+      rect: rect(16, contentY + 52, w - 32, 78),
       tags: ["profile", "settings"],
     };
     const settingsRows = [
@@ -348,20 +378,27 @@ export function computeFeedLayout(ctx: LayoutContext): FeedLayoutState {
       "help",
       "invite",
     ] as const;
-    const settingsRowsTop = contentY + px(156);
-    const settingsRowHeight = px(54);
+    const settingsRowsTop = contentY + 156;
+    const settingsRowHeight = 54;
     settingsRows.forEach((row, index) => {
       const rowId = `settings_${row}`;
       regions[rowId] = {
         id: rowId,
-        rect: rect(0, settingsRowsTop + index * settingsRowHeight, w, settingsRowHeight),
+        rect: rect(
+          0,
+          settingsRowsTop + index * settingsRowHeight,
+          w,
+          settingsRowHeight,
+        ),
         tags: ["row", "settings"],
         metadata: { setting: row, index },
       };
     });
   } else if (screen === "profile") {
     const conversationId = state.conversationId;
-    const conversation = conversationId ? (state.conversations ?? {})[conversationId] : undefined;
+    const conversation = conversationId
+      ? (state.conversations ?? {})[conversationId]
+      : undefined;
     const isGroup = conversation?.type === "group";
     const prefix = isGroup ? "group_info" : "profile";
     regions[`${prefix}_header`] = {
@@ -377,26 +414,31 @@ export function computeFeedLayout(ctx: LayoutContext): FeedLayoutState {
     };
     regions[`${prefix}_hero`] = {
       id: `${prefix}_hero`,
-      rect: rect(px(16), contentY + px(12), w - px(32), px(142)),
+      rect: rect(16, contentY + 12, w - 32, 142),
       tags: ["hero", prefix],
     };
     regions[`${prefix}_actions`] = {
       id: `${prefix}_actions`,
-      rect: rect(px(16), contentY + px(112), w - px(32), px(46)),
+      rect: rect(16, contentY + 112, w - 32, 46),
       tags: ["actions", prefix],
     };
     if (isGroup && conversation) {
-      const membersTop = contentY + px(330);
+      const membersTop = contentY + 330;
       regions.group_info_members = {
         id: "group_info_members",
-        rect: rect(px(16), membersTop, w - px(32), Math.max(0, bottomLimit - membersTop)),
+        rect: rect(
+          16,
+          membersTop,
+          w - 32,
+          Math.max(0, bottomLimit - membersTop),
+        ),
         tags: ["list", "members", "group_info"],
       };
       (conversation.members ?? []).slice(0, 6).forEach((member, index) => {
         const rowId = `group_member_${member.id}`;
         regions[rowId] = {
           id: rowId,
-          rect: rect(px(16), membersTop + index * px(58), w - px(32), px(58)),
+          rect: rect(16, membersTop + index * 58, w - 32, 58),
           tags: ["row", "member", "group_info"],
           metadata: { memberId: member.id, index },
         };
@@ -417,10 +459,23 @@ export function computeFeedLayout(ctx: LayoutContext): FeedLayoutState {
     };
   }
 
+  const scrollY = selectScreenScroll(state, ctx.t);
+  for (const region of Object.values(regions)) {
+    if (
+      region.metadata?.sticky ||
+      region.tags?.includes("sticky") ||
+      region.tags?.includes("list") ||
+      ["app", "device", "content"].includes(region.id)
+    )
+      continue;
+    region.rect = { ...region.rect, y: region.rect.y - scrollY };
+  }
   return {
     kind: "FEED",
-    cacheHint: "static",
-    scrollY: 0,
+    cacheHint: state.screenScroll?.[state.currentScreen ?? "chats"]
+      ? undefined
+      : "static",
+    scrollY,
     contentHeight: h,
     isAtBottom: false,
     itemLayouts: {},

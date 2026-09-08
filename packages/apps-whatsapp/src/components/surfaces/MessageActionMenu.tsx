@@ -1,4 +1,9 @@
 import type { ReactNode } from "react";
+import { useLayout } from "@tokovo/react";
+import type { ChatLayoutState } from "@tokovo/core";
+import type { WhatsAppMessage } from "../../types/index.js";
+import { messageActionKeys } from "../../presentation/message-actions.js";
+import { WHATSAPP_INTERACTION_TOKENS as tokens } from "../../theme/index.js";
 import { Copy, Forward, Info, Reply, Star, Trash2 } from "lucide-react";
 import {
   useTheme,
@@ -23,53 +28,56 @@ const ACTIONS: ReadonlyArray<{
   },
 ];
 
-export function MessageActionMenu({ messageId }: { messageId: string }) {
+export function MessageActionMenu({ message }: { message: WhatsAppMessage }) {
   const theme = useTheme();
   const { t } = useWhatsAppLocale();
+  const layout = useLayout<ChatLayoutState>();
+  const rect = layout?.semantic?.regions.message_actions?.rect;
+  if (!rect) return null;
+  const available = new Set<string>(messageActionKeys(message));
   return (
     <div
       data-cinematic-subject="message_actions"
-      data-message-id={messageId}
+      data-message-id={message.id}
       role="menu"
       aria-label={t("a11y.messageActions")}
       style={{
         position: "absolute",
-        left: 16,
-        right: 16,
-        bottom: theme.spacing.inputAreaHeight + 46,
+        left: rect.x,
+        top: rect.y,
+        width: rect.width,
+        height: rect.height,
+        overflow: "hidden",
         zIndex: 30,
         display: "grid",
-        gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
-        gap: 1,
-        padding: 8,
+        gridAutoRows: "1fr",
         border: `0.5px solid ${theme.colors.divider}`,
-        borderRadius: 16,
+        borderRadius: tokens.menuRadius,
         color: theme.colors.receivedBubbleText,
         backgroundColor: theme.colors.background,
-        boxShadow: "0 12px 36px rgba(0,0,0,0.24)",
+        boxShadow: theme.colors.reactionShadow,
         fontFamily: theme.typography.fontFamily,
       }}
     >
-      {ACTIONS.map((action) => (
+      {ACTIONS.filter((action) => available.has(action.key)).map((action) => (
         <button
           key={action.key}
           type="button"
           role="menuitem"
           aria-label={t(action.key)}
           style={{
-            minHeight: 52,
+            minHeight: 0,
+            paddingInline: tokens.surfaceMargin,
             display: "flex",
-            flexDirection: "column",
+            flexDirection: "row-reverse",
             alignItems: "center",
-            justifyContent: "center",
+            justifyContent: "space-between",
             gap: 5,
-            borderRadius: 10,
             color: action.destructive
-              ? "#D92D20"
+              ? theme.colors.callCardMissed
               : theme.colors.receivedBubbleText,
-            backgroundColor: theme.colors.surfaceMuted,
-            fontSize: 11,
-            fontWeight: 600,
+            backgroundColor: theme.colors.background,
+            ...theme.uiTypography.body,
             border: 0,
             fontFamily: "inherit",
           }}

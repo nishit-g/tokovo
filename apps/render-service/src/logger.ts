@@ -14,12 +14,28 @@ function shouldUseConsoleFromEnv(): boolean {
   );
 }
 
+export interface RenderProgressEvent {
+  readonly level: "info" | "warn" | "error";
+  readonly event: string;
+  readonly message: string;
+  readonly data?: Readonly<Record<string, unknown>>;
+}
+
 export class RenderLogger {
   #logger: TokovoLogger;
   #log: ReturnType<typeof createScopedLogger>;
   #sinkPath: string;
+  #onProgress?: (
+    event: RenderProgressEvent,
+  ) => void | Promise<void>;
 
-  constructor(filePath: string, baseData: Record<string, unknown> = {}) {
+  constructor(
+    filePath: string,
+    baseData: Record<string, unknown> = {},
+    onProgress?: (
+      event: RenderProgressEvent,
+    ) => void | Promise<void>,
+  ) {
     const sinkPath = process.env.TOKOVO_LOG_PATH ?? filePath;
     this.#sinkPath = sinkPath;
     const loggerConfig = configureLoggerFromEnv(process.env);
@@ -29,6 +45,7 @@ export class RenderLogger {
     });
     this.#logger.addSink(createNdjsonFileSink(sinkPath));
     this.#log = createScopedLogger("render-service", this.#logger).withContext(baseData);
+    this.#onProgress = onProgress;
   }
 
   async init(): Promise<void> {
@@ -51,15 +68,18 @@ export class RenderLogger {
 
     if (level === "info") {
       this.#log.info(message, payload);
-      return;
-    }
-
-    if (level === "warn") {
+    } else if (level === "warn") {
       this.#log.warn(message, payload);
-      return;
+    } else {
+      this.#log.error(message, undefined, payload);
     }
 
-    this.#log.error(message, undefined, payload);
+    await this.#onProgress?.({
+      level,
+      event,
+      message,
+      data,
+    });
   }
 
   async info(event: string, message: string, data?: Record<string, unknown>): Promise<void> {

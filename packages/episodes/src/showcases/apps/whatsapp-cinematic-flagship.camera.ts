@@ -1,10 +1,9 @@
 import {
   cameraSubject,
   cinematicProgram,
-  type CinematicPlanBuilder,
-  type CinematicShotBuilder,
+  cinematicShot as shot,
+  type CinematicPlanFamilyDefinition,
 } from "@tokovo/dsl";
-import type { CinematicSubjectRefIR } from "@tokovo/ir";
 import { solveEditorialOverlayViewport } from "@tokovo/visual-system";
 
 const FPS = 30;
@@ -14,343 +13,317 @@ const NOTIFICATION_HANDOFF = "notification-handoff";
 const CALLS_PIP = "calls-pip";
 const IOS = "creator_ios";
 const ANDROID = "launch_android";
-const APP = "app_whatsapp";
-const NOTIFICATION_VIEWPORT = solveEditorialOverlayViewport({
+const ios = cameraSubject.scope(IOS, "app_whatsapp");
+const android = cameraSubject.scope(ANDROID, "app_whatsapp");
+const split = cameraSubject.group(ios.body, android.body);
+const pipViewport = solveEditorialOverlayViewport({
   canvas: { width: 1080, height: 1920 },
   overlay: { width: 330, height: 580 },
   compositionProfileId: "handoff-pip",
   protectedRegions: [{ x: 90, y: 240, width: 560, height: 1440 }],
 });
-const CALLS_PIP_VIEWPORT = solveEditorialOverlayViewport({
-  canvas: { width: 1080, height: 1920 },
-  overlay: { width: 330, height: 580 },
-  compositionProfileId: "handoff-pip",
-  protectedRegions: [{ x: 90, y: 240, width: 560, height: 1440 }],
-});
+const target = {
+  iosHeader: ios.semantic("header"),
+  iosCommand: ios.entity("message", "ios_command", "bubble"),
+  iosActions: ios.semantic("message_actions"),
+  iosReply: ios.semantic("last-message"),
+  iosProof: ios.entity("message", "ios_proof", "media"),
+  androidNotification: android.device("notification.banner"),
+  androidResponse: android.entity("message", "ar_velocity", "bubble"),
+  iosVideo: ios.entity("message", "ios_video", "media"),
+};
 
-const body = (deviceId: string): CinematicSubjectRefIR => cameraSubject.device(deviceId, "body");
-const screen = (deviceId: string): CinematicSubjectRefIR =>
-  cameraSubject.device(deviceId, "screen");
-const keyboard = (deviceId: string): CinematicSubjectRefIR =>
-  cameraSubject.device(deviceId, "keyboard");
-const notification = (deviceId: string): CinematicSubjectRefIR =>
-  cameraSubject.device(deviceId, "notification.banner");
-const semantic = (deviceId: string, subjectId: string): CinematicSubjectRefIR =>
-  cameraSubject.semantic(deviceId, APP, subjectId);
-const message = (deviceId: string, entityId: string): CinematicSubjectRefIR =>
-  cameraSubject.entity(deviceId, APP, "message", entityId, "bubble");
-const messageMedia = (deviceId: string, entityId: string): CinematicSubjectRefIR =>
-  cameraSubject.entity(deviceId, APP, "message", entityId, "media");
-
-const split = cameraSubject.group(body(IOS), body(ANDROID));
-
-function frame(
-  shot: CinematicShotBuilder,
-  target: CinematicSubjectRefIR,
-  options: {
-    position?: readonly [number, number];
-    fill?: number;
-    mode?: "contain" | "cover" | "width" | "height";
-    min?: number;
-    max?: number;
-    padding?: number;
-  } = {},
-): CinematicShotBuilder {
-  return shot.target(target).frame({
-    screenPosition: options.position ?? [0.5, 0.5],
-    targetFill: options.fill ?? 0.82,
-    fillMode: options.mode ?? "contain",
-    paddingPx: options.padding ?? 28,
-    minScale: options.min ?? 0.32,
-    maxScale: options.max ?? 1.5,
-  });
-}
-
-function outputs(camera: CinematicPlanBuilder): void {
-  camera
-    .output(MAIN, {
+const direction = {
+  plans: [{ id: "restrained" }, { id: "kinetic", default: true }],
+  look: {
+    lenses: {
+      "arrival-barrel": {
+        model: "wide-angle-barrel",
+        center: [0.5, 0.34],
+        strength: 0.075,
+        radius: 1.15,
+        cropCompensation: 1.025,
+      },
+      "typing-fisheye": {
+        model: "fisheye",
+        center: [0.5, 0.72],
+        strength: 0.1,
+        radius: 1.18,
+        cropCompensation: 1.04,
+      },
+      "horizontal-stretch": {
+        model: "anamorphic-edge-stretch",
+        axis: "horizontal",
+        strength: 0.1,
+        edgeStart: 0.74,
+        cropCompensation: 1.03,
+      },
+      "vertical-stretch": {
+        model: "anamorphic-edge-stretch",
+        axis: "vertical",
+        strength: 0.07,
+        edgeStart: 0.8,
+        cropCompensation: 1.02,
+      },
+    },
+    modifiers: {
+      breathing: {
+        model: "lens-breathing",
+        amount: 0.004,
+        periodFrames: 150,
+      },
+    },
+    filters: {
+      studio: {
+        model: "color-grade",
+        brightness: -0.015,
+        contrast: 1.07,
+        saturation: 0.95,
+        gamma: 0.99,
+        temperature: -0.06,
+        tint: 0.02,
+      },
+      proof: {
+        model: "color-grade",
+        brightness: 0.01,
+        contrast: 1.12,
+        saturation: 1.05,
+        gamma: 1.01,
+        temperature: 0.04,
+        tint: 0.01,
+      },
+    },
+  },
+  framings: {
+    split: { fill: 0.88, max: 1, padding: 42 },
+    iosHeader: {
+      position: [0.65, 0.24],
+      fill: 0.72,
+      mode: "width",
+      min: 0.45,
+      max: 1.2,
+    },
+    iosKeyboard: {
+      position: [0.65, 0.72],
+      fill: 0.86,
+      mode: "width",
+      min: 0.48,
+      max: 1.28,
+    },
+    iosMessage: {
+      position: [0.65, 0.6],
+      fill: 0.62,
+      mode: "width",
+      min: 0.5,
+      max: 1.4,
+    },
+    iosActions: {
+      position: [0.65, 0.48],
+      fill: 0.74,
+      mode: "width",
+      min: 0.5,
+      max: 1.35,
+    },
+    iosProof: {
+      position: [0.65, 0.52],
+      fill: 0.72,
+      min: 0.5,
+      max: 1.4,
+    },
+    androidNotification: {
+      position: [0.34, 0.2],
+      fill: 0.7,
+      mode: "width",
+      min: 0.45,
+      max: 2.4,
+    },
+    androidMessage: {
+      position: [0.35, 0.58],
+      fill: 0.62,
+      mode: "width",
+      min: 0.48,
+      max: 1.4,
+    },
+    iosVideo: {
+      position: [0.65, 0.5],
+      fill: 0.74,
+      min: 0.45,
+      max: 1.4,
+    },
+    callsMain: { position: [0.36, 0.5], fill: 0.92, max: 2.2 },
+    pip: { position: [0.44, 0.5], fill: 0.92, max: 1, padding: 18 },
+  },
+  outputs: [
+    {
+      id: MAIN,
       viewport: { x: 0, y: 0, width: 1080, height: 1920 },
-      defaultRigId: "split-neutral",
       coveragePolicy: "require-shots",
       compositionProfileId: "hero-device",
-    })
-    .output(NOTIFICATION_HANDOFF, {
-      viewport: NOTIFICATION_VIEWPORT,
-      zIndex: 20,
-      clipRadiusPx: 42,
-      shadow: { offsetX: 0, offsetY: 18, blurPx: 34, opacity: 0.5 },
-      defaultRigId: "notification-hidden",
-      compositionProfileId: "handoff-pip",
-    })
-    .output(CALLS_PIP, {
-      viewport: CALLS_PIP_VIEWPORT,
-      zIndex: 20,
-      clipRadiusPx: 42,
-      shadow: { offsetX: 0, offsetY: 18, blurPx: 34, opacity: 0.5 },
-      defaultRigId: "calls-pip-hidden",
-      compositionProfileId: "handoff-pip",
-    })
-    .rig("split-neutral", {
-      outputId: MAIN,
-      subject: split,
-      composer: {
-        screenPosition: [0.5, 0.5],
-        targetFill: 0.88,
-        fillMode: "contain",
-        paddingPx: 42,
-        minScale: 0.35,
-        maxScale: 1,
-      },
-      framingGuard: {
+      travel: {
+        mode: "stabilized",
         subject: split,
-        paddingPx: 42,
-        screenPosition: [0.5, 0.5],
+        maxDriftPx: [58, 72],
       },
-      motion: { type: "minimum-jerk", durationFrames: 24 },
-    })
-    .rig("notification-hidden", {
+      defaultRig: {
+        id: "split-neutral",
+        subject: split,
+        frame: { fill: 0.88, padding: 42, min: 0.35, max: 1 },
+        framingGuard: {
+          subject: split,
+          paddingPx: 42,
+          screenPosition: [0.5, 0.5],
+        },
+        motion: { type: "minimum-jerk", durationFrames: 24 },
+      },
+    },
+    {
+      id: NOTIFICATION_HANDOFF,
+      viewport: pipViewport,
+      zIndex: 20,
+      clipRadiusPx: 42,
+      shadow: { offsetX: 0, offsetY: 18, blurPx: 34, opacity: 0.5 },
+      compositionProfileId: "handoff-pip",
+      travel: {
+        mode: "stabilized",
+        subject: ios.body,
+        maxDriftPx: [18, 22],
+      },
+      defaultRig: {
+        id: "notification-hidden",
+        subject: ios.body,
+        frame: { fill: 0.9, padding: 18, min: 0.25, max: 1 },
+        opacity: 0,
+        motion: { type: "cut" },
+      },
+    },
+    {
+      id: CALLS_PIP,
+      viewport: pipViewport,
+      zIndex: 20,
+      clipRadiusPx: 42,
+      shadow: { offsetX: 0, offsetY: 18, blurPx: 34, opacity: 0.5 },
+      compositionProfileId: "handoff-pip",
+      travel: {
+        mode: "stabilized",
+        subject: android.body,
+        maxDriftPx: [18, 22],
+      },
+      defaultRig: {
+        id: "calls-pip-hidden",
+        subject: android.body,
+        frame: { fill: 0.9, padding: 18, min: 0.25, max: 1 },
+        opacity: 0,
+        motion: { type: "cut" },
+      },
+    },
+  ],
+  sequences: [
+    {
+      outputId: MAIN,
+      end: DURATION,
+      defaults: {
+        frame: {
+          position: [0.5, 0.5],
+          fill: 0.82,
+          mode: "contain",
+          padding: 28,
+          min: 0.32,
+          max: 1.5,
+        },
+        filters: ["studio"],
+      },
+      shots: [
+        shot("two-device-open", 60, split).frame("split").dollyIn(32, { amount: 0.12 }),
+        shot("ios-header-arrival", 61, target.iosHeader)
+          .frame("iosHeader")
+          .fallback(ios.body)
+          .dollyIn(18, { amount: 0.16 })
+          .when("kinetic", { lens: "arrival-barrel" }),
+        shot("ios-typing-lens", 65, ios.keyboard)
+          .frame("iosKeyboard")
+          .fallback(ios.semantic("input_area"))
+          .truckLeft(16, 0.015)
+          .when("kinetic", { lens: "typing-fisheye" }),
+        shot("ios-command-arrival", 84, target.iosCommand)
+          .frame("iosMessage")
+          .fallback(ios.screen)
+          .dollyOut(18, { amount: 0.08 }),
+        shot("ios-gesture-action", 90, target.iosActions)
+          .frame("iosActions")
+          .fallback(ios.entity("message", "ios_velocity", "bubble"))
+          .settle(18)
+          .when("kinetic", { motion: { kind: "whip", direction: "right", duration: 12 } }),
+        shot("ios-reply", 120, target.iosReply)
+          .frame("iosMessage")
+          .fallback(ios.screen)
+          .dollyOut(22, { amount: 0.1 }),
+        shot("ios-media-proof", 90, target.iosProof)
+          .frame("iosProof")
+          .fallback(ios.screen)
+          .filters("proof")
+          .dollyIn(20, { amount: 0.12 }),
+        shot("android-notification-handoff", 30, target.androidNotification)
+          .frame("androidNotification")
+          .fallback(android.body)
+          .cut()
+          .when("kinetic", { motion: { kind: "whip", direction: "left", duration: 12 } }),
+        shot("android-response", 135, target.androidResponse)
+          .frame("androidMessage")
+          .fallback(android.screen)
+          .dollyIn(20, { amount: 0.14 })
+          .when("kinetic", { lens: "horizontal-stretch" }),
+        shot("split-proof", 45, split).frame("split").dollyOut(22, { amount: 0.12 }),
+        shot("ios-video", 132, target.iosVideo)
+          .frame("iosVideo")
+          .fallback(ios.screen)
+          .filters("proof")
+          .dollyIn(24, { amount: 0.12 })
+          .when("kinetic", { lens: "vertical-stretch" }),
+        shot("calls-pip-main", 54, ios.body).frame("callsMain").settle(18),
+        shot("two-device-final", 114, split).frame("split").dollyOut(28, { amount: 0.1 }),
+      ],
+    },
+    {
       outputId: NOTIFICATION_HANDOFF,
-      subject: body(IOS),
-      composer: {
-        screenPosition: [0.5, 0.5],
-        targetFill: 0.9,
-        fillMode: "contain",
-        paddingPx: 18,
-        minScale: 0.25,
-        maxScale: 1,
+      start: 570,
+      end: 600,
+      defaults: {
+        frame: {
+          position: [0.5, 0.5],
+          fill: 0.82,
+          mode: "contain",
+          padding: 28,
+          min: 0.32,
+          max: 1.5,
+        },
+        filters: ["studio"],
       },
-      opacity: 0,
-      motion: { type: "cut" },
-    })
-    .rig("calls-pip-hidden", {
+      shots: [
+        shot("notification-source-context", 30, ios.body)
+          .frame("pip")
+          .opacity(0.98)
+          .dollyIn(14, { amount: 0.06 }),
+      ],
+    },
+    {
       outputId: CALLS_PIP,
-      subject: body(ANDROID),
-      composer: {
-        screenPosition: [0.5, 0.5],
-        targetFill: 0.9,
-        fillMode: "contain",
-        paddingPx: 18,
-        minScale: 0.25,
-        maxScale: 1,
+      start: 912,
+      end: 966,
+      defaults: {
+        frame: {
+          position: [0.5, 0.5],
+          fill: 0.82,
+          mode: "contain",
+          padding: 28,
+          min: 0.32,
+          max: 1.5,
+        },
+        filters: ["studio"],
       },
-      opacity: 0,
-      motion: { type: "cut" },
-    });
-}
-
-function optics(camera: CinematicPlanBuilder): void {
-  camera
-    .lens("arrival-barrel", "wide-angle-barrel", {
-      center: [0.5, 0.34],
-      strength: 0.075,
-      radius: 1.15,
-      cropCompensation: 1.025,
-    })
-    .lens("typing-fisheye", "fisheye", {
-      center: [0.5, 0.72],
-      strength: 0.1,
-      radius: 1.18,
-      cropCompensation: 1.04,
-    })
-    .lens("horizontal-stretch", "anamorphic-edge-stretch", {
-      axis: "horizontal",
-      strength: 0.1,
-      edgeStart: 0.74,
-      cropCompensation: 1.03,
-    })
-    .lens("vertical-stretch", "anamorphic-edge-stretch", {
-      axis: "vertical",
-      strength: 0.07,
-      edgeStart: 0.8,
-      cropCompensation: 1.02,
-    })
-    .modifier("breathing", "lens-breathing", {
-      amount: 0.004,
-      periodFrames: 150,
-    })
-    .filter("studio", "color-grade", {
-      brightness: -0.015,
-      contrast: 1.07,
-      saturation: 0.95,
-      gamma: 0.99,
-      temperature: -0.06,
-      tint: 0.02,
-    })
-    .filter("proof", "color-grade", {
-      brightness: 0.01,
-      contrast: 1.12,
-      saturation: 1.05,
-      gamma: 1.01,
-      temperature: 0.04,
-      tint: 0.01,
-    });
-}
-
-function direction(camera: CinematicPlanBuilder, kinetic: boolean): void {
-  camera
-    .shot("two-device-open", MAIN, 0, 60, (shot) => {
-      frame(shot, split, { fill: 0.88, max: 1, padding: 42 })
-        .filters("studio")
-        .dollyIn({ duration: 32, toFill: 0.88, amount: 0.12 });
-    })
-    .shot("ios-header-arrival", MAIN, 60, 121, (shot) => {
-      frame(shot, semantic(IOS, "header"), {
-        position: [0.65, 0.24],
-        fill: 0.72,
-        mode: "width",
-        min: 0.45,
-        max: 1.2,
-      })
-        .fallback(body(IOS))
-        .filters("studio")
-        .dollyIn({ duration: 18, toFill: 0.72, amount: 0.16 });
-      if (kinetic) shot.lens("arrival-barrel");
-    })
-    .shot("ios-typing-lens", MAIN, 121, 186, (shot) => {
-      frame(shot, keyboard(IOS), {
-        position: [0.65, 0.72],
-        fill: 0.86,
-        mode: "width",
-        min: 0.48,
-        max: 1.28,
-      })
-        .fallback(semantic(IOS, "input_area"))
-        .filters("studio")
-        .truckLeft({ duration: 16, amount: 0.015 });
-      if (kinetic) shot.lens("typing-fisheye");
-    })
-    .shot("ios-command-arrival", MAIN, 186, 270, (shot) => {
-      frame(shot, message(IOS, "ios_command"), {
-        position: [0.65, 0.6],
-        fill: 0.62,
-        mode: "width",
-        min: 0.5,
-        max: 1.4,
-      })
-        .fallback(screen(IOS))
-        .filters("studio")
-        .dollyOut({ duration: 18, toFill: 0.62, amount: 0.08 });
-    })
-    .shot("ios-gesture-action", MAIN, 270, 360, (shot) => {
-      frame(shot, semantic(IOS, "message_actions"), {
-        position: [0.65, 0.48],
-        fill: 0.74,
-        mode: "width",
-        min: 0.5,
-        max: 1.35,
-      })
-        .fallback(message(IOS, "ios_velocity"))
-        .filters("studio");
-      if (kinetic) shot.whip("right", 12);
-      else shot.settle(18);
-    })
-    .shot("ios-reply", MAIN, 360, 480, (shot) => {
-      frame(shot, semantic(IOS, "last-message"), {
-        position: [0.65, 0.6],
-        fill: 0.62,
-        mode: "width",
-        min: 0.5,
-        max: 1.4,
-      })
-        .fallback(screen(IOS))
-        .filters("studio")
-        .dollyOut({ duration: 22, toFill: 0.62, amount: 0.1 });
-    })
-    .shot("ios-media-proof", MAIN, 480, 570, (shot) => {
-      frame(shot, messageMedia(IOS, "ios_proof"), {
-        position: [0.65, 0.52],
-        fill: 0.72,
-        mode: "contain",
-        min: 0.5,
-        max: 1.4,
-      })
-        .fallback(screen(IOS))
-        .filters("proof")
-        .dollyIn({ duration: 20, toFill: 0.72, amount: 0.12 });
-    })
-    .shot("android-notification-handoff", MAIN, 570, 600, (shot) => {
-      frame(shot, notification(ANDROID), {
-        position: [0.34, 0.2],
-        fill: 0.7,
-        mode: "width",
-        min: 0.45,
-        max: 2.4,
-      })
-        .fallback(body(ANDROID))
-        .filters("studio");
-      if (kinetic) shot.whip("left", 12);
-      else shot.cut();
-    })
-    .shot("android-response", MAIN, 600, 735, (shot) => {
-      frame(shot, message(ANDROID, "ar_velocity"), {
-        position: [0.35, 0.58],
-        fill: 0.62,
-        mode: "width",
-        min: 0.48,
-        max: 1.4,
-      })
-        .fallback(screen(ANDROID))
-        .filters("studio")
-        .dollyIn({ duration: 20, toFill: 0.62, amount: 0.14 });
-      if (kinetic) shot.lens("horizontal-stretch");
-    })
-    .shot("split-proof", MAIN, 735, 780, (shot) => {
-      frame(shot, split, { fill: 0.88, max: 1, padding: 42 })
-        .filters("studio")
-        .dollyOut({ duration: 22, toFill: 0.88, amount: 0.12 });
-    })
-    .shot("ios-video", MAIN, 780, 912, (shot) => {
-      frame(shot, messageMedia(IOS, "ios_video"), {
-        position: [0.65, 0.5],
-        fill: 0.74,
-        mode: "contain",
-        min: 0.45,
-        max: 1.4,
-      })
-        .fallback(screen(IOS))
-        .filters("proof")
-        .dollyIn({ duration: 24, toFill: 0.74, amount: 0.12 });
-      if (kinetic) shot.lens("vertical-stretch");
-    })
-    .shot("calls-pip-main", MAIN, 912, 966, (shot) => {
-      frame(shot, body(IOS), { position: [0.36, 0.5], fill: 0.92, max: 2.2 })
-        .filters("studio")
-        .settle(18);
-    })
-    .shot("two-device-final", MAIN, 966, DURATION, (shot) => {
-      frame(shot, split, { fill: 0.88, max: 1, padding: 42 })
-        .filters("studio")
-        .dollyOut({ duration: 28, toFill: 0.88, amount: 0.1 });
-    })
-    .shot("notification-source-context", NOTIFICATION_HANDOFF, 570, 600, (shot) =>
-      frame(shot, body(IOS), {
-        position: [0.44, 0.5],
-        fill: 0.92,
-        max: 1,
-        padding: 18,
-      })
-        .filters("studio")
-        .opacity(0.98)
-        .dollyIn({ duration: 14, toFill: 0.92, amount: 0.06 }),
-    )
-    .shot("calls-pip", CALLS_PIP, 912, 966, (shot) =>
-      frame(shot, body(ANDROID), {
-        position: [0.44, 0.5],
-        fill: 0.92,
-        max: 1,
-        padding: 18,
-      })
-        .filters("studio")
-        .opacity(0.98)
-        .settle(16),
-    );
-}
-
-function plan(camera: CinematicPlanBuilder, kinetic: boolean): void {
-  outputs(camera);
-  optics(camera);
-  direction(camera, kinetic);
-}
+      shots: [shot("calls-pip", 54, android.body).frame("pip").opacity(0.98).settle(16)],
+    },
+  ],
+} satisfies CinematicPlanFamilyDefinition;
 
 export const whatsappCinematicFlagship = cinematicProgram(
   {
@@ -360,7 +333,14 @@ export const whatsappCinematicFlagship = cinematicProgram(
       width: 1080,
       height: 1920,
       devices: [
-        { deviceId: IOS, x: 70, y: 510, width: 420, height: 889, zIndex: 10 },
+        {
+          deviceId: IOS,
+          x: 70,
+          y: 510,
+          width: 420,
+          height: 889,
+          zIndex: 10,
+        },
         {
           deviceId: ANDROID,
           x: 650,
@@ -373,8 +353,6 @@ export const whatsappCinematicFlagship = cinematicProgram(
     },
   },
   (cinema) => {
-    cinema
-      .plan("restrained", (camera) => plan(camera, false))
-      .plan("kinetic", (camera) => plan(camera, true), { default: true });
+    cinema.planFamily(direction);
   },
 );

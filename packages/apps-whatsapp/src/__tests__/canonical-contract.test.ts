@@ -9,7 +9,11 @@ import {
 import { whatsappV2Lowering } from "../lowering/v2/handler.js";
 import { createWhatsAppInitialState } from "../runtime/initial-state.js";
 import { whatsappReducer } from "../runtime/reducer.js";
-import { selectAppState } from "../runtime/selectors.js";
+import {
+  selectAppState,
+  selectScreenScroll,
+  matchesChatFilter,
+} from "../runtime/selectors.js";
 import { parseWhatsAppEventStrict } from "../schemas/events.js";
 
 function world(): WorldState {
@@ -46,6 +50,44 @@ function reduceTrack(
 }
 
 describe("WhatsApp canonical authoring contract", () => {
+  it("keeps device chrome legible in media and restores it on close", () => {
+    let order = 0;
+    const open = new WhatsAppTrackBuilder(30, "phone", "dm", () => order++);
+    open
+      .at("0s")
+      .receiveImage("Ava", "/media/launch-board.svg", { messageId: "photo" });
+    open.at("1s").openMediaViewer("photo");
+    const opened = reduceTrack(world(), open);
+    expect(selectAppState(opened, "phone")?.statusBarTheme).toBe("dark");
+    const close = new WhatsAppTrackBuilder(30, "phone", "dm", () => order++);
+    close.at("2s").closeMediaViewer();
+    const closed = selectAppState(reduceTrack(opened, close), "phone");
+    expect(closed?.statusBarTheme).toBeUndefined();
+    expect(closed?.mediaViewer).toBeNull();
+    expect(closed?.closingMediaViewer?.closedAt).toBe(60);
+  });
+  it("authors deterministic screen scrolling and keeps favorites separate from pinning", () => {
+    let order = 0;
+    const track = new WhatsAppTrackBuilder(30, "phone", "dm", () => order++);
+    track.at("1s").scrollScreen("calls", 200, "1s");
+    const state = selectAppState(reduceTrack(world(), track), "phone")!;
+    expect(selectScreenScroll(state, 30)).toBe(0);
+    expect(selectScreenScroll(state, 45)).toBe(175);
+    expect(selectScreenScroll(state, 60)).toBe(200);
+    expect(selectScreenScroll(state, 45)).toBe(175);
+    expect(
+      matchesChatFilter(
+        { id: "pinned", isPinned: true, messages: [] },
+        "favorites",
+      ),
+    ).toBe(false);
+    expect(
+      matchesChatFilter(
+        { id: "favorite", isFavorite: true, messages: [] },
+        "favorites",
+      ),
+    ).toBe(true);
+  });
   it("fails loudly when runtime state or conversation bootstrap is missing", () => {
     const event = {
       at: 0,
@@ -66,7 +108,9 @@ describe("WhatsApp canonical authoring contract", () => {
         } as WorldState,
         event,
       ),
-    ).toThrow('APP_INSTANCE_MISSING: app "app_whatsapp" is not mounted on device "phone"');
+    ).toThrow(
+      'APP_INSTANCE_MISSING: app "app_whatsapp" is not mounted on device "phone"',
+    );
     expect(() => reduce(world(), event)).toThrow(
       'unknown conversation "missing"',
     );

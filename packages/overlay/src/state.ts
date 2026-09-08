@@ -5,6 +5,7 @@ export type OverlayVariant =
   | "caption"
   | "receipt"
   | "reactionGif"
+  | "performer"
   | "cliffhanger";
 
 export type OverlayPlacementPreset =
@@ -27,6 +28,9 @@ export interface OverlayItem {
   preset?: OverlayPlacementPreset;
   xPct?: number;
   yPct?: number;
+  widthPct?: number;
+  flipX?: boolean;
+  performerMotion?: "hold" | "duck";
   intensity?: number;
 }
 
@@ -48,6 +52,8 @@ export function getDefaultDurationFrames(variant: OverlayVariant): number {
       return 120; // 4s
     case "reactionGif":
       return 90; // 3s
+    case "performer":
+      return 120; // 4s
     case "cliffhanger":
       return 150; // 5s
     default:

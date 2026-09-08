@@ -456,7 +456,9 @@ export const DynamicIslandSurface = React.memo(function DynamicIslandSurface({
           borderRadius: geometry.cornerRadius,
           ...(minimalActivity
             ? { background: "transparent" }
-            : materialToPaintStyle(projection.visuals.islandMaterial, scale)),
+            : projection.phase === "idle"
+              ? { background: "#000000" }
+              : materialToPaintStyle(projection.visuals.islandMaterial, scale)),
           overflow: "visible",
           contain: "layout style",
           transform: "translate3d(0,0,0)",

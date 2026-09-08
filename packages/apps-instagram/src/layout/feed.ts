@@ -11,24 +11,23 @@ import {
   estimateInstagramPostHeight,
   getInstagramMediaHeight,
 } from "../feed-metrics.js";
-import { buildSemantic, createPx, rect } from "./shared.js";
+import { buildSemantic, rect } from "./shared.js";
 
 export function computeInstagramFeedLayout(ctx: LayoutContext): FeedLayoutState {
   const { viewportWidth: w, viewportHeight: h, appViewport, world } = ctx;
   const contentTop = appViewport.interactiveInsets.top;
   const contentBottom = appViewport.interactiveInsets.bottom;
-  const px = createPx(w);
   const state = requireAppStateForDevice<InstagramState>(
     world,
     "app_instagram",
     ctx.activeDeviceId,
   );
   const screen = state.currentScreen ?? "home";
-  const headerH = contentTop + px(instagramSpacing.headerHeight);
-  const navH = px(instagramSpacing.tabBarHeight);
+  const headerH = contentTop + instagramSpacing.headerHeight;
+  const navH = instagramSpacing.tabBarHeight;
   const hasBottomNav = screen === "home" || screen === "notifications" || screen === "profile";
   const navY = hasBottomNav ? h - contentBottom - navH : h - contentBottom;
-  const screenPad = px(instagramSpacing.screenPadding);
+  const screenPad = instagramSpacing.screenPadding;
   const feedY = headerH;
   const feedH = Math.max(0, navY - feedY);
   const regions: Record<string, SemanticRegion> = {
@@ -50,7 +49,7 @@ export function computeInstagramFeedLayout(ctx: LayoutContext): FeedLayoutState 
     for (const comment of state.comments ?? []) {
       commentCounts.set(comment.postId, (commentCounts.get(comment.postId) ?? 0) + 1);
     }
-    const storyH = px(instagramSpacing.storyTrayHeight);
+    const storyH = instagramSpacing.storyTrayHeight;
     const activePostId = state.activePostId ?? null;
     const scrollY = computeInstagramFeedScrollY(posts, commentCounts, activePostId, w);
     const contentStartY = headerH - scrollY;
@@ -76,7 +75,7 @@ export function computeInstagramFeedLayout(ctx: LayoutContext): FeedLayoutState 
     for (const post of posts) {
       const postHeight = estimateInstagramPostHeight(post, commentCounts.get(post.id) ?? 0, w);
       const mediaHeight = getInstagramMediaHeight(post, w);
-      if (postY + postHeight >= headerH - px(24) && postY <= navY + px(24) && visibleIndex < 3) {
+      if (postY + postHeight >= headerH - 24 && postY <= navY + 24 && visibleIndex < 3) {
         const regionId = `feed_post_${visibleIndex}`;
         regions[regionId] = {
           id: regionId,
@@ -86,19 +85,19 @@ export function computeInstagramFeedLayout(ctx: LayoutContext): FeedLayoutState 
         };
         regions[`${regionId}_media`] = {
           id: `${regionId}_media`,
-          rect: rect(0, postY + px(56), w, mediaHeight),
+          rect: rect(0, postY + 56, w, mediaHeight),
           tags: ["feed", "post", "media"],
           metadata: { postId: post.id },
         };
         regions[`${regionId}_comments`] = {
           id: `${regionId}_comments`,
-          rect: rect(screenPad, postY + px(56) + mediaHeight + px(52), w - screenPad * 2, px(92)),
+          rect: rect(screenPad, postY + 56 + mediaHeight + 52, w - screenPad * 2, 92),
           tags: ["feed", "post", "comments"],
           metadata: { postId: post.id },
         };
         regions[`${regionId}_actions`] = {
           id: `${regionId}_actions`,
-          rect: rect(screenPad, postY + px(56) + mediaHeight + px(10), w - screenPad * 2, px(30)),
+          rect: rect(screenPad, postY + 56 + mediaHeight + 10, w - screenPad * 2, 30),
           tags: ["feed", "post", "actions"],
           metadata: { postId: post.id },
         };
@@ -111,12 +110,7 @@ export function computeInstagramFeedLayout(ctx: LayoutContext): FeedLayoutState 
           };
           regions.feed_post_focus_comments = {
             id: "feed_post_focus_comments",
-            rect: rect(
-              screenPad,
-              postY + px(56) + mediaHeight + px(52),
-              w - screenPad * 2,
-              px(108),
-            ),
+            rect: rect(screenPad, postY + 56 + mediaHeight + 52, w - screenPad * 2, 108),
             tags: ["feed", "post", "comments", "focus"],
             metadata: { postId: post.id },
           };
@@ -129,22 +123,17 @@ export function computeInstagramFeedLayout(ctx: LayoutContext): FeedLayoutState 
     if (visibleIndex === 0) {
       regions.feed_post_0 = {
         id: "feed_post_0",
-        rect: rect(0, headerH + storyH, w, px(540)),
+        rect: rect(0, headerH + storyH, w, 540),
         tags: ["feed", "post"],
       };
       regions.feed_post_0_media = {
         id: "feed_post_0_media",
-        rect: rect(0, headerH + storyH + px(56), w, px(484)),
+        rect: rect(0, headerH + storyH + 56, w, 484),
         tags: ["feed", "post", "media"],
       };
       regions.feed_post_0_actions = {
         id: "feed_post_0_actions",
-        rect: rect(
-          screenPad,
-          headerH + storyH + px(56) + px(484) + px(10),
-          w - screenPad * 2,
-          px(30),
-        ),
+        rect: rect(screenPad, headerH + storyH + 56 + 484 + 10, w - screenPad * 2, 30),
         tags: ["feed", "post", "actions"],
       };
       regions.feed_post_focus = regions.feed_post_0;
@@ -186,7 +175,7 @@ export function computeInstagramFeedLayout(ctx: LayoutContext): FeedLayoutState 
     };
     regions.notifications_row_0 = {
       id: "notifications_row_0",
-      rect: rect(screenPad, feedY + px(12), w - screenPad * 2, px(78)),
+      rect: rect(screenPad, feedY + 12, w - screenPad * 2, 78),
       tags: ["notifications", "row"],
     };
   }
@@ -200,17 +189,17 @@ export function computeInstagramFeedLayout(ctx: LayoutContext): FeedLayoutState 
     };
     regions.inbox_search = {
       id: "inbox_search",
-      rect: rect(screenPad, headerH + px(10), w - screenPad * 2, px(40)),
+      rect: rect(screenPad, headerH + 10, w - screenPad * 2, 40),
       tags: ["inbox", "search"],
     };
     regions.inbox_list = {
       id: "inbox_list",
-      rect: rect(0, headerH + px(60), w, feedH - px(60)),
+      rect: rect(0, headerH + 60, w, feedH - 60),
       tags: ["inbox", "list"],
     };
     regions.dm_row_0 = {
       id: "dm_row_0",
-      rect: rect(screenPad, headerH + px(74), w - screenPad * 2, px(74)),
+      rect: rect(screenPad, headerH + 74, w - screenPad * 2, 74),
       tags: ["dm", "row"],
     };
   }
@@ -218,17 +207,17 @@ export function computeInstagramFeedLayout(ctx: LayoutContext): FeedLayoutState 
   if (screen === "profile") {
     regions.profile_header = {
       id: "profile_header",
-      rect: rect(0, 0, w, headerH + px(180)),
+      rect: rect(0, 0, w, headerH + 180),
       tags: ["profile", "header"],
     };
     regions.profile_grid = {
       id: "profile_grid",
-      rect: rect(0, headerH + px(220), w, Math.max(0, feedH - px(220))),
+      rect: rect(0, headerH + 220, w, Math.max(0, feedH - 220)),
       tags: ["profile", "grid"],
     };
     regions.profile_grid_0 = {
       id: "profile_grid_0",
-      rect: rect(0, headerH + px(224), w / 3, w / 3),
+      rect: rect(0, headerH + 224, w / 3, w / 3),
       tags: ["profile", "grid", "item"],
     };
   }

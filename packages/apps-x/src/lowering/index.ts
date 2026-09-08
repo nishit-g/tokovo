@@ -1,14 +1,6 @@
 import type { RuntimeEvent } from "@tokovo/core";
 import type { NotificationIntentEmitter, TrackEvent } from "@tokovo/ir";
-import type { ZodType } from "zod";
-import {
-  formatXSchemaIssues,
-  xMessageInputSchema,
-  xNotificationInputSchema,
-  xThreadInputSchema,
-  xTweetInputSchema,
-  xUserInputSchema,
-} from "../contract/schemas.js";
+import { parseXAuthoringEventPayload } from "../contract/schemas.js";
 import type { XTrackEvent } from "../types/index.js";
 
 export interface XLoweringHandler {
@@ -42,22 +34,6 @@ function runtimeEvent(
   };
 }
 
-function parseOwnedPayload<T>(
-  type: string,
-  payload: unknown,
-  schema: ZodType<T>,
-): T {
-  const result = schema.safeParse(payload);
-  if (!result.success) {
-    const detail = formatXSchemaIssues(
-      result.error,
-      `track.${type}.payload`,
-    ).join("; ");
-    throw new Error(`X_TRACK_PAYLOAD_INVALID: ${detail}`);
-  }
-  return result.data;
-}
-
 function notificationCopy(type: string): string {
   switch (type) {
     case "mention":
@@ -85,16 +61,11 @@ export const xLowering: XLoweringHandler = {
         "X_EVENT_DEVICE_REQUIRED: lowered X events require deviceId",
       );
     }
+    parseXAuthoringEventPayload(event.type, event.payload);
 
     switch (event.type) {
-      case "USER_CREATE": {
-        const payload = parseOwnedPayload(
-          event.type,
-          event.payload,
-          xUserInputSchema,
-        );
-        return [runtimeEvent(event, "ADD_USER", payload)];
-      }
+      case "USER_CREATE":
+        return [runtimeEvent(event, "ADD_USER", event.payload)];
       case "SET_CURRENT_USER":
         return [runtimeEvent(event, "SET_CURRENT_USER", event.payload)];
       case "FOLLOW_USER":
@@ -103,28 +74,15 @@ export const xLowering: XLoweringHandler = {
         return [runtimeEvent(event, "UNFOLLOW_USER", event.payload)];
       case "TWEET_CREATE":
       case "TWEET_REPLY":
-      case "TWEET_QUOTE": {
-        const payload = parseOwnedPayload(
-          event.type,
-          event.payload,
-          xTweetInputSchema,
-        );
-        return [runtimeEvent(event, "ADD_TWEET", payload)];
-      }
-      case "TWEET_REPOST": {
-        const payload = parseOwnedPayload(
-          event.type,
-          {
-            id: event.payload.id,
-            authorId: event.payload.authorId,
+      case "TWEET_QUOTE":
+        return [runtimeEvent(event, "ADD_TWEET", event.payload)];
+      case "TWEET_REPOST":
+        return [
+          runtimeEvent(event, "ADD_TWEET", {
+            ...event.payload,
             text: event.payload.text ?? "",
-            repostOfId: event.payload.repostOfId,
-            createdAt: event.payload.createdAt,
-          },
-          xTweetInputSchema,
-        );
-        return [runtimeEvent(event, "ADD_TWEET", payload)];
-      }
+          }),
+        ];
       case "TWEET_LIKE":
         return [runtimeEvent(event, "LIKE_TWEET", event.payload)];
       case "TWEET_UNLIKE":
@@ -164,11 +122,7 @@ export const xLowering: XLoweringHandler = {
       case "SET_NOTIFICATIONS_TAB":
         return [runtimeEvent(event, "SET_NOTIFICATIONS_TAB", event.payload)];
       case "NOTIFICATION_ADD": {
-        const payload = parseOwnedPayload(
-          event.type,
-          event.payload,
-          xNotificationInputSchema,
-        );
+        const payload = event.payload;
         const body = payload.body ?? notificationCopy(payload.type);
         const threadId = payload.tweetId
           ? `tweet:${payload.tweetId}`
@@ -195,30 +149,16 @@ export const xLowering: XLoweringHandler = {
         });
         return [runtimeEvent(event, "ADD_NOTIFICATION", payload)];
       }
-      case "DM_THREAD_CREATE": {
-        const payload = parseOwnedPayload(
-          event.type,
-          event.payload,
-          xThreadInputSchema,
-        );
-        return [runtimeEvent(event, "ADD_DM_THREAD", payload)];
-      }
-      case "DM_SEND": {
-        const payload = parseOwnedPayload(
-          event.type,
-          event.payload,
-          xMessageInputSchema,
-        );
-        return [runtimeEvent(event, "ADD_DM_MESSAGE_OUTGOING", payload)];
-      }
-      case "DM_RECEIVE": {
-        const payload = parseOwnedPayload(
-          event.type,
-          event.payload,
-          xMessageInputSchema,
-        );
-        return [runtimeEvent(event, "ADD_DM_MESSAGE_INCOMING", payload)];
-      }
+      case "DM_THREAD_CREATE":
+        return [runtimeEvent(event, "ADD_DM_THREAD", event.payload)];
+      case "DM_SEND":
+        return [
+          runtimeEvent(event, "ADD_DM_MESSAGE_OUTGOING", event.payload),
+        ];
+      case "DM_RECEIVE":
+        return [
+          runtimeEvent(event, "ADD_DM_MESSAGE_INCOMING", event.payload),
+        ];
       case "DM_REACT":
         return [runtimeEvent(event, "ADD_DM_REACTION", event.payload)];
       case "DM_UNREACT":

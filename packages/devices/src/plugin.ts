@@ -3,7 +3,7 @@
  *
  * Self-contained plugin for device profiles, frames, and OS features.
  *
- * @see docs/packages/devices.md
+ * @see docs/PLATFORM_VISUALS.md
  */
 
 // Runtime Layer

@@ -88,6 +88,8 @@ export const IOSStatusBarStrategy: React.FC<StatusBarStrategyProps> = ({
           fontWeight: "600",
           fontFamily,
           letterSpacing: statusBar.timeLetterSpacing,
+          lineHeight: `${21 * pointScale}px`,
+          fontVariantNumeric: "tabular-nums",
         }}
       >
         {displayTime}
@@ -103,6 +105,7 @@ export const IOSStatusBarStrategy: React.FC<StatusBarStrategyProps> = ({
         }}
       >
         {isDND && <DNDIcon color={textColor} scale={pointScale} />}
+        <SignalBarsIcon color={textColor} strength={cellStrength} scale={pointScale} />
         {network !== "wifi" && (
           <NetworkTypeLabel
             network={network}
@@ -111,7 +114,6 @@ export const IOSStatusBarStrategy: React.FC<StatusBarStrategyProps> = ({
             fontFamily={fontFamily}
           />
         )}
-        <SignalBarsIcon color={textColor} strength={cellStrength} scale={pointScale} />
         {network === "wifi" && (
           <WifiIcon color={textColor} strength={wifiStrength} scale={pointScale} />
         )}

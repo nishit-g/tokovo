@@ -1,9 +1,19 @@
 import { Camera, Plus, Radio, Search } from "lucide-react";
 import { requireAppStateForDevice, type WorldState } from "@tokovo/core";
 import { DeterministicImage } from "@tokovo/react";
-import { useTheme, useWhatsAppLocale } from "../../experience/ExperienceContext.js";
-import type { WhatsAppChannel, WhatsAppState, WhatsAppStatusUpdate } from "../../types/index.js";
-import { formatConversationListTimestamp, getBaseTime } from "../../utils/messages.js";
+import {
+  useTheme,
+  useWhatsAppLocale,
+} from "../../experience/ExperienceContext.js";
+import type {
+  WhatsAppChannel,
+  WhatsAppState,
+  WhatsAppStatusUpdate,
+} from "../../types/index.js";
+import {
+  formatConversationListTimestamp,
+  getBaseTime,
+} from "../../utils/messages.js";
 import { resolveAvatarWithFallback } from "../../utils/avatar.js";
 import { AppScaffold, EmptyState, SectionHeader } from "../surfaces/index.js";
 import { StatusRing, type StatusSegmentState } from "../StatusRing.js";
@@ -31,7 +41,9 @@ interface StatusAuthor {
   segments: StatusSegmentState[];
 }
 
-function collectStatusAuthors(statuses: WhatsAppStatusUpdate[]): StatusAuthor[] {
+function collectStatusAuthors(
+  statuses: WhatsAppStatusUpdate[],
+): StatusAuthor[] {
   const authors = new Map<string, StatusAuthor>();
   [...statuses]
     .sort((left, right) => right.postedAt - left.postedAt)
@@ -128,7 +140,13 @@ function StatusAvatar({
   );
 }
 
-function ChannelRow({ channel, baseTime }: { channel: WhatsAppChannel; baseTime: Date }) {
+function ChannelRow({
+  channel,
+  baseTime,
+}: {
+  channel: WhatsAppChannel;
+  baseTime: Date;
+}) {
   const theme = useTheme();
   const { locale, t } = useWhatsAppLocale();
   const { uiTypography: typography } = theme;
@@ -242,7 +260,9 @@ function ChannelRow({ channel, baseTime }: { channel: WhatsAppChannel; baseTime:
             border: `1px solid ${channel.followed ? theme.colors.divider : theme.colors.accent}`,
             borderRadius: 14,
             textAlign: "center",
-            color: channel.followed ? theme.colors.receivedBubbleText : theme.colors.accent,
+            color: channel.followed
+              ? theme.colors.receivedBubbleText
+              : theme.colors.accent,
             fontSize: 10,
             fontWeight: 600,
             fontFamily: theme.typography.fontFamily,
@@ -275,22 +295,30 @@ function ChannelRow({ channel, baseTime }: { channel: WhatsAppChannel; baseTime:
   );
 }
 
-export function UpdatesScreen({ world, deviceId, contentInsets }: UpdatesScreenProps) {
+export function UpdatesScreen({
+  world,
+  deviceId,
+  contentInsets,
+}: UpdatesScreenProps) {
   const theme = useTheme();
   const { t } = useWhatsAppLocale();
   const { uiTypography: typography } = theme;
   const contentInsetTop = contentInsets.top;
   const contentInsetBottom = contentInsets.bottom;
-  const state = requireAppStateForDevice<WhatsAppState>(world, "app_whatsapp", deviceId);
+  const state = requireAppStateForDevice<WhatsAppState>(
+    world,
+    "app_whatsapp",
+    deviceId,
+  );
   const device = world.devices[deviceId];
   const profile = state.profile;
-  const statusAuthors = collectStatusAuthors(state.statuses ?? []).slice(0, 4);
-  const channels = [...(state.channels ?? [])]
-    .sort((left, right) => {
-      if (left.followed !== right.followed) return left.followed ? -1 : 1;
-      return (right.latestUpdate?.postedAt ?? 0) - (left.latestUpdate?.postedAt ?? 0);
-    })
-    .slice(0, 4);
+  const statusAuthors = collectStatusAuthors(state.statuses ?? []);
+  const channels = [...(state.channels ?? [])].sort((left, right) => {
+    if (left.followed !== right.followed) return left.followed ? -1 : 1;
+    return (
+      (right.latestUpdate?.postedAt ?? 0) - (left.latestUpdate?.postedAt ?? 0)
+    );
+  });
   const baseTime = getBaseTime(world, deviceId);
 
   return (
@@ -307,7 +335,10 @@ export function UpdatesScreen({ world, deviceId, contentInsets }: UpdatesScreenP
         </>
       }
     >
-      <SectionHeader title={t("section.status")} action={t("section.privacy")} />
+      <SectionHeader
+        title={t("section.status")}
+        action={t("section.privacy")}
+      />
       <div
         data-cinematic-subject="updates_status_strip"
         style={{
@@ -388,11 +419,18 @@ export function UpdatesScreen({ world, deviceId, contentInsets }: UpdatesScreenP
         ))}
       </div>
 
-      <SectionHeader title={t("updates.channels")} action={t("action.explore")} />
+      <SectionHeader
+        title={t("updates.channels")}
+        action={t("action.explore")}
+      />
       <div data-cinematic-subject="updates_channels">
         {channels.length > 0 ? (
           channels.map((channel) => (
-            <ChannelRow key={channel.id} channel={channel} baseTime={baseTime} />
+            <ChannelRow
+              key={channel.id}
+              channel={channel}
+              baseTime={baseTime}
+            />
           ))
         ) : (
           <EmptyState

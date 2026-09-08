@@ -5,7 +5,7 @@
  * Takes TrackEpisodeIR from episode().build() and produces
  * a PreparedTrackEpisode ready for replayIncremental().
  *
- * @see docs/architecture/dsl-v2.md
+ * @see docs/ENGINEERING_HANDBOOK.md
  */
 
 import type { TrackEpisodeIR, TrackEvent } from "@tokovo/ir";
@@ -38,12 +38,13 @@ import { CompilerSchemaValidationError, RuntimeValidationError } from "./errors.
 import { collectEpisodeAssetRefs } from "./asset-refs.js";
 import { prepareInputProgram, type PreparedInputProgram } from "@tokovo/device-keyboard";
 import {
+  builtinSystemNotificationAdapters,
   prepareNotificationProgram,
   type NotificationAppAdapter,
   type NotificationDeviceContextOperation,
   type PreparedNotificationActionEffect,
   type PreparedNotificationProgram,
-} from "@tokovo/device-notifications";
+} from "@tokovo/device-notifications/headless";
 import { createBuiltinCameraRegistries, type CameraRegistries } from "@tokovo/camera";
 import {
   prepareCinematicPrograms,
@@ -143,7 +144,7 @@ export function prepareTrackEpisode(
   };
 
   if (shouldValidate) {
-    const runtimeIssues = validateV1RuntimeEpisode(sortedEvents);
+    const runtimeIssues = validateV1RuntimeEpisode(sortedEvents, initialWorld);
     const errors = runtimeIssues.filter((i) => i.severity === "error");
     if (errors.length > 0) {
       const header = `[prepareTrackEpisode] V1 runtime validation failed (${errors.length} error(s))`;
@@ -313,7 +314,9 @@ function buildNotificationProgram(
   plugins: TokovoPlugin[],
   lowered: ReturnType<typeof lowerEpisodeWithCapabilities>,
 ): PreparedNotificationProgram {
-  const adapters = new Map<string, NotificationAppAdapter>();
+  const adapters = new Map<string, NotificationAppAdapter>(
+    builtinSystemNotificationAdapters.map((adapter) => [adapter.appId, adapter]),
+  );
   for (const plugin of plugins) {
     const adapter = (
       plugin as TokovoPlugin & {

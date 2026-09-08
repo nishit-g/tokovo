@@ -1,4 +1,7 @@
+import { createHash } from "node:crypto";
+import { createReadStream } from "node:fs";
 import fs from "node:fs/promises";
+import os from "node:os";
 import path from "node:path";
 
 import { closeBrowser } from "./remotion";
@@ -18,6 +21,10 @@ import {
   getEpisodeCameraProgramManifests,
   getRegisteredCinematicSubjectSchemas,
 } from "video-runner/camera-diagnostics";
+import {
+  evaluateReferenceRenderPerformance,
+  REFERENCE_RELEASE_PERFORMANCE_BUDGET,
+} from "./render-performance";
 
 const DEFAULT_EPISODE_ID = "v2-creator-series-showcase";
 
@@ -173,6 +180,109 @@ async function runArtifactUrls(): Promise<void> {
   );
 }
 
+async function sha256File(filePath: string): Promise<string> {
+  const hash = createHash("sha256");
+  for await (const chunk of createReadStream(filePath)) hash.update(chunk);
+  return hash.digest("hex");
+}
+
+function positiveBudget(flag: string, fallback: number): number {
+  const raw = argValue(flag);
+  if (raw === undefined) return fallback;
+  const value = Number(raw);
+  if (!Number.isFinite(value) || value <= 0) {
+    throw new Error(`${flag} must be a positive number of milliseconds.`);
+  }
+  return value;
+}
+
+async function runReferenceBenchmark(): Promise<void> {
+  const episodeId = argValue("--episode") ?? REFERENCE_RELEASE_PERFORMANCE_BUDGET.episodeId;
+  const cameraPlanId =
+    argValue("--camera-plan") ?? REFERENCE_RELEASE_PERFORMANCE_BUDGET.cameraPlanId;
+  const coldBudgetMs = positiveBudget(
+    "--cold-budget-ms",
+    REFERENCE_RELEASE_PERFORMANCE_BUDGET.coldMs,
+  );
+  const warmBudgetMs = positiveBudget(
+    "--warm-budget-ms",
+    REFERENCE_RELEASE_PERFORMANCE_BUDGET.warmMs,
+  );
+  const cacheRoot = await fs.mkdtemp(path.join(os.tmpdir(), "tokovo-render-benchmark-"));
+  const previousCacheRoot = process.env.TOKOVO_RENDER_CACHE_ROOT;
+  process.env.TOKOVO_RENDER_CACHE_ROOT = cacheRoot;
+  const runId = Date.now();
+
+  try {
+    const cold = await renderEpisodeArtifact({
+      episodeId,
+      cameraPlanId,
+      jobId: `reference-benchmark-${runId}-cold`,
+      profile: "release",
+    });
+    const warm = await renderEpisodeArtifact({
+      episodeId,
+      cameraPlanId,
+      jobId: `reference-benchmark-${runId}-warm`,
+      profile: "release",
+    });
+    const [coldVideoSha256, warmVideoSha256, coldPosterSha256, warmPosterSha256] =
+      await Promise.all([
+        sha256File(cold.videoPath),
+        sha256File(warm.videoPath),
+        sha256File(cold.posterPath),
+        sha256File(warm.posterPath),
+      ]);
+    const result = evaluateReferenceRenderPerformance({
+      coldMs: cold.metadata.timingMs.total,
+      warmMs: warm.metadata.timingMs.total,
+      coldVideoSha256,
+      warmVideoSha256,
+      coldPosterSha256,
+      warmPosterSha256,
+      coldDurationInFrames: cold.metadata.durationInFrames,
+      warmDurationInFrames: warm.metadata.durationInFrames,
+      coldBudgetMs,
+      warmBudgetMs,
+    });
+    console.log(
+      JSON.stringify(
+        {
+          benchmark: "reference-release",
+          episodeId,
+          cameraPlanId,
+          budgets: {
+            coldMs: coldBudgetMs,
+            warmMs: warmBudgetMs,
+            maximumWarmToColdRatio: REFERENCE_RELEASE_PERFORMANCE_BUDGET.maximumWarmToColdRatio,
+          },
+          ...result,
+          cold: {
+            metadataPath: cold.metadataPath,
+            timingMs: cold.metadata.timingMs,
+            renderCache: cold.metadata.renderCache,
+          },
+          warm: {
+            metadataPath: warm.metadataPath,
+            timingMs: warm.metadata.timingMs,
+            renderCache: warm.metadata.renderCache,
+          },
+        },
+        null,
+        2,
+      ),
+    );
+    if (!result.passed) process.exitCode = 1;
+  } finally {
+    if (previousCacheRoot === undefined) {
+      delete process.env.TOKOVO_RENDER_CACHE_ROOT;
+    } else {
+      process.env.TOKOVO_RENDER_CACHE_ROOT = previousCacheRoot;
+    }
+    await fs.rm(cacheRoot, { recursive: true, force: true });
+  }
+}
+
 async function runCameraCommand(): Promise<void> {
   const action = positional(1) ?? "programs";
   const episodeId =
@@ -246,7 +356,7 @@ async function main(): Promise<void> {
       process.env.EPISODE_ID = process.env.EPISODE_ID ?? "render-service-smoke";
       process.env.PROFILE = process.env.PROFILE ?? "fast-preview";
       process.env.TOKOVO_EPISODE_CATALOG_PROFILE =
-        process.env.TOKOVO_EPISODE_CATALOG_PROFILE ?? "studio";
+        process.env.TOKOVO_EPISODE_CATALOG_PROFILE ?? "showcase";
       await runRender();
       return;
     }
@@ -258,6 +368,11 @@ async function main(): Promise<void> {
 
     if (command === "artifact-urls") {
       await runArtifactUrls();
+      return;
+    }
+
+    if (command === "benchmark") {
+      await runReferenceBenchmark();
       return;
     }
 

@@ -156,7 +156,7 @@ export type {
  * - All app-specific data goes in `payload` field
  * - No more "from/text location mismatch" bugs
  *
- * @see docs/architecture/core-runtime.md
+ * @see docs/ENGINEERING_HANDBOOK.md
  */
 import type { RuntimeEvent } from "./types/runtime-event.js";
 export type TimelineEvent = RuntimeEvent;

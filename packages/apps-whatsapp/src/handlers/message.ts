@@ -61,13 +61,19 @@ function getReplyFallbackText(
     case "document":
       return message.fileName ?? translateWhatsApp(locale, "message.document");
     case "contact":
-      return message.contactName ?? translateWhatsApp(locale, "message.contact");
+      return (
+        message.contactName ?? translateWhatsApp(locale, "message.contact")
+      );
     case "location":
-      return message.locationName ?? translateWhatsApp(locale, "message.location");
+      return (
+        message.locationName ?? translateWhatsApp(locale, "message.location")
+      );
     case "call":
       return translateWhatsApp(
         locale,
-        message.callType === "video" ? "message.videoCall" : "message.voiceCall",
+        message.callType === "video"
+          ? "message.videoCall"
+          : "message.voiceCall",
       );
     case "call_missed":
       return translateWhatsApp(
@@ -81,7 +87,9 @@ function getReplyFallbackText(
   }
 }
 
-function getReplyThumbnail(message: WhatsAppMessage | undefined): string | undefined {
+function getReplyThumbnail(
+  message: WhatsAppMessage | undefined,
+): string | undefined {
   if (!message) return undefined;
   return (
     message.thumbnailUrl ??
@@ -96,12 +104,12 @@ function buildReplyPreview(
   replyTo: ReplyPayload | undefined,
 ):
   | {
-    messageId: string;
-    text?: string;
-    from?: string;
-    type?: WhatsAppMessageType;
-    thumbnailUrl?: string;
-  }
+      messageId: string;
+      text?: string;
+      from?: string;
+      type?: WhatsAppMessageType;
+      thumbnailUrl?: string;
+    }
   | undefined {
   if (!replyTo) return undefined;
 
@@ -119,63 +127,59 @@ function buildReplyPreview(
 export function registerMessageHandlers(
   registry: MutableHandlerRegistry,
 ): void {
-  registry.registerHandler<MessageReceivedEvent>("MESSAGE_RECEIVED", (ctx, e) => {
-    const payload = e.payload;
+  registry.registerHandler<MessageReceivedEvent>(
+    "MESSAGE_RECEIVED",
+    (ctx, e) => {
+      const payload = e.payload;
 
-    const fromUser = payload.from;
-    const textContent = payload.text;
-    const msgType = (payload.messageType ?? "text") as WhatsAppMessageType;
-    const declarationOrder = (e as { _declarationOrder?: number })
-      ._declarationOrder;
-    const fallbackIndex = ctx.conversation.messages.length;
-    const msgId =
-      payload.messageId ??
-      `msg_${e.at}_${fromUser}_${declarationOrder ?? fallbackIndex}`;
+      const fromUser = payload.from;
+      const textContent = payload.text;
+      const msgType = (payload.messageType ?? "text") as WhatsAppMessageType;
+      const declarationOrder = (e as { _declarationOrder?: number })
+        ._declarationOrder;
+      const fallbackIndex = ctx.conversation.messages.length;
+      const msgId =
+        payload.messageId ??
+        `msg_${e.at}_${fromUser}_${declarationOrder ?? fallbackIndex}`;
 
-    const newMessage: WhatsAppMessage = {
-      id: msgId,
-      from: fromUser,
-      type: msgType,
-      text: textContent,
-      at: e.at,
-      status: "delivered",
-      timestamp: ctx.generateTimestamp(e.at),
-    };
+      const newMessage: WhatsAppMessage = {
+        id: msgId,
+        from: fromUser,
+        type: msgType,
+        text: textContent,
+        at: e.at,
+        status: "delivered",
+        timestamp: ctx.generateTimestamp(e.at),
+      };
 
-    if (fromUser !== "me") {
-      for (let i = ctx.conversation.messages.length - 1; i >= 0; i--) {
-        const priorMessage = ctx.conversation.messages[i];
-        if (priorMessage.from !== "me") continue;
-        if (priorMessage.status === "read") continue;
-        priorMessage.status = "read";
-        priorMessage.readAt = e.at;
+      if (msgType === "system") {
+        newMessage.systemType = payload.systemType;
+      } else if (msgType === "call" || msgType === "call_missed") {
+        newMessage.callType = payload.callType as WhatsAppMessage["callType"];
+        newMessage.duration = payload.callDuration;
       }
-    }
 
-    if (msgType === "system") {
-      newMessage.systemType = payload.systemType;
-    } else if (msgType === "call" || msgType === "call_missed") {
-      newMessage.callType = payload.callType as WhatsAppMessage["callType"];
-      newMessage.duration = payload.callDuration;
-    }
+      const replyPreview = buildReplyPreview(
+        ctx,
+        payload.replyTo as ReplyPayload | undefined,
+      );
+      if (replyPreview) {
+        newMessage.replyTo = replyPreview;
+      }
 
-    const replyPreview = buildReplyPreview(ctx, payload.replyTo as ReplyPayload | undefined);
-    if (replyPreview) {
-      newMessage.replyTo = replyPreview;
-    }
-
-    const previousUnread = ctx.conversation.unreadCount ?? 0;
-    ctx.addMessage(newMessage);
-    if (
-      fromUser !== "me" &&
-      fromUser !== "system" &&
-      !isConversationActive(ctx) &&
-      previousUnread === 0
-    ) {
-      ctx.conversation.unreadDividerMessageId = newMessage.id;
-    }
-    bumpUnread(ctx, fromUser);
-  });
+      const previousUnread = ctx.conversation.unreadCount ?? 0;
+      ctx.addMessage(newMessage);
+      if (
+        fromUser !== "me" &&
+        fromUser !== "system" &&
+        !isConversationActive(ctx) &&
+        previousUnread === 0
+      ) {
+        ctx.conversation.unreadDividerMessageId = newMessage.id;
+      }
+      bumpUnread(ctx, fromUser);
+    },
+  );
 
   registry.registerHandler<MessageSentEvent>("MESSAGE_SENT", (ctx, e) => {
     const payload = e.payload;
@@ -205,7 +209,10 @@ export function registerMessageHandlers(
       newMessage.duration = payload.callDuration;
     }
 
-    const replyPreview = buildReplyPreview(ctx, payload.replyTo as ReplyPayload | undefined);
+    const replyPreview = buildReplyPreview(
+      ctx,
+      payload.replyTo as ReplyPayload | undefined,
+    );
     if (replyPreview) {
       newMessage.replyTo = replyPreview;
     }
@@ -279,7 +286,10 @@ export function registerMessageHandlers(
 
   registry.registerHandler<MessageDeletedEvent>("MESSAGE_DELETED", (ctx, e) => {
     const payload = e.payload;
-    const targetMsg = ctx.requireMessageById(payload.messageId, "delete message");
+    const targetMsg = ctx.requireMessageById(
+      payload.messageId,
+      "delete message",
+    );
     targetMsg.originalType = targetMsg.type;
     targetMsg.originalText = targetMsg.text;
     targetMsg.type = "deleted";
@@ -298,33 +308,38 @@ export function registerMessageHandlers(
     targetMsg.editedAt = e.at;
   });
 
-  registry.registerHandler<MessageForwardedEvent>("MESSAGE_FORWARDED", (ctx, e) => {
-    const payload = e.payload;
-    const sourceMsg = ctx.requireMessageById(
-      payload.sourceMessageId,
-      "forward message",
-    );
+  registry.registerHandler<MessageForwardedEvent>(
+    "MESSAGE_FORWARDED",
+    (ctx, e) => {
+      const payload = e.payload;
+      const sourceMsg = ctx.requireMessageById(
+        payload.sourceMessageId,
+        "forward message",
+      );
 
-    const newMessage: WhatsAppMessage = {
-      id: payload.messageId ?? `msg_${e.at}_fwd`,
-      from: "me",
-      type:
-        sourceMsg.type ?? (payload.messageType as WhatsAppMessageType) ?? "text",
-      text: sourceMsg.text ?? payload.text,
-      at: e.at,
-      status: "sent",
-      timestamp: ctx.generateTimestamp(e.at),
-      isForwarded: true,
-      forwardedFrom: payload.forwardedFrom,
-    };
+      const newMessage: WhatsAppMessage = {
+        id: payload.messageId ?? `msg_${e.at}_fwd`,
+        from: "me",
+        type:
+          sourceMsg.type ??
+          (payload.messageType as WhatsAppMessageType) ??
+          "text",
+        text: sourceMsg.text ?? payload.text,
+        at: e.at,
+        status: "sent",
+        timestamp: ctx.generateTimestamp(e.at),
+        isForwarded: true,
+        forwardedFrom: payload.forwardedFrom,
+      };
 
-    if (sourceMsg.imageUrl) newMessage.imageUrl = sourceMsg.imageUrl;
-    if (sourceMsg.videoUrl) newMessage.videoUrl = sourceMsg.videoUrl;
-    if (sourceMsg.gifUrl) newMessage.gifUrl = sourceMsg.gifUrl;
-    if (payload.imageUrl) newMessage.imageUrl = payload.imageUrl;
-    if (payload.videoUrl) newMessage.videoUrl = payload.videoUrl;
-    if (payload.gifUrl) newMessage.gifUrl = payload.gifUrl;
+      if (sourceMsg.imageUrl) newMessage.imageUrl = sourceMsg.imageUrl;
+      if (sourceMsg.videoUrl) newMessage.videoUrl = sourceMsg.videoUrl;
+      if (sourceMsg.gifUrl) newMessage.gifUrl = sourceMsg.gifUrl;
+      if (payload.imageUrl) newMessage.imageUrl = payload.imageUrl;
+      if (payload.videoUrl) newMessage.videoUrl = payload.videoUrl;
+      if (payload.gifUrl) newMessage.gifUrl = payload.gifUrl;
 
-    ctx.addMessage(newMessage);
-  });
+      ctx.addMessage(newMessage);
+    },
+  );
 }

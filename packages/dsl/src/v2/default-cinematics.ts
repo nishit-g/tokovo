@@ -88,6 +88,14 @@ export function createDefaultEpisodeCinematics(input: {
             .rig("stage-neutral", {
               outputId: "portrait-main",
               subject: stageSubject,
+              travel: {
+                mode: "stabilized",
+                mount: {
+                  subject: stageSubject,
+                  screenPosition: [0.5, 0.5],
+                  maxDriftPx: input.devices.length === 1 ? [54, 72] : [44, 64],
+                },
+              },
               composer: {
                 screenPosition: [0.5, 0.5],
                 targetFill: input.devices.length === 1 ? 0.84 : 0.9,

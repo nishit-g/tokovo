@@ -1,8 +1,10 @@
 import { createHash } from "node:crypto";
 
 import { describe, expect, it } from "vitest";
-import { encodeCameraTextureProjectionCapture } from "video-runner/camera-texture-contract";
-import type { CameraTextureProjectionCapture } from "video-runner/camera-texture-contract";
+import {
+  encodeCameraTextureProjectionCapture,
+  type CameraTextureProjectionCapture,
+} from "@tokovo/composition";
 
 import {
   CameraTextureCaptureCollector,
@@ -21,7 +23,7 @@ function capture(
   projectionPasses: CameraTextureProjectionCapture["outputs"][number]["projectionPasses"] = [],
 ): CameraTextureProjectionCapture {
   return {
-    version: 4,
+    version: 5,
     frame,
     storySignature: "story-a",
     stageSignature: "stage-a",
@@ -44,6 +46,7 @@ function capture(
           subjectFillRatio: 0.72,
           cropCompensation: 1,
           intentionalDiscontinuity: false,
+          travel: { mode: "intentional" },
         },
       },
     ],
@@ -80,6 +83,7 @@ function multiOutputCapture(frame: number): CameraTextureProjectionCapture {
           subjectFillRatio: 0.68,
           cropCompensation: 1.025,
           intentionalDiscontinuity: false,
+          travel: { mode: "intentional" },
         },
       },
     ],

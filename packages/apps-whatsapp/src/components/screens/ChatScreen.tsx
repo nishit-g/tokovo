@@ -1,12 +1,19 @@
 import React from "react";
 import { Pin } from "lucide-react";
 import { requireAppStateForDevice, WorldState } from "@tokovo/core";
-import { KeyboardAwareView, useInputField } from "@tokovo/react";
+import {
+  KeyboardAwareView,
+  useInputField,
+  useKeyboardHeight,
+} from "@tokovo/react";
 import { Header as DefaultHeader } from "../Header.js";
 import { GroupHeader } from "../GroupHeader.js";
 import { MessageList } from "../MessageList.js";
 import { InputArea as DefaultInputArea } from "../InputArea.js";
-import { useTheme, useWhatsAppLocale } from "../../experience/ExperienceContext.js";
+import {
+  useTheme,
+  useWhatsAppLocale,
+} from "../../experience/ExperienceContext.js";
 import { formatWhatsAppNumber } from "../../localization/index.js";
 import type { WhatsAppState, WhatsAppConversation } from "../../types/index.js";
 import { getBaseTime } from "../../utils/messages.js";
@@ -43,7 +50,10 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({
     "app_whatsapp",
     deviceId,
   );
-  const conversations = appState.conversations as Record<string, WhatsAppConversation>;
+  const conversations = appState.conversations as Record<
+    string,
+    WhatsAppConversation
+  >;
   const conversationId = appState.conversationId;
 
   const conversation: WhatsAppConversation | undefined = conversationId
@@ -92,13 +102,15 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({
     return (
       conversation.contact?.lastSeenLabel ??
       conversation.contact?.businessCategory ??
-      t("chat.contactInfo")
+      ""
     );
   })();
 
   const device = world.devices[deviceId];
   if (!device) {
-    throw new Error(`WHATSAPP_DEVICE_MISSING: "${deviceId}" is not in world state.`);
+    throw new Error(
+      `WHATSAPP_DEVICE_MISSING: "${deviceId}" is not in world state.`,
+    );
   }
   const ownerName = device.ownerName;
   const thread = projectWhatsAppThread({
@@ -110,12 +122,16 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({
     fps: world.config?.fps ?? 30,
     locale,
   });
-  const replyMessage = appState.replyComposer
-    ? thread.messagesById.get(appState.replyComposer.messageId)
+  const activeReply =
+    appState.replyComposer?.conversationId === conversationId
+      ? appState.replyComposer
+      : null;
+  const replyMessage = activeReply
+    ? thread.messagesById.get(activeReply.messageId)
     : undefined;
-  if (appState.replyComposer && !replyMessage) {
+  if (activeReply && !replyMessage) {
     throw new Error(
-      `WhatsApp reply composer references missing message "${appState.replyComposer.messageId}"`,
+      `WhatsApp reply composer references missing message "${activeReply.messageId}"`,
     );
   }
 
@@ -128,7 +144,10 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({
   // A system keyboard already owns the bottom platform inset. Keeping the app's
   // home-indicator inset while it is attached creates a conspicuous dead band
   // between the WhatsApp composer and the keyboard.
-  const composerContentInsetsBottom = composerFocused ? 0 : contentInsetBottom;
+  const composerContentInsetsBottom = Math.max(
+    0,
+    contentInsetBottom - useKeyboardHeight(),
+  );
   const bottomPadding = getChatChromeGeometry({
     top: contentInsetTop,
     bottom: composerContentInsetsBottom,
@@ -167,7 +186,11 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({
             gap: 9,
           }}
         >
-          <Pin size={15} color={theme.colors.accent} style={{ flexShrink: 0 }} />
+          <Pin
+            size={15}
+            color={theme.colors.accent}
+            style={{ flexShrink: 0 }}
+          />
           <div style={{ minWidth: 0 }}>
             <div
               style={{
@@ -214,16 +237,21 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({
 
       {appState.activeGesture?.gesture === "long_press" &&
         appState.activeGesture.phase === "completed" && (
-          <MessageActionMenu messageId={appState.activeGesture.messageId} />
+          <MessageActionMenu
+            message={thread.messagesById.get(appState.activeGesture.messageId)!}
+          />
         )}
 
       {replyMessage && <ReplyComposerBanner message={replyMessage} />}
 
       <DefaultInputArea
+        viewportWidth={width}
         text={composerText}
         showCursor={composerFocused}
         inputDirection={composerInput?.direction}
         inputLanguage={composerInput?.locale.tag}
+        selection={composerInput?.selection}
+        lastActivityFrame={composerInput?.lastActivityFrame}
         contentInsetBottom={composerContentInsetsBottom}
       />
     </KeyboardAwareView>

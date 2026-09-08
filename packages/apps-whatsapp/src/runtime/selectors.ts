@@ -11,6 +11,55 @@ import type {
   WhatsAppMessage,
 } from "../types/index.js";
 
+export function selectScreenScroll(
+  state: WhatsAppState,
+  frame: number,
+  screen = state.currentScreen,
+): number {
+  const scroll = screen ? state.screenScroll?.[screen] : undefined;
+  if (!scroll) return 0;
+  const progress =
+    scroll.durationFrames === 0
+      ? 1
+      : Math.max(0, Math.min(1, (frame - scroll.at) / scroll.durationFrames));
+  return scroll.from + (scroll.to - scroll.from) * (1 - (1 - progress) ** 3);
+}
+
+export function compareConversations(
+  a: WhatsAppConversation,
+  b: WhatsAppConversation,
+): number {
+  if (Boolean(a.isPinned) !== Boolean(b.isPinned)) return a.isPinned ? -1 : 1;
+  const delta =
+    (b.lastMessageAt ?? b.messages.at(-1)?.at ?? 0) -
+    (a.lastMessageAt ?? a.messages.at(-1)?.at ?? 0);
+  if (delta) return delta;
+  return (a.name ?? "") < (b.name ?? "")
+    ? -1
+    : (a.name ?? "") > (b.name ?? "")
+      ? 1
+      : 0;
+}
+
+export function matchesChatFilter(
+  conversation: WhatsAppConversation,
+  filter: WhatsAppState["chatFilter"],
+): boolean {
+  if (conversation.isArchived) return false;
+  switch (filter) {
+    case "unread":
+      return (conversation.unreadCount ?? 0) > 0;
+    case "favorites":
+      return Boolean(conversation.isFavorite);
+    case "groups":
+      return conversation.type === "group";
+    case "drafts":
+      return Boolean(conversation.draftText?.trim());
+    default:
+      return true;
+  }
+}
+
 // =============================================================================
 // STATE SELECTORS
 // =============================================================================

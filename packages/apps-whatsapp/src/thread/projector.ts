@@ -7,8 +7,13 @@ import type {
 } from "../types/index.js";
 import {
   resolveParticipantName,
+  resolveParticipantMember,
   resolveReplyPreview,
 } from "../utils/participants.js";
+import {
+  getMemberColor,
+  getMemberOnAccentColor,
+} from "../config/color-utils.js";
 import type { WhatsAppLocale } from "../localization/index.js";
 import {
   formatWhatsAppNumber,
@@ -27,6 +32,8 @@ export interface ProjectedReply extends ReplyToData {
 
 export interface ProjectedThreadMessage extends WhatsAppMessage {
   senderName?: string;
+  senderAccentColor?: string;
+  senderOnAccentColor?: string;
   replyTo?: ProjectedReply;
   reactions?: WhatsAppReaction[];
 }
@@ -267,13 +274,25 @@ function projectMessage(
   conversation: WhatsAppConversation | undefined,
   locale: WhatsAppLocale,
 ): ProjectedThreadMessage {
+  const participant = resolveParticipantMember(
+    conversation,
+    message.senderName ?? message.from,
+  );
   const participantName = resolveParticipantName(
     conversation,
     message.senderName ?? message.from,
   );
   return {
     ...message,
+    ...(message.type === "deleted" ? {
+      text: translateWhatsApp(locale, message.deletedForEveryone === false
+        ? "message.deletedByYou" : "message.deleted"),
+    } : {}),
     senderName: participantName ?? message.senderName,
+    senderAccentColor: participant?.accentColor
+      ? getMemberColor(participant)
+      : undefined,
+    senderOnAccentColor: getMemberOnAccentColor(participant),
     replyTo: projectReply(message.replyTo, messagesById, conversation, locale),
     reactions: normalizeReactions(message.reactions),
   };

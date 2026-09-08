@@ -11,6 +11,8 @@ import { resolveAvatarWithFallback } from "../utils/avatar.js";
 export interface HeaderProps {
   contactName: string;
   avatarUrl?: string;
+  avatarContent?: React.ReactNode;
+  onBack?: () => void;
   status: string;
   contentInsetTop: number;
   locked?: boolean;
@@ -21,6 +23,8 @@ export interface HeaderProps {
 export const Header: React.FC<HeaderProps> = ({
   contactName,
   avatarUrl,
+  avatarContent,
+  onBack,
   status,
   contentInsetTop,
   locked = false,
@@ -30,7 +34,7 @@ export const Header: React.FC<HeaderProps> = ({
   const theme = useTheme();
   const { direction, t } = useWhatsAppLocale();
   const presentation = useWhatsAppPresentation();
-  // Use fallback avatar when local paths don't exist
+  // Authored paths are resolved by DeterministicImage; initials are only for absent photos.
   const resolvedAvatarUrl = resolveAvatarWithFallback(avatarUrl, contactName);
 
   const contentHeight = UI_CONSTANTS.HEADER_CONTENT_HEIGHT;
@@ -45,13 +49,13 @@ export const Header: React.FC<HeaderProps> = ({
       data-cinematic-subject="header"
       style={{
         height: totalHeight,
+        flexShrink: 0,
         backgroundColor: theme.colors.headerBackground,
         paddingTop: contentInsetTop,
         display: "flex",
         alignItems: "center",
         paddingInline: UI_CONSTANTS.HEADER_PADDING_X,
         borderBottom: `0.5px solid ${theme.colors.divider}`,
-        backdropFilter: "blur(20px)",
         position: "relative",
         zIndex: 100,
         boxSizing: "border-box",
@@ -60,8 +64,12 @@ export const Header: React.FC<HeaderProps> = ({
       <button
         type="button"
         aria-label={t("action.back")}
+        onClick={onBack}
         style={{
-          marginInlineEnd: 8,
+          width: 28,
+          height: 44,
+          flexShrink: 0,
+          marginInlineEnd: 4,
           color: theme.colors.headerText,
           display: "flex",
           alignItems: "center",
@@ -73,11 +81,11 @@ export const Header: React.FC<HeaderProps> = ({
         }}
       >
         <ChevronLeft
-          size={34}
+          size={28}
           color={theme.colors.headerText}
           aria-hidden="true"
           style={{
-            marginInlineStart: -8,
+            marginInlineStart: -4,
             transform: direction === "rtl" ? "scaleX(-1)" : undefined,
           }}
         />
@@ -95,16 +103,19 @@ export const Header: React.FC<HeaderProps> = ({
           flexShrink: 0,
         }}
       >
-        <DeterministicImage
-          src={resolvedAvatarUrl}
-          alt={contactName}
-          style={{ width: "100%", height: "100%", objectFit: "cover" }}
-        />
+        {avatarContent ?? (
+          <DeterministicImage
+            src={resolvedAvatarUrl}
+            alt={contactName}
+            style={{ width: "100%", height: "100%", objectFit: "cover" }}
+          />
+        )}
       </div>
 
       <div
         style={{
           flex: 1,
+          minWidth: 0,
           display: "flex",
           flexDirection: "column",
           justifyContent: "center",
@@ -122,7 +133,9 @@ export const Header: React.FC<HeaderProps> = ({
             gap: 6,
           }}
         >
-          <span>{contactName}</span>
+          <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            {contactName}
+          </span>
           {verifiedBusiness && (
             <BadgeCheck
               size={15}
@@ -133,7 +146,7 @@ export const Header: React.FC<HeaderProps> = ({
           )}
           {locked && <Lock size={13} color={theme.colors.timestamp} strokeWidth={1.8} />}
         </div>
-        <div
+        {(status || contactLabel) && <div
           style={{
             fontSize: theme.typography.headerSubtitleFontSize,
             color: theme.colors.timestamp,
@@ -142,23 +155,36 @@ export const Header: React.FC<HeaderProps> = ({
             alignItems: "center",
             gap: 4,
             fontFamily: theme.typography.fontFamily,
+            overflow: "hidden",
+            whiteSpace: "nowrap",
+            textOverflow: "ellipsis",
           }}
         >
           {contactLabel && <Briefcase size={12} color={theme.colors.timestamp} strokeWidth={1.8} />}
-          {contactLabel ? `${contactLabel} • ${status}` : status}
-        </div>
+          {[contactLabel, status !== contactLabel ? status : ""].filter(Boolean).join(" • ")}
+        </div>}
       </div>
 
       <div
         role="group"
         aria-label={t("nav.calls")}
-        style={{ display: "flex", gap: 28, paddingInlineEnd: 4 }}
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 12,
+          paddingInlineStart: 10,
+          flexShrink: 0,
+        }}
       >
         <button
           type="button"
           aria-label={t("action.video")}
           style={{
             padding: 0,
+            width: 32,
+            height: 44,
+            display: "grid",
+            placeItems: "center",
             border: 0,
             color: "inherit",
             background: "transparent",
@@ -171,6 +197,10 @@ export const Header: React.FC<HeaderProps> = ({
           aria-label={t("message.voiceCall")}
           style={{
             padding: 0,
+            width: 32,
+            height: 44,
+            display: "grid",
+            placeItems: "center",
             border: 0,
             color: "inherit",
             background: "transparent",

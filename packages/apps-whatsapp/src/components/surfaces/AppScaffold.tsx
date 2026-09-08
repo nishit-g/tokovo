@@ -1,4 +1,7 @@
-import type { ReactNode } from "react";
+import { useContext, type ReactNode } from "react";
+import { TokovoContext } from "@tokovo/react";
+import { selectScreenScroll } from "../../runtime/selectors.js";
+import type { WhatsAppState } from "../../types/index.js";
 import { useWhatsAppExperience } from "../../experience/ExperienceContext.js";
 import type { WhatsAppTabId } from "../../presentation/strategy.js";
 import { TabNavigation } from "../TabNavigation.js";
@@ -29,9 +32,16 @@ export function AppScaffold({
   missedCallsCount,
 }: AppScaffoldProps) {
   const { theme, platform, direction } = useWhatsAppExperience();
+  const context = useContext(TokovoContext);
+  const state = context?.world.appInstances[
+    `${context.deviceId}:app_whatsapp`
+  ] as WhatsAppState | undefined;
+  const scrollY = state && context ? selectScreenScroll(state, context.t) : 0;
   const { uiSpacing: spacing, uiTypography: typography } = theme;
   const isAndroid = platform === "android";
-  const headerText = isAndroid ? theme.colors.headerText : theme.colors.receivedBubbleText;
+  const headerText = isAndroid
+    ? theme.colors.headerText
+    : theme.colors.receivedBubbleText;
 
   return (
     <div
@@ -112,11 +122,13 @@ export function AppScaffold({
           flex: 1,
           minHeight: 0,
           overflow: "hidden",
-          paddingBottom: showTabs ? spacing.tabBarHeight + contentInsetBottom : contentInsetBottom,
+          paddingBottom: showTabs
+            ? spacing.tabBarHeight + contentInsetBottom
+            : contentInsetBottom,
           backgroundColor: theme.colors.background,
         }}
       >
-        {children}
+        <div style={{ transform: `translateY(${-scrollY}px)` }}>{children}</div>
       </div>
 
       {showTabs && activeTab && (

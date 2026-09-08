@@ -1,0 +1,99 @@
+{
+  "id": "ensemble-launch-room",
+  "seed": "ensemble-launch-room-language-v1",
+  "cast": ["mint-sprite", "teal-manager", "violet-founder"],
+  "lines": [
+    {
+      "id": "mint-scheduled",
+      "character": "mint-sprite",
+      "message": "Scheduled it.",
+      "act": "confirm",
+      "tone": "excited",
+      "context": {
+        "stakes": 0.25,
+        "audience": "group"
+      }
+    },
+    {
+      "id": "teal-legal-reaction",
+      "character": "teal-manager",
+      "message": "Why is Legal reacting with eyes?",
+      "act": "question",
+      "tone": "annoyed",
+      "intent": "controlled-accusation",
+      "context": {
+        "stakes": 0.6,
+        "audience": "group"
+      }
+    },
+    {
+      "id": "mint-company-wide",
+      "character": "mint-sprite",
+      "message": "It went to the company-wide channel.",
+      "act": "confess",
+      "tone": "panic",
+      "context": {
+        "stakes": 0.98,
+        "audience": "public"
+      }
+    },
+    {
+      "id": "violet-which-draft",
+      "character": "violet-founder",
+      "message": "Which draft?",
+      "act": "question",
+      "tone": "deadpan",
+      "intent": "suspicious-check",
+      "context": {
+        "stakes": 0.72,
+        "audience": "group"
+      }
+    },
+    {
+      "id": "teal-apology-draft",
+      "character": "teal-manager",
+      "message": "The apology draft.",
+      "act": "verdict",
+      "tone": "annoyed",
+      "context": {
+        "stakes": 0.9,
+        "audience": "group"
+      }
+    },
+    {
+      "id": "violet-keep-it",
+      "character": "violet-founder",
+      "message": "Keep it. Engagement tripled.",
+      "act": "verdict",
+      "tone": "smug",
+      "intent": "smug-reframe",
+      "context": {
+        "stakes": 0.5,
+        "audience": "group"
+      }
+    },
+    {
+      "id": "mint-relief",
+      "character": "mint-sprite",
+      "message": "We are safe?",
+      "act": "question",
+      "tone": "excited",
+      "context": {
+        "stakes": 0.7,
+        "audience": "group"
+      }
+    },
+    {
+      "id": "violet-rename",
+      "character": "violet-founder",
+      "message": "But rename the file.",
+      "act": "verdict",
+      "tone": "deadpan",
+      "intent": "deadpan-verdict",
+      "context": {
+        "stakes": 0.35,
+        "audience": "group"
+      }
+    }
+  ]
+}

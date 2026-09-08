@@ -44,5 +44,6 @@ export type {
   TimelineTab,
   ProfileTab,
 } from "./events.js";
+export { X_AUTHORING_EVENT_TYPES } from "./events.js";
 
 import "./module-augmentation.js";

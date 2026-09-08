@@ -1,6 +1,6 @@
 # Showcase
 
-The showcase catalog is the fastest way to understand Tokovo's v1 phone-simulation surface. It contains full app demos, system realism tests, theme passes, and creator-story baselines that can be previewed or rendered locally.
+The showcase catalog is the fastest way to understand Tokovo's current phone-simulation surface. It contains full app demos, system realism tests, theme passes, and creator-story baselines that can be previewed or rendered locally.
 
 <video
   controls
@@ -30,19 +30,19 @@ out/social-launch-multi-device.mp4
 
 ## Recommended First Renders
 
-| Episode ID                       | Catalog | What to inspect                                                                                                                                       |
-| -------------------------------- | ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `social-launch-multi-device`     | studio  | iPhone + Android, WhatsApp + X + Instagram, split-screen, PIP, typed input, media, notifications                                                      |
-| `v2-creator-series-showcase`     | release | multi-app story pacing, lockscreen, notifications, keyboard, camera direction                                                                         |
-| `os-surface-mega-exhaustive`     | studio  | four devices, four OS themes, lock/home, multilingual input, notification policy, privacy, grouping, DND, and real quick reply                        |
-| `whatsapp-flagship-v2`           | studio  | WhatsApp chat list, group thread, updates, calls, and replies                                                                                         |
-| `whatsapp-cinematic-flagship`    | studio  | two-device WhatsApp cinema, swappable restrained/kinetic plans, handoff PIP, RTL, gestures, keyboard, notifications, live media, and four lens models |
-| `whatsapp-interaction-matrix-v3` | studio  | iPhone + Pixel, English + Arabic RTL, media lifecycle, viewer, gestures, privacy, Updates, Calls, Communities, Settings, and profile surfaces         |
-| `instagram-flagship-v2`          | studio  | stories, DMs, profile navigation, creator content pacing                                                                                              |
-| `x-cinematic-flagship`           | studio  | release-safe and kinetic camera plans, exact entity shots, keyboard, notifications, DMs, polls, video, and profiles                                   |
-| `typewriter-flagship-v2`         | studio  | text timing, typewriter UI, procedural sound effects                                                                                                  |
-| `screen-recording-exhaustive`    | studio  | screen recording chrome, phone OS realism                                                                                                             |
-| `notification-center-exhaustive` | studio  | notification stack, mixed app alerts, lockscreen behavior                                                                                             |
+| Episode ID                       | Catalog  | What to inspect                                                                                                                                       |
+| -------------------------------- | -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `social-launch-multi-device`     | showcase | iPhone + Android, WhatsApp + X + Instagram, split-screen, PIP, typed input, media, notifications                                                      |
+| `v2-creator-series-showcase`     | release  | multi-app story pacing, lockscreen, notifications, keyboard, camera direction                                                                         |
+| `os-surface-mega-exhaustive`     | showcase | four devices, four OS themes, lock/home, multilingual input, notification policy, privacy, grouping, DND, and real quick reply                        |
+| `whatsapp-flagship-v2`           | showcase | WhatsApp chat list, group thread, updates, calls, and replies                                                                                         |
+| `whatsapp-cinematic-flagship`    | showcase | two-device WhatsApp cinema, swappable restrained/kinetic plans, handoff PIP, RTL, gestures, keyboard, notifications, live media, and four lens models |
+| `whatsapp-interaction-matrix-v3` | showcase | iPhone + Pixel, English + Arabic RTL, media lifecycle, viewer, gestures, privacy, Updates, Calls, Communities, Settings, and profile surfaces         |
+| `instagram-flagship-v2`          | showcase | stories, DMs, profile navigation, creator content pacing                                                                                              |
+| `x-cinematic-flagship`           | showcase | release-safe and kinetic camera plans, exact entity shots, keyboard, notifications, DMs, polls, video, and profiles                                   |
+| `typewriter-flagship-v2`         | showcase | text timing, typewriter UI, procedural sound effects                                                                                                  |
+| `screen-recording-exhaustive`    | showcase | screen recording chrome, phone OS realism                                                                                                             |
+| `notification-center-exhaustive` | showcase | notification stack, mixed app alerts, lockscreen behavior                                                                                             |
 
 ## App Showcase Matrix
 
@@ -72,9 +72,9 @@ out/social-launch-multi-device.mp4
 | `screen-recording-exhaustive`    | recording indicator and OS chrome                                                                                                                  |
 | `call-screen-exhaustive`         | incoming, outgoing, and active call states                                                                                                         |
 
-## Camera VNext Flagship
+## Camera Flagship
 
-The Camera VNext reel keeps one WhatsApp story immutable and swaps only its prepared camera plan.
+The camera reel keeps one WhatsApp story immutable and swaps only its prepared camera plan.
 Use the kinetic plan for the complete lens preview:
 
 ```bash
@@ -109,18 +109,18 @@ EPISODE_ID=os-surface-mega-exhaustive pnpm --filter video-runner render:fast
 
 ## Catalog Profiles
 
-Use `release` for creator-facing episodes and `studio` for the full app/system showcase surface.
+Use `release` for creator-facing episodes and `showcase` for the full app/system showcase surface.
 
 ```bash
-TOKOVO_EPISODE_CATALOG_PROFILE=studio pnpm --filter video-runner dev
+TOKOVO_EPISODE_CATALOG_PROFILE=showcase pnpm --filter video-runner dev
 ```
 
 ## Quality Checklist
 
-Before calling a showcase v1-ready:
+Before calling a showcase release-ready:
 
 - `pnpm validate` passes.
 - The episode renders through `render:fast`.
-- All referenced assets exist under `apps/video-runner/public`.
+- All referenced assets exist under `packages/assets/public`.
 - Camera targets resolve to cinematic subjects instead of app fallback boxes.
 - The final MP4 and manifest are kept out of git unless they are intentional docs assets.

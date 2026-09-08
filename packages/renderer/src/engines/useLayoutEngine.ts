@@ -62,6 +62,11 @@ import type { RendererRegistries } from "../RegistryContext.js";
 
 const log = createScopedLogger("renderer");
 
+/** Phone apps and OS chrome must share the device's logical point grid. */
+export function resolveAppDesignWidth(profile: DeviceProfile, authoredWidth: number): number {
+  return profile.type === "phone" ? profile.display.width / profile.pointScale : authoredWidth;
+}
+
 // =============================================================================
 // INPUT / OUTPUT TYPES
 // =============================================================================
@@ -346,10 +351,12 @@ export function computeLayoutEngine(
     osLocale,
     visualPreferences,
   );
-  const appDesignWidth = appId ? registries.plugins.metadata.get(appId).designWidth : undefined;
-  if (appId && appDesignWidth === undefined) {
+  const authoredWidth = appId ? registries.plugins.metadata.get(appId).designWidth : undefined;
+  if (appId && authoredWidth === undefined) {
     throw new Error(`APP_DESIGN_WIDTH_MISSING: App "${appId}" must register assets.designWidth.`);
   }
+  const appDesignWidth =
+    authoredWidth === undefined ? undefined : resolveAppDesignWidth(profile, authoredWidth);
   const appLogicalScale = appDesignWidth ? profile.display.width / appDesignWidth : 1;
   const notificationProjection = input.notificationProgram
     ? projectNotifications(input.notificationProgram, deviceId, t, {
@@ -423,6 +430,7 @@ export function computeLayoutEngine(
     viewportWidth: appViewport.viewport.width,
     viewportHeight: appViewport.viewport.height,
     appViewport,
+    inputValues: inputProjection ? { [inputProjection.fieldId]: inputProjection.displayDraft } : undefined,
     layoutCache: input.layoutCache,
   };
 

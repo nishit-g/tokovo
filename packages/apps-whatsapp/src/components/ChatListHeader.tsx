@@ -79,9 +79,7 @@ export const ChatListHeader: React.FC<ChatListHeaderProps> = ({
   return (
     <div
       style={{
-        backgroundColor: `${theme.colors.headerBackground}F2`,
-        backdropFilter: "blur(20px)",
-        WebkitBackdropFilter: "blur(20px)",
+        backgroundColor: theme.colors.headerBackground,
         display: "flex",
         flexDirection: "column",
         zIndex: 100,

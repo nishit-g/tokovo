@@ -24,4 +24,4 @@
 
 `@tokovo/core` sits after authoring and compilation, and before rendering. Same authored input and same frame should always produce the same runtime state.
 
-See `docs/ARCHITECTURE.md` at the repo root for the current boundary overview and `docs/AUDIO.md` for audio-specific details.
+See `docs/ENGINEERING_HANDBOOK.md` for the complete runtime boundary and audio architecture.

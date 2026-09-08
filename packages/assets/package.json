@@ -1,0 +1,9 @@
+{
+  "name": "@tokovo/assets",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Renderer-neutral licensed public assets for Tokovo preview and release rendering",
+  "files": [
+    "public"
+  ]
+}

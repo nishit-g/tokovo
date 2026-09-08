@@ -1,12 +1,20 @@
 import React from "react";
-import { AnimatedImage, Img } from "remotion";
-import { easeOutCubic, frameProgress, useFps, useTime } from "@tokovo/react";
+import { AnimatedImage, OffthreadVideo, Sequence, staticFile } from "remotion";
+import {
+  easeOutCubic,
+  frameProgress,
+  useFps,
+  useTime,
+  DeterministicImage as Img,
+} from "@tokovo/react";
+import { resolveStaticAssetSrc } from "@tokovo/core";
 import type { IMessageMessage, IMessageTapbackType } from "../types/index.js";
 import { iOS_IMESSAGE_LIGHT, LAYOUT_CONSTANTS } from "../config/index.js";
 import { AudioMessage } from "./AudioMessage.js";
 import { ContactCard } from "./ContactCard.js";
 import { CalendarCard } from "./CalendarCard.js";
 import { LinkPreviewCard } from "./LinkPreviewCard.js";
+import { deliveryStatus, type messageGeometry } from "../layout/message.js";
 
 interface MessageBubbleProps {
   message: IMessageMessage;
@@ -17,15 +25,18 @@ interface MessageBubbleProps {
   showStatus?: boolean;
   replyPreview?: string;
   theme?: typeof iOS_IMESSAGE_LIGHT;
+  geometry?: ReturnType<typeof messageGeometry>;
+  replySender?: string;
+  replyThumbnail?: string;
 }
 
-const TAPBACK_ICONS: Record<IMessageTapbackType, string> = {
-  heart: "❤️",
-  thumbsUp: "👍",
-  thumbsDown: "👎",
-  haha: "😂",
-  exclamation: "‼️",
-  questionMark: "❓",
+const TAPBACK_LABELS: Record<IMessageTapbackType, string> = {
+  heart: "Loved",
+  thumbsUp: "Liked",
+  thumbsDown: "Disliked",
+  haha: "Laughed",
+  exclamation: "Emphasized",
+  questionMark: "Questioned",
 };
 
 export const MessageBubble: React.FC<MessageBubbleProps> = ({
@@ -37,19 +48,22 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
   showStatus = false,
   replyPreview,
   theme = iOS_IMESSAGE_LIGHT,
+  geometry,
+  replySender,
+  replyThumbnail,
 }) => {
-  const { fromMe, text, attachments, effect, kind, isSystem } = message;
+  const { fromMe, text, attachments, effect, isSystem } = message;
   const tapbacks = message.tapbacks ?? [];
   const { colors, typography, bubble } = theme;
   const frame = useTime();
   const fps = useFps();
+  const status = deliveryStatus(message, frame);
 
-  if (isSystem) {
+  if (isSystem || message.isUnsent) {
     return (
       <div
         style={{
-          alignSelf: "center",
-          backgroundColor: "rgba(0,0,0,0.06)",
+          textAlign: "center",
           padding: "6px 12px",
           borderRadius: 24,
           marginBottom: LAYOUT_CONSTANTS.MESSAGE_GAP,
@@ -63,7 +77,11 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
             color: colors.system.timestamp,
           }}
         >
-          {message.systemText || text}
+          {message.isUnsent
+            ? fromMe
+              ? "You unsent a message"
+              : `${message.senderName ?? "Someone"} unsent a message`
+            : message.systemText || text}
         </span>
       </div>
     );
@@ -77,20 +95,19 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
 
   const textColor = fromMe ? colors.bubble.myText : colors.bubble.otherText;
 
-  const effectStyle = getEffectStyle(
-    effect?.bubble,
-    frame,
-    message.timestamp,
-    fps,
-  );
+  const effectStyle = getEffectStyle(effect?.bubble, frame, message.timestamp, fps);
 
   return (
     <div
+      data-message-id={message.id}
       style={{
+        fontFamily: typography.message.family,
+        color: textColor,
         display: "flex",
         flexDirection: "column",
         alignItems: fromMe ? "flex-end" : "flex-start",
         position: "relative",
+        width: geometry?.width,
         ...effectStyle,
       }}
     >
@@ -111,7 +128,9 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
       <div
         style={{
           position: "relative",
-          maxWidth: `${bubble.maxWidth * 100}%`,
+          width: geometry ? "100%" : undefined,
+          maxWidth: geometry ? "100%" : `${bubble.maxWidth * 100}%`,
+          minWidth: 0,
           display: "inline-flex",
           flexDirection: "column",
         }}
@@ -119,21 +138,63 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
         {replyPreview ? (
           <div
             style={{
-              borderLeft: `2px solid ${fromMe ? "rgba(255,255,255,0.6)" : "rgba(0,0,0,0.2)"}`,
-              paddingLeft: 8,
-              marginBottom: 4,
+              borderInlineStart: `2px solid ${colors.header.icons}`,
+              padding: "6px 10px",
+              marginBottom: 6,
+              marginInline: 8,
+              borderRadius: 8,
+              background: colors.bubble.received,
               fontFamily: typography.timestamp.family,
               fontSize: typography.timestamp.size,
-              color: colors.system.timestamp,
+              color: colors.bubble.otherText,
+              whiteSpace: "pre-wrap",
+              overflowWrap: "anywhere",
+              lineHeight: "14px",
+              position: "relative",
+              paddingRight: replyThumbnail ? 48 : 10,
             }}
           >
-            Replying to: {replyPreview}
+            <span style={{ display: "block", fontWeight: 600, marginBottom: 2 }}>
+              {replySender ?? "Reply"}
+            </span>
+            {geometry?.replyLines.join("\n") ?? replyPreview}
+            {replyThumbnail && (
+              <Img
+                src={replyThumbnail}
+                alt="Original photo"
+                style={{
+                  position: "absolute",
+                  right: 6,
+                  top: 6,
+                  width: 32,
+                  height: 32,
+                  objectFit: "cover",
+                  borderRadius: 5,
+                }}
+              />
+            )}
           </div>
         ) : null}
 
-        {renderAttachments(attachments, bubble, bubbleColor, fromMe)}
+        {attachments?.map((attachment, index) => (
+          <div
+            key={index}
+            style={{
+              marginBottom: geometry ? 8 : text || index < attachments.length - 1 ? 4 : 0,
+              maxWidth: "100%",
+              height: geometry?.attachmentHeights[index],
+              overflow: geometry ? "hidden" : undefined,
+              borderRadius: bubble.borderRadius,
+            }}
+          >
+            {renderAttachment(attachment, bubble, bubbleColor, fromMe, message.timestamp)}
+          </div>
+        ))}
+        {message.linkPreview && !attachments?.some((attachment) => attachment.kind === "link") && (
+          <LinkPreviewCard preview={message.linkPreview} fromMe={fromMe} />
+        )}
 
-        {(text || kind === "text") && (
+        {text && (
           <div
             style={{
               backgroundColor: bubbleColor,
@@ -142,6 +203,8 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
               position: "relative",
               display: "inline-block",
               maxWidth: "100%",
+              boxSizing: "border-box",
+              lineHeight: `${typography.message.lineHeight}px`,
             }}
           >
             {showTail && (
@@ -160,19 +223,31 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
                 lineHeight: `${typography.message.lineHeight}px`,
                 color: textColor,
                 wordBreak: "break-word",
+                whiteSpace: geometry ? "pre" : "pre-wrap",
+                letterSpacing: -0.35,
               }}
             >
-              {text}
+              {geometry?.textLines.join("\n") ?? text}
             </span>
           </div>
         )}
 
-        {tapbacks.length > 0 && (
-          <TapbackRow tapbacks={tapbacks} fromMe={fromMe} theme={theme} />
-        )}
+        {tapbacks.length > 0 && <TapbackRow tapbacks={tapbacks} fromMe={fromMe} theme={theme} />}
       </div>
 
-      {showStatus && message.status ? (
+      {message.isEdited && (
+        <div
+          style={{
+            marginTop: 3,
+            fontFamily: typography.timestamp.family,
+            fontSize: typography.timestamp.size,
+            color: colors.header.icons,
+          }}
+        >
+          Edited
+        </div>
+      )}
+      {showStatus && status ? (
         <div
           style={{
             marginTop: 2,
@@ -181,27 +256,26 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
             color: colors.system.timestamp,
           }}
         >
-          {message.status === "read"
+          {status === "read"
             ? "Read"
-            : message.status === "delivered"
+            : status === "delivered"
               ? "Delivered"
-              : message.status}
+              : status === "sending"
+                ? "Sending…"
+                : "Sent"}
         </div>
       ) : null}
     </div>
   );
 };
 
-function renderAttachments(
-  attachments: IMessageMessage["attachments"],
+function renderAttachment(
+  primary: NonNullable<IMessageMessage["attachments"]>[number],
   bubble: typeof iOS_IMESSAGE_LIGHT.bubble,
   bubbleColor: string,
   fromMe: boolean = false,
+  startFrame = 0,
 ) {
-  if (!attachments || attachments.length === 0) return null;
-  const primary = attachments[0];
-  if (!primary) return null;
-
   if (primary.kind === "image" || primary.kind === "gif") {
     const MediaComponent = primary.kind === "gif" ? AnimatedImage : Img;
     return (
@@ -211,16 +285,28 @@ function renderAttachments(
           overflow: "hidden",
           marginBottom: LAYOUT_CONSTANTS.BUBBLE_GAP,
           backgroundColor: bubbleColor,
-          padding: 2,
+          width: 260,
+          maxWidth: "100%",
         }}
       >
         <MediaComponent
-          src={primary.url}
-          alt=""
+          src={
+            primary.kind === "gif"
+              ? resolveStaticAssetSrc(primary.url, (path) => staticFile(path.replace(/^\//, "")))
+              : primary.url
+          }
+          alt={primary.kind === "image" ? (primary.caption ?? "Photo") : "Animation"}
           style={{
             width: "100%",
+            aspectRatio:
+              primary.kind === "image"
+                ? `${primary.width ?? 260} / ${primary.height ?? 180}`
+                : "260 / 180",
+            height: "auto",
+            maxHeight: 320,
+            objectFit: "cover",
             display: "block",
-            borderRadius: bubble.borderRadius - 2,
+            borderRadius: bubble.borderRadius,
           }}
         />
       </div>
@@ -235,12 +321,19 @@ function renderAttachments(
           overflow: "hidden",
           marginBottom: LAYOUT_CONSTANTS.BUBBLE_GAP,
           backgroundColor: "#000000",
-          color: "#ffffff",
-          padding: 12,
-          textAlign: "center",
+          width: 260,
+          maxWidth: "100%",
+          height: 180,
+          position: "relative",
         }}
       >
-        Video
+        <Sequence from={startFrame} layout="none">
+          <OffthreadVideo
+            src={resolveStaticAssetSrc(primary.url, (path) => staticFile(path.replace(/^\//, "")))}
+            muted
+            style={{ width: "100%", height: "100%", objectFit: "cover" }}
+          />
+        </Sequence>
       </div>
     );
   }
@@ -250,7 +343,7 @@ function renderAttachments(
     return (
       <div
         style={{
-          backgroundColor: fromMe ? bubbleColor : "rgba(0,0,0,0.06)",
+          backgroundColor: fromMe ? bubbleColor : undefined,
           borderRadius: bubble.borderRadius,
           marginBottom: LAYOUT_CONSTANTS.BUBBLE_GAP,
           overflow: "hidden",
@@ -268,7 +361,7 @@ function renderAttachments(
           marginBottom: LAYOUT_CONSTANTS.BUBBLE_GAP,
         }}
       >
-        <Img src={primary.url} alt="sticker" style={{ width: 50 }} />
+        <Img src={primary.url} alt="Sticker" style={{ width: 130, maxWidth: "100%" }} />
       </div>
     );
   }
@@ -304,13 +397,34 @@ function renderAttachments(
     return (
       <div
         style={{
-          backgroundColor: "rgba(0,0,0,0.08)",
+          backgroundColor: bubbleColor,
           borderRadius: bubble.borderRadius,
-          padding: 10,
+          padding: 16,
+          width: 240,
+          maxWidth: "100%",
+          boxSizing: "border-box",
+          overflowWrap: "anywhere",
           marginBottom: LAYOUT_CONSTANTS.BUBBLE_GAP,
         }}
       >
-        Location: {primary.label ?? `${primary.latitude}, ${primary.longitude}`}
+        <svg
+          width="24"
+          height="28"
+          viewBox="0 0 24 28"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.8"
+          aria-hidden="true"
+        >
+          <path d="M12 26S3 17 3 11a9 9 0 0 1 18 0c0 6-9 15-9 15Z" />
+          <circle cx="12" cy="11" r="3" />
+        </svg>
+        <div style={{ fontSize: 16, fontWeight: 600, marginTop: 8 }}>
+          {primary.label ?? "Shared location"}
+        </div>
+        <div style={{ fontSize: 12, opacity: 0.8, marginTop: 4 }}>
+          {primary.latitude.toFixed(5)}, {primary.longitude.toFixed(5)}
+        </div>
       </div>
     );
   }
@@ -319,13 +433,23 @@ function renderAttachments(
     return (
       <div
         style={{
-          backgroundColor: "rgba(0,0,0,0.08)",
+          backgroundColor: bubbleColor,
           borderRadius: bubble.borderRadius,
-          padding: 10,
+          padding: 16,
+          width: 240,
+          maxWidth: "100%",
+          boxSizing: "border-box",
           marginBottom: LAYOUT_CONSTANTS.BUBBLE_GAP,
         }}
       >
-        Payment: {primary.amount} {primary.currency ?? "USD"}
+        <div style={{ fontSize: 12, opacity: 0.8 }}>Payment</div>
+        <div style={{ fontSize: 30, fontWeight: 600, marginTop: 4 }}>
+          {primary.amount.toFixed(2)}{" "}
+          <span style={{ fontSize: 13 }}>{primary.currency ?? "USD"}</span>
+        </div>
+        {primary.note && (
+          <div style={{ fontSize: 13, marginTop: 8, overflowWrap: "anywhere" }}>{primary.note}</div>
+        )}
       </div>
     );
   }
@@ -339,17 +463,18 @@ const BubbleTail: React.FC<{
   tailWidth: number;
   tailHeight: number;
 }> = ({ fromMe, color, tailWidth, tailHeight }) => {
-  const tailPath = fromMe
-    ? `M0,0 C${tailWidth},0 ${tailWidth},${tailHeight} 0,${tailHeight}`
-    : `M${tailWidth},0 C0,0 0,${tailHeight} ${tailWidth},${tailHeight}`;
+  const tailPath = "M0 0 C0 10 3 16 12 18 C7 21 1 19 0 17 Z";
   return (
     <svg
       width={tailWidth}
       height={tailHeight}
+      viewBox="0 0 12 20"
+      aria-hidden="true"
       style={{
         position: "absolute",
         bottom: 0,
-        [fromMe ? "right" : "left"]: -tailWidth + 4,
+        [fromMe ? "right" : "left"]: -5,
+        transform: fromMe ? undefined : "scaleX(-1)",
       }}
     >
       <path d={tailPath} fill={color} />
@@ -368,13 +493,14 @@ const TapbackRow: React.FC<{
         display: "flex",
         gap: 2,
         position: "absolute",
-        bottom: -10,
-        [fromMe ? "right" : "left"]: 4,
+        top: -22,
+        [fromMe ? "left" : "right"]: -6,
       }}
     >
-      {tapbacks.map((tapback, i) => (
+      {tapbacks.slice(0, 4).map((tapback, i) => (
         <div
           key={`${tapback.type}-${i}`}
+          aria-label={i === 3 && tapbacks.length > 4 ? `${tapbacks.length - 3} more reactions` : TAPBACK_LABELS[tapback.type]}
           style={{
             backgroundColor: theme.colors.bubble.received,
             borderRadius: LAYOUT_CONSTANTS.TAPBACK_SIZE / 2,
@@ -384,15 +510,47 @@ const TapbackRow: React.FC<{
             alignItems: "center",
             justifyContent: "center",
             fontSize: LAYOUT_CONSTANTS.TAPBACK_ICON_SIZE,
-            boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
+            fontWeight: 800,
+            fontFamily: theme.typography.message.family,
+            color: tapback.fromMe ? theme.colors.header.icons : theme.colors.bubble.otherText,
+            boxShadow: `0 0 0 2px ${theme.colors.system.chatBackground}`,
           }}
         >
-          {TAPBACK_ICONS[tapback.type] ?? "•"}
+          {i === 3 && tapbacks.length > 4 ? <span style={{ fontSize: 10 }}>+{tapbacks.length - 3}</span> : <TapbackIcon type={tapback.type} />}
         </div>
       ))}
     </div>
   );
 };
+
+function TapbackIcon({ type }: { type: IMessageTapbackType }) {
+  if (type === "haha")
+    return (
+      <span style={{ fontSize: 9, lineHeight: "8px", textAlign: "center" }}>
+        HA
+        <br />
+        HA
+      </span>
+    );
+  if (type === "exclamation" || type === "questionMark")
+    return <span>{type === "exclamation" ? "!!" : "?"}</span>;
+  return (
+    <svg
+      width="18"
+      height="18"
+      viewBox="0 0 24 24"
+      fill="currentColor"
+      aria-hidden="true"
+      style={{ transform: type === "thumbsDown" ? "rotate(180deg)" : undefined }}
+    >
+      {type === "heart" ? (
+        <path d="M12 21 3 12C-3 5 6-1 12 6 18-1 27 5 21 12Z" />
+      ) : (
+        <path d="M3 10h4v11H3Zm6 11V10l5-8c2 0 3 2 2 5l-1 3h5c2 0 2 2 2 3l-2 6c0 1-1 2-3 2Z" />
+      )}
+    </svg>
+  );
+}
 
 function getEffectStyle(
   effect: string | undefined,
@@ -402,25 +560,18 @@ function getEffectStyle(
 ): React.CSSProperties {
   switch (effect) {
     case "slam": {
-      const progress = easeOutCubic(
-        frameProgress(frame, startFrame, 0.3 * fps),
-      );
+      const progress = easeOutCubic(frameProgress(frame, startFrame, 0.3 * fps));
       const scale =
-        progress < 0.8
-          ? 0.8 + (progress / 0.8) * 0.25
-          : 1.05 - ((progress - 0.8) / 0.2) * 0.05;
+        progress < 0.8 ? 0.8 + (progress / 0.8) * 0.25 : 1.05 - ((progress - 0.8) / 0.2) * 0.05;
       return { transform: `scale(${scale})` };
     }
     case "loud": {
       const progress = frameProgress(frame, startFrame, 0.5 * fps);
-      const scale =
-        progress < 0.5 ? 0.9 + progress * 0.44 : 1.12 - (progress - 0.5) * 0.24;
+      const scale = progress < 0.5 ? 0.9 + progress * 0.44 : 1.12 - (progress - 0.5) * 0.24;
       return { transform: `scale(${scale})` };
     }
     case "gentle": {
-      const progress = easeOutCubic(
-        frameProgress(frame, startFrame, 0.8 * fps),
-      );
+      const progress = easeOutCubic(frameProgress(frame, startFrame, 0.8 * fps));
       return {
         opacity: progress,
         transform: `scale(${0.98 + progress * 0.02})`,

@@ -1,9 +1,12 @@
 import type {
+  CameraBakedTrajectoryIR,
+  CameraBlendIR,
   CameraComposerIR,
   CameraFilterIR,
   CameraFramingGuardIR,
   CameraLensIR,
   CameraMissingSubjectPolicyIR,
+  CameraMountIR,
   CameraModifierIR,
   CameraMovementIntentIR,
   CameraMotionProfileIR,
@@ -17,19 +20,17 @@ import type {
   StageProgramIR,
 } from "@tokovo/ir";
 import { CameraPlanSchema, StageProgramSchema } from "@tokovo/ir";
+import {
+  applyPlanFamilyVariant,
+  validatePlanFamilyDefinition,
+  type CinematicPlanFamilyDefinition,
+} from "./cinematic-plan-family.js";
+import { CinematicAuthoringError } from "./cinematic-errors.js";
 import { parseDurationToFrames, parseTimeToFrames } from "./utils/time.js";
 
-type Time = string | number;
-
-export class CinematicAuthoringError extends Error {
-  readonly code: string;
-
-  constructor(code: string, message: string) {
-    super(message);
-    this.name = "CinematicAuthoringError";
-    this.code = code;
-  }
-}
+export type CinematicTime = string | number;
+type Time = CinematicTime;
+export { CinematicAuthoringError } from "./cinematic-errors.js";
 
 function requireIdentifier(value: string, label: string): string {
   if (typeof value !== "string" || value.trim().length === 0) {
@@ -106,7 +107,53 @@ export const cameraSubject = {
     }
     return { kind: "group", members };
   },
+  scope(deviceId: string, appId?: string): ScopedCameraSubjects {
+    const normalizedDeviceId = requireIdentifier(deviceId, "Device id");
+    const normalizedAppId = appId === undefined ? undefined : requireIdentifier(appId, "App id");
+    const device = (subjectId: string): CinematicSubjectRefIR =>
+      cameraSubject.device(normalizedDeviceId, subjectId);
+    const requireApp = (): string => {
+      if (!normalizedAppId) {
+        throw new CinematicAuthoringError(
+          "CINEMATIC_SUBJECT_APP_MISSING",
+          `Scoped camera subjects for device "${normalizedDeviceId}" require an app id for semantic and entity subjects.`,
+        );
+      }
+      return normalizedAppId;
+    };
+    return {
+      deviceId: normalizedDeviceId,
+      appId: normalizedAppId,
+      body: device("body"),
+      screen: device("screen"),
+      keyboard: device("keyboard"),
+      notification: device("notification"),
+      device,
+      semantic(subjectId: string) {
+        return cameraSubject.semantic(normalizedDeviceId, requireApp(), subjectId);
+      },
+      entity(entityType: string, entityId: string, region: string) {
+        return cameraSubject.entity(normalizedDeviceId, requireApp(), entityType, entityId, region);
+      },
+      group(...members: CinematicSubjectRefIR[]) {
+        return cameraSubject.group(...members);
+      },
+    };
+  },
 };
+
+export interface ScopedCameraSubjects {
+  readonly deviceId: string;
+  readonly appId?: string;
+  readonly body: CinematicSubjectRefIR;
+  readonly screen: CinematicSubjectRefIR;
+  readonly keyboard: CinematicSubjectRefIR;
+  readonly notification: CinematicSubjectRefIR;
+  device(subjectId: string): CinematicSubjectRefIR;
+  semantic(subjectId: string): CinematicSubjectRefIR;
+  entity(entityType: string, entityId: string, region: string): CinematicSubjectRefIR;
+  group(...members: CinematicSubjectRefIR[]): CinematicSubjectRefIR;
+}
 
 export interface CinematicStageDevice {
   deviceId: string;
@@ -146,6 +193,7 @@ export interface CameraRigOptions {
   outputId: string;
   subject: CinematicSubjectRefIR;
   composer: CameraComposerIR;
+  travel: CameraRigIR["travel"];
   framingGuard?: CameraFramingGuardIR;
   tracking?: CameraRigIR["tracking"];
   bakedTrajectory?: CameraRigIR["bakedTrajectory"];
@@ -277,15 +325,19 @@ export class CinematicShotBuilder {
     paddingPx: 24,
   };
   #framingGuard?: CameraFramingGuardIR;
+  #travel?: CameraRigIR["travel"];
   #rotationDeg?: number;
   #opacity?: number;
   #lensId?: string;
   #modifierIds: string[] = [];
   #filterIds: string[] = [];
+  #tracking?: CameraRigIR["tracking"];
+  #bakedTrajectory?: CameraBakedTrajectoryIR;
   #motion: CameraMotionProfileIR;
   #priority = 10;
   #missingSubjectPolicy: CameraMissingSubjectPolicyIR = { type: "error" };
   #source: CameraShotIR["source"] = "authored";
+  #blendIn?: CameraBlendIR | null;
 
   constructor(input: {
     fps: number;
@@ -316,6 +368,29 @@ export class CinematicShotBuilder {
 
   guard(subject: CinematicSubjectRefIR, options: Omit<CameraFramingGuardIR, "subject"> = {}): this {
     this.#framingGuard = { subject, ...options };
+    return this;
+  }
+
+  mount(
+    subject: CinematicSubjectRefIR,
+    options: Partial<Omit<CameraMountIR, "subject">> = {},
+  ): this {
+    this.#travel = {
+      mode: "stabilized",
+      mount: {
+        subject,
+        screenPosition: options.screenPosition ?? [0.5, 0.5],
+        maxDriftPx: options.maxDriftPx ?? [54, 72],
+      },
+    };
+    return this;
+  }
+
+  allowDeviceTravel(reason: string): this {
+    this.#travel = {
+      mode: "intentional",
+      reason: requireIdentifier(reason, "Intentional camera travel reason"),
+    };
     return this;
   }
 
@@ -361,6 +436,38 @@ export class CinematicShotBuilder {
 
   automatic(): this {
     this.#source = "automatic";
+    return this;
+  }
+
+  blend(duration: Time, curve: CameraBlendIR["curve"] = "minimum-jerk"): this {
+    this.#blendIn = {
+      durationFrames: parseDurationToFrames(duration, this.#fps),
+      curve,
+    };
+    return this;
+  }
+
+  noBlend(): this {
+    this.#blendIn = null;
+    return this;
+  }
+
+  motion(profile: CameraMotionProfileIR): this {
+    this.#motion = profile;
+    return this;
+  }
+
+  ease(duration: Time): this {
+    this.#motion = {
+      type: "minimum-jerk",
+      durationFrames: parseDurationToFrames(duration, this.#fps),
+    };
+    return this;
+  }
+
+  trajectory(trajectory: CameraBakedTrajectoryIR): this {
+    this.#tracking = { mode: "direct" };
+    this.#bakedTrajectory = trajectory;
     return this;
   }
 
@@ -529,9 +636,15 @@ export class CinematicShotBuilder {
         `Camera shot "${this.#id}" is missing a target.`,
       );
     }
+    if (!this.#travel) {
+      throw new CinematicAuthoringError(
+        "CINEMATIC_SHOT_TRAVEL_UNDECLARED",
+        `Camera shot "${this.#id}" must declare a semantic mount or intentional device travel.`,
+      );
+    }
     const rigId = `${this.#id}.rig`;
     const durationFrames = input.endFrame - input.startFrame;
-    const blendDuration =
+    const inferredBlendDuration =
       this.#motion.type === "cut"
         ? undefined
         : Math.min(
@@ -540,13 +653,30 @@ export class CinematicShotBuilder {
               ? this.#motion.responseFrames
               : this.#motion.durationFrames,
           );
+    const blendIn =
+      this.#blendIn === null
+        ? undefined
+        : this.#blendIn
+          ? {
+              ...this.#blendIn,
+              durationFrames: Math.min(durationFrames, this.#blendIn.durationFrames),
+            }
+          : inferredBlendDuration
+            ? {
+                durationFrames: inferredBlendDuration,
+                curve: "minimum-jerk" as const,
+              }
+            : undefined;
     return {
       rig: {
         id: rigId,
         outputId: this.#outputId,
         subject: this.#subject,
         composer: this.#composer,
+        travel: this.#travel,
         ...(this.#framingGuard ? { framingGuard: this.#framingGuard } : {}),
+        ...(this.#tracking ? { tracking: this.#tracking } : {}),
+        ...(this.#bakedTrajectory ? { bakedTrajectory: this.#bakedTrajectory } : {}),
         ...(this.#rotationDeg !== undefined ? { rotationDeg: this.#rotationDeg } : {}),
         ...(this.#opacity !== undefined ? { opacity: this.#opacity } : {}),
         ...(this.#lensId ? { lensId: this.#lensId } : {}),
@@ -562,14 +692,7 @@ export class CinematicShotBuilder {
         rigId,
         priority: this.#priority,
         declarationOrder: input.declarationOrder,
-        ...(blendDuration
-          ? {
-              blendIn: {
-                durationFrames: blendDuration,
-                curve: "minimum-jerk" as const,
-              },
-            }
-          : {}),
+        ...(blendIn ? { blendIn } : {}),
         missingSubjectPolicy: this.#missingSubjectPolicy,
         source: this.#source,
       },
@@ -743,7 +866,7 @@ export class CinematicPlanBuilder {
       }
     }
     const plan = {
-      version: 1,
+      version: 2,
       id: this.#id,
       fps: this.#fps,
       durationInFrames: this.#durationInFrames,
@@ -802,6 +925,20 @@ export class CinematicProgramBuilder {
     configure(builder);
     this.#plans.push(builder.build());
     if (options.default || !this.#defaultPlanId) this.#defaultPlanId = id;
+    return this;
+  }
+
+  planFamily(definition: CinematicPlanFamilyDefinition): this {
+    validatePlanFamilyDefinition(definition);
+    for (const variant of definition.plans) {
+      this.plan(
+        variant.id,
+        (plan) => {
+          applyPlanFamilyVariant(plan, definition, variant.id, this.#fps);
+        },
+        { default: variant.default },
+      );
+    }
     return this;
   }
 

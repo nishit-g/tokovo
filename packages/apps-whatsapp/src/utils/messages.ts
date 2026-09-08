@@ -91,7 +91,10 @@ export function hydrateSnapshotMessage(
     typeof raw.timestampMs === "number"
       ? new Date(raw.timestampMs)
       : resolveRelativeDate(raw.timestamp, baseTime);
-  const timestamp = formatTimestamp(raw.timestamp, baseTime);
+  const timestamp = formatTimestamp(
+    raw.timestamp ?? raw.timestampMs,
+    baseTime,
+  );
 
   const base: WhatsAppMessage = {
     id,

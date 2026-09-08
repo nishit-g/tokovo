@@ -36,6 +36,9 @@ function upsertShow(state: OverlayState, e: OverlayEvent): void {
     preset?: OverlayItem["preset"];
     xPct?: number;
     yPct?: number;
+    widthPct?: number;
+    flipX?: boolean;
+    performerMotion?: "hold" | "duck";
     intensity?: number;
   };
 
@@ -60,6 +63,9 @@ function upsertShow(state: OverlayState, e: OverlayEvent): void {
     preset: p.preset,
     xPct: p.xPct,
     yPct: p.yPct,
+    widthPct: p.widthPct,
+    flipX: p.flipX,
+    performerMotion: p.performerMotion,
     intensity: p.intensity,
   });
 }

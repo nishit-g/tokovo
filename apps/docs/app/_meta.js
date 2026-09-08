@@ -3,6 +3,7 @@ const meta = {
     title: "Home",
     type: "page",
   },
+  product: "What Tokovo Can Make",
   showcase: "Showcase",
   "getting-started": "Getting Started",
   architecture: "Architecture",

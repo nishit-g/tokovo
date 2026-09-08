@@ -31,7 +31,7 @@ describe("compiler pipeline guarantees", () => {
       transformKeyframes: [],
     };
     const cameraPlan: CameraPlanIR = {
-      version: 1,
+      version: 2,
       id: "editorial",
       fps: 30,
       durationInFrames: 300,
@@ -55,6 +55,10 @@ describe("compiler pipeline guarantees", () => {
             screenPosition: [0.5, 0.5],
             targetFill: 0.8,
             fillMode: "contain",
+          },
+          travel: {
+            mode: "intentional",
+            reason: "Compiler contract fixture.",
           },
         },
       ],
@@ -99,7 +103,7 @@ describe("compiler pipeline guarantees", () => {
       },
       cameraPlans: [
         {
-          version: 1,
+          version: 2,
           id: "ghost-plan",
           fps: 30,
           durationInFrames: 300,
@@ -127,6 +131,10 @@ describe("compiler pipeline guarantees", () => {
                 screenPosition: [0.5, 0.5],
                 targetFill: 0.8,
                 fillMode: "contain",
+              },
+              travel: {
+                mode: "intentional",
+                reason: "Missing-device validation fixture.",
               },
             },
           ],
@@ -461,9 +469,7 @@ describe("compiler pipeline guarantees", () => {
       validate: true,
     });
 
-    const app = prepared.initialWorld.appInstances[
-      "phone:app_whatsapp"
-    ] as Record<string, unknown>;
+    const app = prepared.initialWorld.appInstances["phone:app_whatsapp"] as Record<string, unknown>;
     expect(app.viewMode).toBe("CHAT");
     expect(app.currentScreen).toBe("chat");
     expect(app.conversationId).toBe("dm_alex");
@@ -758,9 +764,7 @@ describe("compiler pipeline guarantees", () => {
       validate: true,
     });
 
-    const app = prepared.initialWorld.appInstances[
-      "phone:app_whatsapp"
-    ] as Record<string, unknown>;
+    const app = prepared.initialWorld.appInstances["phone:app_whatsapp"] as Record<string, unknown>;
     expect(app.viewMode).toBe("FEED");
     expect(app.currentScreen).toBe("chats");
     expect(app.conversationId).toBeUndefined();

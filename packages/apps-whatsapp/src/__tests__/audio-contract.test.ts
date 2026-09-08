@@ -13,14 +13,10 @@ describe("WhatsApp audio contract", () => {
     }
   });
 
-  it("uses payload fields in deterministic typing loop IDs", () => {
+  it("does not synthesize remote typing sounds alongside local input cues", () => {
     const typingRules = whatsappAudioRules.filter((rule) =>
       String(rule.match.type).startsWith("TYPING_"),
     );
-    expect(typingRules).toHaveLength(2);
-    expect(typingRules.map((rule) => rule.idTemplate ?? rule.stopId)).toEqual([
-      "typing_{conversationId}_{actor}",
-      "typing_{conversationId}_{actor}",
-    ]);
+    expect(typingRules).toHaveLength(0);
   });
 });

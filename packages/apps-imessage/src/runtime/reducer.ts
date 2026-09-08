@@ -1,8 +1,4 @@
-import {
-  requireAppStateForDevice,
-  type WorldState,
-  type TimelineEvent,
-} from "@tokovo/core";
+import { requireAppStateForDevice, type WorldState, type TimelineEvent } from "@tokovo/core";
 import { IMESSAGE_APP_ID } from "../constants.js";
 import type {
   IMessageConversation,
@@ -11,10 +7,7 @@ import type {
   IMessageMessageStatus,
   IMessageState,
 } from "../types/index.js";
-import type {
-  IMessageEventType,
-  IMessageEventPayload,
-} from "../types/events.js";
+import type { IMessageEventType, IMessageEventPayload } from "../types/events.js";
 
 function syncViewMode(state: IMessageState): void {
   switch (state.currentScreen) {
@@ -42,11 +35,7 @@ function asPayload<T extends IMessageEventType>(
 }
 
 function getAppState(draft: WorldState, deviceId: string): IMessageState {
-  const state = requireAppStateForDevice<IMessageState>(
-    draft,
-    IMESSAGE_APP_ID,
-    deviceId,
-  );
+  const state = requireAppStateForDevice<IMessageState>(draft, IMESSAGE_APP_ID, deviceId);
   state.viewMode ??= "FEED";
   state.conversationId ??= undefined;
   state.currentScreen ??= "list";
@@ -54,10 +43,7 @@ function getAppState(draft: WorldState, deviceId: string): IMessageState {
   return state;
 }
 
-function ensureConversation(
-  state: IMessageState,
-  conversationId: string,
-): IMessageConversation {
+function ensureConversation(state: IMessageState, conversationId: string): IMessageConversation {
   if (!state.conversations) {
     state.conversations = {};
   }
@@ -75,10 +61,7 @@ function ensureConversation(
   return state.conversations[conversationId] as IMessageConversation;
 }
 
-function addMessage(
-  conversation: IMessageConversation,
-  message: IMessageMessage,
-): void {
+function addMessage(conversation: IMessageConversation, message: IMessageMessage): void {
   conversation.messages.push(message);
   if (!conversation.messagesById) {
     conversation.messagesById = {};
@@ -141,6 +124,9 @@ function createMessage(params: {
   text?: string;
   attachments?: IMessageMessage["attachments"];
   timestamp: number;
+  sentAt?: number;
+  deliveredAt?: number;
+  readAt?: number;
   status?: IMessageMessageStatus;
   effect?: IMessageMessage["effect"];
   replyTo?: IMessageMessage["replyTo"];
@@ -172,15 +158,14 @@ function createMessage(params: {
     senderId,
     senderName,
     fromMe,
-    kind: inferKind(
-      text,
-      attachments as Array<{ kind: string }> | undefined,
-      isSystem,
-    ),
+    kind: inferKind(text, attachments as Array<{ kind: string }> | undefined, isSystem),
     text,
     attachments,
     timestamp,
     tapbacks: [],
+    sentAt: params.sentAt,
+    deliveredAt: params.deliveredAt,
+    readAt: params.readAt,
     effect,
     replyTo,
     mentions,
@@ -242,8 +227,7 @@ export function iMessageReducer(draft: WorldState, event: TimelineEvent): void {
 
   const payload = (appEvent.payload ?? {}) as Record<string, unknown>;
   const at = event.at ?? 0;
-  const conversationId = (payload as { conversationId?: string })
-    .conversationId;
+  const conversationId = (payload as { conversationId?: string }).conversationId;
 
   switch (type) {
     case "IMESSAGE_CONVERSATION_CREATE": {
@@ -320,11 +304,16 @@ export function iMessageReducer(draft: WorldState, event: TimelineEvent): void {
           attachments: msg.attachments,
           timestamp: at,
           status: "sent",
+          sentAt: msg.sentAt,
+          deliveredAt: msg.deliveredAt,
+          readAt: msg.readAt,
           effect: msg.effect ? { bubble: msg.effect } : undefined,
           replyTo: msg.replyTo,
           mentions: msg.mentions,
         }),
       );
+      conv.draft = "";
+      delete conv.typing.me;
       break;
     }
     case "IMESSAGE_MESSAGE_RECEIVE": {
@@ -338,17 +327,19 @@ export function iMessageReducer(draft: WorldState, event: TimelineEvent): void {
           id: messageId,
           conversationId,
           senderId: msg.from,
-          senderName: msg.from,
+          senderName: conv.participants.find((participant) => participant.id === msg.from)?.name ?? msg.from,
           fromMe: false,
           text: msg.text,
           attachments: msg.attachments,
           timestamp: at,
+          sentAt: msg.sentAt,
           status: conv.transport === "imessage" ? "delivered" : "sent",
           replyTo: msg.replyTo,
           mentions: msg.mentions,
         }),
       );
-      if (!msg.silent) {
+      conv.typing[msg.from] = false;
+      if (!msg.silent && !(state.currentScreen === "chat" && state.activeConversationId === conversationId)) {
         conv.unreadCount += 1;
       }
       break;
@@ -360,6 +351,7 @@ export function iMessageReducer(draft: WorldState, event: TimelineEvent): void {
       const target = getMessageById(conv, msg.messageId);
       if (target) {
         target.text = msg.newText ?? target.text;
+        target.isEdited = true;
       }
       break;
     }
@@ -391,9 +383,7 @@ export function iMessageReducer(draft: WorldState, event: TimelineEvent): void {
       if (!conversationId) return;
       const conv = ensureConversation(state, conversationId);
       const tap = asPayload<"IMESSAGE_TAPBACK_ADD">(payload);
-      const target =
-        getMessageById(conv, tap.messageId) ||
-        getMessageByRef(conv, tap.messageRef);
+      const target = getMessageById(conv, tap.messageId) || getMessageByRef(conv, tap.messageRef);
       if (target) {
         // Initialize tapbacks array if undefined
         if (!target.tapbacks) {
@@ -411,9 +401,7 @@ export function iMessageReducer(draft: WorldState, event: TimelineEvent): void {
       if (!conversationId) return;
       const conv = ensureConversation(state, conversationId);
       const tap = asPayload<"IMESSAGE_TAPBACK_REMOVE">(payload);
-      const target =
-        getMessageById(conv, tap.messageId) ||
-        getMessageByRef(conv, tap.messageRef);
+      const target = getMessageById(conv, tap.messageId) || getMessageByRef(conv, tap.messageRef);
       if (target) {
         // Initialize tapbacks array if undefined
         if (!target.tapbacks) {
@@ -466,12 +454,7 @@ export function iMessageReducer(draft: WorldState, event: TimelineEvent): void {
       if (!conv.participants.find((p) => p.id === member.id)) {
         conv.participants.push(member);
       }
-      addSystemMessage(
-        conv,
-        at,
-        `${member.name} joined the group`,
-        "group_member_added",
-      );
+      addSystemMessage(conv, at, `${member.name} joined the group`, "group_member_added");
       break;
     }
     case "IMESSAGE_GROUP_MEMBER_REMOVE":
@@ -479,16 +462,9 @@ export function iMessageReducer(draft: WorldState, event: TimelineEvent): void {
       if (!conversationId) return;
       const conv = ensureConversation(state, conversationId);
       const data = asPayload<"IMESSAGE_GROUP_MEMBER_REMOVE">(payload);
-      conv.participants = conv.participants.filter(
-        (p) => p.id !== data.memberId,
-      );
+      conv.participants = conv.participants.filter((p) => p.id !== data.memberId);
       const name = data.memberName ?? data.memberId;
-      addSystemMessage(
-        conv,
-        at,
-        `${name} left the group`,
-        "group_member_removed",
-      );
+      addSystemMessage(conv, at, `${name} left the group`, "group_member_removed");
       break;
     }
     case "IMESSAGE_GROUP_NAME_CHANGE": {
@@ -496,12 +472,7 @@ export function iMessageReducer(draft: WorldState, event: TimelineEvent): void {
       const conv = ensureConversation(state, conversationId);
       const data = asPayload<"IMESSAGE_GROUP_NAME_CHANGE">(payload);
       conv.title = data.name;
-      addSystemMessage(
-        conv,
-        at,
-        `Group name changed to "${data.name}"`,
-        "group_name_changed",
-      );
+      addSystemMessage(conv, at, `Group name changed to "${data.name}"`, "group_name_changed");
       break;
     }
     case "IMESSAGE_GROUP_AVATAR_CHANGE": {
@@ -546,6 +517,7 @@ export function iMessageReducer(draft: WorldState, event: TimelineEvent): void {
     case "IMESSAGE_SET_THEME_MODE": {
       const data = asPayload<"IMESSAGE_SET_THEME_MODE">(payload);
       state.themeMode = data.mode;
+      state.statusBarTheme = data.mode;
       break;
     }
     case "IMESSAGE_MESSAGE_UNSEND": {

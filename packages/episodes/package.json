@@ -40,6 +40,10 @@
     "./code-first-episode": {
       "types": "./dist/code-first-episode.d.ts",
       "default": "./dist/code-first-episode.js"
+    },
+    "./headless-runtime": {
+      "types": "./dist/runtime/headless-plugin-manifest.d.ts",
+      "default": "./dist/runtime/headless-plugin-manifest.js"
     }
   },
   "files": [

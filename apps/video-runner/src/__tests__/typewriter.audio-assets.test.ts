@@ -24,13 +24,17 @@ import {
 function publicSoundPath(relFromSoundsFolder: string): string {
   // `getSoundPath()` returns something like `sounds/plugins/typewriter/key.wav`.
   const videoRunnerDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
-  return path.resolve(videoRunnerDir, "public", relFromSoundsFolder);
+  return path.resolve(
+    videoRunnerDir,
+    "../../packages/assets/public",
+    relFromSoundsFolder,
+  );
 }
 
 describe("typewriter audio", () => {
   it("typewriter-flagship-v2: never falls back for _soft sounds and always has finite durations", () => {
-    const registry = createEpisodeRegistryForProfiles(["studio"]);
-    const runtime = createTokovoRuntime("studio");
+    const registry = createEpisodeRegistryForProfiles(["showcase"]);
+    const runtime = createTokovoRuntime("showcase");
     const config = createConfig();
 
     const ep = registry.get("typewriter-flagship-v2");

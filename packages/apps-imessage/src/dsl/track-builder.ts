@@ -31,6 +31,9 @@ function createConversationId(frame: number, order: number) {
 }
 
 export interface SendMessageInput {
+  sentAt?: number;
+  deliveredAt?: number;
+  readAt?: number;
   text?: string;
   attachments?: IMessageAttachment[];
   messageId?: string;
@@ -40,6 +43,7 @@ export interface SendMessageInput {
 }
 
 export interface ReceiveMessageInput {
+  sentAt?: number;
   from: string;
   text?: string;
   attachments?: IMessageAttachment[];
@@ -167,6 +171,9 @@ export class IMessagePointBuilder {
       replyTo: input.replyTo,
       mentions: input.mentions,
       effect: input.effect,
+      sentAt: input.sentAt,
+      deliveredAt: input.deliveredAt,
+      readAt: input.readAt,
     }));
   }
 
@@ -180,6 +187,7 @@ export class IMessagePointBuilder {
       replyTo: input.replyTo,
       mentions: input.mentions,
       silent: input.silent,
+      sentAt: input.sentAt,
     }));
   }
 

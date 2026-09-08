@@ -31,6 +31,4 @@ Current exported compile-time plugins include:
 
 Those plugins are optional authoring accelerators. They should help eliminate repetitive timeline code, but they do not replace explicit scene direction when an episode needs custom pacing.
 
-See:
-
-- `docs/TYPING_INDICATOR_PLUGIN.md`
+See `docs/ENGINEERING_HANDBOOK.md` for the canonical compilation and prepared-program architecture.

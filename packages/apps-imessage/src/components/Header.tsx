@@ -1,12 +1,7 @@
-/**
- * iMessage Header Component
- *
- * iOS 17 style navigation header with frosted glass effect
- */
 import React from "react";
-import { Img } from "remotion";
 import { useIMessageTheme } from "../ui/ThemeContext.js";
-import { iMessageSpacing, iMessageTypography } from "../config/tokens.js";
+import { iMessageSpacing } from "../config/tokens.js";
+import { ConversationAvatar } from "./ConversationAvatar.js";
 
 interface HeaderProps {
   name: string;
@@ -14,6 +9,7 @@ interface HeaderProps {
   isGroup?: boolean;
   participantCount?: number;
   contentInsetTop: number;
+  compact?: boolean;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -22,173 +18,118 @@ export const Header: React.FC<HeaderProps> = ({
   isGroup = false,
   participantCount,
   contentInsetTop,
+  compact = false,
 }) => {
-  const theme = useIMessageTheme();
-
-  const { colors } = theme;
-  const topInset = contentInsetTop;
-  const headerHeight = topInset + 44; // 44pt is iOS standard nav height
-
+  const { colors, typography } = useIMessageTheme();
+  const buttonStyle: React.CSSProperties = {
+    border: 0,
+    padding: 0,
+    background: "transparent",
+    color: colors.header.icons,
+    width: 44,
+    height: 44,
+    display: "grid",
+    placeItems: "center",
+  };
   return (
-    <div
+    <header
+      data-cinematic-subject="imessage_chat_header"
       style={{
-        height: headerHeight,
-        backgroundColor: colors.header.background,
-        backdropFilter: "blur(20px)",
-        WebkitBackdropFilter: "blur(20px)",
-        display: "flex",
-        alignItems: "center",
-        padding: `${topInset}px ${iMessageSpacing.headerPaddingH}px 0`,
+        height:
+          contentInsetTop +
+          (compact ? iMessageSpacing.detailHeaderHeight : iMessageSpacing.headerHeight),
+        padding: `${contentInsetTop}px ${iMessageSpacing.headerPaddingH}px 0`,
+        boxSizing: "border-box",
+        flexShrink: 0,
+        background: colors.header.background,
         borderBottom: `0.5px solid ${colors.system.separator}`,
+        display: "grid",
+        gridTemplateColumns: "44px minmax(0, 1fr) 44px",
+        alignItems: "center",
       }}
     >
-      {/* Back button */}
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          color: colors.header.icons,
-          marginRight: iMessageSpacing.headerAvatarGap,
-          fontFamily: iMessageTypography.fontFamily,
-          fontSize: iMessageTypography.headerTitle.fontSize,
-          fontWeight: 400,
-          cursor: "pointer",
-        }}
-      >
+      <button type="button" aria-label="Back to messages" style={buttonStyle}>
         <svg
-          width="20"
-          height="20"
+          width="28"
+          height="28"
           viewBox="0 0 24 24"
           fill="none"
           stroke="currentColor"
-          strokeWidth="2.5"
+          strokeWidth="2.4"
           strokeLinecap="round"
           strokeLinejoin="round"
-          style={{ marginRight: 4 }}
+          aria-hidden="true"
         >
-          <polyline points="15 18 9 12 15 6" />
+          <path d="m15 4-8 8 8 8" />
         </svg>
-      </div>
-
-      {/* Avatar */}
+      </button>
       <div
+        aria-label={isGroup && participantCount ? `${name}, ${participantCount} people` : name}
         style={{
-          width: iMessageSpacing.headerAvatarSize,
-          height: iMessageSpacing.headerAvatarSize,
-          borderRadius: "50%",
-          backgroundColor: colors.bubble.received,
-          overflow: "hidden",
-          marginRight: iMessageSpacing.headerAvatarGap,
+          minWidth: 0,
           display: "flex",
+          flexDirection: "column",
           alignItems: "center",
-          justifyContent: "center",
-          flexShrink: 0,
+          gap: 4,
         }}
       >
-        {avatar ? (
-          <Img
+        {!compact && (
+          <ConversationAvatar
+            name={name}
             src={avatar}
-            alt={name}
-            style={{ width: "100%", height: "100%", objectFit: "cover" }}
+            size={iMessageSpacing.headerAvatarSize}
+            isGroup={isGroup}
           />
-        ) : (
-          <span
-            style={{
-              fontFamily: iMessageTypography.fontFamily,
-              fontSize: iMessageTypography.headerTitle.fontSize,
-              fontWeight: 500,
-              color: colors.system.timestamp,
-            }}
-          >
-            {name.charAt(0).toUpperCase()}
-          </span>
         )}
-      </div>
-
-      {/* Title block */}
-      <div style={{ flex: 1, minWidth: 0 }}>
         <div
           style={{
-            fontFamily: iMessageTypography.fontFamily,
-            fontSize: iMessageTypography.headerTitle.fontSize,
-            fontWeight: iMessageTypography.headerTitle.fontWeight,
+            display: "flex",
+            alignItems: "center",
+            gap: 3,
+            maxWidth: "100%",
             color: colors.header.title,
-            whiteSpace: "nowrap",
-            overflow: "hidden",
-            textOverflow: "ellipsis",
+            fontFamily: typography.headerTitle.family,
+            fontSize: compact ? 17 : 13,
+            fontWeight: compact ? 600 : 400,
+            lineHeight: "18px",
           }}
         >
-          {name}
-        </div>
-        {isGroup && participantCount ? (
-          <div
-            style={{
-              fontFamily: iMessageTypography.fontFamily,
-              fontSize: iMessageTypography.headerSubtitle.fontSize,
-              color: colors.header.subtitle,
-            }}
-          >
-            {participantCount} people
-          </div>
-        ) : null}
-      </div>
-
-      {/* Action buttons */}
-      <div style={{ display: "flex", gap: iMessageSpacing.headerAvatarGap }}>
-        {/* Video call */}
-        <IconButton color={colors.header.icons}>
-          <svg viewBox="0 0 24 24" width="18" height="18" fill="none">
-            <rect
-              x="2"
-              y="6"
-              width="14"
+          <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            {name}
+          </span>
+          {!compact && (
+            <svg
+              width="9"
               height="12"
-              rx="2"
-              stroke="currentColor"
-              strokeWidth="1.5"
-            />
-            <path d="M16 9.5 L21 7 V17 L16 14.5 Z" fill="currentColor" />
-          </svg>
-        </IconButton>
-        {/* Info */}
-        <IconButton color={colors.header.icons}>
-          <svg viewBox="0 0 24 24" width="18" height="18" fill="none">
-            <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.5" />
-            <line
-              x1="12"
-              y1="11"
-              x2="12"
-              y2="16"
-              stroke="currentColor"
-              strokeWidth="1.5"
-              strokeLinecap="round"
-            />
-            <circle cx="12" cy="8" r="1" fill="currentColor" />
-          </svg>
-        </IconButton>
+              viewBox="0 0 9 12"
+              fill="none"
+              stroke={colors.header.subtitle}
+              strokeWidth="1.3"
+              aria-hidden="true"
+            >
+              <path d="m2 2 4 4-4 4" />
+            </svg>
+          )}
+        </div>
       </div>
-    </div>
-  );
-};
-
-const IconButton: React.FC<{ color: string; children: React.ReactNode }> = ({
-  color,
-  children,
-}) => {
-  return (
-    <div
-      style={{
-        width: 32,
-        height: 32,
-        borderRadius: 16,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        color,
-      }}
-    >
-      {children}
-    </div>
+      {!compact && (
+        <button type="button" aria-label="FaceTime" style={buttonStyle}>
+          <svg
+            width="26"
+            height="26"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.7"
+            strokeLinejoin="round"
+            aria-hidden="true"
+          >
+            <rect x="2" y="6" width="13" height="12" rx="3" />
+            <path d="m15 10 6-3v10l-6-3Z" />
+          </svg>
+        </button>
+      )}
+    </header>
   );
 };
 

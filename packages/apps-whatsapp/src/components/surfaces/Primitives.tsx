@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { ChevronRight } from "lucide-react";
 import { useTheme } from "../../experience/ExperienceContext.js";
+import { WHATSAPP_INTERACTION_TOKENS as tokens } from "../../theme/index.js";
 
 export function SectionHeader({
   title,
@@ -14,7 +15,8 @@ export function SectionHeader({
   return (
     <div
       style={{
-        minHeight: 34,
+        height: tokens.sectionHeaderHeight,
+        boxSizing: "border-box",
         padding: `10px ${spacing.pagePaddingX}px 6px`,
         display: "flex",
         alignItems: "center",

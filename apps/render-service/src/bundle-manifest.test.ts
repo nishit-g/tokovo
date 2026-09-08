@@ -14,9 +14,19 @@ function normalizedDirectories(directories: readonly string[]): string[] {
 
 describe("render source manifests", () => {
   it("tracks authored sources and the compiled modules consumed by the bundle", () => {
-    const directories = normalizedDirectories(
-      getBundleInputManifest().directories,
-    );
+    const manifest = getBundleInputManifest();
+    const directories = normalizedDirectories(manifest.directories);
+    const files = normalizedDirectories(manifest.files);
+    expect(
+      files.some((file) =>
+        file.endsWith("/apps/render-service/src/remotion.ts"),
+      ),
+    ).toBe(true);
+    expect(
+      directories.some((directory) =>
+        directory.endsWith("/packages/assets/public"),
+      ),
+    ).toBe(true);
     expect(
       directories.some((directory) =>
         directory.endsWith("/packages/camera/src"),

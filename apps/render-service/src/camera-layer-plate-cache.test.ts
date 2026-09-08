@@ -13,9 +13,7 @@ import {
 
 const temporaryDirectories: string[] = [];
 
-function identity(
-  overrides: Partial<CameraLayerPlateIdentity> = {},
-): CameraLayerPlateIdentity {
+function identity(overrides: Partial<CameraLayerPlateIdentity> = {}): CameraLayerPlateIdentity {
   return {
     layer: "stage",
     episodeId: "whatsapp-cinematic-flagship",
@@ -26,6 +24,7 @@ function identity(
     fps: 30,
     width: 1080,
     height: 1920,
+    chromiumGl: "angle",
     encodingSignature: "prores-4444-yuva444p10le",
     ...overrides,
   };
@@ -46,31 +45,22 @@ describe("camera layer-plate cache", () => {
   it("keys reusable pixels by layer without accepting CameraPlan identity", () => {
     const first = createCameraLayerPlateCacheKey(identity());
     expect(createCameraLayerPlateCacheKey(identity())).toBe(first);
-    expect(
-      createCameraLayerPlateCacheKey(
-        identity({ painterSignature: "painter-b" }),
-      ),
-    ).not.toBe(first);
-    expect(
-      createCameraLayerPlateCacheKey(identity({ layer: "underlay" })),
-    ).not.toBe(first);
-    expect(
-      createCameraLayerPlateCacheKey(identity({ storySignature: "story-b" })),
-    ).not.toBe(first);
-    expect(
-      createCameraLayerPlateCacheKey(identity({ frameRange: [541, 542] })),
-    ).not.toBe(first);
+    expect(createCameraLayerPlateCacheKey(identity({ painterSignature: "painter-b" }))).not.toBe(
+      first,
+    );
+    expect(createCameraLayerPlateCacheKey(identity({ layer: "underlay" }))).not.toBe(first);
+    expect(createCameraLayerPlateCacheKey(identity({ storySignature: "story-b" }))).not.toBe(first);
+    expect(createCameraLayerPlateCacheKey(identity({ frameRange: [541, 542] }))).not.toBe(first);
     expect(
       createCameraLayerPlateCacheKey(
         identity({ encodingSignature: "prores-standard-yuv422p10le" }),
       ),
     ).not.toBe(first);
+    expect(createCameraLayerPlateCacheKey(identity({ chromiumGl: "swangle" }))).not.toBe(first);
   });
 
   it("stores, verifies, and rejects corrupted plates", async () => {
-    const root = await fs.mkdtemp(
-      path.join(os.tmpdir(), "tokovo-camera-layer-cache-test-"),
-    );
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), "tokovo-camera-layer-cache-test-"));
     temporaryDirectories.push(root);
     const sourcePath = path.join(root, "source.mov");
     const cacheRoot = path.join(root, "cache");
@@ -90,6 +80,7 @@ describe("camera layer-plate cache", () => {
       storySignature: "story-a",
       stageSignature: "stage-a",
       painterSignature: "painter-a",
+      chromiumGl: "angle",
     });
     expect(manifest.identity).not.toHaveProperty("cameraPlanId");
     expect(manifest.identity).not.toHaveProperty("cameraSignature");

@@ -9,7 +9,13 @@ export {
   cameraPoseToViewMatrix,
 } from "./matrix.js";
 
-export { solveComposer, minimumJerk, interpolateCameraPose } from "./composer.js";
+export {
+  solveComposer,
+  stabilizeCameraPose,
+  measureCameraMount,
+  minimumJerk,
+  interpolateCameraPose,
+} from "./composer.js";
 
 export {
   CameraLensRegistry,

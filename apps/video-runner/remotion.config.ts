@@ -3,6 +3,7 @@ import os from "node:os";
 
 Config.setVideoImageFormat("jpeg");
 Config.setOverwriteOutput(true);
+Config.setPublicDir("../../packages/assets/public");
 
 // Bundle caching speeds up subsequent renders a lot.
 Config.setCachingEnabled(true);

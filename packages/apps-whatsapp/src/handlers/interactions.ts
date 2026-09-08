@@ -7,10 +7,7 @@ import type {
   SetLocaleEvent,
 } from "../schemas/index.js";
 import type { WhatsAppState } from "../types/index.js";
-import type {
-  HandlerContext,
-  MutableHandlerRegistry,
-} from "./registry.js";
+import type { HandlerContext, MutableHandlerRegistry } from "./registry.js";
 
 function getState(ctx: HandlerContext): WhatsAppState {
   return ctx.state;
@@ -110,12 +107,17 @@ export function registerInteractionHandlers(
     "REPLY_COMPOSER_DISMISSED",
     (ctx, event) => {
       const state = getState(ctx);
-      if (state.replyComposer?.conversationId !== event.payload.conversationId) {
+      if (!state.replyComposer) return; // Sending already dismisses the reply preview.
+      if (
+        state.replyComposer?.conversationId !== event.payload.conversationId
+      ) {
         throw new Error(
           `WhatsApp reply composer is not active in conversation "${event.payload.conversationId}"`,
         );
       }
       state.replyComposer = null;
+      if (state.savedReplyDrafts)
+        state.savedReplyDrafts[event.payload.conversationId] = null;
     },
   );
 

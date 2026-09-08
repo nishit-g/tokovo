@@ -9,17 +9,6 @@ export const whatsappAudioRules: AutoSoundRule[] = [
     bus: "ui",
     duckMusic: true,
   },
-  {
-    match: { kind: "APP", appId: WHATSAPP_APP_ID, type: "TYPING_START" },
-    action: "START_LOOP",
-    sound: "app_whatsapp.typing_loop",
-    bus: "sfx",
-    volume: 0.4,
-    idTemplate: "typing_{conversationId}_{actor}",
-  },
-  {
-    match: { kind: "APP", appId: WHATSAPP_APP_ID, type: "TYPING_END" },
-    action: "STOP_SOUND",
-    stopId: "typing_{conversationId}_{actor}",
-  },
+  // Remote typing indicators are silent. Local key sounds come exclusively
+  // from prepared input operations, so pauses and edits cannot leave a loop on.
 ];

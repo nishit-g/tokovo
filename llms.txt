@@ -15,11 +15,16 @@ Tokovo is a deterministic TypeScript monorepo for authoring, previewing, and ren
 
 ## Core Documentation
 
-- Architecture: https://github.com/nishit-g/tokovo/blob/master/docs/ARCHITECTURE.md
-- V1 stability bar: https://github.com/nishit-g/tokovo/blob/master/docs/V1_STABILITY.md
-- Camera reference: https://github.com/nishit-g/tokovo/blob/master/docs/CAMERA_REFERENCE.md
-- Public release checklist: https://github.com/nishit-g/tokovo/blob/master/docs/operations/public-release.md
-- Release operations: https://github.com/nishit-g/tokovo/blob/master/docs/operations/release.md
+- Product capabilities: https://github.com/nishit-g/tokovo/blob/master/apps/docs/app/product/page.mdx
+- Documentation index: https://github.com/nishit-g/tokovo/blob/master/docs/README.md
+- Engineering handbook: https://github.com/nishit-g/tokovo/blob/master/docs/ENGINEERING_HANDBOOK.md
+- Camera: https://github.com/nishit-g/tokovo/blob/master/docs/CAMERA.md
+- WhatsApp: https://github.com/nishit-g/tokovo/blob/master/docs/WHATSAPP.md
+- X: https://github.com/nishit-g/tokovo/blob/master/docs/X.md
+- Platform visuals: https://github.com/nishit-g/tokovo/blob/master/docs/PLATFORM_VISUALS.md
+- Rendering: https://github.com/nishit-g/tokovo/blob/master/docs/RENDERING.md
+- Visual editor decision: https://github.com/nishit-g/tokovo/blob/master/docs/STUDIO.md
+- Operations: https://github.com/nishit-g/tokovo/blob/master/docs/OPERATIONS.md
 - Asset licenses: https://github.com/nishit-g/tokovo/blob/master/ASSET_LICENSES.md
 
 ## Important Source Areas

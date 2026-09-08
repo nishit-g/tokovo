@@ -31,10 +31,12 @@ export function StatusViewerOverlay({
   statuses,
   viewer,
   baseTime,
+  contentInsets,
 }: {
   statuses: readonly WhatsAppStatusUpdate[];
   viewer: WhatsAppStatusViewerState;
   baseTime: Date;
+  contentInsets: { top: number; bottom: number };
 }) {
   const theme = useTheme();
   const { locale, t } = useWhatsAppLocale();
@@ -147,7 +149,7 @@ export function StatusViewerOverlay({
         style={{
           position: "absolute",
           insetInline: 10,
-          top: 52,
+          top: contentInsets.top + 6,
           display: "flex",
           gap: 4,
         }}
@@ -184,7 +186,7 @@ export function StatusViewerOverlay({
         style={{
           position: "absolute",
           insetInline: 12,
-          top: 62,
+          top: contentInsets.top + 16,
           height: 54,
           display: "flex",
           alignItems: "center",
@@ -259,7 +261,7 @@ export function StatusViewerOverlay({
           style={{
             position: "absolute",
             insetInline: 24,
-            bottom: 96,
+            bottom: contentInsets.bottom + 78,
             textAlign: "center",
             fontSize: 15,
             lineHeight: "21px",
@@ -275,7 +277,7 @@ export function StatusViewerOverlay({
         style={{
           position: "absolute",
           insetInline: 14,
-          bottom: 18,
+          bottom: contentInsets.bottom + 8,
           display: "flex",
           alignItems: "center",
           gap: 9,

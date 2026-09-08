@@ -15,7 +15,7 @@ const experienceInputSchema = z
   .object({
     platform: z.enum(["ios", "android"]),
     appearance: z.enum(["light", "dark"]),
-    themeId: z.enum(["whatsapp-storybook"]).optional(),
+    themeId: z.enum(["whatsapp-storybook", "whatsapp-signal-pop", "whatsapp-coral-studio"]).optional(),
     locale: z.enum(["en-US", "ar"]),
   })
   .strict();

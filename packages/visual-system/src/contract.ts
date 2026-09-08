@@ -326,7 +326,8 @@ export type BackdropProfileId =
   | "studio-quiet-dark"
   | "studio-quiet-light"
   | "ambient-depth"
-  | "editorial-neon";
+  | "editorial-neon"
+  | "signal-pop";
 
 export interface BackdropProfile {
   id: BackdropProfileId;

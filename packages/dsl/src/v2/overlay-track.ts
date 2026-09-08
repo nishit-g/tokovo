@@ -80,6 +80,13 @@ export class OverlayPointBuilder {
     return this.show("reactionGif", { ...options, mediaSrc });
   }
 
+  performer(
+    mediaSrc: string,
+    options?: Omit<OverlayPayloads["SHOW"], "variant" | "mediaSrc">,
+  ): string {
+    return this.show("performer", { ...options, mediaSrc });
+  }
+
   hide(options: OverlayPayloads["HIDE"]): void {
     const event: OverlayTrackEvent = {
       at: this._frame,

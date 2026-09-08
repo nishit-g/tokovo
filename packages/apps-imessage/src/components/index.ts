@@ -11,4 +11,3 @@ export { SearchBar } from "./SearchBar.js";
 export { SwipeableMessage } from "./SwipeableMessage.js";
 export { LongPressMenu } from "./LongPressMenu.js";
 export { UnsendAnimation } from "./UnsendAnimation.js";
-

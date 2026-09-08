@@ -1,10 +1,10 @@
 /**
  * Episode Registry
  *
- * Explicit registry used by runtimes (video-runner, studio, tests).
+ * Explicit registry used by video-runner, render-service, and tests.
  * Episodes are pure definitions; registration must be explicit.
  *
- * @see docs/architecture/episodes.md
+ * @see docs/ENGINEERING_HANDBOOK.md
  */
 
 import type {

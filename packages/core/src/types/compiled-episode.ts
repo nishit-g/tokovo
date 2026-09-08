@@ -4,7 +4,7 @@
  * This is the canonical artifact produced by prepareTrackEpisode().
  * The renderer/engine should NEVER accept raw events or SceneIR.
  *
- * @see docs/architecture/core-runtime.md
+ * @see docs/ENGINEERING_HANDBOOK.md
  */
 
 import { RuntimeEvent } from "./runtime-event.js";

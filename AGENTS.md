@@ -76,7 +76,7 @@ pnpm verify:release
 
 - `README.md`: public positioning and first-run commands.
 - `CONTRIBUTING.md`: contributor workflow and PR checklist.
-- `docs/ARCHITECTURE.md`: runtime and package boundaries.
-- `docs/V1_STABILITY.md`: v1 readiness bar.
-- `docs/CAMERA_REFERENCE.md`: current cinematic authoring rules.
+- `docs/ENGINEERING_HANDBOOK.md`: complete current architecture and release standard.
+- `docs/CAMERA.md`: current cinematic authoring and camera architecture.
+- `docs/OPERATIONS.md`: release gate, logging, and failure response.
 - `apps/docs/app/showcase/page.mdx`: showcase catalog and render commands.

@@ -52,20 +52,24 @@ const WhatsAppMessageTypeSchema = z.enum([
 // BASE SCHEMAS
 // =============================================================================
 
-const BaseEventSchema = z.object({
-  at: z.number(),
-  kind: z.literal("APP"),
-  appId: z.literal("app_whatsapp"),
-  deviceId: z.string(),
-}).strict();
+const BaseEventSchema = z
+  .object({
+    at: z.number(),
+    kind: z.literal("APP"),
+    appId: z.literal("app_whatsapp"),
+    deviceId: z.string(),
+  })
+  .strict();
 
-const ReplyToSchema = z.object({
-  messageId: z.string().min(1),
-  text: z.string().optional(),
-  from: z.string().optional(),
-  type: WhatsAppMessageTypeSchema.optional(),
-  thumbnailUrl: z.string().optional(),
-}).strict();
+const ReplyToSchema = z
+  .object({
+    messageId: z.string().min(1),
+    text: z.string().optional(),
+    from: z.string().optional(),
+    type: WhatsAppMessageTypeSchema.optional(),
+    thumbnailUrl: z.string().optional(),
+  })
+  .strict();
 
 // =============================================================================
 // MESSAGE EVENTS
@@ -73,7 +77,8 @@ const ReplyToSchema = z.object({
 
 export const MessageReceivedEventSchema = BaseEventSchema.extend({
   type: z.literal("MESSAGE_RECEIVED"),
-  payload: z.object({
+  payload: z
+    .object({
       conversationId: z.string().min(1),
       text: z.string(),
       from: z.string().min(1),
@@ -86,12 +91,14 @@ export const MessageReceivedEventSchema = BaseEventSchema.extend({
       systemType: WhatsAppSystemMessageTypeSchema.optional(),
       callType: z.enum(["voice", "video"]).optional(),
       callDuration: z.number().optional(),
-    }).strict(),
+    })
+    .strict(),
 });
 
 export const MessageSentEventSchema = BaseEventSchema.extend({
   type: z.literal("MESSAGE_SENT"),
-  payload: z.object({
+  payload: z
+    .object({
       conversationId: z.string().min(1),
       text: z.string(),
       messageType: z.enum(["text", "call", "call_missed"]).optional(),
@@ -100,7 +107,8 @@ export const MessageSentEventSchema = BaseEventSchema.extend({
       silent: z.boolean().optional(),
       callType: z.enum(["voice", "video"]).optional(),
       callDuration: z.number().optional(),
-    }).strict(),
+    })
+    .strict(),
 });
 
 // =============================================================================
@@ -109,18 +117,22 @@ export const MessageSentEventSchema = BaseEventSchema.extend({
 
 export const TypingStartEventSchema = BaseEventSchema.extend({
   type: z.literal("TYPING_START"),
-  payload: z.object({
-    conversationId: z.string().min(1),
-    actor: z.string().min(1),
-  }).strict(),
+  payload: z
+    .object({
+      conversationId: z.string().min(1),
+      actor: z.string().min(1),
+    })
+    .strict(),
 });
 
 export const TypingEndEventSchema = BaseEventSchema.extend({
   type: z.literal("TYPING_END"),
-  payload: z.object({
-    conversationId: z.string().min(1),
-    actor: z.string().min(1),
-  }).strict(),
+  payload: z
+    .object({
+      conversationId: z.string().min(1),
+      actor: z.string().min(1),
+    })
+    .strict(),
 });
 
 // =============================================================================
@@ -129,178 +141,210 @@ export const TypingEndEventSchema = BaseEventSchema.extend({
 
 export const ImageReceivedEventSchema = BaseEventSchema.extend({
   type: z.literal("IMAGE_RECEIVED"),
-  payload: z.object({
-    conversationId: z.string().min(1),
-    url: z.string().min(1),
-    from: z.string().min(1),
-    caption: z.string().optional(),
-    messageId: z.string().min(1).optional(),
-  }).strict(),
+  payload: z
+    .object({
+      conversationId: z.string().min(1),
+      url: z.string().min(1),
+      from: z.string().min(1),
+      caption: z.string().optional(),
+      messageId: z.string().min(1).optional(),
+    })
+    .strict(),
 });
 
 export const ImageSentEventSchema = BaseEventSchema.extend({
   type: z.literal("IMAGE_SENT"),
-  payload: z.object({
-    conversationId: z.string().min(1),
-    url: z.string().min(1),
-    caption: z.string().optional(),
-    messageId: z.string().min(1).optional(),
-  }).strict(),
+  payload: z
+    .object({
+      conversationId: z.string().min(1),
+      url: z.string().min(1),
+      caption: z.string().optional(),
+      messageId: z.string().min(1).optional(),
+    })
+    .strict(),
 });
 
 export const VideoReceivedEventSchema = BaseEventSchema.extend({
   type: z.literal("VIDEO_RECEIVED"),
-  payload: z.object({
-    conversationId: z.string().min(1),
-    url: z.string().min(1),
-    from: z.string().min(1),
-    duration: z.number().nonnegative().optional(),
-    caption: z.string().optional(),
-    messageId: z.string().min(1).optional(),
-  }).strict(),
+  payload: z
+    .object({
+      conversationId: z.string().min(1),
+      url: z.string().min(1),
+      from: z.string().min(1),
+      duration: z.number().nonnegative().optional(),
+      caption: z.string().optional(),
+      messageId: z.string().min(1).optional(),
+    })
+    .strict(),
 });
 
 export const VideoSentEventSchema = BaseEventSchema.extend({
   type: z.literal("VIDEO_SENT"),
-  payload: z.object({
-    conversationId: z.string().min(1),
-    url: z.string().min(1),
-    duration: z.number().nonnegative().optional(),
-    caption: z.string().optional(),
-    messageId: z.string().min(1).optional(),
-  }).strict(),
+  payload: z
+    .object({
+      conversationId: z.string().min(1),
+      url: z.string().min(1),
+      duration: z.number().nonnegative().optional(),
+      caption: z.string().optional(),
+      messageId: z.string().min(1).optional(),
+    })
+    .strict(),
 });
 
 export const VoiceReceivedEventSchema = BaseEventSchema.extend({
   type: z.literal("VOICE_RECEIVED"),
-  payload: z.object({
-    conversationId: z.string().min(1),
-    from: z.string().min(1),
-    duration: z.number().positive(),
-    messageId: z.string().min(1).optional(),
-  }).strict(),
+  payload: z
+    .object({
+      conversationId: z.string().min(1),
+      from: z.string().min(1),
+      duration: z.number().positive(),
+      messageId: z.string().min(1).optional(),
+    })
+    .strict(),
 });
 
 export const VoiceSentEventSchema = BaseEventSchema.extend({
   type: z.literal("VOICE_SENT"),
-  payload: z.object({
-    conversationId: z.string().min(1),
-    duration: z.number().positive(),
-    messageId: z.string().min(1).optional(),
-  }).strict(),
+  payload: z
+    .object({
+      conversationId: z.string().min(1),
+      duration: z.number().positive(),
+      messageId: z.string().min(1).optional(),
+    })
+    .strict(),
 });
 
 export const GifReceivedEventSchema = BaseEventSchema.extend({
   type: z.literal("GIF_RECEIVED"),
-  payload: z.object({
-    conversationId: z.string().min(1),
-    url: z.string().min(1),
-    from: z.string().min(1),
-    messageId: z.string().min(1).optional(),
-  }).strict(),
+  payload: z
+    .object({
+      conversationId: z.string().min(1),
+      url: z.string().min(1),
+      from: z.string().min(1),
+      messageId: z.string().min(1).optional(),
+    })
+    .strict(),
 });
 
 export const GifSentEventSchema = BaseEventSchema.extend({
   type: z.literal("GIF_SENT"),
-  payload: z.object({
-    conversationId: z.string().min(1),
-    url: z.string().min(1),
-    messageId: z.string().min(1).optional(),
-  }).strict(),
+  payload: z
+    .object({
+      conversationId: z.string().min(1),
+      url: z.string().min(1),
+      messageId: z.string().min(1).optional(),
+    })
+    .strict(),
 });
 
 export const StickerReceivedEventSchema = BaseEventSchema.extend({
   type: z.literal("STICKER_RECEIVED"),
-  payload: z.object({
-    conversationId: z.string().min(1),
-    url: z.string().min(1),
-    from: z.string().min(1),
-    messageId: z.string().min(1).optional(),
-  }).strict(),
+  payload: z
+    .object({
+      conversationId: z.string().min(1),
+      url: z.string().min(1),
+      from: z.string().min(1),
+      messageId: z.string().min(1).optional(),
+    })
+    .strict(),
 });
 
 export const StickerSentEventSchema = BaseEventSchema.extend({
   type: z.literal("STICKER_SENT"),
-  payload: z.object({
-    conversationId: z.string().min(1),
-    url: z.string().min(1),
-    messageId: z.string().min(1).optional(),
-  }).strict(),
+  payload: z
+    .object({
+      conversationId: z.string().min(1),
+      url: z.string().min(1),
+      messageId: z.string().min(1).optional(),
+    })
+    .strict(),
 });
 
 export const DocumentReceivedEventSchema = BaseEventSchema.extend({
   type: z.literal("DOCUMENT_RECEIVED"),
-  payload: z.object({
-    conversationId: z.string().min(1),
-    url: z.string().optional(),
-    from: z.string().min(1),
-    fileName: z.string().min(1),
-    fileSize: z.union([z.string(), z.number()]).optional(),
-    fileType: z.string().optional(),
-    messageId: z.string().min(1).optional(),
-  }).strict(),
+  payload: z
+    .object({
+      conversationId: z.string().min(1),
+      url: z.string().optional(),
+      from: z.string().min(1),
+      fileName: z.string().min(1),
+      fileSize: z.union([z.string(), z.number()]).optional(),
+      fileType: z.string().optional(),
+      messageId: z.string().min(1).optional(),
+    })
+    .strict(),
 });
 
 export const DocumentSentEventSchema = BaseEventSchema.extend({
   type: z.literal("DOCUMENT_SENT"),
-  payload: z.object({
-    conversationId: z.string().min(1),
-    url: z.string().optional(),
-    fileName: z.string().min(1),
-    fileSize: z.union([z.string(), z.number()]).optional(),
-    fileType: z.string().optional(),
-    messageId: z.string().min(1).optional(),
-  }).strict(),
+  payload: z
+    .object({
+      conversationId: z.string().min(1),
+      url: z.string().optional(),
+      fileName: z.string().min(1),
+      fileSize: z.union([z.string(), z.number()]).optional(),
+      fileType: z.string().optional(),
+      messageId: z.string().min(1).optional(),
+    })
+    .strict(),
 });
 
 export const ContactReceivedEventSchema = BaseEventSchema.extend({
   type: z.literal("CONTACT_RECEIVED"),
-  payload: z.object({
-    conversationId: z.string().min(1),
-    from: z.string(),
-    contactName: z.string().min(1),
-    contactPhone: z.string().optional(),
-    contactAvatarUrl: z.string().optional(),
-    messageId: z.string().min(1).optional(),
-  }).strict(),
+  payload: z
+    .object({
+      conversationId: z.string().min(1),
+      from: z.string(),
+      contactName: z.string().min(1),
+      contactPhone: z.string().optional(),
+      contactAvatarUrl: z.string().optional(),
+      messageId: z.string().min(1).optional(),
+    })
+    .strict(),
 });
 
 export const ContactSentEventSchema = BaseEventSchema.extend({
   type: z.literal("CONTACT_SENT"),
-  payload: z.object({
-    conversationId: z.string().min(1),
-    contactName: z.string().min(1),
-    contactPhone: z.string().optional(),
-    contactAvatarUrl: z.string().optional(),
-    messageId: z.string().min(1).optional(),
-  }).strict(),
+  payload: z
+    .object({
+      conversationId: z.string().min(1),
+      contactName: z.string().min(1),
+      contactPhone: z.string().optional(),
+      contactAvatarUrl: z.string().optional(),
+      messageId: z.string().min(1).optional(),
+    })
+    .strict(),
 });
 
 export const LocationReceivedEventSchema = BaseEventSchema.extend({
   type: z.literal("LOCATION_RECEIVED"),
-  payload: z.object({
-    conversationId: z.string().min(1),
-    from: z.string(),
-    latitude: z.number(),
-    longitude: z.number(),
-    locationName: z.string().optional(),
-    locationAddress: z.string().optional(),
-    mapThumbnailUrl: z.string().optional(),
-    messageId: z.string().min(1).optional(),
-  }).strict(),
+  payload: z
+    .object({
+      conversationId: z.string().min(1),
+      from: z.string(),
+      latitude: z.number(),
+      longitude: z.number(),
+      locationName: z.string().optional(),
+      locationAddress: z.string().optional(),
+      mapThumbnailUrl: z.string().optional(),
+      messageId: z.string().min(1).optional(),
+    })
+    .strict(),
 });
 
 export const LocationSentEventSchema = BaseEventSchema.extend({
   type: z.literal("LOCATION_SENT"),
-  payload: z.object({
-    conversationId: z.string().min(1),
-    latitude: z.number(),
-    longitude: z.number(),
-    locationName: z.string().optional(),
-    locationAddress: z.string().optional(),
-    mapThumbnailUrl: z.string().optional(),
-    messageId: z.string().min(1).optional(),
-  }).strict(),
+  payload: z
+    .object({
+      conversationId: z.string().min(1),
+      latitude: z.number(),
+      longitude: z.number(),
+      locationName: z.string().optional(),
+      locationAddress: z.string().optional(),
+      mapThumbnailUrl: z.string().optional(),
+      messageId: z.string().min(1).optional(),
+    })
+    .strict(),
 });
 
 // =============================================================================
@@ -309,79 +353,95 @@ export const LocationSentEventSchema = BaseEventSchema.extend({
 
 export const ReactionAddedEventSchema = BaseEventSchema.extend({
   type: z.literal("REACTION_ADDED"),
-  payload: z.object({
-    conversationId: z.string().min(1),
-    messageId: z.string().min(1),
-    emoji: z.string().min(1),
-    fromMe: z.boolean().optional(),
-  }).strict(),
+  payload: z
+    .object({
+      conversationId: z.string().min(1),
+      messageId: z.string().min(1),
+      emoji: z.string().min(1),
+      fromMe: z.boolean().optional(),
+    })
+    .strict(),
 });
 
 export const MessageReadEventSchema = BaseEventSchema.extend({
   type: z.literal("MESSAGE_READ"),
-  payload: z.object({
-    conversationId: z.string().min(1),
-    messageId: z.string().min(1),
-  }).strict(),
+  payload: z
+    .object({
+      conversationId: z.string().min(1),
+      messageId: z.string().min(1),
+    })
+    .strict(),
 });
 
 export const MessageDeliveryFailedEventSchema = BaseEventSchema.extend({
   type: z.literal("MESSAGE_DELIVERY_FAILED"),
-  payload: z.object({
-    conversationId: z.string().min(1),
-    messageId: z.string().min(1),
-    failureReason: z.string().min(1),
-  }).strict(),
+  payload: z
+    .object({
+      conversationId: z.string().min(1),
+      messageId: z.string().min(1),
+      failureReason: z.string().min(1),
+    })
+    .strict(),
 });
 
 export const MessageRetryStartedEventSchema = BaseEventSchema.extend({
   type: z.literal("MESSAGE_RETRY_STARTED"),
-  payload: z.object({
-    conversationId: z.string().min(1),
-    messageId: z.string().min(1),
-  }).strict(),
+  payload: z
+    .object({
+      conversationId: z.string().min(1),
+      messageId: z.string().min(1),
+    })
+    .strict(),
 });
 
 export const MessageRetryCompletedEventSchema = BaseEventSchema.extend({
   type: z.literal("MESSAGE_RETRY_COMPLETED"),
-  payload: z.object({
-    conversationId: z.string().min(1),
-    messageId: z.string().min(1),
-  }).strict(),
+  payload: z
+    .object({
+      conversationId: z.string().min(1),
+      messageId: z.string().min(1),
+    })
+    .strict(),
 });
 
 export const MessageDeletedEventSchema = BaseEventSchema.extend({
   type: z.literal("MESSAGE_DELETED"),
-  payload: z.object({
-    conversationId: z.string().min(1),
-    messageId: z.string().min(1),
-    deletedForEveryone: z.boolean().optional(),
-    deletedBy: z.string().optional(),
-  }).strict(),
+  payload: z
+    .object({
+      conversationId: z.string().min(1),
+      messageId: z.string().min(1),
+      deletedForEveryone: z.boolean().optional(),
+      deletedBy: z.string().optional(),
+    })
+    .strict(),
 });
 
 export const MessageEditedEventSchema = BaseEventSchema.extend({
   type: z.literal("MESSAGE_EDITED"),
-  payload: z.object({
-    conversationId: z.string().min(1),
-    messageId: z.string().min(1),
-    newText: z.string(),
-  }).strict(),
+  payload: z
+    .object({
+      conversationId: z.string().min(1),
+      messageId: z.string().min(1),
+      newText: z.string(),
+    })
+    .strict(),
 });
 
 export const MessageForwardedEventSchema = BaseEventSchema.extend({
   type: z.literal("MESSAGE_FORWARDED"),
-  payload: z.object({
-    conversationId: z.string().min(1),
-    sourceMessageId: z.string().min(1),
-    messageId: z.string().min(1).optional(),
-    messageType: z.string().optional(),
-    text: z.string().optional(),
-    imageUrl: z.string().optional(),
-    videoUrl: z.string().optional(),
-    gifUrl: z.string().optional(),
-    forwardedFrom: z.string().optional(),
-  }).strict(),
+  payload: z
+    .object({
+      conversationId: z.string().min(1),
+      sourceMessageId: z.string().min(1),
+      messageId: z.string().min(1).optional(),
+      messageType: z.string().optional(),
+      text: z.string().optional(),
+      imageUrl: z.string().optional(),
+      videoUrl: z.string().optional(),
+      gifUrl: z.string().optional(),
+      forwardedFrom: z.string().optional(),
+    })
+    .strict(),
 });
 
 // =============================================================================
@@ -439,10 +499,12 @@ export const MediaPlaybackCompletedEventSchema = BaseEventSchema.extend({
 
 export const MediaViewerOpenedEventSchema = BaseEventSchema.extend({
   type: z.literal("MEDIA_VIEWER_OPENED"),
-  payload: z.object({
-    conversationId: z.string().min(1),
-    messageId: z.string().min(1),
-  }).strict(),
+  payload: z
+    .object({
+      conversationId: z.string().min(1),
+      messageId: z.string().min(1),
+    })
+    .strict(),
 });
 
 export const MediaViewerClosedEventSchema = BaseEventSchema.extend({
@@ -471,36 +533,44 @@ export const StatusViewerClosedEventSchema = BaseEventSchema.extend({
 
 export const GestureStartedEventSchema = BaseEventSchema.extend({
   type: z.literal("GESTURE_STARTED"),
-  payload: z.object({
-    conversationId: z.string().min(1),
-    messageId: z.string().min(1),
-    gesture: z.enum(["long_press", "swipe_reply"]),
-  }).strict(),
+  payload: z
+    .object({
+      conversationId: z.string().min(1),
+      messageId: z.string().min(1),
+      gesture: z.enum(["long_press", "swipe_reply"]),
+    })
+    .strict(),
 });
 
 export const GestureUpdatedEventSchema = BaseEventSchema.extend({
   type: z.literal("GESTURE_UPDATED"),
-  payload: z.object({
-    conversationId: z.string().min(1),
-    messageId: z.string().min(1),
-    progress: z.number().min(0).max(1),
-  }).strict(),
+  payload: z
+    .object({
+      conversationId: z.string().min(1),
+      messageId: z.string().min(1),
+      progress: z.number().min(0).max(1),
+    })
+    .strict(),
 });
 
 export const GestureCompletedEventSchema = BaseEventSchema.extend({
   type: z.literal("GESTURE_COMPLETED"),
-  payload: z.object({
-    conversationId: z.string().min(1),
-    messageId: z.string().min(1),
-  }).strict(),
+  payload: z
+    .object({
+      conversationId: z.string().min(1),
+      messageId: z.string().min(1),
+    })
+    .strict(),
 });
 
 export const GestureCancelledEventSchema = BaseEventSchema.extend({
   type: z.literal("GESTURE_CANCELLED"),
-  payload: z.object({
-    conversationId: z.string().min(1),
-    messageId: z.string().min(1),
-  }).strict(),
+  payload: z
+    .object({
+      conversationId: z.string().min(1),
+      messageId: z.string().min(1),
+    })
+    .strict(),
 });
 
 export const ReplyComposerDismissedEventSchema = BaseEventSchema.extend({
@@ -519,33 +589,46 @@ export const SetLocaleEventSchema = BaseEventSchema.extend({
 
 export const NavigateScreenEventSchema = BaseEventSchema.extend({
   type: z.literal("NAVIGATE_SCREEN"),
-  payload: z.object({
-    screen: z.enum([
-      "chats",
-      "chat",
-      "updates",
-      "calls",
-      "communities",
-      "settings",
-      "profile",
-    ]),
-    conversationId: z.string().min(1).optional(),
-  }).strict(),
+  payload: z
+    .object({
+      scroll: z
+        .object({
+          offset: z.number().finite().nonnegative(),
+          durationFrames: z.number().int().nonnegative(),
+        })
+        .strict()
+        .optional(),
+      screen: z.enum([
+        "chats",
+        "chat",
+        "updates",
+        "calls",
+        "communities",
+        "settings",
+        "profile",
+      ]),
+      conversationId: z.string().min(1).optional(),
+    })
+    .strict(),
 });
 
 export const ConversationOpenedEventSchema = BaseEventSchema.extend({
   type: z.literal("CONVERSATION_OPENED"),
-  payload: z.object({
-    conversationId: z.string().min(1),
-  }).strict(),
+  payload: z
+    .object({
+      conversationId: z.string().min(1),
+    })
+    .strict(),
 });
 
 export const ReadMessagesEventSchema = BaseEventSchema.extend({
   type: z.literal("READ"),
-  payload: z.object({
-    conversationId: z.string().min(1),
-    count: z.number().int().nonnegative().optional(),
-  }).strict(),
+  payload: z
+    .object({
+      conversationId: z.string().min(1),
+      count: z.number().int().nonnegative().optional(),
+    })
+    .strict(),
 });
 
 // =============================================================================
@@ -554,43 +637,51 @@ export const ReadMessagesEventSchema = BaseEventSchema.extend({
 
 export const GroupMemberAddedEventSchema = BaseEventSchema.extend({
   type: z.literal("GROUP_MEMBER_ADDED"),
-  payload: z.object({
-    conversationId: z.string().min(1),
-    memberId: z.string().min(1),
-    memberName: z.string().min(1),
-    addedBy: z.string().min(1).optional(),
-  }).strict(),
+  payload: z
+    .object({
+      conversationId: z.string().min(1),
+      memberId: z.string().min(1),
+      memberName: z.string().min(1),
+      addedBy: z.string().min(1).optional(),
+    })
+    .strict(),
 });
 
 export const GroupMemberRemovedEventSchema = BaseEventSchema.extend({
   type: z.literal("GROUP_MEMBER_REMOVED"),
-  payload: z.object({
-    conversationId: z.string().min(1),
-    memberId: z.string().min(1),
-    memberName: z.string().min(1),
-    removedBy: z.string().min(1).optional(),
-  }).strict(),
+  payload: z
+    .object({
+      conversationId: z.string().min(1),
+      memberId: z.string().min(1),
+      memberName: z.string().min(1),
+      removedBy: z.string().min(1).optional(),
+    })
+    .strict(),
 });
 
 export const GroupAdminChangedEventSchema = BaseEventSchema.extend({
   type: z.literal("GROUP_ADMIN_CHANGED"),
-  payload: z.object({
-    conversationId: z.string().min(1),
-    memberId: z.string().min(1),
-    memberName: z.string().min(1).optional(),
-    action: z.enum(["promote", "demote"]),
-    changedBy: z.string().min(1),
-  }).strict(),
+  payload: z
+    .object({
+      conversationId: z.string().min(1),
+      memberId: z.string().min(1),
+      memberName: z.string().min(1).optional(),
+      action: z.enum(["promote", "demote"]),
+      changedBy: z.string().min(1),
+    })
+    .strict(),
 });
 
 export const GroupInfoUpdatedEventSchema = BaseEventSchema.extend({
   type: z.literal("GROUP_INFO_UPDATED"),
-  payload: z.object({
-    conversationId: z.string().min(1),
-    field: z.enum(["name", "avatar", "description"]),
-    newValue: z.string(),
-    changedBy: z.string().min(1),
-  }).strict(),
+  payload: z
+    .object({
+      conversationId: z.string().min(1),
+      field: z.enum(["name", "avatar", "description"]),
+      newValue: z.string(),
+      changedBy: z.string().min(1),
+    })
+    .strict(),
 });
 
 // =============================================================================
@@ -609,10 +700,12 @@ export const UnpinConversationEventSchema = BaseEventSchema.extend({
 
 export const MuteConversationEventSchema = BaseEventSchema.extend({
   type: z.literal("MUTE_CONVERSATION"),
-  payload: z.object({
-    conversationId: z.string().min(1),
-    until: z.string().optional(),
-  }).strict(),
+  payload: z
+    .object({
+      conversationId: z.string().min(1),
+      until: z.string().optional(),
+    })
+    .strict(),
 });
 
 export const UnmuteConversationEventSchema = BaseEventSchema.extend({
@@ -632,10 +725,12 @@ export const UnarchiveConversationEventSchema = BaseEventSchema.extend({
 
 export const SetDraftEventSchema = BaseEventSchema.extend({
   type: z.literal("SET_DRAFT"),
-  payload: z.object({
-    conversationId: z.string().min(1),
-    text: z.string(),
-  }).strict(),
+  payload: z
+    .object({
+      conversationId: z.string().min(1),
+      text: z.string(),
+    })
+    .strict(),
 });
 
 // =============================================================================
@@ -739,44 +834,92 @@ export type LocationReceivedEvent = z.infer<typeof LocationReceivedEventSchema>;
 export type LocationSentEvent = z.infer<typeof LocationSentEventSchema>;
 export type ReactionAddedEvent = z.infer<typeof ReactionAddedEventSchema>;
 export type MessageReadEvent = z.infer<typeof MessageReadEventSchema>;
-export type MessageDeliveryFailedEvent = z.infer<typeof MessageDeliveryFailedEventSchema>;
-export type MessageRetryStartedEvent = z.infer<typeof MessageRetryStartedEventSchema>;
-export type MessageRetryCompletedEvent = z.infer<typeof MessageRetryCompletedEventSchema>;
+export type MessageDeliveryFailedEvent = z.infer<
+  typeof MessageDeliveryFailedEventSchema
+>;
+export type MessageRetryStartedEvent = z.infer<
+  typeof MessageRetryStartedEventSchema
+>;
+export type MessageRetryCompletedEvent = z.infer<
+  typeof MessageRetryCompletedEventSchema
+>;
 export type MessageDeletedEvent = z.infer<typeof MessageDeletedEventSchema>;
 export type MessageEditedEvent = z.infer<typeof MessageEditedEventSchema>;
 export type MessageForwardedEvent = z.infer<typeof MessageForwardedEventSchema>;
-export type MediaDownloadStartedEvent = z.infer<typeof MediaDownloadStartedEventSchema>;
-export type MediaDownloadProgressEvent = z.infer<typeof MediaDownloadProgressEventSchema>;
-export type MediaDownloadCompletedEvent = z.infer<typeof MediaDownloadCompletedEventSchema>;
-export type MediaDownloadFailedEvent = z.infer<typeof MediaDownloadFailedEventSchema>;
-export type MediaPlaybackStartedEvent = z.infer<typeof MediaPlaybackStartedEventSchema>;
-export type MediaPlaybackProgressEvent = z.infer<typeof MediaPlaybackProgressEventSchema>;
-export type MediaPlaybackPausedEvent = z.infer<typeof MediaPlaybackPausedEventSchema>;
-export type MediaPlaybackCompletedEvent = z.infer<typeof MediaPlaybackCompletedEventSchema>;
-export type MediaViewerOpenedEvent = z.infer<typeof MediaViewerOpenedEventSchema>;
-export type MediaViewerClosedEvent = z.infer<typeof MediaViewerClosedEventSchema>;
-export type StatusViewerOpenedEvent = z.infer<typeof StatusViewerOpenedEventSchema>;
-export type StatusViewerAdvancedEvent = z.infer<typeof StatusViewerAdvancedEventSchema>;
-export type StatusViewerClosedEvent = z.infer<typeof StatusViewerClosedEventSchema>;
+export type MediaDownloadStartedEvent = z.infer<
+  typeof MediaDownloadStartedEventSchema
+>;
+export type MediaDownloadProgressEvent = z.infer<
+  typeof MediaDownloadProgressEventSchema
+>;
+export type MediaDownloadCompletedEvent = z.infer<
+  typeof MediaDownloadCompletedEventSchema
+>;
+export type MediaDownloadFailedEvent = z.infer<
+  typeof MediaDownloadFailedEventSchema
+>;
+export type MediaPlaybackStartedEvent = z.infer<
+  typeof MediaPlaybackStartedEventSchema
+>;
+export type MediaPlaybackProgressEvent = z.infer<
+  typeof MediaPlaybackProgressEventSchema
+>;
+export type MediaPlaybackPausedEvent = z.infer<
+  typeof MediaPlaybackPausedEventSchema
+>;
+export type MediaPlaybackCompletedEvent = z.infer<
+  typeof MediaPlaybackCompletedEventSchema
+>;
+export type MediaViewerOpenedEvent = z.infer<
+  typeof MediaViewerOpenedEventSchema
+>;
+export type MediaViewerClosedEvent = z.infer<
+  typeof MediaViewerClosedEventSchema
+>;
+export type StatusViewerOpenedEvent = z.infer<
+  typeof StatusViewerOpenedEventSchema
+>;
+export type StatusViewerAdvancedEvent = z.infer<
+  typeof StatusViewerAdvancedEventSchema
+>;
+export type StatusViewerClosedEvent = z.infer<
+  typeof StatusViewerClosedEventSchema
+>;
 export type GestureStartedEvent = z.infer<typeof GestureStartedEventSchema>;
 export type GestureUpdatedEvent = z.infer<typeof GestureUpdatedEventSchema>;
 export type GestureCompletedEvent = z.infer<typeof GestureCompletedEventSchema>;
 export type GestureCancelledEvent = z.infer<typeof GestureCancelledEventSchema>;
-export type ReplyComposerDismissedEvent = z.infer<typeof ReplyComposerDismissedEventSchema>;
+export type ReplyComposerDismissedEvent = z.infer<
+  typeof ReplyComposerDismissedEventSchema
+>;
 export type SetLocaleEvent = z.infer<typeof SetLocaleEventSchema>;
 export type NavigateScreenEvent = z.infer<typeof NavigateScreenEventSchema>;
-export type ConversationOpenedEvent = z.infer<typeof ConversationOpenedEventSchema>;
+export type ConversationOpenedEvent = z.infer<
+  typeof ConversationOpenedEventSchema
+>;
 export type ReadMessagesEvent = z.infer<typeof ReadMessagesEventSchema>;
 export type GroupMemberAddedEvent = z.infer<typeof GroupMemberAddedEventSchema>;
-export type GroupMemberRemovedEvent = z.infer<typeof GroupMemberRemovedEventSchema>;
-export type GroupAdminChangedEvent = z.infer<typeof GroupAdminChangedEventSchema>;
+export type GroupMemberRemovedEvent = z.infer<
+  typeof GroupMemberRemovedEventSchema
+>;
+export type GroupAdminChangedEvent = z.infer<
+  typeof GroupAdminChangedEventSchema
+>;
 export type GroupInfoUpdatedEvent = z.infer<typeof GroupInfoUpdatedEventSchema>;
 export type PinConversationEvent = z.infer<typeof PinConversationEventSchema>;
-export type UnpinConversationEvent = z.infer<typeof UnpinConversationEventSchema>;
+export type UnpinConversationEvent = z.infer<
+  typeof UnpinConversationEventSchema
+>;
 export type MuteConversationEvent = z.infer<typeof MuteConversationEventSchema>;
-export type UnmuteConversationEvent = z.infer<typeof UnmuteConversationEventSchema>;
-export type ArchiveConversationEvent = z.infer<typeof ArchiveConversationEventSchema>;
-export type UnarchiveConversationEvent = z.infer<typeof UnarchiveConversationEventSchema>;
+export type UnmuteConversationEvent = z.infer<
+  typeof UnmuteConversationEventSchema
+>;
+export type ArchiveConversationEvent = z.infer<
+  typeof ArchiveConversationEventSchema
+>;
+export type UnarchiveConversationEvent = z.infer<
+  typeof UnarchiveConversationEventSchema
+>;
 export type SetDraftEvent = z.infer<typeof SetDraftEventSchema>;
 
 // =============================================================================

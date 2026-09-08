@@ -4,7 +4,7 @@
  * ALL plugin-specific data goes in the `payload` field.
  * This prevents the "from/text location mismatch" bugs forever.
  *
- * @see docs/architecture/core-runtime.md
+ * @see docs/ENGINEERING_HANDBOOK.md
  */
 
 // =============================================================================
@@ -383,6 +383,7 @@ export type OverlayVariant =
   | "caption"
   | "receipt"
   | "reactionGif"
+  | "performer"
   | "cliffhanger";
 
 export type OverlayPlacementPreset =

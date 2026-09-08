@@ -96,6 +96,7 @@ describe("visual system", () => {
       "studio-quiet-light",
       "ambient-depth",
       "editorial-neon",
+      "signal-pop",
     ] as const) {
       const profile = requireBackdropProfile(id);
       expect(profile.orientation).toBe("orientation-free");

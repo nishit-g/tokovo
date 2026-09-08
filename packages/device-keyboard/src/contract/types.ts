@@ -272,6 +272,7 @@ export interface InputProjection {
     presentation: InputPresentationStrategy;
     returnKey: InputReturnKey;
     activeKey: string | null;
+    uppercase?: boolean;
     suggestions: readonly string[];
     candidateMode: "suggestions" | "toolbar";
     activeSuggestionIndex: number | null;

@@ -157,19 +157,28 @@ describe("WhatsApp UI architecture boundary", () => {
     expect(violations).toEqual([]);
   });
 
-  it("keeps the canonical message item SVG-based and semantically subjected", () => {
-    const source = readFileSync(
+  it("keeps message orchestration separate from reusable bubble chrome", () => {
+    const itemSource = readFileSync(
       join(sourceRoot, "components/ChatMessageItem.tsx"),
       "utf8",
     );
-    expect(source).toContain("export const ChatMessageItem");
-    expect(source).toContain("function BubbleTail");
-    expect(source).toContain("function DeliveryGlyph");
-    expect(source).toContain('data-cinematic-subject="message"');
-    expect(source).toContain('data-cinematic-subject="message-footer"');
-    expect(source).toContain('data-cinematic-subject="reactions"');
-    expect(source).toContain('role="listitem"');
-    expect(source).toContain("<svg");
+    const bubbleSource = readFileSync(
+      join(sourceRoot, "components/MessageEnvelope.tsx"),
+      "utf8",
+    );
+    const primitiveSource = readFileSync(
+      join(sourceRoot, "components/MessageBubblePrimitives.tsx"),
+      "utf8",
+    );
+    expect(itemSource).toContain("export const ChatMessageItem");
+    expect(itemSource).toContain('data-cinematic-subject="message"');
+    expect(itemSource).toContain('role="listitem"');
+    expect(bubbleSource).toContain("export const MessageEnvelope");
+    expect(primitiveSource).toContain("function BubbleSurface");
+    expect(primitiveSource).toContain("function DeliveryGlyph");
+    expect(primitiveSource).toContain('data-cinematic-subject="message-footer"');
+    expect(primitiveSource).toContain('data-cinematic-subject="reactions"');
+    expect(primitiveSource).toContain("<svg");
   });
 
   it("uses the public APP event type as the runtime discriminator", () => {

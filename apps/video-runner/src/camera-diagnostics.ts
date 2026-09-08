@@ -3,22 +3,32 @@ import {
   diffCameraPrograms,
   explainCameraProgramFrame,
 } from "@tokovo/camera";
-import { getEpisodeRenderData } from "./render-data.js";
+import {
+  getEpisodeRenderData,
+  type EpisodeRenderData,
+} from "./render-data.js";
 import { getSharedVideoRunnerRuntime } from "./runtime.js";
 
-async function requirePrograms(episodeId: string) {
-  const renderData = await getEpisodeRenderData(episodeId);
+function requirePreparedPrograms(renderData: EpisodeRenderData) {
   const cinematics = renderData.prepared.cinematics;
   if (!cinematics) {
-    throw new Error(`Episode "${episodeId}" has no prepared cinematics.`);
+    throw new Error(
+      `Episode "${renderData.episodeId}" has no prepared cinematics.`,
+    );
   }
   return cinematics;
 }
 
-export async function getEpisodeCameraProgramManifests(episodeId: string) {
-  const cinematics = await requirePrograms(episodeId);
+async function requirePrograms(episodeId: string) {
+  return requirePreparedPrograms(await getEpisodeRenderData(episodeId));
+}
+
+export function getRenderDataCameraProgramManifests(
+  renderData: EpisodeRenderData,
+) {
+  const cinematics = requirePreparedPrograms(renderData);
   return {
-    episodeId,
+    episodeId: renderData.episodeId,
     storySignature: cinematics.storySignature,
     stageSignature: cinematics.stageProgram.signature,
     defaultCameraPlanId: cinematics.defaultCameraPlanId,
@@ -26,18 +36,24 @@ export async function getEpisodeCameraProgramManifests(episodeId: string) {
   };
 }
 
-export async function getEpisodeCameraArtifact(input: {
-  episodeId: string;
+export async function getEpisodeCameraProgramManifests(episodeId: string) {
+  return getRenderDataCameraProgramManifests(
+    await getEpisodeRenderData(episodeId),
+  );
+}
+
+export function getRenderDataCameraArtifact(input: {
+  renderData: EpisodeRenderData;
   cameraPlanId?: string;
 }) {
-  const cinematics = await requirePrograms(input.episodeId);
+  const cinematics = requirePreparedPrograms(input.renderData);
   const cameraPlanId = input.cameraPlanId ?? cinematics.defaultCameraPlanId;
   const program = cinematics.cameraPrograms.find(
     (candidate) => candidate.plan.id === cameraPlanId,
   );
   if (!program) {
     throw new Error(
-      `CameraPlan "${cameraPlanId}" is not prepared for episode "${input.episodeId}".`,
+      `CameraPlan "${cameraPlanId}" is not prepared for episode "${input.renderData.episodeId}".`,
     );
   }
   return {
@@ -50,33 +66,57 @@ export async function getEpisodeCameraArtifact(input: {
   };
 }
 
-export async function explainEpisodeCameraFrame(input: {
+export async function getEpisodeCameraArtifact(input: {
   episodeId: string;
+  cameraPlanId?: string;
+}) {
+  return getRenderDataCameraArtifact({
+    renderData: await getEpisodeRenderData(input.episodeId),
+    cameraPlanId: input.cameraPlanId,
+  });
+}
+
+export function explainRenderDataCameraFrame(input: {
+  renderData: EpisodeRenderData;
   cameraPlanId?: string;
   outputId?: string;
   frame: number;
 }) {
-  const cinematics = await requirePrograms(input.episodeId);
+  const cinematics = requirePreparedPrograms(input.renderData);
   const cameraPlanId = input.cameraPlanId ?? cinematics.defaultCameraPlanId;
   const program = cinematics.cameraPrograms.find(
     (candidate) => candidate.plan.id === cameraPlanId,
   );
   if (!program) {
     throw new Error(
-      `CameraPlan "${cameraPlanId}" is not prepared for episode "${input.episodeId}".`,
+      `CameraPlan "${cameraPlanId}" is not prepared for episode "${input.renderData.episodeId}".`,
     );
   }
   const outputId = input.outputId ?? program.plan.outputs[0]?.id;
   if (!outputId)
     throw new Error(`CameraPlan "${cameraPlanId}" has no outputs.`);
   return {
-    episodeId: input.episodeId,
+    episodeId: input.renderData.episodeId,
     ...explainCameraProgramFrame({
       program,
       outputId,
       frame: input.frame,
     }),
   };
+}
+
+export async function explainEpisodeCameraFrame(input: {
+  episodeId: string;
+  cameraPlanId?: string;
+  outputId?: string;
+  frame: number;
+}) {
+  return explainRenderDataCameraFrame({
+    renderData: await getEpisodeRenderData(input.episodeId),
+    cameraPlanId: input.cameraPlanId,
+    outputId: input.outputId,
+    frame: input.frame,
+  });
 }
 
 export async function diffEpisodeCameraPlans(input: {

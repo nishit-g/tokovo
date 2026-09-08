@@ -1,0 +1,84 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="1920" viewBox="0 0 1080 1920" role="img" aria-labelledby="title description">
+  <title id="title">The apology template went live</title>
+  <desc id="description">A fictional Orbit incident card showing an unfinished apology in a published export.</desc>
+  <defs>
+    <linearGradient id="background" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#111827"/>
+      <stop offset=".55" stop-color="#17142b"/>
+      <stop offset="1" stop-color="#251338"/>
+    </linearGradient>
+    <linearGradient id="warning" x1="0" y1="0" x2="1" y2="0">
+      <stop stop-color="#ffbd59"/>
+      <stop offset="1" stop-color="#ff6b6b"/>
+    </linearGradient>
+    <filter id="shadow" x="-30%" y="-30%" width="160%" height="180%">
+      <feDropShadow dx="0" dy="30" stdDeviation="34" flood-color="#05030b" flood-opacity=".55"/>
+    </filter>
+  </defs>
+
+  <rect width="1080" height="1920" fill="url(#background)"/>
+  <g opacity=".12" stroke="#f8fafc">
+    <path d="M0 240h1080M0 480h1080M0 720h1080M0 960h1080M0 1200h1080M0 1440h1080M0 1680h1080"/>
+    <path d="M180 0v1920M360 0v1920M540 0v1920M720 0v1920M900 0v1920"/>
+  </g>
+
+  <g transform="translate(82 92)" font-family="Inter, Arial, sans-serif">
+    <g>
+      <circle cx="24" cy="24" r="24" fill="#ff6b6b"/>
+      <path d="M24 12v17M24 37v1" fill="none" stroke="#190b10" stroke-width="6" stroke-linecap="round"/>
+      <text x="68" y="12" fill="#aab4c6" font-size="24" font-weight="700" letter-spacing="3">ORBIT INCIDENT 007</text>
+      <text x="68" y="48" fill="#f8fafc" font-size="28" font-weight="760">Published export review</text>
+    </g>
+    <rect y="104" width="916" height="4" rx="2" fill="#334155"/>
+  </g>
+
+  <g transform="translate(82 300)" font-family="Inter, Arial, sans-serif">
+    <text fill="#ffbd59" font-size="24" font-weight="800" letter-spacing="4">LIVE SUBTITLE</text>
+    <text y="98" fill="#f8fafc" font-size="72" font-weight="820" letter-spacing="-2">
+      <tspan x="0">WE TAKE FULL</tspan>
+      <tspan x="0" dy="82">ACCOUNTABILITY.</tspan>
+    </text>
+  </g>
+
+  <g transform="translate(82 602)" filter="url(#shadow)" font-family="Inter, Arial, sans-serif">
+    <rect width="916" height="326" rx="42" fill="#0b1220" stroke="#5b6475" stroke-width="3"/>
+    <rect x="32" y="32" width="852" height="68" rx="20" fill="#172033"/>
+    <circle cx="70" cy="66" r="12" fill="#ff6b6b"/>
+    <text x="100" y="76" fill="#b7c1d2" font-size="25" font-weight="700">Subtitle track · English</text>
+    <text x="48" y="168" fill="#ff7b7b" font-size="35" font-weight="820">[INSERT LEGAL-APPROVED</text>
+    <text x="48" y="218" fill="#ff7b7b" font-size="35" font-weight="820">APOLOGY]</text>
+    <path d="M48 264h820" stroke="url(#warning)" stroke-width="6" stroke-linecap="round"/>
+    <text x="48" y="304" fill="#8fa0b8" font-size="22" font-weight="620">Placeholder detected after publish</text>
+  </g>
+
+  <g transform="translate(82 1020)" font-family="Inter, Arial, sans-serif">
+    <text fill="#94a3b8" font-size="23" font-weight="780" letter-spacing="3">EXPORT QUEUE</text>
+    <g transform="translate(0 62)" filter="url(#shadow)">
+      <rect width="916" height="278" rx="36" fill="#172033" stroke="#35445d" stroke-width="3"/>
+      <rect x="34" y="34" width="150" height="150" rx="28" fill="#222d43"/>
+      <path d="M82 75h55l28 28v64H82z" fill="#ffbd59"/>
+      <path d="M137 75v30h28" fill="none" stroke="#422315" stroke-width="7" stroke-linejoin="round"/>
+      <text x="220" y="80" fill="#f8fafc" font-size="31" font-weight="790">FINAL_USE_THIS_v7.mp4</text>
+      <text x="220" y="124" fill="#91a0b6" font-size="22" font-weight="620">Master export · subtitles burned in</text>
+      <rect x="220" y="158" width="236" height="52" rx="26" fill="#482329" stroke="#ff6b6b" stroke-width="2"/>
+      <circle cx="252" cy="184" r="9" fill="#ff6b6b"/>
+      <text x="276" y="192" fill="#ffaaaa" font-size="20" font-weight="820" letter-spacing="1.4">PUBLISHED</text>
+      <text x="866" y="192" fill="#f8fafc" font-size="26" font-weight="780" text-anchor="end">2.4M views</text>
+      <rect x="34" y="238" width="848" height="6" rx="3" fill="#334155"/>
+      <rect x="34" y="238" width="848" height="6" rx="3" fill="url(#warning)"/>
+    </g>
+  </g>
+
+  <g transform="translate(82 1496)" font-family="Inter, Arial, sans-serif">
+    <rect width="916" height="222" rx="38" fill="#f8fafc"/>
+    <text x="42" y="64" fill="#5b6475" font-size="22" font-weight="800" letter-spacing="3">POSTMORTEM STATUS</text>
+    <text x="42" y="128" fill="#111827" font-size="48" font-weight="850">TEMPLATE: PENDING</text>
+    <text x="42" y="176" fill="#5b6475" font-size="25" font-weight="650">Engagement: unfortunately excellent</text>
+  </g>
+
+  <g transform="translate(82 1812)" font-family="Inter, Arial, sans-serif">
+    <text fill="#8fa0b8" font-size="21" font-weight="720" letter-spacing="2">INTERNAL REVIEW COPY · DO NOT PUBLISH</text>
+    <rect x="788" y="-24" width="128" height="42" rx="21" fill="#153a2c" stroke="#25d366"/>
+    <text x="852" y="5" fill="#62e58f" font-size="16" font-weight="820" text-anchor="middle">TOO LATE</text>
+  </g>
+</svg>

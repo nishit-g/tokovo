@@ -58,9 +58,10 @@ describe("release episode taxonomy", () => {
   });
 
   it("ships the full new-only curated wave", () => {
-    expect(appShowcaseEpisodes).toHaveLength(22);
-    expect(systemShowcaseEpisodes).toHaveLength(10);
-    expect(storyEpisodes).toHaveLength(8);
+    expect(appShowcaseEpisodes).toHaveLength(25);
+    expect(systemShowcaseEpisodes).toHaveLength(11);
+    expect(storyEpisodes).toHaveLength(14);
+    expect(storyEpisodes.some((item) => item.meta.id === "ping-sent-it")).toBe(true);
   });
 
   it("keeps curated catalogs free of obsolete wrappers and imports", () => {

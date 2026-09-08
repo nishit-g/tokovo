@@ -1,20 +1,10 @@
 import { staticFile } from "remotion";
-import {
-  prepareTrackEpisode,
-  type PreparedTrackEpisode,
-} from "@tokovo/compiler";
-import {
-  createConfig,
-  resolveStaticAssetSrc,
-  type EpisodeAssetRef,
-} from "@tokovo/core";
-import type { BackgroundConfigIR, VoiceConfig } from "@tokovo/ir";
+import { prepareTrackEpisode, type PreparedTrackEpisode } from "@tokovo/compiler";
+import type { SerializableEpisodeRenderData } from "@tokovo/composition";
+import { createConfig, resolveStaticAssetSrc, type EpisodeAssetRef } from "@tokovo/core";
+import type { VoiceConfig } from "@tokovo/ir";
 import { ensureCanvasProfile, resolveCanvasProfileId } from "@tokovo/devices";
-import {
-  getFormat,
-  type EpisodeDefinition,
-  type FormatId,
-} from "@tokovo/episodes";
+import { getFormat, type EpisodeDefinition, type FormatId } from "@tokovo/episodes";
 import type { PluginManagerClass } from "@tokovo/react";
 import type { VoiceManifest } from "@tokovo/voice";
 import { getSharedVideoRunnerRuntime } from "./runtime";
@@ -35,20 +25,7 @@ type SerializablePreparedEpisode = Pick<
   | "metadata"
 >;
 
-export type EpisodeRenderData = {
-  episodeId: string;
-  sourceSignature: string;
-  durationInFrames: number;
-  format: {
-    width: number;
-    height: number;
-    fps: number;
-  };
-  prepared: SerializablePreparedEpisode;
-  backgroundConfig: BackgroundConfigIR | null;
-  voiceConfig: VoiceConfig | null;
-  voiceManifest: VoiceManifest | null;
-};
+export type EpisodeRenderData = SerializableEpisodeRenderData;
 
 type AssetUrlMap = Record<string, string>;
 
@@ -138,10 +115,7 @@ function evictOldestEntries<K, V>(map: Map<K, V>, maxSize: number): void {
   }
 }
 
-function resolvePlugins(
-  pluginManager: PluginManagerClass,
-  appIds: string[],
-) {
+function resolvePlugins(pluginManager: PluginManagerClass, appIds: string[]) {
   const missing: string[] = [];
   const plugins = appIds
     .map((appId) => {
@@ -151,22 +125,16 @@ function resolvePlugins(
       }
       return plugin;
     })
-    .filter(
-      (plugin): plugin is NonNullable<typeof plugin> => plugin !== undefined,
-    );
+    .filter((plugin): plugin is NonNullable<typeof plugin> => plugin !== undefined);
 
   if (missing.length > 0) {
-    throw new Error(
-      `[Video-Runner] Missing plugins for appIds: ${missing.join(", ")}`,
-    );
+    throw new Error(`[Video-Runner] Missing plugins for appIds: ${missing.join(", ")}`);
   }
 
   return plugins;
 }
 
-function serializePreparedEpisode(
-  prepared: PreparedTrackEpisode,
-): SerializablePreparedEpisode {
+function serializePreparedEpisode(prepared: PreparedTrackEpisode): SerializablePreparedEpisode {
   return {
     id: prepared.id,
     fps: prepared.fps,
@@ -299,14 +267,10 @@ async function prepareEpisodeRenderData(
     voiceManifest,
   };
 
-  return assetUrlMap
-    ? rewriteRenderDataAssetUrls(renderData, assetUrlMap)
-    : renderData;
+  return assetUrlMap ? rewriteEpisodeRenderDataAssetUrls(renderData, assetUrlMap) : renderData;
 }
 
-function preparePreparedEpisode(
-  source: BuiltEpisodeSource,
-): PreparedTrackEpisode {
+function preparePreparedEpisode(source: BuiltEpisodeSource): PreparedTrackEpisode {
   for (const device of source.ir.devices ?? []) {
     if (device.profile !== "canvas") {
       continue;
@@ -323,10 +287,7 @@ function preparePreparedEpisode(
     });
   }
 
-  const plugins = resolvePlugins(
-    getMetadataRuntime().pluginManager,
-    source.episode.config.apps,
-  );
+  const plugins = resolvePlugins(getMetadataRuntime().pluginManager, source.episode.config.apps);
   const prepared = prepareTrackEpisode(source.ir, plugins, {
     config: METADATA_CONFIG,
     validate: true,
@@ -371,11 +332,21 @@ function rewriteAssetUrls<T>(
   return next as T;
 }
 
-function rewriteRenderDataAssetUrls(
+export function rewriteEpisodeRenderDataAssetUrls(
   renderData: EpisodeRenderData,
   assetUrlMap: AssetUrlMap,
 ): EpisodeRenderData {
   return rewriteAssetUrls(renderData, assetUrlMap);
+}
+
+export function getRenderDataAssetSources(renderData: EpisodeRenderData): string[] {
+  return [
+    ...new Set(
+      renderData.prepared.assetRefs
+        .map((asset) => asset.src)
+        .filter((source): source is string => typeof source === "string"),
+    ),
+  ].sort((left, right) => left.localeCompare(right));
 }
 
 export function getEpisodeAssetRefs(episodeId: string): EpisodeAssetRef[] {
@@ -436,10 +407,9 @@ export async function getEpisodeRenderData(
     assetUrlMapOrAbortSignal && !isAbortSignal(assetUrlMapOrAbortSignal)
       ? assetUrlMapOrAbortSignal
       : undefined;
-  const abortSignal =
-    isAbortSignal(assetUrlMapOrAbortSignal)
-      ? assetUrlMapOrAbortSignal
-      : maybeAbortSignal;
+  const abortSignal = isAbortSignal(assetUrlMapOrAbortSignal)
+    ? assetUrlMapOrAbortSignal
+    : maybeAbortSignal;
   const episode = getMetadataRuntime().episodeRegistry.get(episodeId);
   if (!episode) {
     throw new Error(`Episode not found: ${episodeId}`);

@@ -171,6 +171,27 @@ export interface CameraEvaluationTrace {
       regionId: string;
     }[];
   } | null;
+  travel:
+    | {
+        mode: "stabilized";
+        screenPosition: readonly [number, number];
+        projectedCenter: readonly [number, number];
+        desiredCenter: readonly [number, number];
+        driftPx: readonly [number, number];
+        maxDriftPx: readonly [number, number];
+        subjects: readonly {
+          key: string;
+          nodeId: string;
+          worldRect: CameraRectIR;
+          sourceVersion: number;
+          ownerId: string;
+          regionId: string;
+        }[];
+      }
+    | {
+        mode: "intentional";
+        reason: string;
+      };
   constraints: {
     compositionProfileId: CameraPlanIR["outputs"][number]["compositionProfileId"];
     editorialInsets: {
@@ -272,6 +293,7 @@ export interface CameraRigEvaluation {
   rig: CameraRigIR;
   subjects: readonly ResolvedCinematicSubject[];
   framingGuardSubjects: readonly ResolvedCinematicSubject[];
+  mountSubjects: readonly ResolvedCinematicSubject[];
   subjectResolution: "direct" | "explicit-fallback";
 }
 
@@ -284,10 +306,19 @@ export interface CameraQualitySample {
   subjectFillRatio: number;
   cropCompensation: number;
   intentionalDiscontinuity: boolean;
+  travel:
+    | {
+        mode: "stabilized";
+        driftPx: readonly [number, number];
+        maxDriftPx: readonly [number, number];
+      }
+    | {
+        mode: "intentional";
+      };
 }
 
 export interface CameraTemporalQualityReport {
-  version: 1;
+  version: 2;
   passed: boolean;
   sampleCount: number;
   outputs: readonly {
@@ -301,6 +332,9 @@ export interface CameraTemporalQualityReport {
     minimumSubjectFillRatio: number;
     maximumSubjectFillRatio: number;
     fallbackFrameCount: number;
+    stabilizedFrameCount: number;
+    intentionalTravelFrameCount: number;
+    maximumMountDriftPx: readonly [number, number];
     cropCompensationChangeCount: number;
     discontinuityFrames: readonly number[];
     missingFrameRanges: readonly (readonly [number, number])[];
@@ -309,7 +343,8 @@ export interface CameraTemporalQualityReport {
     code:
       | "CAM_QUALITY_FRAME_GAP"
       | "CAM_QUALITY_POSE_DISCONTINUITY"
-      | "CAM_QUALITY_FILL_INVALID";
+      | "CAM_QUALITY_FILL_INVALID"
+      | "CAM_QUALITY_MOUNT_DRIFT";
     outputId: string;
     frame?: number;
     message: string;

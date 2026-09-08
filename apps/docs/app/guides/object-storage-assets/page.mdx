@@ -2,7 +2,7 @@
 
 Tokovo supports three asset and artifact storage modes:
 
-- local `public/` assets for fast authoring and studio work
+- local `public/` assets for fast authoring and browser preview
 - object-storage source assets for render-service jobs
 - object-storage render artifacts with presigned download URLs
 
@@ -18,7 +18,8 @@ Examples:
 - `/avatars/alex.jpg`
 - `/voice/episode.mp3`
 
-This is still the default authoring path and it works in Studio and in render-service renders.
+This is still the default authoring path and it works in video-runner preview and render-service
+renders.
 
 ### Object-storage source assets
 
@@ -137,9 +138,10 @@ The current asset strategy follows Remotion's loading model instead of fighting 
 
 `r2://...` source assets are supported for render-service jobs.
 
-Studio/browser preview still expects either:
+Browser preview still expects either:
 
 - local `public/` assets
 - already-public asset URLs
 
-If object-storage preview is needed later, add a dedicated signing endpoint for Studio instead of making the bucket public.
+If object-storage preview is needed later, add a dedicated preview-signing endpoint instead of
+making the bucket public.

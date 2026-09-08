@@ -11,11 +11,13 @@ Create a file like `packages/episodes/src/stories/my-first-story.episode.ts`:
 ```ts
 import { defineEpisode } from "@tokovo/episodes";
 import { episode } from "@tokovo/episodes/code-first-episode";
-import { cameraSubject, cinematicProgram } from "@tokovo/dsl";
+import {
+  cameraSubject,
+  cinematicProgram,
+  cinematicShot as shot,
+} from "@tokovo/dsl";
 
-const phone = cameraSubject.device("phone", "body");
-const thread = cameraSubject.semantic("phone", "app_whatsapp", "chat_thread");
-const latest = cameraSubject.semantic("phone", "app_whatsapp", "last-message");
+const phone = cameraSubject.scope("phone", "app_whatsapp");
 
 const cinematics = cinematicProgram(
   {
@@ -28,42 +30,55 @@ const cinematics = cinematicProgram(
     },
   },
   (program) => {
-    program.plan(
-      "story-cut",
-      (camera) => {
-        camera
-          .output("portrait-main", {
-            viewport: { x: 0, y: 0, width: 1080, height: 1920 },
-            defaultRigId: "neutral",
-            coveragePolicy: "require-shots",
-            compositionProfileId: "hero-device",
-          })
-          .rig("neutral", {
-            outputId: "portrait-main",
-            subject: phone,
-            composer: {
-              screenPosition: [0.5, 0.5],
-              targetFill: 0.84,
-              fillMode: "contain",
-            },
-          })
-          .shot("thread", "portrait-main", "0s", "7.2s", (shot) =>
-            shot
-              .target(thread)
-              .guard(phone, { paddingPx: 36 })
-              .frame({ screenPosition: [0.5, 0.52], targetFill: 0.58 })
-              .settle("420ms"),
-          )
-          .shot("reply", "portrait-main", "7.2s", "10s", (shot) =>
-            shot
-              .target(latest)
-              .guard(phone, { paddingPx: 36 })
-              .frame({ screenPosition: [0.5, 0.64], targetFill: 0.34 })
-              .settle("360ms"),
-          );
+    program.planFamily({
+      plans: [{ id: "story-cut", default: true }],
+      framings: {
+        thread: {
+          position: [0.5, 0.52],
+          fill: 0.58,
+          mode: "width",
+        },
+        reply: {
+          position: [0.5, 0.64],
+          fill: 0.34,
+          mode: "width",
+        },
       },
-      { default: true },
-    );
+      outputs: [
+        {
+          id: "portrait-main",
+          viewport: { x: 0, y: 0, width: 1080, height: 1920 },
+          coveragePolicy: "require-shots",
+          compositionProfileId: "hero-device",
+          travel: {
+            mode: "stabilized",
+            subject: phone.body,
+            maxDriftPx: [54, 72],
+          },
+          defaultRig: {
+            id: "neutral",
+            subject: phone.body,
+            frame: { fill: 0.84, mode: "contain" },
+          },
+        },
+      ],
+      sequences: [
+        {
+          outputId: "portrait-main",
+          end: "10s",
+          shots: [
+            shot("thread", "7.2s", phone.semantic("chat_thread"))
+              .frame("thread")
+              .guard(phone.body, { padding: 36 })
+              .settle("420ms"),
+            shot("reply", "2.8s", phone.semantic("last-message"))
+              .frame("reply")
+              .guard(phone.body, { padding: 36 })
+              .settle("360ms"),
+          ],
+        },
+      ],
+    });
   },
 );
 
@@ -156,7 +171,7 @@ EPISODE_ID=my-first-story pnpm --filter video-runner render:fast
 - Use `.whatsapp()`, `.imessage()`, `.instagram()`, `.x()`, `.linkedin()`,
   `.snapchat()`, `.teams()`, or `.typewriter()` for built-in apps. Do not construct
   their track builders manually.
-- Keep assets under `apps/video-runner/public`.
+- Keep assets under `packages/assets/public`.
 - Prefer stable semantic subjects such as `chat_thread`, `last_message`, `tweet_card`, or app-specific subjects.
 - For narrative episodes, group beats with `.scene()`, use `scene.wait()` for relative
   pacing, and use returned message/post handles for camera targets.

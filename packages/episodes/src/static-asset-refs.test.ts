@@ -5,7 +5,12 @@ import { describe, expect, it } from "vitest";
 
 const episodesRoot = fileURLToPath(new URL(".", import.meta.url));
 const repoRoot = path.resolve(episodesRoot, "../../..");
-const publicRoot = path.join(repoRoot, "apps", "video-runner", "public");
+const publicRoot = path.join(
+  repoRoot,
+  "packages",
+  "assets",
+  "public",
+);
 const episodeSourceRoots = [
   path.join(episodesRoot, "showcases"),
   path.join(episodesRoot, "stories"),
@@ -45,7 +50,7 @@ function collectAssetRefs(filePath: string): string[] {
 }
 
 describe("episode static asset references", () => {
-  it("only points at files that exist in video-runner public", () => {
+  it("only points at files that exist in the canonical asset package", () => {
     const missing: Array<{ asset: string; file: string }> = [];
 
     for (const root of episodeSourceRoots) {

@@ -1,5 +1,5 @@
 import React, { useMemo, useCallback, useRef } from "react";
-import { Html5Audio, Sequence, staticFile } from "remotion";
+import { Html5Audio, Sequence, staticFile, useVideoConfig } from "remotion";
 import {
   WorldState,
   SoundCue,
@@ -48,17 +48,25 @@ const InputSoundInstance: React.FC<{
   world: WorldState;
   volume: number;
 }> = React.memo(({ cue, world, volume }) => {
+  const { fps } = useVideoConfig();
   const registries = useRendererRegistries();
   const device = world.devices?.[cue.deviceId];
   const profile = device
     ? registries.devices.devices.get(device.profileId)
     : undefined;
   const soundPath =
-    profile?.sounds?.["device.keyboard"] ??
-    "generated/core/keyboard-click.wav";
+    profile?.sounds?.["device.keyboard"] ?? "generated/core/keyboard-click.wav";
 
   return (
-    <Sequence from={cue.at} premountFor={AUDIO_PREMOUNT_FRAMES}>
+    <Sequence
+      from={cue.at}
+      durationInFrames={
+        soundPath === "generated/core/keyboard-click.wav"
+          ? Math.max(1, Math.ceil(fps * 0.12))
+          : undefined
+      }
+      premountFor={AUDIO_PREMOUNT_FRAMES}
+    >
       <Html5Audio
         src={staticFile(`sounds/${soundPath.replace(/^\/+/, "")}`)}
         volume={volume * INPUT_CUE_VOLUME[cue.kind]}

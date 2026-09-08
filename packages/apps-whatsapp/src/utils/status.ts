@@ -22,14 +22,14 @@ export function resolveDeliveryStage(
   }
 
   if (
-    message.status === "read" ||
+    (message.status === "read" && message.readAt === undefined) ||
     (typeof message.readAt === "number" && currentFrame >= message.readAt)
   ) {
     return "read";
   }
 
   if (
-    message.status === "delivered" ||
+    (message.status === "delivered" && message.deliveredAt === undefined) ||
     (typeof message.deliveredAt === "number" &&
       currentFrame >= message.deliveredAt)
   ) {
@@ -37,7 +37,7 @@ export function resolveDeliveryStage(
   }
 
   const sentAt = message.at ?? currentFrame;
-  if (currentFrame - sentAt >= DELIVERY_DELAY_FRAMES) {
+  if (message.deliveredAt === undefined && currentFrame - sentAt >= DELIVERY_DELAY_FRAMES) {
     return "delivered";
   }
 

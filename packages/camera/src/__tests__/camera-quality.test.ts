@@ -3,10 +3,7 @@ import { describe, expect, it } from "vitest";
 import { analyzeCameraTemporalQuality } from "../quality.js";
 import type { CameraQualitySample } from "../types.js";
 
-function sample(
-  frame: number,
-  patch: Partial<CameraQualitySample> = {},
-): CameraQualitySample {
+function sample(frame: number, patch: Partial<CameraQualitySample> = {}): CameraQualitySample {
   return {
     frame,
     outputId: "main",
@@ -21,18 +18,18 @@ function sample(
     subjectFillRatio: 0.72,
     cropCompensation: 0,
     intentionalDiscontinuity: false,
+    travel: {
+      mode: "stabilized",
+      driftPx: [12, 18],
+      maxDriftPx: [54, 72],
+    },
     ...patch,
   };
 }
 
 describe("camera temporal quality", () => {
   it("accepts a contiguous smooth random-access trajectory", () => {
-    const report = analyzeCameraTemporalQuality([
-      sample(0),
-      sample(1),
-      sample(2),
-      sample(3),
-    ]);
+    const report = analyzeCameraTemporalQuality([sample(0), sample(1), sample(2), sample(3)]);
 
     expect(report.passed).toBe(true);
     expect(report.sampleCount).toBe(4);
@@ -66,5 +63,42 @@ describe("camera temporal quality", () => {
 
     expect(report.violations).toEqual([]);
     expect(report.passed).toBe(true);
+  });
+
+  it("rejects smooth camera motion that drags a stabilized device out of composition", () => {
+    const report = analyzeCameraTemporalQuality([
+      sample(0),
+      sample(1, {
+        travel: {
+          mode: "stabilized",
+          driftPx: [55, -120],
+          maxDriftPx: [54, 72],
+        },
+      }),
+    ]);
+
+    expect(report.passed).toBe(false);
+    expect(report.violations).toEqual([
+      expect.objectContaining({
+        code: "CAM_QUALITY_MOUNT_DRIFT",
+        frame: 1,
+      }),
+    ]);
+  });
+
+  it("records explicit macro travel without applying a stabilization limit", () => {
+    const report = analyzeCameraTemporalQuality([
+      sample(0, { travel: { mode: "intentional" } }),
+      sample(1, { travel: { mode: "intentional" } }),
+    ]);
+
+    expect(report.passed).toBe(true);
+    expect(report.outputs[0]).toEqual(
+      expect.objectContaining({
+        stabilizedFrameCount: 0,
+        intentionalTravelFrameCount: 2,
+        maximumMountDriftPx: [0, 0],
+      }),
+    );
   });
 });

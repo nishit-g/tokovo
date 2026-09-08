@@ -5,10 +5,7 @@ const root = process.cwd();
 const roots = ["apps", "docs", "packages", "scripts"];
 const rootFiles = ["package.json", "pnpm-lock.yaml", "tsconfig.solution.json", "README.md"];
 const ignoredDirectories = new Set([".next", ".turbo", "coverage", "dist", "node_modules", "out"]);
-const ignoredFiles = new Set([
-  "docs/CAMERA_VNEXT_IMPLEMENTATION_PLAN.md",
-  "scripts/check-camera-hard-cut.mjs",
-]);
+const ignoredFiles = new Set(["scripts/check-camera-hard-cut.mjs"]);
 const textExtensions = new Set([
   ".cjs",
   ".js",
@@ -41,6 +38,12 @@ const retiredIdentifiers = [
   "scene.follow",
   'kind: "CAMERA"',
   "kind: 'CAMERA'",
+];
+const rawEpisodeCameraContracts = [
+  "CameraPlanIR",
+  "CameraRigIR",
+  "CameraShotIR",
+  "EpisodeCinematicsIR",
 ];
 
 async function collectFiles(path) {
@@ -75,6 +78,15 @@ for (const file of files.sort()) {
         violations.push(`${displayPath}:${index + 1}: ${identifier}`);
       }
     });
+  }
+  if (displayPath.startsWith("packages/episodes/src/")) {
+    for (const identifier of rawEpisodeCameraContracts) {
+      lines.forEach((line, index) => {
+        if (line.includes(identifier)) {
+          violations.push(`${displayPath}:${index + 1}: raw episode camera contract ${identifier}`);
+        }
+      });
+    }
   }
 }
 

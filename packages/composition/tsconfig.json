@@ -1,0 +1,22 @@
+{
+  "extends": "../../tsconfig.lib.json",
+  "compilerOptions": {
+    "outDir": "dist",
+    "rootDir": "src",
+    "declaration": true,
+    "declarationMap": true,
+    "jsx": "react-jsx"
+  },
+  "references": [
+    { "path": "../background" },
+    { "path": "../camera" },
+    { "path": "../compiler" },
+    { "path": "../core" },
+    { "path": "../ir" },
+    { "path": "../react" },
+    { "path": "../renderer" },
+    { "path": "../voice" }
+  ],
+  "include": ["src/**/*"],
+  "exclude": ["src/**/*.test.ts", "src/**/*.spec.ts", "src/__tests__/**"]
+}

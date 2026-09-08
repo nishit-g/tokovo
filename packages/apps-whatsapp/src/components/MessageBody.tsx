@@ -29,7 +29,7 @@ import { LinkPreview } from "./LinkPreview.js";
 export interface MessageBodyProps {
   message: ProjectedThreadMessage;
   isMe: boolean;
-  footerReserveWidth?: number;
+  textLines?: readonly string[];
 }
 
 function formatDuration(
@@ -128,10 +128,10 @@ const MediaLifecycleOverlay = memo(function MediaLifecycleOverlay({
 
 const TextBody = memo(function TextBody({
   text,
-  footerReserveWidth = 0,
+  lines,
 }: {
   text: string;
-  footerReserveWidth?: number;
+  lines?: readonly string[];
 }) {
   const theme = useTheme();
   return (
@@ -141,21 +141,12 @@ const TextBody = memo(function TextBody({
         lineHeight: `${theme.typography.messageLineHeight}px`,
         color: "inherit",
         fontFamily: theme.typography.fontFamily,
-        overflowWrap: "anywhere",
-        whiteSpace: "pre-wrap",
+        overflowWrap: lines ? "normal" : "anywhere",
+        whiteSpace: lines ? "pre" : "pre-wrap",
+        unicodeBidi: "plaintext",
       }}
     >
-      {text}
-      {footerReserveWidth > 0 && (
-        <span
-          aria-hidden="true"
-          style={{
-            display: "inline-block",
-            width: footerReserveWidth,
-            height: 1,
-          }}
-        />
-      )}
+      {lines ? lines.join("\n") : text}
     </div>
   );
 });
@@ -972,17 +963,12 @@ const DeletedBody = memo(function DeletedBody({
 export const MessageBody = memo(function MessageBody({
   message,
   isMe,
-  footerReserveWidth,
+  textLines,
 }: MessageBodyProps) {
   let content: ReactNode;
   switch (message.type) {
     case "text":
-      content = (
-        <TextBody
-          text={message.text ?? ""}
-          footerReserveWidth={footerReserveWidth}
-        />
-      );
+      content = <TextBody text={message.text ?? ""} lines={textLines} />;
       break;
     case "image":
       content = (

@@ -275,7 +275,7 @@ async function main() {
   let firstBrowser;
   let secondBrowser;
 
-  process.env.TOKOVO_EPISODE_CATALOG_PROFILE = "studio";
+  process.env.TOKOVO_EPISODE_CATALOG_PROFILE = "showcase";
 
   try {
     console.log(`[render-determinism] bundling ${probes.length} pixel probes`);
@@ -298,7 +298,7 @@ async function main() {
     for (const probe of probes) {
       const inputProps = { episodeId: probe.episodeId };
       const envVariables = {
-        TOKOVO_EPISODE_CATALOG_PROFILE: "studio",
+        TOKOVO_EPISODE_CATALOG_PROFILE: "showcase",
         TOKOVO_RENDER_PROFILE: "determinism",
       };
       const composition = await selectComposition({

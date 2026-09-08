@@ -6,6 +6,7 @@ import {
   Sequence,
   staticFile,
   useVideoConfig,
+  useCurrentFrame,
 } from "remotion";
 import { resolveStaticAssetSrc } from "@tokovo/core";
 import {
@@ -13,6 +14,9 @@ import {
   useWhatsAppLocale,
 } from "../../experience/ExperienceContext.js";
 import type { WhatsAppMessage } from "../../types/index.js";
+import { useLayout } from "@tokovo/react";
+import type { ChatLayoutState } from "@tokovo/core";
+import { WHATSAPP_INTERACTION_TOKENS as tokens } from "../../theme/index.js";
 
 function resolveAsset(source: string | undefined): string | undefined {
   return source
@@ -35,13 +39,28 @@ function viewerImageSource(message: WhatsAppMessage): string | undefined {
 export function MediaViewerOverlay({
   message,
   openedAt,
+  contentInsets,
+  closedAt,
 }: {
   message: WhatsAppMessage;
   openedAt: number;
+  contentInsets: { top: number; bottom: number };
+  closedAt?: number;
 }) {
   const theme = useTheme();
   const { t } = useWhatsAppLocale();
-  const { fps } = useVideoConfig();
+  const { fps, width: renderWidth, height: renderHeight } = useVideoConfig();
+  const frame = useCurrentFrame();
+  const layout = useLayout<ChatLayoutState>();
+  const sourceRect = layout?.messageLayouts?.[message.id]?.rect;
+  const appRect = layout?.semantic?.regions.app?.rect;
+  const width = appRect?.width ?? renderWidth;
+  const height = appRect?.height ?? renderHeight;
+  const elapsed = frame - (closedAt ?? openedAt);
+  const phase =
+    1 -
+    (1 - Math.max(0, Math.min(1, elapsed / (tokens.viewerSeconds * fps)))) ** 3;
+  const reveal = closedAt === undefined ? phase : 1 - phase;
   const source = viewerImageSource(message);
   const videoSource =
     message.type === "video" ? resolveAsset(message.videoUrl) : undefined;
@@ -74,13 +93,23 @@ export function MediaViewerOverlay({
         color: theme.colors.mediaViewerText,
         backgroundColor: theme.colors.mediaViewerBackground,
         fontFamily: theme.typography.fontFamily,
+        paddingTop: contentInsets.top,
+        paddingBottom: contentInsets.bottom,
+        boxSizing: "border-box",
+        opacity: reveal,
+        transformOrigin: "center",
+        transform: sourceRect
+          ? `translate(${(sourceRect.x + sourceRect.width / 2 - width / 2) * (1 - reveal)}px, ${(sourceRect.y + sourceRect.height / 2 - height / 2) * (1 - reveal)}px) scale(${sourceRect.width / width + (1 - sourceRect.width / width) * reveal})`
+          : undefined,
       }}
     >
       <div
         data-cinematic-subject="media_viewer_header"
         style={{
-          height: 64,
-          padding: "16px 14px 8px",
+          minHeight: tokens.viewerHeaderHeight,
+          padding: `8px ${tokens.surfaceMargin}px`,
+          boxSizing: "border-box",
+          flexShrink: 0,
           display: "flex",
           alignItems: "center",
           gap: 12,
@@ -102,7 +131,9 @@ export function MediaViewerOverlay({
         </button>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontSize: 14, fontWeight: 700 }}>
-            {message.senderName ?? message.from}
+            {message.from === "me"
+              ? t("chat.you")
+              : (message.senderName ?? message.from)}
           </div>
           <div
             style={{

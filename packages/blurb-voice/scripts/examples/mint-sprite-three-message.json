@@ -1,0 +1,37 @@
+{
+  "id": "mint-sprite-three-message",
+  "seed": "mint-sprite-language-v1",
+  "character": "mint-sprite",
+  "lines": [
+    {
+      "id": "scheduled-it",
+      "message": "Done!",
+      "act": "confirm",
+      "tone": "excited",
+      "context": {
+        "stakes": 0.3,
+        "audience": "private"
+      }
+    },
+    {
+      "id": "sent-to-everyone",
+      "message": "Wait. Everyone?",
+      "act": "realize",
+      "tone": "confused",
+      "context": {
+        "stakes": 0.9,
+        "audience": "public"
+      }
+    },
+    {
+      "id": "wrong-draft",
+      "message": "I may have used the apology draft.",
+      "act": "confess",
+      "tone": "sad",
+      "context": {
+        "stakes": 0.8,
+        "audience": "group"
+      }
+    }
+  ]
+}

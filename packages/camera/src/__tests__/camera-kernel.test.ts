@@ -37,7 +37,7 @@ const messageSubject: CinematicSubjectRefIR = {
 
 function createPlan(): CameraPlanIR {
   return {
-    version: 1,
+    version: 2,
     id: "camera-test",
     fps: 60,
     durationInFrames: 240,
@@ -66,6 +66,14 @@ function createPlan(): CameraPlanIR {
           minScale: 0.5,
           maxScale: 4,
         },
+        travel: {
+          mode: "stabilized",
+          mount: {
+            subject: deviceSubject,
+            screenPosition: [0.5, 0.5],
+            maxDriftPx: [54, 72],
+          },
+        },
         lensId: "typing-fisheye",
       },
       {
@@ -78,6 +86,14 @@ function createPlan(): CameraPlanIR {
           fillMode: "contain",
           minScale: 0.25,
           maxScale: 2,
+        },
+        travel: {
+          mode: "stabilized",
+          mount: {
+            subject: deviceSubject,
+            screenPosition: [0.5, 0.5],
+            maxDriftPx: [54, 72],
+          },
         },
       },
     ],
@@ -225,6 +241,33 @@ describe("camera composer", () => {
     expect(bottomRight.y).toBeLessThanOrEqual(1920 - 28 + 1e-8);
     expect((topLeft.x + bottomRight.x) / 2).toBeCloseTo(540, 8);
     expect((topLeft.y + bottomRight.y) / 2).toBeCloseTo(960, 8);
+  });
+
+  it("follows a detail target without dragging its physical device beyond the mount dead zone", () => {
+    const viewport = { x: 0, y: 0, width: 1080, height: 1920 };
+    const device = { x: 270, y: 360, width: 540, height: 1172 };
+    const pose = solveComposer({
+      subjectBounds: { x: 330, y: 1220, width: 410, height: 88 },
+      mountBounds: device,
+      mountScreenPosition: [0.5, 0.5],
+      mountMaxDriftPx: [54, 72],
+      viewport,
+      composer: {
+        screenPosition: [0.5, 0.62],
+        targetFill: 0.68,
+        fillMode: "width",
+        maxScale: 1.4,
+      },
+      rotationDeg: 2,
+    });
+    const projectedDeviceCenter = applyMatrix3(cameraPoseToViewMatrix(pose), {
+      x: device.x + device.width / 2,
+      y: device.y + device.height / 2,
+    });
+
+    expect(Math.abs(projectedDeviceCenter.x - 540)).toBeLessThanOrEqual(54 + 1e-8);
+    expect(Math.abs(projectedDeviceCenter.y - 960)).toBeLessThanOrEqual(72 + 1e-8);
+    expect(pose.scale).toBeGreaterThan(1);
   });
 
   it("composes inside explicit output editorial-frame insets", () => {
@@ -534,10 +577,25 @@ describe("camera output evaluation", () => {
     const registries = createBuiltinCameraRegistries();
     const baselinePlan = createPlan();
     const trajectoryPlan = createPlan();
+    baselinePlan.rigs = baselinePlan.rigs.map((rig) =>
+      rig.id === "message-close"
+        ? {
+            ...rig,
+            travel: {
+              mode: "intentional" as const,
+              reason: "Trajectory fixture verifies authored device travel.",
+            },
+          }
+        : rig,
+    );
     trajectoryPlan.rigs = trajectoryPlan.rigs.map((rig) =>
       rig.id === "message-close"
         ? {
             ...rig,
+            travel: {
+              mode: "intentional" as const,
+              reason: "Trajectory fixture verifies authored device travel.",
+            },
             bakedTrajectory: {
               interpolation: "minimum-jerk" as const,
               keyframes: [

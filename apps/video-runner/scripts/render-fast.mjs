@@ -22,6 +22,7 @@ import { renderMedia, selectComposition } from "@remotion/renderer";
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 const appRoot = path.resolve(scriptDir, "..");
 const repoRoot = path.resolve(appRoot, "..", "..");
+const publicDir = path.join(repoRoot, "packages/assets/public");
 const entryPoint = path.join(appRoot, "src/index.ts");
 const releaseCompositionId = "episode-render";
 const rootConfigFiles = [
@@ -162,7 +163,6 @@ function resolveBundleRoots() {
 
 function getRelevantPathspecs() {
   const bundleRoots = resolveBundleRoots().map((dir) => toPosixPath(path.relative(repoRoot, dir)));
-  const publicDir = path.join(appRoot, "public");
   const configFiles = rootConfigFiles.filter((file) => fs.existsSync(path.join(repoRoot, file)));
   if (fs.existsSync(publicDir)) {
     bundleRoots.push(toPosixPath(path.relative(repoRoot, publicDir)));
@@ -244,6 +244,7 @@ async function getServeUrl() {
     entryPoint,
     outDir: bundleDir,
     rootDir: appRoot,
+    publicDir,
     enableCaching: true,
   });
 }

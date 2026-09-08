@@ -18,7 +18,7 @@
  * const registry = createEpisodeRegistry();
  * registry.register(myEpisode);
  *
- * @see docs/architecture/episodes.md
+ * @see docs/ENGINEERING_HANDBOOK.md
  */
 
 // =============================================================================
@@ -73,7 +73,7 @@ export {
 export type { TokovoCatalogProfile, TokovoRuntime } from "./runtime-bootstrap.js";
 export {
   releaseEpisodes,
-  studioEpisodes,
+  showcaseEpisodes,
 } from "./runtime/catalogs/index.js";
 
 // =============================================================================

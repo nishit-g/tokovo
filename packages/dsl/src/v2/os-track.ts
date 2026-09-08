@@ -4,7 +4,7 @@
  * @description Controls device-level state like time, battery,
  * network and DND mode.
  *
- * @see docs/architecture/dsl-v2.md
+ * @see docs/ENGINEERING_HANDBOOK.md
  */
 
 import { OSTrackEvent } from "@tokovo/ir";

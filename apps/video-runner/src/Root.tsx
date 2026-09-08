@@ -5,7 +5,7 @@
  * - Episodes are loaded explicitly from @tokovo/episodes catalogs
  * - Organized into folders: Apps, System, Stories, Tests
  *
- * @see docs/architecture/episodes.md
+ * @see docs/ENGINEERING_HANDBOOK.md
  */
 
 import React from "react";
@@ -23,7 +23,7 @@ import { VideoRunnerRuntimeProvider } from "./RuntimeContext";
 import { useVideoRunnerRuntime } from "./RuntimeSharedContext";
 
 export const RELEASE_COMPOSITION_ID = "episode-render";
-const catalogProfile = resolveCatalogProfile(process.env.TOKOVO_EPISODE_CATALOG_PROFILE, "studio");
+const catalogProfile = resolveCatalogProfile(process.env.TOKOVO_EPISODE_CATALOG_PROFILE, "showcase");
 const INCLUDE_EPISODE_CATALOG = catalogProfile !== "release";
 // =============================================================================
 // MAIN COMPONENT

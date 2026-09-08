@@ -204,6 +204,7 @@ export const KeyboardPainter = React.memo(function KeyboardPainter({
   if (!projection.surface.visible) return null;
   const { surface, locale } = projection;
   const { theme, presentation } = surface;
+  const ios = surface.platform === "ios";
   const geometry = theme.geometry;
   const colors = theme.colors;
   const layout: KeyboardLayoutDefinition = resolveInputKeyboardLayout(projection);
@@ -278,24 +279,26 @@ export const KeyboardPainter = React.memo(function KeyboardPainter({
       ),
       fontWeight: variant === "accent" ? 600 : 400,
       lineHeight: 1,
-      transform: isActive ? "translateY(1px) scale(0.98)" : "none",
+      transform: !ios && isActive ? "translateY(1px)" : "none",
+      zIndex: isActive ? 10 : 0,
       willChange: isActive ? "transform" : undefined,
     };
   };
 
-  const renderKey = (key: string): React.ReactNode => {
+  const renderKey = (key: string, index: number, row: readonly string[]): React.ReactNode => {
     const isActive = activeKey === normalizeKey(key);
     return (
-      <div key={key} style={keyStyle(key, "key", 1, rowKeyHeight)}>
+      <div key={key} data-key={key} data-pressed={isActive || undefined} style={keyStyle(key, "key", 1, rowKeyHeight)}>
         {key}
         {isActive ? (
           <div
             style={{
               position: "absolute",
-              left: "50%",
-              bottom: px(rowKeyHeight + 5),
-              transform: "translateX(-50%)",
-              minWidth: px(rowKeyHeight * 1.15),
+              left: index === 0 ? 0 : index === row.length - 1 ? undefined : "50%",
+              right: index === row.length - 1 ? 0 : undefined,
+              bottom: px(rowKeyHeight - 2),
+              transform: index === 0 || index === row.length - 1 ? undefined : "translateX(-50%)",
+              minWidth: px(rowKeyHeight * 1.05),
               height: px(rowKeyHeight * 1.28),
               padding: `0 ${px(8)}px`,
               borderRadius:
@@ -313,6 +316,7 @@ export const KeyboardPainter = React.memo(function KeyboardPainter({
             }}
           >
             {key}
+            {ios && <span style={{ position: "absolute", top: "100%", left: index === 0 ? 0 : index === row.length - 1 ? undefined : "25%", right: index === row.length - 1 ? 0 : undefined, width: "50%", height: px(9), background: colors.keyPreview, borderRadius: "0 0 4px 4px" }} />}
           </div>
         ) : null}
       </div>
@@ -337,7 +341,9 @@ export const KeyboardPainter = React.memo(function KeyboardPainter({
         boxSizing: "border-box",
         overflow: "visible",
         padding: `${px(geometry.topPadding)}px ${px(geometry.horizontalPadding)}px ${px(geometry.bottomPadding)}px`,
-        ...materialToPaintStyle(theme.material, scale),
+        // Backdrop sampling across the masked device edge creates grey corner
+        // wedges in renders. The keyboard paints its own full surface instead.
+        ...materialToPaintStyle({ ...theme.material, backdropBlur: 0, backdropSaturation: 1, backdropBrightness: 1 }, scale),
         borderTop: spec.surfaceTopBorder
           ? `${Math.max(1, px(0.5))}px solid ${colors.border}`
           : undefined,
@@ -365,7 +371,7 @@ export const KeyboardPainter = React.memo(function KeyboardPainter({
         >
           {rowIndex === layout.controlRow && layout.showsShift ? (
             <div style={keyStyle("shift", "special", 1.25, rowKeyHeight)}>
-              <KeyboardGlyph kind="shift" size={px(20)} />
+              {surface.layout === "letters" ? <span style={{ color: colors.keyText, background: surface.uppercase ? colors.key : undefined, borderRadius: px(5), width: "100%", height: "100%", display: "grid", placeItems: "center" }}><KeyboardGlyph kind="shift" size={px(20)} /></span> : <span style={{ fontSize: px(13) }}>{surface.layout === "numbers" ? "#+=" : "123"}</span>}
             </div>
           ) : null}
           {row.map(renderKey)}
@@ -381,11 +387,11 @@ export const KeyboardPainter = React.memo(function KeyboardPainter({
         <div style={keyStyle(surface.layout === "letters" ? "123" : "ABC", "special", 1.2)}>
           {surface.layout === "letters" ? "123" : "ABC"}
         </div>
-        <div style={keyStyle("language", "special", spec.specialKeyFlex)}>
-          <KeyboardGlyph kind="globe" size={px(19)} />
+        <div style={keyStyle(ios ? "emoji" : "language", "special", spec.specialKeyFlex)}>
+          <KeyboardGlyph kind={ios ? "emoji" : "globe"} size={px(19)} />
         </div>
         <div style={keyStyle(spaceLabel, "key", 4.2)}>{spaceLabel}</div>
-        {spec.includeDictation ? (
+        {spec.includeDictation && !ios ? (
           <div style={keyStyle("dictation", "special", spec.specialKeyFlex)}>
             <KeyboardGlyph kind="dictation" size={px(18)} />
           </div>
@@ -394,12 +400,16 @@ export const KeyboardPainter = React.memo(function KeyboardPainter({
           style={keyStyle(
             returnLabel,
             presentation.returnKeyStyle === "accent" ? "accent" : "special",
-            1.45,
+            ios ? 2 : 1.45,
           )}
         >
           {returnLabel}
         </div>
       </div>
+      {ios && <div data-keyboard-bottom-controls style={{ position: "absolute", left: px(22), right: px(22), bottom: px(geometry.bottomPadding), height: px(36), display: "flex", justifyContent: "space-between", alignItems: "center", color: colors.keyText }}>
+        <KeyboardGlyph kind="globe" size={px(26)} />
+        <KeyboardGlyph kind="dictation" size={px(25)} />
+      </div>}
     </div>
   );
 });

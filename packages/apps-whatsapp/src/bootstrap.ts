@@ -278,6 +278,7 @@ function validateWhatsAppSnapshot(
       errors,
     );
     if (!conversation) return;
+    expectOptionalBoolean(conversation.isFavorite, `snapshot.conversations[${index}].isFavorite`, errors);
 
     const id = expectString(
       conversation.id,
@@ -591,6 +592,7 @@ function hydrateConversation(
     unreadCount: conversation.unreadCount ?? 0,
     isMuted: conversation.isMuted ?? false,
     isPinned: conversation.isPinned ?? false,
+    isFavorite: conversation.isFavorite ?? false,
     isArchived: conversation.isArchived ?? false,
     lastMessageAt,
   };

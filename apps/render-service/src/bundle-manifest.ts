@@ -10,6 +10,9 @@ const ROOT_INPUT_FILES = [
   "pnpm-workspace.yaml",
   "turbo.json",
   "tsconfig.base.json",
+  "apps/render-service/src/bundle-manifest.ts",
+  "apps/render-service/src/constants.ts",
+  "apps/render-service/src/remotion.ts",
 ];
 
 const WORKSPACE_PACKAGE_DIRS = [
@@ -41,7 +44,7 @@ const WORKSPACE_PACKAGE_DIRS = [
 
 const WORKSPACE_INPUT_DIRS = [
   "apps/video-runner/src",
-  "apps/video-runner/public",
+  "packages/assets/public",
   ...WORKSPACE_PACKAGE_DIRS.flatMap((entry) => [`${entry}/src`, `${entry}/dist`]),
 ];
 
@@ -51,7 +54,7 @@ const WORKSPACE_PACKAGE_FILES = WORKSPACE_PACKAGE_DIRS.map(
 
 const CAMERA_LAYER_PAINTER_INPUT_DIRS = [
   "apps/video-runner/src",
-  "apps/video-runner/public",
+  "packages/assets/public",
   "packages/apps-imessage/dist",
   "packages/apps-instagram/dist",
   "packages/apps-linkedin/dist",

@@ -3,7 +3,7 @@
  * Uses iMessage design tokens for spacing/typography and iOS_COLORS for colors
  */
 
-import React, { useState } from "react";
+import React from "react";
 import { useIMessageTheme } from "../ui/ThemeContext.js";
 import { iMessageSpacing, iMessageTypography } from "../config/tokens.js";
 import { iOS_COLORS } from "../config/colors.js";
@@ -14,14 +14,10 @@ interface AudioMessageProps {
   fromMe?: boolean;
 }
 
-export const AudioMessage: React.FC<AudioMessageProps> = ({
-  attachment,
-  fromMe,
-}) => {
+export const AudioMessage: React.FC<AudioMessageProps> = ({ attachment, fromMe }) => {
   const theme = useIMessageTheme();
   const { colors } = theme;
-  const [isPlaying, setIsPlaying] = useState(false);
-  const progress = 0;
+  const progress = attachment.played ? 1 : 0;
 
   const formatDuration = (seconds: number): string => {
     const mins = Math.floor(seconds / 60);
@@ -40,11 +36,9 @@ export const AudioMessage: React.FC<AudioMessageProps> = ({
     });
 
   // Color derivations
-  const playButtonBg = fromMe ? colors.bubble.iMessage : iOS_COLORS.blue;
+  const playButtonBg = fromMe ? "rgba(255,255,255,0.18)" : iOS_COLORS.blue;
   const waveActiveColor = fromMe ? iOS_COLORS.textWhite : iOS_COLORS.blue;
-  const waveInactiveColor = fromMe
-    ? iOS_COLORS.grayLight
-    : iOS_COLORS.grayUltraLight;
+  const waveInactiveColor = fromMe ? "rgba(255,255,255,0.7)" : colors.system.timestamp;
 
   return (
     <div
@@ -53,11 +47,17 @@ export const AudioMessage: React.FC<AudioMessageProps> = ({
         alignItems: "center",
         gap: iMessageSpacing.inputIconGap,
         padding: `${iMessageSpacing.bubblePaddingV}px ${iMessageSpacing.bubblePaddingH}px`,
-        minWidth: 200,
+        width: 270,
+        maxWidth: "100%",
+        minWidth: 0,
+        boxSizing: "border-box",
+        background: fromMe ? undefined : colors.bubble.received,
       }}
     >
       {/* Play button */}
-      <div
+      <button
+        type="button"
+        aria-label="Play audio message"
         style={{
           width: iMessageSpacing.tapbackSize + 6,
           height: iMessageSpacing.tapbackSize + 6,
@@ -68,35 +68,20 @@ export const AudioMessage: React.FC<AudioMessageProps> = ({
           justifyContent: "center",
           cursor: "pointer",
           flexShrink: 0,
+          border: 0,
+          padding: 0,
         }}
-        onClick={() => setIsPlaying(!isPlaying)}
       >
-        {isPlaying ? (
-          <svg
-            width="14"
-            height="14"
-            viewBox="0 0 14 14"
-            fill={iOS_COLORS.textWhite}
-          >
-            <rect x="2" y="1" width="4" height="12" rx="1" />
-            <rect x="8" y="1" width="4" height="12" rx="1" />
-          </svg>
-        ) : (
-          <svg
-            width="14"
-            height="14"
-            viewBox="0 0 14 14"
-            fill={iOS_COLORS.textWhite}
-          >
-            <path d="M2.5 1.5L12.5 7L2.5 12.5V1.5Z" />
-          </svg>
-        )}
-      </div>
+        <svg width="14" height="14" viewBox="0 0 14 14" fill={iOS_COLORS.textWhite}>
+          <path d="M2.5 1.5L12.5 7L2.5 12.5V1.5Z" />
+        </svg>
+      </button>
 
       {/* Waveform visualization */}
       <div
         style={{
           flex: 1,
+          minWidth: 0,
           display: "flex",
           alignItems: "center",
           gap: iMessageSpacing.messageGapMinimal,
@@ -109,8 +94,8 @@ export const AudioMessage: React.FC<AudioMessageProps> = ({
             <div
               key={i}
               style={{
-                width: iMessageSpacing.messageGapMinimal + 0.5,
-                height: `${amplitude * 100}%`,
+                flex: 1,
+                height: `${Math.max(0, Math.min(1, amplitude)) * 100}%`,
                 minHeight: iMessageSpacing.unit,
                 backgroundColor: isPlayed ? waveActiveColor : waveInactiveColor,
                 borderRadius: 1,
@@ -125,7 +110,7 @@ export const AudioMessage: React.FC<AudioMessageProps> = ({
         style={{
           fontFamily: iMessageTypography.fontFamily,
           fontSize: iMessageTypography.caption.fontSize,
-          color: fromMe ? iOS_COLORS.grayLight : colors.bubble.timestamp,
+          color: fromMe ? iOS_COLORS.textWhite : colors.bubble.timestamp,
           minWidth: iMessageSpacing.tapbackSize + 5,
           textAlign: "right",
         }}

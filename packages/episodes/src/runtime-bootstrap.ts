@@ -13,7 +13,7 @@ import {
 
 const log = createScopedLogger("app");
 
-export type TokovoCatalogProfile = "release" | "studio";
+export type TokovoCatalogProfile = "release" | "showcase";
 
 export type TokovoRuntime = {
   tokovoRegistries: TokovoRegistries;
@@ -43,7 +43,7 @@ export function resolveCatalogProfile(
   value: string | undefined,
   fallback: TokovoCatalogProfile = "release",
 ): TokovoCatalogProfile {
-  if (value === "release" || value === "studio") {
+  if (value === "release" || value === "showcase") {
     return value;
   }
   return fallback;

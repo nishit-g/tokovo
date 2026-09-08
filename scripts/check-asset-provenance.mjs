@@ -4,7 +4,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const publicRoot = path.join(repoRoot, "apps/video-runner/public");
+const publicRoot = path.join(repoRoot, "packages/assets/public");
 const manifestPath = path.join(publicRoot, "asset-provenance.json");
 const write = process.argv.includes("--write");
 

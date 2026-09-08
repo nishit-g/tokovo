@@ -41,10 +41,27 @@ export type RenderArtifactMetadata = {
   durationInFrames: number;
   /** Inclusive episode-source frames represented by this artifact. */
   sourceFrameRange: readonly [number, number];
+  /** Canonical authored episode revision. */
   sourceSignature: string;
+  /** Hash of the Remotion renderer bundle used to execute the revision. */
+  bundleSourceSignature: string;
   camera: Awaited<ReturnType<typeof getEpisodeCameraArtifact>>;
   projectionMode: "render";
   cameraQuality: CameraTemporalQualityReport | null;
+  renderCache: {
+    layerPlateEnabled: boolean;
+    compositorChunkEnabled: boolean;
+    layerPlates: {
+      hits: number;
+      misses: number;
+      disabled: number;
+    };
+    compositorChunks: {
+      enabled: boolean;
+      chunkHits: number;
+      chunkMisses: number;
+    };
+  } | null;
   artifact: {
     storageProvider: "local" | "r2";
     bucket?: string;
@@ -73,6 +90,15 @@ export type RenderArtifactMetadata = {
     selectComposition: number;
     renderMedia: number;
     renderStill: number;
+    cameraTexture?: {
+      projectionData: number;
+      underlayPlate: number;
+      stagePlate: number;
+      foregroundPlate: number;
+      displacementMaps: number;
+      compositorChunks: number;
+      mux: number;
+    };
     total: number;
   };
   machine: {

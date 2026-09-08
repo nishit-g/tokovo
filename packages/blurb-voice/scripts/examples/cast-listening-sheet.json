@@ -1,0 +1,58 @@
+{
+  "id": "tokovo-cast-listening-sheet",
+  "seed": "tokovo-original-cast-v1",
+  "voices": {
+    "teal": "teal-manager",
+    "coral": "coral-intern",
+    "violet": "violet-founder",
+    "amber": "amber-analyst"
+  },
+  "utterances": [
+    {
+      "id": "teal-controlled",
+      "performer": "teal",
+      "text": "Who approved this?",
+      "intent": "controlled-accusation",
+      "emotion": "annoyed",
+      "intensity": 0.72,
+      "length": "short"
+    },
+    {
+      "id": "coral-caught",
+      "performer": "coral",
+      "text": "Wait, that file went live?",
+      "intent": "caught-panic",
+      "emotion": "panic",
+      "intensity": 0.86,
+      "length": "medium"
+    },
+    {
+      "id": "amber-realizes",
+      "performer": "amber",
+      "text": "I think everyone saw it.",
+      "intent": "bad-news-realization",
+      "emotion": "confused",
+      "intensity": 0.58,
+      "length": "medium"
+    },
+    {
+      "id": "violet-verdict",
+      "performer": "violet",
+      "text": "No. Rename the file.",
+      "intent": "deadpan-verdict",
+      "emotion": "deadpan",
+      "intensity": 0.68,
+      "length": "short",
+      "finalContour": "fall"
+    },
+    {
+      "id": "coral-defeated",
+      "performer": "coral",
+      "text": "Okay.",
+      "intent": "defeated-button",
+      "emotion": "sad",
+      "intensity": 0.5,
+      "length": "tiny"
+    }
+  ]
+}

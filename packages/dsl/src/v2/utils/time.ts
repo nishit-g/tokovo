@@ -4,7 +4,7 @@
  * @description Converts time strings ("3s", "500ms") to frame numbers.
  * Uses Math.round() for fractional frames to avoid drift.
  * 
- * @see docs/architecture/dsl-v2.md
+ * @see docs/ENGINEERING_HANDBOOK.md
  */
 
 /**

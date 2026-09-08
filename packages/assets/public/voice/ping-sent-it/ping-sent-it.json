@@ -1,0 +1,646 @@
+{
+  "version": 1,
+  "scriptId": "ping-sent-it",
+  "audioFile": "ping-sent-it.wav",
+  "sampleRate": 48000,
+  "channels": 1,
+  "durationMs": 5289,
+  "generatedAt": "1970-01-01T00:00:00.000Z",
+  "provider": "tokovo-blurb",
+  "model": "tokovo-blurb-v2",
+  "contentHash": "947fc3ee",
+  "segments": [
+    {
+      "index": 0,
+      "id": "ping-delivered",
+      "speaker": "ping",
+      "performer": "ping",
+      "text": "Delivered.",
+      "intent": "eager-confirmation",
+      "direction": {
+        "role": "reaction",
+        "preSilenceMs": 90,
+        "postSilenceMs": 240,
+        "interruption": "clean",
+        "prominence": "foreground"
+      },
+      "emotion": "excited",
+      "syllables": [
+        "pim",
+        "billo"
+      ],
+      "startSample": 0,
+      "endSample": 10428,
+      "startMs": 0,
+      "endMs": 217,
+      "durationMs": 217,
+      "analysis": {
+        "frameRate": 60,
+        "energy": [
+          0.5987,
+          0.7777,
+          0.7862,
+          0.7907,
+          0.7791,
+          0.4407,
+          0.7525,
+          1,
+          0.9784,
+          0.99,
+          0.9882,
+          0.8321,
+          0.2614,
+          0.0009
+        ],
+        "mouth": [
+          "small",
+          "medium",
+          "wide",
+          "wide",
+          "wide",
+          "medium",
+          "wide",
+          "wide",
+          "wide",
+          "wide",
+          "wide",
+          "wide",
+          "medium",
+          "small"
+        ],
+        "emphasisFrames": [
+          3,
+          9
+        ]
+      }
+    },
+    {
+      "index": 1,
+      "id": "teal-where",
+      "speaker": "teal",
+      "performer": "teal",
+      "text": "Ping. Where did you send it?",
+      "intent": "controlled-accusation",
+      "direction": {
+        "role": "speaker",
+        "preSilenceMs": 80,
+        "postSilenceMs": 280,
+        "interruption": "clean",
+        "prominence": "foreground"
+      },
+      "emotion": "annoyed",
+      "syllables": [
+        "hm",
+        "dek"
+      ],
+      "startSample": 21948,
+      "endSample": 35626,
+      "startMs": 457,
+      "endMs": 742,
+      "durationMs": 285,
+      "analysis": {
+        "frameRate": 60,
+        "energy": [
+          0.5268,
+          0.7188,
+          0.7265,
+          0.7191,
+          0.6271,
+          0.7154,
+          0.5832,
+          0.1693,
+          0.2322,
+          0.9184,
+          1,
+          0.9892,
+          0.8606,
+          0.9705,
+          0.9469,
+          0.6764,
+          0.2217,
+          0.002
+        ],
+        "mouth": [
+          "small",
+          "medium",
+          "wide",
+          "wide",
+          "wide",
+          "wide",
+          "wide",
+          "medium",
+          "small",
+          "medium",
+          "wide",
+          "wide",
+          "wide",
+          "wide",
+          "wide",
+          "wide",
+          "medium",
+          "small"
+        ],
+        "emphasisFrames": [
+          10
+        ]
+      }
+    },
+    {
+      "index": 2,
+      "id": "ping-room",
+      "speaker": "ping",
+      "performer": "ping",
+      "text": "Launch Room?",
+      "intent": "hesitant-question",
+      "direction": {
+        "role": "speaker",
+        "preSilenceMs": 140,
+        "postSilenceMs": 300,
+        "interruption": "clean",
+        "prominence": "foreground"
+      },
+      "emotion": "confused",
+      "syllables": [
+        "mm",
+        "pillo"
+      ],
+      "startSample": 49066,
+      "endSample": 63224,
+      "startMs": 1022,
+      "endMs": 1317,
+      "durationMs": 295,
+      "analysis": {
+        "frameRate": 60,
+        "energy": [
+          0.2988,
+          0.5441,
+          0.5656,
+          0.5278,
+          0.5714,
+          0.5251,
+          0.5683,
+          0.3834,
+          0.1475,
+          0.5667,
+          0.8956,
+          0.9238,
+          0.939,
+          0.9538,
+          1,
+          0.9507,
+          0.5082,
+          0.0929
+        ],
+        "mouth": [
+          "small",
+          "medium",
+          "medium",
+          "medium",
+          "medium",
+          "medium",
+          "medium",
+          "medium",
+          "small",
+          "medium",
+          "wide",
+          "wide",
+          "wide",
+          "wide",
+          "wide",
+          "wide",
+          "medium",
+          "small"
+        ],
+        "emphasisFrames": [
+          14
+        ]
+      }
+    },
+    {
+      "index": 3,
+      "id": "teal-two-thousand",
+      "speaker": "teal",
+      "performer": "teal",
+      "text": "That room has 2,431 people.",
+      "intent": "bad-news-realization",
+      "direction": {
+        "role": "speaker",
+        "preSilenceMs": 180,
+        "postSilenceMs": 420,
+        "interruption": "clean",
+        "prominence": "foreground"
+      },
+      "emotion": "annoyed",
+      "syllables": [
+        "tok",
+        "hm"
+      ],
+      "startSample": 77624,
+      "endSample": 90679,
+      "startMs": 1617,
+      "endMs": 1889,
+      "durationMs": 272,
+      "analysis": {
+        "frameRate": 60,
+        "energy": [
+          0.7654,
+          1,
+          0.989,
+          0.984,
+          0.9448,
+          0.8717,
+          0.6649,
+          0.1075,
+          0.6509,
+          0.8915,
+          0.8687,
+          0.936,
+          0.9494,
+          0.8124,
+          0.8442,
+          0.3179,
+          0.0131
+        ],
+        "mouth": [
+          "small",
+          "medium",
+          "wide",
+          "wide",
+          "wide",
+          "wide",
+          "wide",
+          "medium",
+          "medium",
+          "wide",
+          "wide",
+          "wide",
+          "wide",
+          "wide",
+          "wide",
+          "medium",
+          "small"
+        ],
+        "emphasisFrames": [
+          1,
+          9,
+          14
+        ]
+      }
+    },
+    {
+      "index": 4,
+      "id": "violet-good",
+      "speaker": "violet",
+      "performer": "violet",
+      "text": "Good.",
+      "intent": "smug-reframe",
+      "direction": {
+        "role": "speaker",
+        "preSilenceMs": 160,
+        "postSilenceMs": 460,
+        "interruption": "clean",
+        "prominence": "foreground"
+      },
+      "emotion": "smug",
+      "syllables": [
+        "zun"
+      ],
+      "startSample": 110839,
+      "endSample": 120489,
+      "startMs": 2309,
+      "endMs": 2510,
+      "durationMs": 201,
+      "analysis": {
+        "frameRate": 60,
+        "energy": [
+          0.3905,
+          0.9024,
+          0.8952,
+          0.8923,
+          0.8895,
+          0.8976,
+          0.9607,
+          1,
+          0.8901,
+          0.7499,
+          0.4453,
+          0.1293,
+          0.0011
+        ],
+        "mouth": [
+          "small",
+          "medium",
+          "wide",
+          "wide",
+          "wide",
+          "wide",
+          "wide",
+          "wide",
+          "wide",
+          "wide",
+          "medium",
+          "small",
+          "closed"
+        ],
+        "emphasisFrames": [
+          1,
+          7
+        ]
+      }
+    },
+    {
+      "index": 5,
+      "id": "ping-relief",
+      "speaker": "ping",
+      "performer": "ping",
+      "text": "We are good?",
+      "intent": "eager-confirmation",
+      "direction": {
+        "role": "reaction",
+        "preSilenceMs": 90,
+        "postSilenceMs": 240,
+        "interruption": "clean",
+        "prominence": "foreground"
+      },
+      "emotion": "excited",
+      "syllables": [
+        "pim",
+        "pim",
+        "billo"
+      ],
+      "startSample": 142569,
+      "endSample": 159316,
+      "startMs": 2970,
+      "endMs": 3319,
+      "durationMs": 349,
+      "analysis": {
+        "frameRate": 60,
+        "energy": [
+          0.6444,
+          0.8741,
+          0.8853,
+          0.8736,
+          0.8933,
+          0.8493,
+          0.5117,
+          0.5636,
+          0.8502,
+          0.8659,
+          0.8313,
+          0.8575,
+          0.6827,
+          0.1944,
+          0.8903,
+          0.9713,
+          0.9972,
+          1,
+          0.9655,
+          0.7605,
+          0.2034
+        ],
+        "mouth": [
+          "small",
+          "medium",
+          "wide",
+          "wide",
+          "wide",
+          "wide",
+          "medium",
+          "medium",
+          "wide",
+          "wide",
+          "wide",
+          "wide",
+          "wide",
+          "medium",
+          "wide",
+          "wide",
+          "wide",
+          "wide",
+          "wide",
+          "wide",
+          "medium"
+        ],
+        "emphasisFrames": [
+          2,
+          9,
+          17
+        ]
+      }
+    },
+    {
+      "index": 6,
+      "id": "violet-corrected",
+      "speaker": "violet",
+      "performer": "violet",
+      "text": "Now send the corrected file.",
+      "intent": "deadpan-verdict",
+      "direction": {
+        "role": "speaker",
+        "preSilenceMs": 280,
+        "postSilenceMs": 650,
+        "interruption": "cuts-current",
+        "prominence": "button"
+      },
+      "emotion": "deadpan",
+      "syllables": [
+        "mm",
+        "no"
+      ],
+      "startSample": 170836,
+      "endSample": 191765,
+      "startMs": 3559,
+      "endMs": 3995,
+      "durationMs": 436,
+      "analysis": {
+        "frameRate": 60,
+        "energy": [
+          0.3029,
+          0.7838,
+          0.8322,
+          0.8373,
+          0.8317,
+          0.8217,
+          0.8598,
+          0.8392,
+          0.8132,
+          0.7256,
+          0.4451,
+          0.1435,
+          0.0126,
+          0.2054,
+          0.9227,
+          1,
+          0.9799,
+          0.976,
+          0.9084,
+          0.8259,
+          0.9438,
+          0.9672,
+          0.9623,
+          0.7843,
+          0.3916,
+          0.0721,
+          0.0051
+        ],
+        "mouth": [
+          "small",
+          "medium",
+          "wide",
+          "wide",
+          "wide",
+          "wide",
+          "wide",
+          "wide",
+          "wide",
+          "wide",
+          "medium",
+          "small",
+          "closed",
+          "small",
+          "medium",
+          "wide",
+          "wide",
+          "wide",
+          "wide",
+          "wide",
+          "wide",
+          "wide",
+          "wide",
+          "wide",
+          "medium",
+          "small",
+          "closed"
+        ],
+        "emphasisFrames": [
+          3,
+          15,
+          21
+        ]
+      }
+    },
+    {
+      "index": 7,
+      "id": "ping-delivered-again",
+      "speaker": "ping",
+      "performer": "ping",
+      "text": "Delivered.",
+      "intent": "eager-confirmation",
+      "direction": {
+        "role": "reaction",
+        "preSilenceMs": 90,
+        "postSilenceMs": 240,
+        "interruption": "clean",
+        "prominence": "foreground"
+      },
+      "emotion": "excited",
+      "syllables": [
+        "pim",
+        "billo"
+      ],
+      "startSample": 222965,
+      "endSample": 233478,
+      "startMs": 4645,
+      "endMs": 4864,
+      "durationMs": 219,
+      "analysis": {
+        "frameRate": 60,
+        "energy": [
+          0.5923,
+          0.7773,
+          0.7994,
+          0.8001,
+          0.7653,
+          0.4952,
+          0.3767,
+          0.9622,
+          0.9894,
+          1,
+          0.9849,
+          0.8871,
+          0.3454,
+          0.0092
+        ],
+        "mouth": [
+          "small",
+          "medium",
+          "wide",
+          "wide",
+          "wide",
+          "medium",
+          "medium",
+          "wide",
+          "wide",
+          "wide",
+          "wide",
+          "wide",
+          "medium",
+          "small"
+        ],
+        "emphasisFrames": [
+          3,
+          9
+        ]
+      }
+    },
+    {
+      "index": 8,
+      "id": "teal-where-again",
+      "speaker": "teal",
+      "performer": "teal",
+      "text": "Where?",
+      "intent": "deadpan-verdict",
+      "direction": {
+        "role": "speaker",
+        "preSilenceMs": 280,
+        "postSilenceMs": 650,
+        "interruption": "cuts-current",
+        "prominence": "button"
+      },
+      "emotion": "deadpan",
+      "syllables": [
+        "hm"
+      ],
+      "startSample": 244998,
+      "endSample": 253868,
+      "startMs": 5104,
+      "endMs": 5289,
+      "durationMs": 185,
+      "analysis": {
+        "frameRate": 60,
+        "energy": [
+          0.4287,
+          0.9977,
+          0.9908,
+          0.8587,
+          0.9783,
+          1,
+          0.8598,
+          0.9987,
+          0.8211,
+          0.5344,
+          0.1242,
+          0.0022
+        ],
+        "mouth": [
+          "small",
+          "medium",
+          "wide",
+          "wide",
+          "wide",
+          "wide",
+          "wide",
+          "wide",
+          "wide",
+          "medium",
+          "small",
+          "closed"
+        ],
+        "emphasisFrames": [
+          1,
+          7
+        ]
+      }
+    }
+  ]
+}

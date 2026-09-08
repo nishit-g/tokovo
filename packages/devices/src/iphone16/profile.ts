@@ -1,12 +1,17 @@
 import { DeviceProfile } from "../types.js";
 
 const SCALE = 3;
+const DISPLAY_WIDTH = 1320;
+const DISPLAY_HEIGHT = 2868;
+const DISPLAY_INSET = 18;
 
 export const iPhone16Constants = {
   SCALE,
-  BODY_CORNER_RADIUS: 60 * SCALE,
+  BODY_CORNER_RADIUS: 56 * SCALE,
   DISPLAY_CORNER_RADIUS: 50 * SCALE,
-  DISPLAY_INSET: 30,
+  DISPLAY_INSET,
+  DISPLAY_WIDTH,
+  DISPLAY_HEIGHT,
   STATUS_BAR_HEIGHT: 186,
   STATUS_BAR_PADDING_TOP: 40,
   STATUS_BAR_PADDING_X: 60,
@@ -31,12 +36,16 @@ export const iPhone16Profile: DeviceProfile = {
   name: "iPhone 16 Pro Max",
   type: "phone",
   platform: "ios",
-  dimensions: { width: 1380, height: 2928, depth: 8.25 * SCALE },
+  dimensions: {
+    width: DISPLAY_WIDTH + DISPLAY_INSET * 2,
+    height: DISPLAY_HEIGHT + DISPLAY_INSET * 2,
+    depth: 8.25 * SCALE,
+  },
   display: {
     x: iPhone16Constants.DISPLAY_INSET,
     y: iPhone16Constants.DISPLAY_INSET,
-    width: 1320,
-    height: 2868,
+    width: DISPLAY_WIDTH,
+    height: DISPLAY_HEIGHT,
     ppi: 460,
     cornerRadius: iPhone16Constants.DISPLAY_CORNER_RADIUS,
   },

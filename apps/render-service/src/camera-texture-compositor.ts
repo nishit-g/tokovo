@@ -8,11 +8,17 @@ import { applyMatrix3, type CameraProjectionPass } from "@tokovo/camera";
 import {
   parseCameraTextureProjectionCapture,
   type CameraTextureProjectionCapture,
-} from "video-runner/camera-texture-contract";
+} from "@tokovo/composition";
 
 import { createRenderServiceError } from "./errors";
 import type { RenderLogger } from "./logger";
 import type { RenderProfile } from "./profiles";
+import {
+  createCameraCompositorCaptureSignature,
+  lookupCameraCompositorChunk,
+  storeCameraCompositorChunk,
+  type CameraCompositorChunkIdentity,
+} from "./camera-compositor-chunk-cache";
 
 const MAP_WIDTH = 512;
 const MAP_HEIGHT = 512;
@@ -20,18 +26,14 @@ const MAP_HEIGHT = 512;
 // to one second bounds both expression-tree size and FFmpeg filter memory even
 // when every frame has a unique camera pose.
 const COMPOSITOR_CHUNK_FRAMES = 30;
+export const CAMERA_TEXTURE_COMPOSITOR_SIGNATURE = "camera-texture-compositor-v2";
 const PNG_SIGNATURE = Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]);
 
 type DistortionPass = Extract<
   CameraProjectionPass,
-  | { kind: "radial-warp" }
-  | { kind: "fisheye-warp" }
-  | { kind: "anamorphic-edge-stretch" }
+  { kind: "radial-warp" } | { kind: "fisheye-warp" } | { kind: "anamorphic-edge-stretch" }
 >;
-type ProjectivePass = Extract<
-  CameraProjectionPass,
-  { kind: "projective-warp" }
->;
+type ProjectivePass = Extract<CameraProjectionPass, { kind: "projective-warp" }>;
 type SmearPass = Extract<CameraProjectionPass, { kind: "directional-smear" }>;
 type GradePass = Extract<CameraProjectionPass, { kind: "color-grade" }>;
 type CaptureOutput = CameraTextureProjectionCapture["outputs"][number];
@@ -73,22 +75,50 @@ export interface CompositorFrameChunk {
   endFrame: number;
 }
 
-export function createCompositorFrameChunks(
-  frameCount: number,
-): readonly CompositorFrameChunk[] {
+export interface CameraTextureCompositeResult {
+  timingMs: {
+    displacementMaps: number;
+    chunks: number;
+    mux: number;
+  };
+  cache: {
+    enabled: boolean;
+    chunkHits: number;
+    chunkMisses: number;
+  };
+}
+
+export function createCompositorFrameChunks(frameCount: number): readonly CompositorFrameChunk[] {
   if (!Number.isInteger(frameCount) || frameCount < 0) {
     throw new Error(
       "CAM_TEXTURE_CHUNK_FRAME_COUNT_INVALID: Frame count must be a non-negative integer.",
     );
   }
-  return Array.from(
-    { length: Math.ceil(frameCount / COMPOSITOR_CHUNK_FRAMES) },
-    (_, index) => ({
-      index,
-      startFrame: index * COMPOSITOR_CHUNK_FRAMES,
-      endFrame: Math.min(frameCount, (index + 1) * COMPOSITOR_CHUNK_FRAMES),
-    }),
+  return Array.from({ length: Math.ceil(frameCount / COMPOSITOR_CHUNK_FRAMES) }, (_, index) => ({
+    index,
+    startFrame: index * COMPOSITOR_CHUNK_FRAMES,
+    endFrame: Math.min(frameCount, (index + 1) * COMPOSITOR_CHUNK_FRAMES),
+  }));
+}
+
+async function mapWithConcurrency<T, R>(
+  values: readonly T[],
+  concurrency: number,
+  mapper: (value: T) => Promise<R>,
+): Promise<R[]> {
+  const results = new Array<R>(values.length);
+  let nextIndex = 0;
+  const worker = async () => {
+    while (nextIndex < values.length) {
+      const index = nextIndex;
+      nextIndex += 1;
+      results[index] = await mapper(values[index]);
+    }
+  };
+  await Promise.all(
+    Array.from({ length: Math.min(values.length, Math.max(1, concurrency)) }, worker),
   );
+  return results;
 }
 
 function clamp(value: number, minimum: number, maximum: number): number {
@@ -101,19 +131,14 @@ function displacementVector(input: {
   y: number;
 }): readonly [number, number] {
   const pass = input.pass;
-  const center =
-    pass.kind === "anamorphic-edge-stretch" ? [0.5, 0.5] : pass.center;
+  const center = pass.kind === "anamorphic-edge-stretch" ? [0.5, 0.5] : pass.center;
   const normalizedX = (input.x - center[0]) * 2;
   const normalizedY = (input.y - center[1]) * 2;
 
   if (pass.kind === "anamorphic-edge-stretch") {
     const axisValue = pass.axis === "horizontal" ? normalizedX : normalizedY;
     const start = clamp(pass.edgeStart, 0, 0.99);
-    const edgeProgress = clamp(
-      (Math.abs(axisValue) - start) / (1 - start),
-      0,
-      1,
-    );
+    const edgeProgress = clamp((Math.abs(axisValue) - start) / (1 - start), 0, 1);
     const displacement = Math.sign(axisValue) * edgeProgress * edgeProgress;
     return pass.axis === "horizontal" ? [displacement, 0] : [0, displacement];
   }
@@ -126,10 +151,7 @@ function displacementVector(input: {
     pass.kind === "fisheye-warp"
       ? Math.sin(radialProgress * Math.PI) ** 2
       : (256 / 27) * radialProgress ** 3 * (1 - radialProgress);
-  return [
-    (normalizedX / distance) * magnitude,
-    (normalizedY / distance) * magnitude,
-  ];
+  return [(normalizedX / distance) * magnitude, (normalizedY / distance) * magnitude];
 }
 
 function passDisplacementPixels(
@@ -165,34 +187,22 @@ export function composeWarpDisplacement(input: {
   // A later displacement samples the already-displaced result, so compose
   // sampling coordinates in reverse painter order instead of merely summing.
   for (let index = passes.length - 1; index >= 0; index -= 1) {
-    const [dx, dy] = passDisplacementPixels(
-      passes[index],
-      sourceX,
-      sourceY,
-      input.viewport,
-    );
+    const [dx, dy] = passDisplacementPixels(passes[index], sourceX, sourceY, input.viewport);
     sourceX += dx / input.viewport.width;
     sourceY += dy / input.viewport.height;
   }
-  return [
-    (sourceX - input.x) * input.viewport.width,
-    (sourceY - input.y) * input.viewport.height,
-  ];
+  return [(sourceX - input.x) * input.viewport.width, (sourceY - input.y) * input.viewport.height];
 }
 
 function maxCropCompensation(passes: readonly CameraProjectionPass[]): number {
   return passes.reduce(
     (maximum, pass) =>
-      "cropCompensation" in pass
-        ? Math.max(maximum, pass.cropCompensation)
-        : maximum,
+      "cropCompensation" in pass ? Math.max(maximum, pass.cropCompensation) : maximum,
     1,
   );
 }
 
-function orderedOutputs(
-  capture: CameraTextureProjectionCapture,
-): readonly CaptureOutput[] {
+function orderedOutputs(capture: CameraTextureProjectionCapture): readonly CaptureOutput[] {
   if (capture.outputs.length === 0) {
     throw new Error(
       `CAM_TEXTURE_OUTPUTS_EMPTY: Frame ${capture.frame} does not contain a camera output.`,
@@ -208,18 +218,12 @@ function orderedOutputs(
     seen.add(output.outputId);
   }
   return [...capture.outputs].sort(
-    (left, right) =>
-      left.zIndex - right.zIndex || left.outputId.localeCompare(right.outputId),
+    (left, right) => left.zIndex - right.zIndex || left.outputId.localeCompare(right.outputId),
   );
 }
 
-function getOutput(
-  capture: CameraTextureProjectionCapture,
-  outputId: string,
-): CaptureOutput {
-  const output = capture.outputs.find(
-    (candidate) => candidate.outputId === outputId,
-  );
+function getOutput(capture: CameraTextureProjectionCapture, outputId: string): CaptureOutput {
+  const output = capture.outputs.find((candidate) => candidate.outputId === outputId);
   if (!output) {
     throw new Error(
       `CAM_TEXTURE_OUTPUT_MISSING: Frame ${capture.frame} does not contain output "${outputId}".`,
@@ -236,12 +240,8 @@ function projectForward(input: {
 }): { x: number; y: number } {
   const centerX = input.viewport.width / 2;
   const centerY = input.viewport.height / 2;
-  let x =
-    centerX +
-    (input.point.x - input.viewport.x - centerX) * input.cropCompensation;
-  let y =
-    centerY +
-    (input.point.y - input.viewport.y - centerY) * input.cropCompensation;
+  let x = centerX + (input.point.x - input.viewport.x - centerX) * input.cropCompensation;
+  let y = centerY + (input.point.y - input.viewport.y - centerY) * input.cropCompensation;
 
   if (input.projective) {
     const radians = Math.PI / 180;
@@ -254,10 +254,7 @@ function projectForward(input: {
     const perspective = Math.max(1, input.projective.perspectivePx);
     const sourceX = x - centerX;
     const sourceY = y - centerY;
-    const denominator =
-      1 +
-      (cosX * sinY * sourceX) / perspective -
-      (sinX * sourceY) / perspective;
+    const denominator = 1 + (cosX * sinY * sourceX) / perspective - (sinX * sourceY) / perspective;
     if (!Number.isFinite(denominator) || Math.abs(denominator) < 1e-8) {
       throw new Error(
         "CAM_TEXTURE_PROJECTIVE_SINGULAR: Projective camera transform sent a stage corner to infinity.",
@@ -311,9 +308,7 @@ export function createOpticalDisplacementMapPlanes(input: {
   const output = getOutput(input.capture, input.outputId);
   const viewport = output.viewport;
   if (
-    ![viewport.x, viewport.y, viewport.width, viewport.height].every(
-      Number.isInteger,
-    ) ||
+    ![viewport.x, viewport.y, viewport.width, viewport.height].every(Number.isInteger) ||
     viewport.x < 0 ||
     viewport.y < 0 ||
     viewport.x + viewport.width > input.compositionWidth ||
@@ -368,18 +363,11 @@ function pngChunk(type: string, data: Uint8Array): Buffer {
   chunk.writeUInt32BE(data.length, 0);
   chunk.write(type, 4, 4, "ascii");
   Buffer.from(data).copy(chunk, 8);
-  chunk.writeUInt32BE(
-    crc32(chunk.subarray(4, chunk.length - 4)),
-    chunk.length - 4,
-  );
+  chunk.writeUInt32BE(crc32(chunk.subarray(4, chunk.length - 4)), chunk.length - 4);
   return chunk;
 }
 
-export function encodeGrayscalePng(
-  width: number,
-  height: number,
-  pixels: Uint8Array,
-): Buffer {
+export function encodeGrayscalePng(width: number, height: number, pixels: Uint8Array): Buffer {
   if (pixels.length !== width * height) {
     throw new Error("Grayscale PNG pixel count does not match its dimensions.");
   }
@@ -387,10 +375,7 @@ export function encodeGrayscalePng(
   for (let row = 0; row < height; row += 1) {
     const offset = row * (width + 1);
     scanlines[offset] = 0;
-    Buffer.from(pixels.subarray(row * width, (row + 1) * width)).copy(
-      scanlines,
-      offset + 1,
-    );
+    Buffer.from(pixels.subarray(row * width, (row + 1) * width)).copy(scanlines, offset + 1);
   }
   const header = Buffer.alloc(13);
   header.writeUInt32BE(width, 0);
@@ -412,9 +397,7 @@ function dominantSmear(output: CaptureOutput): SmearPass | null {
   return (
     [...smears].sort(
       (left, right) =>
-        right.spreadPx - left.spreadPx ||
-        right.decay - left.decay ||
-        right.samples - left.samples,
+        right.spreadPx - left.spreadPx || right.decay - left.decay || right.samples - left.samples,
     )[0] ?? null
   );
 }
@@ -449,9 +432,7 @@ function commandNumber(value: number): string {
   return normalized.toFixed(6).replace(/\.?0+$/, "");
 }
 
-function perspectiveCoordinateValues(
-  corners: PerspectiveCorners,
-): readonly number[] {
+function perspectiveCoordinateValues(corners: PerspectiveCorners): readonly number[] {
   return [
     corners.topLeft.x,
     corners.topLeft.y,
@@ -480,9 +461,7 @@ function frameStepExpression(values: readonly number[]): string {
     const delta = Number(commandNumber(current - previous));
     if (delta === 0) continue;
     const serializedDelta = commandNumber(delta);
-    terms.push(
-      `${delta > 0 ? "+" : ""}${serializedDelta}*gte(in\\,${index + 1})`,
-    );
+    terms.push(`${delta > 0 ? "+" : ""}${serializedDelta}*gte(in\\,${index + 1})`);
   }
   return terms.join("");
 }
@@ -500,9 +479,7 @@ export function createPerspectiveExpressions(
     );
   }
   const expressionAt = (coordinateIndex: number): string =>
-    frameStepExpression(
-      valuesByFrame.map((coordinates) => coordinates[coordinateIndex] ?? 0),
-    );
+    frameStepExpression(valuesByFrame.map((coordinates) => coordinates[coordinateIndex] ?? 0));
   return {
     x0: expressionAt(0),
     y0: expressionAt(1),
@@ -515,11 +492,7 @@ export function createPerspectiveExpressions(
   };
 }
 
-function filterTarget(
-  filter: string,
-  instance: string,
-  outputIndex: number,
-): string {
+function filterTarget(filter: string, instance: string, outputIndex: number): string {
   return `${filter}@tokovo_${instance}_${outputIndex}`;
 }
 
@@ -532,10 +505,7 @@ const CAMERA_COMMAND_STAGES: readonly CameraCommandStage[] = [
   "smear-overlay",
 ];
 
-function cameraCommandFileName(
-  outputIndex: number,
-  stage: CameraCommandStage,
-): string {
+function cameraCommandFileName(outputIndex: number, stage: CameraCommandStage): string {
   return `camera-${outputIndex.toString().padStart(2, "0")}-${stage}.sendcmd`;
 }
 
@@ -546,9 +516,7 @@ function commandsForOutput(
 ): Record<CameraCommandStage, readonly string[]> {
   const smear = dominantSmear(output);
   const grade = resolvedGrade(output);
-  const length = smear
-    ? Math.max(1e-6, Math.hypot(smear.direction[0], smear.direction[1]))
-    : 1;
+  const length = smear ? Math.max(1e-6, Math.hypot(smear.direction[0], smear.direction[1])) : 1;
   const directionX = smear ? smear.direction[0] / length : 1;
   const directionY = smear ? smear.direction[1] / length : 0;
   const spread = smear?.spreadPx ?? 0;
@@ -597,28 +565,24 @@ export function createCameraCommandFiles(
 ): readonly CameraCommandFile[] {
   if (captures.length === 0) return [];
   const commandsByFrame = captures.map((capture, sequenceIndex) => ({
-    timestamp: (sequenceIndex === 0 ? 0 : (sequenceIndex - 0.5) / fps).toFixed(
-      9,
-    ),
+    timestamp: (sequenceIndex === 0 ? 0 : (sequenceIndex - 0.5) / fps).toFixed(9),
     outputs: orderedOutputs(capture).map((output, outputIndex) =>
       commandsForOutput(capture, output, outputIndex),
     ),
   }));
   const outputCount = commandsByFrame[0].outputs.length;
-  return Array.from(
-    { length: outputCount },
-    (_, outputIndex) => outputIndex,
-  ).flatMap((outputIndex) =>
-    CAMERA_COMMAND_STAGES.map((stage) => ({
-      outputIndex,
-      stage,
-      contents: commandsByFrame
-        .map(
-          (frame) =>
-            `${frame.timestamp} [enter] ${frame.outputs[outputIndex][stage].join(", ")};`,
-        )
-        .join("\n"),
-    })),
+  return Array.from({ length: outputCount }, (_, outputIndex) => outputIndex).flatMap(
+    (outputIndex) =>
+      CAMERA_COMMAND_STAGES.map((stage) => ({
+        outputIndex,
+        stage,
+        contents: commandsByFrame
+          .map(
+            (frame) =>
+              `${frame.timestamp} [enter] ${frame.outputs[outputIndex][stage].join(", ")};`,
+          )
+          .join("\n"),
+      })),
   );
 }
 
@@ -637,16 +601,11 @@ export class CameraTextureCaptureCollector {
     this.#frames.set(capture.frame, capture);
   }
 
-  complete(
-    durationInFrames: number,
-  ): readonly CameraTextureProjectionCapture[] {
+  complete(durationInFrames: number): readonly CameraTextureProjectionCapture[] {
     return this.completeRange(0, durationInFrames - 1);
   }
 
-  completeRange(
-    startFrame: number,
-    endFrame: number,
-  ): readonly CameraTextureProjectionCapture[] {
+  completeRange(startFrame: number, endFrame: number): readonly CameraTextureProjectionCapture[] {
     if (
       !Number.isInteger(startFrame) ||
       !Number.isInteger(endFrame) ||
@@ -712,16 +671,12 @@ async function writeMapSequence(input: {
   compositionWidth: number;
   compositionHeight: number;
   rootDir: string;
-}): Promise<
-  readonly { outputId: string; xPattern: string; yPattern: string }[]
-> {
+}): Promise<readonly { outputId: string; xPattern: string; yPattern: string }[]> {
   const firstCapture = input.captures[0];
   if (!firstCapture) return [];
   const cache = new Map<string, { x: string; y: string }>();
   const opticalOutputs = orderedOutputs(firstCapture).filter((output) =>
-    input.captures.some((capture) =>
-      hasOpticalDisplacement(getOutput(capture, output.outputId)),
-    ),
+    input.captures.some((capture) => hasOpticalDisplacement(getOutput(capture, output.outputId))),
   );
   return Promise.all(
     opticalOutputs.map(async (output, outputIndex) => {
@@ -731,11 +686,32 @@ async function writeMapSequence(input: {
       );
       const xDir = path.join(outputDir, "xmaps");
       const yDir = path.join(outputDir, "ymaps");
-      await Promise.all([
-        fs.mkdir(xDir, { recursive: true }),
-        fs.mkdir(yDir, { recursive: true }),
-      ]);
+      await Promise.all([fs.mkdir(xDir, { recursive: true }), fs.mkdir(yDir, { recursive: true })]);
       for (const [sequenceIndex, capture] of input.captures.entries()) {
+        const frameOutput = getOutput(capture, output.outputId);
+        const mapIdentity = createHash("sha256")
+          .update(
+            JSON.stringify({
+              width: MAP_WIDTH,
+              height: MAP_HEIGHT,
+              viewport: frameOutput.viewport,
+              passes: frameOutput.projectionPasses.filter(
+                (pass) =>
+                  pass.kind === "radial-warp" ||
+                  pass.kind === "fisheye-warp" ||
+                  pass.kind === "anamorphic-edge-stretch",
+              ),
+            }),
+          )
+          .digest("hex");
+        const name = `${sequenceIndex.toString().padStart(6, "0")}.png`;
+        const xPath = path.join(xDir, name);
+        const yPath = path.join(yDir, name);
+        const cached = cache.get(mapIdentity);
+        if (cached) {
+          await Promise.all([fs.link(cached.x, xPath), fs.link(cached.y, yPath)]);
+          continue;
+        }
         const planes = createOpticalDisplacementMapPlanes({
           capture,
           outputId: output.outputId,
@@ -744,26 +720,8 @@ async function writeMapSequence(input: {
         });
         const xPng = encodeGrayscalePng(MAP_WIDTH, MAP_HEIGHT, planes.x);
         const yPng = encodeGrayscalePng(MAP_WIDTH, MAP_HEIGHT, planes.y);
-        const digest = createHash("sha256")
-          .update(xPng)
-          .update(yPng)
-          .digest("hex");
-        const name = `${sequenceIndex.toString().padStart(6, "0")}.png`;
-        const xPath = path.join(xDir, name);
-        const yPath = path.join(yDir, name);
-        const cached = cache.get(digest);
-        if (cached) {
-          await Promise.all([
-            fs.link(cached.x, xPath),
-            fs.link(cached.y, yPath),
-          ]);
-          continue;
-        }
-        await Promise.all([
-          fs.writeFile(xPath, xPng),
-          fs.writeFile(yPath, yPng),
-        ]);
-        cache.set(digest, { x: xPath, y: yPath });
+        await Promise.all([fs.writeFile(xPath, xPng), fs.writeFile(yPath, yPng)]);
+        cache.set(mapIdentity, { x: xPath, y: yPath });
       }
       return {
         outputId: output.outputId,
@@ -775,10 +733,7 @@ async function writeMapSequence(input: {
 }
 
 function escapeFilterPath(filePath: string): string {
-  return filePath
-    .replaceAll("\\", "\\\\")
-    .replaceAll(":", "\\:")
-    .replaceAll("'", "\\'");
+  return filePath.replaceAll("\\", "\\\\").replaceAll(":", "\\:").replaceAll("'", "\\'");
 }
 
 function commandFilter(
@@ -786,17 +741,11 @@ function commandFilter(
   outputIndex: number,
   stage: CameraCommandStage,
 ): string {
-  const filePath = path.join(
-    commandDirectory,
-    cameraCommandFileName(outputIndex, stage),
-  );
+  const filePath = path.join(commandDirectory, cameraCommandFileName(outputIndex, stage));
   return `sendcmd=f='${escapeFilterPath(filePath)}'`;
 }
 
-function perspectiveFilter(
-  target: string,
-  expressions: PerspectiveExpressions,
-): string {
+function perspectiveFilter(target: string, expressions: PerspectiveExpressions): string {
   return [
     `perspective@${target}=x0=${expressions.x0}`,
     `y0=${expressions.y0}`,
@@ -860,33 +809,25 @@ export function createTextureFilterGraph(input: {
   const outputs = orderedOutputs(initialCapture);
   const opticalOutputIds =
     input.opticalOutputIds ??
-    outputs
-      .filter((output) => hasOpticalDisplacement(output))
-      .map((output) => output.outputId);
+    outputs.filter((output) => hasOpticalDisplacement(output)).map((output) => output.outputId);
   const opticalOutputIndex = new Map(
     opticalOutputIds.map((outputId, index) => [outputId, index] as const),
   );
   const smearOutputIds = new Set(
     outputs
       .filter((output) =>
-        input.captures.some((capture) =>
-          hasDirectionalSmear(getOutput(capture, output.outputId)),
-        ),
+        input.captures.some((capture) => hasDirectionalSmear(getOutput(capture, output.outputId))),
       )
       .map((output) => output.outputId),
   );
   for (const outputId of opticalOutputIds) {
     if (!outputs.some((output) => output.outputId === outputId)) {
-      throw new Error(
-        `CAM_TEXTURE_OPTICAL_OUTPUT_MISSING: Unknown output "${outputId}".`,
-      );
+      throw new Error(`CAM_TEXTURE_OPTICAL_OUTPUT_MISSING: Unknown output "${outputId}".`);
     }
   }
   const foregroundInputIndex = 2 + opticalOutputIds.length * 2;
   const graph: string[] = [];
-  const cameraSourceLabels = outputs
-    .map((_, index) => `[camera_source_${index}]`)
-    .join("");
+  const cameraSourceLabels = outputs.map((_, index) => `[camera_source_${index}]`).join("");
   graph.push(
     outputs.length === 1
       ? `[1:v]format=rgba${cameraSourceLabels}`
@@ -895,10 +836,7 @@ export function createTextureFilterGraph(input: {
 
   for (const [outputIndex, output] of outputs.entries()) {
     const viewport = output.viewport;
-    const perspectiveExpressions = createPerspectiveExpressions(
-      input.captures,
-      output.outputId,
-    );
+    const perspectiveExpressions = createPerspectiveExpressions(input.captures, output.outputId);
     const opticalIndex = opticalOutputIndex.get(output.outputId);
     graph.push(
       `[camera_source_${outputIndex}]${perspectiveFilter(`tokovo_camera_${outputIndex}`, perspectiveExpressions)},crop=${viewport.width}:${viewport.height}:${viewport.x}:${viewport.y},format=rgba[framed_${outputIndex}]`,
@@ -931,9 +869,7 @@ export function createTextureFilterGraph(input: {
         `[crisp_commanded_${outputIndex}][smear_${outputIndex}]overlay@tokovo_smear_overlay_${outputIndex}=x=0:y=0:format=auto:alpha=straight,format=rgba[optical_unmasked_${outputIndex}]`,
       );
     } else {
-      graph.push(
-        `[graded_${outputIndex}]null[optical_unmasked_${outputIndex}]`,
-      );
+      graph.push(`[graded_${outputIndex}]null[optical_unmasked_${outputIndex}]`);
     }
     const roundedClip = roundedClipFilter({
       radius: output.clipRadiusPx,
@@ -945,34 +881,22 @@ export function createTextureFilterGraph(input: {
         `[optical_unmasked_${outputIndex}]${roundedClip},format=rgba[optical_clipped_${outputIndex}]`,
       );
     } else {
-      graph.push(
-        `[optical_unmasked_${outputIndex}]null[optical_clipped_${outputIndex}]`,
-      );
+      graph.push(`[optical_unmasked_${outputIndex}]null[optical_clipped_${outputIndex}]`);
     }
-    if (
-      output.shadow &&
-      output.shadow.opacity > 0 &&
-      output.shadow.blurPx > 0
-    ) {
+    if (output.shadow && output.shadow.opacity > 0 && output.shadow.blurPx > 0) {
       const shadowPadding = Math.ceil(output.shadow.blurPx * 2);
       graph.push(
         `[optical_clipped_${outputIndex}]split=2[shadow_source_${outputIndex}][optical_${outputIndex}]`,
         `[shadow_source_${outputIndex}]pad=${viewport.width + shadowPadding * 2}:${viewport.height + shadowPadding * 2}:${shadowPadding}:${shadowPadding}:color=black@0,format=rgba,colorchannelmixer=rr=0:gg=0:bb=0:aa=${commandNumber(output.shadow.opacity)},gblur=sigma=${commandNumber(output.shadow.blurPx)}:sigmaV=${commandNumber(output.shadow.blurPx)}:steps=2:planes=15[shadow_${outputIndex}]`,
       );
     } else {
-      graph.push(
-        `[optical_clipped_${outputIndex}]null[optical_${outputIndex}]`,
-      );
+      graph.push(`[optical_clipped_${outputIndex}]null[optical_${outputIndex}]`);
     }
   }
 
   graph.push(`[0:v]format=rgba[camera_canvas_0]`);
   for (const [outputIndex, output] of outputs.entries()) {
-    if (
-      output.shadow &&
-      output.shadow.opacity > 0 &&
-      output.shadow.blurPx > 0
-    ) {
+    if (output.shadow && output.shadow.opacity > 0 && output.shadow.blurPx > 0) {
       const shadowPadding = Math.ceil(output.shadow.blurPx * 2);
       graph.push(
         `[camera_canvas_${outputIndex}][shadow_${outputIndex}]overlay=x=${commandNumber(output.viewport.x + output.shadow.offsetX - shadowPadding)}:y=${commandNumber(output.viewport.y + output.shadow.offsetY - shadowPadding)}:format=auto:alpha=straight[camera_shadow_canvas_${outputIndex}]`,
@@ -1049,164 +973,278 @@ export async function compositeCameraTexture(input: {
   fps: number;
   profile: RenderProfile;
   logger: RenderLogger;
-}): Promise<void> {
+  cache: {
+    enabled: boolean;
+    plateKeys: CameraCompositorChunkIdentity["plateKeys"];
+  };
+}): Promise<CameraTextureCompositeResult> {
   const initialCapture = input.captures[0];
   if (!initialCapture) {
-    throw new Error(
-      "CAM_TEXTURE_CAPTURE_EMPTY: Offline composition requires at least one frame.",
-    );
+    throw new Error("CAM_TEXTURE_CAPTURE_EMPTY: Offline composition requires at least one frame.");
   }
-  if (
-    initialCapture.stage.width < input.width ||
-    initialCapture.stage.height < input.height
-  ) {
+  if (initialCapture.stage.width < input.width || initialCapture.stage.height < input.height) {
     throw new Error(
       `CAM_TEXTURE_STAGE_TOO_SMALL: Reusable stage plate ${initialCapture.stage.width}x${initialCapture.stage.height} cannot contain ${input.width}x${input.height} output.`,
     );
   }
-  const mapStartedAt = Date.now();
-  const maps = await writeMapSequence({
-    captures: input.captures,
-    compositionWidth: input.width,
-    compositionHeight: input.height,
-    rootDir: input.workingDirectory,
-  });
   const chunks = createCompositorFrameChunks(input.captures.length);
   const chunkCount = chunks.length;
   await input.logger.info(
-    "camera.texture.maps.done",
-    "Built deterministic optical displacement maps and prepared bounded composition chunks",
+    "camera.texture.chunks.prepared",
+    "Prepared bounded, cacheable camera composition chunks",
     {
       frameCount: input.captures.length,
-      opticalOutputCount: maps.length,
       chunkCount,
       chunkFrames: COMPOSITOR_CHUNK_FRAMES,
       mapWidth: MAP_WIDTH,
       mapHeight: MAP_HEIGHT,
-      durationMs: Date.now() - mapStartedAt,
+      compositorConcurrency: input.profile.compositorConcurrency,
+      chunkCacheEnabled: input.cache.enabled,
     },
   );
 
   const chunkRoot = path.join(input.workingDirectory, "chunks");
   await fs.mkdir(chunkRoot, { recursive: true });
-  const chunkPaths: string[] = [];
 
   try {
-    for (const chunk of chunks) {
-      const chunkIndex = chunk.index;
-      const startFrame = chunk.startFrame;
-      const endFrame = chunk.endFrame;
-      const chunkCaptures = input.captures.slice(startFrame, endFrame);
-      const chunkDirectory = path.join(
-        chunkRoot,
-        chunkIndex.toString().padStart(4, "0"),
-      );
-      await fs.mkdir(chunkDirectory, { recursive: true });
-      const commandFiles = createCameraCommandFiles(chunkCaptures, input.fps);
-      await Promise.all(
-        commandFiles.map((file) =>
-          fs.writeFile(
-            path.join(
-              chunkDirectory,
-              cameraCommandFileName(file.outputIndex, file.stage),
+    const chunksStartedAt = Date.now();
+    const chunkResults = await mapWithConcurrency(
+      chunks,
+      input.profile.compositorConcurrency,
+      async (chunk) => {
+        const chunkIndex = chunk.index;
+        const startFrame = chunk.startFrame;
+        const endFrame = chunk.endFrame;
+        const chunkCaptures = input.captures.slice(startFrame, endFrame);
+        const firstCapture = chunkCaptures[0];
+        const lastCapture = chunkCaptures.at(-1);
+        if (!firstCapture || !lastCapture) {
+          throw new Error(`CAM_TEXTURE_CHUNK_EMPTY: Chunk ${chunkIndex} contains no captures.`);
+        }
+        const chunkIdentity: CameraCompositorChunkIdentity = {
+          compositorSignature: CAMERA_TEXTURE_COMPOSITOR_SIGNATURE,
+          plateKeys: input.cache.plateKeys,
+          captureSignature: createCameraCompositorCaptureSignature(chunkCaptures),
+          sourceFrameRange: [firstCapture.frame, lastCapture.frame],
+          fps: input.fps,
+          width: input.width,
+          height: input.height,
+          videoBitrate: input.profile.videoBitrate,
+          x264Preset: input.profile.x264Preset,
+          encodingSignature: "libx264-yuv420p-filter-threads1",
+        };
+        const lookup = input.cache.enabled
+          ? await lookupCameraCompositorChunk(chunkIdentity)
+          : null;
+        if (lookup?.status === "hit") {
+          await input.logger.info(
+            "camera.texture.chunk.cache.hit",
+            "Reusing unchanged camera compositor chunk",
+            {
+              chunkIndex,
+              chunkCount,
+              startFrame: firstCapture.frame,
+              endFrame: lastCapture.frame,
+              cacheKey: lookup.key,
+              sizeBytes: lookup.sizeBytes,
+            },
+          );
+          return {
+            path: lookup.chunkPath,
+            cacheStatus: "hit" as const,
+            mapDurationMs: 0,
+          };
+        }
+
+        const chunkDirectory = path.join(chunkRoot, chunkIndex.toString().padStart(4, "0"));
+        await fs.mkdir(chunkDirectory, { recursive: true });
+        await input.logger.info(
+          input.cache.enabled
+            ? "camera.texture.chunk.cache.miss"
+            : "camera.texture.chunk.cache.disabled",
+          input.cache.enabled
+            ? "Rendering changed camera compositor chunk"
+            : "Camera compositor chunk cache disabled for this render",
+          {
+            chunkIndex,
+            chunkCount,
+            startFrame: firstCapture.frame,
+            endFrame: lastCapture.frame,
+            ...(lookup?.status === "miss"
+              ? {
+                  cacheKey: lookup.key,
+                  missReason: lookup.reason,
+                  cacheError: lookup.error,
+                }
+              : {}),
+          },
+        );
+
+        const mapStartedAt = Date.now();
+        const maps = await writeMapSequence({
+          captures: chunkCaptures,
+          compositionWidth: input.width,
+          compositionHeight: input.height,
+          rootDir: path.join(chunkDirectory, "maps"),
+        });
+        const mapDurationMs = Date.now() - mapStartedAt;
+        const commandFiles = createCameraCommandFiles(chunkCaptures, input.fps);
+        await Promise.all(
+          commandFiles.map((file) =>
+            fs.writeFile(
+              path.join(chunkDirectory, cameraCommandFileName(file.outputIndex, file.stage)),
+              `${file.contents}\n`,
+              "utf8",
             ),
-            `${file.contents}\n`,
-            "utf8",
           ),
-        ),
-      );
-      const filterGraph = createTextureFilterGraph({
-        commandDirectory: chunkDirectory,
-        captures: chunkCaptures,
-        width: input.width,
-        height: input.height,
-        opticalOutputIds: maps.map((map) => map.outputId),
-      });
-      const filterGraphPath = path.join(
-        chunkDirectory,
-        "camera-filter-complex.ffgraph",
-      );
-      await fs.writeFile(filterGraphPath, `${filterGraph}\n`, "utf8");
-      const mapInputs = maps.flatMap((map) => [
-        "-framerate",
-        String(input.fps),
-        "-start_number",
-        String(startFrame),
-        "-i",
-        map.xPattern,
-        "-framerate",
-        String(input.fps),
-        "-start_number",
-        String(startFrame),
-        "-i",
-        map.yPattern,
-      ]);
-      const chunkPath = path.join(
-        chunkDirectory,
-        `camera-chunk-${chunkIndex.toString().padStart(4, "0")}.mp4`,
-      );
-      const seekTime = (startFrame / input.fps).toFixed(9);
-      await input.logger.info(
-        "camera.texture.chunk.start",
-        "Compositing bounded deterministic camera chunk",
-        { chunkIndex, chunkCount, startFrame, endFrame },
-      );
-      await runFfmpeg([
-        "-hide_banner",
-        "-loglevel",
-        "error",
-        "-y",
-        "-ss",
-        seekTime,
-        "-i",
-        input.underlayPath,
-        "-ss",
-        seekTime,
-        "-i",
-        input.cameraPlatePath,
-        ...mapInputs,
-        "-ss",
-        seekTime,
-        "-i",
-        input.foregroundPlatePath,
-        "-filter_threads",
-        "1",
-        "-filter_complex_threads",
-        "1",
-        "-/filter_complex",
-        filterGraphPath,
-        "-map",
-        "[final]",
-        "-frames:v",
-        String(chunkCaptures.length),
-        "-r",
-        String(input.fps),
-        "-an",
-        "-c:v",
-        "libx264",
-        "-b:v",
-        input.profile.videoBitrate,
-        "-preset",
-        input.profile.x264Preset,
-        "-threads:v",
-        "1",
-        "-pix_fmt",
-        "yuv420p",
-        "-map_metadata",
-        "-1",
-        "-metadata",
-        "creation_time=1970-01-01T00:00:00Z",
-        "-movflags",
-        "+faststart",
-        chunkPath,
-      ]);
-      chunkPaths.push(chunkPath);
-      await input.logger.info(
-        "camera.texture.chunk.done",
-        "Composited bounded deterministic camera chunk",
-        { chunkIndex, chunkCount, startFrame, endFrame },
-      );
-    }
+        );
+        const filterGraph = createTextureFilterGraph({
+          commandDirectory: chunkDirectory,
+          captures: chunkCaptures,
+          width: input.width,
+          height: input.height,
+          opticalOutputIds: maps.map((map) => map.outputId),
+        });
+        const filterGraphPath = path.join(chunkDirectory, "camera-filter-complex.ffgraph");
+        await fs.writeFile(filterGraphPath, `${filterGraph}\n`, "utf8");
+        const mapInputs = maps.flatMap((map) => [
+          "-framerate",
+          String(input.fps),
+          "-start_number",
+          "0",
+          "-i",
+          map.xPattern,
+          "-framerate",
+          String(input.fps),
+          "-start_number",
+          "0",
+          "-i",
+          map.yPattern,
+        ]);
+        const chunkPath = path.join(
+          chunkDirectory,
+          `camera-chunk-${chunkIndex.toString().padStart(4, "0")}.mp4`,
+        );
+        const seekTime = (startFrame / input.fps).toFixed(9);
+        const chunkStartedAt = Date.now();
+        await input.logger.info(
+          "camera.texture.chunk.start",
+          "Compositing bounded deterministic camera chunk",
+          { chunkIndex, chunkCount, startFrame, endFrame },
+        );
+        await runFfmpeg([
+          "-hide_banner",
+          "-loglevel",
+          "error",
+          "-y",
+          "-ss",
+          seekTime,
+          "-i",
+          input.underlayPath,
+          "-ss",
+          seekTime,
+          "-i",
+          input.cameraPlatePath,
+          ...mapInputs,
+          "-ss",
+          seekTime,
+          "-i",
+          input.foregroundPlatePath,
+          "-filter_threads",
+          "1",
+          "-filter_complex_threads",
+          "1",
+          "-/filter_complex",
+          filterGraphPath,
+          "-map",
+          "[final]",
+          "-frames:v",
+          String(chunkCaptures.length),
+          "-r",
+          String(input.fps),
+          "-an",
+          "-c:v",
+          "libx264",
+          "-b:v",
+          input.profile.videoBitrate,
+          "-preset",
+          input.profile.x264Preset,
+          "-threads:v",
+          "1",
+          "-pix_fmt",
+          "yuv420p",
+          "-map_metadata",
+          "-1",
+          "-metadata",
+          "creation_time=1970-01-01T00:00:00Z",
+          "-movflags",
+          "+faststart",
+          chunkPath,
+        ]);
+        await input.logger.info(
+          "camera.texture.chunk.done",
+          "Composited bounded deterministic camera chunk",
+          {
+            chunkIndex,
+            chunkCount,
+            startFrame,
+            endFrame,
+            durationMs: Date.now() - chunkStartedAt,
+            mapDurationMs,
+          },
+        );
+        if (!input.cache.enabled) {
+          return { path: chunkPath, cacheStatus: "miss" as const, mapDurationMs };
+        }
+        try {
+          const stored = await storeCameraCompositorChunk({
+            identity: chunkIdentity,
+            sourcePath: chunkPath,
+          });
+          await input.logger.info(
+            "camera.texture.chunk.cache.store",
+            "Stored camera compositor chunk",
+            {
+              chunkIndex,
+              chunkCount,
+              cacheKey: stored.key,
+              sizeBytes: stored.sizeBytes,
+            },
+          );
+          return {
+            path: stored.chunkPath,
+            cacheStatus: "miss" as const,
+            mapDurationMs,
+          };
+        } catch (error) {
+          await input.logger.warn(
+            "camera.texture.chunk.cache.store-failed",
+            "Chunk cache write failed; continuing with the freshly rendered chunk",
+            {
+              chunkIndex,
+              chunkCount,
+              error: error instanceof Error ? error.message : String(error),
+            },
+          );
+          return { path: chunkPath, cacheStatus: "miss" as const, mapDurationMs };
+        }
+      },
+    );
+    const chunksDurationMs = Date.now() - chunksStartedAt;
+    const chunkPaths = chunkResults.map((result) => result.path);
+    const displacementMapsDurationMs = chunkResults.reduce(
+      (total, result) => total + result.mapDurationMs,
+      0,
+    );
+    const chunkHits = chunkResults.filter((result) => result.cacheStatus === "hit").length;
+    const chunkMisses = chunkResults.length - chunkHits;
+    await input.logger.info("camera.texture.chunks.done", "Resolved camera compositor chunks", {
+      chunkCount,
+      chunkHits,
+      chunkMisses,
+      displacementMapsDurationMs,
+      durationMs: chunksDurationMs,
+    });
 
     const concatPath = path.join(chunkRoot, "camera-chunks.ffconcat");
     await fs.writeFile(
@@ -1214,6 +1252,7 @@ export async function compositeCameraTexture(input: {
       `ffconcat version 1.0\n${chunkPaths.map((chunkPath) => `file '${chunkPath.replaceAll("'", "'\\''")}'`).join("\n")}\n`,
       "utf8",
     );
+    const muxStartedAt = Date.now();
     await runFfmpeg([
       "-hide_banner",
       "-loglevel",
@@ -1247,6 +1286,19 @@ export async function compositeCameraTexture(input: {
       "+faststart",
       input.outputPath,
     ]);
+    const muxDurationMs = Date.now() - muxStartedAt;
+    return {
+      timingMs: {
+        displacementMaps: displacementMapsDurationMs,
+        chunks: chunksDurationMs,
+        mux: muxDurationMs,
+      },
+      cache: {
+        enabled: input.cache.enabled,
+        chunkHits,
+        chunkMisses,
+      },
+    };
   } catch (error) {
     throw createRenderServiceError({
       code: "CAM_TEXTURE_COMPOSITOR_FAILED",

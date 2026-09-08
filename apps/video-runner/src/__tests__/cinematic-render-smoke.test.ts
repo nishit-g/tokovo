@@ -17,8 +17,8 @@ import {
 } from "@tokovo/episodes";
 
 describe("cinematic render smoke", () => {
-  const registry = createEpisodeRegistryForProfiles(["studio"]);
-  const runtime = createTokovoRuntime("studio");
+  const registry = createEpisodeRegistryForProfiles(["showcase"]);
+  const runtime = createTokovoRuntime("showcase");
   const config = createConfig();
   const smokeEpisodeIds = [
     "cinematic-subject-exhaustive",

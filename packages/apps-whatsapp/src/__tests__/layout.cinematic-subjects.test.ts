@@ -10,6 +10,7 @@ function computeForScreen(
   currentScreen: string,
   conversations?: Record<string, unknown>,
   statePatch?: Record<string, unknown>,
+  viewportWidth = 393,
 ) {
   const appState = {
     ...createWhatsAppInitialState(),
@@ -39,10 +40,10 @@ function computeForScreen(
     activeAppId: "app_whatsapp",
     platform: "ios",
     viewKind: "FEED",
-    viewportWidth: 393,
+    viewportWidth,
     viewportHeight: 852,
     appViewport: createAppViewportFrame({
-      width: 393,
+      width: viewportWidth,
       height: 852,
       interactiveInsets: { top: 47, bottom: 34 },
     }),
@@ -60,6 +61,18 @@ function expectHas(layout: any, ids: string[]) {
 }
 
 describe("WhatsApp semantic subjects (FEED)", () => {
+  it("keeps navigation point-sized when the device gets wider", () => {
+    const narrow = computeForScreen("chats");
+    const wide = computeForScreen("chats", undefined, undefined, 440);
+    expect(wide.semantic.regions.chat_list_header.rect.width).toBe(440);
+    expect(wide.semantic.regions.chat_list_header.rect.height).toBe(
+      narrow.semantic.regions.chat_list_header.rect.height,
+    );
+    expect(wide.semantic.regions.tab_bar.rect.height).toBe(
+      narrow.semantic.regions.tab_bar.rect.height,
+    );
+  });
+
   it("chats includes expected subjects", () => {
     const layout = computeForScreen("chats");
     expectHas(layout, ["device", "app", "tab_bar", "chat_list_header", "chat_list"]);
@@ -278,6 +291,7 @@ describe("WhatsApp semantic subjects (CHAT)", () => {
     const layout = computeChatLayout({
       world,
       t: 90,
+      platform: "ios",
       activeDeviceId: "d1",
       activeAppId: "app_whatsapp",
       activeConversationId: "room",
@@ -376,6 +390,7 @@ describe("WhatsApp semantic subjects (CHAT)", () => {
     const layout = computeChatLayout({
       world,
       t: 90,
+      platform: "ios",
       activeDeviceId: "d1",
       activeAppId: "app_whatsapp",
       activeConversationId: "room",
@@ -447,6 +462,7 @@ describe("WhatsApp semantic subjects (CHAT)", () => {
     const layout = computeChatLayout({
       world,
       t: 0,
+      platform: "ios",
       activeDeviceId: "d1",
       activeAppId: "app_whatsapp",
       activeConversationId: "room",
@@ -503,6 +519,7 @@ describe("WhatsApp semantic subjects (CHAT)", () => {
     const context: LayoutContext = {
       world,
       t: 0,
+      platform: "ios",
       activeDeviceId: "d1",
       activeAppId: "app_whatsapp",
       activeConversationId: "room",

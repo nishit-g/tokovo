@@ -1,0 +1,230 @@
+import type {
+  BlurbChatIntent,
+  BlurbContour,
+  BlurbCueDirection,
+  BlurbEmotion,
+  BlurbIntentProfile,
+  BlurbUtterance,
+} from "./types.js";
+
+export const CHAT_INTENT_PROFILES = {
+  "controlled-accusation": {
+    role: "speaker",
+    emotion: "annoyed",
+    intensity: 0.72,
+    length: "short",
+    finalContour: "fall",
+    preSilenceMs: 80,
+    postSilenceMs: 280,
+    interruption: "clean",
+    prominence: "foreground",
+  },
+  "held-breath-anticipation": {
+    role: "anticipation",
+    emotion: "confused",
+    intensity: 0.28,
+    length: "tiny",
+    finalContour: "flat",
+    preSilenceMs: 220,
+    postSilenceMs: 380,
+    interruption: "clean",
+    prominence: "background",
+  },
+  "urgent-warning": {
+    role: "speaker",
+    emotion: "panic",
+    intensity: 0.76,
+    length: "short",
+    finalContour: "fall",
+    preSilenceMs: 100,
+    postSilenceMs: 420,
+    interruption: "cuts-current",
+    prominence: "foreground",
+  },
+  "caught-panic": {
+    role: "reaction",
+    emotion: "panic",
+    intensity: 0.88,
+    length: "short",
+    finalContour: "bounce",
+    preSilenceMs: 60,
+    postSilenceMs: 260,
+    interruption: "may-overlap",
+    prominence: "foreground",
+  },
+  "nervous-justification": {
+    role: "speaker",
+    emotion: "panic",
+    intensity: 0.68,
+    length: "medium",
+    finalContour: "rise",
+    preSilenceMs: 120,
+    postSilenceMs: 320,
+    interruption: "clean",
+    prominence: "foreground",
+  },
+  "bad-news-realization": {
+    role: "speaker",
+    emotion: "sad",
+    intensity: 0.6,
+    length: "medium",
+    finalContour: "fall",
+    preSilenceMs: 180,
+    postSilenceMs: 420,
+    interruption: "clean",
+    prominence: "foreground",
+  },
+  "smug-reframe": {
+    role: "speaker",
+    emotion: "smug",
+    intensity: 0.62,
+    length: "short",
+    finalContour: "rise",
+    preSilenceMs: 160,
+    postSilenceMs: 460,
+    interruption: "clean",
+    prominence: "foreground",
+  },
+  "hesitant-question": {
+    role: "speaker",
+    emotion: "confused",
+    intensity: 0.5,
+    length: "short",
+    finalContour: "rise",
+    preSilenceMs: 140,
+    postSilenceMs: 300,
+    interruption: "clean",
+    prominence: "foreground",
+  },
+  "deadpan-verdict": {
+    role: "speaker",
+    emotion: "deadpan",
+    intensity: 0.7,
+    length: "tiny",
+    finalContour: "fall",
+    preSilenceMs: 280,
+    postSilenceMs: 650,
+    interruption: "cuts-current",
+    prominence: "button",
+  },
+  "defeated-button": {
+    role: "reaction",
+    emotion: "sad",
+    intensity: 0.42,
+    length: "tiny",
+    finalContour: "fall",
+    preSilenceMs: 180,
+    postSilenceMs: 520,
+    interruption: "clean",
+    prominence: "button",
+  },
+  "interrupted-protest": {
+    role: "reaction",
+    emotion: "angry",
+    intensity: 0.66,
+    length: "tiny",
+    finalContour: "rise",
+    preSilenceMs: 0,
+    postSilenceMs: 220,
+    interruption: "cuts-current",
+    prominence: "foreground",
+  },
+  "suspicious-check": {
+    role: "reaction",
+    emotion: "confused",
+    intensity: 0.48,
+    length: "short",
+    finalContour: "rise",
+    preSilenceMs: 120,
+    postSilenceMs: 300,
+    interruption: "clean",
+    prominence: "background",
+  },
+  "eager-confirmation": {
+    role: "reaction",
+    emotion: "excited",
+    intensity: 0.68,
+    length: "short",
+    finalContour: "bounce",
+    preSilenceMs: 90,
+    postSilenceMs: 240,
+    interruption: "clean",
+    prominence: "foreground",
+  },
+  "delayed-realization": {
+    role: "reaction",
+    emotion: "confused",
+    intensity: 0.58,
+    length: "short",
+    finalContour: "rise",
+    preSilenceMs: 260,
+    postSilenceMs: 340,
+    interruption: "clean",
+    prominence: "foreground",
+  },
+  "tiny-confession": {
+    role: "speaker",
+    emotion: "sad",
+    intensity: 0.46,
+    length: "tiny",
+    finalContour: "fall",
+    preSilenceMs: 320,
+    postSilenceMs: 620,
+    interruption: "clean",
+    prominence: "button",
+  },
+} as const satisfies Record<BlurbChatIntent, BlurbIntentProfile>;
+
+export interface ResolvedBlurbUtterance extends BlurbUtterance {
+  emotion: BlurbIntentProfile["emotion"];
+  intensity: number;
+  length: BlurbIntentProfile["length"];
+  finalContour: BlurbIntentProfile["finalContour"];
+  direction: BlurbCueDirection;
+}
+
+const FALLBACK_PROFILE: BlurbIntentProfile = {
+  role: "reaction",
+  emotion: "neutral",
+  intensity: 0.6,
+  length: "short",
+  finalContour: "bounce",
+  preSilenceMs: 100,
+  postSilenceMs: 280,
+  interruption: "clean",
+  prominence: "foreground",
+};
+
+const EMOTION_CONTOURS: Record<BlurbEmotion, BlurbContour> = {
+  neutral: "bounce",
+  excited: "bounce",
+  angry: "fall",
+  annoyed: "fall",
+  panic: "rise",
+  confused: "rise",
+  sad: "fall",
+  smug: "rise",
+  deadpan: "flat",
+};
+
+export function resolveBlurbUtterance(utterance: BlurbUtterance): ResolvedBlurbUtterance {
+  const profile = utterance.intent ? CHAT_INTENT_PROFILES[utterance.intent] : FALLBACK_PROFILE;
+  const emotion = utterance.emotion ?? profile.emotion;
+
+  return {
+    ...utterance,
+    emotion,
+    intensity: utterance.intensity ?? profile.intensity,
+    length: utterance.length ?? profile.length,
+    finalContour:
+      utterance.finalContour ??
+      (utterance.intent ? profile.finalContour : EMOTION_CONTOURS[emotion]),
+    direction: {
+      role: utterance.role ?? profile.role,
+      preSilenceMs: profile.preSilenceMs,
+      postSilenceMs: utterance.pauseAfterMs ?? profile.postSilenceMs,
+      interruption: profile.interruption,
+      prominence: profile.prominence,
+    },
+  };
+}

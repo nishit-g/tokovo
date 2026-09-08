@@ -30,6 +30,9 @@ export interface ConversationMutePayload {
 }
 
 export interface MessageSendPayload {
+  sentAt?: number;
+  deliveredAt?: number;
+  readAt?: number;
   conversationId: string;
   text?: string;
   attachments?: IMessageAttachment[];
@@ -40,6 +43,7 @@ export interface MessageSendPayload {
 }
 
 export interface MessageReceivePayload {
+  sentAt?: number;
   conversationId: string;
   from: string;
   text?: string;

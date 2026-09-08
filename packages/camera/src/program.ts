@@ -316,7 +316,7 @@ export function prepareCameraPlan(
       ),
     );
   }
-  if (plan.version !== 1) {
+  if (plan.version !== 2) {
     diagnostics.push(
       diagnostic(
         plan.id,
@@ -420,6 +420,13 @@ export function prepareCameraPlan(
 
   for (const rig of plan.rigs) {
     diagnostics.push(...validateSubjectGroups(plan.id, rig.subject, { rigId: rig.id }));
+    if (rig.travel.mode === "stabilized") {
+      diagnostics.push(
+        ...validateSubjectGroups(plan.id, rig.travel.mount.subject, {
+          rigId: rig.id,
+        }),
+      );
+    }
     if (rig.framingGuard) {
       diagnostics.push(
         ...validateSubjectGroups(plan.id, rig.framingGuard.subject, {

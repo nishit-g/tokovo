@@ -45,6 +45,7 @@ export type {
 } from "./KeyboardAware.js";
 
 export { DeterministicImage } from "./DeterministicImage.js";
+export { DraftText } from "./DraftText.js";
 export type { DeterministicImageProps } from "./DeterministicImage.js";
 
 export { AppSurface } from "./AppSurface.js";

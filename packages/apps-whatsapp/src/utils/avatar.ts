@@ -72,7 +72,7 @@ export function resolveAvatarWithFallback(
   avatarUrl: string | undefined,
   contactName: string,
 ): string {
-  if (!avatarUrl || isLocalPath(avatarUrl)) {
+  if (!avatarUrl) {
     return generateAvatarUrl(contactName);
   }
 

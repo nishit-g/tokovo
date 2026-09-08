@@ -6,7 +6,7 @@ export function createIMessageInitialState(): IMessageState {
     conversationId: undefined,
     currentScreen: "list",
     activeConversationId: undefined,
-    statusBarTheme: "dark",
+    statusBarTheme: "light",
     conversations: {},
   };
 }

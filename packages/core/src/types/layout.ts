@@ -81,6 +81,8 @@ export interface LayoutContext {
   viewportHeight: number;
   /** Resolved app-space viewport, including all static and dynamic system occlusions. */
   appViewport: AppViewportFrame;
+  /** Current authored input projection, in the same frame as the layout. */
+  inputValues?: Readonly<Record<string, string>>;
   config?: Partial<LayoutConfig>;
   /** Optional shared cache for layout strategies (scoped per episode/run). */
   layoutCache?: LayoutCacheStore;

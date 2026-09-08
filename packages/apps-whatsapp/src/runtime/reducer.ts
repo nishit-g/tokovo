@@ -18,6 +18,13 @@ import {
 const HANDLERS = createWhatsAppHandlers();
 
 function syncViewMode(state: WhatsAppState): void {
+  if (state.mediaViewer || state.statusViewer) {
+    state.viewerChromeRestore ??= { theme: state.statusBarTheme };
+    state.statusBarTheme = "dark";
+  } else if (state.viewerChromeRestore) {
+    state.statusBarTheme = state.viewerChromeRestore.theme;
+    delete state.viewerChromeRestore;
+  }
   const requiresConversation =
     state.currentScreen === "chat" || state.currentScreen === "profile";
   if (requiresConversation && !state.conversationId) {
@@ -110,9 +117,15 @@ function getAppState(draft: WorldState, deviceId: string): WhatsAppState {
     );
   }
   if (
-    !["chat", "chats", "updates", "calls", "communities", "settings", "profile"].includes(
-      state.currentScreen ?? "",
-    ) ||
+    ![
+      "chat",
+      "chats",
+      "updates",
+      "calls",
+      "communities",
+      "settings",
+      "profile",
+    ].includes(state.currentScreen ?? "") ||
     !["CHAT", "FEED", "FULLSCREEN", "TRANSITION"].includes(state.viewMode) ||
     !["en-US", "ar"].includes(state.locale) ||
     !["all", "unread", "favorites", "groups", "drafts"].includes(
@@ -167,6 +180,10 @@ function addMessage(
     );
   }
   conversation.messages.push(message);
+  if (conversation.typing)
+    Reflect.deleteProperty(conversation.typing, message.from);
+  if (message.from === "me" && message.type === "text")
+    conversation.draftText = "";
   const lastMessageAt = message.timestampMs ?? message.at;
   if (typeof lastMessageAt === "number") {
     conversation.lastMessageAt = lastMessageAt;
@@ -188,13 +205,13 @@ function isLifecycleMedia(message: WhatsAppMessage): boolean {
 function hasMediaSource(message: WhatsAppMessage): boolean {
   return Boolean(
     message.imageUrl ??
-      message.videoUrl ??
-      message.thumbnailUrl ??
-      message.gifUrl ??
-      message.stickerUrl ??
-      message.documentUrl ??
-      message.mapThumbnailUrl ??
-      (message.type === "voice"),
+    message.videoUrl ??
+    message.thumbnailUrl ??
+    message.gifUrl ??
+    message.stickerUrl ??
+    message.documentUrl ??
+    message.mapThumbnailUrl ??
+    message.type === "voice",
   );
 }
 
@@ -324,15 +341,41 @@ export function whatsappReducer(draft: WorldState, event: TimelineEvent): void {
     );
   }
   const conversation = conversations[conversationId];
-  const previousMessageCount = conversation.messages.length;
 
   const ctx: HandlerContext = {
     draft,
     event: parsed,
     state,
     conversation,
-    addMessage: (msg) =>
-      addTimestampedMessage(conversation, msg, draft, parsed.deviceId),
+    addMessage: (msg) => {
+      if (msg.from === "me" && msg.type !== "system") {
+        const reply = state.replyComposer;
+        if (reply?.conversationId === conversationId) {
+          const original = requireMessageById(
+            conversation,
+            reply.messageId,
+            "send reply",
+          );
+          msg.replyTo ??= {
+            messageId: original.id,
+            text: original.text ?? original.caption,
+            from: original.senderName ?? original.from,
+            type: original.type,
+            thumbnailUrl: original.thumbnailUrl ?? original.imageUrl,
+          };
+          state.replyComposer = null;
+          if (state.savedReplyDrafts)
+            state.savedReplyDrafts[conversationId] = null;
+        }
+        // Sending expresses intent to return to the live edge; receiving does not.
+        if (state.threadViewport?.conversationId === conversationId)
+          state.threadViewport = null;
+        if (state.savedThreadViewports)
+          state.savedThreadViewports[conversationId] = null;
+        state.activeGesture = null;
+      }
+      addTimestampedMessage(conversation, msg, draft, parsed.deviceId);
+    },
     getMessageById: (id) => getMessageById(conversation, id),
     requireMessageById: (id, operation) =>
       requireMessageById(conversation, id, operation),
@@ -340,12 +383,6 @@ export function whatsappReducer(draft: WorldState, event: TimelineEvent): void {
   };
 
   handler(ctx, parsed);
-  if (
-    conversation.messages.length > previousMessageCount &&
-    state.threadViewport?.conversationId === conversationId
-  ) {
-    state.threadViewport = null;
-  }
   state.layoutRevision += 1;
   syncViewMode(state);
 }

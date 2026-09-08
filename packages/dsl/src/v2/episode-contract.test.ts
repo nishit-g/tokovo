@@ -139,6 +139,35 @@ describe("DSL contract + determinism", () => {
     expect(ir.events[0]?.payload).toMatchObject({ durationFrames: 45 });
   });
 
+  it("authors a full-body performer in a replaceable overlay lane", () => {
+    const ir = episode("performer-overlay", { fps: 30, duration: "3s" })
+      .overlay((overlay) => {
+        overlay.span("0.5s", "2s").performer(
+          "/performers/mint-sprite/proud.png",
+          {
+            lane: "mint-sprite",
+            preset: "bottomLeft",
+            intensity: 0.7,
+          },
+        );
+      })
+      .build();
+
+    expect(ir.events[0]).toMatchObject({
+      at: 15,
+      kind: "OVERLAY",
+      type: "SHOW",
+      payload: {
+        variant: "performer",
+        mediaSrc: "/performers/mint-sprite/proud.png",
+        lane: "mint-sprite",
+        preset: "bottomLeft",
+        intensity: 0.7,
+        durationFrames: 45,
+      },
+    });
+  });
+
   it("authors field-scoped multilingual input independently from events", () => {
     const ir = episode("input", { fps: 30, duration: "6s", seed: "demo" })
       .device("phone", "pixel", {

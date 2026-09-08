@@ -1,14 +1,13 @@
 import type { ChatLayoutState, LayoutContext, SemanticRegion } from "@tokovo/core";
 import { instagramSpacing } from "../config/tokens.js";
-import { buildSemantic, createPx, rect } from "./shared.js";
+import { buildSemantic, rect } from "./shared.js";
 
 export function computeInstagramChatLayout(ctx: LayoutContext): ChatLayoutState {
   const { viewportWidth: w, viewportHeight: h, appViewport } = ctx;
   const contentTop = appViewport.interactiveInsets.top;
   const contentBottom = appViewport.interactiveInsets.bottom;
-  const px = createPx(w);
-  const headerH = contentTop + px(instagramSpacing.headerHeight);
-  const composerH = px(instagramSpacing.composerHeight);
+  const headerH = contentTop + instagramSpacing.headerHeight;
+  const composerH = instagramSpacing.composerHeight;
   const composerY = h - contentBottom - composerH;
   const regions: Record<string, SemanticRegion> = {
     device: { id: "device", rect: rect(0, 0, w, h), tags: ["device"] },
@@ -26,7 +25,7 @@ export function computeInstagramChatLayout(ctx: LayoutContext): ChatLayoutState 
     },
     dm_message_latest: {
       id: "dm_message_latest",
-      rect: rect(px(18), composerY - px(110), w - px(36), px(64)),
+      rect: rect(18, composerY - 110, w - 36, 64),
       tags: ["dm", "message", "latest"],
     },
     reply_composer: {
@@ -37,12 +36,12 @@ export function computeInstagramChatLayout(ctx: LayoutContext): ChatLayoutState 
     },
     reply_input: {
       id: "reply_input",
-      rect: rect(px(16), composerY + px(14), w - px(110), px(42)),
+      rect: rect(16, composerY + 14, w - 110, 42),
       tags: ["composer", "input"],
     },
     reply_send_button: {
       id: "reply_send_button",
-      rect: rect(w - px(80), composerY + px(14), px(56), px(42)),
+      rect: rect(w - 80, composerY + 14, 56, 42),
       tags: ["composer", "send"],
     },
   };

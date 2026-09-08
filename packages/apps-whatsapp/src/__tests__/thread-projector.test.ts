@@ -47,6 +47,13 @@ function project(
 }
 
 describe("WhatsApp thread projection", () => {
+  it("measures deleted messages using their visible label without restoring source text", () => {
+    const source = message("deleted", "me", 0, { type: "deleted", text: undefined });
+    const result = project([source]);
+    const run = result.blocks.find((block) => block.kind === "run");
+    expect(run?.kind === "run" && run.items[0].message.text).toBe("This message was deleted");
+    expect(source.text).toBeUndefined();
+  });
   it("reuses projections for immutable conversation state", () => {
     const messages = [message("stable", "ava", 0)];
     const conversation: WhatsAppConversation = {
@@ -175,6 +182,36 @@ describe("WhatsApp thread projection", () => {
 
     expect(run?.kind).toBe("run");
     if (run?.kind === "run") expect(run.isMe).toBe(true);
+  });
+
+  it("projects authored participant colors onto each member's messages", () => {
+    const result = project(
+      [message("teal", "ava", 0), message("violet", "noor", 30)],
+      {
+        members: [
+          {
+            id: "ava",
+            name: "Ava",
+            accentColor: "#16B8C9",
+            onAccentColor: "#171C31",
+          },
+          {
+            id: "noor",
+            name: "Noor",
+            accentColor: "#7650BD",
+          },
+        ],
+      },
+    );
+
+    expect(result.messagesById.get("teal")).toMatchObject({
+      senderAccentColor: "#16B8C9",
+      senderOnAccentColor: "#171C31",
+    });
+    expect(result.messagesById.get("violet")).toMatchObject({
+      senderAccentColor: "#7650BD",
+      senderOnAccentColor: "#FFF8EF",
+    });
   });
 
   it("fails loudly when a semantic render-window subject is missing", () => {

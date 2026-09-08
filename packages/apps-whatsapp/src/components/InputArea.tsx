@@ -1,6 +1,8 @@
 import React from "react";
+import { DraftText, type InputFieldState } from "@tokovo/react";
 import { useCurrentFrame, useVideoConfig } from "remotion";
 import { Camera, Mic, Paperclip, Plus, Send, Smile } from "lucide-react";
+import { getComposerExtraHeight } from "../config/layout-config.js";
 import {
   useTheme,
   useWhatsAppLocale,
@@ -13,7 +15,19 @@ export const InputArea: React.FC<{
   contentInsetBottom: number;
   inputDirection?: "ltr" | "rtl";
   inputLanguage?: string;
-}> = ({ text = "", showCursor = false, contentInsetBottom, inputDirection, inputLanguage }) => {
+  viewportWidth?: number;
+  selection?: InputFieldState["selection"];
+  lastActivityFrame?: number;
+}> = ({
+  text = "",
+  showCursor = false,
+  contentInsetBottom,
+  inputDirection,
+  inputLanguage,
+  viewportWidth = 440,
+  selection,
+  lastActivityFrame,
+}) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
   const theme = useTheme();
@@ -21,8 +35,8 @@ export const InputArea: React.FC<{
   const presentation = useWhatsAppPresentation();
 
   const hasContent = text.length > 0;
-  const cursorVisible = Math.floor(frame / (fps * 0.5)) % 2 === 0;
   const keyboardAttached = contentInsetBottom === 0;
+  const extraHeight = getComposerExtraHeight(text, viewportWidth);
   const paddingBottom = keyboardAttached ? 7 : Math.max(contentInsetBottom, 14);
   const controlBottomInset = keyboardAttached ? 3 : 8;
 
@@ -43,7 +57,8 @@ export const InputArea: React.FC<{
         position: "absolute",
         bottom: 0,
         insetInline: 0,
-        minHeight: 50,
+        height: 60 + contentInsetBottom + extraHeight,
+        boxSizing: "border-box",
       }}
     >
       <button
@@ -94,15 +109,17 @@ export const InputArea: React.FC<{
           border: `1px solid ${theme.colors.divider}`,
           paddingBlock: 6,
           paddingInline: "12px 4px",
-          minHeight: 38,
+          height: 38 + extraHeight,
+          minWidth: 0,
+          boxSizing: "border-box",
           display: "flex",
           alignItems: "center",
           gap: 8,
           marginBottom: keyboardAttached ? 1 : 3,
         }}
       >
-        <div style={{ flex: 1, padding: "5px 0" }}>
-          <span
+        <div style={{ flex: 1, minWidth: 0, maxHeight: 80, overflow: "hidden" }}>
+          <div
             dir={inputDirection ?? direction}
             lang={inputLanguage}
             style={{
@@ -111,23 +128,12 @@ export const InputArea: React.FC<{
               color: hasContent ? theme.colors.inputText : theme.colors.inputPlaceholder,
               lineHeight: "20px",
               display: "block",
+              whiteSpace: "pre-wrap",
+              overflowWrap: "anywhere",
             }}
           >
-            {hasContent ? text : ""}
-            {showCursor && cursorVisible && (
-              <span
-                style={{
-                  display: "inline-block",
-                  width: 2,
-                  height: 18,
-                  backgroundColor: theme.colors.accent,
-                  marginInlineStart: 1,
-                  verticalAlign: "middle",
-                }}
-              />
-            )}
-            {!hasContent && !showCursor && t("composer.placeholder")}
-          </span>
+            <DraftText text={text} selection={selection} focused={showCursor} frame={frame} fps={fps} lastActivityFrame={lastActivityFrame} accent={theme.colors.accent} lineHeight={20} locale={inputLanguage} placeholder={t("composer.placeholder")} />
+          </div>
         </div>
 
         <div

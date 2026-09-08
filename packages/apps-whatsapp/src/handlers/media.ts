@@ -72,7 +72,10 @@ function markUnreadBoundary(
   }
 }
 
-function inferFileType(fileName?: string, fallback?: string): string | undefined {
+function inferFileType(
+  fileName?: string,
+  fallback?: string,
+): string | undefined {
   if (!fileName) return fallback;
   const match = fileName.match(/\.([a-z0-9]+)$/i);
   return match ? match[1] : fallback;
@@ -121,9 +124,7 @@ function getWhatsAppState(ctx: HandlerContext): WhatsAppState {
   return ctx.state;
 }
 
-export function registerMediaHandlers(
-  registry: MutableHandlerRegistry,
-): void {
+export function registerMediaHandlers(registry: MutableHandlerRegistry): void {
   registry.registerHandler<ImageReceivedEvent>("IMAGE_RECEIVED", (ctx, e) => {
     const payload = e.payload;
     const from = payload.from;
@@ -260,22 +261,25 @@ export function registerMediaHandlers(
     ctx.addMessage(msg);
   });
 
-  registry.registerHandler<StickerReceivedEvent>("STICKER_RECEIVED", (ctx, e) => {
-    const payload = e.payload;
-    const from = payload.from;
-    const msg: WhatsAppMessage = {
-      id: buildMediaMessageId(ctx, e, from, "sticker", payload.messageId),
-      from,
-      type: "sticker",
-      stickerUrl: payload.url,
-      timestamp: ctx.generateTimestamp(e.at),
-      status: "delivered",
-      at: e.at,
-    };
-    ctx.addMessage(msg);
-    markUnreadBoundary(ctx, from, msg.id);
-    bumpUnread(ctx, from);
-  });
+  registry.registerHandler<StickerReceivedEvent>(
+    "STICKER_RECEIVED",
+    (ctx, e) => {
+      const payload = e.payload;
+      const from = payload.from;
+      const msg: WhatsAppMessage = {
+        id: buildMediaMessageId(ctx, e, from, "sticker", payload.messageId),
+        from,
+        type: "sticker",
+        stickerUrl: payload.url,
+        timestamp: ctx.generateTimestamp(e.at),
+        status: "delivered",
+        at: e.at,
+      };
+      ctx.addMessage(msg);
+      markUnreadBoundary(ctx, from, msg.id);
+      bumpUnread(ctx, from);
+    },
+  );
 
   registry.registerHandler<StickerSentEvent>("STICKER_SENT", (ctx, e) => {
     const payload = e.payload;
@@ -295,27 +299,28 @@ export function registerMediaHandlers(
   registry.registerHandler<DocumentReceivedEvent>(
     "DOCUMENT_RECEIVED",
     (ctx, e) => {
-    const payload = e.payload;
-    const from = payload.from;
-    const fileSize = formatFileSize(payload.fileSize) ?? "0 KB";
-    const fileName = payload.fileName ?? "Document";
-    const fileType = payload.fileType ?? inferFileType(fileName, "pdf");
-    const msg: WhatsAppMessage = {
-      id: buildMediaMessageId(ctx, e, from, "doc", payload.messageId),
-      from,
-      type: "document",
-      documentUrl: payload.url,
-      fileName,
-      fileSize,
-      fileType,
-      timestamp: ctx.generateTimestamp(e.at),
-      status: "delivered",
-      at: e.at,
-    };
-    ctx.addMessage(msg);
-    markUnreadBoundary(ctx, from, msg.id);
-    bumpUnread(ctx, from);
-  });
+      const payload = e.payload;
+      const from = payload.from;
+      const fileSize = formatFileSize(payload.fileSize) ?? "0 KB";
+      const fileName = payload.fileName ?? "Document";
+      const fileType = payload.fileType ?? inferFileType(fileName, "pdf");
+      const msg: WhatsAppMessage = {
+        id: buildMediaMessageId(ctx, e, from, "doc", payload.messageId),
+        from,
+        type: "document",
+        documentUrl: payload.url,
+        fileName,
+        fileSize,
+        fileType,
+        timestamp: ctx.generateTimestamp(e.at),
+        status: "delivered",
+        at: e.at,
+      };
+      ctx.addMessage(msg);
+      markUnreadBoundary(ctx, from, msg.id);
+      bumpUnread(ctx, from);
+    },
+  );
 
   registry.registerHandler<DocumentSentEvent>("DOCUMENT_SENT", (ctx, e) => {
     const payload = e.payload;
@@ -338,24 +343,27 @@ export function registerMediaHandlers(
     ctx.addMessage(msg);
   });
 
-  registry.registerHandler<ContactReceivedEvent>("CONTACT_RECEIVED", (ctx, e) => {
-    const payload = e.payload;
-    const from = payload.from;
-    const msg: WhatsAppMessage = {
-      id: buildMediaMessageId(ctx, e, from, "contact", payload.messageId),
-      from,
-      type: "contact",
-      contactName: payload.contactName,
-      contactPhone: payload.contactPhone,
-      contactAvatarUrl: payload.contactAvatarUrl,
-      timestamp: ctx.generateTimestamp(e.at),
-      status: "delivered",
-      at: e.at,
-    };
-    ctx.addMessage(msg);
-    markUnreadBoundary(ctx, from, msg.id);
-    bumpUnread(ctx, from);
-  });
+  registry.registerHandler<ContactReceivedEvent>(
+    "CONTACT_RECEIVED",
+    (ctx, e) => {
+      const payload = e.payload;
+      const from = payload.from;
+      const msg: WhatsAppMessage = {
+        id: buildMediaMessageId(ctx, e, from, "contact", payload.messageId),
+        from,
+        type: "contact",
+        contactName: payload.contactName,
+        contactPhone: payload.contactPhone,
+        contactAvatarUrl: payload.contactAvatarUrl,
+        timestamp: ctx.generateTimestamp(e.at),
+        status: "delivered",
+        at: e.at,
+      };
+      ctx.addMessage(msg);
+      markUnreadBoundary(ctx, from, msg.id);
+      bumpUnread(ctx, from);
+    },
+  );
 
   registry.registerHandler<ContactSentEvent>("CONTACT_SENT", (ctx, e) => {
     const payload = e.payload;
@@ -374,26 +382,29 @@ export function registerMediaHandlers(
     ctx.addMessage(msg);
   });
 
-  registry.registerHandler<LocationReceivedEvent>("LOCATION_RECEIVED", (ctx, e) => {
-    const payload = e.payload;
-    const from = payload.from;
-    const msg: WhatsAppMessage = {
-      id: buildMediaMessageId(ctx, e, from, "loc", payload.messageId),
-      from,
-      type: "location",
-      latitude: payload.latitude,
-      longitude: payload.longitude,
-      locationName: payload.locationName,
-      locationAddress: payload.locationAddress,
-      mapThumbnailUrl: payload.mapThumbnailUrl,
-      timestamp: ctx.generateTimestamp(e.at),
-      status: "delivered",
-      at: e.at,
-    };
-    ctx.addMessage(msg);
-    markUnreadBoundary(ctx, from, msg.id);
-    bumpUnread(ctx, from);
-  });
+  registry.registerHandler<LocationReceivedEvent>(
+    "LOCATION_RECEIVED",
+    (ctx, e) => {
+      const payload = e.payload;
+      const from = payload.from;
+      const msg: WhatsAppMessage = {
+        id: buildMediaMessageId(ctx, e, from, "loc", payload.messageId),
+        from,
+        type: "location",
+        latitude: payload.latitude,
+        longitude: payload.longitude,
+        locationName: payload.locationName,
+        locationAddress: payload.locationAddress,
+        mapThumbnailUrl: payload.mapThumbnailUrl,
+        timestamp: ctx.generateTimestamp(e.at),
+        status: "delivered",
+        at: e.at,
+      };
+      ctx.addMessage(msg);
+      markUnreadBoundary(ctx, from, msg.id);
+      bumpUnread(ctx, from);
+    },
+  );
 
   registry.registerHandler<LocationSentEvent>("LOCATION_SENT", (ctx, e) => {
     const payload = e.payload;
@@ -486,7 +497,8 @@ export function registerMediaHandlers(
         );
       }
       message.media.transferState = "failed";
-      message.media.failureReason = e.payload.failureReason ?? "download_failed";
+      message.media.failureReason =
+        e.payload.failureReason ?? "download_failed";
     },
   );
 
@@ -499,7 +511,9 @@ export function registerMediaHandlers(
         "start media playback",
       );
       if (!PLAYABLE_MEDIA_TYPES.has(message.type)) {
-        throw new Error(`WhatsApp media type "${message.type}" is not playable`);
+        throw new Error(
+          `WhatsApp media type "${message.type}" is not playable`,
+        );
       }
       if (message.media.transferState !== "ready") {
         throw new Error(`Cannot play media "${message.id}" before it is ready`);
@@ -576,7 +590,9 @@ export function registerMediaHandlers(
         "open media viewer",
       );
       if (!VIEWABLE_MEDIA_TYPES.has(message.type)) {
-        throw new Error(`WhatsApp media type "${message.type}" cannot open in viewer`);
+        throw new Error(
+          `WhatsApp media type "${message.type}" cannot open in viewer`,
+        );
       }
       if (message.media.transferState !== "ready") {
         throw new Error(`Cannot open media "${message.id}" before it is ready`);
@@ -586,18 +602,21 @@ export function registerMediaHandlers(
         messageId: e.payload.messageId,
         openedAt: e.at,
       };
+      getWhatsAppState(ctx).closingMediaViewer = undefined;
     },
   );
 
   registry.registerHandler<MediaViewerClosedEvent>(
     "MEDIA_VIEWER_CLOSED",
-    (ctx) => {
+    (ctx, e) => {
       const state = getWhatsAppState(ctx);
       if (!state.mediaViewer) {
-        throw new Error("Cannot close WhatsApp media viewer when it is not open");
+        throw new Error(
+          "Cannot close WhatsApp media viewer when it is not open",
+        );
       }
+      state.closingMediaViewer = { ...state.mediaViewer, closedAt: e.at };
       state.mediaViewer = null;
     },
   );
-
 }

@@ -1,6 +1,7 @@
 import type { NotificationIntentEmitter, TrackEvent } from "@tokovo/ir";
 import type { RuntimeEvent } from "@tokovo/core";
 import type { WhatsAppTrackEvent, WhatsAppEventType } from "../../types/events.js";
+import { parseWhatsAppEventStrict } from "../../schemas/events.js";
 
 export interface V2LoweringHandler {
   lower: (event: TrackEvent, ctx: NotificationIntentEmitter) => RuntimeEvent[];
@@ -76,6 +77,10 @@ const EVENT_TYPE_TO_KIND: Record<WhatsAppEventType, true> = {
   MESSAGE_RETRY_STARTED: true,
   MESSAGE_RETRY_COMPLETED: true,
 };
+
+export const WHATSAPP_EVENT_TYPES = Object.freeze(
+  Object.keys(EVENT_TYPE_TO_KIND) as WhatsAppEventType[],
+);
 
 function createRuntimeEvent(event: WhatsAppTrackEvent, overrideType?: string): RuntimeEvent {
   const type = overrideType ?? event.type;
@@ -199,6 +204,14 @@ export const whatsappV2Lowering: V2LoweringHandler = {
     if (!isKnownType) {
       throw new Error(`Unknown WhatsApp event type "${eventType}"`);
     }
+    parseWhatsAppEventStrict({
+      at: event.at,
+      kind: event.kind,
+      appId: event.appId,
+      deviceId: event.deviceId,
+      type: event.type,
+      payload: event.payload,
+    });
 
     if (
       INCOMING_NOTIFICATION_TYPES.has(eventType) &&

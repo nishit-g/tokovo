@@ -16,9 +16,6 @@
     "./episode-registry": {
       "default": "./src/episode-registry.ts"
     },
-    "./camera-texture-contract": {
-      "default": "./src/camera-texture-contract.ts"
-    },
     "./camera-diagnostics": {
       "default": "./src/camera-diagnostics.ts"
     }
@@ -26,7 +23,7 @@
   "scripts": {
     "start": "npx remotion studio",
     "dev": "npx remotion studio",
-    "dev:catalog": "TOKOVO_EPISODE_CATALOG_PROFILE=studio npx remotion studio",
+    "dev:catalog": "TOKOVO_EPISODE_CATALOG_PROFILE=showcase npx remotion studio",
     "benchmark": "npx remotion benchmark src/index.ts episode-render --props='{\"episodeId\":\"v2-creator-series-showcase\"}'",
     "render:fast": "sh scripts/render-fast.sh",
     "test:render-determinism": "node scripts/assert-render-determinism.mjs",
@@ -58,6 +55,7 @@
     "@tokovo/background": "workspace:*",
     "@tokovo/camera": "workspace:*",
     "@tokovo/compiler": "workspace:*",
+    "@tokovo/composition": "workspace:*",
     "@tokovo/core": "workspace:*",
     "@tokovo/device-keyboard": "workspace:*",
     "@tokovo/device-notifications": "workspace:*",

@@ -31,8 +31,7 @@ function createTestWorldState(): WorldState {
   const appState = createWhatsAppInitialState();
   appState.conversations.dm_test = { id: "dm_test", messages: [] };
   return {
-    appInstances: { "phone:app_whatsapp": appState,
-    },
+    appInstances: { "phone:app_whatsapp": appState },
     capabilityState: {},
     devices: {
       phone: {
@@ -51,6 +50,163 @@ function runReducer(state: WorldState, event: RuntimeEvent): WorldState {
 }
 
 describe("WhatsApp reducer", () => {
+  it("restores a conversation's reply and reading target after visiting another chat", () => {
+    let world = createTestWorldState();
+    const app = world.appInstances["phone:app_whatsapp"] as ReturnType<
+      typeof createWhatsAppInitialState
+    >;
+    app.currentScreen = "chat";
+    app.conversationId = "dm_test";
+    app.viewMode = "CHAT";
+    app.conversations.second = { id: "second", messages: [] };
+    app.replyComposer = { conversationId: "dm_test", messageId: "original" };
+    app.threadViewport = {
+      conversationId: "dm_test",
+      focusMessageId: "original",
+      reason: "message",
+    };
+    const open = (conversationId: string, at: number): RuntimeEvent => ({
+      at,
+      kind: "APP",
+      appId: "app_whatsapp",
+      deviceId: "phone",
+      type: "CONVERSATION_OPENED",
+      payload: { conversationId },
+    });
+    world = runReducer(world, open("second", 30));
+    expect(
+      (world.appInstances["phone:app_whatsapp"] as typeof app).replyComposer,
+    ).toBeNull();
+    world = runReducer(world, open("dm_test", 60));
+    const restored = world.appInstances["phone:app_whatsapp"] as typeof app;
+    expect(restored.replyComposer).toEqual(app.replyComposer);
+    expect(restored.threadViewport).toEqual(app.threadViewport);
+    expect(restored.navigation?.at).toBe(60);
+  });
+  it("preserves reading position and receipt intent on incoming messages, then consumes the reply on send", () => {
+    let world = createTestWorldState();
+    const app = world.appInstances["phone:app_whatsapp"] as ReturnType<
+      typeof createWhatsAppInitialState
+    >;
+    app.conversations.dm_test!.messages = [
+      { id: "original", from: "alex", type: "text", text: "Question?", at: 0 },
+      {
+        id: "sent",
+        from: "me",
+        type: "text",
+        text: "Waiting",
+        status: "delivered",
+        at: 0,
+      },
+    ];
+    app.threadViewport = {
+      conversationId: "dm_test",
+      focusMessageId: "original",
+      reason: "message",
+    };
+    app.replyComposer = { conversationId: "dm_test", messageId: "original" };
+    const event = (
+      type: string,
+      payload: Record<string, unknown>,
+    ): RuntimeEvent => ({
+      at: 10,
+      kind: "APP",
+      appId: "app_whatsapp",
+      deviceId: "phone",
+      type,
+      payload,
+    });
+    world = runReducer(
+      world,
+      event("MESSAGE_RECEIVED", {
+        conversationId: "dm_test",
+        from: "alex",
+        text: "More",
+      }),
+    );
+    let next = world.appInstances["phone:app_whatsapp"] as typeof app;
+    expect(next.threadViewport?.focusMessageId).toBe("original");
+    expect(next.conversations.dm_test!.messages[1].status).toBe("delivered");
+    world = runReducer(
+      world,
+      event("MESSAGE_SENT", { conversationId: "dm_test", text: "Answer" }),
+    );
+    next = world.appInstances["phone:app_whatsapp"] as typeof app;
+    expect(
+      next.conversations.dm_test!.messages.at(-1)?.replyTo?.messageId,
+    ).toBe("original");
+    expect(next.replyComposer).toBeNull();
+    expect(next.threadViewport).toBeNull();
+  });
+
+  it("dismisses transient overlays on navigation while preserving draft and reply intent", () => {
+    const world = createTestWorldState();
+    const app = world.appInstances["phone:app_whatsapp"] as ReturnType<
+      typeof createWhatsAppInitialState
+    >;
+    app.conversations.dm_test!.draftText = "Unsent";
+    app.replyComposer = { conversationId: "dm_test", messageId: "original" };
+    app.activeGesture = {
+      conversationId: "dm_test",
+      messageId: "original",
+      gesture: "long_press",
+      phase: "completed",
+      progress: 1,
+    };
+    const next = runReducer(world, {
+      at: 10,
+      kind: "APP",
+      appId: "app_whatsapp",
+      deviceId: "phone",
+      type: "NAVIGATE_SCREEN",
+      payload: { screen: "chats" },
+    });
+    const result = next.appInstances["phone:app_whatsapp"] as typeof app;
+    expect(result.activeGesture).toBeNull();
+    expect(result.mediaViewer).toBeNull();
+    expect(result.conversations.dm_test!.draftText).toBe("Unsent");
+    expect(result.replyComposer).toEqual(app.replyComposer);
+  });
+  it("clears the sender's typing and submitted text draft without clearing another person's draft", () => {
+    let state = createTestWorldState();
+    const conversation = (
+      state.appInstances["phone:app_whatsapp"] as ReturnType<
+        typeof createWhatsAppInitialState
+      >
+    ).conversations.dm_test!;
+    conversation.draftText = "My draft";
+    conversation.typing = { me: true, alex: true };
+    state = runReducer(state, {
+      at: 1,
+      kind: "APP",
+      appId: "app_whatsapp",
+      deviceId: "phone",
+      type: "MESSAGE_RECEIVED",
+      payload: { conversationId: "dm_test", from: "alex", text: "Hello" },
+    });
+    let chat = (
+      state.appInstances["phone:app_whatsapp"] as ReturnType<
+        typeof createWhatsAppInitialState
+      >
+    ).conversations.dm_test!;
+    expect(chat.draftText).toBe("My draft");
+    expect(chat.typing).toEqual({ me: true });
+    state = runReducer(state, {
+      at: 2,
+      kind: "APP",
+      appId: "app_whatsapp",
+      deviceId: "phone",
+      type: "MESSAGE_SENT",
+      payload: { conversationId: "dm_test", text: "My draft" },
+    });
+    chat = (
+      state.appInstances["phone:app_whatsapp"] as ReturnType<
+        typeof createWhatsAppInitialState
+      >
+    ).conversations.dm_test!;
+    expect(chat.draftText).toBe("");
+    expect(chat.typing).toEqual({});
+  });
   it("derives event timestamps from authored device time without accelerated drift", () => {
     const state = createTestWorldState();
     const clock = new Date("2026-04-10T20:15:00Z").getTime();
@@ -75,12 +231,13 @@ describe("WhatsApp reducer", () => {
       },
     });
 
-    const message = (next.appInstances["phone:app_whatsapp"] as any).conversations.dm_test
-      .messages[0];
+    const message = (next.appInstances["phone:app_whatsapp"] as any)
+      .conversations.dm_test.messages[0];
     expect(message.timestamp).toBe("20:15");
     expect(message.timestampMs).toBe(clock + 3_000);
     expect(
-      (next.appInstances["phone:app_whatsapp"] as any).conversations.dm_test.lastMessageAt,
+      (next.appInstances["phone:app_whatsapp"] as any).conversations.dm_test
+        .lastMessageAt,
     ).toBe(clock + 3_000);
   });
 
@@ -101,7 +258,8 @@ describe("WhatsApp reducer", () => {
       },
     });
 
-    const conv = (next.appInstances["phone:app_whatsapp"] as any).conversations.dm_test;
+    const conv = (next.appInstances["phone:app_whatsapp"] as any).conversations
+      .dm_test;
     expect(conv.messages).toHaveLength(1);
     expect(conv.messages[0].contactName).toBe("Sam Lee");
     expect(conv.messages[0].contactPhone).toBe("+1 555-0101");
@@ -126,7 +284,8 @@ describe("WhatsApp reducer", () => {
       },
     });
 
-    const conv = (next.appInstances["phone:app_whatsapp"] as any).conversations.dm_test;
+    const conv = (next.appInstances["phone:app_whatsapp"] as any).conversations
+      .dm_test;
     expect(conv.messages).toHaveLength(1);
     expect(conv.messages[0].latitude).toBe(37.7749);
     expect(conv.messages[0].longitude).toBe(-122.4194);
@@ -151,7 +310,8 @@ describe("WhatsApp reducer", () => {
       },
     });
 
-    const conv = (next.appInstances["phone:app_whatsapp"] as any).conversations.dm_test;
+    const conv = (next.appInstances["phone:app_whatsapp"] as any).conversations
+      .dm_test;
     const fileSize = conv.messages[0].fileSize;
     expect(typeof fileSize).toBe("string");
     expect(fileSize).toMatch(/MB|KB|B/);
@@ -173,7 +333,8 @@ describe("WhatsApp reducer", () => {
       },
     });
 
-    const conv = (next.appInstances["phone:app_whatsapp"] as any).conversations.dm_test;
+    const conv = (next.appInstances["phone:app_whatsapp"] as any).conversations
+      .dm_test;
     expect(conv.unreadCount).toBe(1);
   });
 
@@ -203,7 +364,8 @@ describe("WhatsApp reducer", () => {
       },
     });
 
-    const conv = (opened.appInstances["phone:app_whatsapp"] as any).conversations.dm_test;
+    const conv = (opened.appInstances["phone:app_whatsapp"] as any)
+      .conversations.dm_test;
     expect(conv.unreadCount).toBe(0);
   });
 
@@ -247,17 +409,12 @@ describe("WhatsApp reducer", () => {
       },
     });
 
-    const conv = (opened.appInstances["phone:app_whatsapp"] as any).conversations.dm_test;
+    const conv = (opened.appInstances["phone:app_whatsapp"] as any)
+      .conversations.dm_test;
     expect(conv.unreadCount).toBe(0);
     expect(conv.unreadDividerMessageId).toBe(conv.messages[0].id);
 
-    const thread = projectChat(
-      opened,
-      "dm_test",
-      conv.messages,
-      "phone",
-      conv,
-    );
+    const thread = projectChat(opened, "dm_test", conv.messages, "phone", conv);
 
     expect(
       thread.blocks.some(
@@ -297,7 +454,8 @@ describe("WhatsApp reducer", () => {
       },
     });
 
-    const conv = (replied.appInstances["phone:app_whatsapp"] as any).conversations.dm_test;
+    const conv = (replied.appInstances["phone:app_whatsapp"] as any)
+      .conversations.dm_test;
     expect(conv.messages[1].replyTo).toMatchObject({
       text: "Original message",
       from: "alex",
@@ -305,7 +463,7 @@ describe("WhatsApp reducer", () => {
     });
   });
 
-  it("marks prior outgoing messages as read when the other side replies", () => {
+  it("does not infer read receipts from the other side replying", () => {
     const state = createTestWorldState();
     const withOutgoing = runReducer(state, {
       at: 10,
@@ -332,9 +490,10 @@ describe("WhatsApp reducer", () => {
       },
     });
 
-    const conv = (withReply.appInstances["phone:app_whatsapp"] as any).conversations.dm_test;
-    expect(conv.messages[0].status).toBe("read");
-    expect(conv.messages[0].readAt).toBe(40);
+    const conv = (withReply.appInstances["phone:app_whatsapp"] as any)
+      .conversations.dm_test;
+    expect(conv.messages[0].status).toBe("sent");
+    expect(conv.messages[0].readAt).toBeUndefined();
   });
 
   it("models deterministic outgoing delivery failure and retry", () => {
@@ -379,8 +538,8 @@ describe("WhatsApp reducer", () => {
       payload: { conversationId: "dm_test", messageId: "retry-me" },
     });
 
-    const message = (completed.appInstances["phone:app_whatsapp"] as any).conversations
-      .dm_test.messages[0];
+    const message = (completed.appInstances["phone:app_whatsapp"] as any)
+      .conversations.dm_test.messages[0];
     expect(message).toMatchObject({
       status: "sent",
       retryCount: 1,
@@ -392,7 +551,7 @@ describe("WhatsApp reducer", () => {
 
   it("opens, advances, and closes authored status playback while marking views", () => {
     const state = createTestWorldState();
-    const whatsapp = (state.appInstances["phone:app_whatsapp"] as any);
+    const whatsapp = state.appInstances["phone:app_whatsapp"] as any;
     whatsapp.statuses = [
       {
         id: "status-one",
@@ -418,12 +577,16 @@ describe("WhatsApp reducer", () => {
       type: "STATUS_VIEWER_OPENED",
       payload: { statusId: "status-one" },
     });
-    expect((opened.appInstances["phone:app_whatsapp"] as any).statusViewer).toEqual({
+    expect(
+      (opened.appInstances["phone:app_whatsapp"] as any).statusViewer,
+    ).toEqual({
       statusId: "status-one",
       authorId: "ava",
       openedAt: 30,
     });
-    expect((opened.appInstances["phone:app_whatsapp"] as any).statuses[0].viewed).toBe(true);
+    expect(
+      (opened.appInstances["phone:app_whatsapp"] as any).statuses[0].viewed,
+    ).toBe(true);
 
     const advanced = runReducer(opened, {
       at: 60,
@@ -433,13 +596,15 @@ describe("WhatsApp reducer", () => {
       type: "STATUS_VIEWER_ADVANCED",
       payload: { direction: "next" },
     });
-    expect((advanced.appInstances["phone:app_whatsapp"] as any).statusViewer).toMatchObject({
+    expect(
+      (advanced.appInstances["phone:app_whatsapp"] as any).statusViewer,
+    ).toMatchObject({
       statusId: "status-two",
       openedAt: 60,
     });
-    expect((advanced.appInstances["phone:app_whatsapp"] as any).statuses[1].viewed).toBe(
-      true,
-    );
+    expect(
+      (advanced.appInstances["phone:app_whatsapp"] as any).statuses[1].viewed,
+    ).toBe(true);
 
     const closed = runReducer(advanced, {
       at: 90,
@@ -449,7 +614,9 @@ describe("WhatsApp reducer", () => {
       type: "STATUS_VIEWER_CLOSED",
       payload: {},
     });
-    expect((closed.appInstances["phone:app_whatsapp"] as any).statusViewer).toBeNull();
+    expect(
+      (closed.appInstances["phone:app_whatsapp"] as any).statusViewer,
+    ).toBeNull();
   });
 
   it("auto-inserts Today and Yesterday separators for chat timelines", () => {

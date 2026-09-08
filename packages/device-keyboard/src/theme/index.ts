@@ -57,8 +57,7 @@ export function getInputTheme(
       specialKeyText: palette.primaryText,
       accentKey: palette.keyboardAccentKey,
       accentKeyPressed: palette.keyboardAccentKeyPressed,
-      accentKeyText:
-        platform === "android" && appearance === "light" ? "#FFFFFF" : palette.primaryText,
+      accentKeyText: "#FFFFFF",
       suggestionText: palette.primaryText,
       suggestionDivider: palette.separator,
       border: palette.separator,
@@ -70,7 +69,7 @@ export function getInputTheme(
           : "0 1px 2px rgba(0,0,0,0.24)",
       keyPreview: palette.surfaceRaised,
     },
-    material: visuals.materials.keyboard,
+    material: platform === "ios" ? { ...visuals.materials.keyboard, fill: appearance === "light" ? "#D1D3D9" : "#29292C" } : visuals.materials.keyboard,
     typography: {
       fontFamily: key.family,
       keyFontSize: key.size,

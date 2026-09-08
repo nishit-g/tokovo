@@ -8,3 +8,7 @@ export type {
   XThemeId,
 } from "../experience/contract.js";
 export { xAnchor } from "../anchors/index.js";
+export {
+  parseXAuthoringEventPayload,
+  xAuthoringEventPayloadSchemas,
+} from "./schemas.js";

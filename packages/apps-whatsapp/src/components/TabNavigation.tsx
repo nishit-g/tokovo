@@ -90,8 +90,6 @@ export const TabNavigation: React.FC<TabNavigationProps> = ({
       aria-label={t("app.name")}
       style={{
         backgroundColor: theme.colors.background,
-        backdropFilter: "blur(20px)",
-        WebkitBackdropFilter: "blur(20px)",
         borderTop: `0.5px solid ${theme.colors.divider}`,
         display: "flex",
         justifyContent: "space-around",

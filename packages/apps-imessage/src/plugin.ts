@@ -51,23 +51,8 @@ const iMessageAudioRules: NonNullable<TokovoPluginContract["audioRules"]> = [
     bus: "ui",
     duckMusic: true,
   },
-  {
-    match: {
-      kind: "APP",
-      appId: IMESSAGE_APP_ID,
-      type: "IMESSAGE_TYPING_START",
-    },
-    action: "START_LOOP",
-    sound: "app_imessage.typing_loop",
-    bus: "sfx",
-    volume: 0.4,
-    idTemplate: "typing_{conversationId}_{actor}",
-  },
-  {
-    match: { kind: "APP", appId: IMESSAGE_APP_ID, type: "IMESSAGE_TYPING_END" },
-    action: "STOP_SOUND",
-    stopId: "typing_{conversationId}_{actor}",
-  },
+  // A remote typing indicator must not start an audible keyboard loop.
+  // Prepared local input operations own all key-press audio.
 ];
 
 export const IMessagePlugin: TokovoPluginContract<"app_imessage"> & {

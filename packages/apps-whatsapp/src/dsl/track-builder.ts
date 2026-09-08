@@ -7,7 +7,7 @@
  * - typing() - Typing indicator
  * - react() - Emoji reaction
  *
- * @see docs/architecture/dsl-v2.md
+ * @see docs/WHATSAPP.md
  */
 
 import type {
@@ -369,6 +369,11 @@ export class WhatsAppPointBuilder {
 
   setLocale(locale: WhatsAppLocale): void {
     this._pushGlobal("SET_LOCALE", { locale });
+  }
+
+  /** Scroll a tab's content in logical points; its position survives navigation. */
+  scrollScreen(screen: "chats" | "calls" | "updates" | "communities" | "settings", offset: number, duration: string | number = "0.3s"): void {
+    this._pushGlobal("NAVIGATE_SCREEN", { screen, scroll: { offset, durationFrames: parseTime(duration, this._fps) } });
   }
 
   receiveSticker(from: string, url: string, options: { messageId?: string } = {}): void {

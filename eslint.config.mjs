@@ -147,7 +147,7 @@ export default tseslint.config(
   },
   {
     files: ["packages/episodes/src/runtime/**/*.ts"],
-    ignores: ["packages/episodes/src/runtime/catalogs/studio.ts"],
+    ignores: ["packages/episodes/src/runtime/catalogs/showcase.ts"],
     rules: {
       "no-restricted-imports": [
         "error",
@@ -198,7 +198,7 @@ export default tseslint.config(
             {
               group: ["../tests/*", "../../tests/*"],
               message:
-                "Runtime wiring should not depend on test catalogs unless the studio profile explicitly includes them.",
+                "Runtime wiring should not depend on test catalogs unless the full showcase profile explicitly includes them.",
             },
           ],
         },

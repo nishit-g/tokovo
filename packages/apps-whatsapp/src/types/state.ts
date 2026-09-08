@@ -54,14 +54,30 @@ export interface WhatsAppState {
   /** Authored locale; never inferred from the browser or host machine. */
   locale: WhatsAppLocale;
   mediaViewer: WhatsAppMediaViewerState | null;
+  closingMediaViewer?: WhatsAppMediaViewerState & { closedAt: number };
+  viewerChromeRestore?: { theme: WhatsAppState["statusBarTheme"] };
   statusViewer: WhatsAppStatusViewerState | null;
   activeGesture: WhatsAppGestureState | null;
   replyComposer: WhatsAppReplyComposerState | null;
   /** Explicit semantic scroll target. Null means follow the latest messages. */
   threadViewport: WhatsAppThreadViewportState | null;
+  savedThreadViewports?: Record<string, WhatsAppThreadViewportState | null>;
+  savedReplyDrafts?: Record<string, WhatsAppReplyComposerState | null>;
   /** Canonical selected conversation for chat and profile surfaces. */
   conversationId?: string;
   currentScreen?: WhatsAppScreenId;
+  navigation?: {
+    at: number;
+    fromScreen: WhatsAppScreenId;
+    fromConversationId?: string;
+    direction: "push" | "pop" | "tab";
+  };
+  screenScroll?: Partial<
+    Record<
+      WhatsAppScreenId,
+      { at: number; from: number; to: number; durationFrames: number }
+    >
+  >;
   chatFilter: WhatsAppChatFilter;
   /** Required by the Tokovo LayoutEngine. */
   viewMode: ViewKind;

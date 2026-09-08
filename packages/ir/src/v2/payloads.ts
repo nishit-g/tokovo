@@ -215,6 +215,7 @@ export type OverlayVariant =
   | "caption"
   | "receipt"
   | "reactionGif"
+  | "performer"
   | "cliffhanger";
 
 export type OverlayPlacementPreset =
@@ -242,6 +243,11 @@ export interface OverlayPayloads {
     /** Optional fine positioning (0-1 in composition coords). */
     xPct?: number;
     yPct?: number;
+    /** Performer width as a fraction of the composition width. */
+    widthPct?: number;
+    flipX?: boolean;
+    /** A held pose or a deliberate exit below the composition. */
+    performerMotion?: "hold" | "duck";
     /** Visual emphasis (0-1). */
     intensity?: number;
   };

@@ -5,9 +5,74 @@ Tokovo camera work emphasizes authored beats and deterministic random-access eva
 ## Recommended Pattern
 
 - target app-owned cinematic subjects, exact entities, device surfaces, or subject groups
+- bind device and app identity once with `cameraSubject.scope(...)`
+- use `planFamily(...)` to share outputs, framing recipes, looks, and timing across named cuts
+- author shot durations sequentially and use `end` as a compile-time timing assertion
+- express alternate cuts with per-shot `.when(planId, delta)` instead of cloning a complete plan
 - use long tracking shots for sustained attention
 - use explicit cuts, settles, movements, lenses, modifiers, and filters for interruptions and reveals
+- separate the semantic attention target from the stable physical device/group mount
+- use intentional device travel only for an authored macro or world-camera move, with a reason
 - declare output editorial insets and whether every frame requires authored shot coverage
+
+```ts
+const phone = cameraSubject.scope("phone", "app_x");
+
+cinema.planFamily({
+  plans: [{ id: "editorial", default: true }, { id: "optical" }],
+  look: {
+    lenses: {
+      "typing-fisheye": { model: "fisheye", strength: 0.06 },
+    },
+  },
+  framings: {
+    device: { fill: 0.84, mode: "contain", padding: 40 },
+    keyboard: {
+      position: [0.5, 0.72],
+      fill: 0.8,
+      mode: "width",
+      min: 0.44,
+      max: 1.2,
+    },
+  },
+  outputs: [
+    {
+      id: "main",
+      viewport: { x: 0, y: 0, width: 1080, height: 1920 },
+      compositionProfileId: "hero-device",
+      coveragePolicy: "require-shots",
+      travel: {
+        mode: "stabilized",
+        subject: phone.body,
+        maxDriftPx: [54, 72],
+      },
+      defaultRig: { subject: phone.body, frame: { fill: 0.84 } },
+    },
+  ],
+  sequences: [
+    {
+      outputId: "main",
+      end: "6s",
+      defaults: { frame: "device" },
+      shots: [
+        cinematicShot("open", "3s", phone.body).dollyIn("600ms"),
+        cinematicShot("type", "3s", phone.keyboard)
+          .frame("keyboard")
+          .fallback(phone.semantic("x.composer.editor"))
+          .when("optical", { lens: "typing-fisheye" }),
+      ],
+    },
+  ],
+});
+```
+
+Plan-family authoring and the low-level `plan`, `rig`, and absolute `shot` builders produce the same
+CameraPlan IR. Use the low-level surface for unusual shared-rig interval graphs; it is an escape
+hatch, not a separate runtime.
+
+The output mount is inherited by every shot. A message or keyboard can drive focus and dolly scale
+without dragging the whole phone out of composition. For a deliberate full-bleed macro, call
+`.allowDeviceTravel("reason")`; unconstrained travel is never inferred.
 
 ## Use Direct Tracking When
 
@@ -23,5 +88,6 @@ Never target DOM measurements or authored pixel guesses. Cinematic subjects come
 headless layout geometry the app and device surfaces render.
 
 For inspection, use `mise exec -- pnpm camera programs`, `camera explain`, `camera diff`, and
-`camera subjects`. The preview debug mode draws editorial insets, subjects, framing guards, desired pose,
-final pose, and ordered projection passes.
+`camera subjects`. The preview debug mode draws editorial insets, subjects, framing guards, desired
+pose, final pose, and ordered projection passes. Release quality also checks semantic mount drift on
+every stabilized frame.

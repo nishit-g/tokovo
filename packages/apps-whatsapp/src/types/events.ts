@@ -260,6 +260,7 @@ export interface ConversationOpenedPayload {
 }
 
 export interface NavigateScreenPayload {
+  scroll?: { offset: number; durationFrames: number };
   screen:
     | "chats"
     | "updates"
@@ -464,7 +465,10 @@ export type WhatsAppTrackEvent = TrackEventBase & {
     | { type: "GESTURE_UPDATED"; payload: GestureUpdatedPayload }
     | { type: "GESTURE_COMPLETED"; payload: GestureCompletedPayload }
     | { type: "GESTURE_CANCELLED"; payload: GestureCancelledPayload }
-    | { type: "REPLY_COMPOSER_DISMISSED"; payload: ReplyComposerDismissedPayload }
+    | {
+        type: "REPLY_COMPOSER_DISMISSED";
+        payload: ReplyComposerDismissedPayload;
+      }
     | { type: "SET_LOCALE"; payload: SetLocalePayload }
     | { type: "CONVERSATION_OPENED"; payload: ConversationOpenedPayload }
     | { type: "NAVIGATE_SCREEN"; payload: NavigateScreenPayload }

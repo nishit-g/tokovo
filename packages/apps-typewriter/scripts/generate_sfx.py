@@ -9,7 +9,7 @@ Generate offline typewriter SFX matching the old WebAudio MVP:
 - backspace/punct: short click variants
 - room: low hum/hiss bed
 
-Writes to: apps/video-runner/public/sounds/plugins/typewriter/
+Writes to: packages/assets/public/sounds/plugins/typewriter/
 """
 
 from __future__ import annotations

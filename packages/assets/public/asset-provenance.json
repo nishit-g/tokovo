@@ -1,0 +1,1168 @@
+{
+  "version": 1,
+  "policy": "ASSET_LICENSES.md",
+  "assets": [
+    {
+      "path": "assets/iphone16/frame.png",
+      "bytes": 668830,
+      "sha256": "3f592f5139de2839dfae3f0fc80ccd6645baf9365ba72aae972de875fb592d58",
+      "source": "authored-device-calibration-fixture",
+      "license": "LicenseRef-Tokovo-Original-Fixture"
+    },
+    {
+      "path": "assets/iphone16/mask.png",
+      "bytes": 221921,
+      "sha256": "e368d26427128dbfbc0466578e1e0e86007d1a1583cb65ac60e24a2ae034b109",
+      "source": "authored-device-calibration-fixture",
+      "license": "LicenseRef-Tokovo-Original-Fixture"
+    },
+    {
+      "path": "avatars/alex.jpg",
+      "bytes": 7901,
+      "sha256": "2557d4aade7517626982b9c57735d194309fa0f60b24e48f951b150c4a92dced",
+      "source": "original-or-generated-episode-fixture",
+      "license": "LicenseRef-Tokovo-Original-Fixture"
+    },
+    {
+      "path": "avatars/alex.png",
+      "bytes": 63932,
+      "sha256": "d1a2bd3f9ee49120f769fff227b89538a49056e5a1b4a39c666475b24f913b15",
+      "source": "original-or-generated-episode-fixture",
+      "license": "LicenseRef-Tokovo-Original-Fixture"
+    },
+    {
+      "path": "avatars/alice.png",
+      "bytes": 63932,
+      "sha256": "d1a2bd3f9ee49120f769fff227b89538a49056e5a1b4a39c666475b24f913b15",
+      "source": "original-or-generated-episode-fixture",
+      "license": "LicenseRef-Tokovo-Original-Fixture"
+    },
+    {
+      "path": "avatars/arjun.png",
+      "bytes": 90540,
+      "sha256": "a88aea761a9685879d90c49e342c0b168c229aaf09ba45d783728f3062a86412",
+      "source": "original-or-generated-episode-fixture",
+      "license": "LicenseRef-Tokovo-Original-Fixture"
+    },
+    {
+      "path": "avatars/avatar-alex.jpg",
+      "bytes": 7901,
+      "sha256": "2557d4aade7517626982b9c57735d194309fa0f60b24e48f951b150c4a92dced",
+      "source": "original-or-generated-episode-fixture",
+      "license": "LicenseRef-Tokovo-Original-Fixture"
+    },
+    {
+      "path": "avatars/avatar-arsh.jpg",
+      "bytes": 7901,
+      "sha256": "2557d4aade7517626982b9c57735d194309fa0f60b24e48f951b150c4a92dced",
+      "source": "original-or-generated-episode-fixture",
+      "license": "LicenseRef-Tokovo-Original-Fixture"
+    },
+    {
+      "path": "avatars/avatar-ava.jpg",
+      "bytes": 7901,
+      "sha256": "2557d4aade7517626982b9c57735d194309fa0f60b24e48f951b150c4a92dced",
+      "source": "original-or-generated-episode-fixture",
+      "license": "LicenseRef-Tokovo-Original-Fixture"
+    },
+    {
+      "path": "avatars/avatar-group.png",
+      "bytes": 80876,
+      "sha256": "6bbdef195482dd772ea9279cf6eb4e55b2995df27ec8fd3d5c8468067374ac62",
+      "source": "original-or-generated-episode-fixture",
+      "license": "LicenseRef-Tokovo-Original-Fixture"
+    },
+    {
+      "path": "avatars/avatar-jess.jpg",
+      "bytes": 7901,
+      "sha256": "2557d4aade7517626982b9c57735d194309fa0f60b24e48f951b150c4a92dced",
+      "source": "original-or-generated-episode-fixture",
+      "license": "LicenseRef-Tokovo-Original-Fixture"
+    },
+    {
+      "path": "avatars/avatar-john.jpg",
+      "bytes": 7901,
+      "sha256": "2557d4aade7517626982b9c57735d194309fa0f60b24e48f951b150c4a92dced",
+      "source": "original-or-generated-episode-fixture",
+      "license": "LicenseRef-Tokovo-Original-Fixture"
+    },
+    {
+      "path": "avatars/avatar-ken.jpg",
+      "bytes": 7901,
+      "sha256": "2557d4aade7517626982b9c57735d194309fa0f60b24e48f951b150c4a92dced",
+      "source": "original-or-generated-episode-fixture",
+      "license": "LicenseRef-Tokovo-Original-Fixture"
+    },
+    {
+      "path": "avatars/avatar-leo.jpg",
+      "bytes": 7901,
+      "sha256": "2557d4aade7517626982b9c57735d194309fa0f60b24e48f951b150c4a92dced",
+      "source": "original-or-generated-episode-fixture",
+      "license": "LicenseRef-Tokovo-Original-Fixture"
+    },
+    {
+      "path": "avatars/avatar-marcus.jpg",
+      "bytes": 7901,
+      "sha256": "2557d4aade7517626982b9c57735d194309fa0f60b24e48f951b150c4a92dced",
+      "source": "original-or-generated-episode-fixture",
+      "license": "LicenseRef-Tokovo-Original-Fixture"
+    },
+    {
+      "path": "avatars/avatar-maya.jpg",
+      "bytes": 7901,
+      "sha256": "2557d4aade7517626982b9c57735d194309fa0f60b24e48f951b150c4a92dced",
+      "source": "original-or-generated-episode-fixture",
+      "license": "LicenseRef-Tokovo-Original-Fixture"
+    },
+    {
+      "path": "avatars/avatar-mom.jpg",
+      "bytes": 7901,
+      "sha256": "2557d4aade7517626982b9c57735d194309fa0f60b24e48f951b150c4a92dced",
+      "source": "original-or-generated-episode-fixture",
+      "license": "LicenseRef-Tokovo-Original-Fixture"
+    },
+    {
+      "path": "avatars/avatar-priya.jpg",
+      "bytes": 7901,
+      "sha256": "2557d4aade7517626982b9c57735d194309fa0f60b24e48f951b150c4a92dced",
+      "source": "original-or-generated-episode-fixture",
+      "license": "LicenseRef-Tokovo-Original-Fixture"
+    },
+    {
+      "path": "avatars/avatar-ria.jpg",
+      "bytes": 7901,
+      "sha256": "2557d4aade7517626982b9c57735d194309fa0f60b24e48f951b150c4a92dced",
+      "source": "original-or-generated-episode-fixture",
+      "license": "LicenseRef-Tokovo-Original-Fixture"
+    },
+    {
+      "path": "avatars/avatar-riya.jpg",
+      "bytes": 7901,
+      "sha256": "2557d4aade7517626982b9c57735d194309fa0f60b24e48f951b150c4a92dced",
+      "source": "original-or-generated-episode-fixture",
+      "license": "LicenseRef-Tokovo-Original-Fixture"
+    },
+    {
+      "path": "avatars/avatar-sarah.jpg",
+      "bytes": 7901,
+      "sha256": "2557d4aade7517626982b9c57735d194309fa0f60b24e48f951b150c4a92dced",
+      "source": "original-or-generated-episode-fixture",
+      "license": "LicenseRef-Tokovo-Original-Fixture"
+    },
+    {
+      "path": "avatars/avatar-zoe.jpg",
+      "bytes": 7901,
+      "sha256": "2557d4aade7517626982b9c57735d194309fa0f60b24e48f951b150c4a92dced",
+      "source": "original-or-generated-episode-fixture",
+      "license": "LicenseRef-Tokovo-Original-Fixture"
+    },
+    {
+      "path": "avatars/bob.png",
+      "bytes": 63932,
+      "sha256": "d1a2bd3f9ee49120f769fff227b89538a49056e5a1b4a39c666475b24f913b15",
+      "source": "original-or-generated-episode-fixture",
+      "license": "LicenseRef-Tokovo-Original-Fixture"
+    },
+    {
+      "path": "avatars/demo-avatar.jpg",
+      "bytes": 7901,
+      "sha256": "2557d4aade7517626982b9c57735d194309fa0f60b24e48f951b150c4a92dced",
+      "source": "original-or-generated-episode-fixture",
+      "license": "LicenseRef-Tokovo-Original-Fixture"
+    },
+    {
+      "path": "avatars/group-design.jpg",
+      "bytes": 7901,
+      "sha256": "2557d4aade7517626982b9c57735d194309fa0f60b24e48f951b150c4a92dced",
+      "source": "original-or-generated-episode-fixture",
+      "license": "LicenseRef-Tokovo-Original-Fixture"
+    },
+    {
+      "path": "avatars/group-forest.jpg",
+      "bytes": 7901,
+      "sha256": "2557d4aade7517626982b9c57735d194309fa0f60b24e48f951b150c4a92dced",
+      "source": "original-or-generated-episode-fixture",
+      "license": "LicenseRef-Tokovo-Original-Fixture"
+    },
+    {
+      "path": "avatars/group-weekend.jpg",
+      "bytes": 7901,
+      "sha256": "2557d4aade7517626982b9c57735d194309fa0f60b24e48f951b150c4a92dced",
+      "source": "original-or-generated-episode-fixture",
+      "license": "LicenseRef-Tokovo-Original-Fixture"
+    },
+    {
+      "path": "avatars/hr.png",
+      "bytes": 63932,
+      "sha256": "d1a2bd3f9ee49120f769fff227b89538a49056e5a1b4a39c666475b24f913b15",
+      "source": "original-or-generated-episode-fixture",
+      "license": "LicenseRef-Tokovo-Original-Fixture"
+    },
+    {
+      "path": "avatars/instagram.png",
+      "bytes": 63932,
+      "sha256": "d1a2bd3f9ee49120f769fff227b89538a49056e5a1b4a39c666475b24f913b15",
+      "source": "original-or-generated-episode-fixture",
+      "license": "LicenseRef-Tokovo-Original-Fixture"
+    },
+    {
+      "path": "avatars/jake.png",
+      "bytes": 63932,
+      "sha256": "d1a2bd3f9ee49120f769fff227b89538a49056e5a1b4a39c666475b24f913b15",
+      "source": "original-or-generated-episode-fixture",
+      "license": "LicenseRef-Tokovo-Original-Fixture"
+    },
+    {
+      "path": "avatars/john-smith.jpg",
+      "bytes": 7901,
+      "sha256": "2557d4aade7517626982b9c57735d194309fa0f60b24e48f951b150c4a92dced",
+      "source": "original-or-generated-episode-fixture",
+      "license": "LicenseRef-Tokovo-Original-Fixture"
+    },
+    {
+      "path": "avatars/kabir.png",
+      "bytes": 63932,
+      "sha256": "d1a2bd3f9ee49120f769fff227b89538a49056e5a1b4a39c666475b24f913b15",
+      "source": "original-or-generated-episode-fixture",
+      "license": "LicenseRef-Tokovo-Original-Fixture"
+    },
+    {
+      "path": "avatars/meme-daily.png",
+      "bytes": 11606,
+      "sha256": "b0a70bf08f46c43afd06adc6e45ac985e31aa73a17fcb42beb7f3e9c7c96c397",
+      "source": "original-or-generated-episode-fixture",
+      "license": "LicenseRef-Tokovo-Original-Fixture"
+    },
+    {
+      "path": "avatars/neha.png",
+      "bytes": 40139,
+      "sha256": "c60c427723b203dd967d394c82952f0380f1d1eef9f386efee386ff14b2bfece",
+      "source": "original-or-generated-episode-fixture",
+      "license": "LicenseRef-Tokovo-Original-Fixture"
+    },
+    {
+      "path": "avatars/netrunner.jpg",
+      "bytes": 7901,
+      "sha256": "2557d4aade7517626982b9c57735d194309fa0f60b24e48f951b150c4a92dced",
+      "source": "original-or-generated-episode-fixture",
+      "license": "LicenseRef-Tokovo-Original-Fixture"
+    },
+    {
+      "path": "avatars/sarah.jpg",
+      "bytes": 7901,
+      "sha256": "2557d4aade7517626982b9c57735d194309fa0f60b24e48f951b150c4a92dced",
+      "source": "original-or-generated-episode-fixture",
+      "license": "LicenseRef-Tokovo-Original-Fixture"
+    },
+    {
+      "path": "avatars/sarah.png",
+      "bytes": 63932,
+      "sha256": "d1a2bd3f9ee49120f769fff227b89538a49056e5a1b4a39c666475b24f913b15",
+      "source": "original-or-generated-episode-fixture",
+      "license": "LicenseRef-Tokovo-Original-Fixture"
+    },
+    {
+      "path": "avatars/spotify.png",
+      "bytes": 63932,
+      "sha256": "d1a2bd3f9ee49120f769fff227b89538a49056e5a1b4a39c666475b24f913b15",
+      "source": "original-or-generated-episode-fixture",
+      "license": "LicenseRef-Tokovo-Original-Fixture"
+    },
+    {
+      "path": "avatars/totoro.jpg",
+      "bytes": 7901,
+      "sha256": "2557d4aade7517626982b9c57735d194309fa0f60b24e48f951b150c4a92dced",
+      "source": "original-or-generated-episode-fixture",
+      "license": "LicenseRef-Tokovo-Original-Fixture"
+    },
+    {
+      "path": "avatars/unknown.png",
+      "bytes": 63932,
+      "sha256": "d1a2bd3f9ee49120f769fff227b89538a49056e5a1b4a39c666475b24f913b15",
+      "source": "original-or-generated-episode-fixture",
+      "license": "LicenseRef-Tokovo-Original-Fixture"
+    },
+    {
+      "path": "backgrounds/ambient-night.png",
+      "bytes": 532745,
+      "sha256": "f1ae3d9939b3afda53064dbbe870230fc89f63ddc791732a9193a341339a3f0c",
+      "source": "original-or-generated-episode-fixture",
+      "license": "LicenseRef-Tokovo-Original-Fixture"
+    },
+    {
+      "path": "backgrounds/bedroom-dark.png",
+      "bytes": 40139,
+      "sha256": "c60c427723b203dd967d394c82952f0380f1d1eef9f386efee386ff14b2bfece",
+      "source": "original-or-generated-episode-fixture",
+      "license": "LicenseRef-Tokovo-Original-Fixture"
+    },
+    {
+      "path": "backgrounds/bokeh-loop.mp4",
+      "bytes": 872416,
+      "sha256": "ace3fa8076fac729383e8ee0f1864e040c2c3cceb8b943dd6dfc7924d63c1bf2",
+      "source": "original-or-generated-episode-fixture",
+      "license": "LicenseRef-Tokovo-Original-Fixture"
+    },
+    {
+      "path": "backgrounds/cafe-lofi.png",
+      "bytes": 71192,
+      "sha256": "b3a4a0cff5bb8258e7ddb108f805f7f508f609daa78bf137be43b9eaf720c6e5",
+      "source": "original-or-generated-episode-fixture",
+      "license": "LicenseRef-Tokovo-Original-Fixture"
+    },
+    {
+      "path": "backgrounds/cozy-bedroom.png",
+      "bytes": 40139,
+      "sha256": "c60c427723b203dd967d394c82952f0380f1d1eef9f386efee386ff14b2bfece",
+      "source": "original-or-generated-episode-fixture",
+      "license": "LicenseRef-Tokovo-Original-Fixture"
+    },
+    {
+      "path": "backgrounds/cozy-canvas.jpg",
+      "bytes": 27104,
+      "sha256": "7101162ac98c561cd512160dc2efdfdcadb06cf8c8dde621385126444a787888",
+      "source": "original-or-generated-episode-fixture",
+      "license": "LicenseRef-Tokovo-Original-Fixture"
+    },
+    {
+      "path": "backgrounds/dark-studio.png",
+      "bytes": 11606,
+      "sha256": "b0a70bf08f46c43afd06adc6e45ac985e31aa73a17fcb42beb7f3e9c7c96c397",
+      "source": "original-or-generated-episode-fixture",
+      "license": "LicenseRef-Tokovo-Original-Fixture"
+    },
+    {
+      "path": "backgrounds/neon-canvas.jpg",
+      "bytes": 60913,
+      "sha256": "9ab04f57c56ef03290f01c721b0b47a3e87a601d88cabd6cd97be650db530990",
+      "source": "original-or-generated-episode-fixture",
+      "license": "LicenseRef-Tokovo-Original-Fixture"
+    },
+    {
+      "path": "backgrounds/neon-city.png",
+      "bytes": 90540,
+      "sha256": "a88aea761a9685879d90c49e342c0b168c229aaf09ba45d783728f3062a86412",
+      "source": "original-or-generated-episode-fixture",
+      "license": "LicenseRef-Tokovo-Original-Fixture"
+    },
+    {
+      "path": "backgrounds/night-window.png",
+      "bytes": 63932,
+      "sha256": "d1a2bd3f9ee49120f769fff227b89538a49056e5a1b4a39c666475b24f913b15",
+      "source": "original-or-generated-episode-fixture",
+      "license": "LicenseRef-Tokovo-Original-Fixture"
+    },
+    {
+      "path": "backgrounds/soft-gradient.png",
+      "bytes": 307974,
+      "sha256": "27cb46a5a3b57ba8d6f5834d570d5da12708abb17af3a916410014453e25079c",
+      "source": "original-or-generated-episode-fixture",
+      "license": "LicenseRef-Tokovo-Original-Fixture"
+    },
+    {
+      "path": "backgrounds/storybook-forest.jpg",
+      "bytes": 72575,
+      "sha256": "02fddf95f4f91a4976d872d72ee75c4c2a93423bde30b836329ced0313f49a82",
+      "source": "original-or-generated-episode-fixture",
+      "license": "LicenseRef-Tokovo-Original-Fixture"
+    },
+    {
+      "path": "backgrounds/test-ambient.png",
+      "bytes": 29381,
+      "sha256": "e92bc93dcbd8a984a97b8e276372b69b1b24986802abbe281f0e2fddcb89281e",
+      "source": "original-or-generated-episode-fixture",
+      "license": "LicenseRef-Tokovo-Original-Fixture"
+    },
+    {
+      "path": "banners/founder-dark.jpg",
+      "bytes": 7901,
+      "sha256": "2557d4aade7517626982b9c57735d194309fa0f60b24e48f951b150c4a92dced",
+      "source": "original-or-generated-episode-fixture",
+      "license": "LicenseRef-Tokovo-Original-Fixture"
+    },
+    {
+      "path": "banners/startup-neon.jpg",
+      "bytes": 60913,
+      "sha256": "9ab04f57c56ef03290f01c721b0b47a3e87a601d88cabd6cd97be650db530990",
+      "source": "original-or-generated-episode-fixture",
+      "license": "LicenseRef-Tokovo-Original-Fixture"
+    },
+    {
+      "path": "hands/medium-grip-underlay.png",
+      "bytes": 870246,
+      "sha256": "d6b3a721147e82329678f83aa9ed16cd3738a647337ac8b8b91b281335e79d56",
+      "source": "original-or-generated-episode-fixture",
+      "license": "LicenseRef-Tokovo-Original-Fixture"
+    },
+    {
+      "path": "hands/medium-left-thumb.png",
+      "bytes": 312969,
+      "sha256": "dd0a1abf6951b35f8335c5c977e368f1785e0e24e75f691d14a57e798be9e2b0",
+      "source": "original-or-generated-episode-fixture",
+      "license": "LicenseRef-Tokovo-Original-Fixture"
+    },
+    {
+      "path": "hands/medium-right-thumb.png",
+      "bytes": 301114,
+      "sha256": "c3789c6eafdcbda027a6e21523005bab483aabd815984b7cdb3b61623c435c1a",
+      "source": "original-or-generated-episode-fixture",
+      "license": "LicenseRef-Tokovo-Original-Fixture"
+    },
+    {
+      "path": "icons/imessage.svg",
+      "bytes": 639,
+      "sha256": "0c0f5c699b1bafd4bc1388c9090a1387395859d9b641e6ac74aabe961e30bab3",
+      "source": "authored-in-repository-vector-fixture",
+      "license": "LicenseRef-Tokovo-Original-Fixture"
+    },
+    {
+      "path": "icons/instagram.svg",
+      "bytes": 720,
+      "sha256": "8b3d7df14ab5c3d6b36ed4b3b46ccc6e38490716f3aeda5900ebed409155af23",
+      "source": "authored-in-repository-vector-fixture",
+      "license": "LicenseRef-Tokovo-Original-Fixture"
+    },
+    {
+      "path": "icons/linkedin.svg",
+      "bytes": 536,
+      "sha256": "c12563430fa9ad6c6714ec75b06e8486f709cab6dfc7a1b3d16fc49cf408e33a",
+      "source": "authored-in-repository-vector-fixture",
+      "license": "LicenseRef-Tokovo-Original-Fixture"
+    },
+    {
+      "path": "icons/snapchat.svg",
+      "bytes": 375,
+      "sha256": "81b3730b2267958deecb98ecf5ffddfe38d9648155a86012f0fbabd5a80b777a",
+      "source": "authored-in-repository-vector-fixture",
+      "license": "LicenseRef-Tokovo-Original-Fixture"
+    },
+    {
+      "path": "icons/teams.svg",
+      "bytes": 489,
+      "sha256": "e6c89c7ea9c98f9a7875365cd84eacccafb2a90fa3fc30a9051a5dee9b2b1e6e",
+      "source": "authored-in-repository-vector-fixture",
+      "license": "LicenseRef-Tokovo-Original-Fixture"
+    },
+    {
+      "path": "icons/typewriter.svg",
+      "bytes": 738,
+      "sha256": "cc789b182e28de10dd332c2a0def9c235bb27817c569c5bc1c03c8665746ad9c",
+      "source": "authored-in-repository-vector-fixture",
+      "license": "LicenseRef-Tokovo-Original-Fixture"
+    },
+    {
+      "path": "icons/whatsapp.svg",
+      "bytes": 983,
+      "sha256": "65d3b4751804480849109dbc20b8e801ce4de7500623feb508e1d2fc414b8263",
+      "source": "authored-in-repository-vector-fixture",
+      "license": "LicenseRef-Tokovo-Original-Fixture"
+    },
+    {
+      "path": "icons/x.svg",
+      "bytes": 329,
+      "sha256": "8cc752f905d569c7e117542c7b8d371a74322ccddcca2daae9fb10a461cd16d5",
+      "source": "authored-in-repository-vector-fixture",
+      "license": "LicenseRef-Tokovo-Original-Fixture"
+    },
+    {
+      "path": "link-preview/blog-launch.jpg",
+      "bytes": 7901,
+      "sha256": "2557d4aade7517626982b9c57735d194309fa0f60b24e48f951b150c4a92dced",
+      "source": "original-or-generated-episode-fixture",
+      "license": "LicenseRef-Tokovo-Original-Fixture"
+    },
+    {
+      "path": "link-preview/product-hunt.jpg",
+      "bytes": 60913,
+      "sha256": "9ab04f57c56ef03290f01c721b0b47a3e87a601d88cabd6cd97be650db530990",
+      "source": "original-or-generated-episode-fixture",
+      "license": "LicenseRef-Tokovo-Original-Fixture"
+    },
+    {
+      "path": "maps/cafe-handoff.png",
+      "bytes": 90540,
+      "sha256": "a88aea761a9685879d90c49e342c0b168c229aaf09ba45d783728f3062a86412",
+      "source": "original-or-generated-episode-fixture",
+      "license": "LicenseRef-Tokovo-Original-Fixture"
+    },
+    {
+      "path": "media/apology-template.svg",
+      "bytes": 5153,
+      "sha256": "e63f6e6a75ddc2354f920c0c62f442a4500f09d6647bfd2c1e605bf27aa8687a",
+      "source": "authored-in-repository-vector-fixture",
+      "license": "LicenseRef-Tokovo-Original-Fixture"
+    },
+    {
+      "path": "media/founder-whiteboard.jpg",
+      "bytes": 60913,
+      "sha256": "9ab04f57c56ef03290f01c721b0b47a3e87a601d88cabd6cd97be650db530990",
+      "source": "original-or-generated-episode-fixture",
+      "license": "LicenseRef-Tokovo-Original-Fixture"
+    },
+    {
+      "path": "media/launch-board.svg",
+      "bytes": 5204,
+      "sha256": "a24e42e5942180f7d533541c448c36a21a246b1e62662d3a1541853307fbc6fb",
+      "source": "authored-in-repository-vector-fixture",
+      "license": "LicenseRef-Tokovo-Original-Fixture"
+    },
+    {
+      "path": "media/launch-clip.mp4",
+      "bytes": 872416,
+      "sha256": "ace3fa8076fac729383e8ee0f1864e040c2c3cceb8b943dd6dfc7924d63c1bf2",
+      "source": "original-or-generated-episode-fixture",
+      "license": "LicenseRef-Tokovo-Original-Fixture"
+    },
+    {
+      "path": "media/office-meme.png",
+      "bytes": 11606,
+      "sha256": "b0a70bf08f46c43afd06adc6e45ac985e31aa73a17fcb42beb7f3e9c7c96c397",
+      "source": "original-or-generated-episode-fixture",
+      "license": "LicenseRef-Tokovo-Original-Fixture"
+    },
+    {
+      "path": "music/ambient-track.mp3",
+      "bytes": 1686625,
+      "sha256": "acaf7d02285384b0b2af3efb20c49b2fb7aff1a0b6df226bdfd8d69de65f99d2",
+      "source": "original-or-generated-episode-fixture",
+      "license": "LicenseRef-Tokovo-Original-Fixture"
+    },
+    {
+      "path": "music/cinematic-ambient.mp3",
+      "bytes": 4711235,
+      "sha256": "7e1c5715443c6fb2e4af66af3316adce4638f2f8c53680d70665aeed41d74cf5",
+      "source": "original-or-generated-episode-fixture",
+      "license": "LicenseRef-Tokovo-Original-Fixture"
+    },
+    {
+      "path": "performers/calendar-invite-cast/coral/neutral.png",
+      "bytes": 959386,
+      "sha256": "540440ee7e1a735c84b4a752d2ff1b3bddfccceeb437fad8cbf0ec2234da3793",
+      "source": "original-or-generated-episode-fixture",
+      "license": "LicenseRef-Tokovo-Original-Fixture"
+    },
+    {
+      "path": "performers/calendar-invite-cast/coral/panic.png",
+      "bytes": 645484,
+      "sha256": "b4b43ec1969f48d40b1d64ac9874775c883210e2a485ba2e411cf688442c2b48",
+      "source": "original-or-generated-episode-fixture",
+      "license": "LicenseRef-Tokovo-Original-Fixture"
+    },
+    {
+      "path": "performers/calendar-invite-cast/reference/cast-lineup.png",
+      "bytes": 1998440,
+      "sha256": "7a8bd9a782576cb138c3959928ed091b1f4b7e716bc2f862b2dcd8c9f65abd24",
+      "source": "original-or-generated-episode-fixture",
+      "license": "LicenseRef-Tokovo-Original-Fixture"
+    },
+    {
+      "path": "performers/calendar-invite-cast/teal/observing.png",
+      "bytes": 643753,
+      "sha256": "9a49f3480a68137a7b0fe2db2f04811fe4c5bc6037cd30cd72203307f88272ba",
+      "source": "original-or-generated-episode-fixture",
+      "license": "LicenseRef-Tokovo-Original-Fixture"
+    },
+    {
+      "path": "performers/calendar-invite-cast/teal/peek.png",
+      "bytes": 704025,
+      "sha256": "e7b1b6c174cc8a4b7975d89097a647b681aa9aac5cf0a1d5a51d61382594e11f",
+      "source": "original-or-generated-episode-fixture",
+      "license": "LicenseRef-Tokovo-Original-Fixture"
+    },
+    {
+      "path": "performers/calendar-invite-cast/violet/accept.png",
+      "bytes": 559861,
+      "sha256": "0790784a778d5aa5292dbd0a62516b3324cf9576d4fd805384769ca37aa77c6c",
+      "source": "original-or-generated-episode-fixture",
+      "license": "LicenseRef-Tokovo-Original-Fixture"
+    },
+    {
+      "path": "performers/calendar-invite-cast/violet/composed.png",
+      "bytes": 754524,
+      "sha256": "0719b6aa0a290fbb50f76293bac0665bdd33de53e15b32c832b60c2ed10cc94d",
+      "source": "original-or-generated-episode-fixture",
+      "license": "LicenseRef-Tokovo-Original-Fixture"
+    },
+    {
+      "path": "performers/mint-sprite/frozen.png",
+      "bytes": 268292,
+      "sha256": "b355f31fb703d98ba549b466378d51934b9c6c8cde350e0f2048b390e23320fb",
+      "source": "original-or-generated-episode-fixture",
+      "license": "LicenseRef-Tokovo-Original-Fixture"
+    },
+    {
+      "path": "performers/mint-sprite/guilty.png",
+      "bytes": 251432,
+      "sha256": "24902ab7f0bd2e6b159883e4204bb44ce57223e514fa574c28fad8720f650121",
+      "source": "original-or-generated-episode-fixture",
+      "license": "LicenseRef-Tokovo-Original-Fixture"
+    },
+    {
+      "path": "performers/mint-sprite/pose-strip.png",
+      "bytes": 857005,
+      "sha256": "2ac04b440452fa2f78c204f73e627037c90bf8c893ff048cbb089d78e490fc76",
+      "source": "original-or-generated-episode-fixture",
+      "license": "LicenseRef-Tokovo-Original-Fixture"
+    },
+    {
+      "path": "performers/mint-sprite/proud.png",
+      "bytes": 282645,
+      "sha256": "622d7dceea7db83205db611c45e29710a6be5c676069b01ed71d7f80e5fd8c1c",
+      "source": "original-or-generated-episode-fixture",
+      "license": "LicenseRef-Tokovo-Original-Fixture"
+    },
+    {
+      "path": "performers/ping-courier/failed.gif",
+      "bytes": 84931,
+      "sha256": "30d50c5999b4c3b35610a6c59e3c1010102ba9d17166ecd5ecfe8a52072b9839",
+      "source": "original-or-generated-episode-fixture",
+      "license": "LicenseRef-Tokovo-Original-Fixture"
+    },
+    {
+      "path": "performers/ping-courier/idle.gif",
+      "bytes": 56221,
+      "sha256": "63654c82f9f06124bdc33539c6e9cd136f299d43e7745e9458e0693c86b012c7",
+      "source": "original-or-generated-episode-fixture",
+      "license": "LicenseRef-Tokovo-Original-Fixture"
+    },
+    {
+      "path": "performers/ping-courier/jumping.gif",
+      "bytes": 37750,
+      "sha256": "fbca0438b8a1cd1e241f70d1e1edcd8e293713d156c36cd44d2a562a746f24fe",
+      "source": "original-or-generated-episode-fixture",
+      "license": "LicenseRef-Tokovo-Original-Fixture"
+    },
+    {
+      "path": "performers/ping-courier/review.gif",
+      "bytes": 55874,
+      "sha256": "2f45b20a4de7e212dbcff20ecde01f89d437f0b57ae37304340de79e6344b1c0",
+      "source": "original-or-generated-episode-fixture",
+      "license": "LicenseRef-Tokovo-Original-Fixture"
+    },
+    {
+      "path": "performers/ping-courier/running.gif",
+      "bytes": 58554,
+      "sha256": "78a8c50888c628e8dfe760a366cb8ad4ac11b4a671fd556361375d298543b60e",
+      "source": "original-or-generated-episode-fixture",
+      "license": "LicenseRef-Tokovo-Original-Fixture"
+    },
+    {
+      "path": "performers/ping-courier/spritesheet.webp",
+      "bytes": 2016138,
+      "sha256": "fbe7197e97bb803c7ee1116f9e15fc7a6738d4df8441a26bb46bf47877522732",
+      "source": "original-or-generated-episode-fixture",
+      "license": "LicenseRef-Tokovo-Original-Fixture"
+    },
+    {
+      "path": "performers/ping-courier/waiting.gif",
+      "bytes": 57887,
+      "sha256": "e230fbd0800af981353d086af4a91c60fd38b2bbe467b62b3474a6f29b3fad1a",
+      "source": "original-or-generated-episode-fixture",
+      "license": "LicenseRef-Tokovo-Original-Fixture"
+    },
+    {
+      "path": "performers/ping-courier/waving.gif",
+      "bytes": 40232,
+      "sha256": "958b70c51b5f4b990c06dffd6c1b05ef44120bff97b292a27860e25265407ec7",
+      "source": "original-or-generated-episode-fixture",
+      "license": "LicenseRef-Tokovo-Original-Fixture"
+    },
+    {
+      "path": "performers/teal-manager/calm.png",
+      "bytes": 259401,
+      "sha256": "7b8421f10bd280bb0a8fc665e2bcc341b5147b502330b52f3806eb1ed2ae610f",
+      "source": "original-or-generated-episode-fixture",
+      "license": "LicenseRef-Tokovo-Original-Fixture"
+    },
+    {
+      "path": "performers/teal-manager/judgmental.png",
+      "bytes": 276174,
+      "sha256": "9038beb3e90c727ee8d956bbcaf21c0b2933b786e5af937f13827db4a6fe8517",
+      "source": "original-or-generated-episode-fixture",
+      "license": "LicenseRef-Tokovo-Original-Fixture"
+    },
+    {
+      "path": "performers/teal-manager/pose-strip.png",
+      "bytes": 831854,
+      "sha256": "346e202bbbde74f715c0a8ebb51bd6a872d1f07da526f068dc72cdb5d70ac29c",
+      "source": "original-or-generated-episode-fixture",
+      "license": "LicenseRef-Tokovo-Original-Fixture"
+    },
+    {
+      "path": "performers/teal-manager/suspicious.png",
+      "bytes": 259377,
+      "sha256": "ad92b4078c050712b05672c4573463c42f32955b47f3316b3d01ba0f7d1d83d5",
+      "source": "original-or-generated-episode-fixture",
+      "license": "LicenseRef-Tokovo-Original-Fixture"
+    },
+    {
+      "path": "performers/violet-founder/composed.png",
+      "bytes": 255609,
+      "sha256": "4e47af1dbb559f63f7a4b7b2946abafd23262907f504436a0218cc68e78d62bf",
+      "source": "original-or-generated-episode-fixture",
+      "license": "LicenseRef-Tokovo-Original-Fixture"
+    },
+    {
+      "path": "performers/violet-founder/interrupt.png",
+      "bytes": 269530,
+      "sha256": "d11fdb763fb27449a5a7a4ad025743b628361870f8904bc4648125216b1b47a7",
+      "source": "original-or-generated-episode-fixture",
+      "license": "LicenseRef-Tokovo-Original-Fixture"
+    },
+    {
+      "path": "performers/violet-founder/pose-strip.png",
+      "bytes": 833807,
+      "sha256": "8b42818e9b177e906d0d5312fe5d845a89d5c0bbceb21fcf2edc782fc576fed2",
+      "source": "original-or-generated-episode-fixture",
+      "license": "LicenseRef-Tokovo-Original-Fixture"
+    },
+    {
+      "path": "performers/violet-founder/verdict.png",
+      "bytes": 275222,
+      "sha256": "7e3912cc8460f62b81b075258aff4be78063cd952833d5973a84c7184cdb82a3",
+      "source": "original-or-generated-episode-fixture",
+      "license": "LicenseRef-Tokovo-Original-Fixture"
+    },
+    {
+      "path": "sounds/core/keyboard/typing_loop.wav",
+      "bytes": 307244,
+      "sha256": "07468a4343cd90fbfab43d051615427cbd0b49101f1e2dcf815368e7a4f239f2",
+      "source": "procedurally-generated-in-repository",
+      "license": "LicenseRef-Tokovo-Procedural"
+    },
+    {
+      "path": "sounds/generated/README.md",
+      "bytes": 289,
+      "sha256": "f51d9f2604db3c2bb654f01f6222869a17cdad610bb9f1beb487f342a9534961",
+      "source": "procedurally-generated-in-repository",
+      "license": "LicenseRef-Tokovo-Procedural"
+    },
+    {
+      "path": "sounds/generated/core/call-end.wav",
+      "bytes": 22976,
+      "sha256": "daa19926a722be1da22feebf5224b822d4f6403ab6d68348269c4141d3a27b23",
+      "source": "procedurally-generated-in-repository",
+      "license": "LicenseRef-Tokovo-Procedural"
+    },
+    {
+      "path": "sounds/generated/core/camera-shutter.wav",
+      "bytes": 19448,
+      "sha256": "0f762749574f303a289cf7d39aa60e2164939f7b692463f9f56a63bbe932f6c0",
+      "source": "procedurally-generated-in-repository",
+      "license": "LicenseRef-Tokovo-Procedural"
+    },
+    {
+      "path": "sounds/generated/core/dramatic.wav",
+      "bytes": 105884,
+      "sha256": "81456eeda91261783839f0a757dc68e4fcd2102136b026a4ad9b9c34ec77388f",
+      "source": "procedurally-generated-in-repository",
+      "license": "LicenseRef-Tokovo-Procedural"
+    },
+    {
+      "path": "sounds/generated/core/keyboard-click.wav",
+      "bytes": 2690,
+      "sha256": "b77e9dac48e0e09aaf8ac00d2e82e10b0968a14a6fb3ce1cf1a0c66e4ef184d3",
+      "source": "procedurally-generated-in-repository",
+      "license": "LicenseRef-Tokovo-Procedural"
+    },
+    {
+      "path": "sounds/generated/core/lock.wav",
+      "bytes": 10628,
+      "sha256": "da1037af79020de2ac1e6a4700be4063a1eb61a62eefe7c80bce7d275c29be84",
+      "source": "procedurally-generated-in-repository",
+      "license": "LicenseRef-Tokovo-Procedural"
+    },
+    {
+      "path": "sounds/generated/core/notification-soft.wav",
+      "bytes": 10628,
+      "sha256": "eaa2c69361ffea4dcd7f835ad178af8138bd6805cf68fb26657d0055a74ca63a",
+      "source": "procedurally-generated-in-repository",
+      "license": "LicenseRef-Tokovo-Procedural"
+    },
+    {
+      "path": "sounds/generated/core/notification.wav",
+      "bytes": 15920,
+      "sha256": "fdc36650a52691ff96dcf92829cc7207f41151e176673991c443803cc8c2e237",
+      "source": "procedurally-generated-in-repository",
+      "license": "LicenseRef-Tokovo-Procedural"
+    },
+    {
+      "path": "sounds/generated/core/ringtone.wav",
+      "bytes": 211724,
+      "sha256": "cd4804a4bd2dd702b3352aeaed343f255504fbea6df85c4ff0ba393bde9915d8",
+      "source": "procedurally-generated-in-repository",
+      "license": "LicenseRef-Tokovo-Procedural"
+    },
+    {
+      "path": "sounds/generated/core/screenshot.wav",
+      "bytes": 19448,
+      "sha256": "ed983238b3f25427faf8ee06c3d0507f29577bc61946bed42b22a437fd1444db",
+      "source": "procedurally-generated-in-repository",
+      "license": "LicenseRef-Tokovo-Procedural"
+    },
+    {
+      "path": "sounds/generated/core/suspense.wav",
+      "bytes": 79424,
+      "sha256": "a49e5d0761b6883cdf06c0aeee585a8a4b55e1a4ed1d3834cbe77be2394d8229",
+      "source": "procedurally-generated-in-repository",
+      "license": "LicenseRef-Tokovo-Procedural"
+    },
+    {
+      "path": "sounds/generated/core/tap.wav",
+      "bytes": 3572,
+      "sha256": "c97e402e5c6e1b532b6876d9f1d65e6e6e7d83c3ac60fa8be73850846d4c00aa",
+      "source": "procedurally-generated-in-repository",
+      "license": "LicenseRef-Tokovo-Procedural"
+    },
+    {
+      "path": "sounds/generated/core/unlock.wav",
+      "bytes": 12392,
+      "sha256": "b005fa9c4aeb9843589c603693bd24164ed52fdeaaaaaf02b234a48bb4c5459c",
+      "source": "procedurally-generated-in-repository",
+      "license": "LicenseRef-Tokovo-Procedural"
+    },
+    {
+      "path": "sounds/os/android/keyboard.wav",
+      "bytes": 2690,
+      "sha256": "b77e9dac48e0e09aaf8ac00d2e82e10b0968a14a6fb3ce1cf1a0c66e4ef184d3",
+      "source": "procedurally-generated-in-repository",
+      "license": "LicenseRef-Tokovo-Procedural"
+    },
+    {
+      "path": "sounds/os/android/lock.wav",
+      "bytes": 10628,
+      "sha256": "da1037af79020de2ac1e6a4700be4063a1eb61a62eefe7c80bce7d275c29be84",
+      "source": "procedurally-generated-in-repository",
+      "license": "LicenseRef-Tokovo-Procedural"
+    },
+    {
+      "path": "sounds/os/android/notification.wav",
+      "bytes": 10628,
+      "sha256": "eaa2c69361ffea4dcd7f835ad178af8138bd6805cf68fb26657d0055a74ca63a",
+      "source": "procedurally-generated-in-repository",
+      "license": "LicenseRef-Tokovo-Procedural"
+    },
+    {
+      "path": "sounds/os/android/unlock.wav",
+      "bytes": 12392,
+      "sha256": "b005fa9c4aeb9843589c603693bd24164ed52fdeaaaaaf02b234a48bb4c5459c",
+      "source": "procedurally-generated-in-repository",
+      "license": "LicenseRef-Tokovo-Procedural"
+    },
+    {
+      "path": "sounds/os/ios/charging.wav",
+      "bytes": 24740,
+      "sha256": "766384c108519de5c012bd27de0c326c986b7806588a463f8acebbd4d80a0998",
+      "source": "procedurally-generated-in-repository",
+      "license": "LicenseRef-Tokovo-Procedural"
+    },
+    {
+      "path": "sounds/os/ios/keyboard.wav",
+      "bytes": 2690,
+      "sha256": "b77e9dac48e0e09aaf8ac00d2e82e10b0968a14a6fb3ce1cf1a0c66e4ef184d3",
+      "source": "procedurally-generated-in-repository",
+      "license": "LicenseRef-Tokovo-Procedural"
+    },
+    {
+      "path": "sounds/os/ios/lock.wav",
+      "bytes": 10628,
+      "sha256": "da1037af79020de2ac1e6a4700be4063a1eb61a62eefe7c80bce7d275c29be84",
+      "source": "procedurally-generated-in-repository",
+      "license": "LicenseRef-Tokovo-Procedural"
+    },
+    {
+      "path": "sounds/os/ios/notification.wav",
+      "bytes": 10628,
+      "sha256": "eaa2c69361ffea4dcd7f835ad178af8138bd6805cf68fb26657d0055a74ca63a",
+      "source": "procedurally-generated-in-repository",
+      "license": "LicenseRef-Tokovo-Procedural"
+    },
+    {
+      "path": "sounds/os/ios/screenshot.wav",
+      "bytes": 19448,
+      "sha256": "ed983238b3f25427faf8ee06c3d0507f29577bc61946bed42b22a437fd1444db",
+      "source": "procedurally-generated-in-repository",
+      "license": "LicenseRef-Tokovo-Procedural"
+    },
+    {
+      "path": "sounds/os/ios/unlock.wav",
+      "bytes": 12392,
+      "sha256": "b005fa9c4aeb9843589c603693bd24164ed52fdeaaaaaf02b234a48bb4c5459c",
+      "source": "procedurally-generated-in-repository",
+      "license": "LicenseRef-Tokovo-Procedural"
+    },
+    {
+      "path": "sounds/plugins/imessage/received.wav",
+      "bytes": 10628,
+      "sha256": "eaa2c69361ffea4dcd7f835ad178af8138bd6805cf68fb26657d0055a74ca63a",
+      "source": "procedurally-generated-in-repository",
+      "license": "LicenseRef-Tokovo-Procedural"
+    },
+    {
+      "path": "sounds/plugins/imessage/sent.wav",
+      "bytes": 3130,
+      "sha256": "3f3d20b793d9fa44cb1c29753eb89edd7d6429225af6087e21b5706b419b638f",
+      "source": "procedurally-generated-in-repository",
+      "license": "LicenseRef-Tokovo-Procedural"
+    },
+    {
+      "path": "sounds/plugins/imessage/typing_loop.wav",
+      "bytes": 70604,
+      "sha256": "c436ae48e5daaf463dc73bfd0e22106ba4f155bb62b724ae16ff3afa7db7eb6f",
+      "source": "procedurally-generated-in-repository",
+      "license": "LicenseRef-Tokovo-Procedural"
+    },
+    {
+      "path": "sounds/plugins/typewriter/backspace.wav",
+      "bytes": 4012,
+      "sha256": "e82d8d0afb791ca1223ab9d65ccbcf426476c619f669e4c91ff864bf2cda0e29",
+      "source": "procedurally-generated-in-repository",
+      "license": "LicenseRef-Tokovo-Procedural"
+    },
+    {
+      "path": "sounds/plugins/typewriter/backspace_soft.wav",
+      "bytes": 4012,
+      "sha256": "0ab269dc8e3c7f26ae162e7f41dcd7d680fcf29241d00cd905c2c7fbcfa1238f",
+      "source": "procedurally-generated-in-repository",
+      "license": "LicenseRef-Tokovo-Procedural"
+    },
+    {
+      "path": "sounds/plugins/typewriter/bell.wav",
+      "bytes": 105884,
+      "sha256": "fd0fcbca6aa9a1b618891cf3373d80c1cfd34e57cc7545cca0c0aa1492ae6706",
+      "source": "procedurally-generated-in-repository",
+      "license": "LicenseRef-Tokovo-Procedural"
+    },
+    {
+      "path": "sounds/plugins/typewriter/bell_soft.wav",
+      "bytes": 105884,
+      "sha256": "5a19ce119144003c363109f24725362000f549321e01152e851396255594e8a8",
+      "source": "procedurally-generated-in-repository",
+      "license": "LicenseRef-Tokovo-Procedural"
+    },
+    {
+      "path": "sounds/plugins/typewriter/carriage.wav",
+      "bytes": 22976,
+      "sha256": "430df38f0ec2b879ea3df0775a574ee17a8bf12747ae0c95aed160935e936999",
+      "source": "procedurally-generated-in-repository",
+      "license": "LicenseRef-Tokovo-Procedural"
+    },
+    {
+      "path": "sounds/plugins/typewriter/carriage_soft.wav",
+      "bytes": 22976,
+      "sha256": "061a1bd28b58b0cc4e0c97ff575e1e4ca01182c0b3b88e509d1c488596da5aac",
+      "source": "procedurally-generated-in-repository",
+      "license": "LicenseRef-Tokovo-Procedural"
+    },
+    {
+      "path": "sounds/plugins/typewriter/key.wav",
+      "bytes": 2866,
+      "sha256": "fa73a055273d44a892c56630d10801b2ea6246b4c82e9d53b8c132d63bde5dcf",
+      "source": "procedurally-generated-in-repository",
+      "license": "LicenseRef-Tokovo-Procedural"
+    },
+    {
+      "path": "sounds/plugins/typewriter/key_soft.wav",
+      "bytes": 2866,
+      "sha256": "70356b0fa3d744f78f4afd3b5f3bfa88ace0633dc14a6f3fb85956adc696ce8e",
+      "source": "procedurally-generated-in-repository",
+      "license": "LicenseRef-Tokovo-Procedural"
+    },
+    {
+      "path": "sounds/plugins/typewriter/punct.wav",
+      "bytes": 2866,
+      "sha256": "defca4a93c2ed63dcb123512ae5210d0e8498888c84e1afa0c07d0b736b53573",
+      "source": "procedurally-generated-in-repository",
+      "license": "LicenseRef-Tokovo-Procedural"
+    },
+    {
+      "path": "sounds/plugins/typewriter/punct_soft.wav",
+      "bytes": 2866,
+      "sha256": "969441e9ab0d309e201b10fd4ab55d1711af7bacb7f7dd1f58f5ccdff767b965",
+      "source": "procedurally-generated-in-repository",
+      "license": "LicenseRef-Tokovo-Procedural"
+    },
+    {
+      "path": "sounds/plugins/typewriter/room.wav",
+      "bytes": 882044,
+      "sha256": "42ba98f17b9aec2a9407599baa002d6a77baa27f59cda140552d21f8b6b8e990",
+      "source": "procedurally-generated-in-repository",
+      "license": "LicenseRef-Tokovo-Procedural"
+    },
+    {
+      "path": "sounds/plugins/typewriter/space.wav",
+      "bytes": 5336,
+      "sha256": "b65d7cc1d94a6dd4e41db188114353370309eb86562572d1943855ffc7c15500",
+      "source": "procedurally-generated-in-repository",
+      "license": "LicenseRef-Tokovo-Procedural"
+    },
+    {
+      "path": "sounds/plugins/typewriter/space_soft.wav",
+      "bytes": 5336,
+      "sha256": "cbe7260ca4b9b67622f2ef5735c32692615299aa7d4417d19d2b492bbef91c92",
+      "source": "procedurally-generated-in-repository",
+      "license": "LicenseRef-Tokovo-Procedural"
+    },
+    {
+      "path": "sounds/plugins/whatsapp/call_end.wav",
+      "bytes": 22976,
+      "sha256": "daa19926a722be1da22feebf5224b822d4f6403ab6d68348269c4141d3a27b23",
+      "source": "procedurally-generated-in-repository",
+      "license": "LicenseRef-Tokovo-Procedural"
+    },
+    {
+      "path": "sounds/plugins/whatsapp/call_outgoing.wav",
+      "bytes": 48554,
+      "sha256": "fe0da1ff431fdf78173005cfce61fda7275d9e01861c47b5494a386634743865",
+      "source": "procedurally-generated-in-repository",
+      "license": "LicenseRef-Tokovo-Procedural"
+    },
+    {
+      "path": "sounds/plugins/whatsapp/call_ringtone.wav",
+      "bytes": 211724,
+      "sha256": "cd4804a4bd2dd702b3352aeaed343f255504fbea6df85c4ff0ba393bde9915d8",
+      "source": "procedurally-generated-in-repository",
+      "license": "LicenseRef-Tokovo-Procedural"
+    },
+    {
+      "path": "sounds/plugins/whatsapp/ptt_cancel.wav",
+      "bytes": 10628,
+      "sha256": "7f2674ab2c047fb8edfea1ca2cd52565d9b43f322316743c507668795ea356d7",
+      "source": "procedurally-generated-in-repository",
+      "license": "LicenseRef-Tokovo-Procedural"
+    },
+    {
+      "path": "sounds/plugins/whatsapp/ptt_send.wav",
+      "bytes": 12392,
+      "sha256": "02ef18fff7709bf618ece1c1a8f42634507815e538de96c6ea7872f5f054518b",
+      "source": "procedurally-generated-in-repository",
+      "license": "LicenseRef-Tokovo-Procedural"
+    },
+    {
+      "path": "sounds/plugins/whatsapp/ptt_start.wav",
+      "bytes": 4454,
+      "sha256": "384f12ce458f4f377c2a797e3053c2fa30612e8cd02641e8b38b0629da07f508",
+      "source": "procedurally-generated-in-repository",
+      "license": "LicenseRef-Tokovo-Procedural"
+    },
+    {
+      "path": "sounds/plugins/whatsapp/received.wav",
+      "bytes": 10628,
+      "sha256": "a28896bdec85322fbd0c2cc16fee6820c72fa7b5becbc814ab6f052fc44841c6",
+      "source": "procedurally-generated-in-repository",
+      "license": "LicenseRef-Tokovo-Procedural"
+    },
+    {
+      "path": "sounds/plugins/whatsapp/sent.wav",
+      "bytes": 3130,
+      "sha256": "9ca7f986229514f6378a7826379557d922291396db5c583108c4b927764dadd5",
+      "source": "procedurally-generated-in-repository",
+      "license": "LicenseRef-Tokovo-Procedural"
+    },
+    {
+      "path": "sounds/plugins/whatsapp/typing_loop.wav",
+      "bytes": 70604,
+      "sha256": "1ef6b4bf935bb4359576976ab79fb3370c2b6da690890ce4b6df01632ffa414a",
+      "source": "procedurally-generated-in-repository",
+      "license": "LicenseRef-Tokovo-Procedural"
+    },
+    {
+      "path": "stickers/deal-done.webp",
+      "bytes": 40139,
+      "sha256": "c60c427723b203dd967d394c82952f0380f1d1eef9f386efee386ff14b2bfece",
+      "source": "original-or-generated-episode-fixture",
+      "license": "LicenseRef-Tokovo-Original-Fixture"
+    },
+    {
+      "path": "stickers/panic-cat.webp",
+      "bytes": 90540,
+      "sha256": "a88aea761a9685879d90c49e342c0b168c229aaf09ba45d783728f3062a86412",
+      "source": "original-or-generated-episode-fixture",
+      "license": "LicenseRef-Tokovo-Original-Fixture"
+    },
+    {
+      "path": "voice/calendar-invite/calendar-invite.json",
+      "bytes": 14092,
+      "sha256": "676a3cbc176c8dc5189f3a9dec383f7e7859031ee4d4cd3a28f6dcd311dd3964",
+      "source": "generated-demo-voice-fixture",
+      "license": "LicenseRef-Tokovo-Original-Fixture"
+    },
+    {
+      "path": "voice/calendar-invite/calendar-invite.wav",
+      "bytes": 483510,
+      "sha256": "a047d85153e8b67559aff267170298c1ddb8ec37d1eeb33fc93c7dd2523691e7",
+      "source": "generated-demo-voice-fixture",
+      "license": "LicenseRef-Tokovo-Original-Fixture"
+    },
+    {
+      "path": "voice/drama-example-manifest.json",
+      "bytes": 7745,
+      "sha256": "993d8accc78f05bcbfea8f364d9aa83817eb7be0583f5be959c7a92508346fd8",
+      "source": "generated-demo-voice-fixture",
+      "license": "LicenseRef-Tokovo-Original-Fixture"
+    },
+    {
+      "path": "voice/drama-example.mp3",
+      "bytes": 168482,
+      "sha256": "4ecba19659c76de34541b082e8bdc653966844dd85f08e29ac221f3fdb4f7509",
+      "source": "generated-demo-voice-fixture",
+      "license": "LicenseRef-Tokovo-Original-Fixture"
+    },
+    {
+      "path": "voice/ensemble-launch-room/ensemble-launch-room.json",
+      "bytes": 11783,
+      "sha256": "556f02a481f901429c46e78f92dc72b41896416e31eed021f9c1898050fbdf15",
+      "source": "generated-demo-voice-fixture",
+      "license": "LicenseRef-Tokovo-Original-Fixture"
+    },
+    {
+      "path": "voice/ensemble-launch-room/ensemble-launch-room.wav",
+      "bytes": 502640,
+      "sha256": "2586fa0a7529a09fdd9f478b2ed4ef533a9ebda3f2f7f67a54f2556738e23c8c",
+      "source": "generated-demo-voice-fixture",
+      "license": "LicenseRef-Tokovo-Original-Fixture"
+    },
+    {
+      "path": "voice/mint-sprite/three-message.json",
+      "bytes": 4742,
+      "sha256": "cdbdbaed0b888401643863b78453929663e942cd9087e664d3f8615d563a2e73",
+      "source": "generated-demo-voice-fixture",
+      "license": "LicenseRef-Tokovo-Original-Fixture"
+    },
+    {
+      "path": "voice/mint-sprite/three-message.wav",
+      "bytes": 148770,
+      "sha256": "08bd611126e80ea123f9830380906e8f729eea1d372f5689ae0700f296cbb1fe",
+      "source": "generated-demo-voice-fixture",
+      "license": "LicenseRef-Tokovo-Original-Fixture"
+    },
+    {
+      "path": "voice/ping-sent-it/ping-sent-it.json",
+      "bytes": 12681,
+      "sha256": "51a1a1c49e42680363f856d853be731bb1d7c4837f015d5d471ae3eb36b164ec",
+      "source": "generated-demo-voice-fixture",
+      "license": "LicenseRef-Tokovo-Original-Fixture"
+    },
+    {
+      "path": "voice/ping-sent-it/ping-sent-it.wav",
+      "bytes": 507780,
+      "sha256": "0a6458389bdc32e6cf2909eb5e944cf319a03ae32a79d499e002ba86dd5ec1b8",
+      "source": "generated-demo-voice-fixture",
+      "license": "LicenseRef-Tokovo-Original-Fixture"
+    },
+    {
+      "path": "wallpapers/midnight-grid.png",
+      "bytes": 90540,
+      "sha256": "a88aea761a9685879d90c49e342c0b168c229aaf09ba45d783728f3062a86412",
+      "source": "original-or-generated-episode-fixture",
+      "license": "LicenseRef-Tokovo-Original-Fixture"
+    },
+    {
+      "path": "wallpapers/warm-grain.png",
+      "bytes": 40139,
+      "sha256": "c60c427723b203dd967d394c82952f0380f1d1eef9f386efee386ff14b2bfece",
+      "source": "original-or-generated-episode-fixture",
+      "license": "LicenseRef-Tokovo-Original-Fixture"
+    }
+  ]
+}

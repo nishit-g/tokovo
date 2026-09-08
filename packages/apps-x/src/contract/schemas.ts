@@ -1,4 +1,5 @@
 import { z } from "zod";
+import type { XEventPayloadMap, XEventType } from "../types/events.js";
 
 const MIN_AUTHORED_EPOCH_MS = Date.UTC(2000, 0, 1);
 const MAX_AUTHORED_EPOCH_MS = Date.UTC(2100, 0, 1);
@@ -8,10 +9,7 @@ export const xCountSchema = z.number().int().nonnegative().finite();
 export const xEpochMsSchema = z
   .number()
   .int()
-  .min(
-    MIN_AUTHORED_EPOCH_MS,
-    "must be epoch milliseconds on or after 2000-01-01",
-  )
+  .min(MIN_AUTHORED_EPOCH_MS, "must be epoch milliseconds on or after 2000-01-01")
   .max(MAX_AUTHORED_EPOCH_MS, "must be epoch milliseconds before 2100-01-01")
   .finite();
 
@@ -223,9 +221,7 @@ export const xMessageInputSchema = z
           .strict(),
       )
       .optional(),
-    delivery: z
-      .enum(["sending", "sent", "delivered", "read", "failed"])
-      .optional(),
+    delivery: z.enum(["sending", "sent", "delivered", "read", "failed"]).optional(),
   })
   .strict()
   .superRefine((message, context) => {
@@ -311,6 +307,214 @@ export const xDMDeliveryInputSchema = z
   })
   .strict();
 
+const xSetCurrentUserEventSchema = z.object({ userId: xIdSchema }).strict();
+const xFollowEventSchema = z
+  .object({
+    followerId: xIdSchema,
+    followingId: xIdSchema,
+  })
+  .strict();
+const xTweetCreateEventSchema = xTweetInputSchema.superRefine((tweet, context) => {
+  for (const field of ["replyToId", "repostOfId", "quoteTweetId"] as const) {
+    if (tweet[field] !== undefined) {
+      context.addIssue({
+        code: "custom",
+        message: `is not valid for TWEET_CREATE`,
+        path: [field],
+      });
+    }
+  }
+});
+const xTweetReplyEventSchema = xTweetInputSchema.superRefine((tweet, context) => {
+  if (!tweet.replyToId) {
+    context.addIssue({
+      code: "custom",
+      message: "is required for TWEET_REPLY",
+      path: ["replyToId"],
+    });
+  }
+  for (const field of ["repostOfId", "quoteTweetId"] as const) {
+    if (tweet[field] !== undefined) {
+      context.addIssue({
+        code: "custom",
+        message: `is not valid for TWEET_REPLY`,
+        path: [field],
+      });
+    }
+  }
+});
+const xTweetRepostEventSchema = z
+  .object({
+    id: xIdSchema,
+    authorId: xIdSchema,
+    repostOfId: xIdSchema,
+    text: z.string().max(25_000).optional(),
+    createdAt: xEpochMsSchema,
+  })
+  .strict();
+const xTweetQuoteEventSchema = xTweetInputSchema.superRefine((tweet, context) => {
+  if (!tweet.quoteTweetId) {
+    context.addIssue({
+      code: "custom",
+      message: "is required for TWEET_QUOTE",
+      path: ["quoteTweetId"],
+    });
+  }
+  for (const field of ["replyToId", "repostOfId"] as const) {
+    if (tweet[field] !== undefined) {
+      context.addIssue({
+        code: "custom",
+        message: `is not valid for TWEET_QUOTE`,
+        path: [field],
+      });
+    }
+  }
+});
+const xTweetActorEventSchema = z
+  .object({
+    tweetId: xIdSchema,
+    userId: xIdSchema,
+  })
+  .strict();
+const xTweetReferenceEventSchema = z.object({ tweetId: xIdSchema }).strict();
+const xNavigateEventSchema = z
+  .object({
+    screen: xScreenSchema,
+    tweetId: xIdSchema.optional(),
+    userId: xIdSchema.optional(),
+    threadId: xIdSchema.optional(),
+  })
+  .strict()
+  .superRefine((navigation, context) => {
+    const expectedTarget =
+      navigation.screen === "tweet"
+        ? "tweetId"
+        : navigation.screen === "profile"
+          ? "userId"
+          : navigation.screen === "thread"
+            ? "threadId"
+            : null;
+    if (expectedTarget && !navigation[expectedTarget]) {
+      context.addIssue({
+        code: "custom",
+        message: `${navigation.screen} screen requires ${expectedTarget}`,
+        path: [expectedTarget],
+      });
+    }
+    for (const target of ["tweetId", "userId", "threadId"] as const) {
+      if (navigation[target] && target !== expectedTarget) {
+        context.addIssue({
+          code: "custom",
+          message: `${target} is not valid for ${navigation.screen} screen`,
+          path: [target],
+        });
+      }
+    }
+  });
+const xEmptyEventSchema = z.object({}).strict();
+const xComposeDraftEventSchema = z.object({ text: z.string().max(25_000) }).strict();
+const xThreadDraftEventSchema = z
+  .object({
+    threadId: xIdSchema,
+    text: z.string().max(25_000),
+  })
+  .strict();
+const xScrollEventSchema = z
+  .object({
+    surface: z.enum(["timeline", "tweet", "notifications", "messages", "profile", "thread"]),
+    offset: z.number().finite().nonnegative(),
+    targetId: xIdSchema.optional(),
+  })
+  .strict();
+const xDMActorEventSchema = z
+  .object({
+    threadId: xIdSchema,
+    userId: xIdSchema,
+  })
+  .strict();
+const xTimelineTabEventSchema = z.object({ tab: xTimelineTabSchema }).strict();
+const xProfileTabEventSchema = z.object({ tab: xProfileTabSchema }).strict();
+const xNotificationsTabEventSchema = z.object({ tab: xNotificationsTabSchema }).strict();
+const xAuthoredDMMessageSchema = z
+  .object({
+    id: xIdSchema,
+    threadId: xIdSchema,
+    senderId: xIdSchema,
+    text: z.string().trim().min(1).max(25_000),
+    createdAt: xEpochMsSchema,
+    replyToMessageId: xIdSchema.optional(),
+    delivery: z.enum(["sending", "sent", "delivered", "read", "failed"]).optional(),
+  })
+  .strict();
+const xReceivedDMMessageSchema = xAuthoredDMMessageSchema.omit({
+  delivery: true,
+});
+const xDMReactionEventSchema = z
+  .object({
+    messageId: xIdSchema,
+    userId: xIdSchema,
+    emoji: z.string().trim().min(1).max(16),
+  })
+  .strict();
+
+/**
+ * The canonical authored X event contract. Compiler lowering, runtime
+ * preparation, and package tests all validate through this table so an event
+ * cannot be accepted by one surface and rejected by another.
+ */
+export const xAuthoringEventPayloadSchemas = {
+  USER_CREATE: xUserInputSchema,
+  SET_CURRENT_USER: xSetCurrentUserEventSchema,
+  FOLLOW_USER: xFollowEventSchema,
+  UNFOLLOW_USER: xFollowEventSchema,
+  TWEET_CREATE: xTweetCreateEventSchema,
+  TWEET_REPLY: xTweetReplyEventSchema,
+  TWEET_REPOST: xTweetRepostEventSchema,
+  TWEET_QUOTE: xTweetQuoteEventSchema,
+  TWEET_LIKE: xTweetActorEventSchema,
+  TWEET_UNLIKE: xTweetActorEventSchema,
+  TWEET_VIEW: xTweetReferenceEventSchema,
+  TWEET_BOOKMARK: xTweetActorEventSchema,
+  TWEET_UNBOOKMARK: xTweetActorEventSchema,
+  TWEET_SHARE: xTweetActorEventSchema,
+  TWEET_POLL_VOTE: xPollVoteInputSchema,
+  TWEET_MEDIA_PLAYBACK: xMediaPlaybackInputSchema,
+  NAVIGATE: xNavigateEventSchema,
+  NAVIGATE_BACK: xEmptyEventSchema,
+  SET_COMPOSE_DRAFT: xComposeDraftEventSchema,
+  SET_COMPOSER_STATUS: xComposerStatusInputSchema,
+  SET_THREAD_DRAFT: xThreadDraftEventSchema,
+  SET_SCROLL: xScrollEventSchema,
+  DM_TYPING_START: xDMActorEventSchema,
+  DM_TYPING_STOP: xDMActorEventSchema,
+  SET_TIMELINE_TAB: xTimelineTabEventSchema,
+  SET_PROFILE_TAB: xProfileTabEventSchema,
+  SET_NOTIFICATIONS_TAB: xNotificationsTabEventSchema,
+  NOTIFICATION_ADD: xNotificationInputSchema,
+  DM_THREAD_CREATE: xThreadInputSchema,
+  DM_SEND: xAuthoredDMMessageSchema,
+  DM_RECEIVE: xReceivedDMMessageSchema,
+  DM_REACT: xDMReactionEventSchema,
+  DM_UNREACT: xDMReactionEventSchema,
+  DM_SET_DELIVERY: xDMDeliveryInputSchema,
+} satisfies Record<XEventType, z.ZodType>;
+
+export function parseXAuthoringEventPayload<T extends XEventType>(
+  type: T,
+  payload: unknown,
+): XEventPayloadMap[T] {
+  const schema = (xAuthoringEventPayloadSchemas as Partial<Record<string, z.ZodType>>)[type];
+  if (!schema) {
+    throw new Error(`X_TRACK_TYPE_UNSUPPORTED: "${type}"`);
+  }
+  const result = schema.safeParse(payload);
+  if (!result.success) {
+    const detail = formatXSchemaIssues(result.error, `track.${type}.payload`).join("; ");
+    throw new Error(`X_TRACK_PAYLOAD_INVALID: ${detail}`);
+  }
+  return result.data as XEventPayloadMap[T];
+}
+
 export const xSnapshotSchema = z
   .object({
     schemaVersion: z.literal(2),
@@ -322,9 +526,7 @@ export const xSnapshotSchema = z
     threads: z.array(xThreadInputSchema).optional(),
     messages: z.array(xMessageInputSchema).optional(),
     follows: z
-      .array(
-        z.object({ followerId: xIdSchema, followingId: xIdSchema }).strict(),
-      )
+      .array(z.object({ followerId: xIdSchema, followingId: xIdSchema }).strict())
       .optional(),
   })
   .strict();
@@ -399,8 +601,7 @@ export type XInitialViewInput = z.infer<typeof xInitialViewSchema>;
 
 export function formatXSchemaIssues(error: z.ZodError, root: string): string[] {
   return error.issues.map((issue) => {
-    const path =
-      issue.path.length > 0 ? `${root}.${issue.path.join(".")}` : root;
+    const path = issue.path.length > 0 ? `${root}.${issue.path.join(".")}` : root;
     return `${path}: ${issue.message}`;
   });
 }

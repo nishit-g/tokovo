@@ -6,7 +6,7 @@
  * Tier C (Authoring): + DSL helpers
  * Tier D (Compiler): + compile validators
  *
- * @see docs/architecture/core-runtime.md
+ * @see docs/ENGINEERING_HANDBOOK.md
  */
 
 import { RuntimeEvent } from "./runtime-event.js";
@@ -35,8 +35,12 @@ export interface PluginBootstrapSchemaContext<AppId extends string = string> {
 
 export interface PluginBootstrapSchemaContract<AppId extends string = string> {
   currentVersion: number;
-  migrate?: (input: PluginBootstrapSchemaContext<AppId>) => PluginBootstrapMigrationResult;
-  validate?: (input: PluginBootstrapSchemaContext<AppId>) => PluginBootstrapValidationResult;
+  migrate?(
+    input: PluginBootstrapSchemaContext<AppId>,
+  ): PluginBootstrapMigrationResult;
+  validate?(
+    input: PluginBootstrapSchemaContext<AppId>,
+  ): PluginBootstrapValidationResult;
 }
 
 export interface PluginBootstrapContext<AppId extends string = string> {
@@ -52,8 +56,10 @@ export interface PluginBootstrapContext<AppId extends string = string> {
 export interface PluginBootstrapContract<AppId extends string = string> {
   snapshot?: PluginBootstrapSchemaContract<AppId>;
   view?: PluginBootstrapSchemaContract<AppId>;
-  hydrate: (context: PluginBootstrapContext<AppId>) => InitialStateForApp<AppId>;
-  validate?: (context: PluginBootstrapContext<AppId>) => PluginBootstrapValidationResult;
+  hydrate(context: PluginBootstrapContext<AppId>): InitialStateForApp<AppId>;
+  validate?(
+    context: PluginBootstrapContext<AppId>,
+  ): PluginBootstrapValidationResult;
 }
 // =============================================================================
 // LAYOUT CONSTANTS - App-specific UI metrics
@@ -99,10 +105,16 @@ type InitialStateForApp<AppId extends string> = AppId extends keyof AppInitialSt
  * Plugin reducer signature
  * Uses Immer draft pattern - mutate directly
  */
-export type PluginReducer<AppId extends string = string> = (
-  draft: import("../types").WorldState,
-  event: RuntimeEvent & { kind: "APP"; appId: AppId; deviceId: string },
-) => void;
+export type PluginReducer<AppId extends string = string> = {
+  bivarianceHack(
+    draft: import("../types").WorldState,
+    event: RuntimeEvent & {
+      kind: "APP";
+      appId: AppId;
+      deviceId: string;
+    },
+  ): void;
+}["bivarianceHack"];
 
 // =============================================================================
 // PLUGIN VIEWS

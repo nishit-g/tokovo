@@ -27,6 +27,7 @@ export interface ChatListItemProps {
   avatarUrl?: string;
   groupAvatars?: string[];
   lastMessage?: string;
+  draftText?: string;
   timestamp?: string;
   unreadCount?: number;
   status?: "sending" | "sent" | "delivered" | "read" | "failed";
@@ -133,6 +134,7 @@ export const ChatListItem = memo(function ChatListItem({
   avatarUrl,
   groupAvatars,
   lastMessage,
+  draftText,
   timestamp,
   unreadCount = 0,
   status,
@@ -160,6 +162,16 @@ export const ChatListItem = memo(function ChatListItem({
   const avatarBorder = theme.colors.background;
 
   const buildMessagePreview = (): React.ReactNode => {
+    if (draftText?.trim()) {
+      return (
+        <>
+          <span style={{ color: accent, fontWeight: 600 }}>
+            {t("chat.draft")}:{" "}
+          </span>
+          <bdi>{draftText}</bdi>
+        </>
+      );
+    }
     if (isTyping) {
       return (
         <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
@@ -312,8 +324,8 @@ export const ChatListItem = memo(function ChatListItem({
           flexDirection: "column",
           justifyContent: "center",
           height: "100%",
-          paddingRight: spacing.contentMarginRight,
-          paddingLeft: spacing.contentMarginLeft,
+          paddingInlineEnd: spacing.contentMarginRight,
+          paddingInlineStart: spacing.contentMarginLeft,
           borderBottom: isLast ? "none" : `0.5px solid ${divider}`,
           minWidth: 0,
         }}
@@ -335,7 +347,7 @@ export const ChatListItem = memo(function ChatListItem({
               whiteSpace: "nowrap",
               overflow: "hidden",
               textOverflow: "ellipsis",
-              marginRight: 8,
+              marginInlineEnd: 8,
               flex: 1,
             }}
           >
@@ -386,7 +398,7 @@ export const ChatListItem = memo(function ChatListItem({
               minWidth: 0,
             }}
           >
-            {status && !hasUnread && !isTyping && (
+            {status && !hasUnread && !isTyping && !draftText?.trim() && (
               <span
                 style={{ display: "flex", alignItems: "center", flexShrink: 0 }}
               >
@@ -418,7 +430,7 @@ export const ChatListItem = memo(function ChatListItem({
               alignItems: "center",
               gap: 6,
               flexShrink: 0,
-              marginLeft: 8,
+              marginInlineStart: 8,
             }}
           >
             {isPinned && <PinIcon size={14} color={secondaryText} />}

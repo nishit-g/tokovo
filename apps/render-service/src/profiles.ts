@@ -3,7 +3,12 @@ import os from "node:os";
 import { getRenderMaxConcurrency } from "./env";
 
 export type RenderProfileId = "fast-preview" | "review" | "release";
-export const DETERMINISTIC_CHROMIUM_GL = "swangle" as const;
+/**
+ * The renderer backend is part of the release environment and layer-plate
+ * cache identity. ANGLE is repeatable on the pinned macOS render host while
+ * avoiding the order-of-magnitude CSS/GPU penalty measured with SwANGLE.
+ */
+export const DETERMINISTIC_CHROMIUM_GL = "angle" as const;
 
 export type RenderProfile = {
   id: RenderProfileId;
@@ -18,6 +23,7 @@ export type RenderProfile = {
   chromiumGl: "angle" | "swangle";
   timeoutInMilliseconds: number;
   concurrency: number;
+  compositorConcurrency: number;
   artifactSuffix: string;
 };
 
@@ -41,7 +47,8 @@ export const RENDER_PROFILES: Record<RenderProfileId, RenderProfile> = {
     hardwareAcceleration: "if-possible",
     chromiumGl: DETERMINISTIC_CHROMIUM_GL,
     timeoutInMilliseconds: 300000,
-    concurrency: clampConcurrency(2),
+    concurrency: clampConcurrency(4),
+    compositorConcurrency: clampConcurrency(4),
     artifactSuffix: "preview",
   },
   review: {
@@ -56,7 +63,8 @@ export const RENDER_PROFILES: Record<RenderProfileId, RenderProfile> = {
     hardwareAcceleration: "if-possible",
     chromiumGl: DETERMINISTIC_CHROMIUM_GL,
     timeoutInMilliseconds: 360000,
-    concurrency: clampConcurrency(3),
+    concurrency: clampConcurrency(6),
+    compositorConcurrency: clampConcurrency(4),
     artifactSuffix: "review",
   },
   release: {
@@ -70,7 +78,8 @@ export const RENDER_PROFILES: Record<RenderProfileId, RenderProfile> = {
     hardwareAcceleration: "if-possible",
     chromiumGl: DETERMINISTIC_CHROMIUM_GL,
     timeoutInMilliseconds: 600000,
-    concurrency: clampConcurrency(4),
+    concurrency: clampConcurrency(8),
+    compositorConcurrency: clampConcurrency(4),
     artifactSuffix: "release",
   },
 };

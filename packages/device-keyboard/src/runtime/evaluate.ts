@@ -121,6 +121,12 @@ export function evaluateInputSession(
   return cloneState(state);
 }
 
+/** Shares the binary-search index with replay, including reverse-frame seeking. */
+export function lastInputOperationAtFrame(session: PreparedInputSession, frame: number) {
+  const index = getEvaluationIndex(session);
+  return index.operations[operationCountAtFrame(index.operations, frame) - 1];
+}
+
 export function evaluateInputProgram(
   program: PreparedInputProgram,
   frame: number,

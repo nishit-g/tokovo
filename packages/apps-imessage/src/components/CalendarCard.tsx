@@ -48,7 +48,8 @@ export const CalendarCard: React.FC<CalendarCardProps> = ({ event, fromMe }) => 
         borderRadius: iMessageSpacing.bubbleRadius,
         overflow: "hidden",
         backgroundColor: bgColor,
-        minWidth: 240,
+        width: 260,
+        maxWidth: "100%",
       }}
     >
       {/* Red calendar header */}
@@ -64,7 +65,7 @@ export const CalendarCard: React.FC<CalendarCardProps> = ({ event, fromMe }) => 
           textTransform: "uppercase",
         }}
       >
-        📅 Calendar Invite
+        Calendar Invite
       </div>
 
       {/* Event content */}
@@ -96,7 +97,6 @@ export const CalendarCard: React.FC<CalendarCardProps> = ({ event, fromMe }) => 
             marginBottom: iMessageSpacing.messageGapMinimal,
           }}
         >
-          <span>🕐</span>
           <span>{formatDate(event.startDate)}</span>
           {event.isAllDay && (
             <span style={{ fontSize: iMessageTypography.timestamp.fontSize, opacity: 0.7 }}>
@@ -118,7 +118,6 @@ export const CalendarCard: React.FC<CalendarCardProps> = ({ event, fromMe }) => 
               color: textSecondary,
             }}
           >
-            <span>📍</span>
             <span>{event.location}</span>
           </div>
         )}

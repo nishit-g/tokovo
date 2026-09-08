@@ -1,12 +1,13 @@
 import React from "react";
-import { AnimatedImage, Img } from "remotion";
-import type { WorldState } from "@tokovo/core";
+import { AnimatedImage, Img, staticFile } from "remotion";
+import { resolveStaticAssetSrc, type WorldState } from "@tokovo/core";
 
 type OverlayVariant =
   | "hook"
   | "caption"
   | "receipt"
   | "reactionGif"
+  | "performer"
   | "cliffhanger";
 
 type OverlayPlacementPreset =
@@ -29,6 +30,9 @@ type OverlayItem = {
   preset?: OverlayPlacementPreset;
   xPct?: number;
   yPct?: number;
+  widthPct?: number;
+  flipX?: boolean;
+  performerMotion?: "hold" | "duck";
   intensity?: number;
 };
 
@@ -121,6 +125,7 @@ function getVariantStyle(variant: OverlayVariant, intensity: number): React.CSSP
         textShadow: "0 10px 50px rgba(0,0,0,0.65)",
       };
     case "reactionGif":
+    case "performer":
     default:
       return {};
   }
@@ -177,11 +182,15 @@ export const StoryOverlay: React.FC<{
       {items.map((it) => {
         const inDur = 10;
         const outDur = 10;
-        const inP = easeOutCubic((t - it.startFrame) / inDur);
+        const isPerformer = it.variant === "performer";
+        const inP = isPerformer ? 1 : easeOutCubic((t - it.startFrame) / inDur);
         const outP =
-          it.endFrame !== undefined ? easeOutCubic((it.endFrame - t) / outDur) : 1;
+          !isPerformer && it.endFrame !== undefined ? easeOutCubic((it.endFrame - t) / outDur) : 1;
         const opacity = clamp01(Math.min(inP, outP));
-        const floatY = (1 - inP) * 14;
+        const duckProgress = isPerformer && it.performerMotion === "duck"
+          ? clamp01((t - it.startFrame) / Math.max(1, (it.endFrame ?? it.startFrame + 30) - it.startFrame))
+          : 0;
+        const floatY = (1 - inP) * 14 + height * duckProgress * duckProgress;
 
         const intensity = typeof it.intensity === "number" ? it.intensity : 0.6;
         const pos = getPositionStyle(it.preset);
@@ -206,18 +215,50 @@ export const StoryOverlay: React.FC<{
           ...pos,
           ...overridePos,
           opacity,
-          transform:
-            typeof pos.transform === "string"
-              ? `${pos.transform} translateY(${floatY}px)`
-              : `translateY(${floatY}px)`,
+          transform: `${
+            typeof overridePos.transform === "string"
+              ? overridePos.transform
+              : typeof pos.transform === "string"
+                ? pos.transform
+                : ""
+          } translateY(${floatY}px)`.trim(),
         };
 
-        if (it.variant === "reactionGif" && it.mediaSrc) {
+        if (
+          (it.variant === "reactionGif" || it.variant === "performer") &&
+          it.mediaSrc
+        ) {
           const MediaComponent = isGifAsset(it.mediaSrc) ? AnimatedImage : Img;
+          const src = resolveStaticAssetSrc(it.mediaSrc, staticFile);
+
+          if (it.variant === "performer") {
+            const performerWidth = Math.round(it.widthPct === undefined
+              ? lerp(width * 0.24, width * 0.32, intensity)
+              : width * clamp01(it.widthPct));
+            const performerScale = lerp(0.92, 1, inP);
+
+            return (
+              <div key={it.id} style={containerStyle}>
+                <MediaComponent
+                  src={src}
+                  alt=""
+                  style={{
+                    width: performerWidth,
+                    maxHeight: it.widthPct === undefined ? Math.round(height * 0.56) : undefined,
+                    objectFit: "contain",
+                    filter: "drop-shadow(0 12px 18px rgba(48, 31, 20, 0.16))",
+                    transform: `scale(${it.flipX ? -performerScale : performerScale}, ${performerScale})`,
+                    transformOrigin: "bottom center",
+                  }}
+                />
+              </div>
+            );
+          }
+
           return (
             <div key={it.id} style={containerStyle}>
               <MediaComponent
-                src={it.mediaSrc}
+                src={src}
                 alt=""
                 style={{
                   width: 220,

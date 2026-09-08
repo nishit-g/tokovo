@@ -24,6 +24,13 @@ function findMemberByActor(
   });
 }
 
+export function resolveParticipantMember(
+  conversation: WhatsAppConversation | undefined,
+  actor: string | undefined,
+): WhatsAppGroupMember | undefined {
+  return findMemberByActor(conversation, actor);
+}
+
 export function resolveParticipantName(
   conversation: WhatsAppConversation | undefined,
   actor: string | undefined,

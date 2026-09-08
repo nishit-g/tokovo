@@ -6,6 +6,6 @@ import {
 
 export function createVideoRunnerEpisodeRegistry(): EpisodeRegistry {
   return createEpisodeRegistryForProfile(
-    resolveCatalogProfile(process.env.TOKOVO_EPISODE_CATALOG_PROFILE, "studio"),
+    resolveCatalogProfile(process.env.TOKOVO_EPISODE_CATALOG_PROFILE, "showcase"),
   );
 }

@@ -164,8 +164,8 @@ export function resolveInputKeyboardLayout(projection: InputProjection): Keyboar
     projection.surface.family === "gujarati";
   return {
     id: `${projection.surface.platform}:${projection.surface.family}@1`,
-    rows: FAMILY_ROWS[projection.surface.family] ?? LATIN,
-    rowInsets: [0, projection.surface.platform === "ios" ? 14 : 7, 18],
+    rows: (FAMILY_ROWS[projection.surface.family] ?? LATIN).map((row) => row.map((key) => projection.surface.uppercase ? key.toLocaleUpperCase(projection.locale.tag) : key)),
+    rowInsets: [0, projection.surface.platform === "ios" ? 20 : 7, 0],
     keyGapScale: dense ? 0.72 : 1,
     fontScale: dense ? 0.84 : 1,
     controlRow: projection.surface.family === "kana" ? 3 : 2,

@@ -1,10 +1,9 @@
 import React, { useMemo } from "react";
+import { useLayout } from "@tokovo/react";
+import type { ChatLayoutState } from "@tokovo/core";
 import { ChatMessageItem } from "./ChatMessageItem.js";
 import { TypingIndicator } from "./TypingIndicator.js";
-import {
-  GroupTypingIndicator,
-  type TypingMember,
-} from "./GroupTypingIndicator.js";
+import { GroupTypingIndicator, type TypingMember } from "./GroupTypingIndicator.js";
 import { useTheme } from "../experience/ExperienceContext.js";
 import { getSenderColor } from "../config/color-utils.js";
 import type { WhatsAppThreadProjection } from "../thread/projector.js";
@@ -64,6 +63,8 @@ export const MessageList: React.FC<MessageListProps> = ({
   focusMessageId,
 }) => {
   const theme = useTheme();
+  const layout = useLayout<ChatLayoutState>();
+  const threadRect = layout?.semantic?.regions.thread?.rect;
   const backgroundColor = theme.colors.chatBackground;
   const doodleImage = useMemo(
     () => buildDoodleDataUri(theme.colors.wallpaperDoodle),
@@ -127,12 +128,16 @@ export const MessageList: React.FC<MessageListProps> = ({
       style={{
         flex: 1,
         backgroundColor,
-        position: "relative",
+        position: threadRect ? "absolute" : "relative",
+        top: threadRect?.y,
+        left: threadRect ? 0 : undefined,
+        right: threadRect ? 0 : undefined,
+        height: threadRect?.height,
         display: "flex",
         flexDirection: "column",
         padding: `${listPaddingY}px ${listPaddingX}px`,
         overflow: "hidden",
-        paddingBottom: bottomPadding,
+        paddingBottom: threadRect ? 0 : bottomPadding,
         backgroundImage: `${overlayGlow}, ${doodleImage}`,
         backgroundRepeat: "no-repeat, repeat",
         backgroundSize: "100% 100%, 180px 180px",
@@ -143,30 +148,65 @@ export const MessageList: React.FC<MessageListProps> = ({
           minHeight: "100%",
           display: "flex",
           flexDirection: "column",
-          justifyContent: "flex-end",
+          justifyContent:
+            theme.spacing.shortThreadAlignment === "start" ? "flex-start" : "flex-end",
         }}
       >
-        {renderedItems.map((item) => (
-          <ChatMessageItem
-            key={item.message.id}
-            message={item.message}
-            isMe={item.isMe}
-            position={item.position}
-            isGroupChat={isGroupChat}
-            senderName={item.message.senderName ?? item.message.from}
-            senderColor={getSenderColor(
-              item.message.senderName ?? item.message.from ?? "unknown",
-            )}
-            showSenderName={item.showSenderName}
-            messageOrder={item.order}
-            gesture={activeGesture ?? undefined}
-            viewportWidth={viewportWidth}
-            gapBefore={gapBeforeByMessageId.get(item.message.id) ?? 0}
-          />
-        ))}
+        {renderedItems.map((item) => {
+          const geometry = layout?.messageLayouts[item.message.id];
+          if (threadRect && !geometry) return null;
+          return (
+            <div
+              key={item.message.id}
+              style={
+                threadRect && geometry?.rect
+                  ? {
+                      position: "absolute",
+                      left: geometry.rect.x,
+                      top: geometry.rect.y - threadRect.y,
+                      width: geometry.rect.width,
+                      height: geometry.height,
+                      opacity: geometry.opacity,
+                      transform: `translate(${geometry.translateX}px, ${geometry.translateY}px)`,
+                    }
+                  : undefined
+              }
+            >
+              <ChatMessageItem
+                key={item.message.id}
+                message={item.message}
+                isMe={item.isMe}
+                position={item.position}
+                isGroupChat={isGroupChat}
+                senderName={item.message.senderName ?? item.message.from}
+                senderColor={getSenderColor(
+                  item.message.senderName ?? item.message.from ?? "unknown",
+                )}
+                bubbleColor={item.message.senderAccentColor}
+                bubbleTextColor={item.message.senderOnAccentColor}
+                showSenderName={item.showSenderName}
+                messageOrder={item.order}
+                gesture={activeGesture ?? undefined}
+                viewportWidth={viewportWidth}
+                gapBefore={threadRect ? 0 : (gapBeforeByMessageId.get(item.message.id) ?? 0)}
+              />
+            </div>
+          );
+        })}
 
         {isTyping && (
-          <div style={{ marginTop: 12, position: "relative", zIndex: 1 }}>
+          <div
+            style={
+              threadRect && layout?.typingLayout?.rect
+                ? {
+                    position: "absolute",
+                    left: layout.typingLayout.rect.x,
+                    top: layout.typingLayout.rect.y - threadRect.y,
+                    zIndex: 1,
+                  }
+                : { marginTop: 12, position: "relative", zIndex: 1 }
+            }
+          >
             {isGroupChat && typingMembers.length > 0 ? (
               <GroupTypingIndicator typingMembers={typingMembers} />
             ) : (

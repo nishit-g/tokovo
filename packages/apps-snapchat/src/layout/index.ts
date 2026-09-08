@@ -10,8 +10,6 @@ import type {
 
 import { snapchatSpacing } from "../config/tokens.js";
 
-const DESIGN_WIDTH = 393;
-
 function rect(x: number, y: number, width: number, height: number): LayoutRect {
   return { x, y, width, height };
 }
@@ -27,10 +25,8 @@ function computeSnapchatFeedLayout(ctx: LayoutContext): FeedLayoutState {
   const { viewportWidth: w, viewportHeight: h, appViewport } = ctx;
   const contentTop = appViewport.interactiveInsets.top;
   const contentBottom = appViewport.interactiveInsets.bottom;
-  const scale = w / DESIGN_WIDTH;
-  const px = (v: number) => v * scale;
 
-  const headerH = contentTop + px(snapchatSpacing.headerHeight);
+  const headerH = contentTop + snapchatSpacing.headerHeight;
   const listY = headerH;
   const listH = Math.max(0, h - contentBottom - listY);
 
@@ -50,17 +46,17 @@ function computeSnapchatFeedLayout(ctx: LayoutContext): FeedLayoutState {
     },
     snapchat_chat_row_0: {
       id: "snapchat_chat_row_0",
-      rect: rect(px(16), listY + px(8), Math.max(0, w - px(32)), px(72)),
+      rect: rect(16, listY + 8, Math.max(0, w - 32), 72),
       tags: ["list", "row"],
     },
     snapchat_chat_row_0_avatar: {
       id: "snapchat_chat_row_0_avatar",
-      rect: rect(px(16), listY + px(14), px(54), px(54)),
+      rect: rect(16, listY + 14, 54, 54),
       tags: ["list", "avatar"],
     },
     snapchat_chat_row_0_content: {
       id: "snapchat_chat_row_0_content",
-      rect: rect(px(82), listY + px(18), Math.max(0, w - px(98)), px(42)),
+      rect: rect(82, listY + 18, Math.max(0, w - 98), 42),
       tags: ["list", "content"],
     },
   };
@@ -81,11 +77,9 @@ function computeSnapchatChatLayout(ctx: LayoutContext): ChatLayoutState {
   const { viewportWidth: w, viewportHeight: h, appViewport } = ctx;
   const contentTop = appViewport.interactiveInsets.top;
   const contentBottom = appViewport.interactiveInsets.bottom;
-  const scale = w / DESIGN_WIDTH;
-  const px = (v: number) => v * scale;
 
-  const headerH = contentTop + px(snapchatSpacing.headerHeight);
-  const composerH = px(snapchatSpacing.inputHeight) + contentBottom;
+  const headerH = contentTop + snapchatSpacing.headerHeight;
+  const composerH = snapchatSpacing.inputHeight + contentBottom;
   const composerY = Math.max(0, h - composerH);
   const threadY = headerH;
   const threadH = Math.max(0, composerY - threadY);
@@ -106,7 +100,7 @@ function computeSnapchatChatLayout(ctx: LayoutContext): ChatLayoutState {
     },
     snapchat_last_message: {
       id: "snapchat_last_message",
-      rect: rect(px(22), threadY + Math.max(0, threadH - px(120)), Math.max(0, w - px(44)), px(72)),
+      rect: rect(22, threadY + Math.max(0, threadH - 120), Math.max(0, w - 44), 72),
       tags: ["thread", "message", "latest"],
     },
     snapchat_composer: {
@@ -117,7 +111,7 @@ function computeSnapchatChatLayout(ctx: LayoutContext): ChatLayoutState {
     },
     snapchat_input: {
       id: "snapchat_input",
-      rect: rect(px(56), composerY + px(10), Math.max(0, w - px(122)), px(36)),
+      rect: rect(56, composerY + 10, Math.max(0, w - 122), 36),
       tags: ["composer", "input"],
     },
   };

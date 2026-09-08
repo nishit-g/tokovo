@@ -9,15 +9,15 @@ import {
 function resolveValidationProfiles(): TokovoCatalogProfile[] {
   return [
     resolveCatalogProfile(
-    process.env.TOKOVO_EPISODE_CATALOG_PROFILE,
-    'studio',
-  ),
+      process.env.TOKOVO_EPISODE_CATALOG_PROFILE,
+      'showcase',
+    ),
   ]
 }
 
 function main(): void {
   const profiles = resolveValidationProfiles()
-  const runtime = createTokovoRuntime('studio')
+  const runtime = createTokovoRuntime('showcase')
   const registry = createEpisodeRegistryForProfiles(profiles)
 
   for (const episode of registry.all()) {

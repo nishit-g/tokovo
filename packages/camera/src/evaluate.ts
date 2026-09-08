@@ -6,7 +6,13 @@ import type {
   CameraShotIR,
   CinematicSubjectRefIR,
 } from "@tokovo/ir";
-import { interpolateCameraPose, minimumJerk, solveComposer } from "./composer.js";
+import {
+  interpolateCameraPose,
+  measureCameraMount,
+  minimumJerk,
+  solveComposer,
+  stabilizeCameraPose,
+} from "./composer.js";
 import type { CameraRegistries } from "./lenses.js";
 import { requireEditorialCompositionProfile } from "@tokovo/visual-system";
 import { applyCameraModifiers } from "./modifiers.js";
@@ -114,7 +120,8 @@ function selectShots(
 type CameraRigResolution =
   | { status: "resolved"; evaluation: CameraRigEvaluation }
   | { status: "subject-missing" }
-  | { status: "framing-guard-missing" };
+  | { status: "framing-guard-missing" }
+  | { status: "mount-missing" };
 
 function evaluateRig(
   rig: CameraRigIR,
@@ -129,12 +136,18 @@ function evaluateRig(
   if (rig.framingGuard && !framingGuardSubjects) {
     return { status: "framing-guard-missing" };
   }
+  const mountSubjects =
+    rig.travel.mode === "stabilized" ? resolveSubjects(rig.travel.mount.subject, available) : [];
+  if (rig.travel.mode === "stabilized" && !mountSubjects) {
+    return { status: "mount-missing" };
+  }
   return {
     status: "resolved",
     evaluation: {
       rig,
       subjects: subjectResolution.subjects,
       framingGuardSubjects: framingGuardSubjects ?? [],
+      mountSubjects: mountSubjects ?? [],
       subjectResolution: subjectResolution.source,
     },
   };
@@ -199,8 +212,20 @@ function evaluateRigFrame(input: {
   const framingGuardBounds = input.evaluation.framingGuardSubjects.length
     ? unionRects(input.evaluation.framingGuardSubjects.map((subject) => subject.worldRect))
     : undefined;
+  const mountBounds = input.evaluation.mountSubjects.length
+    ? unionRects(input.evaluation.mountSubjects.map((subject) => subject.worldRect))
+    : undefined;
   const basePose = solveComposer({
     subjectBounds,
+    mountBounds,
+    mountScreenPosition:
+      input.evaluation.rig.travel.mode === "stabilized"
+        ? input.evaluation.rig.travel.mount.screenPosition
+        : undefined,
+    mountMaxDriftPx:
+      input.evaluation.rig.travel.mode === "stabilized"
+        ? input.evaluation.rig.travel.mount.maxDriftPx
+        : undefined,
     framingGuardBounds,
     framingGuardPaddingPx: input.evaluation.rig.framingGuard?.paddingPx,
     framingGuardScreenPosition: input.evaluation.rig.framingGuard?.screenPosition,
@@ -604,6 +629,19 @@ export function evaluateCameraOutput(
         }),
       ]);
     }
+    if (resolution.status === "mount-missing") {
+      throw new CameraEvaluationError([
+        diagnostic({
+          program,
+          outputId,
+          frame,
+          code: "CAM_STABILIZATION_MOUNT_SUBJECT_MISSING",
+          message: `Shot "${shot.id}" could not resolve rig "${rig.id}" stabilization mount.`,
+          shotId: shot.id,
+          rigId: rig.id,
+        }),
+      ]);
+    }
     if (shot.missingSubjectPolicy.type === "error") {
       throw new CameraEvaluationError([
         diagnostic({
@@ -633,6 +671,18 @@ export function evaluateCameraOutput(
           frame,
           code: "CAM_DEFAULT_FRAMING_GUARD_SUBJECT_MISSING",
           message: `Output "${outputId}" could not resolve default rig "${output.defaultRigId}" framing guard.`,
+          rigId: output.defaultRigId,
+        }),
+      ]);
+    }
+    if (resolution.status === "mount-missing") {
+      throw new CameraEvaluationError([
+        diagnostic({
+          program,
+          outputId,
+          frame,
+          code: "CAM_DEFAULT_STABILIZATION_MOUNT_SUBJECT_MISSING",
+          message: `Output "${outputId}" could not resolve default rig "${output.defaultRigId}" stabilization mount.`,
           rigId: output.defaultRigId,
         }),
       ]);
@@ -691,6 +741,19 @@ export function evaluateCameraOutput(
           }),
         ]);
       }
+      if (previous.status === "mount-missing") {
+        throw new CameraEvaluationError([
+          diagnostic({
+            program,
+            outputId,
+            frame,
+            code: "CAM_TRANSITION_SOURCE_MOUNT_SUBJECT_MISSING",
+            message: `Shot "${activeShot.id}" could not resolve its transition source stabilization mount.`,
+            shotId: activeShot.id,
+            rigId: selected.rig.id,
+          }),
+        ]);
+      }
       if (previous.status === "resolved") {
         sourceRigId = previous.evaluation.rig.id;
         const source = evaluateRigFrame({
@@ -720,6 +783,19 @@ export function evaluateCameraOutput(
     };
   }
 
+  if (selected.rig.travel.mode === "stabilized") {
+    const mountBounds = unionRects(selected.mountSubjects.map((subject) => subject.worldRect));
+    pose = stabilizeCameraPose({
+      pose,
+      mountBounds,
+      mountScreenPosition: selected.rig.travel.mount.screenPosition,
+      mountMaxDriftPx: selected.rig.travel.mount.maxDriftPx,
+      viewport: output.viewport,
+      compositionProfileId: output.compositionProfileId,
+      editorialInsets: output.editorialInsets,
+    });
+  }
+
   const subjectBounds = unionRects(
     selected.subjects.map((subject) => subject.clippedWorldRect ?? subject.worldRect),
   );
@@ -741,7 +817,6 @@ export function evaluateCameraOutput(
       "cropCompensation" in pass ? Math.max(maximum, pass.cropCompensation) : maximum,
     1,
   );
-
   return {
     frame,
     outputId,
@@ -789,6 +864,39 @@ export function evaluateCameraOutput(
             })),
           }
         : null,
+      travel:
+        selected.rig.travel.mode === "stabilized"
+          ? (() => {
+              const measurement = measureCameraMount({
+                pose,
+                mountBounds: unionRects(selected.mountSubjects.map((subject) => subject.worldRect)),
+                mountScreenPosition: selected.rig.travel.mount.screenPosition,
+                mountMaxDriftPx: selected.rig.travel.mount.maxDriftPx,
+                viewport: output.viewport,
+                compositionProfileId: output.compositionProfileId,
+                editorialInsets: output.editorialInsets,
+              });
+              return {
+                mode: "stabilized" as const,
+                screenPosition: selected.rig.travel.mount.screenPosition,
+                projectedCenter: measurement.projectedCenter,
+                desiredCenter: measurement.desiredCenter,
+                driftPx: measurement.driftPx,
+                maxDriftPx: measurement.maxDriftPx,
+                subjects: selected.mountSubjects.map((subject) => ({
+                  key: cinematicSubjectKey(subject.ref),
+                  nodeId: subject.nodeId,
+                  worldRect: subject.worldRect,
+                  sourceVersion: subject.sourceVersion,
+                  ownerId: subject.provenance.ownerId,
+                  regionId: subject.provenance.regionId,
+                })),
+              };
+            })()
+          : {
+              mode: "intentional",
+              reason: selected.rig.travel.reason,
+            },
       constraints: {
         compositionProfileId: output.compositionProfileId,
         editorialInsets: resolveOutputEditorialInsets(output),

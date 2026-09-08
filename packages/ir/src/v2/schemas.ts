@@ -137,7 +137,7 @@ const CameraBlendSchema = z
 
 export const CameraPlanSchema: z.ZodType<import("./camera-vnext.js").CameraPlanIR> = z
   .object({
-    version: z.literal(1),
+    version: z.literal(2),
     id: z.string().min(1),
     fps: z.number().int().positive(),
     durationInFrames: z.number().int().positive(),
@@ -191,6 +191,32 @@ export const CameraPlanSchema: z.ZodType<import("./camera-vnext.js").CameraPlanI
             outputId: z.string().min(1),
             subject: CinematicSubjectRefSchema,
             composer: CameraComposerSchema,
+            travel: z.discriminatedUnion("mode", [
+              z
+                .object({
+                  mode: z.literal("stabilized"),
+                  mount: z
+                    .object({
+                      subject: CinematicSubjectRefSchema,
+                      screenPosition: z.tuple([
+                        z.number().finite().min(0).max(1),
+                        z.number().finite().min(0).max(1),
+                      ]),
+                      maxDriftPx: z.tuple([
+                        z.number().finite().nonnegative(),
+                        z.number().finite().nonnegative(),
+                      ]),
+                    })
+                    .strict(),
+                })
+                .strict(),
+              z
+                .object({
+                  mode: z.literal("intentional"),
+                  reason: z.string().trim().min(1),
+                })
+                .strict(),
+            ]),
             framingGuard: z
               .object({
                 subject: CinematicSubjectRefSchema,

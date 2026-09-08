@@ -49,8 +49,13 @@ export function getSenderColor(senderId: string): string {
 export function getMemberColor(member?: {
   id: string;
   colorIndex?: number;
+  accentColor?: string;
 }): string {
   if (!member) return WHATSAPP_GROUP_SENDER_COLORS[0];
+
+  if (member.accentColor) {
+    return member.accentColor;
+  }
 
   // If explicitly assigned colorIndex, use it
   if (member.colorIndex !== undefined) {
@@ -61,6 +66,38 @@ export function getMemberColor(member?: {
 
   // Otherwise, compute from ID
   return getSenderColor(member.id);
+}
+
+/**
+ * Choose a deterministic readable foreground for authored member accents.
+ * Explicit authoring wins; hex accents otherwise use WCAG relative luminance.
+ */
+export function getMemberOnAccentColor(member?: {
+  accentColor?: string;
+  onAccentColor?: string;
+}): string | undefined {
+  if (!member?.accentColor) return undefined;
+  if (member.onAccentColor) return member.onAccentColor;
+
+  const normalized = member.accentColor.trim();
+  const shortHex = /^#([\da-f])([\da-f])([\da-f])$/i.exec(normalized);
+  const longHex = /^#([\da-f]{2})([\da-f]{2})([\da-f]{2})$/i.exec(normalized);
+  const channels = shortHex
+    ? shortHex.slice(1).map((channel) => Number.parseInt(`${channel}${channel}`, 16))
+    : longHex
+      ? longHex.slice(1).map((channel) => Number.parseInt(channel, 16))
+      : undefined;
+
+  if (!channels) return "#171C31";
+
+  const linear = channels.map((channel) => {
+    const value = channel / 255;
+    return value <= 0.04045
+      ? value / 12.92
+      : ((value + 0.055) / 1.055) ** 2.4;
+  });
+  const luminance = 0.2126 * linear[0] + 0.7152 * linear[1] + 0.0722 * linear[2];
+  return luminance > 0.42 ? "#171C31" : "#FFF8EF";
 }
 
 /**

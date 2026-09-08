@@ -1,6 +1,7 @@
 import {
   getInputDisplayDraft,
   inferTextDirection,
+  sliceGraphemes,
   type InputProjection,
   type PreparedInputOperation,
   type PreparedInputProgram,
@@ -8,6 +9,16 @@ import {
 } from "../contract/index.js";
 import { evaluateInputSession } from "../runtime/evaluate.js";
 import { resolveInputExperience } from "../experience/index.js";
+
+const experiences = new WeakMap<PreparedInputSession, ReturnType<typeof resolveInputExperience>>();
+function sessionExperience(session: PreparedInputSession) {
+  let experience = experiences.get(session);
+  if (!experience) {
+    experience = resolveInputExperience({ platform: session.keyboard.platform, appearance: session.keyboard.appearance, locale: session.keyboard.locale.tag, platformProfileId: session.keyboard.platformProfileId, preferences: session.keyboard.visualPreferences });
+    experiences.set(session, experience);
+  }
+  return experience;
+}
 
 export interface InputProjectionConfig {
   fps: number;
@@ -24,15 +35,9 @@ export function findInputSessionForProjection(
   frame: number,
   fps: number,
 ): PreparedInputSession | undefined {
-  return program.sessions.find((session) => {
+  return program.sessions.findLast((session) => {
     if (session.deviceId !== deviceId || frame < session.startFrame) return false;
-    const experience = resolveInputExperience({
-      platform: session.keyboard.platform,
-      appearance: session.keyboard.appearance,
-      locale: session.keyboard.locale.tag,
-      platformProfileId: session.keyboard.platformProfileId,
-      preferences: session.keyboard.visualPreferences,
-    });
+    const experience = sessionExperience(session);
     const exitFrames = Math.max(1, Math.round(experience.theme.motion.exitDurationSeconds * fps));
     return frame <= session.endFrame + exitFrames;
   });
@@ -50,16 +55,17 @@ function getSurfaceProgress(
   session: PreparedInputSession,
   frame: number,
   duration: number,
+  exitDuration: number,
 ): number {
   if (frame < session.startFrame) return 0;
+  if (frame >= session.endFrame) {
+    const entered = easeOutCubic(clamp01((session.endFrame - session.startFrame) / duration));
+    return entered * (1 - easeOutCubic(clamp01((frame - session.endFrame) / exitDuration)));
+  }
   if (frame < session.startFrame + duration) {
     return easeOutCubic(clamp01((frame - session.startFrame) / Math.max(1, duration)));
   }
-  if (frame < session.endFrame) return 1;
-  if (frame < session.endFrame + duration) {
-    return 1 - easeOutCubic(clamp01((frame - session.endFrame) / Math.max(1, duration)));
-  }
-  return 0;
+  return 1;
 }
 
 function operationKey(
@@ -101,25 +107,23 @@ function operationKey(
   }
 }
 
-function getActiveKey(session: PreparedInputSession, frame: number): string | null {
-  let active: { key: string; at: number; sequence: number } | undefined;
-  for (const operation of session.operations) {
-    if (operation.at > frame) continue;
-    const resolved = operationKey(operation, session);
-    if (!resolved || frame >= operation.at + resolved.duration) continue;
-    if (
-      !active ||
-      operation.at > active.at ||
-      (operation.at === active.at && operation.sequence > active.sequence)
-    ) {
-      active = {
-        key: resolved.key,
-        at: operation.at,
-        sequence: operation.sequence,
-      };
-    }
+const keyOperations = new WeakMap<PreparedInputSession, readonly PreparedInputOperation[]>();
+function getActiveOperation(session: PreparedInputSession, frame: number): PreparedInputOperation | undefined {
+  let operations = keyOperations.get(session);
+  if (!operations) {
+    operations = session.operations.filter((op) => operationKey(op, session)).sort((a, b) => a.at - b.at || a.sequence - b.sequence);
+    keyOperations.set(session, operations);
   }
-  return active?.key ?? null;
+  let low = 0;
+  let high = operations.length;
+  while (low < high) {
+    const middle = (low + high) >>> 1;
+    if (operations[middle].at <= frame) low = middle + 1;
+    else high = middle;
+  }
+  const operation = operations[low - 1];
+  const key = operation && operationKey(operation, session);
+  return operation && key && frame < operation.at + key.duration ? operation : undefined;
 }
 
 export function projectInputSession(
@@ -137,6 +141,7 @@ export function projectInputSession(
   }
 
   const state = evaluateInputSession(session, frame);
+  const experience = sessionExperience(session);
   const displayDraft = getInputDisplayDraft(state, session.keyboard.locale.tag);
   const direction =
     session.direction === "auto"
@@ -147,25 +152,18 @@ export function projectInputSession(
     Math.max(
       1,
       Math.round(
-        config.fps *
-          resolveInputExperience({
-            platform: session.keyboard.platform,
-            appearance: session.keyboard.appearance,
-            locale: session.keyboard.locale.tag,
-            platformProfileId: session.keyboard.platformProfileId,
-            preferences: session.keyboard.visualPreferences,
-          }).theme.motion.entranceDurationSeconds,
+        config.fps * experience.theme.motion.entranceDurationSeconds,
       ),
     );
-  const progress = getSurfaceProgress(session, frame, transitionDuration);
+  const exitDuration = config.transitionDurationFrames ?? Math.max(1, Math.round(config.fps * experience.theme.motion.exitDurationSeconds));
+  const progress = getSurfaceProgress(session, frame, transitionDuration, exitDuration);
   const viewportInset = config.keyboardHeight * progress;
-  const experience = resolveInputExperience({
-    platform: session.keyboard.platform,
-    appearance: session.keyboard.appearance,
-    locale: session.keyboard.locale.tag,
-    platformProfileId: session.keyboard.platformProfileId,
-    preferences: session.keyboard.visualPreferences,
-  });
+  const beforeCursor = sliceGraphemes(displayDraft, 0, state.selection.focus, session.keyboard.locale.tag);
+  const activeInsert = getActiveOperation(session, frame);
+  const uppercase = activeInsert?.type === "insert" && /\p{Lu}/u.test(activeInsert.text)
+    || session.keyboard.autocapitalization === "characters"
+    || session.keyboard.autocapitalization === "words" && /(?:^|\s)$/u.test(beforeCursor)
+    || session.keyboard.autocapitalization === "sentences" && /(?:^|[.!?]\s+)$/u.test(beforeCursor);
 
   return {
     sessionId: session.id,
@@ -196,7 +194,8 @@ export function projectInputSession(
       theme: experience.theme,
       presentation: experience.presentation,
       returnKey: session.keyboard.returnKey,
-      activeKey: getActiveKey(session, frame),
+      activeKey: activeInsert ? operationKey(activeInsert, session)?.key ?? null : null,
+      uppercase,
       suggestions: [...state.suggestions],
       candidateMode: state.suggestions.length > 0 ? "suggestions" : "toolbar",
       activeSuggestionIndex: state.activeSuggestionIndex,

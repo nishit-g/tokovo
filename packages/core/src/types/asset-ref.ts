@@ -50,6 +50,8 @@ export interface PluginAssetCollectorContext<AppId extends string = string> {
   events: RuntimeEvent[];
 }
 
-export type PluginAssetCollector<AppId extends string = string> = (
-  context: PluginAssetCollectorContext<AppId>,
-) => EpisodeAssetRef[];
+export type PluginAssetCollector<AppId extends string = string> = {
+  bivarianceHack(
+    context: PluginAssetCollectorContext<AppId>,
+  ): EpisodeAssetRef[];
+}["bivarianceHack"];

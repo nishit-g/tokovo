@@ -10,7 +10,7 @@ import {
 describe("Camera VNext IR", () => {
   it("round-trips CameraPlan and StageProgram through JSON without Maps or functions", () => {
     const plan: CameraPlanIR = {
-      version: 1,
+      version: 2,
       id: "json-contract",
       fps: 60,
       durationInFrames: 120,
@@ -34,6 +34,14 @@ describe("Camera VNext IR", () => {
             screenPosition: [0.5, 0.5],
             targetFill: 0.9,
             fillMode: "contain",
+          },
+          travel: {
+            mode: "stabilized",
+            mount: {
+              subject: { kind: "device", deviceId: "phone", subjectId: "body" },
+              screenPosition: [0.5, 0.5],
+              maxDriftPx: [54, 72],
+            },
           },
           framingGuard: {
             subject: { kind: "device", deviceId: "phone", subjectId: "body" },
@@ -73,7 +81,7 @@ describe("Camera VNext IR", () => {
     expect(() => CinematicSubjectRefSchema.parse({ kind: "group", members: [] })).toThrow();
 
     const base = CameraPlanSchema.parse({
-      version: 1,
+      version: 2,
       id: "validation",
       fps: 60,
       durationInFrames: 120,
@@ -98,6 +106,10 @@ describe("Camera VNext IR", () => {
             targetFill: 0.9,
             fillMode: "contain",
           },
+          travel: {
+            mode: "intentional",
+            reason: "Schema fixture isolates lens validation.",
+          },
         },
       ],
       shots: [],
@@ -119,6 +131,8 @@ describe("Camera VNext IR", () => {
         ],
       }),
     ).toThrow();
+
+    expect(() => CameraPlanSchema.parse({ ...base, version: 1 })).toThrow();
 
     expect(() =>
       CameraPlanSchema.parse({

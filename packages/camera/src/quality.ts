@@ -34,6 +34,14 @@ export function cameraQualitySample(output: EvaluatedCameraOutput): CameraQualit
     cropCompensation: output.trace.quality.cropCompensation,
     intentionalDiscontinuity:
       output.trace.transition?.durationFrames === 0 || output.trace.transition?.whipActive === true,
+    travel:
+      output.trace.travel.mode === "stabilized"
+        ? {
+            mode: "stabilized",
+            driftPx: output.trace.travel.driftPx,
+            maxDriftPx: output.trace.travel.maxDriftPx,
+          }
+        : { mode: "intentional" },
   };
 }
 
@@ -113,6 +121,13 @@ export function analyzeCameraTemporalQuality(
         .slice(1)
         .map((acceleration, index) => Math.abs(acceleration - accelerations[index]));
       const fills = ordered.map((sample) => sample.subjectFillRatio);
+      const stabilized = ordered.filter(
+        (
+          sample,
+        ): sample is CameraQualitySample & {
+          travel: Extract<CameraQualitySample["travel"], { mode: "stabilized" }>;
+        } => sample.travel.mode === "stabilized",
+      );
       ordered.forEach((sample) => {
         if (
           !Number.isFinite(sample.subjectFillRatio) ||
@@ -124,6 +139,18 @@ export function analyzeCameraTemporalQuality(
             outputId,
             frame: sample.frame,
             message: `Camera output "${outputId}" has invalid subject fill ${sample.subjectFillRatio} at frame ${sample.frame}.`,
+          });
+        }
+        if (
+          sample.travel.mode === "stabilized" &&
+          (Math.abs(sample.travel.driftPx[0]) > sample.travel.maxDriftPx[0] + 0.5 ||
+            Math.abs(sample.travel.driftPx[1]) > sample.travel.maxDriftPx[1] + 0.5)
+        ) {
+          violations.push({
+            code: "CAM_QUALITY_MOUNT_DRIFT",
+            outputId,
+            frame: sample.frame,
+            message: `Camera output "${outputId}" exceeds its semantic mount dead zone at frame ${sample.frame}: drift ${round(sample.travel.driftPx[0])}px × ${round(sample.travel.driftPx[1])}px, allowed ${sample.travel.maxDriftPx[0]}px × ${sample.travel.maxDriftPx[1]}px.`,
           });
         }
       });
@@ -140,13 +167,19 @@ export function analyzeCameraTemporalQuality(
         fallbackFrameCount: ordered.filter(
           (sample) => sample.subjectResolution === "explicit-fallback",
         ).length,
+        stabilizedFrameCount: stabilized.length,
+        intentionalTravelFrameCount: ordered.length - stabilized.length,
+        maximumMountDriftPx: [
+          round(Math.max(0, ...stabilized.map((sample) => Math.abs(sample.travel.driftPx[0])))),
+          round(Math.max(0, ...stabilized.map((sample) => Math.abs(sample.travel.driftPx[1])))),
+        ] as const,
         cropCompensationChangeCount,
         discontinuityFrames: discontinuities,
         missingFrameRanges: gaps,
       };
     });
   return {
-    version: 1,
+    version: 2,
     passed: violations.length === 0,
     sampleCount: samples.length,
     outputs,

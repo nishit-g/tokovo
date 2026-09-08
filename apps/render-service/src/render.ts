@@ -15,23 +15,33 @@ import {
   getRenderServiceErrorData,
   toRenderServiceError,
 } from "./errors";
-import { RenderLogger } from "./logger";
+import { RenderLogger, type RenderProgressEvent } from "./logger";
 import { assertRenderPreflight } from "./preflight";
 import { getRenderProfile, type RenderProfileId } from "./profiles";
 import { renderEpisodeMedia } from "./remotion";
 import {
   explainEpisodeCameraFrame,
+  explainRenderDataCameraFrame,
   getEpisodeCameraArtifact,
   getEpisodeCameraProgramManifests,
+  getRenderDataCameraArtifact,
+  getRenderDataCameraProgramManifests,
 } from "video-runner/camera-diagnostics";
+import type { EpisodeRenderData } from "video-runner/render-data";
 
 export type RenderEpisodeOptions = {
   episodeId: string;
   jobId: string;
   profile: RenderProfileId;
+  /**
+   * Immutable prepared input supplied by a non-catalog caller.
+   * When omitted, the catalog registry remains the source of render data.
+   */
+  renderData?: EpisodeRenderData;
   cameraPlanId?: string;
   /** Inclusive source frames for deterministic chunks and release probes. */
   frameRange?: [number, number];
+  onProgress?: (event: RenderProgressEvent) => void | Promise<void>;
 };
 
 export type RenderEpisodeResult = {
@@ -115,17 +125,33 @@ export async function renderEpisodeArtifact(
   const startedAt = Date.now();
   const profile = getRenderProfile(options.profile);
   const paths = await createRenderArtifactPaths(options);
-  const logger = new RenderLogger(paths.logsPath, {
-    episodeId: options.episodeId,
-    jobId: options.jobId,
-    profile: profile.id,
-  });
+  const logger = new RenderLogger(
+    paths.logsPath,
+    {
+      episodeId: options.episodeId,
+      jobId: options.jobId,
+      profile: profile.id,
+    },
+    options.onProgress,
+  );
   await logger.init();
   await logger.info("render.start", "Starting render", {
     episodeId: options.episodeId,
     jobId: options.jobId,
     profile: profile.id,
+    sourceSignature: options.renderData?.sourceSignature,
   });
+  if (options.renderData && options.renderData.episodeId !== options.episodeId) {
+    throw createRenderServiceError({
+      code: "RENDER_DATA_EPISODE_MISMATCH",
+      stage: "bootstrap",
+      message: `Prepared render data belongs to "${options.renderData.episodeId}", not "${options.episodeId}".`,
+      details: {
+        episodeId: options.episodeId,
+        renderDataEpisodeId: options.renderData.episodeId,
+      },
+    });
+  }
   let camera: Awaited<ReturnType<typeof getEpisodeCameraArtifact>> | undefined;
 
   try {
@@ -136,11 +162,18 @@ export async function renderEpisodeArtifact(
       durationMs: preflightMs,
     });
 
-    camera = await getEpisodeCameraArtifact({
-      episodeId: options.episodeId,
-      cameraPlanId: options.cameraPlanId,
-    });
-    const cameraPrograms = await getEpisodeCameraProgramManifests(options.episodeId);
+    camera = options.renderData
+      ? getRenderDataCameraArtifact({
+          renderData: options.renderData,
+          cameraPlanId: options.cameraPlanId,
+        })
+      : await getEpisodeCameraArtifact({
+          episodeId: options.episodeId,
+          cameraPlanId: options.cameraPlanId,
+        });
+    const cameraPrograms = options.renderData
+      ? getRenderDataCameraProgramManifests(options.renderData)
+      : await getEpisodeCameraProgramManifests(options.episodeId);
     const diagnosticRange: readonly [number, number] = options.frameRange ?? [
       0,
       camera.program.durationInFrames - 1,
@@ -153,12 +186,19 @@ export async function renderEpisodeArtifact(
     const explanations = await Promise.all(
       camera.program.outputs.flatMap((output) =>
         representativeFrames.map((frame) =>
-          explainEpisodeCameraFrame({
-            episodeId: options.episodeId,
-            cameraPlanId: camera?.selectedCameraPlanId,
-            outputId: output.id,
-            frame,
-          }),
+          options.renderData
+            ? explainRenderDataCameraFrame({
+                renderData: options.renderData,
+                cameraPlanId: camera?.selectedCameraPlanId,
+                outputId: output.id,
+                frame,
+              })
+            : explainEpisodeCameraFrame({
+                episodeId: options.episodeId,
+                cameraPlanId: camera?.selectedCameraPlanId,
+                outputId: output.id,
+                frame,
+              }),
         ),
       ),
     );
@@ -180,6 +220,7 @@ export async function renderEpisodeArtifact(
 
     const renderOutput = await renderEpisodeMedia({
       episodeId: options.episodeId,
+      renderData: options.renderData,
       cameraPlanId: options.cameraPlanId,
       profile,
       outputLocation: paths.videoPath,
@@ -206,6 +247,7 @@ export async function renderEpisodeArtifact(
       version: 1,
       cameraSignature: camera.program.signature,
       sourceSignature: renderOutput.sourceSignature,
+      bundleSourceSignature: renderOutput.bundleSourceSignature,
       sourceFrameRange: renderOutput.sourceFrameRange,
       files: {
         video: { sha256: videoSha256, sizeBytes },
@@ -233,9 +275,11 @@ export async function renderEpisodeArtifact(
       durationInFrames: renderOutput.sourceFrameRange[1] - renderOutput.sourceFrameRange[0] + 1,
       sourceFrameRange: renderOutput.sourceFrameRange,
       sourceSignature: renderOutput.sourceSignature,
+      bundleSourceSignature: renderOutput.bundleSourceSignature,
       camera,
       projectionMode: "render",
       cameraQuality: renderOutput.cameraQuality ?? null,
+      renderCache: "renderCache" in renderOutput ? (renderOutput.renderCache ?? null) : null,
       artifact: artifactRecord,
       timingMs: {
         preflight: preflightMs,
@@ -243,6 +287,9 @@ export async function renderEpisodeArtifact(
         selectComposition: renderOutput.timingMs.selectComposition,
         renderMedia: renderOutput.timingMs.renderMedia,
         renderStill: renderOutput.timingMs.renderStill,
+        ...("cameraTexture" in renderOutput.timingMs
+          ? { cameraTexture: renderOutput.timingMs.cameraTexture }
+          : {}),
         total: Date.now() - startedAt,
       },
       machine: {

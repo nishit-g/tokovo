@@ -1,15 +1,53 @@
 # Performance
 
-Tokovo performance is mostly about keeping runtime replay deterministic and keeping render-time work explicit.
+Tokovo treats release latency and deterministic output as one contract. The same cache key must
+always mean the same pixels, and a speedup may not silently change a release artifact.
+
+## Release Budget
+
+The 38-second `x-the-last-frame` reference release must complete in under five minutes from an
+isolated cache. An unchanged camera rerender must complete in under one minute and under half the
+cold time.
+
+Run the complete budget:
+
+```bash
+mise exec -- pnpm render:benchmark
+```
+
+The benchmark renders cold and warm into an isolated temporary cache, compares MP4 and poster
+hashes, records phase/cache metadata, and fails the budget. The measured reference on the pinned
+Darwin arm64 host is 150.127 seconds cold and 10.648 seconds warm.
+
+## What Is Cached
+
+- camera-independent underlay, RGBA stage, and foreground plates;
+- deterministic 30-frame camera compositor chunks;
+- the Remotion bundle.
+
+Camera plans do not enter plate identity. Compositor chunks use exact frame-local camera transforms
+and effects instead of a whole-plan signature, so a local recut reuses unchanged seconds.
+
+Each plate and chunk has a versioned identity manifest, byte length, and SHA-256 checksum. Corrupt
+entries become cache misses.
 
 ## Main Levers
 
-- keep episode catalogs explicit
-- avoid hidden import-time side effects
-- use preview and fast-render smoke episodes to catch regressions early
+- use the mise-pinned Node and pnpm toolchain;
+- keep the render host's OS, Chromium/Remotion, FFmpeg, fonts, and GL backend pinned;
+- reuse the browser and bundle;
+- measure browser and compositor concurrency independently;
+- keep camera-independent painting out of camera-only revisions;
+- inspect `timingMs.cameraTexture` and `renderCache` in every release metadata file.
 
-## Practical Checks
+## Focused Checks
 
-- `pnpm build:video`
-- `pnpm --filter docs build`
-- `pnpm --filter video-runner render:fast`
+```bash
+mise exec -- pnpm build:video
+mise exec -- pnpm --filter video-runner render:fast
+mise exec -- pnpm --filter @tokovo/render-service test
+mise exec -- pnpm --filter @tokovo/render-service typecheck
+```
+
+The full architecture, cache invalidation table, measured phases, controls, and Remotion/Mediabunny
+decision are in `docs/RENDERING.md`.

@@ -1,4 +1,9 @@
-import React from "react";
+import React, { useMemo } from "react";
+import {
+  compareConversations,
+  matchesChatFilter,
+  selectScreenScroll,
+} from "../../runtime/selectors.js";
 import { useCurrentFrame } from "remotion";
 import { requireAppStateForDevice, WorldState } from "@tokovo/core";
 import { ArchiveIcon, ChevronRightIcon } from "../Icons.js";
@@ -10,10 +15,16 @@ import type {
   WhatsAppState,
   WhatsAppStatusUpdate,
 } from "../../types/index.js";
-import { formatConversationListTimestamp, getBaseTime } from "../../utils/messages.js";
+import {
+  formatConversationListTimestamp,
+  getBaseTime,
+} from "../../utils/messages.js";
 import { resolveTypingMembers } from "../../utils/participants.js";
 import { resolveDeliveryStage } from "../../utils/status.js";
-import { useTheme, useWhatsAppLocale } from "../../experience/ExperienceContext.js";
+import {
+  useTheme,
+  useWhatsAppLocale,
+} from "../../experience/ExperienceContext.js";
 import type { WhatsAppChatFilter } from "../../presentation/strategy.js";
 import type { StatusSegmentState } from "../StatusRing.js";
 import { formatWhatsAppNumber } from "../../localization/index.js";
@@ -46,14 +57,17 @@ function getConversationStatusSegments(
   const identities = new Set([
     normalizeIdentity(conversation.id),
     normalizeIdentity(conversation.name),
-    ...(conversation.members ?? []).map((member) => normalizeIdentity(member.id)),
+    ...(conversation.members ?? []).map((member) =>
+      normalizeIdentity(member.id),
+    ),
   ]);
 
   return statuses
     .filter(
       (status) =>
         identities.has(normalizeIdentity(status.authorId)) ||
-        normalizeIdentity(status.authorName) === normalizeIdentity(conversation.name),
+        normalizeIdentity(status.authorName) ===
+          normalizeIdentity(conversation.name),
     )
     .sort((left, right) => left.postedAt - right.postedAt)
     .map((status) => (status.viewed ? "viewed" : "unviewed"));
@@ -199,7 +213,13 @@ const EmptyState: React.FC<{ filter: WhatsAppChatFilter }> = ({ filter }) => {
           color: theme.colors.accent,
         }}
       >
-        <svg width="42" height="42" viewBox="0 0 48 48" fill="none" aria-hidden="true">
+        <svg
+          width="42"
+          height="42"
+          viewBox="0 0 48 48"
+          fill="none"
+          aria-hidden="true"
+        >
           {glyph === "check" ? (
             <path
               d="m12 25 8 8 17-19"
@@ -217,8 +237,20 @@ const EmptyState: React.FC<{ filter: WhatsAppChatFilter }> = ({ filter }) => {
             />
           ) : glyph === "group" ? (
             <>
-              <circle cx="18" cy="19" r="7" stroke="currentColor" strokeWidth="3" />
-              <circle cx="33" cy="21" r="5" stroke="currentColor" strokeWidth="3" />
+              <circle
+                cx="18"
+                cy="19"
+                r="7"
+                stroke="currentColor"
+                strokeWidth="3"
+              />
+              <circle
+                cx="33"
+                cy="21"
+                r="5"
+                stroke="currentColor"
+                strokeWidth="3"
+              />
               <path
                 d="M7 39c1-8 6-12 11-12s10 4 11 12M28 29c6 0 10 3 11 9"
                 stroke="currentColor"
@@ -299,44 +331,23 @@ export const ChatListScreen: React.FC<ChatListScreenProps> = ({
   );
   const activeFilter = appState.chatFilter ?? "all";
   const statuses = appState.statuses ?? [];
-  const allConversations = (
-    Object.values(appState.conversations || {}) as WhatsAppConversation[]
-  ).sort((a, b) => {
-    // Sort: Pinned first, then by last message time
-    if (a.isPinned && !b.isPinned) return -1;
-    if (!a.isPinned && b.isPinned) return 1;
-
-    const aLastMsg = a.messages?.[a.messages.length - 1];
-    const bLastMsg = b.messages?.[b.messages.length - 1];
-    const aTime = a.lastMessageAt ?? aLastMsg?.at ?? 0;
-    const bTime = b.lastMessageAt ?? bLastMsg?.at ?? 0;
-
-    if (aTime !== bTime) return bTime - aTime;
-    const aName = a.name ?? "";
-    const bName = b.name ?? "";
-    return aName < bName ? -1 : aName > bName ? 1 : 0;
-  });
-
-  // Apply filters
-  const filteredConversations = allConversations.filter((conv) => {
-    if (conv.isArchived) return false; // Don't show archived in main list
-
-    switch (activeFilter) {
-      case "unread":
-        return (conv.unreadCount || 0) > 0;
-      case "favorites":
-        return conv.isPinned;
-      case "groups":
-        return conv.type === "group";
-      case "drafts":
-        return Boolean(conv.draftText?.trim());
-      default:
-        return true;
-    }
-  });
+  const allConversations = useMemo(
+    () => Object.values(appState.conversations).sort(compareConversations),
+    [appState.conversations],
+  );
+  const filteredConversations = useMemo(
+    () =>
+      allConversations.filter((conversation) =>
+        matchesChatFilter(conversation, activeFilter),
+      ),
+    [allConversations, activeFilter],
+  );
 
   // Calculate total unread for tab badge
-  const totalUnread = allConversations.reduce((sum, conv) => sum + (conv.unreadCount || 0), 0);
+  const totalUnread = allConversations.reduce(
+    (sum, conv) => sum + (conv.unreadCount || 0),
+    0,
+  );
 
   // Count archived conversations
   const archivedCount = allConversations.filter((c) => c.isArchived).length;
@@ -368,162 +379,210 @@ export const ChatListScreen: React.FC<ChatListScreenProps> = ({
       <div
         style={{
           flex: 1,
-          overflow: "auto",
+          overflow: "hidden",
           overflowX: "hidden",
           backgroundColor: theme.colors.background,
           paddingBottom: spacing.tabBarHeight + contentInsetBottom,
           WebkitOverflowScrolling: "touch",
         }}
       >
-        {/* Archived Row (only show if there are archived chats and "all" filter is active) */}
-        {archivedCount > 0 && activeFilter === "all" && <ArchivedRow count={archivedCount} />}
+        <div
+          style={{
+            transform: `translateY(${-selectScreenScroll(appState, currentFrame)}px)`,
+          }}
+        >
+          {/* Archived Row (only show if there are archived chats and "all" filter is active) */}
+          {archivedCount > 0 && activeFilter === "all" && (
+            <ArchivedRow count={archivedCount} />
+          )}
 
-        {/* Conversations List */}
-        {filteredConversations.length > 0 ? (
-          <div role="list" aria-label={t("nav.chats")}>
-            {filteredConversations.map((conv, i) => {
-              const messages = conv.messages ?? [];
+          {/* Conversations List */}
+          {filteredConversations.length > 0 ? (
+            <div role="list" aria-label={t("nav.chats")}>
+              {filteredConversations.map((conv, i) => {
+                const messages = conv.messages ?? [];
 
-              const lastMsg = messages.length > 0 ? messages[messages.length - 1] : null;
-              const lastRenderable =
-                [...messages]
-                  .reverse()
-                  .find((msg) => msg.type !== "system" || msg.systemType !== "date_change") ??
-                lastMsg;
+                const lastMsg =
+                  messages.length > 0 ? messages[messages.length - 1] : null;
+                const lastRenderable =
+                  messages.findLast(
+                    (msg) =>
+                      msg.type !== "system" || msg.systemType !== "date_change",
+                  ) ?? lastMsg;
 
-              // Determine media type
-              let mediaType: "photo" | "video" | "voice" | "document" | "gif" | "sticker" | null =
-                null;
-              if (lastRenderable?.type === "image" || lastRenderable?.imageUrl) mediaType = "photo";
-              else if (lastRenderable?.type === "video" || lastRenderable?.videoUrl)
-                mediaType = "video";
-              else if (lastRenderable?.type === "voice") mediaType = "voice";
-              else if (lastRenderable?.type === "document" || lastRenderable?.documentUrl)
-                mediaType = "document";
-              else if (lastRenderable?.type === "gif" || lastRenderable?.gifUrl) mediaType = "gif";
-              else if (lastRenderable?.type === "sticker" || lastRenderable?.stickerUrl)
-                mediaType = "sticker";
+                // Determine media type
+                let mediaType:
+                  | "photo"
+                  | "video"
+                  | "voice"
+                  | "document"
+                  | "gif"
+                  | "sticker"
+                  | null = null;
+                if (
+                  lastRenderable?.type === "image" ||
+                  lastRenderable?.imageUrl
+                )
+                  mediaType = "photo";
+                else if (
+                  lastRenderable?.type === "video" ||
+                  lastRenderable?.videoUrl
+                )
+                  mediaType = "video";
+                else if (lastRenderable?.type === "voice") mediaType = "voice";
+                else if (
+                  lastRenderable?.type === "document" ||
+                  lastRenderable?.documentUrl
+                )
+                  mediaType = "document";
+                else if (
+                  lastRenderable?.type === "gif" ||
+                  lastRenderable?.gifUrl
+                )
+                  mediaType = "gif";
+                else if (
+                  lastRenderable?.type === "sticker" ||
+                  lastRenderable?.stickerUrl
+                )
+                  mediaType = "sticker";
 
-              // Determine sender name for groups
-              let senderName: string | undefined;
-              if (conv.type === "group" && lastRenderable) {
-                if (lastRenderable.from === "me") {
-                  senderName = t("chat.you");
-                } else if (lastRenderable.senderName) {
-                  senderName = lastRenderable.senderName;
-                } else if (lastRenderable.from) {
-                  // Try to get name from members
-                  const member = conv.members?.find((m) => m.id === lastRenderable.from);
-                  senderName = member?.name || lastRenderable.from;
-                }
-              } else if (lastRenderable?.from === "me") {
-                senderName = undefined; // Don't show "You:" for DMs
-              }
-
-              // Determine read status
-              let status: "sending" | "sent" | "delivered" | "read" | "failed" | undefined;
-              if (lastRenderable?.from === "me") {
-                status = resolveDeliveryStage(lastRenderable, currentFrame);
-              }
-
-              // Check if someone is typing
-              const typingMembers = resolveTypingMembers(conv);
-              const isTyping = typingMembers.length > 0;
-              const typingText = (() => {
-                if (!isTyping) return undefined;
-                if (conv.type !== "group") return t("chat.typing");
-                if (typingMembers.length === 1)
-                  return t("chat.memberTyping", { name: typingMembers[0].name });
-                return t("chat.manyMembersTyping", {
-                  first: typingMembers[0].name,
-                  count: typingMembers.length - 1,
-                });
-              })();
-
-              const lastMessagePreview = (() => {
-                if (!lastRenderable) return t("chat.noMessages");
-                if (lastRenderable.text) return lastRenderable.text;
-                switch (lastRenderable.type) {
-                  case "contact":
-                    return t("message.contact");
-                  case "location":
-                    return t("message.location");
-                  case "system":
-                    return lastRenderable.text ?? t("message.systemUpdate");
-                  case "call":
-                    return lastRenderable.callType === "video"
-                      ? t("message.videoCall")
-                      : t("message.voiceCall");
-                  case "call_missed":
-                    return lastRenderable.callType === "video"
-                      ? t("message.missedVideoCall")
-                      : t("message.missedVoiceCall");
-                  case "screenshot_alert":
-                    return t("message.screenshotAlert");
-                  case "document":
-                    return lastRenderable.fileName
-                      ? t("message.documentNamed", {
-                          name: lastRenderable.fileName,
-                        })
-                      : t("message.document");
-                  case "voice":
-                    return t("message.voice");
-                  case "gif":
-                    return t("message.gif");
-                  case "sticker":
-                    return t("message.sticker");
-                  case "image":
-                    return t("message.photo");
-                  case "video":
-                    return t("message.video");
-                  default:
-                    return t("message.media");
-                }
-              })();
-
-              return (
-                <ChatListItem
-                  key={conv.id}
-                  id={conv.id}
-                  name={conv.name || t("chat.unknown")}
-                  avatarUrl={conv.avatar}
-                  groupAvatars={
-                    conv.type === "group"
-                      ? conv.members
-                          ?.map((m) => m.avatar)
-                          .filter((avatar): avatar is string => Boolean(avatar))
-                      : undefined
+                // Determine sender name for groups
+                let senderName: string | undefined;
+                if (conv.type === "group" && lastRenderable) {
+                  if (lastRenderable.from === "me") {
+                    senderName = t("chat.you");
+                  } else if (lastRenderable.senderName) {
+                    senderName = lastRenderable.senderName;
+                  } else if (lastRenderable.from) {
+                    // Try to get name from members
+                    const member = conv.members?.find(
+                      (m) => m.id === lastRenderable.from,
+                    );
+                    senderName = member?.name || lastRenderable.from;
                   }
-                  lastMessage={lastMessagePreview}
-                  timestamp={
-                    formatConversationListTimestamp(
-                      lastRenderable?.timestampMs ?? lastMsg?.timestampMs,
-                      baseTime,
-                      locale,
-                    ) ||
-                    lastRenderable?.timestamp ||
-                    lastMsg?.timestamp ||
-                    ""
+                } else if (lastRenderable?.from === "me") {
+                  senderName = undefined; // Don't show "You:" for DMs
+                }
+
+                // Determine read status
+                let status:
+                  | "sending"
+                  | "sent"
+                  | "delivered"
+                  | "read"
+                  | "failed"
+                  | undefined;
+                if (lastRenderable?.from === "me") {
+                  status = resolveDeliveryStage(lastRenderable, currentFrame);
+                }
+
+                // Check if someone is typing
+                const typingMembers = resolveTypingMembers(conv);
+                const isTyping = typingMembers.length > 0;
+                const typingText = (() => {
+                  if (!isTyping) return undefined;
+                  if (conv.type !== "group") return t("chat.typing");
+                  if (typingMembers.length === 1)
+                    return t("chat.memberTyping", {
+                      name: typingMembers[0].name,
+                    });
+                  return t("chat.manyMembersTyping", {
+                    first: typingMembers[0].name,
+                    count: typingMembers.length - 1,
+                  });
+                })();
+
+                const lastMessagePreview = (() => {
+                  if (!lastRenderable) return t("chat.noMessages");
+                  if (lastRenderable.text) return lastRenderable.text;
+                  switch (lastRenderable.type) {
+                    case "contact":
+                      return t("message.contact");
+                    case "location":
+                      return t("message.location");
+                    case "system":
+                      return lastRenderable.text ?? t("message.systemUpdate");
+                    case "call":
+                      return lastRenderable.callType === "video"
+                        ? t("message.videoCall")
+                        : t("message.voiceCall");
+                    case "call_missed":
+                      return lastRenderable.callType === "video"
+                        ? t("message.missedVideoCall")
+                        : t("message.missedVoiceCall");
+                    case "screenshot_alert":
+                      return t("message.screenshotAlert");
+                    case "document":
+                      return lastRenderable.fileName
+                        ? t("message.documentNamed", {
+                            name: lastRenderable.fileName,
+                          })
+                        : t("message.document");
+                    case "voice":
+                      return t("message.voice");
+                    case "gif":
+                      return t("message.gif");
+                    case "sticker":
+                      return t("message.sticker");
+                    case "image":
+                      return t("message.photo");
+                    case "video":
+                      return t("message.video");
+                    default:
+                      return t("message.media");
                   }
-                  unreadCount={conv.unreadCount || 0}
-                  status={status}
-                  isTyping={isTyping}
-                  isLast={i === filteredConversations.length - 1}
-                  isMuted={conv.isMuted}
-                  isPinned={conv.isPinned}
-                  statusSegments={getConversationStatusSegments(conv, statuses)}
-                  mediaType={mediaType}
-                  senderName={senderName}
-                  typingText={typingText}
-                  locked={conv.preferences?.chatLock}
-                  verifiedBusiness={conv.contact?.verifiedBusiness}
-                />
-              );
-            })}
-          </div>
-        ) : (
-          <EmptyState filter={activeFilter} />
-        )}
+                })();
+
+                return (
+                  <ChatListItem
+                    key={conv.id}
+                    id={conv.id}
+                    name={conv.name || t("chat.unknown")}
+                    avatarUrl={conv.avatar}
+                    groupAvatars={
+                      conv.type === "group"
+                        ? conv.members
+                            ?.map((m) => m.avatar)
+                            .filter((avatar): avatar is string =>
+                              Boolean(avatar),
+                            )
+                        : undefined
+                    }
+                    lastMessage={lastMessagePreview}
+                    draftText={conv.draftText}
+                    timestamp={
+                      formatConversationListTimestamp(
+                        lastRenderable?.timestampMs ?? lastMsg?.timestampMs,
+                        baseTime,
+                        locale,
+                      ) ||
+                      lastRenderable?.timestamp ||
+                      lastMsg?.timestamp ||
+                      ""
+                    }
+                    unreadCount={conv.unreadCount || 0}
+                    status={status}
+                    isTyping={isTyping}
+                    isLast={i === filteredConversations.length - 1}
+                    isMuted={conv.isMuted}
+                    isPinned={conv.isPinned}
+                    statusSegments={getConversationStatusSegments(
+                      conv,
+                      statuses,
+                    )}
+                    mediaType={mediaType}
+                    senderName={senderName}
+                    typingText={typingText}
+                    locked={conv.preferences?.chatLock}
+                    verifiedBusiness={conv.contact?.verifiedBusiness}
+                  />
+                );
+              })}
+            </div>
+          ) : (
+            <EmptyState filter={activeFilter} />
+          )}
+        </div>
       </div>
 
       {/* Tab Navigation (Fixed Bottom) */}

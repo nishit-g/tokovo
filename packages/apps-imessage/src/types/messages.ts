@@ -171,6 +171,10 @@ export interface IMessageMessage {
   text?: string;
   attachments?: IMessageAttachment[];
   timestamp: number;
+  /** Authored wall-clock time in milliseconds; timestamp remains the arrival frame. */
+  sentAt?: number;
+  deliveredAt?: number;
+  readAt?: number;
   tapbacks: IMessageTapback[];
   effect?: IMessageEffect;
   replyTo?: MessageReference;
@@ -184,4 +188,3 @@ export interface IMessageMessage {
   isEdited?: boolean;
   isUnsent?: boolean;
 }
-

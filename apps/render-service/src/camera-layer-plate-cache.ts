@@ -5,12 +5,12 @@ import path from "node:path";
 
 import { repoRoot } from "./constants";
 
-const CAMERA_LAYER_PLATE_CACHE_VERSION = 1;
-const DEFAULT_CACHE_ROOT = path.join(
-  repoRoot,
-  ".remotion",
-  "camera-layer-plates",
-);
+const CAMERA_LAYER_PLATE_CACHE_VERSION = 2;
+
+function defaultCacheRoot(): string {
+  const renderCacheRoot = process.env.TOKOVO_RENDER_CACHE_ROOT ?? path.join(repoRoot, ".remotion");
+  return path.join(renderCacheRoot, "camera-layer-plates");
+}
 
 export type CameraLayerPlateKind = "underlay" | "stage" | "foreground";
 
@@ -24,6 +24,7 @@ export interface CameraLayerPlateIdentity {
   fps: number;
   width: number;
   height: number;
+  chromiumGl: "angle" | "swangle";
   encodingSignature: string;
 }
 
@@ -46,18 +47,11 @@ export interface CameraLayerPlateCacheHit {
 export interface CameraLayerPlateCacheMiss {
   status: "miss";
   key: string;
-  reason:
-    | "not-found"
-    | "manifest-invalid"
-    | "size-mismatch"
-    | "checksum-mismatch"
-    | "read-failed";
+  reason: "not-found" | "manifest-invalid" | "size-mismatch" | "checksum-mismatch" | "read-failed";
   error?: string;
 }
 
-export type CameraLayerPlateCacheLookup =
-  | CameraLayerPlateCacheHit
-  | CameraLayerPlateCacheMiss;
+export type CameraLayerPlateCacheLookup = CameraLayerPlateCacheHit | CameraLayerPlateCacheMiss;
 
 function cachePaths(cacheRoot: string, key: string) {
   return {
@@ -77,9 +71,7 @@ async function hashFile(filePath: string): Promise<string> {
   return hash.digest("hex");
 }
 
-export function createCameraLayerPlateCacheKey(
-  identity: CameraLayerPlateIdentity,
-): string {
+export function createCameraLayerPlateCacheKey(identity: CameraLayerPlateIdentity): string {
   return createHash("sha256")
     .update(
       JSON.stringify({
@@ -92,7 +84,7 @@ export function createCameraLayerPlateCacheKey(
 
 export async function lookupCameraLayerPlate(
   identity: CameraLayerPlateIdentity,
-  cacheRoot = DEFAULT_CACHE_ROOT,
+  cacheRoot = defaultCacheRoot(),
 ): Promise<CameraLayerPlateCacheLookup> {
   const key = createCameraLayerPlateCacheKey(identity);
   const { platePath, manifestPath } = cachePaths(cacheRoot, key);
@@ -136,18 +128,13 @@ export async function storeCameraLayerPlate(input: {
   sourcePath: string;
   cacheRoot?: string;
 }): Promise<CameraLayerPlateCacheHit> {
-  const cacheRoot = input.cacheRoot ?? DEFAULT_CACHE_ROOT;
+  const cacheRoot = input.cacheRoot ?? defaultCacheRoot();
   const key = createCameraLayerPlateCacheKey(input.identity);
   const { platePath, manifestPath } = cachePaths(cacheRoot, key);
   await fs.mkdir(cacheRoot, { recursive: true });
-  const [stat, sha256] = await Promise.all([
-    fs.stat(input.sourcePath),
-    hashFile(input.sourcePath),
-  ]);
+  const [stat, sha256] = await Promise.all([fs.stat(input.sourcePath), hashFile(input.sourcePath)]);
   if (stat.size <= 0) {
-    throw new Error(
-      "CAM_LAYER_PLATE_CACHE_EMPTY: Refusing to cache an empty layer plate.",
-    );
+    throw new Error("CAM_LAYER_PLATE_CACHE_EMPTY: Refusing to cache an empty layer plate.");
   }
 
   const nonce = `${process.pid}-${Date.now()}`;
@@ -162,11 +149,7 @@ export async function storeCameraLayerPlate(input: {
   };
   try {
     await fs.copyFile(input.sourcePath, temporaryPlatePath);
-    await fs.writeFile(
-      temporaryManifestPath,
-      `${JSON.stringify(manifest)}\n`,
-      "utf8",
-    );
+    await fs.writeFile(temporaryManifestPath, `${JSON.stringify(manifest)}\n`, "utf8");
     await fs.rename(temporaryPlatePath, platePath);
     await fs.rename(temporaryManifestPath, manifestPath);
   } finally {

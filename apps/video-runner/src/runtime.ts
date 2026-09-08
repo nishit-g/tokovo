@@ -10,7 +10,7 @@ export type VideoRunnerRuntime = TokovoRuntime;
 function getVideoRunnerCatalogProfile() {
   return resolveCatalogProfile(
     process.env.TOKOVO_EPISODE_CATALOG_PROFILE,
-    "studio",
+    "showcase",
   );
 }
 

@@ -1,0 +1,35 @@
+{
+  "name": "@tokovo/blurb-voice",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "description": "Deterministic procedural character voices for Tokovo performers",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "test": "pnpm exec vitest run",
+    "blurb:generate": "tsx bin/generate.ts",
+    "blurb:demo": "tsx bin/generate.ts scripts/examples/cast-listening-sheet.json",
+    "blurb:chat-demo": "tsx bin/generate.ts scripts/examples/apology-chat-use-cases.json",
+    "blurb:micro-demo": "tsx bin/generate.ts scripts/examples/mint-sprite-three-message.json",
+    "blurb:ensemble-demo": "tsx bin/generate.ts scripts/examples/ensemble-launch-room.json",
+    "blurb:ping-demo": "tsx bin/generate.ts scripts/examples/ping-sent-it.json"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "tsx": "^4.0.0",
+    "typescript": "^5.9.3",
+    "vitest": "^1.0.0"
+  }
+}

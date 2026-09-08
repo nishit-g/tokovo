@@ -16,6 +16,8 @@ export const TypingIndicator: React.FC = () => {
     <div
       style={{
         display: "flex",
+        width: "fit-content",
+        marginTop: iMessageSpacing.messageGapNormal,
         gap: iMessageSpacing.typingDotGap,
         padding: `${iMessageSpacing.typingBubblePaddingV}px ${iMessageSpacing.typingBubblePaddingH}px`,
         borderRadius: iMessageSpacing.bubbleRadius,

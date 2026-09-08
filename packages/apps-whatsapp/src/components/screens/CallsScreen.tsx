@@ -1,11 +1,26 @@
-import { ArrowDownLeft, ArrowUpRight, Link, Phone, PhoneMissed, Plus, Video } from "lucide-react";
+import {
+  ArrowDownLeft,
+  ArrowUpRight,
+  Link,
+  Phone,
+  PhoneMissed,
+  Plus,
+  Video,
+} from "lucide-react";
 import { requireAppStateForDevice, type WorldState } from "@tokovo/core";
 import { DeterministicImage } from "@tokovo/react";
-import { useTheme, useWhatsAppLocale } from "../../experience/ExperienceContext.js";
+import {
+  useTheme,
+  useWhatsAppLocale,
+} from "../../experience/ExperienceContext.js";
 import type { WhatsAppCallLogEntry, WhatsAppState } from "../../types/index.js";
-import { formatConversationListTimestamp, getBaseTime } from "../../utils/messages.js";
+import {
+  formatConversationListTimestamp,
+  getBaseTime,
+} from "../../utils/messages.js";
 import { resolveAvatarWithFallback } from "../../utils/avatar.js";
 import type { WhatsAppMessageKey } from "../../localization/index.js";
+import { WHATSAPP_INTERACTION_TOKENS as tokens } from "../../theme/index.js";
 import { AppScaffold, EmptyState, SectionHeader } from "../surfaces/index.js";
 
 export interface CallsScreenProps {
@@ -21,9 +36,15 @@ export interface CallsScreenProps {
   height: number;
 }
 
-type Translator = (key: WhatsAppMessageKey, parameters?: Record<string, string | number>) => string;
+type Translator = (
+  key: WhatsAppMessageKey,
+  parameters?: Record<string, string | number>,
+) => string;
 
-function formatCallDuration(seconds: number | undefined, t: Translator): string | undefined {
+function formatCallDuration(
+  seconds: number | undefined,
+  t: Translator,
+): string | undefined {
   if (!seconds || seconds <= 0) return undefined;
   if (seconds < 60) return t("calls.durationSeconds", { count: seconds });
   const minutes = Math.floor(seconds / 60);
@@ -33,7 +54,13 @@ function formatCallDuration(seconds: number | undefined, t: Translator): string 
     : t("calls.durationMinutes", { count: minutes });
 }
 
-function CallRow({ entry, baseTime }: { entry: WhatsAppCallLogEntry; baseTime: Date }) {
+function CallRow({
+  entry,
+  baseTime,
+}: {
+  entry: WhatsAppCallLogEntry;
+  baseTime: Date;
+}) {
   const theme = useTheme();
   const { locale, t } = useWhatsAppLocale();
   const { uiTypography: typography } = theme;
@@ -64,7 +91,8 @@ function CallRow({ entry, baseTime }: { entry: WhatsAppCallLogEntry; baseTime: D
     <div
       data-call-id={entry.id}
       style={{
-        minHeight: 70,
+        height: tokens.callRowHeight,
+        boxSizing: "border-box",
         padding: "8px 16px",
         display: "flex",
         alignItems: "center",
@@ -116,7 +144,15 @@ function CallRow({ entry, baseTime }: { entry: WhatsAppCallLogEntry; baseTime: D
           }}
         >
           <DirectionIcon size={13} />
-          <span>{meta}</span>
+          <span
+            style={{
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              whiteSpace: "nowrap",
+            }}
+          >
+            {meta}
+          </span>
         </div>
       </div>
       <div
@@ -137,25 +173,31 @@ function CallRow({ entry, baseTime }: { entry: WhatsAppCallLogEntry; baseTime: D
   );
 }
 
-export function CallsScreen({ world, deviceId, contentInsets }: CallsScreenProps) {
+export function CallsScreen({
+  world,
+  deviceId,
+  contentInsets,
+}: CallsScreenProps) {
   const theme = useTheme();
   const { t } = useWhatsAppLocale();
   const { uiTypography: typography } = theme;
   const contentInsetTop = contentInsets.top;
   const contentInsetBottom = contentInsets.bottom;
-  const state = requireAppStateForDevice<WhatsAppState>(world, "app_whatsapp", deviceId);
+  const state = requireAppStateForDevice<WhatsAppState>(
+    world,
+    "app_whatsapp",
+    deviceId,
+  );
   const baseTime = getBaseTime(world, deviceId);
   const callLog = [...(state.callLog ?? [])].sort(
     (left, right) => right.startedAt - left.startedAt,
   );
-  const favorites = [
-    ...new Map(
-      callLog
-        .filter((entry) => entry.direction !== "missed")
-        .map((entry) => [entry.name, entry] as const),
-    ).values(),
-  ].slice(0, 3);
-  const missedCount = callLog.filter((entry) => entry.direction === "missed").length;
+  const favorites = Object.values(state.conversations).filter(
+    (chat) => chat.isFavorite,
+  );
+  const missedCount = callLog.filter(
+    (entry) => entry.direction === "missed",
+  ).length;
 
   return (
     <AppScaffold
@@ -173,9 +215,10 @@ export function CallsScreen({ world, deviceId, contentInsets }: CallsScreenProps
     >
       <div
         style={{
-          margin: "14px 16px 8px",
+          margin: `${tokens.callLinkMarginTop}px 16px ${tokens.callLinkMarginBottom}px`,
           padding: "10px 12px",
-          minHeight: 58,
+          height: tokens.callLinkHeight,
+          boxSizing: "border-box",
           display: "flex",
           alignItems: "center",
           gap: 11,
@@ -223,10 +266,14 @@ export function CallsScreen({ world, deviceId, contentInsets }: CallsScreenProps
 
       {favorites.length > 0 && (
         <>
-          <SectionHeader title={t("calls.favorites")} action={t("action.edit")} />
+          <SectionHeader
+            title={t("calls.favorites")}
+            action={t("action.edit")}
+          />
           <div
             style={{
-              height: 88,
+              height: tokens.favoritesHeight,
+              boxSizing: "border-box",
               padding: "0 16px 8px",
               display: "flex",
               gap: 18,
@@ -235,7 +282,7 @@ export function CallsScreen({ world, deviceId, contentInsets }: CallsScreenProps
           >
             {favorites.map((entry) => (
               <div
-                key={entry.name}
+                key={entry.id}
                 style={{
                   width: 66,
                   display: "flex",
@@ -254,7 +301,10 @@ export function CallsScreen({ world, deviceId, contentInsets }: CallsScreenProps
                   }}
                 >
                   <DeterministicImage
-                    src={resolveAvatarWithFallback(entry.avatar, entry.name)}
+                    src={resolveAvatarWithFallback(
+                      entry.avatar,
+                      entry.name ?? entry.id,
+                    )}
                     alt={entry.name}
                     style={{
                       width: "100%",
@@ -289,9 +339,9 @@ export function CallsScreen({ world, deviceId, contentInsets }: CallsScreenProps
       />
       <div data-cinematic-subject="calls_list">
         {callLog.length > 0 ? (
-          callLog
-            .slice(0, 6)
-            .map((entry) => <CallRow key={entry.id} entry={entry} baseTime={baseTime} />)
+          callLog.map((entry) => (
+            <CallRow key={entry.id} entry={entry} baseTime={baseTime} />
+          ))
         ) : (
           <EmptyState
             icon={<Phone size={28} />}

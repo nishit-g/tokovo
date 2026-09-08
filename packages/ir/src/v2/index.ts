@@ -148,6 +148,8 @@ export type {
   CameraFillModeIR,
   CameraComposerIR,
   CameraFramingGuardIR,
+  CameraMountIR,
+  CameraTravelIR,
   CameraTrajectoryKeyframeIR,
   CameraBakedTrajectoryIR,
   CameraMovementIntentIR,

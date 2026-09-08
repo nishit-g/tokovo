@@ -1,0 +1,112 @@
+{
+  "id": "ping-sent-it",
+  "seed": "ping-courier-language-v1",
+  "cast": ["ping-courier", "teal-manager", "violet-founder"],
+  "lines": [
+    {
+      "id": "ping-delivered",
+      "character": "ping-courier",
+      "message": "Delivered.",
+      "act": "confirm",
+      "tone": "excited",
+      "context": {
+        "stakes": 0.2,
+        "audience": "group"
+      }
+    },
+    {
+      "id": "teal-where",
+      "character": "teal-manager",
+      "message": "Ping. Where did you send it?",
+      "act": "question",
+      "tone": "annoyed",
+      "intent": "controlled-accusation",
+      "context": {
+        "stakes": 0.58,
+        "audience": "group"
+      }
+    },
+    {
+      "id": "ping-room",
+      "character": "ping-courier",
+      "message": "Launch Room?",
+      "act": "question",
+      "tone": "confused",
+      "intent": "hesitant-question",
+      "context": {
+        "stakes": 0.7,
+        "audience": "group"
+      }
+    },
+    {
+      "id": "teal-two-thousand",
+      "character": "teal-manager",
+      "message": "That room has 2,431 people.",
+      "act": "verdict",
+      "tone": "annoyed",
+      "intent": "bad-news-realization",
+      "context": {
+        "stakes": 0.92,
+        "audience": "public"
+      }
+    },
+    {
+      "id": "violet-good",
+      "character": "violet-founder",
+      "message": "Good.",
+      "act": "verdict",
+      "tone": "smug",
+      "intent": "smug-reframe",
+      "context": {
+        "stakes": 0.42,
+        "audience": "group"
+      }
+    },
+    {
+      "id": "ping-relief",
+      "character": "ping-courier",
+      "message": "We are good?",
+      "act": "celebrate",
+      "tone": "excited",
+      "context": {
+        "stakes": 0.62,
+        "audience": "group"
+      }
+    },
+    {
+      "id": "violet-corrected",
+      "character": "violet-founder",
+      "message": "Now send the corrected file.",
+      "act": "verdict",
+      "tone": "deadpan",
+      "intent": "deadpan-verdict",
+      "context": {
+        "stakes": 0.3,
+        "audience": "group"
+      }
+    },
+    {
+      "id": "ping-delivered-again",
+      "character": "ping-courier",
+      "message": "Delivered.",
+      "act": "confirm",
+      "tone": "excited",
+      "context": {
+        "stakes": 0.25,
+        "audience": "group"
+      }
+    },
+    {
+      "id": "teal-where-again",
+      "character": "teal-manager",
+      "message": "Where?",
+      "act": "question",
+      "tone": "deadpan",
+      "intent": "deadpan-verdict",
+      "context": {
+        "stakes": 0.74,
+        "audience": "group"
+      }
+    }
+  ]
+}

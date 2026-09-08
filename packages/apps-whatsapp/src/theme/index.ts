@@ -1,5 +1,24 @@
 export type Platform = "ios" | "android";
-export type WhatsAppThemeId = "whatsapp-storybook";
+/** Shared logical-point and second-based tokens for app-owned interaction surfaces. */
+export const WHATSAPP_INTERACTION_TOKENS = {
+  navigationSeconds: 0.28,
+  viewerSeconds: 0.22,
+  surfaceMargin: 12,
+  menuWidth: 236,
+  menuRowHeight: 44,
+  menuRadius: 14,
+  viewerHeaderHeight: 52,
+  sectionHeaderHeight: 34,
+  callRowHeight: 70,
+  callLinkHeight: 70,
+  callLinkMarginTop: 14,
+  callLinkMarginBottom: 8,
+  favoritesHeight: 88,
+} as const;
+export type WhatsAppThemeId =
+  | "whatsapp-storybook"
+  | "whatsapp-signal-pop"
+  | "whatsapp-coral-studio";
 
 export interface WhatsAppColorPalette {
   sentBubble: string;
@@ -122,6 +141,7 @@ export interface WhatsAppTypography {
 }
 
 export interface WhatsAppSpacing {
+  shortThreadAlignment?: "start" | "end";
   messagePaddingHorizontal: number;
   messagePaddingVertical: number;
   bubbleRadius: number;
@@ -302,7 +322,7 @@ export const iosTheme: WhatsAppTheme = {
   spacing: {
     messagePaddingHorizontal: 12,
     messagePaddingVertical: 8,
-    bubbleRadius: 18,
+    bubbleRadius: 12,
     bubbleRadiusTail: 4,
     avatarSize: 40,
     avatarSizeSmall: 32,
@@ -598,7 +618,145 @@ const STORYBOOK_DARK_COLORS: Partial<WhatsAppColorPalette> = {
   surfaceMuted: "#242823",
 };
 
-function mergeTheme(base: WhatsAppTheme, overrides: WhatsAppThemeOverrides): WhatsAppTheme {
+const SIGNAL_POP_OVERRIDES: WhatsAppThemeOverrides = {
+  colors: {
+    sentBubble: "#16B8C9",
+    receivedBubble: "#F1E7D9",
+    sentBubbleText: "#101528",
+    receivedBubbleText: "#171C31",
+    background: "#F6EFE7",
+    chatBackground: "#E8DDD4",
+    headerBackground: "#FFF8EF",
+    headerText: "#171C31",
+    inputBackground: "#FFF8EF",
+    inputText: "#171C31",
+    inputPlaceholder: "#776F77",
+    divider: "#D9CCC2",
+    timestamp: "#6E6872",
+    systemMessage: "#625D68",
+    systemMessageBg: "rgba(255,248,239,0.94)",
+    systemMessageBorder: "rgba(23,28,49,0.12)",
+    systemMessageShadow: "0 3px 10px rgba(23,28,49,0.14)",
+    systemBannerBg: "#F7DCA8",
+    systemBannerText: "#503A12",
+    systemBannerBorder: "#E5A13B",
+    systemBannerLink: "#5B3FA0",
+    systemBannerIcon: "#503A12",
+    datePillBg: "rgba(255,248,239,0.96)",
+    datePillBorder: "rgba(23,28,49,0.12)",
+    datePillText: "#625D68",
+    callCardIconBgIncoming: "rgba(23,28,49,0.07)",
+    callCardIconBgOutgoing: "rgba(255,255,255,0.34)",
+    callCardIcon: "#171C31",
+    callCardMissed: "#E95E4A",
+    callCardSubtext: "#6E6872",
+    typingIndicator: "#5B3FA0",
+    accent: "#7650BD",
+    link: "#4D3A9A",
+    unreadBadge: "#F16B4F",
+    unreadBadgeText: "#FFFFFF",
+    onlineStatus: "#16B8C9",
+    checkmark: "#315967",
+    checkmarkRead: "#5B3FA0",
+    statusRingUnviewed: "#F16B4F",
+    statusRingViewed: "#A59AA1",
+    statusRingGap: "#F6EFE7",
+    sentBubbleBorder: "rgba(16,21,40,0.14)",
+    receivedBubbleBorder: "rgba(23,28,49,0.13)",
+    bubbleShadow: "0 3px 9px rgba(23,28,49,0.16)",
+    reactionSurface: "#FFF8EF",
+    reactionBorder: "#D9CCC2",
+    reactionShadow: "0 3px 10px rgba(23,28,49,0.18)",
+    replySurfaceSent: "rgba(255,255,255,0.34)",
+    replySurfaceReceived: "rgba(118,80,189,0.1)",
+    mediaScrim: "rgba(16,21,40,0.62)",
+    wallpaperDoodle: "rgba(118,80,189,0.08)",
+    wallpaperGlow: "rgba(22,184,201,0.12)",
+    surfaceMuted: "#EEE3DA",
+  },
+  spacing: {
+    messagePaddingHorizontal: 13,
+    messagePaddingVertical: 9,
+    bubbleRadius: 19,
+    bubbleRadiusTail: 6,
+    messageGap: 5,
+  },
+  uiTypography: {
+    largeTitle: { fontSize: 34, fontWeight: "700", letterSpacing: -0.2 },
+    title: { fontSize: 17, fontWeight: "700", letterSpacing: -0.35 },
+    headline: { fontSize: 17, fontWeight: "600", letterSpacing: -0.35 },
+  },
+  uiSpacing: {
+    chatListItemHeight: 82,
+    contentMarginLeft: 14,
+    contentMarginRight: 18,
+    filterChipGap: 10,
+    sectionGap: 18,
+    searchBarRadius: 16,
+    filterChipRadius: 18,
+  },
+};
+
+const SIGNAL_POP_DARK_COLORS: Partial<WhatsAppColorPalette> = {
+  sentBubble: "#168C9B",
+  receivedBubble: "#29243D",
+  sentBubbleText: "#F8F1E8",
+  receivedBubbleText: "#F8F1E8",
+  background: "#101528",
+  chatBackground: "#171C31",
+  headerBackground: "#1F2440",
+  headerText: "#FFF8EF",
+  inputBackground: "#252A47",
+  inputText: "#FFF8EF",
+  inputPlaceholder: "#AAA5B2",
+  divider: "#373B59",
+  timestamp: "#B7B0BC",
+  systemMessage: "#C4BDC8",
+  systemMessageBg: "rgba(37,42,71,0.94)",
+  systemMessageBorder: "rgba(241,231,217,0.13)",
+  systemMessageShadow: "0 3px 10px rgba(0,0,0,0.38)",
+  systemBannerBg: "#4D3C25",
+  systemBannerText: "#FFE4AE",
+  systemBannerBorder: "#765D32",
+  systemBannerLink: "#B6A2FF",
+  systemBannerIcon: "#FFE4AE",
+  datePillBg: "rgba(37,42,71,0.96)",
+  datePillBorder: "rgba(241,231,217,0.13)",
+  datePillText: "#C4BDC8",
+  callCardIconBgIncoming: "rgba(255,255,255,0.09)",
+  callCardIconBgOutgoing: "rgba(255,255,255,0.14)",
+  callCardIcon: "#FFF8EF",
+  callCardMissed: "#FF7A65",
+  callCardSubtext: "#B7B0BC",
+  typingIndicator: "#B6A2FF",
+  accent: "#9B7CE7",
+  link: "#A89CFF",
+  unreadBadge: "#F16B4F",
+  unreadBadgeText: "#FFFFFF",
+  onlineStatus: "#28C7D7",
+  checkmark: "#C3D6D9",
+  checkmarkRead: "#C0ABFF",
+  statusRingUnviewed: "#F16B4F",
+  statusRingViewed: "#706A7D",
+  statusRingGap: "#101528",
+  sentBubbleBorder: "rgba(211,249,253,0.13)",
+  receivedBubbleBorder: "rgba(241,231,217,0.12)",
+  bubbleShadow: "0 3px 10px rgba(0,0,0,0.38)",
+  reactionSurface: "#302B49",
+  reactionBorder: "#47415E",
+  reactionShadow: "0 3px 11px rgba(0,0,0,0.42)",
+  replySurfaceSent: "rgba(0,0,0,0.18)",
+  replySurfaceReceived: "rgba(155,124,231,0.12)",
+  mediaScrim: "rgba(8,11,24,0.72)",
+  wallpaperDoodle: "rgba(155,124,231,0.07)",
+  wallpaperGlow: "rgba(22,184,201,0.055)",
+  surfaceMuted: "#1D2239",
+};
+
+function mergeTheme(
+  base: WhatsAppTheme,
+  overrides: WhatsAppThemeOverrides,
+): WhatsAppTheme {
   return {
     ...base,
     colors: { ...base.colors, ...overrides.colors },
@@ -625,7 +783,45 @@ export function getTheme(
 
   if (themeId === "whatsapp-storybook") {
     const themed = mergeTheme(base, STORYBOOK_OVERRIDES);
-    return darkMode ? mergeTheme(themed, { colors: STORYBOOK_DARK_COLORS }) : themed;
+    return darkMode
+      ? mergeTheme(themed, { colors: STORYBOOK_DARK_COLORS })
+      : themed;
+  }
+  if (themeId === "whatsapp-signal-pop") {
+    const themed = mergeTheme(base, SIGNAL_POP_OVERRIDES);
+    return darkMode
+      ? mergeTheme(themed, { colors: SIGNAL_POP_DARK_COLORS })
+      : themed;
+  }
+  if (themeId === "whatsapp-coral-studio") {
+    return mergeTheme(base, {
+      colors: {
+        sentBubble: "#FF825C",
+        sentBubbleText: "#30251F",
+        receivedBubble: darkMode ? "#34302D" : "#FFFFFF",
+        receivedBubbleText: darkMode ? "#FFF6ED" : "#30251F",
+        background: darkMode ? "#201D1A" : "#FFF8F0",
+        chatBackground: darkMode ? "#201D1A" : "#FFF8F0",
+        headerBackground: darkMode ? "#28231F" : "#FFF8F0",
+        headerText: darkMode ? "#FFF6ED" : "#30251F",
+        inputBackground: darkMode ? "#34302D" : "#FFFDF9",
+        accent: "#C34A28",
+        checkmarkRead: "#694334",
+        wallpaperDoodle: "transparent",
+        wallpaperGlow: "transparent",
+        bubbleShadow: "0 3px 9px rgba(80,45,25,0.08)",
+        sentBubbleBorder: "transparent",
+        receivedBubbleBorder: darkMode ? "#51443B" : "#F0E2D6",
+        datePillBg: "transparent",
+        datePillBorder: "transparent",
+      },
+      typography: { messageFontSize: 20, messageLineHeight: 27 },
+      spacing: {
+        bubbleRadius: 22,
+        messagePaddingVertical: 14,
+        shortThreadAlignment: "start",
+      },
+    });
   }
   return base;
 }

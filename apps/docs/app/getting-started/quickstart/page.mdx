@@ -1,6 +1,6 @@
 # Quickstart
 
-This path verifies the repo, previews the renderer, and exports one current v1 showcase episode.
+This path verifies the repo, previews the renderer, and exports one current showcase episode.
 
 ## 1. Install
 
@@ -15,7 +15,7 @@ pnpm validate
 pnpm --filter @tokovo/episodes test
 ```
 
-`pnpm validate` boots the studio runtime and validates every registered episode definition.
+`pnpm validate` boots the headless runtime and validates every registered episode definition.
 
 ## 3. Open the Renderer
 
@@ -23,7 +23,7 @@ pnpm --filter @tokovo/episodes test
 pnpm --filter video-runner dev
 ```
 
-Use the Remotion Studio UI to select an episode composition and scrub the timeline.
+Use the Remotion preview UI to select an episode composition and scrub the timeline.
 
 ## 4. Render a Local MP4
 
@@ -48,15 +48,15 @@ EPISODE_ID=typewriter-flagship-v2 pnpm --filter video-runner render:fast
 
 ## 5. Know the Main Catalogs
 
-| Catalog | Includes |
-| --- | --- |
-| `release` | public story and v2 creator episodes |
-| `studio` | release catalog plus app, system, and test showcases |
+| Catalog    | Includes                                             |
+| ---------- | ---------------------------------------------------- |
+| `release`  | public story and v2 creator episodes                 |
+| `showcase` | release catalog plus app, system, and test showcases |
 
 Set the catalog profile when needed:
 
 ```bash
-TOKOVO_EPISODE_CATALOG_PROFILE=studio pnpm --filter video-runner dev
+TOKOVO_EPISODE_CATALOG_PROFILE=showcase pnpm --filter video-runner dev
 ```
 
 ## Next

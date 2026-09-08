@@ -1,6 +1,6 @@
 /**
  * Episode Registry Module
- * @see docs/architecture/episodes.md
+ * @see docs/ENGINEERING_HANDBOOK.md
  */
 export {
   EpisodeRegistry,

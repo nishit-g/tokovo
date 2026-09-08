@@ -8,6 +8,7 @@ import socialLaunchMultiDevice from "./social-launch-multi-device.episode.js";
 import screenRecordingExhaustive from "./screen-recording-exhaustive.episode.js";
 import callScreenExhaustive from "./call-screen-exhaustive.episode.js";
 import osSurfaceMegaExhaustive from "./os-surface-mega-exhaustive.episode.js";
+import signalPopThemeProof from "./signal-pop-theme-proof.episode.js";
 
 export const fixedSystemShowcaseEpisodes = [
   osSurfaceMegaExhaustive,
@@ -18,6 +19,7 @@ export const fixedSystemShowcaseEpisodes = [
   notificationSystemExhaustive,
   cinematicSubjectExhaustive,
   keyboardInputExhaustive,
+  signalPopThemeProof,
   socialLaunchMultiDevice,
   multiDeviceExhaustive,
 ];

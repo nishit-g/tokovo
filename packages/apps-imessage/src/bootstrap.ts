@@ -12,8 +12,10 @@ import type {
 } from "@tokovo/core";
 import type { IMessageConversation, IMessageMessage, IMessageState } from "./types/index.js";
 
-export interface IMessageSnapshotConversation
-  extends Omit<IMessageConversation, "messages" | "messagesById" | "typing" | "lastMessageAt"> {
+export interface IMessageSnapshotConversation extends Omit<
+  IMessageConversation,
+  "messages" | "messagesById" | "typing" | "lastMessageAt"
+> {
   messages?: IMessageMessage[];
   typing?: Record<string, boolean>;
 }
@@ -48,11 +50,7 @@ function validateIMessageSnapshot(
   const conversationIds = new Set<string>();
 
   conversations.forEach((value, index) => {
-    const conversation = expectObjectRecord(
-      value,
-      `snapshot.conversations[${index}]`,
-      errors,
-    );
+    const conversation = expectObjectRecord(value, `snapshot.conversations[${index}]`, errors);
     if (!conversation) return;
 
     const id = expectString(conversation.id, `snapshot.conversations[${index}].id`, errors);
@@ -62,11 +60,11 @@ function validateIMessageSnapshot(
       errors,
     );
     participants?.forEach((participant, participantIndex) => {
-      expectString(
-        participant,
-        `snapshot.conversations[${index}].participants[${participantIndex}]`,
-        errors,
-      );
+      const path = `snapshot.conversations[${index}].participants[${participantIndex}]`;
+      const record = expectObjectRecord(participant, path, errors);
+      if (!record) return;
+      expectString(record.id, `${path}.id`, errors);
+      expectString(record.name, `${path}.name`, errors);
     });
 
     if (id) {
@@ -99,6 +97,12 @@ function validateIMessageSnapshot(
           `snapshot.conversations[${index}].messages[${messageIndex}].sender`,
           errors,
         );
+        for (const field of ["timestamp", "sentAt", "deliveredAt", "readAt"] as const) {
+          const value = message[field];
+          if (value !== undefined && (typeof value !== "number" || !Number.isFinite(value) || value < 0)) {
+            errors.push(`snapshot.conversations[${index}].messages[${messageIndex}].${field} must be a finite non-negative number`);
+          }
+        }
       });
     }
   });
@@ -124,9 +128,7 @@ function validateIMessageInitialView(
   return { errors };
 }
 
-function hydrateConversation(
-  conversation: IMessageSnapshotConversation,
-): IMessageConversation {
+function hydrateConversation(conversation: IMessageSnapshotConversation): IMessageConversation {
   const messages = [...(conversation.messages ?? [])].sort(
     (a, b) => (a.timestamp ?? 0) - (b.timestamp ?? 0),
   );
@@ -157,12 +159,11 @@ export const iMessageBootstrap: PluginBootstrapContract<"app_imessage"> = {
     const snapshot = context.snapshot?.snapshot as IMessageSnapshot | undefined;
     const initialView = context.initialView?.view as IMessageInitialView | undefined;
     const errors: string[] = [];
-    const conversationIds = new Set((snapshot?.conversations ?? []).map((conversation) => conversation.id));
+    const conversationIds = new Set(
+      (snapshot?.conversations ?? []).map((conversation) => conversation.id),
+    );
 
-    if (
-      initialView?.conversationId &&
-      !conversationIds.has(initialView.conversationId)
-    ) {
+    if (initialView?.conversationId && !conversationIds.has(initialView.conversationId)) {
       errors.push(
         `initialView.conversationId references unknown conversation "${initialView.conversationId}"`,
       );
@@ -187,6 +188,7 @@ export const iMessageBootstrap: PluginBootstrapContract<"app_imessage"> = {
       state.currentScreen = initialView.screen;
       state.activeConversationId = initialView.conversationId;
       state.themeMode = initialView.themeMode ?? state.themeMode;
+      state.statusBarTheme = state.themeMode ?? "light";
       state.viewMode =
         initialView.screen === "chat"
           ? "CHAT"

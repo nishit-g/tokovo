@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { EpisodeRenderData } from "./render-data";
-import type { CameraRenderLayer } from "./camera-texture-contract";
+import type { CameraRenderLayer } from "@tokovo/composition";
 
 export type EpisodeRendererProps = {
   episodeId: string;

@@ -6,14 +6,14 @@
  * by synthesizing deterministic WAV files in-repo.
  *
  * Output root:
- *   apps/video-runner/public/sounds/
+ *   packages/assets/public/sounds/
  */
 
 import fs from "node:fs";
 import path from "node:path";
 
 const ROOT = process.cwd();
-const OUT_ROOT = path.join(ROOT, "apps/video-runner/public/sounds");
+const OUT_ROOT = path.join(ROOT, "packages/assets/public/sounds");
 const SAMPLE_RATE = 44100;
 
 function mkdirp(dir) {
@@ -495,7 +495,7 @@ function main() {
   const licenseBlock = [
     "## Audio (Procedural SFX)",
     "",
-    "- Location: `apps/video-runner/public/sounds/**`",
+    "- Location: `packages/assets/public/sounds/**`",
     "- Source: procedurally generated in-repo (no samples)",
     "- Generator: `scripts/generate-procedural-sfx.mjs`",
     "",
@@ -516,4 +516,3 @@ function main() {
 }
 
 main();
-

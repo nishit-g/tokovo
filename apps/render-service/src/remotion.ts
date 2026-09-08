@@ -5,10 +5,16 @@ import { analyzeCameraTemporalQuality, type CameraTemporalQualityReport } from "
 
 import { bundle } from "@remotion/bundler";
 import { openBrowser, renderMedia, renderStill, selectComposition } from "@remotion/renderer";
-import { getEpisodeAssetRefs, getEpisodeRenderData } from "video-runner/render-data";
+import {
+  getEpisodeAssetRefs,
+  getEpisodeRenderData,
+  getRenderDataAssetSources,
+  rewriteEpisodeRenderDataAssetUrls,
+} from "video-runner/render-data";
 import type { EpisodeRenderData } from "video-runner/render-data";
 
 import {
+  publicAssetsRoot,
   releaseCompositionId,
   repoRoot,
   videoRunnerEntryPoint,
@@ -29,6 +35,7 @@ import {
   renderPosterFromVideo,
 } from "./camera-texture-compositor";
 import {
+  createCameraLayerPlateCacheKey,
   lookupCameraLayerPlate,
   storeCameraLayerPlate,
   type CameraLayerPlateIdentity,
@@ -74,7 +81,12 @@ export async function getServeUrl(
 
   const bundleDir = path.join(repoRoot, ".remotion", "bundles", sourceSignature);
   const indexPath = path.join(bundleDir, "index.html");
-  if (fs.existsSync(indexPath)) {
+  const publicAssetMarker = path.join(
+    bundleDir,
+    "public",
+    "asset-provenance.json",
+  );
+  if (fs.existsSync(indexPath) && fs.existsSync(publicAssetMarker)) {
     await logger?.info("bundle.reuse", "Reusing cached Remotion bundle", {
       sourceSignature,
       bundleDir,
@@ -84,6 +96,7 @@ export async function getServeUrl(
     return { serveUrl: bundleDir, sourceSignature };
   }
 
+  fs.rmSync(bundleDir, { recursive: true, force: true });
   fs.mkdirSync(bundleDir, { recursive: true });
   await logger?.info("bundle.start", "Bundling Remotion entrypoint", {
     sourceSignature,
@@ -94,6 +107,7 @@ export async function getServeUrl(
     entryPoint: videoRunnerEntryPoint,
     outDir: bundleDir,
     rootDir: videoRunnerRoot,
+    publicDir: publicAssetsRoot,
     enableCaching: true,
   }).catch((error) => {
     serveUrlPromise = null;
@@ -175,8 +189,20 @@ async function resolveCameraLayerPlate(input: {
   cacheEnabled: boolean;
   logger: RenderLogger;
   render: () => Promise<void>;
-}): Promise<string> {
+}): Promise<{
+  path: string;
+  cacheStatus: "hit" | "miss" | "disabled";
+  timingMs: {
+    lookup: number;
+    render: number;
+    store: number;
+    total: number;
+  };
+}> {
+  const startedAt = Date.now();
+  const lookupStartedAt = Date.now();
   const lookup = input.cacheEnabled ? await lookupCameraLayerPlate(input.identity) : null;
+  const lookupMs = Date.now() - lookupStartedAt;
   if (lookup?.status === "hit") {
     await input.logger.info(
       "camera.layer-plate.cache.hit",
@@ -192,7 +218,16 @@ async function resolveCameraLayerPlate(input: {
         stageSignature: input.identity.stageSignature,
       },
     );
-    return lookup.platePath;
+    return {
+      path: lookup.platePath,
+      cacheStatus: "hit",
+      timingMs: {
+        lookup: lookupMs,
+        render: 0,
+        store: 0,
+        total: Date.now() - startedAt,
+      },
+    };
   }
 
   await input.logger.info(
@@ -214,9 +249,23 @@ async function resolveCameraLayerPlate(input: {
         : {}),
     },
   );
+  const renderStartedAt = Date.now();
   await input.render();
-  if (!input.cacheEnabled) return input.sourcePath;
+  const renderMs = Date.now() - renderStartedAt;
+  if (!input.cacheEnabled) {
+    return {
+      path: input.sourcePath,
+      cacheStatus: "disabled",
+      timingMs: {
+        lookup: lookupMs,
+        render: renderMs,
+        store: 0,
+        total: Date.now() - startedAt,
+      },
+    };
+  }
 
+  const storeStartedAt = Date.now();
   try {
     const stored = await storeCameraLayerPlate({
       identity: input.identity,
@@ -236,7 +285,17 @@ async function resolveCameraLayerPlate(input: {
         stageSignature: input.identity.stageSignature,
       },
     );
-    return stored.platePath;
+    const storeMs = Date.now() - storeStartedAt;
+    return {
+      path: stored.platePath,
+      cacheStatus: "miss",
+      timingMs: {
+        lookup: lookupMs,
+        render: renderMs,
+        store: storeMs,
+        total: Date.now() - startedAt,
+      },
+    };
   } catch (error) {
     await input.logger.warn(
       "camera.layer-plate.cache.store-failed",
@@ -246,12 +305,22 @@ async function resolveCameraLayerPlate(input: {
         error: error instanceof Error ? error.message : String(error),
       },
     );
-    return input.sourcePath;
+    return {
+      path: input.sourcePath,
+      cacheStatus: "miss",
+      timingMs: {
+        lookup: lookupMs,
+        render: renderMs,
+        store: Date.now() - storeStartedAt,
+        total: Date.now() - startedAt,
+      },
+    };
   }
 }
 
 export async function renderEpisodeMedia(input: {
   episodeId: string;
+  renderData?: EpisodeRenderData;
   cameraPlanId?: string;
   /** Internal verification/chunking seam. Values are inclusive source frames. */
   frameRange?: [number, number];
@@ -263,15 +332,37 @@ export async function renderEpisodeMedia(input: {
 }) {
   const browser = await getBrowser(input.profile.chromiumGl, input.logger);
   const publicAssetBaseUrl = getPublicAssetBaseUrl();
-  const assetSources = getEpisodeAssetSources(input.episodeId);
+  const unresolvedRenderData =
+    input.renderData ??
+    (await getPreparedRenderData({
+      episodeId: input.episodeId,
+      assetUrlMap: {},
+    }));
+  if (unresolvedRenderData.episodeId !== input.episodeId) {
+    throw createRenderServiceError({
+      code: "RENDER_DATA_EPISODE_MISMATCH",
+      stage: "bootstrap",
+      message: `Prepared render data belongs to "${unresolvedRenderData.episodeId}", not "${input.episodeId}".`,
+      details: {
+        episodeId: input.episodeId,
+        renderDataEpisodeId: unresolvedRenderData.episodeId,
+      },
+    });
+  }
+  const assetSources = input.renderData
+    ? getRenderDataAssetSources(input.renderData)
+    : getEpisodeAssetSources(input.episodeId);
   const presignedAssetUrlMap = await createPresignedAssetUrlMap(
     assetSources,
     Math.max(3600, Math.floor(input.profile.timeoutInMilliseconds / 1000) + 300),
   );
-  const renderData = await getPreparedRenderData({
-    episodeId: input.episodeId,
-    assetUrlMap: presignedAssetUrlMap,
-  });
+  const renderData =
+    Object.keys(presignedAssetUrlMap).length > 0
+      ? rewriteEpisodeRenderDataAssetUrls(
+          unresolvedRenderData,
+          presignedAssetUrlMap,
+        )
+      : unresolvedRenderData;
   const inputProps = {
     episodeId: input.episodeId,
     renderData,
@@ -283,7 +374,10 @@ export async function renderEpisodeMedia(input: {
     ...(publicAssetBaseUrl ? { TOKOVO_PUBLIC_ASSET_BASE_URL: publicAssetBaseUrl } : {}),
   };
   const bundleStartedAt = Date.now();
-  const { serveUrl, sourceSignature } = await getServeUrl(input.logger);
+  const {
+    serveUrl,
+    sourceSignature: bundleSourceSignature,
+  } = await getServeUrl(input.logger);
   const bundleMs = Date.now() - bundleStartedAt;
 
   const selectStartedAt = Date.now();
@@ -312,7 +406,8 @@ export async function renderEpisodeMedia(input: {
       details: {
         episodeId: input.episodeId,
         compositionId: releaseCompositionId,
-        sourceSignature,
+        sourceSignature: renderData.sourceSignature,
+        bundleSourceSignature,
       },
       cause: error instanceof Error ? error : undefined,
     });
@@ -374,7 +469,7 @@ export async function renderEpisodeMedia(input: {
       });
     }
     const layerPainterSignature = createCameraLayerPainterSourceSignature();
-    const layerPlateIdentity = (
+    const createLayerPlateIdentity = (
       layer: CameraLayerPlateIdentity["layer"],
     ): CameraLayerPlateIdentity => ({
       layer,
@@ -386,11 +481,22 @@ export async function renderEpisodeMedia(input: {
       fps: composition.fps,
       width: stageRoot.localBounds.width,
       height: stageRoot.localBounds.height,
+      chromiumGl: input.profile.chromiumGl,
       encodingSignature:
         layer === "underlay"
           ? "prores-standard-yuv422p10le-pcm16"
           : "prores-4444-yuva444p10le-muted",
     });
+    const layerPlateIdentities = {
+      underlay: createLayerPlateIdentity("underlay"),
+      stage: createLayerPlateIdentity("stage"),
+      foreground: createLayerPlateIdentity("foreground"),
+    } satisfies Record<CameraLayerPlateIdentity["layer"], CameraLayerPlateIdentity>;
+    const layerPlateKeys = {
+      underlay: createCameraLayerPlateCacheKey(layerPlateIdentities.underlay),
+      stage: createCameraLayerPlateCacheKey(layerPlateIdentities.stage),
+      foreground: createCameraLayerPlateCacheKey(layerPlateIdentities.foreground),
+    };
     const textureStartedAt = Date.now();
     const workingDirectory = await fs.promises.mkdtemp(
       path.join(os.tmpdir(), "tokovo-camera-texture-"),
@@ -443,8 +549,13 @@ export async function renderEpisodeMedia(input: {
         });
         return { layerInputProps, layerComposition };
       };
-      const cacheEnabled = process.env.TOKOVO_CAMERA_LAYER_PLATE_CACHE !== "off";
+      const renderCacheEnabled = process.env.TOKOVO_RENDER_CACHE !== "off";
+      const layerPlateCacheEnabled =
+        renderCacheEnabled && process.env.TOKOVO_CAMERA_LAYER_PLATE_CACHE !== "off";
+      const compositorChunkCacheEnabled =
+        renderCacheEnabled && process.env.TOKOVO_CAMERA_COMPOSITOR_CHUNK_CACHE !== "off";
       const projectionData = await selectLayer("camera-projection-data");
+      const projectionDataStartedAt = Date.now();
       await renderMedia({
         ...sharedLayerOptions,
         composition: projectionData.layerComposition,
@@ -453,13 +564,18 @@ export async function renderEpisodeMedia(input: {
         codec: "h264",
         pixelFormat: "yuv420p",
         muted: true,
-        onBrowserLog: (log) => collector.acceptBrowserLog(log.text),
+        onArtifact: (artifact) => {
+          if (typeof artifact.content === "string") {
+            collector.acceptBrowserLog(artifact.content);
+          }
+        },
       });
+      const projectionDataMs = Date.now() - projectionDataStartedAt;
 
-      const resolvedUnderlayPath = await resolveCameraLayerPlate({
-        identity: layerPlateIdentity("underlay"),
+      const resolvedUnderlay = await resolveCameraLayerPlate({
+        identity: layerPlateIdentities.underlay,
         sourcePath: underlayPath,
-        cacheEnabled,
+        cacheEnabled: layerPlateCacheEnabled,
         logger: input.logger,
         render: async () => {
           const underlay = await selectLayer("underlay");
@@ -475,10 +591,10 @@ export async function renderEpisodeMedia(input: {
           });
         },
       });
-      const resolvedCameraPlatePath = await resolveCameraLayerPlate({
-        identity: layerPlateIdentity("stage"),
+      const resolvedCameraPlate = await resolveCameraLayerPlate({
+        identity: layerPlateIdentities.stage,
         sourcePath: cameraPlatePath,
-        cacheEnabled,
+        cacheEnabled: layerPlateCacheEnabled,
         logger: input.logger,
         render: async () => {
           const cameraPlate = await selectLayer("camera-plate");
@@ -494,10 +610,10 @@ export async function renderEpisodeMedia(input: {
           });
         },
       });
-      const resolvedForegroundPlatePath = await resolveCameraLayerPlate({
-        identity: layerPlateIdentity("foreground"),
+      const resolvedForegroundPlate = await resolveCameraLayerPlate({
+        identity: layerPlateIdentities.foreground,
         sourcePath: foregroundPlatePath,
-        cacheEnabled,
+        cacheEnabled: layerPlateCacheEnabled,
         logger: input.logger,
         render: async () => {
           const foreground = await selectLayer("foreground-plate");
@@ -547,11 +663,11 @@ export async function renderEpisodeMedia(input: {
           details: { cameraQuality },
         });
       }
-      await compositeCameraTexture({
+      const compositeResult = await compositeCameraTexture({
         captures,
-        underlayPath: resolvedUnderlayPath,
-        cameraPlatePath: resolvedCameraPlatePath,
-        foregroundPlatePath: resolvedForegroundPlatePath,
+        underlayPath: resolvedUnderlay.path,
+        cameraPlatePath: resolvedCameraPlate.path,
+        foregroundPlatePath: resolvedForegroundPlate.path,
         outputPath: input.outputLocation,
         workingDirectory,
         width: composition.width,
@@ -559,6 +675,10 @@ export async function renderEpisodeMedia(input: {
         fps: composition.fps,
         profile: input.profile,
         logger: input.logger,
+        cache: {
+          enabled: compositorChunkCacheEnabled,
+          plateKeys: layerPlateKeys,
+        },
       });
       const renderMediaMs = Date.now() - textureStartedAt;
       await input.logger.info(
@@ -580,7 +700,8 @@ export async function renderEpisodeMedia(input: {
       });
       const renderStillMs = Date.now() - stillStartedAt;
       return {
-        sourceSignature,
+        sourceSignature: renderData.sourceSignature,
+        bundleSourceSignature,
         composition,
         sourceFrameRange,
         timingMs: {
@@ -588,8 +709,33 @@ export async function renderEpisodeMedia(input: {
           selectComposition: selectCompositionMs,
           renderMedia: renderMediaMs,
           renderStill: renderStillMs,
+          cameraTexture: {
+            projectionData: projectionDataMs,
+            underlayPlate: resolvedUnderlay.timingMs.total,
+            stagePlate: resolvedCameraPlate.timingMs.total,
+            foregroundPlate: resolvedForegroundPlate.timingMs.total,
+            displacementMaps: compositeResult.timingMs.displacementMaps,
+            compositorChunks: compositeResult.timingMs.chunks,
+            mux: compositeResult.timingMs.mux,
+          },
         },
         cameraQuality,
+        renderCache: {
+          layerPlateEnabled: layerPlateCacheEnabled,
+          compositorChunkEnabled: compositorChunkCacheEnabled,
+          layerPlates: {
+            hits: [resolvedUnderlay, resolvedCameraPlate, resolvedForegroundPlate].filter(
+              (resolution) => resolution.cacheStatus === "hit",
+            ).length,
+            misses: [resolvedUnderlay, resolvedCameraPlate, resolvedForegroundPlate].filter(
+              (resolution) => resolution.cacheStatus === "miss",
+            ).length,
+            disabled: [resolvedUnderlay, resolvedCameraPlate, resolvedForegroundPlate].filter(
+              (resolution) => resolution.cacheStatus === "disabled",
+            ).length,
+          },
+          compositorChunks: compositeResult.cache,
+        },
       };
     } catch (error) {
       throw toRenderServiceError(error, {
@@ -658,7 +804,11 @@ export async function renderEpisodeMedia(input: {
         overwrite: true,
         logLevel: "error",
         frameRange: sourceFrameRange,
-        onBrowserLog: (log) => collector.acceptBrowserLog(log.text),
+        onArtifact: (artifact) => {
+          if (typeof artifact.content === "string") {
+            collector.acceptBrowserLog(artifact.content);
+          }
+        },
       });
       const captures = collector.completeRange(sourceFrameRange[0], sourceFrameRange[1]);
       compositedCameraQuality = analyzeCameraTemporalQuality(
@@ -736,7 +886,8 @@ export async function renderEpisodeMedia(input: {
       details: {
         episodeId: input.episodeId,
         outputLocation: input.outputLocation,
-        sourceSignature,
+        sourceSignature: renderData.sourceSignature,
+        bundleSourceSignature,
       },
       cause: error instanceof Error ? error : undefined,
     });
@@ -776,7 +927,8 @@ export async function renderEpisodeMedia(input: {
       details: {
         episodeId: input.episodeId,
         outputLocation: input.posterLocation,
-        sourceSignature,
+        sourceSignature: renderData.sourceSignature,
+        bundleSourceSignature,
       },
       cause: error instanceof Error ? error : undefined,
     });
@@ -788,7 +940,8 @@ export async function renderEpisodeMedia(input: {
   });
 
   return {
-    sourceSignature,
+    sourceSignature: renderData.sourceSignature,
+    bundleSourceSignature,
     composition,
     sourceFrameRange,
     timingMs: {

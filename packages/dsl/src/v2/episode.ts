@@ -19,7 +19,7 @@
  *   .build();
  * ```
  *
- * @see docs/architecture/dsl-v2.md
+ * @see docs/ENGINEERING_HANDBOOK.md
  */
 
 import {

@@ -1,0 +1,66 @@
+{
+  "id": "apology-chat-use-cases",
+  "seed": "apology-chat-direction-v1",
+  "voices": {
+    "teal": "teal-manager",
+    "coral": "coral-intern",
+    "violet": "violet-founder",
+    "amber": "amber-analyst"
+  },
+  "utterances": [
+    {
+      "id": "who-uploaded-this",
+      "performer": "teal",
+      "text": "Which genius uploaded FINAL_USE_THIS_v7.mp4?",
+      "intent": "controlled-accusation"
+    },
+    {
+      "id": "do-not-open-x",
+      "performer": "amber",
+      "text": "Do not open X.",
+      "intent": "urgent-warning"
+    },
+    {
+      "id": "we-opened-x",
+      "performer": "coral",
+      "text": "Oh no, we opened X.",
+      "intent": "caught-panic"
+    },
+    {
+      "id": "legal-reasons",
+      "performer": "coral",
+      "text": "For legal reasons, that bracket was director's commentary.",
+      "intent": "nervous-justification"
+    },
+    {
+      "id": "meme-is-everywhere",
+      "performer": "amber",
+      "text": "The clean export has fourteen views. The typo has two hundred thousand shares.",
+      "intent": "bad-news-realization"
+    },
+    {
+      "id": "engagement-doubled",
+      "performer": "violet",
+      "text": "Keep the typo. Engagement doubled.",
+      "intent": "smug-reframe"
+    },
+    {
+      "id": "is-this-strategy",
+      "performer": "coral",
+      "text": "So we are calling this strategy?",
+      "intent": "hesitant-question"
+    },
+    {
+      "id": "rename-the-file",
+      "performer": "violet",
+      "text": "No. Rename the file.",
+      "intent": "deadpan-verdict"
+    },
+    {
+      "id": "coral-deflates",
+      "performer": "coral",
+      "text": "Okay.",
+      "intent": "defeated-button"
+    }
+  ]
+}

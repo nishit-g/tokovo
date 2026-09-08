@@ -4,7 +4,7 @@ This file tracks bundled assets that ship with the repository.
 
 ## Audio (Procedural SFX)
 
-- Location: `apps/video-runner/public/sounds/**`
+- Location: `packages/assets/public/sounds/**`
 - Source: procedurally generated in-repo (no samples)
 - Generator: `scripts/generate-procedural-sfx.mjs`
 
@@ -24,31 +24,39 @@ This file tracks bundled assets that ship with the repository.
 
 ## App and Story Media
 
-- Location: `apps/video-runner/public/{avatars,backgrounds,banners,link-preview,maps,media,placeholders,stickers,wallpapers}/**`
+- Location: `packages/assets/public/{avatars,backgrounds,banners,link-preview,maps,media,placeholders,stickers,wallpapers}/**`
 - Purpose: original or generated local episode fixtures for app simulation demos
 - License: `LicenseRef-Tokovo-Original-Fixture`; distributed with this repository for Tokovo examples and renders
-- Per-file inventory: `apps/video-runner/public/asset-provenance.json` records the content hash, byte size, source category, and license of every bundled render asset.
+- Per-file inventory: `packages/assets/public/asset-provenance.json` records the content hash, byte size, source category, and license of every bundled render asset.
 - Policy: placeholder assets are forbidden. New third-party assets must declare their exact source and license here and in the per-file manifest before release validation passes.
-- `apps/video-runner/public/media/launch-board.svg` is an original deterministic fixture authored in-repo for the WhatsApp cinematic showcase.
+- `packages/assets/public/media/launch-board.svg` is an original deterministic fixture authored in-repo for the WhatsApp cinematic showcase.
+- `packages/assets/public/media/apology-template.svg` is an original deterministic incident-card fixture authored in-repo for the multi-app drama story.
 
 ## App Icons
 
-- Location: `apps/video-runner/public/icons/**`
+- Location: `packages/assets/public/icons/**`
 - Source: simplified vector fixtures authored in-repo for deterministic simulated UI
 - Purpose: app identity in home-screen, status-bar, and notification render surfaces
 - License: `LicenseRef-Tokovo-Original-Fixture`
 
 ## Device Calibration Assets
 
-- Location: `apps/video-runner/public/assets/**`
+- Location: `packages/assets/public/assets/**`
 - Source: original in-repository device calibration fixtures
 - License: `LicenseRef-Tokovo-Original-Fixture`
 
 ## Demo Voice Fixtures
 
-- Location: `apps/video-runner/public/voice/**`
-- Source: generated demo voice and its deterministic timing manifest
+- Location: `packages/assets/public/voice/**`
+- Source: generated demo voice and its deterministic timing manifest, including procedural character voice rendered by `@tokovo/blurb-voice`
 - License: `LicenseRef-Tokovo-Original-Fixture`
+
+## Performer Character Fixtures
+
+- Location: `packages/assets/public/performers/**`
+- Source: original generated character art created for Tokovo, chroma-keyed and split into deterministic full-body reaction poses in-repo
+- License: `LicenseRef-Tokovo-Original-Fixture`
+- Purpose: reusable performer identity and emotion poses in authored episodes
 
 ## Deterministic UI Fonts
 

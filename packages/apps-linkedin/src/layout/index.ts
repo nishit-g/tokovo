@@ -13,8 +13,6 @@ import type { LinkedInState } from "../runtime/state.js";
 import { getLinkedInFeedLayoutMetrics } from "../feed-metrics.js";
 import { liSpacing } from "../ui/tokens.js";
 
-const DESIGN_WIDTH = 393;
-
 function rect(x: number, y: number, width: number, height: number): LayoutRect {
   return { x, y, width, height };
 }
@@ -27,11 +25,7 @@ function buildSemantic(
 }
 
 function getAppState(ctx: LayoutContext): LinkedInState {
-  return requireAppStateForDevice<LinkedInState>(
-    ctx.world,
-    "app_linkedin",
-    ctx.activeDeviceId,
-  );
+  return requireAppStateForDevice<LinkedInState>(ctx.world, "app_linkedin", ctx.activeDeviceId);
 }
 
 function getFeedFocusIndex(state: Partial<LinkedInState>): number {
@@ -45,19 +39,17 @@ function computeFeedLayout(ctx: LayoutContext): FeedLayoutState {
   const { viewportWidth: w, viewportHeight: h, appViewport } = ctx;
   const contentTop = appViewport.interactiveInsets.top;
   const contentBottom = appViewport.interactiveInsets.bottom;
-  const scale = w / DESIGN_WIDTH;
-  const px = (value: number) => value * scale;
   const state = getAppState(ctx);
   const screen = state.currentScreen ?? "feed";
 
-  const navH = px(liSpacing.navHeight);
+  const navH = liSpacing.navHeight;
   const navY = Math.max(0, h - contentBottom - navH);
-  const headerH = contentTop + px(liSpacing.headerHeight);
+  const headerH = contentTop + liSpacing.headerHeight;
   const contentY = headerH;
   const contentH = Math.max(0, navY - contentY);
-  const cardX = px(liSpacing.screenPadding);
+  const cardX = liSpacing.screenPadding;
   const cardW = Math.max(0, w - cardX * 2);
-  const gap = px(liSpacing.sm);
+  const gap = liSpacing.sm;
 
   const regions: Record<string, SemanticRegion> = {
     device: { id: "device", rect: rect(0, 0, w, h), tags: ["device"] },
@@ -77,11 +69,11 @@ function computeFeedLayout(ctx: LayoutContext): FeedLayoutState {
   };
 
   if (screen === "feed") {
-    const composerH = px(liSpacing.feedComposerHeight);
-    const sortH = px(liSpacing.sortRowHeight);
+    const composerH = liSpacing.feedComposerHeight;
+    const sortH = liSpacing.sortRowHeight;
     const focusIndex = getFeedFocusIndex(state);
     const feedCount = Math.max(1, state.feed?.length ?? 1);
-    const metrics = getLinkedInFeedLayoutMetrics(feedCount, focusIndex, scale, contentH);
+    const metrics = getLinkedInFeedLayoutMetrics(feedCount, focusIndex, 1, contentH);
     const contentHeight = composerH + gap + sortH + gap + metrics.contentHeight - metrics.feedTop;
     const scrollY = metrics.scrollY;
     const focusCardY =
@@ -93,7 +85,7 @@ function computeFeedLayout(ctx: LayoutContext): FeedLayoutState {
       metrics.feedTop +
       focusIndex * (metrics.baseCardHeight + metrics.gap) -
       scrollY;
-    const focusCardH = Math.min(metrics.focusedCardHeight, contentH - px(12));
+    const focusCardH = Math.min(metrics.focusedCardHeight, contentH - 12);
 
     regions.li_feed = {
       id: "li_feed",
@@ -102,12 +94,12 @@ function computeFeedLayout(ctx: LayoutContext): FeedLayoutState {
     };
     regions.li_feed_composer = {
       id: "li_feed_composer",
-      rect: rect(cardX, contentY + px(8) - scrollY, cardW, composerH),
+      rect: rect(cardX, contentY + 8 - scrollY, cardW, composerH),
       tags: ["feed", "composer"],
     };
     regions.li_feed_sort = {
       id: "li_feed_sort",
-      rect: rect(cardX, contentY + composerH + gap + px(8) - scrollY, cardW, sortH),
+      rect: rect(cardX, contentY + composerH + gap + 8 - scrollY, cardW, sortH),
       tags: ["feed", "sort"],
     };
     regions.li_post_focus = {
@@ -117,17 +109,17 @@ function computeFeedLayout(ctx: LayoutContext): FeedLayoutState {
     };
     regions.li_post_focus_media = {
       id: "li_post_focus_media",
-      rect: rect(cardX, focusCardY + px(162), cardW, px(liSpacing.postMediaHeight)),
+      rect: rect(cardX, focusCardY + 162, cardW, liSpacing.postMediaHeight),
       tags: ["post", "media", "focus"],
     };
     regions.li_post_focus_reactions = {
       id: "li_post_focus_reactions",
-      rect: rect(cardX, focusCardY + focusCardH - px(118), cardW, px(34)),
+      rect: rect(cardX, focusCardY + focusCardH - 118, cardW, 34),
       tags: ["post", "reactions", "focus"],
     };
     regions.li_post_focus_comments = {
       id: "li_post_focus_comments",
-      rect: rect(cardX, focusCardY + focusCardH - px(82), cardW, px(42)),
+      rect: rect(cardX, focusCardY + focusCardH - 82, cardW, 42),
       tags: ["post", "comments", "focus"],
     };
     regions.li_post_card = regions.li_post_focus;
@@ -154,9 +146,9 @@ function computeFeedLayout(ctx: LayoutContext): FeedLayoutState {
   }
 
   if (screen === "profile") {
-    const heroH = px(liSpacing.profileHeroHeight);
-    const highlightsH = px(liSpacing.profileHighlightsHeight);
-    const postsY = contentY + heroH + highlightsH + px(liSpacing.profilePostsTopGap);
+    const heroH = liSpacing.profileHeroHeight;
+    const highlightsH = liSpacing.profileHighlightsHeight;
+    const postsY = contentY + heroH + highlightsH + liSpacing.profilePostsTopGap;
 
     regions.li_profile_header = {
       id: "li_profile_header",
@@ -167,15 +159,15 @@ function computeFeedLayout(ctx: LayoutContext): FeedLayoutState {
       id: "li_profile_actions",
       rect: rect(
         cardX,
-        contentY + heroH - px(liSpacing.profileActionsHeight) - px(16),
+        contentY + heroH - liSpacing.profileActionsHeight - 16,
         cardW,
-        px(liSpacing.profileActionsHeight),
+        liSpacing.profileActionsHeight,
       ),
       tags: ["profile", "actions"],
     };
     regions.li_profile_highlights = {
       id: "li_profile_highlights",
-      rect: rect(cardX, contentY + heroH + px(8), cardW, highlightsH),
+      rect: rect(cardX, contentY + heroH + 8, cardW, highlightsH),
       tags: ["profile", "highlights"],
     };
     regions.li_profile_posts = {
@@ -185,7 +177,7 @@ function computeFeedLayout(ctx: LayoutContext): FeedLayoutState {
     };
     regions.li_post_focus = {
       id: "li_post_focus",
-      rect: rect(cardX, postsY + px(12), cardW, px(liSpacing.postCardHeight)),
+      rect: rect(cardX, postsY + 12, cardW, liSpacing.postCardHeight),
       tags: ["post", "card", "focus"],
     };
   } else if (screen === "notifications") {
@@ -196,16 +188,16 @@ function computeFeedLayout(ctx: LayoutContext): FeedLayoutState {
     };
     regions.li_notifications_focus_row = {
       id: "li_notifications_focus_row",
-      rect: rect(0, contentY + px(12), w, px(liSpacing.listRowHeight)),
+      rect: rect(0, contentY + 12, w, liSpacing.listRowHeight),
       tags: ["notifications", "row", "focus"],
     };
   } else if (screen === "messages") {
-    const searchBlockH = px(liSpacing.inputHeight + 96);
-    const fabSize = px(liSpacing.fabSize);
+    const searchBlockH = liSpacing.inputHeight + 96;
+    const fabSize = liSpacing.fabSize;
 
     regions.li_messages_search = {
       id: "li_messages_search",
-      rect: rect(cardX, contentY + px(8), cardW, searchBlockH),
+      rect: rect(cardX, contentY + 8, cardW, searchBlockH),
       tags: ["messages", "search"],
     };
     regions.li_messages_list = {
@@ -215,17 +207,17 @@ function computeFeedLayout(ctx: LayoutContext): FeedLayoutState {
     };
     regions.li_messages_focus_row = {
       id: "li_messages_focus_row",
-      rect: rect(0, contentY + searchBlockH + px(8), w, px(liSpacing.listRowHeight)),
+      rect: rect(0, contentY + searchBlockH + 8, w, liSpacing.listRowHeight),
       tags: ["messages", "row", "focus"],
     };
     regions.li_compose_fab = {
       id: "li_compose_fab",
-      rect: rect(w - cardX - fabSize, navY - px(14) - fabSize, fabSize, fabSize),
+      rect: rect(w - cardX - fabSize, navY - 14 - fabSize, fabSize, fabSize),
       tags: ["messages", "compose", "sticky"],
       metadata: { sticky: true },
     };
   } else if (screen === "post") {
-    const composerH = px(liSpacing.commentComposerHeight);
+    const composerH = liSpacing.commentComposerHeight;
     const detailH = Math.max(0, contentH - composerH);
 
     regions.li_post_detail = {
@@ -235,16 +227,16 @@ function computeFeedLayout(ctx: LayoutContext): FeedLayoutState {
     };
     regions.li_post_detail_card = {
       id: "li_post_detail_card",
-      rect: rect(cardX, contentY + px(8), cardW, px(liSpacing.postCardExpandedHeight)),
+      rect: rect(cardX, contentY + 8, cardW, liSpacing.postCardExpandedHeight),
       tags: ["post", "card"],
     };
     regions.li_post_detail_comments = {
       id: "li_post_detail_comments",
       rect: rect(
         cardX,
-        contentY + px(liSpacing.postCardExpandedHeight) + px(20),
+        contentY + liSpacing.postCardExpandedHeight + 20,
         cardW,
-        Math.max(0, detailH - px(liSpacing.postCardExpandedHeight) - px(28)),
+        Math.max(0, detailH - liSpacing.postCardExpandedHeight - 28),
       ),
       tags: ["post", "comments", "scroll"],
     };
@@ -272,11 +264,9 @@ function computeChatLayout(ctx: LayoutContext): ChatLayoutState {
   const { viewportWidth: w, viewportHeight: h, appViewport } = ctx;
   const contentTop = appViewport.interactiveInsets.top;
   const contentBottom = appViewport.interactiveInsets.bottom;
-  const scale = w / DESIGN_WIDTH;
-  const px = (value: number) => value * scale;
 
-  const headerH = contentTop + px(liSpacing.messageHeaderHeight);
-  const composerH = px(liSpacing.dmComposerHeight) + contentBottom;
+  const headerH = contentTop + liSpacing.messageHeaderHeight;
+  const composerH = liSpacing.dmComposerHeight + contentBottom;
   const composerY = Math.max(0, h - composerH);
   const threadY = headerH;
   const threadH = Math.max(0, composerY - threadY);
@@ -298,7 +288,7 @@ function computeChatLayout(ctx: LayoutContext): ChatLayoutState {
     },
     li_dm_focus_message: {
       id: "li_dm_focus_message",
-      rect: rect(w - bubbleW - px(liSpacing.screenPadding), composerY - px(140), bubbleW, px(44)),
+      rect: rect(w - bubbleW - liSpacing.screenPadding, composerY - 140, bubbleW, 44),
       tags: ["dm", "message", "focus"],
     },
     li_dm_composer: {
@@ -325,11 +315,9 @@ function computeFullscreenLayout(ctx: LayoutContext): FullscreenLayoutState {
   const { viewportWidth: w, viewportHeight: h, appViewport } = ctx;
   const contentTop = appViewport.interactiveInsets.top;
   const contentBottom = appViewport.interactiveInsets.bottom;
-  const scale = w / DESIGN_WIDTH;
-  const px = (value: number) => value * scale;
 
-  const headerH = contentTop + px(liSpacing.headerHeight);
-  const bottomBarH = px(64) + contentBottom;
+  const headerH = contentTop + liSpacing.headerHeight;
+  const bottomBarH = 64 + contentBottom;
 
   const regions: Record<string, SemanticRegion> = {
     device: { id: "device", rect: rect(0, 0, w, h), tags: ["device"] },

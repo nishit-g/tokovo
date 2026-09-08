@@ -1,0 +1,77 @@
+{
+  "id": "calendar-invite",
+  "seed": "calendar-invite-language-v1",
+  "voices": {
+    "coral": "coral-intern",
+    "teal": "teal-manager",
+    "violet": "violet-founder"
+  },
+  "utterances": [
+    {
+      "id": "violet-why",
+      "performer": "violet",
+      "text": "Why did Teal get that?",
+      "intent": "suspicious-check",
+      "emotion": "deadpan",
+      "intensity": 0.52,
+      "length": "short",
+      "finalContour": "fall",
+      "pauseAfterMs": 180
+    },
+    {
+      "id": "coral-denial",
+      "performer": "coral",
+      "text": "I didn't add her.",
+      "intent": "caught-panic",
+      "emotion": "panic",
+      "intensity": 0.74,
+      "length": "short",
+      "finalContour": "rise",
+      "pauseAfterMs": 160
+    },
+    {
+      "id": "teal-looking-forward",
+      "performer": "teal",
+      "text": "Looking forward to the feedback.",
+      "intent": "smug-reframe",
+      "emotion": "smug",
+      "intensity": 0.48,
+      "length": "medium",
+      "finalContour": "fall",
+      "pauseAfterMs": 220
+    },
+    {
+      "id": "coral-explain",
+      "performer": "coral",
+      "text": "I can explain.",
+      "intent": "nervous-justification",
+      "emotion": "confused",
+      "intensity": 0.68,
+      "length": "short",
+      "finalContour": "rise",
+      "pauseAfterMs": 220
+    },
+    {
+      "id": "violet-accepted",
+      "performer": "violet",
+      "text": "Accepted.",
+      "intent": "deadpan-verdict",
+      "emotion": "deadpan",
+      "intensity": 0.36,
+      "length": "tiny",
+      "finalContour": "fall",
+      "pauseAfterMs": 260
+    },
+    {
+      "id": "teal-friday",
+      "performer": "teal",
+      "text": "See you Friday.",
+      "intent": "smug-reframe",
+      "emotion": "smug",
+      "intensity": 0.44,
+      "length": "short",
+      "finalContour": "fall",
+      "pauseAfterMs": 300
+    }
+  ]
+}

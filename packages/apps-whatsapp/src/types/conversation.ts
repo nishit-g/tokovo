@@ -16,6 +16,12 @@ export interface WhatsAppGroupMember {
   avatar?: string;
   phone?: string;
   colorIndex?: number;
+  /**
+   * Optional authored identity colors. When present, messages from this member
+   * use the accent as their bubble color and the on-accent color for content.
+   */
+  accentColor?: string;
+  onAccentColor?: string;
 }
 
 // =============================================================================
@@ -53,6 +59,8 @@ export interface WhatsAppConversation {
   };
   isMuted?: boolean;
   isPinned?: boolean;
+  /** Favorite is independent of list pinning. */
+  isFavorite?: boolean;
   isArchived?: boolean;
   unreadDividerMessageId?: string;
   lastMessageAt?: number;

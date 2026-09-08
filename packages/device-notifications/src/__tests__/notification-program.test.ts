@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { NotificationIntentIR, NotificationInteractionIR } from "@tokovo/ir";
 import {
   evaluateNotificationProgram,
+  systemCalendarNotificationAdapter,
   getNotificationTheme,
   prepareNotificationProgram,
   projectNotificationAudio,
@@ -91,6 +92,39 @@ const projectionConfig = {
 } as const;
 
 describe("canonical notification program", () => {
+  it("formats OS-owned Calendar notifications without an app plugin", () => {
+    const calendarIntent = intent("calendar", 30, {
+      appId: "system_calendar",
+      content: {
+        title: "Teal accepted",
+        body: "Discuss Teal's performance",
+      },
+    });
+    const program = prepare({
+      intents: [calendarIntent],
+      adapters: new Map([
+        [systemCalendarNotificationAdapter.appId, systemCalendarNotificationAdapter],
+      ]),
+    });
+
+    expect(program.records[0]).toMatchObject({
+      appId: "system_calendar",
+      presentation: {
+        appName: "Calendar",
+        icon: "31",
+        accentColor: "#ff3b30",
+        title: "Teal accepted",
+        body: "Discuss Teal's performance",
+      },
+      defaultAction: {
+        navigation: {
+          appId: "system_calendar",
+          route: "today",
+        },
+      },
+    });
+  });
+
   it("queues same-frame banners by authored sequence and projects audio", () => {
     const program = prepare({
       intents: [

@@ -1,18 +1,18 @@
 import type { EpisodeDefinition } from "../../types/index.js";
 import releaseEpisodes from "./release.js";
-import studioEpisodes from "./studio.js";
+import showcaseEpisodes from "./showcase.js";
 
-type TokovoCatalogProfile = "release" | "studio";
+type TokovoCatalogProfile = "release" | "showcase";
 
 export const catalogEpisodesByProfile: Record<
   TokovoCatalogProfile,
   readonly EpisodeDefinition[]
 > = {
   release: releaseEpisodes,
-  studio: studioEpisodes,
+  showcase: showcaseEpisodes,
 };
 
 export {
   releaseEpisodes,
-  studioEpisodes,
+  showcaseEpisodes,
 };

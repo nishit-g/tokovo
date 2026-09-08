@@ -1,4 +1,8 @@
-import type { RuntimeEvent } from "@tokovo/core";
+import {
+  getAppStateForDevice,
+  type RuntimeEvent,
+  type WorldState,
+} from "@tokovo/core";
 
 export type RuntimeValidationSeverity = "error" | "warning";
 
@@ -12,6 +16,7 @@ export interface RuntimeValidationIssue {
 
 type AnyRuntimeEvent = RuntimeEvent & {
   appId?: string;
+  deviceId?: string;
   type?: string;
   payload?: unknown;
 };
@@ -35,7 +40,29 @@ function getPayloadScreen(e: AnyRuntimeEvent): string | undefined {
 function hasWhatsAppChatNavigationBefore(
   events: AnyRuntimeEvent[],
   firstChatFrame: number,
+  initialWorld?: WorldState,
+  firstChatEvent?: AnyRuntimeEvent,
 ): boolean {
+  const deviceId = firstChatEvent?.deviceId;
+  if (initialWorld && typeof deviceId === "string") {
+    const state = getAppStateForDevice<{
+      currentScreen?: string;
+      conversationId?: string;
+    }>(initialWorld, "app_whatsapp", deviceId);
+    const payload = firstChatEvent?.payload;
+    const eventConversationId =
+      payload && typeof payload === "object"
+        ? (payload as { conversationId?: unknown }).conversationId
+        : undefined;
+    if (
+      state?.currentScreen === "chat" &&
+      typeof state.conversationId === "string" &&
+      (typeof eventConversationId !== "string" ||
+        eventConversationId === state.conversationId)
+    ) {
+      return true;
+    }
+  }
   return events.some((e) => {
     if (!isAppEvent(e)) return false;
     if (e.appId !== "app_whatsapp") return false;
@@ -52,10 +79,19 @@ function hasWhatsAppChatNavigationBefore(
 function hasIMessageChatNavigationBefore(
   events: AnyRuntimeEvent[],
   firstChatFrame: number,
+  initialWorld?: WorldState,
+  firstChatEvent?: AnyRuntimeEvent,
 ): boolean {
+  const deviceId = firstChatEvent?.deviceId;
+  if (initialWorld && deviceId) {
+    const state = getAppStateForDevice<{ currentScreen?: string; activeConversationId?: string }>(initialWorld, "app_imessage", deviceId);
+    const conversationId = (firstChatEvent?.payload as { conversationId?: string } | undefined)?.conversationId;
+    if (state?.currentScreen === "chat" && state.activeConversationId && (!conversationId || state.activeConversationId === conversationId)) return true;
+  }
   return events.some((e) => {
     if (!isAppEvent(e)) return false;
     if (e.appId !== "app_imessage") return false;
+    if (deviceId && e.deviceId !== deviceId) return false;
     if (typeof e.at !== "number" || e.at > firstChatFrame) return false;
 
     // iMessage can be entered either by setting screen, or by explicit open.
@@ -112,6 +148,7 @@ function hasInstagramThreadNavigationBefore(
  */
 export function validateV1RuntimeEpisode(
   events: RuntimeEvent[],
+  initialWorld?: WorldState,
 ): RuntimeValidationIssue[] {
   const issues: RuntimeValidationIssue[] = [];
   const evs = events as AnyRuntimeEvent[];
@@ -155,7 +192,14 @@ export function validateV1RuntimeEpisode(
 
   if (firstWaChat) {
     const firstFrame = firstWaChat.at as number;
-    if (!hasWhatsAppChatNavigationBefore(evs, firstFrame)) {
+    if (
+      !hasWhatsAppChatNavigationBefore(
+        evs,
+        firstFrame,
+        initialWorld,
+        firstWaChat,
+      )
+    ) {
       issues.push({
         severity: "error",
         appId: "app_whatsapp",
@@ -187,7 +231,7 @@ export function validateV1RuntimeEpisode(
 
   if (firstIMsgChat) {
     const firstFrame = firstIMsgChat.at as number;
-    if (!hasIMessageChatNavigationBefore(evs, firstFrame)) {
+    if (!hasIMessageChatNavigationBefore(evs, firstFrame, initialWorld, firstIMsgChat)) {
       issues.push({
         severity: "error",
         appId: "app_imessage",

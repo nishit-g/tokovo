@@ -26,8 +26,7 @@ export const iPhone16Frame: React.FC<FrameProps> = ({
       height,
       background: "linear-gradient(145deg, #25252a 0%, #0b0b0d 30%, #050506 72%, #1b1b1f 100%)",
       borderRadius: C.BODY_CORNER_RADIUS,
-      filter:
-        "drop-shadow(0 1px 1px rgba(255, 255, 255, 0.08)) drop-shadow(0 24px 34px rgba(0, 0, 0, 0.58))",
+      filter: "drop-shadow(0 12px 24px rgba(0, 0, 0, 0.24))",
       position: "relative" as const,
       overflow: "hidden" as const,
       display: "flex" as const,
@@ -93,9 +92,8 @@ export const iPhone16Frame: React.FC<FrameProps> = ({
       pointerEvents: "none" as const,
       display: "flex" as const,
       justifyContent: "space-between" as const,
-      padding: `${metrics.statusBar.paddingTop}px ${metrics.statusBar.paddingX}px 0 ${metrics.statusBar.paddingX}px`,
     }),
-    [metrics.statusBar.height, metrics.statusBar.paddingTop, metrics.statusBar.paddingX],
+    [metrics.statusBar.height],
   );
 
   const dynamicIslandStyle = useMemo(

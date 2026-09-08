@@ -12,17 +12,30 @@ import {
   applyEasing,
   UI_CONSTANTS,
   getChatChromeGeometry,
+  getComposerExtraHeight,
+  getReactionWidth,
+  getThemedMessageLayout,
   type MessageLayoutConfig,
   type MessageForGap,
   type MessageType,
   type GapContext,
 } from "../config/index.js";
-import type { WhatsAppMessage, WhatsAppConversation, WhatsAppState } from "../types/index.js";
+import type {
+  WhatsAppMessage,
+  WhatsAppConversation,
+  WhatsAppState,
+} from "../types/index.js";
 import { computeConversationLayout, getLayoutCache } from "./cache.js";
 import { projectWhatsAppThread } from "../thread/projector.js";
 import { createWhatsAppThreadWindow } from "../thread/window.js";
 import { getBaseTime } from "../utils/messages.js";
 import { resolveTypingMembers } from "../utils/participants.js";
+import {
+  messageActionKeys,
+  messageActionRect,
+} from "../presentation/message-actions.js";
+import { resolveWhatsAppExperience } from "../experience/resolver.js";
+import type { WhatsAppThemeId } from "../theme/index.js";
 
 type LayoutMessage = WhatsAppMessage;
 
@@ -46,7 +59,6 @@ export function computeChatLayout(
   layoutConfig: MessageLayoutConfig = DEFAULT_LAYOUT_CONFIG,
 ): ChatLayoutState {
   const { world, t, activeConversationId, viewportHeight, viewportWidth } = ctx;
-  const config = layoutConfig;
   // Layout context dimensions and React CSS values are both logical points.
   // Physical-pixel scaling happens above the app surface in the renderer.
   const px = (value: number) => value;
@@ -56,7 +68,20 @@ export function computeChatLayout(
     "app_whatsapp",
     ctx.activeDeviceId,
   );
-  const conversations = (appState.conversations || {}) as Record<string, WhatsAppConversation>;
+  const device = world.devices[ctx.activeDeviceId];
+  if (!device)
+    throw new Error(`WHATSAPP_LAYOUT_DEVICE_MISSING: "${ctx.activeDeviceId}"`);
+  const { theme } = resolveWhatsAppExperience({
+    platform: ctx.platform,
+    appearance: device.appAppearance ?? device.os.appearance,
+    themeId: device.appTheme as WhatsAppThemeId | undefined,
+    locale: appState.locale ?? "en-US",
+  });
+  const config = getThemedMessageLayout(theme, layoutConfig);
+  const conversations = (appState.conversations || {}) as Record<
+    string,
+    WhatsAppConversation
+  >;
 
   if (!activeConversationId || !conversations[activeConversationId]) {
     throw new Error(
@@ -82,7 +107,9 @@ export function computeChatLayout(
     focusMessageId: viewportFocusMessageId,
   });
   const allMessages = threadWindow.blocks.flatMap((block) =>
-    block.kind === "system" ? [block.message] : block.items.map((item) => item.message),
+    block.kind === "system"
+      ? [block.message]
+      : block.items.map((item) => item.message),
   );
   const projectedConversation: WhatsAppConversation = {
     ...conversation,
@@ -131,16 +158,19 @@ export function computeChatLayout(
 
     const timeSinceAppear = t - baseLayout.messageAt;
     let opacity = 1;
-    let translateX = 0;
-    const translateY = 0;
+    const translateX = 0;
+    let translateY = 0;
 
-    if (timeSinceAppear >= 0 && timeSinceAppear < config.animation.messageAppearDuration) {
-      const progress = timeSinceAppear / config.animation.messageAppearDuration;
+    if (
+      baseLayout.messageAt > 0 &&
+      timeSinceAppear >= 0 &&
+      timeSinceAppear < (world.config?.fps ?? 30) * 0.24
+    ) {
+      const progress = timeSinceAppear / ((world.config?.fps ?? 30) * 0.24);
       const ease = applyEasing(progress, "easeOut");
       opacity = ease;
 
-      const offset = config.animation.messageAppearOffset * (1 - ease);
-      translateX = baseLayout.isMe ? offset : -offset;
+      translateY = 8 * (1 - ease);
     }
 
     const rect = baseLayout.rect;
@@ -159,7 +189,11 @@ export function computeChatLayout(
     semanticRegions[subjectId] = {
       id: subjectId,
       rect,
-      tags: ["message", msg.from === "me" ? "message_me" : "message_other", msgType],
+      tags: [
+        "message",
+        msg.from === "me" ? "message_me" : "message_other",
+        msgType,
+      ],
       metadata: {
         from: msg.from,
         type: msgType,
@@ -204,7 +238,9 @@ export function computeChatLayout(
 
     if (isMediaSemanticType) {
       const mediaHeightRatio =
-        rawMessageType === "voice" || rawMessageType === "document" || rawMessageType === "contact"
+        rawMessageType === "voice" ||
+        rawMessageType === "document" ||
+        rawMessageType === "contact"
           ? 0.44
           : rawMessageType === "location"
             ? 0.62
@@ -213,7 +249,10 @@ export function computeChatLayout(
         x: innerX,
         y: contentTop,
         width: innerWidth,
-        height: Math.max(px(32), Math.min(rect.height - px(16), rect.height * mediaHeightRatio)),
+        height: Math.max(
+          px(32),
+          Math.min(rect.height - px(16), rect.height * mediaHeightRatio),
+        ),
       };
       semanticRegions[`media_${msg.id}`] = {
         id: `media_${msg.id}`,
@@ -226,10 +265,12 @@ export function computeChatLayout(
 
     if (msg.reactions && msg.reactions.length > 0) {
       const reactionsRect = {
-        x: isOutgoing(msg) ? rect.x + rect.width - px(74) : rect.x + px(8),
-        y: rect.y + rect.height - px(14),
-        width: px(66),
-        height: px(18),
+        x: isOutgoing(msg)
+          ? rect.x + rect.width - 7 - getReactionWidth(msg.reactions)
+          : rect.x + 7,
+        y: rect.y + rect.height - 26,
+        width: getReactionWidth(msg.reactions),
+        height: 26,
       };
       semanticRegions[`reactions_${msg.id}`] = {
         id: `reactions_${msg.id}`,
@@ -266,7 +307,9 @@ export function computeChatLayout(
 
     // Calculate gap before typing indicator
     const lastMsg =
-      lastVisibleIndex >= 0 ? (allMessages[lastVisibleIndex] as LayoutMessage) : undefined;
+      lastVisibleIndex >= 0
+        ? (allMessages[lastVisibleIndex] as LayoutMessage)
+        : undefined;
     if (lastMsg) {
       const prevForGap: MessageForGap = {
         type: lastMsg.type as MessageType,
@@ -323,18 +366,68 @@ export function computeChatLayout(
   }
 
   const lastVisibleLayout =
-    lastMessageId !== undefined ? conversationLayout.messageLayouts.get(lastMessageId) : undefined;
+    lastMessageId !== undefined
+      ? conversationLayout.messageLayouts.get(lastMessageId)
+      : undefined;
   const lastVisibleBottom =
-    lastVisibleLayout?.y !== undefined && lastVisibleLayout?.height !== undefined
+    lastVisibleLayout?.y !== undefined &&
+    lastVisibleLayout?.height !== undefined
       ? lastVisibleLayout.y + lastVisibleLayout.height
       : config.spacing.global.topPadding;
   const rawContentBottom = Math.max(currentY, lastVisibleBottom);
-  const messageBottomInset = px(chromeGeometry.messageBottomInset);
-  const viewportOffsetY = viewportHeight - messageBottomInset - rawContentBottom;
+  const composerExtra = getComposerExtraHeight(
+    ctx.inputValues?.composer ?? conversation.draftText ?? "",
+    viewportWidth,
+  );
+  const messageBottomInset =
+    px(chromeGeometry.messageBottomInset) + composerExtra;
+  const pinnedHeight = conversation.pinnedMessage ? 53 : 0;
+  const replyHeight =
+    appState.replyComposer?.conversationId === activeConversationId ? 66 : 0;
+  const threadTop = chromeGeometry.headerHeight + pinnedHeight;
+  const threadBottom = viewportHeight - messageBottomInset - replyHeight;
+  // Grow the newest slot from authored time. No previous-frame state: seeking
+  // directly to a frame produces the same scroll position as sequential replay.
+  let pendingHeight = 0;
+  for (let i = 0; i <= lastVisibleIndex; i++) {
+    const base = conversationLayout.messageLayouts.get(allMessages[i].id);
+    const item = messageLayouts[allMessages[i].id];
+    if (!base || !item) continue;
+    for (const prefix of ["reply_", "media_", "reactions_"]) {
+      const region = semanticRegions[`${prefix}${item.id}`];
+      if (region)
+        region.rect = { ...region.rect, y: region.rect.y - pendingHeight };
+    }
+    item.y -= pendingHeight;
+    if (item.rect) item.rect = { ...item.rect, y: item.rect.y - pendingHeight };
+    const age = t - base.messageAt;
+    if (base.messageAt > 0 && age >= 0) {
+      const progress = applyEasing(
+        Math.min(1, age / ((world.config?.fps ?? 30) * 0.24)),
+        "easeOut",
+      );
+      pendingHeight += base.height * (1 - progress);
+    }
+    semanticRegions[item.id].rect = item.rect!;
+  }
+  const animatedBottom = rawContentBottom - pendingHeight;
+  if (typingLayout) {
+    typingLayout.y -= pendingHeight;
+    if (typingLayout.rect)
+      typingLayout.rect = {
+        ...typingLayout.rect,
+        y: typingLayout.rect.y - pendingHeight,
+      };
+    semanticRegions.typing_indicator.rect = typingLayout.rect!;
+  }
+  const topOffset = threadTop - config.spacing.global.topPadding;
+  const bottomOffset = threadBottom - animatedBottom;
+  const viewportOffsetY =
+    theme.spacing.shortThreadAlignment === "start"
+      ? Math.min(topOffset, bottomOffset)
+      : bottomOffset;
 
-  // The React thread is a bottom-aligned window, not a scrollable copy of the
-  // full conversation. Translate every non-sticky chat region into those same
-  // viewport coordinates before exposing semantic subjects to the camera.
+  // Match the app-owned thread alignment before exposing camera subjects.
   for (const layout of Object.values(messageLayouts)) {
     layout.y += viewportOffsetY;
     if (layout.rect) {
@@ -353,6 +446,24 @@ export function computeChatLayout(
   for (const region of Object.values(semanticRegions)) {
     region.rect = { ...region.rect, y: region.rect.y + viewportOffsetY };
   }
+  for (const item of Object.values(messageLayouts)) {
+    const region = semanticRegions[item.id];
+    region.rect = { ...region.rect, y: region.rect.y + item.translateY };
+    if (item.id === lastMessageId && item.opacity < 1) {
+      const top = Math.min(
+        threadBottom - 1,
+        Math.max(threadTop, region.rect.y),
+      );
+      region.rect = {
+        ...region.rect,
+        y: top,
+        height: Math.max(
+          1,
+          Math.min(threadBottom, region.rect.y + region.rect.height) - top,
+        ),
+      };
+    }
+  }
 
   // ==========================================================
   // INPUT AREA SUBJECT (Semantic only, not visual layout item)
@@ -362,12 +473,14 @@ export function computeChatLayout(
   // Ideally, the InputArea component itself should report this, but since we compute layout here:
   // We can define a "logical" input area subject at the bottom of the viewport.
 
-  const INPUT_HEIGHT = px(UI_CONSTANTS.INPUT_MIN_HEIGHT + contentBottom);
+  const INPUT_HEIGHT =
+    px(UI_CONSTANTS.INPUT_MIN_HEIGHT + contentBottom) + composerExtra;
   const HEADER_HEIGHT = px(chromeGeometry.headerHeight);
 
   const PROFILE_SIZE = px(UI_CONSTANTS.HEADER_AVATAR_SIZE);
   const PROFILE_X_OFFSET = px(10 + (24 + 17) + 10);
-  const PROFILE_Y_OFFSET = contentTop + (px(UI_CONSTANTS.HEADER_CONTENT_HEIGHT) - PROFILE_SIZE) / 2;
+  const PROFILE_Y_OFFSET =
+    contentTop + (px(UI_CONSTANTS.HEADER_CONTENT_HEIGHT) - PROFILE_SIZE) / 2;
 
   const inputRect = {
     x: 0,
@@ -381,6 +494,18 @@ export function computeChatLayout(
     rect: inputRect,
     tags: ["input", "footer"],
     metadata: { sticky: true },
+  };
+  semanticRegions.thread = {
+    id: "thread",
+    rect: {
+      x: 0,
+      y: threadTop,
+      width: viewportWidth,
+      // Paint wallpaper through the clearance, not a white strip that visually
+      // joins the last bubble to the composer. Content still stops 20pt above it.
+      height: Math.max(0, inputRect.y - replyHeight - threadTop),
+    },
+    tags: ["thread"],
   };
 
   if (appState.replyComposer?.conversationId === activeConversationId) {
@@ -402,14 +527,19 @@ export function computeChatLayout(
     appState.activeGesture.gesture === "long_press" &&
     appState.activeGesture.phase === "completed"
   ) {
+    const selectedRect = messageLayouts[appState.activeGesture.messageId]?.rect;
+    const selectedMessage = thread.messagesById.get(
+      appState.activeGesture.messageId,
+    );
+    if (!selectedRect || !selectedMessage)
+      throw new Error("WhatsApp action menu requires a visible message anchor");
     semanticRegions.message_actions = {
       id: "message_actions",
-      rect: {
-        x: px(16),
-        y: Math.max(0, inputRect.y - px(184)),
-        width: viewportWidth - px(32),
-        height: px(138),
-      },
+      rect: messageActionRect(
+        selectedRect,
+        semanticRegions.thread.rect,
+        messageActionKeys(selectedMessage).length,
+      ),
       tags: ["message", "actions", "overlay"],
       metadata: { messageId: appState.activeGesture.messageId },
     };
@@ -468,7 +598,10 @@ function isOutgoing(message: LayoutMessage): boolean {
   return message.from === "me";
 }
 
-function findLastVisibleIndex(messages: WhatsAppMessage[], frame: number): number {
+function findLastVisibleIndex(
+  messages: WhatsAppMessage[],
+  frame: number,
+): number {
   if (messages.length === 0) return -1;
 
   let low = 0;

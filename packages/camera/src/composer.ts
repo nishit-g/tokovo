@@ -13,8 +13,111 @@ function finitePositive(value: number, label: string): number {
   return value;
 }
 
+function effectiveViewport(input: {
+  viewport: CameraRectIR;
+  compositionProfileId?: import("@tokovo/visual-system").CompositionProfileId;
+  editorialInsets?: CameraEditorialInsetsIR;
+}): CameraRectIR {
+  const editorialFrame =
+    input.editorialInsets ??
+    (input.compositionProfileId
+      ? requireEditorialCompositionProfile(input.compositionProfileId).editorialInsets
+      : { top: 0, right: 0, bottom: 0, left: 0 });
+  const safeViewport = {
+    x: input.viewport.x + editorialFrame.left,
+    y: input.viewport.y + editorialFrame.top,
+    width: input.viewport.width - editorialFrame.left - editorialFrame.right,
+    height: input.viewport.height - editorialFrame.top - editorialFrame.bottom,
+  };
+  finitePositive(safeViewport.width, "Safe viewport width");
+  finitePositive(safeViewport.height, "Safe viewport height");
+  return safeViewport;
+}
+
+export interface CameraMountMeasurement {
+  desiredCenter: readonly [number, number];
+  projectedCenter: readonly [number, number];
+  driftPx: readonly [number, number];
+  maxDriftPx: readonly [number, number];
+}
+
+export function measureCameraMount(input: {
+  pose: CameraPose2D;
+  mountBounds: CameraRectIR;
+  mountScreenPosition: readonly [number, number];
+  mountMaxDriftPx: readonly [number, number];
+  viewport: CameraRectIR;
+  compositionProfileId?: import("@tokovo/visual-system").CompositionProfileId;
+  editorialInsets?: CameraEditorialInsetsIR;
+}): CameraMountMeasurement {
+  const safeViewport = effectiveViewport(input);
+  const projectionCenterX = input.viewport.x + input.viewport.width / 2;
+  const projectionCenterY = input.viewport.y + input.viewport.height / 2;
+  const rotationRadians = (input.pose.rotationDeg * Math.PI) / 180;
+  const rotationCosine = Math.cos(rotationRadians);
+  const rotationSine = Math.sin(rotationRadians);
+  const mountCenterX = input.mountBounds.x + input.mountBounds.width / 2;
+  const mountCenterY = input.mountBounds.y + input.mountBounds.height / 2;
+  const deltaX = mountCenterX - input.pose.centerX;
+  const deltaY = mountCenterY - input.pose.centerY;
+  const projectedCenterX =
+    projectionCenterX + input.pose.scale * (rotationCosine * deltaX - rotationSine * deltaY);
+  const projectedCenterY =
+    projectionCenterY + input.pose.scale * (rotationSine * deltaX + rotationCosine * deltaY);
+  const desiredCenterX = safeViewport.x + safeViewport.width * input.mountScreenPosition[0];
+  const desiredCenterY = safeViewport.y + safeViewport.height * input.mountScreenPosition[1];
+  return {
+    desiredCenter: [desiredCenterX, desiredCenterY],
+    projectedCenter: [projectedCenterX, projectedCenterY],
+    driftPx: [projectedCenterX - desiredCenterX, projectedCenterY - desiredCenterY],
+    maxDriftPx: input.mountMaxDriftPx,
+  };
+}
+
+/**
+ * Applies only an output-space translation correction. Authored scale,
+ * rotation, trajectory, lens, and filter intent remain untouched.
+ */
+export function stabilizeCameraPose(input: {
+  pose: CameraPose2D;
+  mountBounds: CameraRectIR;
+  mountScreenPosition: readonly [number, number];
+  mountMaxDriftPx: readonly [number, number];
+  viewport: CameraRectIR;
+  compositionProfileId?: import("@tokovo/visual-system").CompositionProfileId;
+  editorialInsets?: CameraEditorialInsetsIR;
+}): CameraPose2D {
+  finitePositive(input.mountBounds.width, "Camera mount width");
+  finitePositive(input.mountBounds.height, "Camera mount height");
+  const measurement = measureCameraMount(input);
+  const correctionX =
+    clamp(measurement.driftPx[0], -measurement.maxDriftPx[0], measurement.maxDriftPx[0]) -
+    measurement.driftPx[0];
+  const correctionY =
+    clamp(measurement.driftPx[1], -measurement.maxDriftPx[1], measurement.maxDriftPx[1]) -
+    measurement.driftPx[1];
+  if (Math.abs(correctionX) <= 1e-9 && Math.abs(correctionY) <= 1e-9) {
+    return input.pose;
+  }
+  const rotationRadians = (input.pose.rotationDeg * Math.PI) / 180;
+  const rotationCosine = Math.cos(rotationRadians);
+  const rotationSine = Math.sin(rotationRadians);
+  return {
+    ...input.pose,
+    centerX:
+      input.pose.centerX -
+      (rotationCosine * correctionX + rotationSine * correctionY) / input.pose.scale,
+    centerY:
+      input.pose.centerY -
+      (-rotationSine * correctionX + rotationCosine * correctionY) / input.pose.scale,
+  };
+}
+
 export function solveComposer(input: {
   subjectBounds: CameraRectIR;
+  mountBounds?: CameraRectIR;
+  mountScreenPosition?: readonly [number, number];
+  mountMaxDriftPx?: readonly [number, number];
   framingGuardBounds?: CameraRectIR;
   framingGuardPaddingPx?: number;
   framingGuardScreenPosition?: readonly [number, number];
@@ -30,19 +133,7 @@ export function solveComposer(input: {
   finitePositive(subjectBounds.height, "Subject height");
   finitePositive(viewport.width, "Viewport width");
   finitePositive(viewport.height, "Viewport height");
-  const editorialFrame =
-    input.editorialInsets ??
-    (input.compositionProfileId
-      ? requireEditorialCompositionProfile(input.compositionProfileId).editorialInsets
-      : { top: 0, right: 0, bottom: 0, left: 0 });
-  const safeViewport = {
-    x: viewport.x + editorialFrame.left,
-    y: viewport.y + editorialFrame.top,
-    width: viewport.width - editorialFrame.left - editorialFrame.right,
-    height: viewport.height - editorialFrame.top - editorialFrame.bottom,
-  };
-  finitePositive(safeViewport.width, "Safe viewport width");
-  finitePositive(safeViewport.height, "Safe viewport height");
+  const safeViewport = effectiveViewport(input);
 
   const targetFill = finitePositive(composer.targetFill, "Composer targetFill");
   const padding = Math.max(0, composer.paddingPx ?? 0);
@@ -161,7 +252,7 @@ export function solveComposer(input: {
     centerY -= (-rotationSine * correctionX + rotationCosine * correctionY) / scale;
   }
 
-  return {
+  const pose = {
     centerX,
     centerY,
     scale,
@@ -169,6 +260,16 @@ export function solveComposer(input: {
     opacity: input.opacity ?? 1,
     clipRect: viewport,
   };
+  if (!input.mountBounds) return pose;
+  return stabilizeCameraPose({
+    pose,
+    mountBounds: input.mountBounds,
+    mountScreenPosition: input.mountScreenPosition ?? [0.5, 0.5],
+    mountMaxDriftPx: input.mountMaxDriftPx ?? [0, 0],
+    viewport,
+    compositionProfileId: input.compositionProfileId,
+    editorialInsets: input.editorialInsets,
+  });
 }
 
 export function minimumJerk(progress: number): number {

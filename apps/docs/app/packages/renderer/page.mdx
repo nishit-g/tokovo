@@ -20,9 +20,9 @@ Renderer should render through registries, not by hardcoding app behavior.
 - camera integration: `CameraProjectionPassRegistry`, `projectCinematicFrame`
 - registry integration: `RendererRegistryProvider`
 
-## V1 Rule
+## Current Rule
 
 System chrome must scale from device-aware metrics and editorial insets, not ad hoc render-pixel constants.
 Lockscreen, homescreen, keyboard, and notification semantics stay in their owning device
 packages; renderer composes their projections and supplies their cinematic subjects to the pure
-Camera VNext evaluator before painting outputs.
+camera evaluator before painting outputs.

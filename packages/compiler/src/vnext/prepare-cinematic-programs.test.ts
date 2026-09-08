@@ -23,7 +23,7 @@ const stage: StageProgramIR = {
 
 function camera(id: string, targetFill: number): CameraPlanIR {
   return {
-    version: 1,
+    version: 2,
     id,
     fps: 60,
     durationInFrames: 300,
@@ -47,6 +47,10 @@ function camera(id: string, targetFill: number): CameraPlanIR {
           screenPosition: [0.5, 0.5],
           targetFill,
           fillMode: "contain",
+        },
+        travel: {
+          mode: "intentional",
+          reason: "Compiler signature fixture.",
         },
       },
     ],

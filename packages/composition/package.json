@@ -1,0 +1,40 @@
+{
+  "name": "@tokovo/composition",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Shared deterministic Remotion composition used by preview and release rendering",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@tokovo/background": "workspace:*",
+    "@tokovo/camera": "workspace:*",
+    "@tokovo/compiler": "workspace:*",
+    "@tokovo/core": "workspace:*",
+    "@tokovo/ir": "workspace:*",
+    "@tokovo/react": "workspace:*",
+    "@tokovo/renderer": "workspace:*",
+    "@tokovo/voice": "workspace:*",
+    "react": "18.3.1",
+    "remotion": "4.0.409"
+  },
+  "devDependencies": {
+    "@types/react": "18.3.1",
+    "typescript": "^5.0.0",
+    "vitest": "^1.0.0"
+  }
+}

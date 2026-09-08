@@ -54,6 +54,7 @@ export type WhatsAppMessageKey =
   | "chat.noMessages"
   | "chat.archived"
   | "chat.you"
+  | "chat.draft"
   | "chat.unknown"
   | "chat.groupInfoHint"
   | "chat.other"
@@ -274,6 +275,7 @@ const ENGLISH: Catalog = {
   "chat.noMessages": "No messages yet",
   "chat.archived": "Archived",
   "chat.you": "You",
+  "chat.draft": "Draft",
   "chat.unknown": "Unknown",
   "chat.groupInfoHint": "tap here for group info",
   "chat.other": "other",
@@ -410,7 +412,7 @@ const ENGLISH: Catalog = {
   "empty.noUnreadTitle": "No unread chats",
   "empty.noUnreadBody": "You're all caught up!",
   "empty.noFavoritesTitle": "No favorite chats",
-  "empty.noFavoritesBody": "Pin your important chats to see them here",
+  "empty.noFavoritesBody": "Add your important chats to favorites to see them here",
   "empty.noGroupsTitle": "No groups",
   "empty.noGroupsBody": "Create or join a group to get started",
   "empty.noDraftsTitle": "No drafts",
@@ -493,6 +495,7 @@ const ARABIC: Catalog = {
   "chat.noMessages": "لا توجد رسائل بعد",
   "chat.archived": "المؤرشفة",
   "chat.you": "أنت",
+  "chat.draft": "مسودة",
   "chat.unknown": "غير معروف",
   "chat.groupInfoHint": "اضغط هنا لمعلومات المجموعة",
   "chat.other": "آخر",
@@ -629,7 +632,7 @@ const ARABIC: Catalog = {
   "empty.noUnreadTitle": "لا توجد دردشات غير مقروءة",
   "empty.noUnreadBody": "اطلعت على كل شيء!",
   "empty.noFavoritesTitle": "لا توجد دردشات مفضلة",
-  "empty.noFavoritesBody": "ثبّت دردشاتك المهمة لتظهر هنا",
+  "empty.noFavoritesBody": "أضف دردشاتك المهمة إلى المفضلة لتظهر هنا",
   "empty.noGroupsTitle": "لا توجد مجموعات",
   "empty.noGroupsBody": "أنشئ مجموعة أو انضم إليها للبدء",
   "empty.noDraftsTitle": "لا توجد مسودات",

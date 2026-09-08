@@ -189,7 +189,9 @@ export interface CinematicStageRendererProps {
   cameraPlanId?: string;
   cameraProjectionBackend?: "final" | "texture-stage-plate" | "texture-projection-data";
   onCinematicCameraDebugFrame?: (frame: CinematicCameraDebugFrame) => void;
-  onCameraTextureProjectionFrame?: (frame: CinematicTextureProjectionFrame) => void;
+  renderCameraTextureProjectionArtifact?: (
+    frame: CinematicTextureProjectionFrame,
+  ) => React.ReactNode;
 }
 
 export interface CinematicCameraDebugFrame {
@@ -245,7 +247,7 @@ export const CinematicStageRenderer: React.FC<CinematicStageRendererProps> = ({
   cameraPlanId,
   cameraProjectionBackend = "final",
   onCinematicCameraDebugFrame,
-  onCameraTextureProjectionFrame,
+  renderCameraTextureProjectionArtifact,
 }) => {
   const runtimeRef = React.useRef<LayoutEngineRuntime | null>(null);
   const layoutRuntime = runtimeRef.current ?? createLayoutEngineRuntime();
@@ -293,22 +295,27 @@ export const CinematicStageRenderer: React.FC<CinematicStageRendererProps> = ({
       stage,
       registry: registries.plugins.cinematicSubjects,
     });
-    const program = selectPreparedCameraProgram(cinematics, cameraPlanId);
-    const outputs = program.plan.outputs.map((output) =>
-      evaluateCameraOutput(
-        {
-          program,
-          outputId: output.id,
-          frame: t,
-          subjectFrame,
-          mode,
-        },
-        registries.camera,
-      ),
-    );
+    const program =
+      cameraProjectionBackend === "texture-stage-plate"
+        ? null
+        : selectPreparedCameraProgram(cinematics, cameraPlanId);
+    const outputs =
+      program?.plan.outputs.map((output) =>
+        evaluateCameraOutput(
+          {
+            program,
+            outputId: output.id,
+            frame: t,
+            subjectFrame,
+            mode,
+          },
+          registries.camera,
+        ),
+      ) ?? [];
     return { stage, layouts, outputs };
   }, [
     cameraPlanId,
+    cameraProjectionBackend,
     cinematics,
     config,
     fps,
@@ -323,23 +330,16 @@ export const CinematicStageRenderer: React.FC<CinematicStageRendererProps> = ({
   ]);
 
   React.useEffect(() => {
-    if (!debug || !onCinematicCameraDebugFrame) return;
+    if (!onCinematicCameraDebugFrame) return;
     onCinematicCameraDebugFrame({
       t,
       storySignature: cinematics.storySignature,
       stageSignature: cinematics.stageSignature,
       outputs: frame.outputs,
     });
-  }, [cinematics, debug, frame.outputs, onCinematicCameraDebugFrame, t]);
+  }, [cinematics, frame.outputs, onCinematicCameraDebugFrame, t]);
 
-  React.useEffect(() => {
-    if (
-      (cameraProjectionBackend !== "texture-stage-plate" &&
-        cameraProjectionBackend !== "texture-projection-data") ||
-      !onCameraTextureProjectionFrame
-    ) {
-      return;
-    }
+  if (cameraProjectionBackend === "texture-projection-data") {
     const planId = frame.outputs[0]?.trace.planId;
     if (!planId) throw new Error("CAM_OUTPUT_MISSING: Camera plan produced no outputs.");
     const cameraSignature = cinematics.cameraSignatures[planId];
@@ -348,7 +348,7 @@ export const CinematicStageRenderer: React.FC<CinematicStageRendererProps> = ({
     }
     const root = frame.stage.nodes.find((node) => node.id === frame.stage.rootNodeId);
     if (!root) throw new Error(`Camera stage root "${frame.stage.rootNodeId}" is missing.`);
-    onCameraTextureProjectionFrame({
+    const projectionFrame: CinematicTextureProjectionFrame = {
       t,
       storySignature: cinematics.storySignature,
       stageSignature: cinematics.stageSignature,
@@ -356,17 +356,9 @@ export const CinematicStageRenderer: React.FC<CinematicStageRendererProps> = ({
       planId,
       stage: { width: root.localBounds.width, height: root.localBounds.height },
       outputs: frame.outputs,
-    });
-  }, [
-    cameraProjectionBackend,
-    cinematics,
-    frame.outputs,
-    frame.stage,
-    onCameraTextureProjectionFrame,
-    t,
-  ]);
-
-  if (cameraProjectionBackend === "texture-projection-data") return null;
+    };
+    return renderCameraTextureProjectionArtifact?.(projectionFrame) ?? null;
+  }
 
   const root = frame.stage.nodes.find((node) => node.id === frame.stage.rootNodeId);
   if (!root) throw new Error(`Camera stage root "${frame.stage.rootNodeId}" is missing.`);

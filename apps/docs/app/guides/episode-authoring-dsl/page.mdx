@@ -235,7 +235,9 @@ episode("reveal", { fps: 30, duration: "20s" }).scene(
 
 `scene.at()` and `scene.wait()` move a scene-local cursor. Raw app, audio, overlay, and device
 tracks nested under a scene also interpret their `at()` and `span()` times relative to the scene
-start. CameraPlans use absolute frames because they are independently replaceable artifacts.
+start. CameraPlans remain independently replaceable artifacts: production `planFamily` sequences
+use relative shot durations compiled to absolute intervals, while `.at(...)` and the low-level shot
+builder support intentional gaps, overlaps, and exact absolute edits.
 
 ### Consistent conversations
 
@@ -264,7 +266,7 @@ scene.social(
 ### Cinematography
 
 Story handles expose typed `subject` references and a `region(subjectId)` helper. Use those values in
-`cinematicProgram` rigs or shots after the scene has been authored. Camera direction is never
+`cinematicProgram` plan-family shots or low-level rigs after the scene has been authored. Camera direction is never
 inferred from app event names and never enters runtime-event replay. For known stable IDs, the same
 references can be declared directly with `cameraSubject.entity(...)` or
-`cameraSubject.semantic(...)`.
+`cameraSubject.semantic(...)`; `cameraSubject.scope(...)` avoids repeating device and app IDs.

@@ -19,14 +19,15 @@ deterministic without turning into a CMS abstraction layer.
 
 ## Core Model
 
-Tokovo v1 does not use beat-based authoring. The authoring model is:
+Tokovo does not use beat-based authoring. The current authoring model is:
 
 - `device()` for device and OS state
 - `snapshot()` for plugin-owned pre-seeded app data
 - `view()` for explicit frame-0 app routing
 - named built-in app methods for app mutations after frame 0
 - `track()` as the low-level extension point for external app plugins
-- `cinematics()` for immutable StageProgram and CameraPlan data
+- `cinematics()` for immutable StageProgram and CameraPlan data; `planFamily()` is the compact
+  production surface and the low-level plan/rig builders are the full escape hatch
 - `audio()`, `overlay()`, `os()`, and `deviceTrack()` for supporting direction
 - `input()` for explicit field-scoped text sessions
 - `notificationTrack()` for notification delivery and interaction
@@ -47,3 +48,7 @@ The product-level layer also owns narrative composition: actors with per-app ide
 scene-local timing, consistent conversation/social verbs, and typed story handles. Story APIs
 lower into event IR, while `cinematics()` stays an independently signed projection program; neither
 introduces a second runtime or nondeterministic scheduling model.
+
+Plan-family sequences remove manual start/end arithmetic, share explicit framing and optical data,
+and compile named-plan deltas to the same CameraPlan IR used by the low-level builders. This is
+authoring-time lowering only; runtime preparation and evaluation have one contract.

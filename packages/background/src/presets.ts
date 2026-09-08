@@ -6,6 +6,7 @@ const NAMES: Readonly<Record<BackdropProfileId, string>> = {
   "studio-quiet-light": "Quiet Light Studio",
   "ambient-depth": "Ambient Depth",
   "editorial-neon": "Editorial Neon",
+  "signal-pop": "Signal Pop",
 };
 
 export const BACKGROUND_PRESETS: Readonly<Record<BackdropProfileId, BackgroundPreset>> =

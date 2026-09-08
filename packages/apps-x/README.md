@@ -18,4 +18,5 @@ The X VNext runtime plugin for deterministic Tokovo episodes.
 
 The package does not migrate or repair V1 data. Repository-owned episodes must declare snapshot and view version 2. An installed app without authored data hydrates a canonical empty V2 state.
 
-See [CINEMATIC_SUBJECTS.md](./CINEMATIC_SUBJECTS.md) for camera targets and `docs/X_VNEXT_ARCHITECTURE.md` for the hard-cut architecture.
+See [CINEMATIC_SUBJECTS.md](./CINEMATIC_SUBJECTS.md) for camera targets and `docs/X.md` for the
+hard-cut package architecture.

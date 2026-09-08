@@ -8,6 +8,10 @@ Tokovo is an AI-native studio for multi-device shows that happen inside phones.
 
 Create cinematic chat dramas, social-feed stories, screen-recorded episodes, and short-form series without rebuilding phone screens in After Effects. Tokovo gives AI and creators a full phone-native production stage: one or many simulated devices, app worlds, OS surfaces, camera direction, sound, voice, backgrounds, overlays, and deterministic rendering.
 
+> **Current product priority:** create and publish excellent episodes through checked-in TypeScript
+> and LLM-assisted code authoring. The visual-editor experiment and its Studio-specific packages
+> were deleted. See [`docs/STUDIO.md`](docs/STUDIO.md).
+
 ![Tokovo phone-native show preview](apps/docs/public/showcase/launch-poster.png)
 
 [Watch the demo clip](apps/docs/public/showcase/launch-clip.mp4)
@@ -37,9 +41,36 @@ AI can now generate scripts, branches, edits, translations, captions, and variat
 - ship repeatable series instead of one-off timeline projects
 - avoid manual After Effects work for phone-screen stories
 
-## What You Can Build
+## What You Can Make
 
-Tokovo's v1 target surface covers:
+Tokovo is a production engine for stories where the phone is the stage:
+
+| Format                              | Example                                                                                                     |
+| ----------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| Serialized phone-native drama       | A recurring manager, family, friendship, or relationship story told through chats, calls, and notifications |
+| Topical original fiction            | A fictional cast reacts to a match, launch, cultural moment, or public event across several phones          |
+| Mystery and investigation           | Deleted messages, unknown callers, location drops, and conflicting digital evidence drive a reveal          |
+| Comedy and satire                   | Office absurdity, family-group rituals, autocorrect chaos, creator culture, and internet behavior           |
+| Story-native promotion              | A product link, booking, order, or recommendation changes the plot instead of interrupting it               |
+| Commentary and reconstruction       | A narrator shows how a rumor, launch, outage, or controversy moved through private and public surfaces      |
+| Education and public-interest story | Scam awareness, finance, cybersecurity, training, history, or language taught through consequences          |
+| Multi-perspective anthology         | One event appears differently on an employee's, manager's, journalist's, and family member's phone          |
+| Alternate and regional editions     | Reuse the story structure with another language, culture, cast, platform, sponsor, camera plan, or ending   |
+
+See [What Tokovo Can Make](apps/docs/app/product/page.mdx) for the complete format catalog and
+examples.
+
+### Multilingual production
+
+Tokovo can adapt story copy, RTL direction, keyboard script, typography, app/system chrome, voice,
+timing, and camera framing for regional editions. Current implementation depth is package-specific:
+device system surfaces cover English, Hindi, Arabic, and Japanese; X covers English, Arabic RTL,
+and Hindi; WhatsApp covers English and Arabic RTL. Every advertised language/app combination still
+requires visual review.
+
+### Production surface
+
+Tokovo's current release surface covers:
 
 | Surface            | Package                                                             | What it covers                                                                                   |
 | ------------------ | ------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
@@ -118,7 +149,7 @@ pnpm --filter video-runner dev
 
 ## Showcase Episodes
 
-These are good first renders when checking the v1 target surface:
+These are good first renders when checking the current release surface:
 
 | Episode ID                       | Shows                                                                                     |
 | -------------------------------- | ----------------------------------------------------------------------------------------- |
@@ -126,7 +157,7 @@ These are good first renders when checking the v1 target surface:
 | `multi-device-exhaustive`        | parallel phones, split pacing, screen recording, cross-app continuity                     |
 | `whatsapp-interaction-matrix-v3` | two devices, RTL, message/media lifecycle, gestures, Status, calls, communities, settings |
 | `instagram-flagship-v2`          | story, DM, profile, creator-facing pacing                                                 |
-| `x-cinematic-flagship`           | entity-directed X cinema, keyboard, notifications, DMs, polls, video, and profiles         |
+| `x-cinematic-flagship`           | entity-directed X cinema, keyboard, notifications, DMs, polls, video, and profiles        |
 | `typewriter-flagship-v2`         | typewriter app, procedural sound effects, text timing                                     |
 | `screen-recording-exhaustive`    | OS chrome and screen-recording realism                                                    |
 
@@ -136,11 +167,11 @@ The full showcase matrix is documented in `apps/docs/app/showcase/page.mdx`.
 
 | Path                  | Purpose                                                              |
 | --------------------- | -------------------------------------------------------------------- |
-| `packages/episodes`   | canonical episode definitions, release/studio catalogs, validation   |
-| `packages/dsl`        | timeline and cinematic-program builders                             |
+| `packages/episodes`   | canonical episode definitions, release/showcase catalogs, validation |
+| `packages/dsl`        | timeline and cinematic-program builders                              |
 | `packages/compiler`   | lowers episode definitions into renderable IR                        |
 | `packages/core`       | deterministic runtime, registries, logging, validation               |
-| `packages/camera`     | headless Camera VNext preparation, evaluation, and diagnostics       |
+| `packages/camera`     | headless camera preparation, evaluation, and diagnostics             |
 | `packages/renderer`   | React render surface and camera-aware layout                         |
 | `packages/apps-*`     | app simulators for phone-native stories                              |
 | `packages/device-*`   | OS-owned interactions: keyboard and notifications                    |
@@ -154,7 +185,7 @@ The full showcase matrix is documented in `apps/docs/app/showcase/page.mdx`.
 1. Create a `*.episode.ts` file in `packages/episodes/src`.
 2. Define metadata with `defineEpisode`.
 3. Build the timeline with the code-first episode builder.
-4. Register the episode in the release or studio catalog.
+4. Register the episode in the release or showcase catalog.
 5. Validate with `pnpm validate`.
 6. Preview in `video-runner`.
 7. Render with `pnpm --filter video-runner render:fast`.
@@ -181,16 +212,18 @@ pnpm --filter docs build
 
 ## Documentation
 
+- `docs/README.md` is the canonical engineering-documentation index.
+- `docs/ENGINEERING_HANDBOOK.md` is the complete current architecture and product handbook.
+- `docs/CAMERA.md`, `docs/WHATSAPP.md`, `docs/X.md`, and `docs/PLATFORM_VISUALS.md` are the
+  specialist architecture references.
+- `docs/RENDERING.md`, `docs/STUDIO.md`, and `docs/OPERATIONS.md` own rendering, product scope, and
+  operations.
 - `apps/docs/app/page.mdx` is the documentation home.
 - `llms.txt`, `AGENTS.md`, `CLAUDE.md`, and `.skills/tokovo-authoring/SKILL.md` provide LLM and coding-agent context.
-- `apps/docs/app/showcase/page.mdx` lists the current v1 showcase surface.
+- `apps/docs/app/showcase/page.mdx` lists the current showcase surface.
 - `apps/docs/app/getting-started/quickstart/page.mdx` is the fastest render path.
 - `apps/docs/app/getting-started/first-episode/page.mdx` explains the authoring shape.
 - `apps/docs/app/guides/object-storage-assets/page.mdx` explains local and object-storage assets.
-- `docs/ARCHITECTURE.md` describes runtime boundaries.
-- `docs/V1_STABILITY.md` defines the v1 readiness bar.
-- `docs/operations/release.md` documents the release gate.
-- `docs/operations/public-release.md` tracks public-release readiness.
 - `ASSET_LICENSES.md` records bundled asset provenance.
 
 Run the docs site locally:
@@ -199,9 +232,9 @@ Run the docs site locally:
 pnpm --filter docs dev
 ```
 
-## V1 Readiness
+## Release Standard
 
-The public v1 bar is intentionally strict:
+The public release bar is intentionally strict:
 
 - app simulators must own their reducers, views, subjects, and DSL helpers
 - episodes must validate before they are rendered

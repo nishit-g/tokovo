@@ -1,6 +1,6 @@
 # @tokovo/camera
 
-`@tokovo/camera` is Tokovo's deterministic Camera VNext kernel. It evaluates immutable camera
+`@tokovo/camera` is Tokovo's deterministic camera kernel. It evaluates immutable camera
 programs against projected cinematic subjects; it does not mutate world state.
 
 ## Responsibilities
@@ -8,8 +8,9 @@ programs against projected cinematic subjects; it does not mutate world state.
 - validate and prepare camera plans into random-access frame indexes;
 - resolve typed app, device, entity, and group subjects;
 - evaluate cuts, blends, tracking, framing constraints, and baked trajectories;
+- separate semantic attention from explicit device/group stabilization;
 - compose multi-output views with explicit coverage and editorial insets;
-- emit stable traces, manifests, diffs, and frame explanations.
+- emit stable traces, manifests, diffs, frame explanations, and per-frame mount drift.
 
 ## Runtime Flow
 
@@ -22,12 +23,16 @@ app/device subject projection -> prepared camera plan -> evaluated outputs -> re
 
 The same canonical headless layout supplies both app rendering geometry and camera subject
 geometry. Missing subjects, registrations, outputs, and release projection passes fail loudly.
+Every rig must declare either a semantic stabilization mount with an output-space dead zone or
+intentional device travel with a reason.
 
 ## Authoring
 
-Use `cinematicProgram`, `cameraSubject`, and the camera-plan builders exported by `@tokovo/dsl`.
-An episode may contain several named plans, so an editor can recut cinematography without changing
-story events or stage placement.
+Use `cinematicProgram`, scoped `cameraSubject` references, and `planFamily` from `@tokovo/dsl` for
+normal production cuts. Named framing recipes, sequential durations, and per-plan shot deltas
+compile to the canonical CameraPlan IR. The low-level output/rig/shot builders remain available for
+specialized interval graphs. An episode may contain several named plans, so an editor can recut
+cinematography without changing story events or stage placement.
 
 See [Cinematic Camera](/guides/cinematic-camera) for shots, rigs, movement, lenses, filters,
 coverage, editorial insets, baked trajectories, and diagnostics.

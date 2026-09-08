@@ -11,6 +11,7 @@
     { "path": "../../packages/background" },
     { "path": "../../packages/camera" },
     { "path": "../../packages/compiler" },
+    { "path": "../../packages/composition" },
     { "path": "../../packages/apps-instagram" },
     { "path": "../../packages/apps-imessage" },
     { "path": "../../packages/apps-linkedin" },

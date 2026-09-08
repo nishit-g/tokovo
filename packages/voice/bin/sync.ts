@@ -175,7 +175,7 @@ Syncs generated voice assets to the public folder and generates TypeScript types
 
 Options:
   --cache-dir    Source cache directory (default: ./generated/voice-cache)
-  --public-dir   Destination public folder (default: ../../apps/video-runner/public)
+  --public-dir   Destination public folder (default: ../assets/public)
   --watch        Watch for changes and auto-sync
   --help         Show this help message
 
@@ -201,9 +201,7 @@ Examples:
             __dirname,
             "..",
             "..",
-            "..",
-            "apps",
-            "video-runner",
+            "assets",
             "public",
           ),
     watch: args.includes("--watch"),

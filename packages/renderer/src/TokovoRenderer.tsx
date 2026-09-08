@@ -125,6 +125,7 @@ const TokovoRendererInner: React.FC<TokovoRendererProps> = ({
     notificationProjection,
     systemSurfaceProjection,
     appViewport,
+    appDesignWidth,
     platformVisuals,
   } = layoutOutput;
   const renderWorld = world;
@@ -256,13 +257,10 @@ const TokovoRendererInner: React.FC<TokovoRendererProps> = ({
               if (!appId) {
                 baseContent = <div style={{ flex: 1, backgroundColor: "black" }} />;
               } else {
-                const pluginAssets = pm.get(appId)?.assets;
                 const isCanvasProfile =
                   typeof device.profileId === "string" && device.profileId.startsWith("canvas-");
                 // Canvas devices should render 1:1 in video pixel coordinates.
-                const designWidth = isCanvasProfile
-                  ? profile.display.width
-                  : pluginAssets?.designWidth;
+                const designWidth = isCanvasProfile ? profile.display.width : appDesignWidth;
                 if (designWidth === undefined) {
                   throw new Error(
                     `APP_DESIGN_WIDTH_MISSING: App "${appId}" must register assets.designWidth.`,

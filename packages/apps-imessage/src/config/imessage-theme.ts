@@ -1,11 +1,10 @@
 /**
  * iMessage Theme Configuration
- * 
+ *
  * Uses centralized tokens from tokens.ts for spacing and typography.
  */
 import { iOS_COLORS, TAPBACK_COLORS } from "./colors.js";
 import { iMessageSpacing, iMessageTypography } from "./tokens.js";
-
 
 export interface BubbleColors {
   iMessage: string;
@@ -98,7 +97,7 @@ export const iOS_IMESSAGE_LIGHT: IMessageTheme = {
       deliveryStatus: iOS_COLORS.gray,
     },
     header: {
-      background: "rgba(249, 249, 249, 0.94)",
+      background: "#F9F9F9",
       title: iOS_COLORS.textPrimary,
       subtitle: iOS_COLORS.gray,
       icons: iOS_COLORS.blue,
@@ -106,7 +105,7 @@ export const iOS_IMESSAGE_LIGHT: IMessageTheme = {
     },
     input: {
       background: iOS_COLORS.backgroundLight,
-      field: iOS_COLORS.grayUltraLight,
+      field: iOS_COLORS.backgroundLight,
       border: iOS_COLORS.grayLight,
       placeholder: iOS_COLORS.gray,
       icons: iOS_COLORS.gray,
@@ -195,7 +194,7 @@ export const iOS_IMESSAGE_DARK: IMessageTheme = {
       deliveryStatus: iOS_COLORS.gray,
     },
     header: {
-      background: "rgba(28, 28, 30, 0.94)",
+      background: "#1C1C1E",
       title: iOS_COLORS.textWhite,
       subtitle: iOS_COLORS.gray,
       icons: iOS_COLORS.blue,
@@ -226,10 +225,7 @@ export function getTheme(mode: "light" | "dark" = "light") {
   return mode === "dark" ? iOS_IMESSAGE_DARK : iOS_IMESSAGE_LIGHT;
 }
 
-export function createTheme(
-  base: IMessageTheme,
-  overrides: Partial<IMessageTheme>,
-): IMessageTheme {
+export function createTheme(base: IMessageTheme, overrides: Partial<IMessageTheme>): IMessageTheme {
   return {
     ...base,
     ...overrides,

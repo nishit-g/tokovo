@@ -23,6 +23,55 @@ function runReducer(state: WorldState, event: RuntimeEvent): WorldState {
 }
 
 describe("iMessage Reducer", () => {
+  it("clears typing and drafts and does not mark the visible thread unread", () => {
+    let world = createTestWorldState();
+    const event = (type: string, payload: Record<string, unknown>) => {
+      world = runReducer(world, {
+        at: 30,
+        kind: "APP",
+        deviceId: "phone",
+        appId: "app_imessage",
+        type,
+        payload,
+      } as RuntimeEvent);
+    };
+    event("IMESSAGE_CONVERSATION_OPEN", { conversationId: "c1" });
+    event("IMESSAGE_TYPING_START", { conversationId: "c1", actor: "Ava" });
+    event("IMESSAGE_MESSAGE_RECEIVE", { conversationId: "c1", from: "Ava", text: "Hello" });
+    event("IMESSAGE_SET_DRAFT", { conversationId: "c1", text: "Reply" });
+    event("IMESSAGE_MESSAGE_SEND", {
+      conversationId: "c1",
+      text: "Reply",
+      deliveredAt: 48,
+      readAt: 90,
+    });
+    const conversation = (world.appInstances["phone:app_imessage"] as IMessageState).conversations!
+      .c1;
+    expect(conversation.unreadCount).toBe(0);
+    expect(conversation.typing.Ava).toBe(false);
+    expect(conversation.draft).toBe("");
+    expect(conversation.messages.at(-1)).toMatchObject({ deliveredAt: 48, readAt: 90 });
+  });
+  it("keeps system chrome contrast synchronized with light and dark themes", () => {
+    let world = createTestWorldState();
+    expect((world.appInstances["phone:app_imessage"] as IMessageState).statusBarTheme).toBe(
+      "light",
+    );
+    for (const mode of ["dark", "light"] as const) {
+      world = runReducer(world, {
+        at: 0,
+        kind: "APP",
+        deviceId: "phone",
+        appId: "app_imessage",
+        type: "IMESSAGE_SET_THEME_MODE",
+        payload: { mode },
+      });
+      const state = world.appInstances["phone:app_imessage"] as IMessageState;
+      expect(state.themeMode).toBe(mode);
+      expect(state.statusBarTheme).toBe(mode);
+    }
+  });
+
   it("MESSAGE_SEND adds outgoing message", () => {
     const state = createTestWorldState();
     const nextState = runReducer(state, {
@@ -93,9 +142,7 @@ describe("iMessage Reducer", () => {
       payload: { effect: "confetti" },
     });
 
-    const appState = nextState.appInstances?.["phone:app_imessage"] as
-      | IMessageState
-      | undefined;
+    const appState = nextState.appInstances?.["phone:app_imessage"] as IMessageState | undefined;
     expect(appState?.activeScreenEffect).toBe("confetti");
     expect(appState?.activeScreenEffectStartedAtFrame).toBe(123);
   });

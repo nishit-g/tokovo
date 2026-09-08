@@ -15,6 +15,8 @@
 // MESSAGE TYPE ENUMERATION
 // =============================================================================
 
+import type { WhatsAppTheme } from "../theme/index.js";
+
 export type MessageType =
   | "text"
   | "image"
@@ -34,7 +36,12 @@ export type MessageType =
   | "call"
   | "call_missed";
 
-export type MessageCategory = "text" | "media" | "audio" | "system" | "ephemeral";
+export type MessageCategory =
+  | "text"
+  | "media"
+  | "audio"
+  | "system"
+  | "ephemeral";
 
 // =============================================================================
 // SPACING CONFIGURATION (SOURCE OF TRUTH)
@@ -62,7 +69,7 @@ export const LAYOUT_CONSTANTS = {
   GAP_SYSTEM: 10,
 
   // Typography / Metrics
-  AVG_CHAR_WIDTH: 8.2,
+  AVG_CHAR_WIDTH: 9.4,
 
   // Typing Indicator
   TYPING_BUBBLE_HEIGHT: 24,
@@ -75,7 +82,7 @@ export const LAYOUT_CONSTANTS = {
  */
 export const UI_CONSTANTS = {
   // Header
-  HEADER_CONTENT_HEIGHT: 60,
+  HEADER_CONTENT_HEIGHT: 44,
   HEADER_AVATAR_SIZE: 37,
   HEADER_AVATAR_MARGIN_RIGHT: 10,
   HEADER_PADDING_X: 10,
@@ -85,14 +92,48 @@ export const UI_CONSTANTS = {
   INPUT_MIN_HEIGHT: 60, // Standard single line
 };
 
-export function getChatChromeGeometry(contentInsets: { top: number; bottom: number }): {
+export function getChatChromeGeometry(contentInsets: {
+  top: number;
+  bottom: number;
+}): {
   headerHeight: number;
   messageBottomInset: number;
 } {
   return {
     headerHeight: contentInsets.top + UI_CONSTANTS.HEADER_CONTENT_HEIGHT,
-    messageBottomInset: UI_CONSTANTS.INPUT_MIN_HEIGHT + contentInsets.bottom + 12,
+    messageBottomInset:
+      UI_CONSTANTS.INPUT_MIN_HEIGHT + contentInsets.bottom + 20,
   };
+}
+
+export function getComposerExtraHeight(
+  text: string,
+  viewportWidth: number,
+): number {
+  const width = Math.max(40, viewportWidth - 132);
+  const metrics = measureTextBlock(
+    text,
+    (width + 16) / DEFAULT_LAYOUT_CONFIG.messageTypes.text.width.maxPercent,
+  );
+  return (Math.min(4, metrics.lines) - 1) * 20;
+}
+
+export function getReactionWidth(
+  reactions: readonly { count: number }[],
+): number {
+  return (
+    16 +
+    reactions
+      .slice(0, 3)
+      .reduce(
+        (sum, reaction) =>
+          sum +
+          25 +
+          (reaction.count > 1 ? String(reaction.count).length * 7 : 0),
+        0,
+      ) +
+    (reactions.length > 3 ? 28 : 0)
+  );
 }
 
 /**
@@ -183,6 +224,7 @@ export interface GlobalSpacing {
 // =============================================================================
 
 export interface MessageLayoutConfig {
+  textMetrics?: { horizontalPadding: number; averageCharacterWidth: number };
   messageTypes: Record<MessageType, MessageSchema>;
   additions: HeightAdditions;
   scroll: ScrollConfig;
@@ -231,7 +273,9 @@ export const DEFAULT_LAYOUT_CONFIG: MessageLayoutConfig = {
   messageTypes: {
     text: {
       height: {
-        base: LAYOUT_CONSTANTS.BUBBLE_PADDING_V * 2 + LAYOUT_CONSTANTS.TIMESTAMP_HEIGHT,
+        base:
+          LAYOUT_CONSTANTS.BUBBLE_PADDING_V * 2 +
+          LAYOUT_CONSTANTS.TIMESTAMP_HEIGHT,
         lineHeight: LAYOUT_CONSTANTS.LINE_HEIGHT,
         // capacity dynamic via measureTextBlock (unitsPerLine)
       },
@@ -290,7 +334,9 @@ export const DEFAULT_LAYOUT_CONFIG: MessageLayoutConfig = {
     },
     typing: {
       height: {
-        base: LAYOUT_CONSTANTS.TYPING_BUBBLE_HEIGHT + LAYOUT_CONSTANTS.TYPING_BUBBLE_PADDING_V * 2,
+        base:
+          LAYOUT_CONSTANTS.TYPING_BUBBLE_HEIGHT +
+          LAYOUT_CONSTANTS.TYPING_BUBBLE_PADDING_V * 2,
       },
       width: { fixed: 150, maxPercent: 0.3, min: 150 },
     },
@@ -365,6 +411,40 @@ export interface MessageForHeight {
   } | null;
 }
 
+/** Share themed text geometry between the React bubbles and semantic layout. */
+export function getThemedMessageLayout(
+  theme: WhatsAppTheme,
+  config: MessageLayoutConfig = DEFAULT_LAYOUT_CONFIG,
+): MessageLayoutConfig {
+  const { messageFontSize, messageLineHeight } = theme.typography;
+  const { messagePaddingHorizontal, messagePaddingVertical } = theme.spacing;
+  if (
+    messageFontSize === LAYOUT_CONSTANTS.FONT_SIZE &&
+    messageLineHeight === LAYOUT_CONSTANTS.LINE_HEIGHT &&
+    messagePaddingHorizontal === LAYOUT_CONSTANTS.BUBBLE_PADDING_H &&
+    messagePaddingVertical === LAYOUT_CONSTANTS.BUBBLE_PADDING_V
+  )
+    return config;
+  const height = {
+    base: messagePaddingVertical * 2 + LAYOUT_CONSTANTS.TIMESTAMP_HEIGHT + 1,
+    lineHeight: messageLineHeight,
+  };
+  return {
+    ...config,
+    textMetrics: {
+      horizontalPadding: messagePaddingHorizontal * 2,
+      averageCharacterWidth:
+        (LAYOUT_CONSTANTS.AVG_CHAR_WIDTH * messageFontSize) /
+        LAYOUT_CONSTANTS.FONT_SIZE,
+    },
+    messageTypes: {
+      ...config.messageTypes,
+      text: { ...config.messageTypes.text, height },
+      deleted: { ...config.messageTypes.deleted, height },
+    },
+  };
+}
+
 export function calculateMessageHeight(
   msg: MessageForHeight,
   viewportWidth: number,
@@ -388,7 +468,8 @@ export function calculateMessageHeight(
     const captionHeight = lines * LAYOUT_CONSTANTS.LINE_HEIGHT;
     const captionPadding = 9;
     const metadataHeight = 17;
-    height = typeConfig.height.base + captionHeight + captionPadding + metadataHeight;
+    height =
+      typeConfig.height.base + captionHeight + captionPadding + metadataHeight;
   } else if (msgType === "voice") {
     height = 85;
   } else if (msgType === "document") {
@@ -419,9 +500,11 @@ export function calculateMessageHeight(
       (msg.linkPreview.description ? 40 : 0) +
       18;
     const textHeight = msg.text
-      ? measureTextBlock(msg.text, viewportWidth, config).lines * LAYOUT_CONSTANTS.LINE_HEIGHT
+      ? measureTextBlock(msg.text, viewportWidth, config).lines *
+        LAYOUT_CONSTANTS.LINE_HEIGHT
       : 0;
-    height = LAYOUT_CONSTANTS.BUBBLE_PADDING_V * 2 + previewHeight + textHeight + 17;
+    height =
+      LAYOUT_CONSTANTS.BUBBLE_PADDING_V * 2 + previewHeight + textHeight + 17;
   } else if (msgType === "system") {
     if (msg.systemType === "date_change") {
       height = 49;
@@ -431,7 +514,10 @@ export function calculateMessageHeight(
       msg.systemType === "safety_code_changed"
     ) {
       const usableWidth = Math.max(120, viewportWidth * 0.7 - 78);
-      const unitsPerLine = Math.max(1, Math.floor(usableWidth / LAYOUT_CONSTANTS.AVG_CHAR_WIDTH));
+      const unitsPerLine = Math.max(
+        1,
+        Math.floor(usableWidth / LAYOUT_CONSTANTS.AVG_CHAR_WIDTH),
+      );
       const textUnits = Array.from(msg.text ?? "").reduce(
         (total, character) => total + (character.charCodeAt(0) > 255 ? 1.5 : 1),
         0,
@@ -446,7 +532,8 @@ export function calculateMessageHeight(
   }
 
   // Additions
-  if (msg.reactions && msg.reactions.length > 0) height += config.additions.reaction;
+  if (msg.reactions && msg.reactions.length > 0)
+    height += config.additions.reaction;
   if (msg.replyTo) height += config.additions.reply;
   if (msg.linkPreview && msgType !== "link") {
     height += config.additions.linkPreview;
@@ -500,7 +587,10 @@ export function calculateSmartGap(
   if (prevOverride?.gapAfter !== undefined && prevOverride.gapAfter !== null) {
     return prevOverride.gapAfter;
   }
-  if (nextOverride?.gapBefore !== undefined && nextOverride.gapBefore !== null) {
+  if (
+    nextOverride?.gapBefore !== undefined &&
+    nextOverride.gapBefore !== null
+  ) {
     return nextOverride.gapBefore;
   }
 
@@ -528,6 +618,7 @@ export function calculateSmartGap(
 
 export interface TextBlockMetrics {
   lines: number;
+  textLines: string[];
   bubbleWidth: number;
   unitsPerLine: number; // Renamed from charsPerLine to reflect weighted units
 }
@@ -550,104 +641,88 @@ export interface TextBlockMetrics {
  * - wide (CJK etc): 1.5
  * - emoji surrogate pair: 1.8
  */
+const graphemeSegmenter = new Intl.Segmenter("en", { granularity: "grapheme" });
+const textBlockCache = new Map<string, TextBlockMetrics>();
+
 export function measureTextBlock(
   text: string,
   viewportWidth: number = 393,
   config: MessageLayoutConfig = DEFAULT_LAYOUT_CONFIG,
 ): TextBlockMetrics {
-  const typeConfig = config.messageTypes.text; // Text config is the source of truth for text metrics
-
-  // 1) Constraints
+  const typeConfig = config.messageTypes.text;
   const maxBubbleWidth = viewportWidth * typeConfig.width.maxPercent;
-  const horizontalPadding = LAYOUT_CONSTANTS.BUBBLE_PADDING_H * 2;
-
-  // Safety clamp so we never divide by 0 / go negative on tiny screens
-  const availableTextWidth = Math.max(1, maxBubbleWidth - horizontalPadding);
-
-  // 2) Capacity (INTEGER, consistent everywhere)
-  const avgCharWidth = LAYOUT_CONSTANTS.AVG_CHAR_WIDTH;
-  const unitsPerLine = Math.max(1, Math.floor(availableTextWidth / avgCharWidth));
-
-  // 3) Measure
-  // Split paragraphs by explicit newline. Newline always forces a line break.
-  const paragraphs = text.split("\n");
-
-  let totalLines = 0;
-  let maxLineUnits = 0; // the single most "wide" wrapped line across all paragraphs
-
-  for (const paragraph of paragraphs) {
-    // Explicit blank line => counts as 1 line
-    if (paragraph.length === 0) {
-      totalLines += 1;
-      maxLineUnits = Math.max(maxLineUnits, 0);
-      continue;
-    }
-
-    // Wrap simulation in weighted units
-    let lineUnits = 0;
-    let linesInParagraph = 1;
-
-    for (let i = 0; i < paragraph.length; i++) {
-      const code = paragraph.charCodeAt(i);
-
-      // Weight function (deterministic)
-      let w = 1.0;
-
-      // space
-      if (code === 32) {
-        w = 0.6;
-      } else if (code >= 65 && code <= 90) {
-        // Uppercase A-Z
-        w = 1.3;
-      } else {
-        // emoji surrogate pair
-        const isHigh = code >= 0xd800 && code <= 0xdbff;
-        if (isHigh && i + 1 < paragraph.length) {
-          const next = paragraph.charCodeAt(i + 1);
-          const isLow = next >= 0xdc00 && next <= 0xdfff;
-          if (isLow) {
-            w = 1.8;
-            i++; // consume low surrogate
-          } else if (code > 255) {
-            w = 1.5;
-          }
-        } else if (code > 255) {
-          // wide-ish (CJK etc.)
-          w = 1.5;
-        }
+  const padding =
+    config.textMetrics?.horizontalPadding ??
+    LAYOUT_CONSTANTS.BUBBLE_PADDING_H * 2;
+  const advance =
+    config.textMetrics?.averageCharacterWidth ??
+    LAYOUT_CONSTANTS.AVG_CHAR_WIDTH;
+  const capacity = Math.max(1, maxBubbleWidth - padding);
+  const cacheKey = JSON.stringify([
+    maxBubbleWidth,
+    padding,
+    advance,
+    typeConfig.width.min,
+    text,
+  ]);
+  const cached = textBlockCache.get(cacheKey);
+  if (cached) return cached;
+  // ponytail: conservative advances, not font shaping. Shared explicit line breaks
+  // prevent camera/UI divergence; full font shaping is needed for exact glyph widths.
+  const weight = (char: string): number =>
+    (/^\s+$/u.test(char)
+      ? 0.6
+      : /^[ilI.,'!:;|]$/u.test(char)
+        ? 0.55
+        : /^[MW@]$/u.test(char)
+          ? 1.65
+          : /^[A-Z]$/u.test(char)
+            ? 1.3
+            : char.charCodeAt(0) > 255
+              ? 2
+              : 1) * advance;
+  const textLines: string[] = [];
+  let widest = 0;
+  for (const paragraph of text.split("\n")) {
+    let line = "";
+    let lineWidth = 0;
+    const flush = () => {
+      textLines.push(line);
+      widest = Math.max(widest, lineWidth);
+      line = "";
+      lineWidth = 0;
+    };
+    for (const token of paragraph.split(/(\s+)/u)) {
+      const graphemes = /^[ -~]*$/.test(token)
+        ? token.split("")
+        : [...graphemeSegmenter.segment(token)].map((part) => part.segment);
+      const tokenWidth = graphemes.reduce((sum, char) => sum + weight(char), 0);
+      if (line && tokenWidth <= capacity && lineWidth + tokenWidth > capacity)
+        flush();
+      for (const char of graphemes) {
+        const width = weight(char);
+        if (line && lineWidth + width > capacity) flush();
+        line += char;
+        lineWidth += width;
       }
-
-      // If adding this char overflows the line => wrap
-      // NOTE: If the char itself is heavier than capacity, we still place it on a new line
-      // and clamp the recorded width to capacity (because bubble cannot exceed maxBubbleWidth).
-      if (lineUnits > 0 && lineUnits + w > unitsPerLine) {
-        maxLineUnits = Math.max(maxLineUnits, lineUnits);
-        linesInParagraph += 1;
-        lineUnits = w;
-      } else {
-        lineUnits += w;
-      }
-
-      // Track widest line as we go
-      // We clamp width contribution to at most unitsPerLine because bubble width is clamped anyway.
-      maxLineUnits = Math.max(maxLineUnits, Math.min(lineUnits, unitsPerLine));
     }
-
-    // finalize paragraph
-    totalLines += linesInParagraph;
-    maxLineUnits = Math.max(maxLineUnits, Math.min(lineUnits, unitsPerLine));
+    flush();
   }
-
-  // Ensure at least one line for empty string
-  if (totalLines === 0) totalLines = 1;
-
-  // 4) Convert widest line units -> pixels
-  const computedWidth = maxLineUnits * avgCharWidth + horizontalPadding;
-
-  // Clamp bubble width to: [minWidth, maxBubbleWidth]
-  const bubbleWidth = Math.min(maxBubbleWidth, Math.max(computedWidth, typeConfig.width.min));
-
-  return { lines: totalLines, bubbleWidth, unitsPerLine };
+  const result = {
+    lines: textLines.length,
+    textLines,
+    bubbleWidth: Math.min(
+      maxBubbleWidth,
+      Math.max(typeConfig.width.min, Math.ceil(widest + padding)),
+    ),
+    unitsPerLine: Math.max(1, Math.floor(capacity / advance)),
+  };
+  if (textBlockCache.size >= 1024) {
+    const oldest = textBlockCache.keys().next().value;
+    if (oldest !== undefined) textBlockCache.delete(oldest);
+  }
+  textBlockCache.set(cacheKey, result);
+  return result;
 }
 
 export function calculateBubbleWidth(
@@ -659,12 +734,23 @@ export function calculateBubbleWidth(
   const typeConfig = config.messageTypes[msgType] || config.messageTypes.text;
 
   if (typeConfig.width.fixed) {
-    return Math.min(typeConfig.width.fixed, viewportWidth * typeConfig.width.maxPercent);
+    return Math.min(
+      typeConfig.width.fixed,
+      viewportWidth * typeConfig.width.maxPercent,
+    );
   }
 
   if (msgType === "text" || msgType === "deleted") {
-    const { bubbleWidth } = measureTextBlock(msg.text || "", viewportWidth, config);
-    return bubbleWidth;
+    const { bubbleWidth } = measureTextBlock(
+      msg.text || "",
+      viewportWidth,
+      config,
+    );
+    const metadataMinimumWidth = msg.from === "me" ? 92 : 76;
+    return Math.min(
+      viewportWidth * typeConfig.width.maxPercent,
+      Math.max(bubbleWidth, metadataMinimumWidth),
+    );
   }
 
   // Media & others: Use standard clamping
@@ -694,7 +780,9 @@ export function applyEasing(progress: number, easing: EasingFunction): number {
         ? 0
         : progress === 1
           ? 1
-          : Math.pow(2, -10 * progress) * Math.sin((progress * 10 - 0.75) * c4) + 1;
+          : Math.pow(2, -10 * progress) *
+              Math.sin((progress * 10 - 0.75) * c4) +
+            1;
     }
     default:
       return progress;

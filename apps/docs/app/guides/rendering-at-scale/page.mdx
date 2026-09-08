@@ -5,32 +5,49 @@ Tokovo scales best when the authoring surface and render plane stay separated.
 ## Recommended Approach
 
 - keep episode definitions in the repo
-- keep source assets under `apps/video-runner/public` or a private object store
+- keep source assets under `packages/assets/public` or a private object store
 - build and render from committed episode code
 - write a render manifest next to every output
 - verify a real episode render path regularly
+- keep render workers homogeneous: OS, Chromium, FFmpeg, fonts, GL backend, Node, and package lock
+- mount a monitored local cache volume or a content-addressed remote cache
 
 This avoids drift between editing tools and render state.
 
-## Local Batch Pattern
+## Release Worker Pattern
 
 ```bash
-for episode in \
-  v2-creator-series-showcase \
-  whatsapp-flagship-v2 \
-  instagram-flagship-v2 \
-  x-cinematic-flagship
-do
-  EPISODE_ID="$episode" pnpm --filter video-runner render:fast
-done
+TOKOVO_RENDER_CACHE_ROOT=/var/cache/tokovo \
+mise exec -- pnpm --filter @tokovo/render-service render -- \
+  --episode x-the-last-frame \
+  --camera-plan optical \
+  --profile release \
+  --job release-001
 ```
 
-## Output Contract
+The render service reuses camera-independent plates and exact 30-frame compositor chunks. A local
+camera recut invalidates only chunks whose frame-local camera pixels changed.
+
+Do not split a release into independently encoded arbitrary ranges unless the orchestration layer
+also owns exact concat, audio, retry, and cache semantics. The local compositor already has a
+deterministic bounded-chunk seam and runs four chunks concurrently.
+
+## Output and Performance Contract
 
 Each render should produce:
 
-- an MP4 or image sequence
-- a manifest with episode ID, format, duration, git SHA, and output path
-- logs that identify the render profile and bundle signature
+- an MP4 and poster;
+- selected camera program, diagnostics, trace, and projection hashes;
+- metadata with source range, render environment, phase timings, and cache hit/miss counts;
+- structured logs that identify job, episode, profile, source signature, and cache keys.
 
-`apps/video-runner/scripts/write-artifact-manifest.ts` owns the local manifest shape.
+Before adding workers, run `mise exec -- pnpm render:benchmark`. Scaling out a slow single-worker
+pipeline multiplies storage and coordination cost. The current 38-second reference measures 150.127
+seconds cold and 10.648 seconds with full reuse on the pinned local host.
+
+The current cache is local and integrity-checked. Remote cache distribution, leases, and bounded
+eviction are required before a long-lived multi-tenant render farm. A full reference cache entry is
+about 0.8GB.
+
+See `docs/RENDERING.md` for cache identity, controls, measured phases, and the
+Remotion/Mediabunny decision.

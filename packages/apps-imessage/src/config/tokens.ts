@@ -18,6 +18,7 @@ export const iMessageSpacing = {
 
   // Header
   headerHeight: 88,
+  detailHeaderHeight: 44,
   headerPaddingH: 16,
   headerBackButtonWidth: 44,
   headerAvatarSize: 40,
@@ -28,8 +29,8 @@ export const iMessageSpacing = {
   bubblePaddingV: 8,
   bubbleRadius: 18,
   bubbleMaxWidthRatio: 0.75,
-  bubbleTailWidth: 8,
-  bubbleTailHeight: 10,
+  bubbleTailWidth: 12,
+  bubbleTailHeight: 20,
 
   // Message gaps (between bubbles)
   messageGapMinimal: 2, // Same sender, no metadata
@@ -59,6 +60,7 @@ export const iMessageSpacing = {
   inputIconGap: 8,
 
   // Conversation list
+  listHeaderHeight: 148,
   listItemHeight: 75,
   listAvatarSize: 50,
   listPaddingH: 16,

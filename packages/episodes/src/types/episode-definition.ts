@@ -3,7 +3,7 @@
  *
  * Type-safe definitions for the episode registry system.
  *
- * @see docs/architecture/episodes.md
+ * @see docs/ENGINEERING_HANDBOOK.md
  */
 
 import { createScopedLogger } from "@tokovo/core";

@@ -14,6 +14,7 @@ import {
 } from "./TokovoContext.js";
 import {
   evaluateInputSession,
+  lastInputOperationAtFrame,
   findInputSessionForField,
   getInputDisplayDraft,
   inferTextDirection,
@@ -84,6 +85,7 @@ export const KeyboardAwareView: React.FC<KeyboardAwareViewProps> = ({
 };
 
 export interface InputFieldState {
+  lastActivityFrame: number;
   sessionId: string;
   value: string;
   committedValue: string;
@@ -132,6 +134,7 @@ export function useInputField(
   const projectionMatches = inputProjection?.sessionId === session.id;
 
   return {
+    lastActivityFrame: lastInputOperationAtFrame(session, frame)?.at ?? session.startFrame,
     sessionId: session.id,
     value,
     committedValue: state.draft,

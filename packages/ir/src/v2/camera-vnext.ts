@@ -90,6 +90,36 @@ export interface CameraFramingGuardIR {
   screenPosition?: readonly [number, number];
 }
 
+/**
+ * Separates the physical subject that should remain compositionally stable
+ * from the semantic detail receiving editorial attention.
+ *
+ * The composer may follow the attention subject freely until the projected
+ * mount center reaches this output-space dead zone. Beyond it, translation is
+ * corrected without changing authored scale, rotation, lenses, or filters.
+ */
+export interface CameraMountIR {
+  subject: CinematicSubjectRefIR;
+  /** Normalized position inside the effective output viewport. */
+  screenPosition: readonly [number, number];
+  /** Maximum horizontal and vertical displacement from screenPosition. */
+  maxDriftPx: readonly [number, number];
+}
+
+/**
+ * Device travel is never inferred. A rig either declares a stable semantic
+ * mount or explicitly documents why the physical subject may travel.
+ */
+export type CameraTravelIR =
+  | {
+      mode: "stabilized";
+      mount: CameraMountIR;
+    }
+  | {
+      mode: "intentional";
+      reason: string;
+    };
+
 export interface CameraTrajectoryKeyframeIR {
   frame: number;
   offsetX: number;
@@ -216,6 +246,7 @@ export interface CameraRigIR {
   outputId: string;
   subject: CinematicSubjectRefIR;
   composer: CameraComposerIR;
+  travel: CameraTravelIR;
   framingGuard?: CameraFramingGuardIR;
   tracking?: { mode: "direct" };
   bakedTrajectory?: CameraBakedTrajectoryIR;
@@ -241,7 +272,7 @@ export interface CameraShotIR {
 }
 
 export interface CameraPlanIR {
-  version: 1;
+  version: 2;
   id: string;
   fps: number;
   durationInFrames: number;
