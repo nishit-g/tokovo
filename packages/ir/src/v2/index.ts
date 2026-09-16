@@ -163,6 +163,7 @@ export type {
   CameraOutputIR,
   CameraRigIR,
   CameraShotIR,
+  CameraShotDirectionIR,
   CameraPlanIR,
   CinematicSubjectSchemaIR,
 } from "./camera-vnext.js";

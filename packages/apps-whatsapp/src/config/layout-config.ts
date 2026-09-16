@@ -16,6 +16,7 @@
 // =============================================================================
 
 import type { WhatsAppTheme } from "../theme/index.js";
+import { measureBodyText } from "@tokovo/core";
 
 export type MessageType =
   | "text"
@@ -121,18 +122,12 @@ export function getComposerExtraHeight(
 export function getReactionWidth(
   reactions: readonly { count: number }[],
 ): number {
+  const total = reactions.reduce((sum, reaction) => sum + reaction.count, 0);
   return (
-    16 +
-    reactions
-      .slice(0, 3)
-      .reduce(
-        (sum, reaction) =>
-          sum +
-          25 +
-          (reaction.count > 1 ? String(reaction.count).length * 7 : 0),
-        0,
-      ) +
-    (reactions.length > 3 ? 28 : 0)
+    12 + Math.min(3, reactions.length) * 18 +
+    (total > 1
+      ? 4 + String(total).length * 7
+      : 0)
   );
 }
 
@@ -224,6 +219,8 @@ export interface GlobalSpacing {
 // =============================================================================
 
 export interface MessageLayoutConfig {
+  fontFamily?: string;
+  timestampFontSize?: number;
   textMetrics?: { horizontalPadding: number; averageCharacterWidth: number };
   messageTypes: Record<MessageType, MessageSchema>;
   additions: HeightAdditions;
@@ -392,6 +389,9 @@ export interface MessageForHeight {
   type?: MessageType;
   text?: string;
   caption?: string;
+  timestamp?: string;
+  edited?: boolean;
+  starred?: boolean;
   systemType?: string;
   pollQuestion?: string;
   pollOptionCount?: number;
@@ -423,14 +423,18 @@ export function getThemedMessageLayout(
     messageLineHeight === LAYOUT_CONSTANTS.LINE_HEIGHT &&
     messagePaddingHorizontal === LAYOUT_CONSTANTS.BUBBLE_PADDING_H &&
     messagePaddingVertical === LAYOUT_CONSTANTS.BUBBLE_PADDING_V
+    && theme.typography.timestampFontSize === 11
+    && !theme.typography.fontFamily.includes("Roboto")
   )
     return config;
   const height = {
-    base: messagePaddingVertical * 2 + LAYOUT_CONSTANTS.TIMESTAMP_HEIGHT + 1,
+    base: messagePaddingVertical * 2 + metadataLineHeight(theme.typography.timestampFontSize),
     lineHeight: messageLineHeight,
   };
   return {
     ...config,
+    fontFamily: theme.typography.fontFamily,
+    timestampFontSize: theme.typography.timestampFontSize,
     textMetrics: {
       horizontalPadding: messagePaddingHorizontal * 2,
       averageCharacterWidth:
@@ -443,6 +447,10 @@ export function getThemedMessageLayout(
       deleted: { ...config.messageTypes.deleted, height },
     },
   };
+}
+
+export function metadataLineHeight(fontSize = 11): number {
+  return Math.max(LAYOUT_CONSTANTS.TIMESTAMP_HEIGHT, Math.ceil(fontSize * 1.25));
 }
 
 export function calculateMessageHeight(
@@ -463,6 +471,8 @@ export function calculateMessageHeight(
     height =
       typeConfig.height.base +
       lines * (typeConfig.height.lineHeight || LAYOUT_CONSTANTS.LINE_HEIGHT);
+    if (inlineMetadataWidth(msg, viewportWidth, config) !== undefined)
+      height -= metadataLineHeight(config.timestampFontSize);
   } else if ((msgType === "image" || msgType === "video") && msg.caption) {
     const { lines } = measureTextBlock(msg.caption, viewportWidth, config);
     const captionHeight = lines * LAYOUT_CONSTANTS.LINE_HEIGHT;
@@ -617,6 +627,7 @@ export function calculateSmartGap(
 // =============================================================================
 
 export interface TextBlockMetrics {
+  contentWidth: number;
   lines: number;
   textLines: string[];
   bubbleWidth: number;
@@ -635,11 +646,8 @@ export interface TextBlockMetrics {
  * Key fix: bubble width uses the WIDEST wrapped line weight (maxLineWeight),
  * not the paragraph total weight or always-full-capacity width.
  *
- * Weighted units:
- * - space: 0.6
- * - ascii/basic: 1.0
- * - wide (CJK etc): 1.5
- * - emoji surrogate pair: 1.8
+ * Pinned body fonts shape complete runs; emoji/full-width cells share explicit
+ * advances with ShapedText. Font parsing and repeated runs are cached headlessly.
  */
 const graphemeSegmenter = new Intl.Segmenter("en", { granularity: "grapheme" });
 const textBlockCache = new Map<string, TextBlockMetrics>();
@@ -662,25 +670,14 @@ export function measureTextBlock(
     maxBubbleWidth,
     padding,
     advance,
+    config.fontFamily,
     typeConfig.width.min,
     text,
   ]);
   const cached = textBlockCache.get(cacheKey);
   if (cached) return cached;
-  // ponytail: conservative advances, not font shaping. Shared explicit line breaks
-  // prevent camera/UI divergence; full font shaping is needed for exact glyph widths.
-  const weight = (char: string): number =>
-    (/^\s+$/u.test(char)
-      ? 0.6
-      : /^[ilI.,'!:;|]$/u.test(char)
-        ? 0.55
-        : /^[MW@]$/u.test(char)
-          ? 1.65
-          : /^[A-Z]$/u.test(char)
-            ? 1.3
-            : char.charCodeAt(0) > 255
-              ? 2
-              : 1) * advance;
+  const weight = (text: string): number => measureBodyText(text,
+    advance / LAYOUT_CONSTANTS.AVG_CHAR_WIDTH * LAYOUT_CONSTANTS.FONT_SIZE, config.fontFamily);
   const textLines: string[] = [];
   let widest = 0;
   for (const paragraph of text.split("\n")) {
@@ -696,19 +693,24 @@ export function measureTextBlock(
       const graphemes = /^[ -~]*$/.test(token)
         ? token.split("")
         : [...graphemeSegmenter.segment(token)].map((part) => part.segment);
-      const tokenWidth = graphemes.reduce((sum, char) => sum + weight(char), 0);
-      if (line && tokenWidth <= capacity && lineWidth + tokenWidth > capacity)
+      const tokenWidth = weight(token);
+      if (line && tokenWidth <= capacity && weight(line + token) > capacity)
         flush();
+      if (tokenWidth <= capacity) {
+        line += token;
+        lineWidth = weight(line);
+        continue;
+      }
       for (const char of graphemes) {
-        const width = weight(char);
-        if (line && lineWidth + width > capacity) flush();
+        if (line && weight(line + char) > capacity) flush();
         line += char;
-        lineWidth += width;
+        lineWidth = weight(line);
       }
     }
     flush();
   }
   const result = {
+    contentWidth: widest,
     lines: textLines.length,
     textLines,
     bubbleWidth: Math.min(
@@ -741,6 +743,8 @@ export function calculateBubbleWidth(
   }
 
   if (msgType === "text" || msgType === "deleted") {
+    const inlineWidth = inlineMetadataWidth(msg, viewportWidth, config);
+    if (inlineWidth !== undefined) return inlineWidth;
     const { bubbleWidth } = measureTextBlock(
       msg.text || "",
       viewportWidth,
@@ -758,6 +762,27 @@ export function calculateBubbleWidth(
   // and optionally upper-bounded if we strictly wanted to (not currently in config)
   const idealWidth = viewportWidth * typeConfig.width.maxPercent;
   return Math.max(typeConfig.width.min, idealWidth);
+}
+
+/** Compact plain messages share one baseline; rich/long metadata keeps its own row. */
+export function inlineMetadataWidth(
+  msg: MessageForHeight,
+  viewportWidth: number,
+  config: MessageLayoutConfig = DEFAULT_LAYOUT_CONFIG,
+): number | undefined {
+  if (msg.type !== "text" || msg.edited || msg.starred || msg.replyTo ||
+    msg.isForwarded || msg.isGroupChat || msg.linkPreview || (msg.timestamp?.length ?? 0) > 5)
+    return undefined;
+  const metrics = measureTextBlock(msg.text ?? "", viewportWidth, config);
+  if (metrics.lines !== 1) return undefined;
+  if (metadataLineHeight(config.timestampFontSize) > (config.messageTypes.text.height.lineHeight ?? LAYOUT_CONSTANTS.LINE_HEIGHT)) return undefined;
+  const padding = config.textMetrics?.horizontalPadding ?? LAYOUT_CONSTANTS.BUBBLE_PADDING_H * 2;
+  const timestampSize = config.timestampFontSize ?? 11;
+  const timestampWidth = measureBodyText(msg.timestamp ?? "", timestampSize, config.fontFamily);
+  const metadataWidth = timestampWidth + (msg.from === "me" ? 21 : 0);
+  const width = Math.max(msg.from === "me" ? 92 : 76,
+    Math.ceil(metrics.contentWidth + padding + (metadataWidth ? metadataWidth + 8 : 0)));
+  return width <= viewportWidth * config.messageTypes.text.width.maxPercent ? width : undefined;
 }
 
 // =============================================================================

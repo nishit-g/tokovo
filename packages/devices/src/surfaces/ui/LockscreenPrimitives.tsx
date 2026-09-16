@@ -31,11 +31,11 @@ function CameraIcon({ color, size }: { color: string; size: number }) {
   );
 }
 
-export function LockIcon({ color, size }: { color: string; size: number }) {
+export function LockIcon({ color, size, unlocked = false }: { color: string; size: number; unlocked?: boolean }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true">
       <rect x="6" y="10" width="12" height="10" rx="3" fill={color} />
-      <path d="M9 10V7a3 3 0 0 1 6 0v3" stroke={color} strokeWidth="2.3" strokeLinecap="round" />
+      <path d={unlocked ? "M9 10V6a3 3 0 0 1 6 0" : "M9 10V7a3 3 0 0 1 6 0v3"} stroke={color} strokeWidth="2.3" strokeLinecap="round" />
     </svg>
   );
 }
@@ -51,6 +51,7 @@ export function LockscreenControl({
 }) {
   const { theme, layout } = projection;
   const lock = layout.lock;
+  const native = projection.notificationUX === "native" && theme.platform === "ios";
   return (
     <div
       role="img"
@@ -65,7 +66,11 @@ export function LockscreenControl({
         justifyContent: "center",
       }}
     >
-      {kind === "flashlight" ? (
+      {native ? (
+        <svg width={lock.controlIconSize} height={lock.controlIconSize} viewBox="0 0 24 24" fill={theme.colors.primaryText} aria-hidden="true">
+          {kind === "camera" ? <path fillRule="evenodd" d="M8.4 4.5h7.2l1.5 2H20a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-10a2 2 0 0 1 2-2h2.9l1.5-2ZM12 9a4.5 4.5 0 1 0 0 9 4.5 4.5 0 0 0 0-9Zm0 1.5a3 3 0 1 1 0 6 3 3 0 0 1 0-6ZM18.5 9a.8.8 0 1 0 0 1.6.8.8 0 0 0 0-1.6Z" /> : <path fillRule="evenodd" d="M7 2h10v3H7V2Zm0 4h10v2l-3 4v8a2 2 0 0 1-4 0v-8L7 8V6Zm4.25 8v3h1.5v-3h-1.5Z" />}
+        </svg>
+      ) : kind === "flashlight" ? (
         <FlashlightIcon color={theme.colors.primaryText} size={lock.controlIconSize} />
       ) : (
         <CameraIcon color={theme.colors.primaryText} size={lock.controlIconSize} />

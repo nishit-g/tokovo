@@ -1,10 +1,5 @@
 import { parseTimeToFrames } from "@tokovo/dsl";
-import type {
-  InputCadenceIR,
-  InputDirectionIR,
-  InputKeyboardIR,
-  InputSourceIR,
-} from "@tokovo/ir";
+import type { InputCadenceIR, InputDirectionIR, InputKeyboardIR, InputSourceIR } from "@tokovo/ir";
 import { xInputFields } from "../input-fields.js";
 import type {
   ProfileTab,
@@ -115,14 +110,9 @@ class XPointBuilder {
     private _addInputIntent?: AddXInputIntent,
   ) {}
 
-  private _push<T extends XEventType>(
-    type: T,
-    payload: PayloadInput<T>,
-    duration?: number,
-  ): void {
+  private _push<T extends XEventType>(type: T, payload: PayloadInput<T>, duration?: number): void {
     const order = this._getOrder();
-    const resolvedPayload =
-      typeof payload === "function" ? payload(order) : payload;
+    const resolvedPayload = typeof payload === "function" ? payload(order) : payload;
     const event: XTrackEventFor<T> = {
       at: this._frame,
       duration,
@@ -324,10 +314,7 @@ class XPointBuilder {
     this._push("SET_COMPOSE_DRAFT", { text });
   }
 
-  setComposerStatus(
-    status: "idle" | "sending" | "failed",
-    error?: string,
-  ): void {
+  setComposerStatus(status: "idle" | "sending" | "failed", error?: string): void {
     this._push("SET_COMPOSER_STATUS", { status, error });
   }
 
@@ -353,6 +340,10 @@ class XPointBuilder {
 
   setNotificationsTab(tab: NotificationsTab): void {
     this._push("SET_NOTIFICATIONS_TAB", { tab });
+  }
+
+  markNotificationRead(id: string, badgeCount?: number): void {
+    this._push("MARK_NOTIFICATION_READ", { id, badgeCount });
   }
 
   addNotification(data: NotificationInput): void {
@@ -448,11 +439,7 @@ class XPointBuilder {
     this._push("DM_REACT", { messageId, userId, emoji });
   }
 
-  removeMessageReaction(
-    messageId: string,
-    userId: string,
-    emoji: string,
-  ): void {
+  removeMessageReaction(messageId: string, userId: string, emoji: string): void {
     this._push("DM_UNREACT", { messageId, userId, emoji });
   }
 
@@ -463,8 +450,8 @@ class XPointBuilder {
     this._push("DM_SET_DELIVERY", { messageId, delivery });
   }
 
-  setScroll(surface: XScrollSurface, offset: number, targetId?: string): void {
-    this._push("SET_SCROLL", { surface, offset, targetId });
+  setScroll(surface: XScrollSurface, offset: number, targetId?: string, durationFrames = 12): void {
+    this._push("SET_SCROLL", { surface, offset, targetId, durationFrames });
   }
 
   scrollTimelineTo(offset: number): void {
@@ -512,8 +499,7 @@ export class XTrackBuilder {
   ) {}
 
   at(time: string | number): XPointBuilder {
-    const frame =
-      typeof time === "number" ? time : parseTimeToFrames(time, this._fps);
+    const frame = typeof time === "number" ? time : parseTimeToFrames(time, this._fps);
     return new XPointBuilder(
       frame,
       this._deviceId,

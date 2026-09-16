@@ -4,25 +4,16 @@ import { parseXAuthoringEventPayload } from "../contract/schemas.js";
 import type { XTrackEvent } from "../types/index.js";
 
 export interface XLoweringHandler {
-  lower: (
-    event: TrackEvent,
-    context: NotificationIntentEmitter,
-  ) => RuntimeEvent[];
+  lower: (event: TrackEvent, context: NotificationIntentEmitter) => RuntimeEvent[];
 }
 
 function isXEvent(event: TrackEvent): event is XTrackEvent {
   return event.kind === "APP" && event.appId === "app_x";
 }
 
-function runtimeEvent(
-  event: XTrackEvent,
-  type: string,
-  payload: unknown,
-): RuntimeEvent {
+function runtimeEvent(event: XTrackEvent, type: string, payload: unknown): RuntimeEvent {
   if (!event.deviceId) {
-    throw new Error(
-      "X_EVENT_DEVICE_REQUIRED: lowered X events require deviceId",
-    );
+    throw new Error("X_EVENT_DEVICE_REQUIRED: lowered X events require deviceId");
   }
   return {
     at: event.at,
@@ -57,15 +48,28 @@ export const xLowering: XLoweringHandler = {
   lower(event: TrackEvent, context: NotificationIntentEmitter): RuntimeEvent[] {
     if (!isXEvent(event)) return [];
     if (!event.deviceId) {
-      throw new Error(
-        "X_EVENT_DEVICE_REQUIRED: lowered X events require deviceId",
-      );
+      throw new Error("X_EVENT_DEVICE_REQUIRED: lowered X events require deviceId");
     }
     parseXAuthoringEventPayload(event.type, event.payload);
 
     switch (event.type) {
       case "USER_CREATE":
         return [runtimeEvent(event, "ADD_USER", event.payload)];
+      case "MARK_NOTIFICATION_READ": {
+        const { id, badgeCount } = event.payload;
+        if (badgeCount !== undefined) {
+          context.emitNotificationInteraction({
+            deviceId: event.deviceId,
+            atFrame: event.at,
+            type: "markRead",
+            notificationId: id,
+            badgeCount,
+            readTarget: { appId: "app_x", type: "MARK_NOTIFICATION_READ", payload: { id } },
+          });
+          return [];
+        }
+        return [runtimeEvent(event, "MARK_NOTIFICATION_READ", { id })];
+      }
       case "SET_CURRENT_USER":
         return [runtimeEvent(event, "SET_CURRENT_USER", event.payload)];
       case "FOLLOW_USER":
@@ -124,9 +128,7 @@ export const xLowering: XLoweringHandler = {
       case "NOTIFICATION_ADD": {
         const payload = event.payload;
         const body = payload.body ?? notificationCopy(payload.type);
-        const threadId = payload.tweetId
-          ? `tweet:${payload.tweetId}`
-          : `user:${payload.actorId}`;
+        const threadId = payload.tweetId ? `tweet:${payload.tweetId}` : `user:${payload.actorId}`;
         context.emitNotification({
           id: payload.id,
           deviceId: event.deviceId,
@@ -138,12 +140,12 @@ export const xLowering: XLoweringHandler = {
           threadId,
           groupId: threadId,
           interruption:
-            payload.type === "mention" || payload.type === "reply"
-              ? "timeSensitive"
-              : "active",
+            payload.type === "mention" || payload.type === "reply" ? "timeSensitive" : "active",
           privacy: "public",
           metadata: {
             kind: payload.type,
+            tweetId: payload.tweetId,
+            actorId: payload.actorId,
             route: payload.tweetId ? "tweet" : "notifications",
           },
         });
@@ -152,13 +154,9 @@ export const xLowering: XLoweringHandler = {
       case "DM_THREAD_CREATE":
         return [runtimeEvent(event, "ADD_DM_THREAD", event.payload)];
       case "DM_SEND":
-        return [
-          runtimeEvent(event, "ADD_DM_MESSAGE_OUTGOING", event.payload),
-        ];
+        return [runtimeEvent(event, "ADD_DM_MESSAGE_OUTGOING", event.payload)];
       case "DM_RECEIVE":
-        return [
-          runtimeEvent(event, "ADD_DM_MESSAGE_INCOMING", event.payload),
-        ];
+        return [runtimeEvent(event, "ADD_DM_MESSAGE_INCOMING", event.payload)];
       case "DM_REACT":
         return [runtimeEvent(event, "ADD_DM_REACTION", event.payload)];
       case "DM_UNREACT":
@@ -166,9 +164,7 @@ export const xLowering: XLoweringHandler = {
       case "DM_SET_DELIVERY":
         return [runtimeEvent(event, "SET_DM_DELIVERY", event.payload)];
       default:
-        throw new Error(
-          `X_TRACK_TYPE_UNSUPPORTED: "${(event as { type: string }).type}"`,
-        );
+        throw new Error(`X_TRACK_TYPE_UNSUPPORTED: "${(event as { type: string }).type}"`);
     }
   },
 };

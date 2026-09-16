@@ -81,6 +81,7 @@ export function getNotificationTheme(
       cardPadding: geometry.cardPadding,
       iconSize: geometry.iconSize,
       lockScreenTop: geometry.lockScreenTop,
+      lockScreenBottom: platform === "ios" ? 104 : 32,
       centerTop: geometry.centerTop,
       centerHorizontalMargin: geometry.horizontalMargin,
       stackGap: geometry.stackGap,
@@ -95,6 +96,7 @@ export function getNotificationTheme(
       timestampSize: timestamp.size,
     },
     motion: {
+      reduced: preferences.motion === "reduced",
       bannerEnterFramesAt30: visuals.motionProfile.notificationBannerEnterFramesAt30,
       bannerExitFramesAt30: visuals.motionProfile.notificationBannerExitFramesAt30,
       cardEnterFramesAt30: visuals.motionProfile.notificationCardEnterFramesAt30,

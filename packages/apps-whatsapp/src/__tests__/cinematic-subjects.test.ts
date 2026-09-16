@@ -12,6 +12,7 @@ describe("WhatsApp cinematic subjects", () => {
             id: "m1",
             rect: { x: 22, y: 410, width: 250, height: 82 },
             tags: ["message", "message_other", "text"],
+            metadata: { textSizePx: 17 },
           },
           media_m1: {
             id: "media_m1",
@@ -47,6 +48,7 @@ describe("WhatsApp cinematic subjects", () => {
             region: "bubble",
           },
           rect: { x: 22, y: 410, width: 250, height: 82 },
+          textSizePx: 17,
         }),
         expect.objectContaining({
           ref: expect.objectContaining({
@@ -61,6 +63,7 @@ describe("WhatsApp cinematic subjects", () => {
             subjectId: "last-message",
           }),
           provenance: expect.objectContaining({ regionId: "m1" }),
+          textSizePx: 17,
         }),
       ]),
     );

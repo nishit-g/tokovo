@@ -63,6 +63,7 @@ export const xMediaInputSchema = z
     aspect: z.enum(["square", "wide", "tall"]),
     alt: z.string().max(1_000).optional(),
     posterUrl: z.string().trim().min(1).optional(),
+    durationSeconds: z.number().positive().finite().optional(),
     sensitive: z.boolean().optional(),
   })
   .strict()
@@ -170,7 +171,7 @@ export const xTweetInputSchema = z
         message: "a post may declare only one of media, linkPreview, or poll",
       });
     }
-    if (!tweet.text.trim() && attachmentCount === 0 && !tweet.repostOfId) {
+    if (!tweet.text.trim() && attachmentCount === 0 && !tweet.repostOfId && !tweet.quoteTweetId) {
       context.addIssue({
         code: "custom",
         message: "a post requires text, an attachment, or repostOfId",
@@ -423,6 +424,7 @@ const xScrollEventSchema = z
   .object({
     surface: z.enum(["timeline", "tweet", "notifications", "messages", "profile", "thread"]),
     offset: z.number().finite().nonnegative(),
+    durationFrames: z.number().int().min(0).max(600).optional(),
     targetId: xIdSchema.optional(),
   })
   .strict();
@@ -491,6 +493,7 @@ export const xAuthoringEventPayloadSchemas = {
   SET_PROFILE_TAB: xProfileTabEventSchema,
   SET_NOTIFICATIONS_TAB: xNotificationsTabEventSchema,
   NOTIFICATION_ADD: xNotificationInputSchema,
+  MARK_NOTIFICATION_READ: z.object({ id: xIdSchema, badgeCount: xCountSchema.optional() }).strict(),
   DM_THREAD_CREATE: xThreadInputSchema,
   DM_SEND: xAuthoredDMMessageSchema,
   DM_RECEIVE: xReceivedDMMessageSchema,
@@ -519,6 +522,7 @@ export const xSnapshotSchema = z
   .object({
     schemaVersion: z.literal(2),
     locale: xLocaleSchema.optional(),
+    postCharacterLimit: z.union([z.literal(280), z.literal(25000)]).optional(),
     currentUserId: xIdSchema.optional(),
     users: z.array(xUserInputSchema),
     tweets: z.array(xTweetInputSchema).optional(),

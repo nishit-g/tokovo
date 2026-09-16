@@ -41,6 +41,21 @@ const fixture: CameraTextureProjectionCapture = {
 };
 
 describe("camera texture projection contract", () => {
+  it("preserves framing failures through export capture and rejects malformed checks", () => {
+    const capture = structuredClone(fixture);
+    capture.outputs[0].quality.framing = {
+      projectionSupported: true,
+      clippedSubjectKeys: ["message"],
+    };
+    expect(
+      parseCameraTextureProjectionCapture(encodeCameraTextureProjectionCapture(capture)),
+    ).toEqual(capture);
+    const malformed = encodeCameraTextureProjectionCapture(capture).replace(
+      '"clippedSubjectKeys":["message"]',
+      '"clippedSubjectKeys":[42]',
+    );
+    expect(parseCameraTextureProjectionCapture(malformed)).toBeNull();
+  });
   it("round-trips valid captures embedded in renderer output", () => {
     expect(
       parseCameraTextureProjectionCapture(

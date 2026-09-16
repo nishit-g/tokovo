@@ -137,10 +137,19 @@ export function projectCinematicSubjects(
     const clippedLocalRect = node.clip
       ? intersectRects(subjectClip, node.clip)
       : subject.clippedLocalRect;
+    // Smallest singular value: a conservative em-size under rotation, shear and nonuniform scale.
+    const { a, b, c, d } = node.worldTransform;
+    const sum = a * a + b * b + c * c + d * d;
+    const textScale = Math.sqrt(
+      Math.max(0, (sum - Math.sqrt(Math.max(0, sum * sum - 4 * (a * d - b * c) ** 2))) / 2),
+    );
     return {
       ...subject,
       visible: subject.visible && (!hasClip || clippedLocalRect !== undefined),
       worldRect: transformStageRect(node.worldTransform, subject.localRect),
+      ...(subject.textSizePx === undefined
+        ? {}
+        : { worldTextSizePx: subject.textSizePx * textScale }),
       clippedWorldRect: clippedLocalRect
         ? transformStageRect(node.worldTransform, clippedLocalRect)
         : undefined,

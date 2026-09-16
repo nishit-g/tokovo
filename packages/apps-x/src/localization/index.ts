@@ -7,6 +7,7 @@ const copy = {
     appName: "X",
     forYou: "For you",
     following: "Following",
+    follow: "Follow",
     home: "Home",
     search: "Search",
     notifications: "Notifications",
@@ -39,18 +40,18 @@ const copy = {
     joined: "Joined",
     pollVotes: "votes",
     pollEnded: "Final results",
+    showMore: "Show more",
+    pollOpen: "Voting open",
+    pollEnds: "Ends",
     sensitiveMedia: "Content warning",
     sensitiveBody: "This media may contain sensitive content.",
     show: "Show",
     emptyTimelineTitle: "Welcome to your timeline",
-    emptyTimelineBody:
-      "When people you follow post, their updates will appear here.",
+    emptyTimelineBody: "When people you follow post, their updates will appear here.",
     emptyNotificationsTitle: "Nothing to see—yet",
-    emptyNotificationsBody:
-      "From likes to reposts and more, this is where all the action happens.",
+    emptyNotificationsBody: "From likes to reposts and more, this is where all the action happens.",
     emptyMessagesTitle: "Welcome to your inbox",
-    emptyMessagesBody:
-      "Drop a line, share posts and more with private conversations.",
+    emptyMessagesBody: "Drop a line, share posts and more with private conversations.",
     newMessage: "New message",
     send: "Send",
     typing: "typing…",
@@ -76,6 +77,7 @@ const copy = {
     appName: "إكس",
     forYou: "لك",
     following: "المتابَعون",
+    follow: "متابعة",
     home: "الرئيسية",
     search: "البحث",
     notifications: "التنبيهات",
@@ -108,6 +110,9 @@ const copy = {
     joined: "انضم في",
     pollVotes: "أصوات",
     pollEnded: "النتائج النهائية",
+    showMore: "عرض المزيد",
+    pollOpen: "التصويت مفتوح",
+    pollEnds: "ينتهي",
     sensitiveMedia: "تحذير محتوى",
     sensitiveBody: "قد تتضمن هذه الوسائط محتوى حساسًا.",
     show: "عرض",
@@ -142,6 +147,7 @@ const copy = {
     appName: "एक्स",
     forYou: "आपके लिए",
     following: "फ़ॉलोइंग",
+    follow: "फ़ॉलो करें",
     home: "होम",
     search: "खोजें",
     notifications: "नोटिफ़िकेशन",
@@ -174,12 +180,14 @@ const copy = {
     joined: "जुड़े",
     pollVotes: "वोट",
     pollEnded: "अंतिम नतीजे",
+    showMore: "और दिखाएँ",
+    pollOpen: "मतदान जारी है",
+    pollEnds: "समाप्त",
     sensitiveMedia: "कंटेंट चेतावनी",
     sensitiveBody: "इस मीडिया में संवेदनशील सामग्री हो सकती है।",
     show: "दिखाएँ",
     emptyTimelineTitle: "आपकी टाइमलाइन में स्वागत है",
-    emptyTimelineBody:
-      "जिन लोगों को आप फ़ॉलो करते हैं उनकी पोस्ट यहाँ दिखेंगी।",
+    emptyTimelineBody: "जिन लोगों को आप फ़ॉलो करते हैं उनकी पोस्ट यहाँ दिखेंगी।",
     emptyNotificationsTitle: "अभी यहाँ कुछ नहीं है",
     emptyNotificationsBody: "लाइक, रीपोस्ट और दूसरी गतिविधियाँ यहाँ दिखेंगी।",
     emptyMessagesTitle: "आपके इनबॉक्स में स्वागत है",
@@ -224,11 +232,7 @@ export function formatXCount(value: number, locale: XLocale): string {
   }).format(value);
 }
 
-export function formatXTimestamp(
-  value: number,
-  nowMs: number,
-  locale: XLocale,
-): string {
+export function formatXTimestamp(value: number, nowMs: number, locale: XLocale): string {
   const elapsed = Math.max(0, Math.floor((nowMs - value) / 1_000));
   const units =
     locale === "ar-SA"
@@ -236,18 +240,11 @@ export function formatXTimestamp(
       : locale === "hi-IN"
         ? { second: "से", minute: "मि", hour: "घं" }
         : { second: "s", minute: "m", hour: "h" };
-  if (elapsed < 60)
-    return new Intl.NumberFormat(locale).format(elapsed) + units.second;
+  if (elapsed < 60) return new Intl.NumberFormat(locale).format(elapsed) + units.second;
   if (elapsed < 3_600)
-    return (
-      new Intl.NumberFormat(locale).format(Math.floor(elapsed / 60)) +
-      units.minute
-    );
+    return new Intl.NumberFormat(locale).format(Math.floor(elapsed / 60)) + units.minute;
   if (elapsed < 86_400)
-    return (
-      new Intl.NumberFormat(locale).format(Math.floor(elapsed / 3_600)) +
-      units.hour
-    );
+    return new Intl.NumberFormat(locale).format(Math.floor(elapsed / 3_600)) + units.hour;
   return new Intl.DateTimeFormat(locale, {
     month: "short",
     day: "numeric",
@@ -264,4 +261,21 @@ export function formatXLongTimestamp(value: number, locale: XLocale): string {
     year: "numeric",
     timeZone: "UTC",
   }).format(new Date(value));
+}
+export function xProfileDetails(
+  user: { location?: string; website?: string; joinedAt?: number },
+  locale: XLocale,
+  joined: string,
+): string[] {
+  return [
+    user.location,
+    user.website,
+    user.joinedAt
+      ? joined +
+        " " +
+        new Intl.DateTimeFormat(locale, { month: "long", year: "numeric", timeZone: "UTC" }).format(
+          user.joinedAt,
+        )
+      : undefined,
+  ].filter((value): value is string => Boolean(value));
 }

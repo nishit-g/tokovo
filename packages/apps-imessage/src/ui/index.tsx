@@ -15,6 +15,7 @@ import {
   SearchBar,
 } from "../components/index.js";
 import { iMessageSpacing, getReplyPreview, shouldShowTail } from "../config/index.js";
+import { getReplyTarget } from "../config/layout-config.js";
 import { ConversationAvatar } from "../components/ConversationAvatar.js";
 import { iMessageTypography } from "../config/tokens.js";
 import type { IMessageConversation, IMessageState } from "../types/index.js";
@@ -118,6 +119,7 @@ const ChatView: React.FC<{
   const draftText = composerInput?.value ?? conversation.draft ?? "";
 
   const messages = (conversation.messages ?? []).filter((message) => message.timestamp <= t);
+  const messageIndex = new Map(messages.map((message, index) => [message.id, index]));
   const thread = layout.semantic?.regions.imessage_thread?.rect;
   const composer = layout.semantic?.regions.imessage_composer?.rect;
   if (!thread || !composer) throw new Error("IMESSAGE_CHAT_CHROME_MISSING");
@@ -194,14 +196,16 @@ const ChatView: React.FC<{
             {conversation.transport === "sms" ? "Text Message" : "iMessage"}
           </div>
           {messages.map((message, index) => {
+            const item = layout.messageLayouts[message.id];
+            if (!item?.rect) throw new Error(`IMESSAGE_MESSAGE_LAYOUT_MISSING: ${message.id}`);
+            // Keep the full headless history; mount only the viewport plus overscan.
+            if (item.y + item.height < thread.y - 200 || item.y > thread.y + thread.height + 200) return null;
             const prev = messages[index - 1];
             const showSenderLabel =
               conversation.isGroup &&
               !message.fromMe &&
               (prev?.senderId !== message.senderId || prev?.fromMe);
-            const replyPreview = getReplyPreview(messages, index);
-            const item = layout.messageLayouts[message.id];
-            if (!item?.rect) throw new Error(`IMESSAGE_MESSAGE_LAYOUT_MISSING: ${message.id}`);
+            const replyPreview = getReplyPreview(messages, index, messageIndex);
             const geometry = messageGeometry(
               message,
               width,
@@ -209,17 +213,8 @@ const ChatView: React.FC<{
               Boolean(showSenderLabel),
               message.id === lastOutgoingId,
             );
-            const label = dateLabel(message, prev);
-            const replyRef = message.replyTo;
-            const replyTarget =
-              messages
-                .slice(0, index)
-                .find((candidate) => candidate.id === (replyRef?.messageId ?? replyRef?.id)) ??
-              (replyRef?.index === "last"
-                ? prev
-                : typeof replyRef?.index === "number"
-                  ? messages[replyRef.index]
-                  : undefined);
+            const label = dateLabel(message, prev, _world.devices?.[_deviceId]?.os?.locale);
+            const replyTarget = getReplyTarget(messages, index, messageIndex);
             return (
               <React.Fragment key={message.id}>
                 {label && (

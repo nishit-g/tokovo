@@ -1,12 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { requireXState } from "../runtime/selectors.js";
-import {
-  appEvent,
-  BASE_TIME,
-  createTestState,
-  createTestWorld,
-  reduce,
-} from "./helpers.js";
+import { appEvent, BASE_TIME, createTestState, createTestWorld, reduce } from "./helpers.js";
 
 describe("X VNext reducer", () => {
   it("creates canonical users and rejects duplicate entity creation", () => {
@@ -18,9 +12,7 @@ describe("X VNext reducer", () => {
       followers: 0,
       followingIds: [],
     });
-    expect(() => reduce(next, appEvent("ADD_USER", payload))).toThrow(
-      /X_USER_DUPLICATE/,
-    );
+    expect(() => reduce(next, appEvent("ADD_USER", payload))).toThrow(/X_USER_DUPLICATE/);
   });
 
   it("rejects malformed timestamps instead of treating frames as Unix time", () => {
@@ -89,45 +81,24 @@ describe("X VNext reducer", () => {
         createdAt: BASE_TIME + 1_000,
       }),
     );
-    expect(requireXState(topLevel, "phone").timelineIds).toEqual([
-      "tw_new",
-      "tw_1",
-    ]);
+    expect(requireXState(topLevel, "phone").timelineIds).toEqual(["tw_new", "tw_1"]);
   });
 
   it("makes likes idempotent and validates both entities", () => {
     const world = createTestWorld();
-    const once = reduce(
-      world,
-      appEvent("LIKE_TWEET", { tweetId: "tw_1", userId: "u_me" }),
-    );
-    const twice = reduce(
-      once,
-      appEvent("LIKE_TWEET", { tweetId: "tw_1", userId: "u_me" }),
-    );
+    const once = reduce(world, appEvent("LIKE_TWEET", { tweetId: "tw_1", userId: "u_me" }));
+    const twice = reduce(once, appEvent("LIKE_TWEET", { tweetId: "tw_1", userId: "u_me" }));
     expect(requireXState(twice, "phone").tweetsById.tw_1.likeCount).toBe(1);
     expect(() =>
-      reduce(
-        world,
-        appEvent("LIKE_TWEET", { tweetId: "tw_1", userId: "ghost" }),
-      ),
+      reduce(world, appEvent("LIKE_TWEET", { tweetId: "tw_1", userId: "ghost" })),
     ).toThrow(/X_USER_MISSING/);
   });
 
   it("supports reversible reactions without allowing counters below zero", () => {
     const world = createTestWorld();
-    const liked = reduce(
-      world,
-      appEvent("LIKE_TWEET", { tweetId: "tw_1", userId: "u_me" }),
-    );
-    const unliked = reduce(
-      liked,
-      appEvent("UNLIKE_TWEET", { tweetId: "tw_1", userId: "u_me" }),
-    );
-    const repeated = reduce(
-      unliked,
-      appEvent("UNLIKE_TWEET", { tweetId: "tw_1", userId: "u_me" }),
-    );
+    const liked = reduce(world, appEvent("LIKE_TWEET", { tweetId: "tw_1", userId: "u_me" }));
+    const unliked = reduce(liked, appEvent("UNLIKE_TWEET", { tweetId: "tw_1", userId: "u_me" }));
+    const repeated = reduce(unliked, appEvent("UNLIKE_TWEET", { tweetId: "tw_1", userId: "u_me" }));
     expect(requireXState(repeated, "phone").tweetsById.tw_1).toMatchObject({
       likeCount: 0,
       likedBy: [],
@@ -157,13 +128,11 @@ describe("X VNext reducer", () => {
         optionId: "b",
       }),
     );
-    expect(requireXState(voted, "phone").tweetsById.tw_poll.poll).toMatchObject(
-      {
-        totalVotes: 6,
-        selectedOptionId: "b",
-        options: [{ votes: 2 }, { votes: 4 }],
-      },
-    );
+    expect(requireXState(voted, "phone").tweetsById.tw_poll.poll).toMatchObject({
+      totalVotes: 6,
+      selectedOptionId: "b",
+      options: [{ votes: 2 }, { votes: 4 }],
+    });
     expect(() =>
       reduce(
         voted,
@@ -220,7 +189,7 @@ describe("X VNext reducer", () => {
       }),
     );
     const next = requireXState(world, "phone");
-    expect(next.tweetsById.tw_1.media?.playback).toEqual({
+    expect(next.tweetsById.tw_1.media?.playback).toMatchObject({
       state: "playing",
       progress: 0.4,
     });
@@ -235,10 +204,7 @@ describe("X VNext reducer", () => {
   it("validates route targets and keeps viewMode synchronized", () => {
     const world = createTestWorld();
     expect(() =>
-      reduce(
-        world,
-        appEvent("SET_SCREEN", { screen: "tweet", tweetId: "ghost" }),
-      ),
+      reduce(world, appEvent("SET_SCREEN", { screen: "tweet", tweetId: "ghost" })),
     ).toThrow(/X_TWEET_MISSING/);
     const thread = reduce(
       world,
@@ -358,22 +324,14 @@ describe("X VNext reducer", () => {
     state.dmThreadsById.dm_1.participantIds.push("u_third");
     let world = createTestWorld(state);
     expect(() =>
-      reduce(
-        world,
-        appEvent("START_DM_TYPING", { threadId: "dm_1", userId: "u_me" }),
-      ),
+      reduce(world, appEvent("START_DM_TYPING", { threadId: "dm_1", userId: "u_me" })),
     ).toThrow(/X_DM_TYPING_CURRENT_USER_INVALID/);
-    world = reduce(
-      world,
-      appEvent("START_DM_TYPING", { threadId: "dm_1", userId: "u_other" }),
-    );
-    world = reduce(
-      world,
-      appEvent("START_DM_TYPING", { threadId: "dm_1", userId: "u_third" }),
-    );
-    expect(
-      requireXState(world, "phone").dmThreadsById.dm_1.typingUserIds,
-    ).toEqual(["u_other", "u_third"]);
+    world = reduce(world, appEvent("START_DM_TYPING", { threadId: "dm_1", userId: "u_other" }));
+    world = reduce(world, appEvent("START_DM_TYPING", { threadId: "dm_1", userId: "u_third" }));
+    expect(requireXState(world, "phone").dmThreadsById.dm_1.typingUserIds).toEqual([
+      "u_other",
+      "u_third",
+    ]);
     world = reduce(
       world,
       appEvent("ADD_DM_MESSAGE_INCOMING", {
@@ -384,9 +342,7 @@ describe("X VNext reducer", () => {
         createdAt: BASE_TIME,
       }),
     );
-    expect(
-      requireXState(world, "phone").dmThreadsById.dm_1.typingUserIds,
-    ).toEqual(["u_third"]);
+    expect(requireXState(world, "phone").dmThreadsById.dm_1.typingUserIds).toEqual(["u_third"]);
   });
 
   it("validates DM replies and applies reactions idempotently", () => {
@@ -418,9 +374,7 @@ describe("X VNext reducer", () => {
         emoji: "🔥",
       }),
     );
-    expect(
-      requireXState(world, "phone").dmMessagesById.msg_reply,
-    ).toMatchObject({
+    expect(requireXState(world, "phone").dmMessagesById.msg_reply).toMatchObject({
       replyToMessageId: "msg_1",
       reactions: [{ emoji: "🔥", userIds: ["u_other"] }],
     });
@@ -432,9 +386,7 @@ describe("X VNext reducer", () => {
         emoji: "🔥",
       }),
     );
-    expect(
-      requireXState(world, "phone").dmMessagesById.msg_reply.reactions,
-    ).toEqual([]);
+    expect(requireXState(world, "phone").dmMessagesById.msg_reply.reactions).toEqual([]);
   });
 
   it("enforces forward outgoing delivery transitions", () => {
@@ -451,14 +403,9 @@ describe("X VNext reducer", () => {
       }),
     );
     for (const delivery of ["sent", "delivered", "read"] as const) {
-      world = reduce(
-        world,
-        appEvent("SET_DM_DELIVERY", { messageId: "msg_delivery", delivery }),
-      );
+      world = reduce(world, appEvent("SET_DM_DELIVERY", { messageId: "msg_delivery", delivery }));
     }
-    expect(
-      requireXState(world, "phone").dmMessagesById.msg_delivery.delivery,
-    ).toBe("read");
+    expect(requireXState(world, "phone").dmMessagesById.msg_delivery.delivery).toBe("read");
     expect(() =>
       reduce(
         world,
@@ -481,10 +428,7 @@ describe("X VNext reducer", () => {
 
   it("stores independent authored scroll positions and rejects missing targets", () => {
     let world = createTestWorld();
-    world = reduce(
-      world,
-      appEvent("SET_SCROLL", { surface: "timeline", offset: 240 }),
-    );
+    world = reduce(world, appEvent("SET_SCROLL", { surface: "timeline", offset: 240 }));
     world = reduce(
       world,
       appEvent("SET_SCROLL", {
@@ -522,8 +466,8 @@ describe("X VNext reducer", () => {
     const state = createTestState() as unknown as Record<string, unknown>;
     delete state.schemaVersion;
     const world = createTestWorld(state as never);
-    expect(() =>
-      reduce(world, appEvent("SET_COMPOSE_DRAFT", { text: "x" })),
-    ).toThrow(/X_STATE_VERSION_UNSUPPORTED/);
+    expect(() => reduce(world, appEvent("SET_COMPOSE_DRAFT", { text: "x" }))).toThrow(
+      /X_STATE_VERSION_UNSUPPORTED/,
+    );
   });
 });

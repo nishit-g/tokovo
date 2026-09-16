@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { xTextTokens } from "../layout/tokens.js";
 import { getXDirection, translateX } from "../localization/index.js";
 import {
   X_UI_VERSION,
@@ -97,18 +98,17 @@ function resolveThemeId(appearance: "light" | "dark", raw?: string): XThemeId {
 export function resolveXExperience(input: XExperienceInput): XExperience {
   const parsed = inputSchema.parse(input);
   const themeId = resolveThemeId(parsed.appearance, parsed.themeId);
-  const colors = parsed.appearance === "light"
-    ? light
-    : themeId === "x-lights-out"
-      ? lightsOut
-      : dim;
+  const colors =
+    parsed.appearance === "light" ? light : themeId === "x-lights-out" ? lightsOut : dim;
   const contrastColors = parsed.increasedContrast
     ? { ...colors, border: colors.borderStrong, textSecondary: colors.text }
     : colors;
   const ios = parsed.platform === "ios";
+  const text = xTextTokens(parsed.textScale, !ios);
 
   return {
     appId: "app_x",
+    text,
     uiVersion: X_UI_VERSION,
     platform: parsed.platform,
     appearance: parsed.appearance,
@@ -118,21 +118,17 @@ export function resolveXExperience(input: XExperienceInput): XExperience {
     reducedMotion: parsed.reducedMotion,
     colors: contrastColors,
     type: {
-      family: ios
-        ? "'SF Pro Text', -apple-system, BlinkMacSystemFont, 'Noto Sans Arabic', 'Noto Sans Devanagari', sans-serif"
-        : "'Roboto Flex', Roboto, 'Noto Sans Arabic', 'Noto Sans Devanagari', sans-serif",
-      displayFamily: ios
-        ? "'SF Pro Display', 'SF Pro Text', -apple-system, sans-serif"
-        : "'Roboto Flex', Roboto, sans-serif",
+      family: text.fontFamily,
+      displayFamily: text.fontFamily,
       scale: parsed.textScale,
     },
     metrics: {
       headerHeight: ios ? 52 : 56,
       navHeight: ios ? 50 : 64,
-      touchTarget: ios ? 44 : 48,
-      pagePadding: 16,
-      postPaddingY: ios ? 11 : 12,
-      avatar: ios ? 40 : 42,
+      touchTarget: text.touchTarget,
+      pagePadding: text.page,
+      postPaddingY: text.postPadding,
+      avatar: text.avatar,
       composerHeight: ios ? 48 : 52,
       radius: ios ? 16 : 14,
     },

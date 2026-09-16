@@ -34,7 +34,8 @@ export {
 
 export { CameraPreparationError, prepareCameraPlan, getRigById } from "./program.js";
 
-export { CameraEvaluationError, evaluateCameraOutput } from "./evaluate.js";
+export { CameraEvaluationError, evaluateCameraOutput, prepareCameraTracking } from "./evaluate.js";
+export type { PreparedCameraTracking } from "./types.js";
 export { analyzeCameraTemporalQuality, cameraQualitySample } from "./quality.js";
 export { cinematicSubjectKey } from "./subjects.js";
 export {

@@ -22,6 +22,7 @@ export const linkedInNotificationAdapter: NotificationAppAdapter = {
     };
   },
   defaultAction: (intent) => ({
+    ...(intent.threadId ? { appEvent: { appId: "app_linkedin", type: "NAVIGATE", payload: { screen: "thread", threadId: intent.threadId } } } : {}),
     navigation: {
       appId: "app_linkedin",
       route: intent.metadata?.route as string | undefined,

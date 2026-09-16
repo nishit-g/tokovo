@@ -28,6 +28,16 @@ function sample(frame: number, patch: Partial<CameraQualitySample> = {}): Camera
 }
 
 describe("camera temporal quality", () => {
+  it("flags clipped subjects and does not certify unchecked nonlinear projection", () => {
+    const report = analyzeCameraTemporalQuality([
+      sample(0, { framing: { clippedSubjectKeys: ["message"], projectionSupported: true } }),
+      sample(1, { framing: { clippedSubjectKeys: [], projectionSupported: false } }),
+    ]);
+    expect(report.violations.map(({ code }) => code)).toEqual([
+      "CAM_QUALITY_SUBJECT_CROPPED",
+      "CAM_QUALITY_PROJECTION_UNCHECKED",
+    ]);
+  });
   it("accepts a contiguous smooth random-access trajectory", () => {
     const report = analyzeCameraTemporalQuality([sample(0), sample(1), sample(2), sample(3)]);
 

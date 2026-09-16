@@ -8,6 +8,8 @@ export interface CinematicSubjectProjection {
   coordinateSpace: "app-logical" | "device-screen" | "device-body";
   visible: boolean;
   clippedRect?: CameraRectIR;
+  /** Body-text em size in this projection's coordinate space, emitted by app layout. */
+  textSizePx?: number;
   sourceVersion: number;
   provenance: {
     ownerId: string;

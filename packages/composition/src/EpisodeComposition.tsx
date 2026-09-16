@@ -1,4 +1,5 @@
 import { BackgroundLayer } from "@tokovo/background";
+import { cameraQualitySample } from "@tokovo/camera";
 import {
   createConfig,
   createKeyframedEventIndex,
@@ -46,16 +47,12 @@ export function EpisodeComposition({
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
   const environment = useRemotionEnvironment();
-  const renderMode =
-    cameraProjectionMode ??
-    (environment.isRendering ? "render" : "preview");
+  const renderMode = cameraProjectionMode ?? (environment.isRendering ? "render" : "preview");
   const config = useMemo(() => createConfig(), []);
   const voiceConfig = renderData.voiceConfig;
   const voiceAudioUrl = useMemo(
     () =>
-      voiceConfig?.audioPath
-        ? resolveStaticAssetSrc(voiceConfig.audioPath, staticFile)
-        : null,
+      voiceConfig?.audioPath ? resolveStaticAssetSrc(voiceConfig.audioPath, staticFile) : null,
     [voiceConfig?.audioPath],
   );
 
@@ -70,8 +67,7 @@ export function EpisodeComposition({
     () =>
       createKeyframedEventIndex(
         renderData.prepared.events,
-        renderData.prepared.keyframeInterval ??
-          config.rendering.cacheKeyframeInterval,
+        renderData.prepared.keyframeInterval ?? config.rendering.cacheKeyframeInterval,
       ),
     [
       config.rendering.cacheKeyframeInterval,
@@ -82,8 +78,7 @@ export function EpisodeComposition({
   const stateCache = useMemo(
     () =>
       createStateCache(
-        renderData.prepared.keyframeInterval ??
-          config.rendering.cacheKeyframeInterval,
+        renderData.prepared.keyframeInterval ?? config.rendering.cacheKeyframeInterval,
       ),
     [
       config.rendering.cacheKeyframeInterval,
@@ -91,12 +86,12 @@ export function EpisodeComposition({
       renderData.sourceSignature,
     ],
   );
-  const world = useMemo(
-    () =>
+  const worldAtFrame = useCallback(
+    (requestedFrame: number) =>
       replayIncremental(
         renderData.prepared.initialWorld,
         renderData.prepared.events,
-        frame,
+        requestedFrame,
         {
           mode: renderMode,
           fps,
@@ -109,7 +104,6 @@ export function EpisodeComposition({
     [
       config,
       fps,
-      frame,
       keyframedEventIndex,
       renderData.prepared.events,
       renderData.prepared.initialWorld,
@@ -118,6 +112,7 @@ export function EpisodeComposition({
       stateCache,
     ],
   );
+  const world = useMemo(() => worldAtFrame(frame), [worldAtFrame, frame]);
 
   const voiceEvents = useMemo((): VoicePlayEvent[] => {
     if (!renderData.voiceConfig?.usePerSegmentControl) return [];
@@ -134,11 +129,7 @@ export function EpisodeComposition({
   }, [renderData.voiceConfig]);
   const voiceDuckingRanges = useMemo(() => {
     if (!renderData.voiceManifest || voiceEvents.length === 0) return [];
-    return computeVoiceDuckingRanges(
-      voiceEvents,
-      renderData.voiceManifest,
-      fps,
-    )
+    return computeVoiceDuckingRanges(voiceEvents, renderData.voiceManifest, fps)
       .map(({ startFrame, endFrame }) => ({ startFrame, endFrame }))
       .sort((left, right) => left.startFrame - right.startFrame);
   }, [fps, renderData.voiceManifest, voiceEvents]);
@@ -148,10 +139,7 @@ export function EpisodeComposition({
   );
   const backgroundUsesTimeline = useMemo(() => {
     const background = renderData.backgroundConfig;
-    const type =
-      background && typeof background === "object"
-        ? background.type
-        : null;
+    const type = background && typeof background === "object" ? background.type : null;
     return type === "particles" || type === "ambient";
   }, [renderData.backgroundConfig]);
   const format = useMemo(() => {
@@ -197,28 +185,7 @@ export function EpisodeComposition({
             clipRadiusPx: output.clipRadiusPx,
             shadow: output.shadow,
             projectionPasses: output.projectionPasses,
-            quality: {
-              pose: {
-                centerX: output.pose.centerX,
-                centerY: output.pose.centerY,
-                scale: output.pose.scale,
-                rotationDeg: output.pose.rotationDeg,
-              },
-              subjectResolution: output.trace.subjectResolution,
-              subjectFillRatio: output.trace.quality.subjectFillRatio,
-              cropCompensation: output.trace.quality.cropCompensation,
-              intentionalDiscontinuity:
-                output.trace.transition?.durationFrames === 0 ||
-                output.trace.transition?.whipActive === true,
-              travel:
-                output.trace.travel.mode === "stabilized"
-                  ? {
-                      mode: "stabilized",
-                      driftPx: output.trace.travel.driftPx,
-                      maxDriftPx: output.trace.travel.maxDriftPx,
-                    }
-                  : { mode: "intentional" },
-            },
+            quality: cameraQualitySample(output),
           })),
         })}
       />
@@ -228,20 +195,16 @@ export function EpisodeComposition({
 
   const cinematics = renderData.prepared.cinematics;
   if (!cinematics) {
-    throw new Error(
-      `CAM_VNEXT_REQUIRED: Episode "${episodeId}" did not compile a CameraPlan.`,
-    );
+    throw new Error(`CAM_VNEXT_REQUIRED: Episode "${episodeId}" did not compile a CameraPlan.`);
   }
   const hasDevices = Object.keys(world.devices ?? {}).length > 0;
-  const rendersUnderlay =
-    cameraRenderLayer === "final" || cameraRenderLayer === "underlay";
+  const rendersUnderlay = cameraRenderLayer === "final" || cameraRenderLayer === "underlay";
   const rendersCamera =
     cameraRenderLayer === "final" ||
     cameraRenderLayer === "camera-plate" ||
     cameraRenderLayer === "camera-projection-data";
   const rendersForeground =
-    cameraRenderLayer === "final" ||
-    cameraRenderLayer === "foreground-plate";
+    cameraRenderLayer === "final" || cameraRenderLayer === "foreground-plate";
 
   return (
     <AbsoluteFill
@@ -254,9 +217,8 @@ export function EpisodeComposition({
       {rendersUnderlay ? (
         <BackgroundLayer
           config={
-            (renderData.backgroundConfig as Parameters<
-              typeof BackgroundLayer
-            >[0]["config"]) ?? "studio-quiet-dark"
+            (renderData.backgroundConfig as Parameters<typeof BackgroundLayer>[0]["config"]) ??
+            "studio-quiet-dark"
           }
           frame={backgroundUsesTimeline ? frame : undefined}
           fps={backgroundUsesTimeline ? fps : undefined}
@@ -272,12 +234,8 @@ export function EpisodeComposition({
             notificationProgram={renderData.prepared.notificationProgram}
           />
         ) : null}
-        {rendersUnderlay &&
-        renderData.voiceManifest &&
-        voiceConfig &&
-        voiceAudioUrl ? (
-          voiceConfig.usePerSegmentControl &&
-          voiceEvents.length > 0 ? (
+        {rendersUnderlay && renderData.voiceManifest && voiceConfig && voiceAudioUrl ? (
+          voiceConfig.usePerSegmentControl && voiceEvents.length > 0 ? (
             <VoiceLayer
               manifest={renderData.voiceManifest}
               audioUrl={voiceAudioUrl}
@@ -303,6 +261,7 @@ export function EpisodeComposition({
           >
             <CinematicStageRenderer
               world={world}
+              worldAtFrame={worldAtFrame}
               t={frame}
               fps={fps}
               debug={cameraDebugEnabled}
@@ -322,9 +281,7 @@ export function EpisodeComposition({
                     ? "texture-projection-data"
                     : "final"
               }
-              onCinematicCameraDebugFrame={
-                onCinematicCameraDebugFrame
-              }
+              onCinematicCameraDebugFrame={onCinematicCameraDebugFrame}
               renderCameraTextureProjectionArtifact={
                 cameraRenderLayer === "camera-projection-data"
                   ? renderCameraTextureProjectionArtifact
@@ -334,12 +291,7 @@ export function EpisodeComposition({
           </div>
         ) : null}
         {rendersForeground ? (
-          <StoryOverlay
-            world={world}
-            t={frame}
-            width={format.width}
-            height={format.height}
-          />
+          <StoryOverlay world={world} t={frame} width={format.width} height={format.height} />
         ) : null}
       </RendererRegistryProvider>
     </AbsoluteFill>

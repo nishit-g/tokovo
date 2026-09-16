@@ -138,6 +138,7 @@ function resolveActionEffects(
     if (
       interaction.type !== "tap" &&
       interaction.type !== "chooseAction" &&
+      interaction.type !== "markRead" &&
       interaction.type !== "reply"
     ) {
       continue;
@@ -152,7 +153,9 @@ function resolveActionEffects(
     }
     let target: NotificationActionTargetIR | undefined;
     let actionId = interaction.actionId;
-    if (interaction.type === "tap") {
+    if (interaction.type === "markRead") {
+      target = { appEvent: interaction.readTarget! };
+    } else if (interaction.type === "tap") {
       target = record.defaultAction;
       actionId ??= "default";
     } else if (interaction.type === "chooseAction") {
@@ -182,6 +185,7 @@ function resolveActionEffects(
       deviceId: interaction.deviceId,
       notificationId,
       interactionType: interaction.type,
+      badgeCount: interaction.badgeCount,
       actionId,
       replyText: interaction.replyText,
       replyTextField:
@@ -227,6 +231,16 @@ export function prepareNotificationProgram(
   for (const device of input.devices) {
     requireNonEmpty(device.id, "device id");
     requireNonEmpty(device.locale, `${device.id} locale`);
+    const tokens = device.notificationTokens;
+    if (tokens) {
+      for (const key of ["card", "text", "secondaryText", "accent", "border"] as const) {
+        if (tokens[key] !== undefined && (typeof tokens[key] !== "string" || !tokens[key]?.trim())) fail("NOTIFICATION_TOKENS_INVALID", `${key} must be nonempty`);
+      }
+      for (const [key, min, max] of [["radius", 0, 48], ["padding", 4, 32]] as const) {
+        const value = tokens[key];
+        if (value !== undefined && (!Number.isFinite(value) || value < min || value > max)) fail("NOTIFICATION_TOKENS_INVALID", `${key} must be between ${min} and ${max}`);
+      }
+    }
     if (deviceDescriptors.has(device.id)) {
       fail("NOTIFICATION_DEVICE_DUPLICATE", `duplicate device ${device.id}`);
     }
@@ -423,6 +437,7 @@ export function prepareNotificationProgram(
       }
       if (
         record.retentionUntilFrame !== undefined &&
+        interaction.type !== "markRead" &&
         interaction.atFrame >= record.retentionUntilFrame
       ) {
         fail(
@@ -431,7 +446,7 @@ export function prepareNotificationProgram(
         );
       }
     }
-    const targetsOne = ["tap", "chooseAction", "reply", "dismiss"].includes(
+    const targetsOne = ["tap", "chooseAction", "reply", "dismiss", "markRead", "expand", "collapse", "beginReply", "expandGroup", "collapseGroup", "swipeLeft", "swipeRight"].includes(
       interaction.type,
     );
     if (targetsOne && !interaction.notificationId) {
@@ -443,14 +458,56 @@ export function prepareNotificationProgram(
     if (interaction.type === "chooseAction" && !interaction.actionId?.trim()) {
       fail("NOTIFICATION_ACTION_MISSING", "chooseAction requires actionId");
     }
+    if (interaction.type === "setDisplay" && !["count", "stack", "list"].includes(interaction.display ?? "")) fail("NOTIFICATION_DISPLAY_INVALID", "setDisplay requires count, stack or list");
+    if (interaction.type === "scrollHistory" && (!Number.isFinite(interaction.scrollPosition) || interaction.scrollPosition! < 0 || interaction.scrollPosition! > 1)) fail("NOTIFICATION_SCROLL_INVALID", "scrollHistory requires a finite position from 0 to 1");
     if (interaction.type === "reply" && interaction.replyText === undefined) {
       fail("NOTIFICATION_REPLY_TEXT_MISSING", "reply requires replyText");
     }
+    if (interaction.type === "beginReply") {
+      if (!interaction.inputSessionId?.trim()) fail("NOTIFICATION_INPUT_MISSING", "beginReply requires inputSessionId");
+      if (!preliminaryRecords.find((record) => record.id === interaction.notificationId)?.reply) {
+        fail("NOTIFICATION_REPLY_UNSUPPORTED", "beginReply requires a replyable notification");
+      }
+    }
+    if (interaction.type === "markRead") {
+      requireFrame(interaction.badgeCount as number, "markRead badgeCount");
+      if (!interaction.readTarget) fail("NOTIFICATION_READ_TARGET_MISSING", "markRead requires an app-owned readTarget");
+      validateActionTarget({ appEvent: interaction.readTarget }, "markRead");
+      const source = preliminaryRecords.find((record) => record.id === interaction.notificationId);
+      if (interaction.readTarget.appId !== undefined && interaction.readTarget.appId !== source?.appId) {
+        fail("NOTIFICATION_READ_APP_MISMATCH", "Read acknowledgement must target the notification's app");
+      }
+    } else if (interaction.badgeCount !== undefined || interaction.readTarget !== undefined) {
+      fail("NOTIFICATION_READ_FIELDS_INVALID", "Only markRead can author read state and badges");
+    }
   }
 
-  const actionEffects = resolveActionEffects(preliminaryRecords, interactions);
+  for (const device of Object.values(preparedDevices)) {
+    device.operations = [...device.operations, ...interactions.filter((interaction) => interaction.deviceId === device.id && interaction.type === "authenticate")
+      .map((interaction) => ({ deviceId: device.id, at: interaction.atFrame, sequence: interaction.sequence, type: "authenticate" as const }))];
+  }
+  const actionEffects: PreparedNotificationActionEffect[] = [];
+  for (const effect of resolveActionEffects(preliminaryRecords, interactions)) {
+    // Context indexes cache immutable arrays; preparation is still accumulating effects.
+    const context = resolveNotificationDeviceContext(preparedDevices[effect.deviceId], effect.at, [...actionEffects]);
+    if (!context.isLocked || effect.interactionType === "markRead") { actionEffects.push(effect); continue; }
+    if (context.isAuthenticated) { actionEffects.push({ ...effect, authenticated: Boolean(effect.target.navigation) }); continue; }
+    const authentication = interactions.find((interaction) => interaction.type === "authenticate" &&
+      interaction.deviceId === effect.deviceId && (!interaction.notificationId || interaction.notificationId === effect.notificationId) && interaction.atFrame >= effect.at);
+    if (!authentication) continue; // An unauthenticated tap remains pending, never navigates.
+    const cancelled = interactions.some((interaction) => interaction.deviceId === effect.deviceId &&
+      interaction.atFrame >= effect.at && interaction.atFrame <= authentication.atFrame &&
+      (interaction.type === "clearAll" || (interaction.type === "dismiss" && interaction.notificationId === effect.notificationId)));
+    if (!cancelled) actionEffects.push({ ...effect, requestedAtFrame: effect.at, at: authentication.atFrame, sequence: authentication.sequence, authenticated: Boolean(effect.target.navigation) });
+  }
   const lastBannerEndByDevice = new Map<string, number>();
   const bannerGap = Math.max(1, Math.round(input.fps * 0.2));
+  const contextFrames = new Map(Object.values(preparedDevices).map((device) => [device.id,
+    [...new Set([
+      ...device.operations.map((operation) => operation.at),
+      ...actionEffects.filter((effect) => effect.deviceId === device.id && effect.target.navigation).map((effect) => effect.at),
+    ])].sort((a, b) => a - b),
+  ]));
 
   const records = preliminaryRecords.map((record) => {
     const device = preparedDevices[record.deviceId];
@@ -482,6 +539,7 @@ export function prepareNotificationProgram(
       record.interruption !== "timeSensitive" &&
       record.interruption !== "critical";
     const foregroundSuppresses =
+      !context.isLocked &&
       context.foregroundAppId === record.appId &&
       record.foregroundBehavior !== "present";
     const alertSuppressionReason = focusSuppresses
@@ -496,6 +554,8 @@ export function prepareNotificationProgram(
       !foregroundSuppresses;
     let bannerStartFrame: number | undefined;
     let bannerEndFrame: number | undefined;
+    let bannerDismissedAtFrame: number | undefined;
+    let bannerInterruptedAtFrame: number | undefined;
 
     if (wantsBanner) {
       const previousEnd = lastBannerEndByDevice.get(record.deviceId);
@@ -522,7 +582,22 @@ export function prepareNotificationProgram(
           interaction.atFrame <= end &&
           interactionDismissesRecord(interaction, record.id),
       );
-      if (dismissal) end = dismissal.atFrame;
+      if (dismissal) {
+        end = dismissal.atFrame;
+        bannerDismissedAtFrame = dismissal.atFrame;
+      }
+      for (const at of [start, ...(contextFrames.get(record.deviceId) ?? [])]) {
+        if (at < start || at >= end) continue;
+        const current = resolveNotificationDeviceContext(device, at, actionEffects);
+        if (current.isLocked ||
+          (current.dnd && record.interruption !== "timeSensitive" && record.interruption !== "critical") ||
+          (current.foregroundAppId === record.appId && record.foregroundBehavior !== "present")) {
+          end = at;
+          bannerInterruptedAtFrame = at;
+          bannerDismissedAtFrame = undefined;
+          break;
+        }
+      }
       if (end > start) {
         bannerStartFrame = start;
         bannerEndFrame = end;
@@ -545,6 +620,8 @@ export function prepareNotificationProgram(
         lockScreenEligible: true,
         bannerStartFrame,
         bannerEndFrame,
+        bannerDismissedAtFrame,
+        bannerInterruptedAtFrame,
         soundAtFrame: soundAllowed ? record.deliverAtFrame : undefined,
       },
     };

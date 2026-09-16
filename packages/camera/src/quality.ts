@@ -3,6 +3,7 @@ import type {
   CameraTemporalQualityReport,
   EvaluatedCameraOutput,
 } from "./types.js";
+import { applyMatrix3, cameraPoseToViewMatrix } from "./matrix.js";
 
 function round(value: number): number {
   return Math.round(value * 1_000_000) / 1_000_000;
@@ -18,7 +19,40 @@ function missingRanges(frames: readonly number[]): readonly (readonly [number, n
   return ranges;
 }
 
-export function cameraQualitySample(output: EvaluatedCameraOutput): CameraQualitySample {
+export function cameraQualitySample(
+  output: EvaluatedCameraOutput,
+  options: { checkFraming?: boolean } = {},
+): CameraQualitySample {
+  const safe = output.trace.constraints.effectiveViewport;
+  const matrix =
+    (options.checkFraming ?? output.trace.quality.checkFraming)
+      ? cameraPoseToViewMatrix(output.pose)
+      : undefined;
+  const framing = matrix
+    ? {
+        projectionSupported: output.projectionPasses.length === 0,
+        subjects: output.trace.subjects.map(({ key, worldRect }) => ({ key, worldRect })),
+        safeViewport: safe,
+        clippedSubjectKeys: output.trace.subjects
+          .filter(({ worldRect: rect }) =>
+            [
+              [rect.x, rect.y],
+              [rect.x + rect.width, rect.y],
+              [rect.x, rect.y + rect.height],
+              [rect.x + rect.width, rect.y + rect.height],
+            ].some(([x, y]) => {
+              const point = applyMatrix3(matrix, { x, y });
+              return (
+                point.x < safe.x - 0.5 ||
+                point.y < safe.y - 0.5 ||
+                point.x > safe.x + safe.width + 0.5 ||
+                point.y > safe.y + safe.height + 0.5
+              );
+            }),
+          )
+          .map(({ key }) => key),
+      }
+    : undefined;
   return {
     frame: output.frame,
     outputId: output.outputId,
@@ -32,8 +66,11 @@ export function cameraQualitySample(output: EvaluatedCameraOutput): CameraQualit
     subjectResolution: output.trace.subjectResolution,
     subjectFillRatio: output.trace.quality.subjectFillRatio,
     cropCompensation: output.trace.quality.cropCompensation,
+    ...(framing ? { framing } : {}),
     intentionalDiscontinuity:
-      output.trace.transition?.durationFrames === 0 || output.trace.transition?.whipActive === true,
+      (output.trace.transition?.durationFrames === 0 &&
+        output.frame === output.trace.transition.startFrame) ||
+      output.trace.transition?.whipActive === true,
     travel:
       output.trace.travel.mode === "stabilized"
         ? {
@@ -61,6 +98,24 @@ export function analyzeCameraTemporalQuality(
       const ordered = [...values].sort((left, right) => left.frame - right.frame);
       const frames = ordered.map((sample) => sample.frame);
       const gaps = missingRanges(frames);
+      for (const sample of ordered) {
+        if (!sample.framing) continue;
+        if (!sample.framing.projectionSupported)
+          violations.push({
+            code: "CAM_QUALITY_PROJECTION_UNCHECKED",
+            outputId,
+            frame: sample.frame,
+            message:
+              "Framing safety requires checking nonlinear projection passes in the rendered output.",
+          });
+        else if (sample.framing.clippedSubjectKeys.length)
+          violations.push({
+            code: "CAM_QUALITY_SUBJECT_CROPPED",
+            outputId,
+            frame: sample.frame,
+            message: `Protected subjects leave the editorial safe viewport: ${sample.framing.clippedSubjectKeys.join(", ")}.`,
+          });
+      }
       for (const gap of gaps) {
         violations.push({
           code: "CAM_QUALITY_FRAME_GAP",

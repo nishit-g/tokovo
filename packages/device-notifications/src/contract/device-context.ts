@@ -8,20 +8,21 @@ import type {
 type ContextOperation = NotificationDeviceContextOperation & {
   sourceOrder: number;
 };
+type ContextSnapshot = { at: number; state: NotificationDeviceContextState };
 
 const EMPTY_ACTION_EFFECTS: readonly PreparedNotificationActionEffect[] = [];
 const operationIndexes = new WeakMap<
   PreparedNotificationDevice,
-  WeakMap<object, readonly ContextOperation[]>
+  WeakMap<object, readonly ContextSnapshot[]>
 >();
 
 function getContextOperations(
   device: PreparedNotificationDevice,
   actionEffects: readonly PreparedNotificationActionEffect[],
-): readonly ContextOperation[] {
+): readonly ContextSnapshot[] {
   let byEffects = operationIndexes.get(device);
   if (!byEffects) {
-    byEffects = new WeakMap<object, readonly ContextOperation[]>();
+    byEffects = new WeakMap<object, readonly ContextSnapshot[]>();
     operationIndexes.set(device, byEffects);
   }
   const effectsKey = actionEffects as object;
@@ -29,6 +30,9 @@ function getContextOperations(
   if (existing) return existing;
 
   const created: ContextOperation[] = [
+    ...actionEffects.filter((effect) => effect.deviceId === device.id && effect.authenticated).map((effect) => ({
+      at: effect.at, sequence: effect.sequence, deviceId: effect.deviceId, sourceOrder: 0, type: "unlock" as const,
+    })),
     ...device.operations.map((operation) => ({
       ...operation,
       sourceOrder: 0,
@@ -57,8 +61,25 @@ function getContextOperations(
       left.sequence - right.sequence ||
       left.sourceOrder - right.sourceOrder,
   );
-  byEffects.set(effectsKey, created);
-  return created;
+  const state: NotificationDeviceContextState = {
+    isAuthenticated: !device.initialLocked,
+    isLocked: device.initialLocked,
+    dnd: device.initialDnd,
+    foregroundAppId: device.initialForegroundAppId,
+  };
+  const snapshots = created.map((operation) => {
+    switch (operation.type) {
+      case "lock": state.isLocked = true; state.isAuthenticated = false; break;
+      case "authenticate": state.isAuthenticated = true; break;
+      case "unlock": state.isLocked = false; state.isAuthenticated = true; break;
+      case "goHome": state.foregroundAppId = undefined; break;
+      case "openApp": if (operation.appId) state.foregroundAppId = operation.appId; break;
+      case "setDnd": state.dnd = operation.enabled; break;
+    }
+    return { at: operation.at, state: { ...state } };
+  });
+  byEffects.set(effectsKey, snapshots);
+  return snapshots;
 }
 
 export function resolveNotificationDeviceContext(
@@ -67,32 +88,19 @@ export function resolveNotificationDeviceContext(
   actionEffects: readonly PreparedNotificationActionEffect[] = EMPTY_ACTION_EFFECTS,
 ): NotificationDeviceContextState {
   const state: NotificationDeviceContextState = {
+    isAuthenticated: !device.initialLocked,
     isLocked: device.initialLocked,
     dnd: device.initialDnd,
     foregroundAppId: device.initialForegroundAppId,
   };
   const operations = getContextOperations(device, actionEffects);
 
-  for (const operation of operations) {
-    if (operation.at > frame) break;
-    switch (operation.type) {
-      case "lock":
-        state.isLocked = true;
-        break;
-      case "unlock":
-        state.isLocked = false;
-        break;
-      case "goHome":
-        state.foregroundAppId = undefined;
-        break;
-      case "openApp":
-        if (operation.appId) state.foregroundAppId = operation.appId;
-        break;
-      case "setDnd":
-        state.dnd = operation.enabled;
-        break;
-    }
+  let low = 0;
+  let high = operations.length;
+  while (low < high) {
+    const middle = low + Math.floor((high - low) / 2);
+    if (operations[middle].at <= frame) low = middle + 1;
+    else high = middle;
   }
-
-  return state;
+  return low > 0 ? { ...operations[low - 1].state } : state;
 }

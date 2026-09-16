@@ -8,9 +8,20 @@ export function projectNotificationAudio(
   program: PreparedNotificationProgram | undefined,
 ): NotificationAudioCue[] {
   if (!program) return [];
-  return program.records.flatMap((record) => {
+  const lastDefaultByDevice = new Map<string, number>();
+  const burstFrames = Math.max(1, Math.round(program.fps * 0.35));
+  return [...program.records].sort((a, b) =>
+    a.deliverAtFrame - b.deliverAtFrame || a.sequence - b.sequence,
+  ).flatMap((record) => {
     if (record.delivery.soundAtFrame === undefined) return [];
     const authored = record.sound;
+    if (authored === "silent") return [];
+    // Coalesce ordinary alerts only; explicitly authored and critical cues retain intent.
+    if (authored === "default" && record.interruption !== "critical") {
+      const previous = lastDefaultByDevice.get(record.deviceId);
+      if (previous !== undefined && record.delivery.soundAtFrame - previous < burstFrames) return [];
+      lastDefaultByDevice.set(record.deviceId, record.delivery.soundAtFrame);
+    }
     return [
       {
         id: `notification:${record.id}`,

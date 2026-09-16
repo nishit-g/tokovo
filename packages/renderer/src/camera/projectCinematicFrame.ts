@@ -33,9 +33,7 @@ function deviceSubject(input: {
   };
 }
 
-function collectDeviceSubjects(
-  layout: LayoutEngineOutput,
-): readonly CinematicSubjectProjection[] {
+function collectDeviceSubjects(layout: LayoutEngineOutput): readonly CinematicSubjectProjection[] {
   const viewport = {
     x: 0,
     y: 0,
@@ -110,11 +108,7 @@ function scaleRect(rect: LayoutRect, scale: number): LayoutRect {
   };
 }
 
-function scaleRect2d(
-  rect: LayoutRect,
-  scaleX: number,
-  scaleY: number,
-): LayoutRect {
+function scaleRect2d(rect: LayoutRect, scaleX: number, scaleY: number): LayoutRect {
   return {
     x: rect.x * scaleX,
     y: rect.y * scaleY,
@@ -144,35 +138,22 @@ export function projectCinematicFrame(input: {
   const localSubjects: LocalCinematicSubject[] = [];
   for (const layout of input.layouts) {
     if (seenDevices.has(layout.deviceId)) {
-      throw new Error(
-        `Duplicate cinematic layout for device "${layout.deviceId}".`,
-      );
+      throw new Error(`Duplicate cinematic layout for device "${layout.deviceId}".`);
     }
     seenDevices.add(layout.deviceId);
     const stageNode = input.stage.nodes.find(
-      (node) =>
-        node.source.kind === "device" &&
-        node.source.deviceId === layout.deviceId,
+      (node) => node.source.kind === "device" && node.source.deviceId === layout.deviceId,
     );
     if (!stageNode) {
-      throw new Error(
-        `No evaluated stage node owns device "${layout.deviceId}".`,
-      );
+      throw new Error(`No evaluated stage node owns device "${layout.deviceId}".`);
     }
     const appSubjects = layout.appId
-      ? input.registry.project(
-          layout.appId,
-          input.world,
-          layout.layout,
-          layout.deviceId,
-        )
+      ? input.registry.project(layout.appId, input.world, layout.layout, layout.deviceId)
       : [];
     const projections = [...collectDeviceSubjects(layout), ...appSubjects];
     const display = layout.profile.display;
-    const scaleX =
-      stageNode.localBounds.width / layout.profile.dimensions.width;
-    const scaleY =
-      stageNode.localBounds.height / layout.profile.dimensions.height;
+    const scaleX = stageNode.localBounds.width / layout.profile.dimensions.width;
+    const scaleY = stageNode.localBounds.height / layout.profile.dimensions.height;
     for (const projection of projections) {
       const screenRect =
         projection.coordinateSpace === "app-logical"
@@ -210,6 +191,14 @@ export function projectCinematicFrame(input: {
         nodeId: stageNode.id,
         visible: projection.visible,
         clippedLocalRect,
+        ...(projection.textSizePx === undefined
+          ? {}
+          : {
+              textSizePx:
+                projection.textSizePx *
+                Math.min(scaleX, scaleY) *
+                (projection.coordinateSpace === "app-logical" ? layout.appLogicalScale : 1),
+            }),
         sourceVersion: projection.sourceVersion,
         provenance: projection.provenance,
       });

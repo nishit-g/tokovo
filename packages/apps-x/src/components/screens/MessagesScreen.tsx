@@ -9,17 +9,12 @@ import {
   selectUnreadThreadCount,
 } from "../../runtime/selectors.js";
 import { Avatar, VerifiedBadge } from "../primitives/Avatar.js";
-import {
-  AppHeader,
-  BottomNav,
-  EmptyState,
-  IconButton,
-} from "../primitives/Chrome.js";
+import { AppHeader, BottomNav, EmptyState, IconButton } from "../primitives/Chrome.js";
 import { XIcon } from "../primitives/Icon.js";
 import type { XScreenProps } from "./types.js";
 import { requireDeviceClock } from "./types.js";
 
-export const MessagesScreen: React.FC<XScreenProps> = ({ world, deviceId }) => {
+export const MessagesScreen: React.FC<XScreenProps> = ({ world, deviceId, height }) => {
   const experience = useXExperience();
   const state = requireXState(world, deviceId);
   const threads = selectDMThreads(world, deviceId);
@@ -36,13 +31,7 @@ export const MessagesScreen: React.FC<XScreenProps> = ({ world, deviceId }) => {
     >
       <AppHeader
         title={experience.t("messages")}
-        trailing={
-          <IconButton
-            icon="edit"
-            label={experience.t("newMessage")}
-            size={20}
-          />
-        }
+        trailing={<IconButton icon="edit" label={experience.t("newMessage")} size={20} />}
       />
       <div style={{ flex: 1, minHeight: 0, overflow: "hidden" }}>
         {threads.length === 0 ? (
@@ -54,14 +43,19 @@ export const MessagesScreen: React.FC<XScreenProps> = ({ world, deviceId }) => {
         ) : (
           <div
             style={{
+              height: threads.length * 74,
+              position: "relative",
               transform: `translateY(${-state.scroll.messages}px)`,
               willChange: "transform",
             }}
           >
-            {threads.map((thread) => {
-              const otherIds = thread.participantIds.filter(
-                (id) => id !== state.currentUserId,
-              );
+            {threads.map((thread, index) => {
+              if (
+                index * 74 + 74 < state.scroll.messages - 160 ||
+                index * 74 > state.scroll.messages + height + 160
+              )
+                return null;
+              const otherIds = thread.participantIds.filter((id) => id !== state.currentUserId);
               const users = otherIds.map((id) =>
                 requireUser(state, id, `thread "${thread.id}" participantIds`),
               );
@@ -72,18 +66,12 @@ export const MessagesScreen: React.FC<XScreenProps> = ({ world, deviceId }) => {
                   thread.participantIds[0],
                   `thread "${thread.id}" participantIds`,
                 );
-              const lastMessageId =
-                thread.messageIds[thread.messageIds.length - 1];
-              const lastMessage = lastMessageId
-                ? state.dmMessagesById[lastMessageId]
-                : undefined;
+              const lastMessageId = thread.messageIds[thread.messageIds.length - 1];
+              const lastMessage = lastMessageId ? state.dmMessagesById[lastMessageId] : undefined;
               const title =
-                thread.title ??
-                (users.map((user) => user.name).join(", ") || primary.name);
+                thread.title ?? (users.map((user) => user.name).join(", ") || primary.name);
               const typingNames = thread.typingUserIds.map(
-                (id) =>
-                  requireUser(state, id, `thread "${thread.id}" typingUserIds`)
-                    .name,
+                (id) => requireUser(state, id, `thread "${thread.id}" typingUserIds`).name,
               );
               const typingLabel =
                 typingNames.length === 0
@@ -96,7 +84,11 @@ export const MessagesScreen: React.FC<XScreenProps> = ({ world, deviceId }) => {
                   key={thread.id}
                   data-x-anchor={`x.dm.${thread.id}`}
                   style={{
-                    minHeight: 74,
+                    height: 74,
+                    position: "absolute",
+                    top: index * 74,
+                    width: "100%",
+                    overflow: "hidden",
                     padding: "10px 14px",
                     display: "grid",
                     gridTemplateColumns: "48px minmax(0,1fr)",
@@ -127,11 +119,7 @@ export const MessagesScreen: React.FC<XScreenProps> = ({ world, deviceId }) => {
                       }}
                     >
                       {thread.pinned ? (
-                        <XIcon
-                          name="pin"
-                          size={13}
-                          color={experience.colors.textSecondary}
-                        />
+                        <XIcon name="pin" size={13} color={experience.colors.textSecondary} />
                       ) : null}
                       <strong
                         style={{
@@ -153,11 +141,7 @@ export const MessagesScreen: React.FC<XScreenProps> = ({ world, deviceId }) => {
                             whiteSpace: "nowrap",
                           }}
                         >
-                          {formatXTimestamp(
-                            thread.lastMessageAt,
-                            nowMs,
-                            experience.locale,
-                          )}
+                          {formatXTimestamp(thread.lastMessageAt, nowMs, experience.locale)}
                         </span>
                       ) : null}
                     </div>
@@ -181,9 +165,7 @@ export const MessagesScreen: React.FC<XScreenProps> = ({ world, deviceId }) => {
                           textOverflow: "ellipsis",
                         }}
                       >
-                        {typingLabel ??
-                          lastMessage?.text ??
-                          experience.t("newMessage")}
+                        {typingLabel ?? lastMessage?.text ?? experience.t("newMessage")}
                       </span>
                       {thread.unreadCount > 0 ? (
                         <span

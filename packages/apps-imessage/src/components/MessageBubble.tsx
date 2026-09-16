@@ -2,6 +2,7 @@ import React from "react";
 import { AnimatedImage, OffthreadVideo, Sequence, staticFile } from "remotion";
 import {
   easeOutCubic,
+  ShapedText,
   frameProgress,
   useFps,
   useTime,
@@ -157,7 +158,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
             <span style={{ display: "block", fontWeight: 600, marginBottom: 2 }}>
               {replySender ?? "Reply"}
             </span>
-            {geometry?.replyLines.join("\n") ?? replyPreview}
+            <ShapedText text={geometry?.replyLines.join("\n") ?? replyPreview ?? ""} />
             {replyThumbnail && (
               <Img
                 src={replyThumbnail}
@@ -227,7 +228,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
                 letterSpacing: -0.35,
               }}
             >
-              {geometry?.textLines.join("\n") ?? text}
+              <ShapedText text={geometry?.textLines.join("\n") ?? text ?? ""} />
             </span>
           </div>
         )}

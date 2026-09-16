@@ -3,6 +3,9 @@ export type Platform = "ios" | "android";
 export const WHATSAPP_INTERACTION_TOKENS = {
   navigationSeconds: 0.28,
   viewerSeconds: 0.22,
+  reactionSeconds: 0.18,
+  reactionHeight: 24,
+  reactionInset: 7,
   surfaceMargin: 12,
   menuWidth: 236,
   menuRowHeight: 44,
@@ -141,6 +144,7 @@ export interface WhatsAppTypography {
 }
 
 export interface WhatsAppSpacing {
+  wallpaperTileSize?: number;
   shortThreadAlignment?: "start" | "end";
   messagePaddingHorizontal: number;
   messagePaddingVertical: number;
@@ -166,7 +170,7 @@ export interface WhatsAppTheme {
 export const WHATSAPP_IOS_FONT_FAMILY =
   '"Inter Variable", "Noto Sans Arabic Variable", "Noto Sans Devanagari Variable", "Noto Sans JP Variable", sans-serif';
 export const WHATSAPP_ANDROID_FONT_FAMILY =
-  '"Roboto", "Noto Sans Arabic Variable", "Noto Sans Devanagari Variable", "Noto Sans JP Variable", sans-serif';
+  '"Roboto Variable", "Noto Sans Arabic Variable", "Noto Sans Devanagari Variable", "Noto Sans JP Variable", sans-serif';
 
 const sharedColors: WhatsAppColorPalette = {
   sentBubble: "#DCF8C6",
@@ -320,6 +324,7 @@ export const iosTheme: WhatsAppTheme = {
     systemMessageFontSize: 13,
   },
   spacing: {
+    wallpaperTileSize: 120,
     messagePaddingHorizontal: 12,
     messagePaddingVertical: 8,
     bubbleRadius: 12,

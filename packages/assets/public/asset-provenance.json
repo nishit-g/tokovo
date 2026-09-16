@@ -760,8 +760,8 @@
     },
     {
       "path": "sounds/generated/core/keyboard-click.wav",
-      "bytes": 2690,
-      "sha256": "b77e9dac48e0e09aaf8ac00d2e82e10b0968a14a6fb3ce1cf1a0c66e4ef184d3",
+      "bytes": 4012,
+      "sha256": "1a3c203076f2cbcdf088990c64eb7a2779c86e2ad47e60e3aa3aed535192b0ba",
       "source": "procedurally-generated-in-repository",
       "license": "LicenseRef-Tokovo-Procedural"
     },
@@ -823,8 +823,8 @@
     },
     {
       "path": "sounds/os/android/keyboard.wav",
-      "bytes": 2690,
-      "sha256": "b77e9dac48e0e09aaf8ac00d2e82e10b0968a14a6fb3ce1cf1a0c66e4ef184d3",
+      "bytes": 4012,
+      "sha256": "1a3c203076f2cbcdf088990c64eb7a2779c86e2ad47e60e3aa3aed535192b0ba",
       "source": "procedurally-generated-in-repository",
       "license": "LicenseRef-Tokovo-Procedural"
     },
@@ -858,8 +858,8 @@
     },
     {
       "path": "sounds/os/ios/keyboard.wav",
-      "bytes": 2690,
-      "sha256": "b77e9dac48e0e09aaf8ac00d2e82e10b0968a14a6fb3ce1cf1a0c66e4ef184d3",
+      "bytes": 4012,
+      "sha256": "1a3c203076f2cbcdf088990c64eb7a2779c86e2ad47e60e3aa3aed535192b0ba",
       "source": "procedurally-generated-in-repository",
       "license": "LicenseRef-Tokovo-Procedural"
     },

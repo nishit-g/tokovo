@@ -106,6 +106,7 @@ describe("stage evaluation", () => {
           region: "bubble",
         },
         localRect: { x: 20, y: 30, width: 200, height: 80 },
+        textSizePx: 17,
         nodeId: "phone",
         visible: true,
         sourceVersion: 1,
@@ -118,6 +119,15 @@ describe("stage evaluation", () => {
       width: 200,
       height: 80,
     });
+    expect(subject.worldTextSizePx).toBe(17);
+    const scaled = {
+      ...frame,
+      nodes: frame.nodes.map((node) => ({
+        ...node,
+        worldTransform: { a: 0, b: 2, c: -0.5, d: 0, tx: 0, ty: 0 },
+      })),
+    };
+    expect(projectCinematicSubjects(scaled, [subject])[0].worldTextSizePx).toBe(8.5);
   });
 
   it("clips subjects through the same stage node geometry used for painting", () => {

@@ -20,6 +20,7 @@ export const snapchatNotificationAdapter: NotificationAppAdapter = {
     };
   },
   defaultAction: (intent) => ({
+    ...(intent.threadId ? { appEvent: { appId: "app_snapchat", type: "SNAPCHAT_CONVERSATION_OPEN", payload: { conversationId: intent.threadId } } } : {}),
     navigation: {
       appId: "app_snapchat",
       route: "conversation",

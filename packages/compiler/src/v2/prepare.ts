@@ -122,10 +122,22 @@ export function prepareTrackEpisode(
 
   const lowered = lowerEpisodeWithCapabilities(ir, plugins);
 
-  // Build initial world state from device configs before capability preparation.
-  const initialWorld = buildInitialWorld(ir, plugins);
   const inputProgram = buildInputProgram(ir);
   const notificationProgram = buildNotificationProgram(ir, plugins, lowered);
+  for (const interaction of notificationProgram.interactions) {
+    if (interaction.type !== "beginReply") continue;
+    const session = inputProgram.sessions.find((candidate) => candidate.id === interaction.inputSessionId);
+    if (!session || session.deviceId !== interaction.deviceId || session.startFrame < interaction.atFrame) {
+      throw new RuntimeValidationError("Notification reply requires a same-device input session starting at or after beginReply");
+    }
+    const send = notificationProgram.interactions.find((candidate) => candidate.type === "reply" &&
+      candidate.notificationId === interaction.notificationId && candidate.atFrame >= interaction.atFrame);
+    if (send && session.endFrame > send.atFrame) {
+      throw new RuntimeValidationError("Notification reply input must end before its authored send event");
+    }
+  }
+  // Notification-only destinations need the same bootstrap as initially open apps.
+  const initialWorld = buildInitialWorld(ir, plugins, notificationProgram.actionEffects);
   const runtimeEvents = [
     ...lowered.events,
     ...lowerNotificationActionEffects(notificationProgram.actionEffects),
@@ -345,6 +357,8 @@ function buildNotificationProgram(
         return [
           {
             id: device.id,
+            notificationTokens: device.notificationTokens,
+            notificationUX: device.notificationUX,
             platform: visualIdentity.platform,
             platformProfileId: visualIdentity.platformProfileId,
             appearance: device.os?.appearance ?? device.appearance ?? DEFAULT_OS_STATE.appearance,
@@ -380,6 +394,17 @@ function lowerNotificationActionEffects(
 ): RuntimeEvent[] {
   return effects.flatMap((effect) => {
     const events: RuntimeEvent[] = [];
+    if (effect.authenticated) {
+      events.push({ at: effect.at, kind: "DEVICE", type: "UNLOCK", deviceId: effect.deviceId,
+        _declarationOrder: effect.sequence, payload: { authenticatedNotification: true } } as RuntimeEvent);
+    }
+    if (effect.interactionType === "markRead") {
+      events.push({
+        at: effect.at, kind: "DEVICE", type: "SET_BADGE", deviceId: effect.deviceId,
+        _declarationOrder: effect.sequence,
+        payload: { appId: effect.target.appEvent?.appId, count: effect.badgeCount },
+      } as RuntimeEvent);
+    }
     if (effect.target.navigation) {
       events.push({
         at: effect.at,
@@ -466,7 +491,7 @@ function buildInputProgram(ir: TrackEpisodeIR): PreparedInputProgram {
 /**
  * Build initial WorldState from TrackEpisodeIR device configs.
  */
-function buildInitialWorld(ir: TrackEpisodeIR, plugins: TokovoPlugin[]): WorldState {
+function buildInitialWorld(ir: TrackEpisodeIR, plugins: TokovoPlugin[], notificationActions: readonly PreparedNotificationActionEffect[]): WorldState {
   const devices: Record<string, DeviceState> = {};
   for (const device of ir.devices) {
     const platform = resolveHardwareVisualIdentity(device.profile).platform;
@@ -600,6 +625,19 @@ function buildInitialWorld(ir: TrackEpisodeIR, plugins: TokovoPlugin[]): WorldSt
       appId: entry.appId,
       device,
     });
+  }
+
+  for (const effect of notificationActions) {
+    const device = devicesById.get(effect.deviceId);
+    for (const appId of [effect.target.navigation?.appId, effect.target.appEvent?.appId]) {
+      if (!appId) continue;
+      if (!device || !pluginsById.has(appId)) {
+        throw new RuntimeValidationError(
+          `[prepareTrackEpisode] notification ${effect.notificationId} targets unavailable app ${appId} on ${effect.deviceId}`,
+        );
+      }
+      bootstrapTargets.set(`${appId}:${device.id}`, { appId, device });
+    }
   }
 
   for (const { appId, device } of bootstrapTargets.values()) {

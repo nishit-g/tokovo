@@ -32,9 +32,7 @@ function context(world: WorldState, viewKind: ViewKind): LayoutContext {
 
 function layoutFor(state: XState, viewKind: ViewKind) {
   const world = createTestWorld(state);
-  const strategy = xLayoutStrategies.find(
-    (candidate) => candidate.viewKind === viewKind,
-  );
+  const strategy = xLayoutStrategies.find((candidate) => candidate.viewKind === viewKind);
   if (!strategy) throw new Error(`Missing ${viewKind} layout`);
   const layout = strategy.computeLayout(context(world, viewKind));
   return { layout, world };
@@ -90,16 +88,12 @@ describe("X VNext canonical layout and cinematic subjects", () => {
     };
     notifications.notificationIds = ["nt_1"];
     expect(
-      layoutFor(notifications, "FEED").layout.semantic?.regions[
-        "x.notification.nt_1"
-      ],
+      layoutFor(notifications, "FEED").layout.semantic?.regions["x.notification.nt_1"],
     ).toBeDefined();
 
     const messages = createTestState();
     messages.route = { screen: "messages" };
-    expect(
-      layoutFor(messages, "FEED").layout.semantic?.regions["x.dm.dm_1"],
-    ).toBeDefined();
+    expect(layoutFor(messages, "FEED").layout.semantic?.regions["x.dm.dm_1"]).toBeDefined();
   });
 
   it("matches thread message measurement and entity projection", () => {
@@ -108,17 +102,12 @@ describe("X VNext canonical layout and cinematic subjects", () => {
     state.viewMode = "CHAT";
     state.conversationId = "dm_1";
     const { layout, world } = layoutFor(state, "CHAT");
-    const withoutReceipt = measureXMessage(
-      state.dmMessagesById.msg_1.text,
-      393,
-    );
+    const withoutReceipt = measureXMessage(state.dmMessagesById.msg_1.text, 393);
     const expected = measureXMessage(state.dmMessagesById.msg_1.text, 393, {
       hasReceipt: true,
     });
-    expect(expected.receiptHeight).toBe(15);
-    expect(expected.bubbleHeight).toBe(
-      withoutReceipt.bubbleHeight + expected.receiptHeight,
-    );
+    expect(expected.receiptHeight).toBe(16);
+    expect(expected.bubbleHeight).toBe(withoutReceipt.bubbleHeight + expected.receiptHeight);
     expect((layout as any).messageLayouts.msg_1.height).toBe(expected.height);
     expect(layout.semantic?.regions["x.dm.dm_1.message.msg_1"]).toBeDefined();
     expect(XCinematicSubjects.project(world, layout, "phone")).toContainEqual(
@@ -152,9 +141,7 @@ describe("X VNext canonical layout and cinematic subjects", () => {
     state.scroll.tweetById.tw_1 = 180;
     const { layout, world } = layoutFor(state, "FEED");
     expect(layout.semantic?.regions["x.tweet.conversation"]).toBeDefined();
-    expect(layout.semantic?.regions["x.post.tw_reply"].rect.y).toBe(
-      before - 180,
-    );
+    expect(layout.semantic?.regions["x.post.tw_reply"].rect.y).toBe(before - 180);
     expect(XCinematicSubjects.project(world, layout, "phone")).toContainEqual(
       expect.objectContaining({
         ref: expect.objectContaining({

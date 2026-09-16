@@ -92,10 +92,53 @@ const handheldDrift: CameraModifierModel = {
   },
 };
 
+const impactShake: CameraModifierModel = {
+  id: "impact-shake",
+  version: 1,
+  projectionBackendRequirement: "composited",
+  validate: (parameters) => [
+    ...rejectUnknownParameters(parameters, [
+      "startFrame",
+      "durationFrames",
+      "amplitudePx",
+      "rotationDeg",
+      "seed",
+    ]),
+    ...requireRange(parameters, "startFrame", 0, 10000000),
+    ...requireRange(parameters, "durationFrames", 2, 10000),
+    ...requireRange(parameters, "amplitudePx", 0, 32),
+    ...requireRange(parameters, "rotationDeg", 0, 3),
+    ...requireRange(parameters, "seed", 0, 2147483647),
+  ],
+  evaluate: ({ frame, parameters, pose, projectionPasses }) => {
+    const start = numberParameter(parameters, "startFrame", 0);
+    const duration = numberParameter(parameters, "durationFrames", 18);
+    const t = (frame - start) / duration;
+    if (t <= 0 || t >= 1) return { pose, projectionPasses };
+    const envelope = Math.sin(Math.PI * t) ** 2 * Math.exp(-4 * t);
+    const seed = numberParameter(parameters, "seed", 1);
+    const amplitude = (numberParameter(parameters, "amplitudePx", 12) * envelope) / pose.scale;
+    return {
+      pose: {
+        ...pose,
+        centerX: pose.centerX + continuousNoise(t * 24, seed) * amplitude,
+        centerY: pose.centerY + continuousNoise(t * 24 + 17.3, seed + 97) * amplitude,
+        rotationDeg:
+          pose.rotationDeg +
+          continuousNoise(t * 24 + 31.7, seed + 211) *
+            envelope *
+            numberParameter(parameters, "rotationDeg", 0.4),
+      },
+      projectionPasses,
+    };
+  },
+};
+
 export function createBuiltinCameraModifierRegistry(): CameraModifierRegistry {
   const registry = new CameraModifierRegistry();
   registry.register(lensBreathing);
   registry.register(handheldDrift);
+  registry.register(impactShake);
   return registry;
 }
 

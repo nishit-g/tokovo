@@ -58,6 +58,10 @@ export function deviceReducer(
         break;
       case "UNLOCK":
         device.isLocked = false;
+        if ((event as { payload?: { authenticatedNotification?: boolean } }).payload?.authenticatedNotification) {
+          device.transition = undefined;
+          break;
+        }
         device.transition = {
           kind: "unlock",
           startFrame: event.at,
@@ -133,6 +137,11 @@ export function deviceReducer(
             page.apps.forEach((item) => {
               if ("appId" in item && item.appId === appId) {
                 item.badge = count > 0 ? count : undefined;
+              }
+              if ("apps" in item) {
+                for (const icon of item.apps) {
+                  if (icon.appId === appId) icon.badge = count > 0 ? count : undefined;
+                }
               }
             });
           });

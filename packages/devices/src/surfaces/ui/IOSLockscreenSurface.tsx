@@ -8,6 +8,7 @@ export function IOSLockscreenSurface({ projection }: { projection: LockscreenPro
     throw new Error("SYSTEM_SURFACE_PLATFORM_MISMATCH: iOS lock painter received Android data.");
   }
   const { theme, layout } = projection;
+  const native = projection.notificationUX === "native";
   const lock = layout.lock;
   const inset = layout.pointScale * 26;
   const shadow =
@@ -28,7 +29,9 @@ export function IOSLockscreenSurface({ projection }: { projection: LockscreenPro
     >
       <SystemWallpaper wallpaper={projection.wallpaper} />
       <div
-        aria-label={projection.strings.deviceLocked}
+        aria-label={projection.authenticated ? undefined : projection.strings.deviceLocked}
+        aria-hidden={projection.authenticated || undefined}
+        data-authenticated={projection.authenticated || undefined}
         style={{
           position: "absolute",
           top: layout.pointScale * 57,
@@ -37,7 +40,7 @@ export function IOSLockscreenSurface({ projection }: { projection: LockscreenPro
           zIndex: 2,
         }}
       >
-        <LockIcon color={theme.colors.primaryText} size={layout.pointScale * 17} />
+        <LockIcon color={theme.colors.primaryText} size={layout.pointScale * 17} unlocked={projection.authenticated} />
       </div>
       <div
         style={{
@@ -47,7 +50,7 @@ export function IOSLockscreenSurface({ projection }: { projection: LockscreenPro
           right: 0,
           textAlign: "center",
           fontSize: lock.dateSize,
-          fontWeight: 600,
+          fontWeight: native ? 500 : 600,
           lineHeight: 1.15,
           letterSpacing: -0.15 * layout.pointScale,
           textShadow: shadow,
@@ -65,7 +68,7 @@ export function IOSLockscreenSurface({ projection }: { projection: LockscreenPro
           right: 0,
           textAlign: "center",
           fontSize: lock.clockSize,
-          fontWeight: 240,
+          fontWeight: native ? 600 : 240,
           lineHeight: 0.93,
           letterSpacing: -3.1 * layout.pointScale,
           fontVariantNumeric: "tabular-nums",

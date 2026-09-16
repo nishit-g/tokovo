@@ -182,6 +182,7 @@ export class LayoutCache {
       hash = hashMaybeString(hash, "locationAddress", message.locationAddress);
       hash = hashMaybeString(hash, "mapThumbnailUrl", message.mapThumbnailUrl);
       hash = hashMaybeBoolean(hash, "edited", message.edited);
+      hash = hashMaybeBoolean(hash, "starred", message.starred);
       hash = hashMaybeNumber(hash, "editedAt", message.editedAt);
       hash = hashMaybeString(hash, "originalText", message.originalText);
       hash = hashMaybeString(hash, "originalType", message.originalType);
@@ -365,6 +366,9 @@ export function computeConversationLayout(
       type: msgType,
       text: "text" in msg ? msg.text : undefined,
       caption: "caption" in msg ? msg.caption : undefined,
+      timestamp: msg.timestamp,
+      edited: msg.edited,
+      starred: msg.starred,
       systemType: msg.systemType,
       pollQuestion: msg.pollQuestion,
       pollOptionCount: msg.options?.length,

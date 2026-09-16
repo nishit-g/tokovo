@@ -1,11 +1,8 @@
+import { Freeze, OffthreadVideo, staticFile } from "remotion";
 import React from "react";
-import { DeterministicImage, useTime } from "@tokovo/react";
+import { DeterministicImage, ShapedText, useTime, useFps } from "@tokovo/react";
 import { useXExperience } from "../../experience/context.js";
-import {
-  formatXCount,
-  formatXLongTimestamp,
-  formatXTimestamp,
-} from "../../localization/index.js";
+import { formatXCount, formatXLongTimestamp, formatXTimestamp } from "../../localization/index.js";
 import { measureXPost } from "../../layout/measure.js";
 import type { XState, XTweet } from "../../runtime/state.js";
 import { requireTweet, requireUser } from "../../runtime/selectors.js";
@@ -20,15 +17,7 @@ const Action: React.FC<{
   active?: boolean;
   fill?: string;
   pulse?: number;
-}> = ({
-  icon,
-  label,
-  count,
-  color,
-  active = false,
-  fill = "none",
-  pulse = 1,
-}) => {
+}> = ({ icon, label, count, color, active = false, fill = "none", pulse = 1 }) => {
   const experience = useXExperience();
   return (
     <div
@@ -36,16 +25,18 @@ const Action: React.FC<{
       aria-label={count ? `${label}: ${count}` : label}
       style={{
         minWidth: experience.metrics.touchTarget,
+        flex: count ? "1 1 0" : `0 0 ${experience.metrics.touchTarget}px`,
         height: 32,
         display: "flex",
         alignItems: "center",
-        gap: 6,
+        gap: 3,
         color: active ? color : experience.colors.textSecondary,
       }}
     >
       <span
         style={{
-          width: 28,
+          width: 20,
+          minWidth: 20,
           height: 28,
           display: "grid",
           placeItems: "center",
@@ -67,7 +58,11 @@ const Action: React.FC<{
       {count && count > 0 ? (
         <span
           style={{
-            fontSize: 12,
+            fontSize: 11 * experience.type.scale,
+            minWidth: 0,
+            whiteSpace: "nowrap",
+            overflow: "hidden",
+            textOverflow: "ellipsis",
             fontVariantNumeric: "tabular-nums",
             transform: "translateY(.5px)",
           }}
@@ -79,73 +74,88 @@ const Action: React.FC<{
   );
 };
 
-const Media: React.FC<{ tweet: XTweet; height: number }> = ({
+export const PostMedia: React.FC<{ tweet: XTweet; height: number; compact?: boolean }> = ({
   tweet,
   height,
+  compact = false,
 }) => {
   const experience = useXExperience();
+  const frame = useTime();
+  const fps = useFps();
   const media = tweet.media;
   if (!media || height <= 0) return null;
   const sources = media.urls.slice(0, 4);
   const columns = sources.length === 1 ? 1 : 2;
+  const playback = media.playback;
+  const start = (playback?.progress ?? 0) * (media.durationSeconds ?? 0) * fps;
+  const elapsed = playback?.state === "playing" ? Math.max(0, frame - (playback.atFrame ?? 0)) : 0;
+  const videoFrame = Math.max(
+    0,
+    Math.floor(
+      Math.min(start + elapsed, media.durationSeconds ? media.durationSeconds * fps - 1 : Infinity),
+    ),
+  );
   return (
     <div
       data-x-anchor={`x.post.${tweet.id}.media`}
       role="img"
-      aria-label={
-        media.alt ?? (media.type === "video" ? "Video" : "Post media")
-      }
+      aria-label={media.alt ?? (media.type === "video" ? "Video" : "Post media")}
       style={{
         height,
         width: "100%",
         display: "grid",
         gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))`,
-        gridTemplateRows:
-          sources.length > 2 ? "repeat(2, minmax(0, 1fr))" : "1fr",
+        gridTemplateRows: sources.length > 2 ? "repeat(2, minmax(0, 1fr))" : "1fr",
         gap: 2,
         overflow: "hidden",
-        borderRadius: experience.metrics.radius,
+        borderRadius: compact ? 0 : experience.metrics.radius,
         border: `1px solid ${experience.colors.border}`,
         position: "relative",
         background: experience.colors.surfaceRaised,
         boxSizing: "border-box",
       }}
     >
-      {sources.map((source, index) => (
-        <DeterministicImage
-          key={`${source}:${index}`}
-          src={
-            media.type === "video" && index === 0
-              ? (media.posterUrl ?? source)
-              : source
-          }
-          alt=""
-          aria-hidden
-          style={{
-            width: "100%",
-            height: "100%",
-            display: "block",
-            objectFit: "cover",
-            minWidth: 0,
-            minHeight: 0,
-          }}
-        />
-      ))}
-      {media.type === "video" ? (
+      {sources.map((source, index) =>
+        media.type === "video" && (!media.posterUrl || playback?.state !== "idle") ? (
+          <Freeze key={`${source}:${index}`} frame={videoFrame}>
+            <OffthreadVideo
+              src={source.startsWith("/") ? staticFile(source.slice(1)) : source}
+              muted
+              style={{ width: "100%", height: "100%", objectFit: "cover" }}
+            />
+          </Freeze>
+        ) : (
+          <DeterministicImage
+            key={`${source}:${index}`}
+            src={media.type === "video" && index === 0 ? (media.posterUrl ?? source) : source}
+            alt=""
+            aria-hidden
+            style={{
+              gridRow: sources.length === 3 && index === 0 ? "span 2" : undefined,
+              width: "100%",
+              height: "100%",
+              display: "block",
+              objectFit: "cover",
+              minWidth: 0,
+              minHeight: 0,
+            }}
+          />
+        ),
+      )}
+      {media.type === "video" && playback?.state !== "playing" ? (
         <div
           style={{
             position: "absolute",
             inset: 0,
             display: "grid",
             placeItems: "center",
-            background:
-              "linear-gradient(180deg, transparent 56%, rgba(0,0,0,.22))",
+            background: "linear-gradient(180deg, transparent 56%, rgba(0,0,0,.22))",
           }}
         >
           <span
             style={{
-              width: 48,
-              height: 48,
+              width: compact ? 28 : 48,
+              height: compact ? 28 : 48,
               borderRadius: "50%",
               background: "rgba(15,20,25,.78)",
               display: "grid",
@@ -163,9 +173,7 @@ const Media: React.FC<{ tweet: XTweet; height: number }> = ({
           </span>
         </div>
       ) : null}
-      {media.type === "video" &&
-      media.playback &&
-      media.playback.state !== "idle" ? (
+      {media.type === "video" && media.playback && media.playback.state !== "idle" ? (
         <div
           style={{
             position: "absolute",
@@ -179,7 +187,7 @@ const Media: React.FC<{ tweet: XTweet; height: number }> = ({
         >
           <div
             style={{
-              width: `${Math.max(0, Math.min(1, media.playback.progress)) * 100}%`,
+              width: `${Math.max(0, Math.min(1, media.durationSeconds ? videoFrame / (media.durationSeconds * fps) : media.playback.progress)) * 100}%`,
               height: "100%",
               borderRadius: 3,
               background: "#fff",
@@ -204,9 +212,7 @@ const Media: React.FC<{ tweet: XTweet; height: number }> = ({
             backdropFilter: "blur(18px)",
           }}
         >
-          <strong style={{ fontSize: 15 }}>
-            {experience.t("sensitiveMedia")}
-          </strong>
+          <strong style={{ fontSize: 15 }}>{experience.t("sensitiveMedia")}</strong>
           <span style={{ fontSize: 12, lineHeight: 1.35, opacity: 0.86 }}>
             {experience.t("sensitiveBody")}
           </span>
@@ -228,10 +234,7 @@ const Media: React.FC<{ tweet: XTweet; height: number }> = ({
   );
 };
 
-const LinkPreview: React.FC<{ tweet: XTweet; height: number }> = ({
-  tweet,
-  height,
-}) => {
+const LinkPreview: React.FC<{ tweet: XTweet; height: number }> = ({ tweet, height }) => {
   const experience = useXExperience();
   const link = tweet.linkPreview;
   if (!link || height <= 0) return null;
@@ -239,6 +242,7 @@ const LinkPreview: React.FC<{ tweet: XTweet; height: number }> = ({
     <div
       data-x-anchor={`x.post.${tweet.id}.link`}
       style={{
+        boxSizing: "border-box",
         height,
         overflow: "hidden",
         borderRadius: experience.metrics.radius,
@@ -305,14 +309,22 @@ const LinkPreview: React.FC<{ tweet: XTweet; height: number }> = ({
   );
 };
 
-const Poll: React.FC<{ tweet: XTweet; height: number }> = ({
+const Poll: React.FC<{ tweet: XTweet; height: number; nowMs: number }> = ({
   tweet,
   height,
+  nowMs,
 }) => {
   const experience = useXExperience();
   const poll = tweet.poll;
   if (!poll || height <= 0) return null;
   const total = Math.max(1, poll.totalVotes);
+  const ended = poll.endsAt !== undefined && nowMs >= poll.endsAt;
+  const results = ended || Boolean(poll.selectedOptionId);
+  const minutes = Math.max(1, Math.ceil(((poll.endsAt ?? nowMs) - nowMs) / 60000));
+  const remaining = new Intl.RelativeTimeFormat(experience.locale, { numeric: "always" }).format(
+    minutes >= 60 ? Math.ceil(minutes / 60) : minutes,
+    minutes >= 60 ? "hour" : "minute",
+  );
   return (
     <div
       data-x-anchor={`x.post.${tweet.id}.poll`}
@@ -331,21 +343,22 @@ const Poll: React.FC<{ tweet: XTweet; height: number }> = ({
           <div
             key={option.id}
             style={{
-              height: 31,
+              height: experience.text.bodyLine + 11,
+              flexShrink: 0,
               position: "relative",
               overflow: "hidden",
               borderRadius: 4,
-              background: experience.colors.surfaceRaised,
+              background: results ? experience.colors.surfaceRaised : "transparent",
+              border: `1px solid ${results ? "transparent" : experience.colors.accent}`,
+              boxSizing: "border-box",
             }}
           >
             <div
               style={{
                 position: "absolute",
                 inset: 0,
-                width: `${percentage}%`,
-                background: selected
-                  ? experience.colors.accent
-                  : experience.colors.borderStrong,
+                width: results ? `${results ? `${percentage}%` : ""}` : "0%",
+                background: selected ? experience.colors.accent : experience.colors.borderStrong,
                 opacity: selected ? 0.34 : 0.5,
               }}
             />
@@ -358,7 +371,7 @@ const Poll: React.FC<{ tweet: XTweet; height: number }> = ({
                 alignItems: "center",
                 justifyContent: "space-between",
                 gap: 10,
-                fontSize: 13,
+                fontSize: experience.text.body,
                 fontWeight: selected ? 700 : 550,
               }}
             >
@@ -372,16 +385,24 @@ const Poll: React.FC<{ tweet: XTweet; height: number }> = ({
                 {selected ? "✓ " : ""}
                 {option.label}
               </span>
-              <span style={{ fontVariantNumeric: "tabular-nums" }}>
-                {percentage}%
-              </span>
+              <span style={{ fontVariantNumeric: "tabular-nums" }}>{percentage}%</span>
             </div>
           </div>
         );
       })}
-      <div style={{ color: experience.colors.textSecondary, fontSize: 12 }}>
-        {formatXCount(poll.totalVotes, experience.locale)}{" "}
-        {experience.t("pollVotes")} · {experience.t("pollEnded")}
+      <div
+        style={{
+          color: experience.colors.textSecondary,
+          fontSize: experience.text.small,
+          lineHeight: `${experience.text.smallLine}px`,
+        }}
+      >
+        {formatXCount(poll.totalVotes, experience.locale)} {experience.t("pollVotes")} ·{" "}
+        {ended
+          ? experience.t("pollEnded")
+          : poll.endsAt
+            ? `${experience.t("pollEnds")} ${remaining}`
+            : experience.t("pollOpen")}
       </div>
     </div>
   );
@@ -394,16 +415,8 @@ const QuoteCard: React.FC<{ state: XState; tweet: XTweet; height: number }> = ({
 }) => {
   const experience = useXExperience();
   if (!tweet.quoteTweetId || height <= 0) return null;
-  const quote = requireTweet(
-    state,
-    tweet.quoteTweetId,
-    `tweet "${tweet.id}" quoteTweetId`,
-  );
-  const author = requireUser(
-    state,
-    quote.authorId,
-    `tweet "${quote.id}" authorId`,
-  );
+  const quote = requireTweet(state, tweet.quoteTweetId, `tweet "${tweet.id}" quoteTweetId`);
+  const author = requireUser(state, quote.authorId, `tweet "${quote.id}" authorId`);
   return (
     <div
       data-x-anchor={`x.post.${tweet.id}.quote`}
@@ -416,9 +429,7 @@ const QuoteCard: React.FC<{ state: XState; tweet: XTweet; height: number }> = ({
         overflow: "hidden",
       }}
     >
-      <div
-        style={{ display: "flex", alignItems: "center", gap: 7, minWidth: 0 }}
-      >
+      <div style={{ display: "flex", alignItems: "center", gap: 7, minWidth: 0 }}>
         <Avatar user={author} size={22} />
         <strong
           style={{
@@ -448,13 +459,18 @@ const QuoteCard: React.FC<{ state: XState; tweet: XTweet; height: number }> = ({
           marginTop: 7,
           fontSize: 13,
           lineHeight: "18px",
-          height: 54,
+          height: quote.media ? 18 : 54,
           overflow: "hidden",
           whiteSpace: "pre-wrap",
         }}
       >
         {quote.text}
       </div>
+      {quote.media ? (
+        <div style={{ marginTop: 6 }}>
+          <PostMedia tweet={quote} height={52} />
+        </div>
+      ) : null}
     </div>
   );
 };
@@ -475,40 +491,31 @@ export const PostCard: React.FC<{
   const displayed = tweet.repostOfId
     ? requireTweet(state, tweet.repostOfId, `tweet "${tweet.id}" repostOfId`)
     : tweet;
-  const author = requireUser(
-    state,
-    displayed.authorId,
-    `tweet "${displayed.id}" authorId`,
-  );
+  const author = requireUser(state, displayed.authorId, `tweet "${displayed.id}" authorId`);
   const measurement = measureXPost(
-    tweet.repostOfId
-      ? { ...displayed, repostOfId: tweet.repostOfId }
-      : displayed,
+    tweet.repostOfId ? { ...displayed, repostOfId: tweet.repostOfId } : displayed,
     width,
     detail,
+    experience.text,
   );
-  const liked = Boolean(
-    state.currentUserId && displayed.likedBy.includes(state.currentUserId),
-  );
+  const liked = Boolean(state.currentUserId && displayed.likedBy.includes(state.currentUserId));
   const bookmarked = Boolean(
     state.currentUserId && displayed.bookmarkedBy.includes(state.currentUserId),
   );
-  const shared = Boolean(
-    state.currentUserId && displayed.sharedBy.includes(state.currentUserId),
-  );
-  const contentWidth = detail ? width - 32 : width - 76;
+  const shared = Boolean(state.currentUserId && displayed.sharedBy.includes(state.currentUserId));
+  const contentWidth = measurement.contentWidth;
   const interactionAge =
     state.recentInteraction?.targetId === displayed.id
       ? frame - state.recentInteraction.atFrame
       : Number.POSITIVE_INFINITY;
   const interactionPulse =
-    interactionAge >= 0 && interactionAge <= 12
-      ? 1 + Math.sin((interactionAge / 12) * Math.PI) * 0.17
+    !experience.reducedMotion &&
+    interactionAge >= 0 &&
+    interactionAge <= experience.motion.feedbackFrames
+      ? 1 + Math.sin((interactionAge / experience.motion.feedbackFrames) * Math.PI) * 0.17
       : 1;
   const interactionType =
-    state.recentInteraction?.targetId === displayed.id
-      ? state.recentInteraction.type
-      : null;
+    state.recentInteraction?.targetId === displayed.id ? state.recentInteraction.type : null;
 
   return (
     <article
@@ -517,12 +524,8 @@ export const PostCard: React.FC<{
       style={{
         height: measurement.totalHeight,
         minHeight: measurement.totalHeight,
-        padding: detail
-          ? "12px 16px"
-          : `${experience.metrics.postPaddingY}px 16px`,
-        borderBottom: showBorder
-          ? `1px solid ${experience.colors.border}`
-          : "none",
+        padding: detail ? "12px 16px" : `${experience.metrics.postPaddingY}px 16px`,
+        borderBottom: showBorder ? `1px solid ${experience.colors.border}` : "none",
         boxSizing: "border-box",
         background: experience.colors.background,
         overflow: "hidden",
@@ -551,16 +554,12 @@ export const PostCard: React.FC<{
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: detail
-            ? "1fr"
-            : `${experience.metrics.avatar}px minmax(0, 1fr)`,
+          gridTemplateColumns: detail ? "1fr" : `${experience.metrics.avatar}px minmax(0, 1fr)`,
           columnGap: 12,
           minWidth: 0,
         }}
       >
-        {!detail ? (
-          <Avatar user={author} size={experience.metrics.avatar} />
-        ) : null}
+        {!detail ? <Avatar user={author} size={experience.metrics.avatar} /> : null}
         <div style={{ minWidth: 0 }}>
           <div
             data-x-anchor={`x.post.${tweet.id}.author`}
@@ -637,19 +636,14 @@ export const PostCard: React.FC<{
               style={{
                 color: experience.colors.textSecondary,
                 fontSize: 13,
-                lineHeight: "18px",
-                marginTop: 2,
+                lineHeight: `${experience.text.smallLine}px`,
+                height: measurement.replyLabelHeight,
+                boxSizing: "border-box",
               }}
             >
               {experience.t("repliedTo")}{" "}
               <span style={{ color: experience.colors.accent }}>
-                @
-                {
-                  requireUser(
-                    state,
-                    requireTweet(state, displayed.replyToId).authorId,
-                  ).handle
-                }
+                @{requireUser(state, requireTweet(state, displayed.replyToId).authorId).handle}
               </span>
             </div>
           ) : null}
@@ -661,30 +655,44 @@ export const PostCard: React.FC<{
                 height: measurement.bodyHeight,
                 marginTop: 5,
                 fontSize: (detail ? 20 : 15) * experience.type.scale,
-                lineHeight: detail ? "25px" : "20px",
-                letterSpacing: detail ? "-.012em" : "-.004em",
+                lineHeight: `${detail ? experience.text.detailLine : experience.text.bodyLine}px`,
+                letterSpacing: 0,
                 whiteSpace: "pre-wrap",
                 overflow: "hidden",
                 unicodeBidi: "plaintext",
               }}
             >
-              {displayed.text}
+              {measurement.textLines.map((line, index) => (
+                <div
+                  key={index}
+                  style={{
+                    height: detail ? experience.text.detailLine : experience.text.bodyLine,
+                    whiteSpace: "pre",
+                  }}
+                >
+                  <ShapedText text={line} />
+                </div>
+              ))}
+              {measurement.truncated ? (
+                <div style={{ color: experience.colors.accent }}>{experience.t("showMore")}</div>
+              ) : null}
             </div>
           ) : null}
 
           {measurement.attachmentHeight > 0 ? (
-            <div style={{ marginTop: 10, width: Math.max(0, contentWidth) }}>
-              <Media tweet={displayed} height={measurement.attachmentHeight} />
-              <LinkPreview
-                tweet={displayed}
-                height={measurement.attachmentHeight}
-              />
-              <Poll tweet={displayed} height={measurement.attachmentHeight} />
-              <QuoteCard
-                state={state}
-                tweet={displayed}
-                height={measurement.attachmentHeight}
-              />
+            <div
+              style={{
+                marginTop: 10,
+                width: Math.max(0, contentWidth),
+                display: "flex",
+                flexDirection: "column",
+                gap: 10,
+              }}
+            >
+              <PostMedia tweet={displayed} height={measurement.primaryAttachmentHeight} />
+              <LinkPreview tweet={displayed} height={measurement.primaryAttachmentHeight} />
+              <Poll tweet={displayed} height={measurement.primaryAttachmentHeight} nowMs={nowMs} />
+              <QuoteCard state={state} tweet={displayed} height={measurement.quoteHeight} />
             </div>
           ) : null}
 
@@ -711,9 +719,7 @@ export const PostCard: React.FC<{
               alignItems: "center",
               justifyContent: "space-between",
               maxWidth: detail ? "100%" : 310,
-              borderBottom: detail
-                ? `1px solid ${experience.colors.border}`
-                : "none",
+              borderBottom: detail ? `1px solid ${experience.colors.border}` : "none",
             }}
           >
             <Action
@@ -736,9 +742,7 @@ export const PostCard: React.FC<{
               active={liked}
               fill={experience.colors.like}
               pulse={
-                interactionType === "like" || interactionType === "unlike"
-                  ? interactionPulse
-                  : 1
+                interactionType === "like" || interactionType === "unlike" ? interactionPulse : 1
               }
             />
             {!detail ? (
@@ -757,8 +761,7 @@ export const PostCard: React.FC<{
               active={bookmarked}
               fill={experience.colors.accent}
               pulse={
-                interactionType === "bookmark" ||
-                interactionType === "unbookmark"
+                interactionType === "bookmark" || interactionType === "unbookmark"
                   ? interactionPulse
                   : 1
               }
@@ -784,25 +787,19 @@ export const PostCard: React.FC<{
               }}
             >
               <span>
-                <strong>
-                  {formatXCount(displayed.repostCount, experience.locale)}
-                </strong>{" "}
+                <strong>{formatXCount(displayed.repostCount, experience.locale)}</strong>{" "}
                 <span style={{ color: experience.colors.textSecondary }}>
                   {experience.t("repost")}
                 </span>
               </span>
               <span>
-                <strong>
-                  {formatXCount(displayed.likeCount, experience.locale)}
-                </strong>{" "}
+                <strong>{formatXCount(displayed.likeCount, experience.locale)}</strong>{" "}
                 <span style={{ color: experience.colors.textSecondary }}>
                   {experience.t("likes")}
                 </span>
               </span>
               <span>
-                <strong>
-                  {formatXCount(displayed.viewCount, experience.locale)}
-                </strong>{" "}
+                <strong>{formatXCount(displayed.viewCount, experience.locale)}</strong>{" "}
                 <span style={{ color: experience.colors.textSecondary }}>
                   {experience.t("views")}
                 </span>

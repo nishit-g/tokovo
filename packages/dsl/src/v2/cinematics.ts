@@ -13,6 +13,7 @@ import type {
   CameraOutputIR,
   CameraRigIR,
   CameraShotIR,
+  CameraShotDirectionIR,
   CinematicSubjectRefIR,
   EpisodeCinematicsIR,
   JsonObject,
@@ -127,7 +128,7 @@ export const cameraSubject = {
       body: device("body"),
       screen: device("screen"),
       keyboard: device("keyboard"),
-      notification: device("notification"),
+      notification: device("notification.banner"),
       device,
       semantic(subjectId: string) {
         return cameraSubject.semantic(normalizedDeviceId, requireApp(), subjectId);
@@ -338,6 +339,7 @@ export class CinematicShotBuilder {
   #missingSubjectPolicy: CameraMissingSubjectPolicyIR = { type: "error" };
   #source: CameraShotIR["source"] = "authored";
   #blendIn?: CameraBlendIR | null;
+  #direction?: CameraShotDirectionIR;
 
   constructor(input: {
     fps: number;
@@ -452,6 +454,12 @@ export class CinematicShotBuilder {
     return this;
   }
 
+  /** Explicit entrance plus independent, shot-local movement. */
+  direct(direction: CameraShotDirectionIR): this {
+    this.#direction = direction;
+    return this;
+  }
+
   motion(profile: CameraMotionProfileIR): this {
     this.#motion = profile;
     return this;
@@ -484,7 +492,7 @@ export class CinematicShotBuilder {
     return this;
   }
 
-  whip(direction: "left" | "right" | "up" | "down", duration: Time): this {
+  whip(direction: "left" | "right" | "up" | "down" | "travel", duration: Time): this {
     this.#motion = {
       type: "whip",
       durationFrames: parseDurationToFrames(duration, this.#fps),
@@ -692,7 +700,7 @@ export class CinematicShotBuilder {
         rigId,
         priority: this.#priority,
         declarationOrder: input.declarationOrder,
-        ...(blendIn ? { blendIn } : {}),
+        ...(this.#direction ? { direction: this.#direction } : blendIn ? { blendIn } : {}),
         missingSubjectPolicy: this.#missingSubjectPolicy,
         source: this.#source,
       },

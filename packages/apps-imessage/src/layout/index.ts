@@ -11,6 +11,7 @@ import {
 
 import type { IMessageState } from "../types/index.js";
 import { iMessageSpacing } from "../config/tokens.js";
+import { iOS_IMESSAGE_LIGHT } from "../config/index.js";
 import { computeMessageGap, getReplyPreview } from "../config/layout-config.js";
 import { composerExtraHeight, dateLabel, messageGeometry } from "./message.js";
 
@@ -123,6 +124,7 @@ function computeIMessageChatLayout(ctx: LayoutContext): ChatLayoutState {
   const threadY = headerH;
   const threadH = Math.max(0, composerY - threadY);
   const messages = (conversation?.messages ?? []).filter((message) => message.timestamp <= ctx.t);
+  const messageIndex = new Map(messages.map((message, index) => [message.id, index]));
   const lastOutgoing = messages.findLast(
     (message) => message.fromMe && !message.isUnsent && !message.isSystem,
   )?.id;
@@ -132,14 +134,16 @@ function computeIMessageChatLayout(ctx: LayoutContext): ChatLayoutState {
   for (let index = 0; index < messages.length; index++) {
     const message = messages[index];
     const previous = messages[index - 1];
-    y += computeMessageGap(previous, message) + (dateLabel(message, previous) ? 32 : 0);
+    y +=
+      computeMessageGap(previous, message) +
+      (dateLabel(message, previous, ctx.world.devices?.[ctx.activeDeviceId]?.os?.locale) ? 32 : 0);
     const sender = Boolean(
       conversation?.isGroup && !message.fromMe && previous?.senderId !== message.senderId,
     );
     const geometry = messageGeometry(
       message,
       w,
-      getReplyPreview(messages, index),
+      getReplyPreview(messages, index, messageIndex),
       sender,
       message.id === lastOutgoing,
     );
@@ -208,7 +212,10 @@ function computeIMessageChatLayout(ctx: LayoutContext): ChatLayoutState {
       id: message.id,
       rect: { ...item.rect!, y: item.y + item.translateY },
       tags: ["thread", "message"],
-      metadata: { messageId: message.id },
+      metadata: {
+        messageId: message.id,
+        ...(message.text ? { textSizePx: iOS_IMESSAGE_LIGHT.typography.message.size } : {}),
+      },
     };
   }
   const lastId = messages.at(-1)?.id;
@@ -223,7 +230,11 @@ function computeIMessageChatLayout(ctx: LayoutContext): ChatLayoutState {
       const region = regions.imessage_last_message;
       const bottom = composerY - 16;
       const top = Math.min(bottom - 1, Math.max(threadY, region.rect.y));
-      region.rect = { ...region.rect, y: top, height: Math.max(1, Math.min(bottom, region.rect.y + region.rect.height) - top) };
+      region.rect = {
+        ...region.rect,
+        y: top,
+        height: Math.max(1, Math.min(bottom, region.rect.y + region.rect.height) - top),
+      };
     }
   }
   const typingLayout = typing

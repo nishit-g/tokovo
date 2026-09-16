@@ -59,8 +59,10 @@ describe("release episode taxonomy", () => {
 
   it("ships the full new-only curated wave", () => {
     expect(appShowcaseEpisodes).toHaveLength(25);
-    expect(systemShowcaseEpisodes).toHaveLength(11);
-    expect(storyEpisodes).toHaveLength(14);
+    expect(systemShowcaseEpisodes).toHaveLength(15);
+    expect(storyEpisodes).toHaveLength(16);
+    expect(storyEpisodes.some((item) => item.meta.id === "the-quiet-night")).toBe(true);
+    expect(storyEpisodes.some((item) => item.meta.id === "surprise-group-chat")).toBe(true);
     expect(storyEpisodes.some((item) => item.meta.id === "ping-sent-it")).toBe(true);
   });
 

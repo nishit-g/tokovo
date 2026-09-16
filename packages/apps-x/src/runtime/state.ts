@@ -27,10 +27,12 @@ export interface XMedia {
   aspect: "square" | "wide" | "tall";
   alt?: string;
   posterUrl?: string;
+  durationSeconds?: number;
   sensitive: boolean;
   playback: {
     state: "idle" | "playing" | "paused" | "complete";
     progress: number;
+    atFrame?: number;
   } | null;
 }
 
@@ -56,6 +58,7 @@ export interface XPoll {
 }
 
 export interface XTweet {
+  arrivedAtFrame?: number;
   id: string;
   authorId: string;
   text: string;
@@ -79,13 +82,7 @@ export interface XTweet {
   shareCount: number;
 }
 
-export type NotificationType =
-  | "like"
-  | "repost"
-  | "reply"
-  | "follow"
-  | "mention"
-  | "verified";
+export type NotificationType = "like" | "repost" | "reply" | "follow" | "mention" | "verified";
 
 export interface XNotification {
   id: string;
@@ -118,6 +115,7 @@ export interface XDMReaction {
 }
 
 export interface XDMMessage {
+  arrivedAtFrame?: number;
   id: string;
   threadId: string;
   senderId: string;
@@ -188,7 +186,9 @@ export interface XComposerState {
 export interface XState {
   schemaVersion: typeof X_STATE_SCHEMA_VERSION;
   layoutRevision: number;
+  lastArrivalFrame?: number;
   locale: XLocale;
+  postCharacterLimit: 280 | 25000;
   /** Required by the Tokovo LayoutEngine. */
   viewMode: ViewKind;
   /** Required when viewMode === "CHAT". */
@@ -211,6 +211,14 @@ export interface XState {
   navigationStack: XRoute[];
   lastTransition: XRouteTransition | null;
   scroll: XScrollState;
+  scrollMotion?: {
+    surface: string;
+    targetId?: string;
+    from: number;
+    to: number;
+    atFrame: number;
+    durationFrames: number;
+  };
   recentInteraction: XRecentInteraction | null;
 }
 
@@ -219,6 +227,7 @@ export function createXInitialState(): XState {
     schemaVersion: X_STATE_SCHEMA_VERSION,
     layoutRevision: 0,
     locale: "en-US",
+    postCharacterLimit: 280,
     viewMode: "FEED",
     conversationId: undefined,
     usersById: {},

@@ -4,6 +4,8 @@ export interface NotificationLocalizedStrings {
   reply: string;
   timeSensitive: string;
   critical: string;
+  options: string;
+  clear: string;
   now: string;
   minute(value: number): string;
   hour(value: number): string;
@@ -18,6 +20,7 @@ function languageOf(locale: string): string {
 
 const LOCALIZED: Readonly<Record<string, NotificationLocalizedStrings>> = {
   en: {
+    options: "Options", clear: "Clear",
     centerTitle: "Notifications",
     newNotification: "New notification",
     reply: "Reply",
@@ -29,6 +32,7 @@ const LOCALIZED: Readonly<Record<string, NotificationLocalizedStrings>> = {
     day: (value) => `${value}d`,
   },
   hi: {
+    options: "विकल्प", clear: "साफ़ करें",
     centerTitle: "सूचनाएँ",
     newNotification: "नई सूचना",
     reply: "जवाब दें",
@@ -40,6 +44,7 @@ const LOCALIZED: Readonly<Record<string, NotificationLocalizedStrings>> = {
     day: (value) => `${value} दिन`,
   },
   ar: {
+    options: "خيارات", clear: "مسح",
     centerTitle: "الإشعارات",
     newNotification: "إشعار جديد",
     reply: "رد",
@@ -51,6 +56,7 @@ const LOCALIZED: Readonly<Record<string, NotificationLocalizedStrings>> = {
     day: (value) => `${value} ي`,
   },
   ja: {
+    options: "オプション", clear: "消去",
     centerTitle: "通知",
     newNotification: "新しい通知",
     reply: "返信",

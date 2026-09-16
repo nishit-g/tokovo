@@ -1,11 +1,6 @@
-import type {
-  CameraProjectionPass,
-  CameraQualitySample,
-  Matrix3,
-} from "@tokovo/camera";
+import type { CameraProjectionPass, CameraQualitySample, Matrix3 } from "@tokovo/camera";
 
-export const CAMERA_TEXTURE_CAPTURE_PREFIX =
-  "TOKOVO_CAMERA_TEXTURE_FRAME:";
+export const CAMERA_TEXTURE_CAPTURE_PREFIX = "TOKOVO_CAMERA_TEXTURE_FRAME:";
 
 export interface CameraTextureProjectionCapture {
   version: 5;
@@ -51,11 +46,7 @@ function isValidRect(value: unknown): boolean {
 }
 
 function isValidMatrix(value: unknown): boolean {
-  return (
-    Array.isArray(value) &&
-    value.length === 9 &&
-    value.every(isFiniteNumber)
-  );
+  return Array.isArray(value) && value.length === 9 && value.every(isFiniteNumber);
 }
 
 export function parseCameraTextureProjectionCapture(
@@ -99,6 +90,23 @@ export function parseCameraTextureProjectionCapture(
           !isFiniteNumber(output.quality.subjectFillRatio) ||
           !isFiniteNumber(output.quality.cropCompensation) ||
           typeof output.quality.intentionalDiscontinuity !== "boolean" ||
+          (output.quality.framing !== undefined &&
+            (!output.quality.framing ||
+              typeof output.quality.framing.projectionSupported !== "boolean" ||
+              (output.quality.framing.safeViewport !== undefined &&
+                !isValidRect(output.quality.framing.safeViewport)) ||
+              (output.quality.framing.subjects !== undefined &&
+                (!Array.isArray(output.quality.framing.subjects) ||
+                  output.quality.framing.subjects.some(
+                    (subject: { key?: unknown; worldRect?: unknown } | null) =>
+                      !subject ||
+                      typeof subject.key !== "string" ||
+                      !isValidRect(subject.worldRect),
+                  ))) ||
+              !Array.isArray(output.quality.framing.clippedSubjectKeys) ||
+              !output.quality.framing.clippedSubjectKeys.every(
+                (key: unknown) => typeof key === "string",
+              ))) ||
           !output.quality.travel ||
           (output.quality.travel.mode !== "intentional" &&
             (output.quality.travel.mode !== "stabilized" ||

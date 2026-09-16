@@ -1,9 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-  createCinematicSubjectRegistry,
-  type LayoutState,
-  type WorldState,
-} from "@tokovo/core";
+import { createCinematicSubjectRegistry, type LayoutState, type WorldState } from "@tokovo/core";
 import { evaluateStageFrame, prepareStageProgram } from "@tokovo/stage";
 import type { LayoutEngineOutput } from "../engines/useLayoutEngine.js";
 import { projectCinematicFrame } from "../camera/projectCinematicFrame.js";
@@ -28,6 +24,7 @@ describe("cinematic coordinate-space bridge", () => {
             subjectId: "message",
           },
           rect: { x: 10, y: 20, width: 100, height: 40 },
+          textSizePx: 17,
           coordinateSpace: "app-logical",
           visible: true,
           sourceVersion: 1,
@@ -92,8 +89,7 @@ describe("cinematic coordinate-space bridge", () => {
     });
 
     const message = projected.subjects.find(
-      (subject) =>
-        subject.ref.kind === "semantic" && subject.ref.subjectId === "message",
+      (subject) => subject.ref.kind === "semantic" && subject.ref.subjectId === "message",
     );
     expect(message?.localRect).toEqual({
       x: 54,
@@ -101,6 +97,7 @@ describe("cinematic coordinate-space bridge", () => {
       width: 300,
       height: 120,
     });
+    expect(message?.worldTextSizePx).toBe(51);
     expect(message?.worldRect).toEqual({
       x: 104,
       y: 160,
@@ -109,12 +106,10 @@ describe("cinematic coordinate-space bridge", () => {
     });
 
     const body = projected.subjects.find(
-      (subject) =>
-        subject.ref.kind === "device" && subject.ref.subjectId === "body",
+      (subject) => subject.ref.kind === "device" && subject.ref.subjectId === "body",
     );
     const screen = projected.subjects.find(
-      (subject) =>
-        subject.ref.kind === "device" && subject.ref.subjectId === "screen",
+      (subject) => subject.ref.kind === "device" && subject.ref.subjectId === "screen",
     );
     expect(body?.localRect).toEqual({ x: 0, y: 0, width: 1179, height: 2556 });
     expect(screen?.localRect).toEqual({
@@ -191,8 +186,7 @@ describe("cinematic coordinate-space bridge", () => {
     });
 
     const bodies = projected.subjects.filter(
-      (subject) =>
-        subject.ref.kind === "device" && subject.ref.subjectId === "body",
+      (subject) => subject.ref.kind === "device" && subject.ref.subjectId === "body",
     );
     expect(bodies).toHaveLength(2);
     expect(bodies[0]).toMatchObject({

@@ -60,6 +60,10 @@ This file tracks bundled assets that ship with the repository.
 
 ## Deterministic UI Fonts
 
+- Headless shaping copies: `packages/visual-system/src/fonts/*`; base64-encoded,
+  unmodified WOFF2 subsets from the pinned packages below, with upstream license
+  notices alongside them. Regenerate patches with `scripts/font-data-patch.mjs`.
+
 - Packages: `@fontsource-variable/inter@5.3.0`, `@fontsource-variable/roboto@5.3.0`, `@fontsource-variable/roboto-mono@5.3.0`, `@fontsource-variable/noto-sans@5.3.0`, `@fontsource-variable/noto-sans-arabic@5.3.0`, `@fontsource-variable/noto-sans-devanagari@5.3.0`, and `@fontsource-variable/noto-sans-jp@5.3.0`
 - Loaded by: `apps/video-runner` for every app and OS render surface through `@tokovo/visual-system`
 - Source: Fontsource distributions of the named upstream font families

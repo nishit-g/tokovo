@@ -557,6 +557,196 @@ export function prepareCameraPlan(
   }
 
   for (const shot of plan.shots) {
+    if (shot.direction) {
+      if (
+        shot.direction.continuity === "velocity" &&
+        (shot.direction.source !== "freeze" ||
+          (shot.direction.framing !== "hold" && shot.direction.framing !== "follow-position") ||
+          shot.direction.movement ||
+          shot.direction.entrance.type !== "minimum-jerk" ||
+          shot.direction.entrance.durationFrames < 2)
+      ) {
+        diagnostics.push(
+          diagnostic(
+            plan.id,
+            "CAM_VELOCITY_HANDOFF_INVALID",
+            "Velocity handoffs require a frozen source, held or follow-position framing, no local movement, and a minimum-jerk entrance of at least two frames.",
+            { shotId: shot.id },
+          ),
+        );
+      }
+      if (shot.direction.framingSubject) {
+        diagnostics.push(
+          ...validateSubjectGroups(plan.id, shot.direction.framingSubject, { shotId: shot.id }),
+        );
+        if (!shot.direction.framing || shot.direction.framing === "live")
+          diagnostics.push(
+            diagnostic(
+              plan.id,
+              "CAM_FRAMING_REFERENCE_INVALID",
+              "A framing subject requires hold or follow-position framing.",
+              { shotId: shot.id },
+            ),
+          );
+      }
+      if (shot.direction.tracking && shot.direction.framing !== "follow-position") {
+        diagnostics.push(
+          diagnostic(
+            plan.id,
+            "CAM_TRACKING_FRAMING_INVALID",
+            `Shot "${shot.id}" damped tracking requires follow-position framing.`,
+            { shotId: shot.id },
+          ),
+        );
+      }
+      const fields = { outputId: shot.outputId, shotId: shot.id, rigId: shot.rigId };
+      const rig = rigsById.get(shot.rigId);
+      if (
+        shot.direction.tracking?.panLimits &&
+        (!rig?.composer.maxScale ||
+          shot.direction.tracking.minimumReadingScale !== undefined ||
+          shot.direction.movement ||
+          shot.direction.entrance.type !== "cut" ||
+          rig.bakedTrajectory ||
+          rig.lensId ||
+          rig.modifierIds?.length ||
+          rig.framingGuard ||
+          rig.travel.mode !== "intentional")
+      )
+        diagnostics.push(
+          diagnostic(
+            plan.id,
+            "CAM_PAN_LIMIT_CONFLICT",
+            "Bounded tracking needs an unmodified intentional cut shot and a finite maximum scale. Hard reading containment needs a separate shot because abrupt subject jumps can require faster movement than the bound.",
+            fields,
+          ),
+        );
+      if (
+        (shot.direction.tracking?.minimumTextPx !== undefined ||
+          shot.direction.tracking?.avoidSubjects) &&
+        shot.direction.tracking.minimumReadingScale === undefined
+      )
+        diagnostics.push(
+          diagnostic(
+            plan.id,
+            "CAM_READING_SAFETY_REQUIRED",
+            "Text-size and occlusion protection require minimumReadingScale safe reading.",
+            fields,
+          ),
+        );
+      for (const subject of shot.direction.tracking?.avoidSubjects ?? [])
+        diagnostics.push(...validateSubjectGroups(plan.id, subject, { shotId: shot.id }));
+      if (
+        shot.direction.tracking?.minimumReadingScale !== undefined &&
+        (!shot.direction.tracking.readingRegion ||
+          !rig?.composer.maxScale ||
+          rig.composer.minScale !== rig.composer.maxScale ||
+          shot.direction.tracking.minimumReadingScale > rig.composer.maxScale ||
+          shot.direction.entrance.type !== "cut" ||
+          shot.direction.movement ||
+          rig.bakedTrajectory ||
+          rig.lensId ||
+          rig.modifierIds?.length ||
+          rig.framingGuard ||
+          rig.travel.mode !== "intentional")
+      ) {
+        diagnostics.push(
+          diagnostic(
+            plan.id,
+            "CAM_READING_SAFETY_CONFLICT",
+            "Safe reading requires a fixed authored scale, a reading region, a floor no higher than that scale, and an unmodified intentional cut shot. Use a separate entrance shot.",
+            fields,
+          ),
+        );
+      }
+      if (
+        shot.direction.continuity === "velocity" &&
+        (rig?.bakedTrajectory || rig?.modifierIds?.length)
+      ) {
+        diagnostics.push(
+          diagnostic(
+            plan.id,
+            "CAM_VELOCITY_HANDOFF_INVALID",
+            "Velocity handoffs require a destination without rig trajectories or pose modifiers.",
+            fields,
+          ),
+        );
+      }
+      if (
+        shot.direction.source === "freeze" &&
+        shot.direction.entrance.type !== "cut" &&
+        rig?.travel.mode === "stabilized"
+      ) {
+        diagnostics.push(
+          diagnostic(
+            plan.id,
+            "CAM_FROZEN_SOURCE_CONSTRAINT_CONFLICT",
+            `Shot "${shot.id}" frozen entrance requires intentional travel so the incoming mount cannot move its source pose.`,
+            fields,
+          ),
+        );
+      }
+      if (
+        shot.direction.framing &&
+        shot.direction.framing !== "live" &&
+        (rig?.travel.mode === "stabilized" || rig?.framingGuard)
+      ) {
+        diagnostics.push(
+          diagnostic(
+            plan.id,
+            "CAM_STABLE_FRAMING_CONSTRAINT_CONFLICT",
+            `Shot "${shot.id}" stable framing requires intentional travel without a live framing guard.`,
+            fields,
+          ),
+        );
+      }
+      if (shot.blendIn || (shot.direction.movement && rig?.bakedTrajectory)) {
+        diagnostics.push(
+          diagnostic(
+            plan.id,
+            "CAM_DIRECTION_LEGACY_CONFLICT",
+            `Shot "${shot.id}" cannot combine direction with blendIn or two movement trajectories.`,
+            fields,
+          ),
+        );
+      }
+      const entrance = shot.direction.entrance;
+      const entranceDuration =
+        entrance.type === "cut"
+          ? 0
+          : entrance.type === "critically-damped"
+            ? entrance.responseFrames
+            : entrance.durationFrames;
+      if (entranceDuration > shot.endFrame - shot.startFrame) {
+        diagnostics.push(
+          diagnostic(
+            plan.id,
+            "CAM_ENTRANCE_OUT_OF_RANGE",
+            `Shot "${shot.id}" entrance exceeds its duration.`,
+            fields,
+          ),
+        );
+      }
+      const keys = shot.direction.movement?.keyframes;
+      if (
+        keys &&
+        (keys[0].frame !== 0 ||
+          keys.some(
+            (key, index) =>
+              key.frame >= shot.endFrame - shot.startFrame ||
+              (index > 0 && key.frame <= keys[index - 1].frame),
+          ))
+      ) {
+        diagnostics.push(
+          diagnostic(
+            plan.id,
+            "CAM_MOVEMENT_TIMELINE_INVALID",
+            `Shot "${shot.id}" movement must start at zero, increase strictly, and stay inside its duration.`,
+            fields,
+          ),
+        );
+      }
+    }
     if (shot.missingSubjectPolicy.type === "use-explicit") {
       diagnostics.push(
         ...validateSubjectGroups(plan.id, shot.missingSubjectPolicy.fallback, {
@@ -682,7 +872,10 @@ export function prepareCameraPlan(
       ...plan.shots.map((shot) => shot.rigId),
     ]);
     const reachableRigs = plan.rigs.filter((rig) => reachableRigIds.has(rig.id));
-    if (reachableRigs.some((rig) => rig.motion?.type === "whip")) {
+    if (
+      reachableRigs.some((rig) => rig.motion?.type === "whip") ||
+      plan.shots.some((shot) => shot.direction?.entrance.type === "whip")
+    ) {
       return "texture";
     }
     const reachableLensIds = new Set(

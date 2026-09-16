@@ -1,4 +1,5 @@
 import { memo, type ReactNode } from "react";
+import { ShapedText } from "@tokovo/react";
 import {
   Ban,
   Download,
@@ -146,7 +147,7 @@ const TextBody = memo(function TextBody({
         unicodeBidi: "plaintext",
       }}
     >
-      {lines ? lines.join("\n") : text}
+      <ShapedText text={lines ? lines.join("\n") : text} />
     </div>
   );
 });

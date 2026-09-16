@@ -2,6 +2,8 @@ import type { LayoutRect } from "@tokovo/core";
 import type { WhatsAppMessage } from "../types/index.js";
 import { WHATSAPP_INTERACTION_TOKENS as tokens } from "../theme/index.js";
 
+export const QUICK_REACTIONS = ["❤️", "👍", "😂", "😮", "😢", "🙏"] as const;
+
 export function messageActionKeys(message: WhatsAppMessage) {
   const actions = [
     "action.reply",
@@ -29,7 +31,7 @@ export function messageActionRect(
   const gap = tokens.surfaceMargin;
   const width = Math.min(tokens.menuWidth, Math.max(1, bounds.width - gap * 2));
   const height = Math.min(
-    count * tokens.menuRowHeight,
+    (count + (count > 1 ? 1 : 0)) * tokens.menuRowHeight,
     Math.max(1, bounds.height - gap * 2),
   );
   const below = message.y + message.height + gap;

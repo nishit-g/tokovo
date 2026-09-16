@@ -12,8 +12,12 @@ import ensembleLaunchRoom from "./ensemble-launch-room.episode.js";
 import calendarInvite from "./calendar-invite.episode.js";
 import pingSentIt from "./ping-sent-it.episode.js";
 import pingWrongChat from "./ping-wrong-chat.episode.js";
+import surpriseGroupChat from "./surprise-group-chat.episode.js";
+import theQuietNight from "./the-quiet-night.episode.js";
 
 export const curatedStoryEpisodes = [
+  theQuietNight,
+  surpriseGroupChat,
   pingWrongChat,
   pingSentIt,
   calendarInvite,

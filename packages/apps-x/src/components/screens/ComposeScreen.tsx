@@ -1,5 +1,6 @@
-import React from "react";
-import { useInputField } from "@tokovo/react";
+import { xPostBudget } from "../../presentation/text.js";
+import React, { useMemo } from "react";
+import { useInputField, DraftText, useFps, useTime } from "@tokovo/react";
 import { useXExperience } from "../../experience/context.js";
 import { xInputFields } from "../../input-fields.js";
 import { requireUser, requireXState } from "../../runtime/selectors.js";
@@ -10,19 +11,20 @@ import type { XScreenProps } from "./types.js";
 
 export const ComposeScreen: React.FC<XScreenProps> = ({ world, deviceId }) => {
   const experience = useXExperience();
+  const frame = useTime();
+  const fps = useFps();
   const state = requireXState(world, deviceId);
   if (!state.currentUserId)
-    throw new Error(
-      "X_CURRENT_USER_REQUIRED: compose screen requires currentUserId",
-    );
+    throw new Error("X_CURRENT_USER_REQUIRED: compose screen requires currentUserId");
   const user = requireUser(state, state.currentUserId, "compose.currentUserId");
   const input = useInputField(xInputFields.postComposer);
   const draft = input?.value ?? state.composer.draft;
-  const remaining = 280 - Array.from(draft).length;
-  const canPost =
-    Boolean(draft.trim()) &&
-    remaining >= 0 &&
-    state.composer.status !== "sending";
+  const budget = useMemo(
+    () => xPostBudget(draft, state.postCharacterLimit),
+    [draft, state.postCharacterLimit],
+  );
+  const remaining = budget.remaining;
+  const canPost = Boolean(draft.trim()) && budget.valid && state.composer.status !== "sending";
 
   return (
     <div
@@ -59,18 +61,14 @@ export const ComposeScreen: React.FC<XScreenProps> = ({ world, deviceId }) => {
             marginInlineEnd: 8,
             padding: "8px 18px",
             borderRadius: 22,
-            background: canPost
-              ? experience.colors.accent
-              : experience.colors.textTertiary,
+            background: canPost ? experience.colors.accent : experience.colors.textTertiary,
             color: "#fff",
             fontSize: 14,
             fontWeight: 750,
             opacity: draft.trim() ? 1 : 0.62,
           }}
         >
-          {state.composer.status === "sending"
-            ? experience.t("posting")
-            : experience.t("post")}
+          {state.composer.status === "sending" ? experience.t("posting") : experience.t("post")}
         </div>
       </header>
 
@@ -99,25 +97,21 @@ export const ComposeScreen: React.FC<XScreenProps> = ({ world, deviceId }) => {
             letterSpacing: "-.012em",
             whiteSpace: "pre-wrap",
             unicodeBidi: "plaintext",
-            color: draft
-              ? experience.colors.text
-              : experience.colors.textSecondary,
+            color: draft ? experience.colors.text : experience.colors.textSecondary,
           }}
         >
-          {draft || experience.t("composePlaceholder")}
-          {draft && state.composer.status === "idle" && input?.focused ? (
-            <span
-              aria-hidden
-              style={{
-                display: "inline-block",
-                width: 2,
-                height: "1.04em",
-                marginInlineStart: 1,
-                verticalAlign: "-.12em",
-                background: experience.colors.accent,
-              }}
-            />
-          ) : null}
+          <DraftText
+            text={draft}
+            selection={input?.selection}
+            lastActivityFrame={input?.lastActivityFrame}
+            focused={Boolean(input?.focused)}
+            frame={frame}
+            fps={fps}
+            accent={experience.colors.accent}
+            lineHeight={experience.text.detailLine}
+            locale={input?.locale.tag ?? experience.locale}
+            placeholder={experience.t("composePlaceholder")}
+          />
         </div>
       </div>
 

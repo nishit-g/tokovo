@@ -175,7 +175,7 @@ export type CameraMotionProfileIR =
   | {
       type: "whip";
       durationFrames: number;
-      direction: "left" | "right" | "up" | "down" | readonly [number, number];
+      direction: "left" | "right" | "up" | "down" | "travel" | readonly [number, number];
       intent?: CameraMovementIntentIR;
     };
 
@@ -267,8 +267,41 @@ export interface CameraShotIR {
   priority: number;
   declarationOrder: number;
   blendIn?: CameraBlendIR;
+  /** Opt-in shot-local direction. Entrance never overwrites movement. */
+  direction?: CameraShotDirectionIR;
   missingSubjectPolicy: CameraMissingSubjectPolicyIR;
   source: "authored" | "automatic";
+}
+
+export interface CameraShotDirectionIR {
+  /** Explicit entrance; takes precedence over legacy rig motion. */
+  entrance: CameraMotionProfileIR;
+  /** Freeze the actual outgoing frame, including an interrupted blend. Defaults to live. */
+  source?: "live" | "freeze";
+  /** Carry sampled outgoing velocity into a held or position-following minimum-jerk handoff. */
+  continuity?: "velocity";
+  /** Require the selected subjects to remain inside the editorial viewport in export QA. */
+  checkFraming?: boolean;
+  /** Hold the opening composition, or follow position while preserving opening subject size. */
+  framing?: "live" | "hold" | "follow-position";
+  /** Exponential position following, prepared at the episode fps. Requires follow-position. */
+  tracking?: {
+    halfLifeSeconds: number;
+    /** Soft reading window in normalized output coordinates. Reframe only outside it. */
+    readingRegion?: CameraRectIR;
+    /** Opt-in hard containment. Preflight one stable shot scale, never below this floor. */
+    minimumReadingScale?: number;
+    /** Minimum projected body-text em size. Requires layout-owned text metrics and safe reading. */
+    minimumTextPx?: number;
+    /** Visible device surfaces that must not obscure the subject; absent surfaces are inactive. */
+    avoidSubjects?: readonly CinematicSubjectRefIR[];
+    /** Bounded translation tracking; output pixels per second and per second squared. */
+    panLimits?: { speedPxPerSecond: number; accelerationPxPerSecondSquared: number };
+  };
+  /** Opening fit reference, independent of the tracked subject (for example the device screen). */
+  framingSubject?: CinematicSubjectRefIR;
+  /** Offsets from the live composition, with frames relative to shot start. */
+  movement?: CameraBakedTrajectoryIR;
 }
 
 export interface CameraPlanIR {

@@ -10,7 +10,7 @@
 // =============================================================================
 export * from "./types.js";
 export type { ViewLayoutMode, PIPPosition } from "./types.js";
-export { createAppViewportFrame, resolvePlatformVisuals } from "@tokovo/visual-system";
+export { createAppViewportFrame, resolvePlatformVisuals, measureBodyText } from "@tokovo/visual-system";
 // Note: types/index.ts exists but is NOT exported here to avoid duplicate exports.
 
 // =============================================================================

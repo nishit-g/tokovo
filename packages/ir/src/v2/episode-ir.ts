@@ -48,6 +48,8 @@ export interface ScreenRecordingBootConfig {
 }
 
 export interface DeviceConfig {
+  notificationUX?: "cinematic" | "native";
+  notificationTokens?: import("./notification.js").NotificationVisualTokensIR;
   id: string;
   profile: string;
   app: string;

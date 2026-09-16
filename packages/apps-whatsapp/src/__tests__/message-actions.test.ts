@@ -3,8 +3,15 @@ import {
   messageActionKeys,
   messageActionRect,
 } from "../presentation/message-actions.js";
+import { getReactionWidth } from "../config/layout-config.js";
 
 describe("message action surfaces", () => {
+  it("keeps reaction clusters compact and reserves the total-count width", () => {
+    expect(getReactionWidth([{ count: 1 }])).toBe(30);
+    expect(getReactionWidth([{ count: 2 }])).toBe(41);
+    expect(getReactionWidth([{ count: 1 }, { count: 1 }])).toBe(59);
+    expect(getReactionWidth([{ count: 9 }, { count: 1 }, { count: 1 }, { count: 1 }])).toBe(84);
+  });
   it("offers actions appropriate to content and ownership", () => {
     expect(
       messageActionKeys({ id: "photo", from: "other", type: "image", at: 0 }),

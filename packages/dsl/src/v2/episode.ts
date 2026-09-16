@@ -65,6 +65,8 @@ import { createDefaultEpisodeCinematics } from "./default-cinematics.js";
 // =============================================================================
 
 export interface DeviceOptions {
+  notificationUX?: "cinematic" | "native";
+  notificationTokens?: import("@tokovo/ir").DeviceConfig["notificationTokens"];
   app: string;
   os?: OSConfig;
   /** UI theme/strategy to use (e.g., "whatsapp-storybook") */
@@ -223,6 +225,19 @@ export class NotificationPointBuilder {
     this.interact("tap", notificationId);
   }
 
+  authenticate(notificationId?: string): void { this.interact("authenticate", notificationId); }
+  expand(notificationId: string): void { this.interact("expand", notificationId); }
+  expandGroup(notificationId: string): void { this.interact("expandGroup", notificationId); }
+  collapseGroup(notificationId: string): void { this.interact("collapseGroup", notificationId); }
+  swipeLeft(notificationId: string): void { this.interact("swipeLeft", notificationId); }
+  swipeRight(notificationId: string): void { this.interact("swipeRight", notificationId); }
+  displayAs(display: "count" | "stack" | "list"): void { this.interact("setDisplay", undefined, { display }); }
+  scrollHistory(position: number): void { this.interact("scrollHistory", undefined, { scrollPosition: position }); }
+  collapse(notificationId: string): void { this.interact("collapse", notificationId); }
+  beginReply(notificationId: string, inputSessionId: string): void {
+    this.interact("beginReply", notificationId, { inputSessionId });
+  }
+
   chooseAction(notificationId: string, actionId: string): void {
     this.interact("chooseAction", notificationId, { actionId });
   }
@@ -233,6 +248,10 @@ export class NotificationPointBuilder {
 
   dismiss(notificationId: string): void {
     this.interact("dismiss", notificationId);
+  }
+
+  markRead(notificationId: string, badgeCount: number, readTarget: NonNullable<NotificationInteractionIR["readTarget"]>): void {
+    this.interact("markRead", notificationId, { badgeCount, readTarget });
   }
 
   clearAll(): void {
@@ -250,7 +269,7 @@ export class NotificationPointBuilder {
   private interact(
     type: NotificationInteractionIR["type"],
     notificationId?: string,
-    options: { actionId?: string; replyText?: string } = {},
+    options: Pick<NotificationInteractionIR, "actionId" | "replyText" | "badgeCount" | "readTarget" | "inputSessionId" | "display" | "scrollPosition"> = {},
   ): void {
     this.interactions.push({
       deviceId: this.deviceId,
@@ -259,6 +278,11 @@ export class NotificationPointBuilder {
       notificationId,
       actionId: options.actionId,
       replyText: options.replyText,
+      inputSessionId: options.inputSessionId,
+      display: options.display,
+      scrollPosition: options.scrollPosition,
+      badgeCount: options.badgeCount,
+      readTarget: options.readTarget,
       sequence: this.getOrder(),
     });
   }
@@ -360,6 +384,8 @@ export class EpisodeBuilder {
       app: options.app,
       os: options.os,
       theme: options.theme,
+      notificationTokens: options.notificationTokens,
+      notificationUX: options.notificationUX,
       appearance: options.appearance,
       locked: options.locked,
       installedApps: options.installedApps,

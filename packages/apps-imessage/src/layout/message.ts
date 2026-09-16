@@ -1,29 +1,23 @@
 import type { IMessageMessage } from "../types/index.js";
+import { measureBodyText } from "@tokovo/core";
+
+const segmenter = new Intl.Segmenter("en", { granularity: "grapheme" });
+const graphemes = (text: string) => /^[\x20-\x7e]*$/.test(text) ? [...text] : [...segmenter.segment(text)].map((part) => part.segment);
+const wrappedText = new Map<string, string[]>();
+const dateFormatters = new Map<string, Intl.DateTimeFormat>();
 
 function textAdvance(text: string, size = 17): number {
-  return [...text].reduce(
-    (sum, char) =>
-      sum +
-      (/\s/u.test(char)
-        ? 0.32
-        : /[ilI.,'!:;]/u.test(char)
-          ? 0.3
-          : /[MW@]/u.test(char)
-            ? 0.9
-            : (char.codePointAt(0) ?? 0) > 255
-              ? 1
-              : 0.57) *
-        size,
-    0,
-  );
+  return measureBodyText(text, size);
 }
 
 /** Headless wrapping shared by the bubble and camera layout. */
 export function wrapMessageText(text: string, width: number, size = 17): string[] {
-  // ponytail: conservative glyph advances, not font shaping. Explicit shared
-  // line breaks keep the rendered slot and headless anchor in agreement.
+  const key = JSON.stringify([text, width, size]);
+  const cached = wrappedText.get(key);
+  if (cached) return cached;
+  // Shape complete runs so kerning and ligatures match the painted line.
   const advance = (value: string) => textAdvance(value, size);
-  return text.split("\n").flatMap((paragraph) => {
+  const result = text.split("\n").flatMap((paragraph) => {
     const lines: string[] = [];
     let line = "";
     for (const word of paragraph.split(/(\s+)/u)) {
@@ -31,7 +25,11 @@ export function wrapMessageText(text: string, width: number, size = 17): string[
         lines.push(line.trimEnd());
         line = "";
       }
-      for (const char of word) {
+      if (advance(word) <= width + 0.5) {
+        if (line || !/^\s+$/u.test(word)) line += word;
+        continue;
+      }
+      for (const char of graphemes(word)) {
         if (line && advance(line + char) > width + 0.5) {
           lines.push(line);
           line = "";
@@ -42,9 +40,27 @@ export function wrapMessageText(text: string, width: number, size = 17): string[
     lines.push(line);
     return lines;
   });
+  if (wrappedText.size >= 1024) wrappedText.delete(wrappedText.keys().next().value!);
+  wrappedText.set(key, result);
+  return result;
 }
 
-export function messageGeometry(
+type Geometry = ReturnType<typeof computeMessageGeometry>;
+const geometries = new WeakMap<IMessageMessage, Map<string, Geometry>>();
+
+export function messageGeometry(message: IMessageMessage, viewportWidth: number, reply?: string, sender = false, status = false): Geometry {
+  let cache = geometries.get(message);
+  if (!cache) { cache = new Map(); geometries.set(message, cache); }
+  const key = JSON.stringify([viewportWidth, reply, sender, status]);
+  const found = cache.get(key);
+  if (found) return found;
+  const value = computeMessageGeometry(message, viewportWidth, reply, sender, status);
+  if (cache.size >= 8) cache.delete(cache.keys().next().value!);
+  cache.set(key, value);
+  return value;
+}
+
+function computeMessageGeometry(
   message: IMessageMessage,
   viewportWidth: number,
   reply?: string,
@@ -114,6 +130,7 @@ export function messageGeometry(
 export function dateLabel(
   message: IMessageMessage,
   previous?: IMessageMessage,
+  locale = "en-US",
 ): string | undefined {
   if (message.sentAt === undefined) return undefined;
   const date = new Date(message.sentAt);
@@ -122,12 +139,13 @@ export function dateLabel(
     new Date(previous.sentAt).toISOString().slice(0, 10) === date.toISOString().slice(0, 10)
   )
     return undefined;
-  return new Intl.DateTimeFormat("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-    timeZone: "UTC",
-  }).format(date);
+  let formatter = dateFormatters.get(locale);
+  if (!formatter) {
+    formatter = new Intl.DateTimeFormat(locale, { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" });
+    if (dateFormatters.size >= 64) dateFormatters.clear();
+    dateFormatters.set(locale, formatter);
+  }
+  return formatter.format(date);
 }
 
 export function deliveryStatus(message: IMessageMessage, frame: number) {

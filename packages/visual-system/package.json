@@ -22,7 +22,11 @@
     "lint": "eslint src --ext .ts"
   },
   "devDependencies": {
+    "@types/fontkit": "2.0.8",
     "typescript": "^5.0.0",
     "vitest": "^1.0.0"
+  },
+  "dependencies": {
+    "fontkit": "2.0.4"
   }
 }

@@ -22,6 +22,7 @@ interface NotificationDeviceRuntimeIndex {
   records: readonly PreparedNotificationRecord[];
   orderedRecords: readonly PreparedNotificationRecord[];
   terminalByRecord: ReadonlyMap<string, TerminalInteraction>;
+  readAtByRecord: ReadonlyMap<string, number>;
   centerTransitions: readonly CenterTransition[];
 }
 
@@ -67,11 +68,20 @@ function buildRuntimeIndex(
     const records = program.records.filter(
       (record) => record.deviceId === deviceId,
     );
-    const interactions = program.interactions.filter(
-      (interaction) => interaction.deviceId === deviceId,
-    );
+    const interactions = program.interactions.filter((interaction) => interaction.deviceId === deviceId).flatMap((interaction) => {
+      if (!["tap", "chooseAction", "reply"].includes(interaction.type)) return [interaction];
+      const effect = program.actionEffects.find((effect) => effect.deviceId === deviceId &&
+        effect.notificationId === interaction.notificationId && effect.interactionType === interaction.type && (effect.requestedAtFrame ?? effect.at) === interaction.atFrame);
+      return effect ? [{ ...interaction, atFrame: effect.at }] : [];
+    }).sort((a, b) => a.atFrame - b.atFrame || a.sequence - b.sequence);
     const terminalInteractions = interactions.filter(isTerminalInteraction);
     const terminalByRecord = new Map<string, TerminalInteraction>();
+    const readAtByRecord = new Map<string, number>();
+    for (const interaction of interactions) {
+      if (interaction.type === "markRead" && interaction.notificationId && !readAtByRecord.has(interaction.notificationId)) {
+        readAtByRecord.set(interaction.notificationId, interaction.atFrame);
+      }
+    }
 
     for (const record of records) {
       const terminal = terminalInteractions.find(
@@ -94,6 +104,7 @@ function buildRuntimeIndex(
           right.id.localeCompare(left.id),
       ),
       terminalByRecord,
+      readAtByRecord,
       centerTransitions: interactions.filter(isCenterTransition),
     });
   }
@@ -160,6 +171,8 @@ export function evaluateNotificationProgram(
 
     state.lifecycle = "delivered";
     state.deliveredAtFrame = record.deliverAtFrame;
+    const readAt = deviceIndex.readAtByRecord.get(record.id);
+    if (readAt !== undefined && readAt <= frame) state.readAtFrame = readAt;
     const terminal = deviceIndex.terminalByRecord.get(record.id);
     if (terminal && terminal.atFrame <= frame) {
       if (
@@ -194,6 +207,9 @@ export function evaluateNotificationProgram(
     frame,
   );
   const centerOpen = centerTransition?.type === "openCenter";
+  const previousTransition = centerTransition
+    ? deviceIndex.centerTransitions[deviceIndex.centerTransitions.indexOf(centerTransition) - 1]
+    : undefined;
 
   return {
     records,
@@ -202,5 +218,7 @@ export function evaluateNotificationProgram(
       .map((record) => record.id),
     centerOpen,
     centerOpenedAtFrame: centerOpen ? centerTransition.atFrame : undefined,
+    centerClosedAtFrame: !centerOpen && previousTransition?.type === "openCenter"
+      ? centerTransition?.atFrame : undefined,
   };
 }

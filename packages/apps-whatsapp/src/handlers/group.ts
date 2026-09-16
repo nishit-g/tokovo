@@ -162,12 +162,22 @@ export function registerGroupHandlers(
       e.payload.messageId,
       "add reaction to message",
     );
-    if (!msg.reactions) {
+    if (!msg.reactions?.length) {
       msg.reactions = [];
+      msg.reactionsStartedAt = e.at;
     }
 
     const emoji = e.payload.emoji;
     const fromMe = e.payload.fromMe ?? false;
+
+    // A person has one reaction per message; repeated selection is idempotent.
+    if (fromMe) {
+      if (msg.reactions.some((reaction) => reaction.emoji === emoji && reaction.fromMe)) return;
+      msg.reactions = msg.reactions.flatMap((reaction) => reaction.fromMe
+        ? reaction.count > 1 ? [{ ...reaction, count: reaction.count - 1, fromMe: false }] : []
+        : [reaction]);
+    }
+    msg.reactionsChangedAt = e.at;
 
     const existing = msg.reactions.find((r) => r.emoji === emoji);
     if (existing) {

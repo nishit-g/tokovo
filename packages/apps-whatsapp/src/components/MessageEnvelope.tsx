@@ -23,6 +23,7 @@ import {
 } from "../config/layout-config.js";
 
 interface MessageEnvelopeProps {
+  inlineMetadata: boolean;
   message: ProjectedThreadMessage;
   isMe: boolean;
   position: MessageRunPosition;
@@ -42,6 +43,7 @@ interface MessageEnvelopeProps {
 }
 
 export const MessageEnvelope = memo(function MessageEnvelope({
+  inlineMetadata,
   message,
   isMe,
   position,
@@ -159,6 +161,7 @@ export const MessageEnvelope = memo(function MessageEnvelope({
             }
           />
           <MessageMetadata
+            inline={inlineMetadata}
             message={message}
             isMe={isMe}
             deliveryStage={deliveryStage}

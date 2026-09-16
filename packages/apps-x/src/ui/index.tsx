@@ -1,3 +1,4 @@
+import { projectXMotion, xRouteShift } from "../runtime/motion.js";
 import React, { useMemo } from "react";
 import { type PluginViewProps } from "@tokovo/core";
 import { useTime } from "@tokovo/react";
@@ -20,24 +21,53 @@ export const XView: React.FC<PluginViewProps> = ({
   const state = requireXState(world, deviceId);
   const appearance = device.appAppearance ?? device.os.appearance;
   const experience = useMemo(
-    () => resolveXExperience({
-      platform,
+    () =>
+      resolveXExperience({
+        platform,
+        appearance,
+        themeId: device.appTheme,
+        locale: state.locale,
+        reducedMotion: device.os.motion === "reduced",
+        increasedContrast: device.os.contrast === "increased",
+        textScale: device.os.textScale,
+      }),
+    [
       appearance,
-      themeId: device.appTheme,
-      locale: state.locale,
-      reducedMotion: device.os.motion === "reduced",
-      increasedContrast: device.os.contrast === "increased",
-      textScale: device.os.textScale,
-    }),
-    [appearance, device.appTheme, device.os.contrast, device.os.motion, device.os.textScale, platform, state.locale],
+      device.appTheme,
+      device.os.contrast,
+      device.os.motion,
+      device.os.textScale,
+      platform,
+      state.locale,
+    ],
   );
+  const projected = projectXMotion(state, frame, experience.reducedMotion);
+  const projectedWorld =
+    projected === state
+      ? world
+      : { ...world, appInstances: { ...world.appInstances, [`${deviceId}:app_x`]: projected } };
   const transition = state.lastTransition;
   const duration = experience.motion.routeFrames;
-  const progress = !transition || duration === 0
-    ? 1
-    : Math.min(1, Math.max(0, (frame - transition.atFrame) / duration));
+  const progress =
+    !transition || duration === 0
+      ? 1
+      : Math.min(1, Math.max(0, (frame - transition.atFrame) / duration));
   const eased = 1 - Math.pow(1 - progress, 3);
-  const direction = transition?.direction === "back" ? -1 : 1;
+  const direction =
+    (transition?.direction === "back" ? -1 : 1) * (experience.direction === "rtl" ? -1 : 1);
+  const screenHeight = Math.max(
+    0,
+    height - appViewport.interactiveInsets.top - appViewport.interactiveInsets.bottom,
+  );
+  const outgoingWorld = transition
+    ? {
+        ...projectedWorld,
+        appInstances: {
+          ...projectedWorld.appInstances,
+          [`${deviceId}:app_x`]: { ...projected, route: transition.from },
+        },
+      }
+    : projectedWorld;
 
   return (
     <XExperienceProvider experience={experience}>
@@ -62,23 +92,41 @@ export const XView: React.FC<PluginViewProps> = ({
           textRendering: "geometricPrecision",
         }}
       >
-        <div
-          style={{
-            width: "100%",
-            height: "100%",
-            // Runtime state contains only the active route, so fading from zero
-            // would reveal the app background rather than the outgoing screen.
-            // Keep every authored frame readable and use position for the cue.
-            transform: `translateX(${direction * (1 - eased) * 10}px)`,
-            overflow: "hidden",
-          }}
-        >
-          {renderXScreen(state.route, {
-            world,
-            deviceId,
-            width,
-            height: Math.max(0, height - appViewport.interactiveInsets.top - appViewport.interactiveInsets.bottom),
-          })}
+        <div style={{ position: "relative", width: "100%", height: "100%", overflow: "hidden" }}>
+          {transition && progress < 1 ? (
+            <div
+              aria-hidden
+              style={{
+                position: "absolute",
+                inset: 0,
+                transform: `translateX(${-direction * eased * width * 0.25}px)`,
+                opacity: 1 - eased * 0.25,
+              }}
+            >
+              {renderXScreen(transition.from, {
+                world: outgoingWorld,
+                deviceId,
+                width,
+                height: screenHeight,
+              })}
+            </div>
+          ) : null}
+          <div
+            style={{
+              position: "absolute",
+              inset: 0,
+              background: experience.colors.background,
+              transform: `translateX(${xRouteShift(state, frame, width, duration, experience.direction === "rtl")}px)`,
+              boxShadow: progress < 1 ? "0 0 18px rgba(0,0,0,.15)" : undefined,
+            }}
+          >
+            {renderXScreen(state.route, {
+              world: projectedWorld,
+              deviceId,
+              width,
+              height: screenHeight,
+            })}
+          </div>
         </div>
       </div>
     </XExperienceProvider>

@@ -5,7 +5,7 @@
 > [Visual Editor Decision](./STUDIO.md) and the
 > [Tokovo Engineering Handbook](./ENGINEERING_HANDBOOK.md).
 
-Status: implemented and visually reviewed
+Status: implemented; regression and visual verification commands below
 
 Owner: `@tokovo/apps-x`
 Replacement policy: hard cut; no legacy runtime state, compatibility reducer, or guessed camera geometry
@@ -38,7 +38,7 @@ The direction is restrained editorial utility:
 6. Entity lookup is constant-time. Ordered collections use ID arrays plus normalized records.
 7. Layout computation is a pure function of canonical app state, viewport, platform, appearance, locale, and authored scroll state.
 8. Cinematic subjects are projected from the same layout model that paints the UI. No subject may invent a rectangle.
-9. App code depends on no wall clock, live network, global mutable cache, random number, DOM measurement, or browser-only state.
+9. Headless app state and layout depend on no wall clock, live network, random number, or DOM measurement. Bounded measurement caches memoize immutable inputs; the shared UI-only draft component measures its caret viewport.
 10. The same episode and frame render identically in fresh browser processes and arbitrary frame order.
 
 ## Canonical state
@@ -171,14 +171,14 @@ The package owns these complete flows:
 
 - For You and Following timelines
 - original post, reply, quote, repost, like, bookmark, share, and view metrics
-- image grid, video poster/playback state, link card, poll voting, and sensitive-media cover
+- image grids, deterministic muted video frames, link cards, open/voted/expired polls, and sensitive-media covers
 - conversation detail with oldest-first ancestors, focused post, stable nested descendants, authored scroll, and exact reply entity anchors
-- compose and reply compose with deterministic character count, media attachment, send, failure, and retry states
+- compose and reply compose with weighted character counts, selection-aware drafts, growing input viewports, send, failure, and retry states; attachments remain authored on the submitted post
 - notifications for likes, reposts, replies, follows, mentions, and verified activity
 - profile header and Posts/Replies/Media/Likes tabs
 - DM inbox, pinned/unread threads, outgoing versus incoming semantics, per-thread drafts, concurrent typing participants, replies, emoji reactions, unread rules, and sending/sent/delivered/read/failed delivery state
 
-Search, Spaces, Communities, Premium purchase, and live Grok responses are out of scope until their state and episode value are specified. They must not appear as non-functional chrome.
+Search, Spaces, Communities, Premium purchase, full-screen media navigation, and live Grok responses are not implemented. The navigation chrome is a visual simulation, not a claim that every destination is authorable.
 
 ## Layout and anchor contract
 
@@ -207,7 +207,7 @@ x.thread.typing
 
 Legacy singleton names such as `tweet_card` and `dm_message_latest` are removed. Episode code targets semantic entity IDs through exported helpers, not raw DOM selectors.
 
-The layout engine computes only the visible render window plus overscan. Long feeds and threads may contain at least 10,000 entities without linear lookup during paint.
+Projection walks the ordered history and uses cached post/text measurements. Painting is windowed for feeds, conversations, DM threads, inboxes, notifications, and profiles. The headless tests cover 10,000 entities; browser timing must be measured separately.
 
 ## Accessibility and localization
 
@@ -258,3 +258,93 @@ X is complete only when:
 8. long-feed and random-access proofs pass within the recorded budget
 9. determinism and release gates pass on Node 22 or 24 through mise
 10. the flagship render is good enough to be the public package demo without excuses
+
+## Authoring the repaired flows
+
+Within an X track callback, these methods use the existing authored IDs:
+
+```ts
+x.at("4s").setScroll("timeline", 320, undefined, 18);
+x.at("5s").setScroll("timeline", 0, undefined, 0); // explicit cut
+x.at("6s").markNotificationRead("launch-mention"); // app activity only
+x.at("7s").markNotificationRead("launch-mention", 3); // OS record + authoritative app badge
+```
+
+The badge overload requires an existing OS notification with the same ID. Its count is explicit:
+dismissal never means read, and visible notification cards are not the app's unread count.
+Social notification taps route to the referenced post/profile and acknowledge only the selected
+app activity. Background or locked DMs still increment unread even when X remembers that thread.
+
+Media may include `durationSeconds`. Supply the actual duration when using normalized playback
+progress; `setMediaPlayback(tweetId, "playing" | "paused" | "complete" | "idle", progress)`
+uses the event frame as its playback origin. Without duration, playback starts from the beginning;
+a poster is used only while idle. Video is muted: author audio separately.
+
+Snapshot `postCharacterLimit` is `280` by default, or `25000` for an authored long-post account.
+The composer uses the reference `twitter-text` parser for URL weights, NFC normalization, and
+CJK, with Unicode grapheme segmentation for newer joined emoji that its older emoji table misses.
+See [X character-count rules](https://docs.x.com/fundamentals/counting-characters).
+The snapshot/post schema still permits long history independent of the composing account.
+
+Polls expose choices before voting, percentages after voting, and final results after the authored
+`endsAt`. Voting at or after expiry throws `X_POLL_ENDED`.
+
+## Shared visual tokens and verification
+
+`src/layout/tokens.ts` owns body/detail/message sizes, line heights, insets, avatar spacing, and
+composer geometry. `experience/resolver.ts` selects platform, palette, accessibility preferences,
+and those same tokens for both headless layout and painters. Existing light, dim, and lights-out
+themes remain available. Loaded Inter/Roboto and Noto fallbacks replace unavailable system-font names.
+
+Evidence and implementation paths for the audit fixes:
+
+| Finding                            | Repair path                                                             | Runnable evidence                                                |
+| ---------------------------------- | ----------------------------------------------------------------------- | ---------------------------------------------------------------- |
+| Notification routing and unread    | adapter → lowered runtime route → reducer; explicit OS read interaction | `audit-regressions.test.ts`                                      |
+| Text, attachments, camera, profile | shared measurement → projection → painter and semantic rectangles       | `audit-regressions.test.ts`, `layout.cinematic-subjects.test.ts` |
+| Input, poll, motion                | input session → shared draft; authored clock/frame → projection         | `audit-regressions.test.ts`                                      |
+| Long history                       | cached measurements → bounded visible rows                              | `long-feed-performance.test.ts`, browser probe                   |
+
+The twelve audited defects are addressed as follows:
+
+1. OS notifications emit runtime routes and distinguish social targets from DM threads.
+2. Locked/background arrivals preserve unread; opening the activity tab no longer reads everything.
+3. Glyph-based wrapping, scaled lines, reply labels, and full detail text share painter geometry.
+4. Pinned Latin, Arabic, Devanagari, and Japanese fonts replace unavailable font names.
+5. Authored video playback decodes video frames, including paused frames, instead of painting a poster.
+6. Poll choices, votes, countdowns, and final results follow the authored clock; expired votes fail.
+7. Quotes and primary attachments occupy separate measured slots; three-image grids and quoted media render.
+8. Draft selection/caret and growing composers use the shared input session; counters use weighted text.
+9. Semantic targets mirror in RTL, retain negative coordinates, and report offscreen visibility.
+10. Profiles measure their content, show other authors' liked posts, and render media in a grid.
+11. Routes retain outgoing content; scroll and arrivals interpolate by frame and respect reduced motion.
+12. Profile, notification, inbox, and message rendering is windowed; text/post measurement is cached.
+
+Recorded local Chromium checks (1080×1920, 1,000 injected history items): DM frames 480–539
+had 16.8 ms p95, 22.3 ms maximum, and 227 DOM nodes; profile frames 1180–1209 had 16.8 ms
+p95, 33.3 ms maximum, and 314 DOM nodes. Neither run reported shaped-text overflow or a frame
+over 33.34 ms. These are machine-specific regression observations, not a universal FPS guarantee.
+Notification-filter frames 280–319 stayed at 266 DOM nodes with no overflow: two fresh runs
+measured 18.7/18.3 ms p95 and 21.2/20.5 ms maximum. An earlier run had an isolated 210.6 ms
+frame at the filter change that did not recur; its cause is unconfirmed, so these checks do not
+establish a worst-case latency guarantee.
+
+Run from the repository root:
+
+```bash
+mise exec -- pnpm --filter @tokovo/apps-x test
+mise exec -- pnpm --filter @tokovo/visual-system test
+mise exec -- pnpm -s typecheck:solution
+mise exec -- pnpm build:video
+mise exec -- pnpm --filter @tokovo/render-service render --episode x-native-theme-matrix-vnext --profile review --job x-locales --start-frame 90 --end-frame 90
+```
+
+For actual Chromium timings, run from `apps/render-service`:
+
+```bash
+mise exec -- node --import tsx scripts/profile-ui.mjs x-cinematic-flagship 480 90
+mise exec -- node --import tsx scripts/profile-ui.mjs x-cinematic-flagship 1180 30 1000
+```
+
+The probe rejects blank/error screens, overflowing shaped X lines, and unbounded X history DOM.
+It measures sequential frame-to-ready latency, not live Player FPS. Do not run it alongside renders.

@@ -1,4 +1,7 @@
 import { describe, expect, it } from "vitest";
+import { createElement } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
+import { IOSStatusBarStrategy } from "../strategies/IOSStatusBarStrategy.js";
 import type { DeviceOSState, HomeScreenConfig } from "@tokovo/core";
 import { DEFAULT_OS_STATE } from "@tokovo/core";
 import { iPhone16Profile } from "../iphone16/profile.js";
@@ -34,6 +37,35 @@ const home: HomeScreenConfig = {
 };
 
 describe("canonical system surfaces", () => {
+  it("keeps the native status clock in the same hour cycle as the Lock Screen", () => {
+    const state = os({ clock: Date.parse("2026-09-08T18:30:00Z"), hourCycle: "h12" });
+    const markup = renderToStaticMarkup(createElement(IOSStatusBarStrategy, { os: state, deviceProfile: iPhone16Profile, theme: "dark", notificationUX: "native" }));
+    expect(markup).toContain(projectLockscreen({ profile: iPhone16Profile, os: state }).time);
+    expect(markup).not.toContain("18:30");
+  });
+  it("keeps status indicators but removes the duplicate native Lock Screen time", () => {
+    const paint = (lockScreen: boolean) => renderToStaticMarkup(createElement(IOSStatusBarStrategy, {
+      os: os(), deviceProfile: iPhone16Profile, theme: "dark", lockScreen,
+    }));
+    expect(paint(false)).toContain("9:41");
+    expect(paint(true)).not.toContain("9:41");
+    expect(paint(true)).toContain("<svg");
+  });
+  it("opts into native clock and icon metrics without altering cinematic or Android", () => {
+    const project = (notificationUX?: "native" | "cinematic", profile = iPhone16Profile) => projectLockscreen({ profile, os: os(), notificationUX });
+    expect(project().layout).toEqual(project("cinematic").layout);
+    expect(project("native").layout.lock.controlIconSize).toBe(25 * iPhone16Profile.pointScale);
+    expect(project("native").cinematicSubjects["lockscreen.clock"].y).toBe(project("native").layout.lock.clockTop);
+    expect(project("native", PixelProfile).layout).toEqual(project("cinematic", PixelProfile).layout);
+  });
+  it("can show authenticated preview access without changing the Lock Screen surface", () => {
+    const locked = projectLockscreen({ profile: iPhone16Profile, os: os() });
+    const authenticated = projectLockscreen({ profile: iPhone16Profile, os: os(), authenticated: true });
+    expect(locked.authenticated).toBeUndefined();
+    expect(authenticated.authenticated).toBe(true);
+    expect(authenticated.kind).toBe("lockscreen");
+    expect(authenticated.layout).toEqual(locked.layout);
+  });
   it.each([iPhone16Profile, PixelProfile])(
     "keeps the display aperture physically inset inside %s",
     (profile) => {

@@ -4,6 +4,7 @@ import { useCurrentFrame } from "remotion";
 import { getMessageAccessibilityLabel } from "../accessibility/index.js";
 import {
   calculateBubbleWidth,
+  inlineMetadataWidth,
   calculateMessageHeight,
   getThemedMessageLayout,
   DEFAULT_LAYOUT_CONFIG,
@@ -68,6 +69,9 @@ export const ChatMessageItem = memo(function ChatMessageItem({
     type: message.type as MessageType,
     text: message.text,
     caption: message.caption,
+    timestamp: message.timestamp,
+    edited: message.edited,
+    starred: message.starred,
     systemType: message.systemType,
     pollQuestion: message.pollQuestion,
     pollOptionCount: message.options?.length,
@@ -163,14 +167,16 @@ export const ChatMessageItem = memo(function ChatMessageItem({
         marginLeft: isMe ? "auto" : 0,
         marginRight: isMe ? 0 : "auto",
         marginTop: gapBefore,
-        transform: `translateX(${swipeProgress * 52 * swipeSign}px) scale(${longPressed ? 0.982 : 1})`,
-        filter: longPressed ? "brightness(0.95) saturate(0.94)" : undefined,
+        transform: `translateX(${swipeProgress * 52 * swipeSign}px) scale(${longPressed ? 1.015 : 1})`,
+        opacity: gesture?.gesture === "long_press" && gesture.phase === "completed" && !longPressed ? 0.38 : 1,
+        filter: longPressed ? "drop-shadow(0 3px 6px rgba(0,0,0,0.16))" : undefined,
         transformOrigin: isMe ? "right center" : "left center",
       }}
     >
       {swipeProgress > 0 && <ReplyAffordance progress={swipeProgress} />}
 
       <MessageEnvelope
+        inlineMetadata={inlineMetadataWidth(geometryInput, viewportWidth, layoutConfig) !== undefined}
         viewportWidth={viewportWidth}
         message={message}
         isMe={isMe}

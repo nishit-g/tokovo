@@ -18,6 +18,14 @@ function buildDeterministicDslEpisode() {
 }
 
 describe("DSL contract + determinism", () => {
+  it("authors normalized notification history scrolling as typed IR", () => {
+    const ir = episode("history-scroll", { fps: 30, duration: "5s" })
+      .device("phone", "iphone16", { app: "app_whatsapp", notificationUX: "native" })
+      .notificationTrack("phone", (n) => { n.at("1s").openCenter(); n.at("2s").scrollHistory(1); })
+      .build();
+    expect(ir.notificationInteractions?.[1]).toMatchObject({ deviceId: "phone", atFrame: 60, type: "scrollHistory", scrollPosition: 1 });
+    expect(JSON.parse(normalizeTrackEpisodeIR(ir)).notificationInteractions?.[1]?.scrollPosition).toBe(1);
+  });
   it("maps builder calls to expected IR shape", () => {
     const ir = buildDeterministicDslEpisode();
     expect(ir.id).toBe("dsl-contract");
@@ -226,6 +234,11 @@ describe("DSL contract + determinism", () => {
         });
         notifications.at("2s").reply("message-a", "أهلًا");
         notifications.at("3s").openCenter();
+        notifications.at("5s").expand("message-a");
+        notifications.at("5.5s").beginReply("message-a", "reply-input");
+        notifications.at("6s").collapse("message-a");
+        notifications.at("7s").authenticate("message-a");
+        notifications.at("4s").markRead("message-a", 0, { type: "CONVERSATION_OPENED", payload: { conversationId: "chat-a" } });
       })
       .build();
 
@@ -248,6 +261,12 @@ describe("DSL contract + determinism", () => {
         sequence: 1,
       },
       { type: "openCenter", atFrame: 90, sequence: 2 },
+      { type: "expand", atFrame: 150, notificationId: "message-a" },
+      { type: "beginReply", atFrame: 165, notificationId: "message-a", inputSessionId: "reply-input" },
+      { type: "collapse", atFrame: 180, notificationId: "message-a" },
+      { type: "authenticate", atFrame: 210, notificationId: "message-a" },
+      { type: "markRead", atFrame: 120, sequence: 7, notificationId: "message-a", badgeCount: 0,
+        readTarget: { type: "CONVERSATION_OPENED", payload: { conversationId: "chat-a" } } },
     ]);
     expect(ir.events).toEqual([]);
   });

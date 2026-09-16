@@ -1,3 +1,6 @@
+import { xRouteShift, xLayoutCacheHint } from "../runtime/motion.js";
+import { xComposerHeight } from "./measure.js";
+import { xInputFields } from "../input-fields.js";
 import type {
   ChatLayoutState,
   ChatMessageLayout,
@@ -5,11 +8,7 @@ import type {
   SemanticRegion,
 } from "@tokovo/core";
 import { projectXThread } from "./project.js";
-import {
-  requireUser,
-  selectActiveThread,
-  selectThreadMessages,
-} from "../runtime/selectors.js";
+import { requireUser, selectActiveThread, selectThreadMessages } from "../runtime/selectors.js";
 import { rect, region, resolveXLayoutEnvironment, semantic } from "./shared.js";
 
 export function computeXChatLayout(ctx: LayoutContext): ChatLayoutState {
@@ -23,22 +22,30 @@ export function computeXChatLayout(ctx: LayoutContext): ChatLayoutState {
       `X_CHAT_CONTEXT_MISMATCH: layout requested "${ctx.activeConversationId}" while route targets "${thread.id}"`,
     );
   }
-  const messages = selectThreadMessages(
-    ctx.world,
-    ctx.activeDeviceId,
-    thread.id,
+  const messages = selectThreadMessages(ctx.world, ctx.activeDeviceId, thread.id);
+  const composerHeight = xComposerHeight(
+    ctx.inputValues?.[xInputFields.threadComposer(thread.id)] ??
+      state.threadDrafts[thread.id] ??
+      "",
+    width,
+    experience.text,
   );
-  const composerHeight = experience.metrics.composerHeight + 10;
   const headerY = top;
   const threadY = headerY + experience.metrics.headerHeight;
   const composerY = height - bottom - composerHeight;
   const threadHeight = Math.max(0, composerY - threadY);
   const projection = projectXThread({
+    tokens: experience.text,
+    frame: ctx.t,
+    reducedMotion: experience.reducedMotion,
     state,
     threadId: thread.id,
     messages,
     width,
-    viewportHeight: threadHeight,
+    viewportHeight: Math.max(
+      0,
+      threadHeight - 20 - (thread.typingUserIds.length ? experience.text.typingHeight : 0),
+    ),
   });
   const regions: Record<string, SemanticRegion> = {};
   const groups: Record<string, string[]> = { message: [] };
@@ -67,7 +74,7 @@ export function computeXChatLayout(ctx: LayoutContext): ChatLayoutState {
     const self = item.message.senderId === state.currentUserId;
     requireUser(state, item.message.senderId, `message "${item.id}" senderId`);
     const bubbleX = self ? width - 12 - item.bubbleWidth : 44;
-    const bubbleY = threadY + item.y - projection.viewportStart;
+    const bubbleY = threadY + 12 + item.y - projection.viewportStart;
     const bubbleRect = rect(bubbleX, bubbleY, item.bubbleWidth, item.height);
     messageLayouts[item.id] = {
       id: item.id,
@@ -79,31 +86,27 @@ export function computeXChatLayout(ctx: LayoutContext): ChatLayoutState {
       rect: bubbleRect,
     };
     const id = `x.dm.${thread.id}.message.${item.id}`;
-    region(
-      regions,
-      id,
-      bubbleRect,
-      ["dm", "message", self ? "outgoing" : "incoming"],
-      {
-        entityType: "message",
-        entityId: item.id,
-        entityRegion: "bubble",
-        threadId: thread.id,
-      },
-    );
+    region(regions, id, bubbleRect, ["dm", "message", self ? "outgoing" : "incoming"], {
+      entityType: "message",
+      entityId: item.id,
+      entityRegion: "bubble",
+      threadId: thread.id,
+    });
     groups.message.push(id);
   }
 
   if (thread.typingUserIds.length > 0) {
-    region(regions, "x.thread.typing", rect(44, composerY - 44, 54, 36), [
-      "thread",
-      "typing",
-    ]);
+    region(regions, "x.thread.typing", rect(44, composerY - 44, 54, 36), ["thread", "typing"]);
   }
 
   return {
     kind: "CHAT",
-    cacheHint: "static",
+    cacheHint: xLayoutCacheHint(
+      state,
+      ctx.t,
+      experience.motion.routeFrames,
+      experience.reducedMotion,
+    ),
     scrollY: state.scroll.threadFromBottomById[thread.id],
     contentHeight: projection.contentHeight,
     isAtBottom: (state.scroll.threadFromBottomById[thread.id] ?? 0) === 0,
@@ -112,6 +115,17 @@ export function computeXChatLayout(ctx: LayoutContext): ChatLayoutState {
       lastMessageId: projection.visibleItems.at(-1)?.id,
       isGroupChat: thread.participantIds.length > 2,
     },
-    semantic: semantic(regions, groups),
+    semantic: semantic(regions, groups, {
+      width,
+      height,
+      rtl: experience.direction === "rtl",
+      shiftX: xRouteShift(
+        state,
+        ctx.t,
+        width,
+        experience.motion.routeFrames,
+        experience.direction === "rtl",
+      ),
+    }),
   };
 }

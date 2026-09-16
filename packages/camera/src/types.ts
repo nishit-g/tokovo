@@ -131,6 +131,7 @@ export interface CameraShotSegment {
 }
 
 export interface CameraTransitionTrace {
+  startFrame: number;
   sourceRigId: string | null;
   targetRigId: string;
   durationFrames: number;
@@ -214,6 +215,7 @@ export interface CameraEvaluationTrace {
   } | null;
   projectionPassKinds: readonly CameraProjectionPass["kind"][];
   quality: {
+    checkFraming?: boolean;
     /** Dominant linear subject extent relative to the effective output viewport. */
     subjectFillRatio: number;
     /** Largest crop compensation requested by an active lens pass. */
@@ -286,7 +288,16 @@ export interface CameraEvaluationInput {
   outputId: string;
   frame: number;
   subjectFrame: CinematicSubjectFrame;
+  /** Deterministic historical geometry, independent of playback order. */
+  subjectFrameAt?: (frame: number) => CinematicSubjectFrame;
+  tracking?: PreparedCameraTracking;
   mode: "preview" | "render";
+}
+
+export interface PreparedCameraTracking {
+  programSignature: string;
+  centersByShot: Readonly<Record<string, readonly (readonly [number, number])[]>>;
+  scaleByShot?: Readonly<Record<string, number>>;
 }
 
 export interface CameraRigEvaluation {
@@ -306,6 +317,14 @@ export interface CameraQualitySample {
   subjectFillRatio: number;
   cropCompensation: number;
   intentionalDiscontinuity: boolean;
+  /** Opt-in affine framing check; absent for legacy quality consumers. */
+  framing?: {
+    clippedSubjectKeys: readonly string[];
+    projectionSupported: boolean;
+    /** Geometry retained for the production texture compositor's optical safety check. */
+    subjects?: readonly { key: string; worldRect: CameraRectIR }[];
+    safeViewport?: CameraRectIR;
+  };
   travel:
     | {
         mode: "stabilized";
@@ -344,6 +363,8 @@ export interface CameraTemporalQualityReport {
       | "CAM_QUALITY_FRAME_GAP"
       | "CAM_QUALITY_POSE_DISCONTINUITY"
       | "CAM_QUALITY_FILL_INVALID"
+      | "CAM_QUALITY_SUBJECT_CROPPED"
+      | "CAM_QUALITY_PROJECTION_UNCHECKED"
       | "CAM_QUALITY_MOUNT_DRIFT";
     outputId: string;
     frame?: number;

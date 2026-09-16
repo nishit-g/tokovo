@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import { useLayout } from "@tokovo/react";
 import type { ChatLayoutState } from "@tokovo/core";
 import type { WhatsAppMessage } from "../../types/index.js";
-import { messageActionKeys } from "../../presentation/message-actions.js";
+import { messageActionKeys, QUICK_REACTIONS } from "../../presentation/message-actions.js";
 import { WHATSAPP_INTERACTION_TOKENS as tokens } from "../../theme/index.js";
 import { Copy, Forward, Info, Reply, Star, Trash2 } from "lucide-react";
 import {
@@ -59,6 +59,16 @@ export function MessageActionMenu({ message }: { message: WhatsAppMessage }) {
         fontFamily: theme.typography.fontFamily,
       }}
     >
+      {available.size > 1 && (
+        <div role="group" aria-label={t("a11y.messageActions")} style={{
+          display: "flex", alignItems: "center", justifyContent: "space-evenly",
+          borderBottom: `0.5px solid ${theme.colors.divider}`,
+        }}>
+          {QUICK_REACTIONS.map((emoji) => (
+            <span key={emoji} style={{ fontSize: 24, lineHeight: 1 }}>{emoji}</span>
+          ))}
+        </div>
+      )}
       {ACTIONS.filter((action) => available.has(action.key)).map((action) => (
         <button
           key={action.key}
@@ -79,6 +89,7 @@ export function MessageActionMenu({ message }: { message: WhatsAppMessage }) {
             backgroundColor: theme.colors.background,
             ...theme.uiTypography.body,
             border: 0,
+            borderBottom: `0.5px solid ${theme.colors.divider}`,
             fontFamily: "inherit",
           }}
         >

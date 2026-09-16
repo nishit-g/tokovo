@@ -26,21 +26,17 @@ export type XSnapshot = XSnapshotInput;
 export type XInitialView = XInitialViewInput;
 
 function snapshotInputOrEmpty(value: unknown): unknown {
-  return value === undefined
-    ? { schemaVersion: X_STATE_SCHEMA_VERSION, users: [] }
-    : value;
+  return value === undefined ? { schemaVersion: X_STATE_SCHEMA_VERSION, users: [] } : value;
 }
 
 function validateSchema(
   input: PluginBootstrapSchemaContext<"app_x">,
   kind: "snapshot" | "initialView",
 ): PluginBootstrapValidationResult {
-  const result = (
-    kind === "snapshot" ? xSnapshotSchema : xInitialViewSchema
-  ).safeParse(input.value);
-  return result.success
-    ? { errors: [] }
-    : { errors: formatXSchemaIssues(result.error, kind) };
+  const result = (kind === "snapshot" ? xSnapshotSchema : xInitialViewSchema).safeParse(
+    input.value,
+  );
+  return result.success ? { errors: [] } : { errors: formatXSchemaIssues(result.error, kind) };
 }
 
 function duplicateErrors(ids: readonly string[], path: string): string[] {
@@ -53,10 +49,7 @@ function duplicateErrors(ids: readonly string[], path: string): string[] {
   return errors;
 }
 
-function validateReferences(
-  snapshot: XSnapshot,
-  view?: XInitialView,
-): string[] {
+function validateReferences(snapshot: XSnapshot, view?: XInitialView): string[] {
   const errors: string[] = [];
   const users = new Set(snapshot.users.map((user) => user.id));
   const tweets = new Set((snapshot.tweets ?? []).map((tweet) => tweet.id));
@@ -97,31 +90,23 @@ function validateReferences(
     if (!users.has(id)) errors.push(`${path} references unknown user "${id}"`);
   };
   const requireTweet = (id: string, path: string): void => {
-    if (!tweets.has(id))
-      errors.push(`${path} references unknown tweet "${id}"`);
+    if (!tweets.has(id)) errors.push(`${path} references unknown tweet "${id}"`);
   };
   const requireThread = (id: string, path: string): void => {
-    if (!threads.has(id))
-      errors.push(`${path} references unknown thread "${id}"`);
+    if (!threads.has(id)) errors.push(`${path} references unknown thread "${id}"`);
   };
   const messagesById = new Map(
     (snapshot.messages ?? []).map((message) => [message.id, message] as const),
   );
 
-  if (snapshot.currentUserId)
-    requireUser(snapshot.currentUserId, "snapshot.currentUserId");
+  if (snapshot.currentUserId) requireUser(snapshot.currentUserId, "snapshot.currentUserId");
 
   (snapshot.tweets ?? []).forEach((tweet, index) => {
     requireUser(tweet.authorId, `snapshot.tweets[${index}].authorId`);
-    if (tweet.replyToId)
-      requireTweet(tweet.replyToId, `snapshot.tweets[${index}].replyToId`);
-    if (tweet.repostOfId)
-      requireTweet(tweet.repostOfId, `snapshot.tweets[${index}].repostOfId`);
+    if (tweet.replyToId) requireTweet(tweet.replyToId, `snapshot.tweets[${index}].replyToId`);
+    if (tweet.repostOfId) requireTweet(tweet.repostOfId, `snapshot.tweets[${index}].repostOfId`);
     if (tweet.quoteTweetId)
-      requireTweet(
-        tweet.quoteTweetId,
-        `snapshot.tweets[${index}].quoteTweetId`,
-      );
+      requireTweet(tweet.quoteTweetId, `snapshot.tweets[${index}].quoteTweetId`);
     tweet.likedBy?.forEach((id, actorIndex) =>
       requireUser(id, `snapshot.tweets[${index}].likedBy[${actorIndex}]`),
     );
@@ -134,15 +119,9 @@ function validateReferences(
   });
 
   (snapshot.notifications ?? []).forEach((notification, index) => {
-    requireUser(
-      notification.actorId,
-      `snapshot.notifications[${index}].actorId`,
-    );
+    requireUser(notification.actorId, `snapshot.notifications[${index}].actorId`);
     if (notification.tweetId)
-      requireTweet(
-        notification.tweetId,
-        `snapshot.notifications[${index}].tweetId`,
-      );
+      requireTweet(notification.tweetId, `snapshot.notifications[${index}].tweetId`);
   });
 
   const threadParticipants = new Map<string, Set<string>>();
@@ -150,15 +129,10 @@ function validateReferences(
     const participants = new Set(thread.participantIds);
     threadParticipants.set(thread.id, participants);
     if (participants.size !== thread.participantIds.length) {
-      errors.push(
-        `snapshot.threads[${index}].participantIds contains duplicates`,
-      );
+      errors.push(`snapshot.threads[${index}].participantIds contains duplicates`);
     }
     thread.participantIds.forEach((id, participantIndex) => {
-      requireUser(
-        id,
-        `snapshot.threads[${index}].participantIds[${participantIndex}]`,
-      );
+      requireUser(id, `snapshot.threads[${index}].participantIds[${participantIndex}]`);
     });
   });
 
@@ -188,9 +162,7 @@ function validateReferences(
           `snapshot.messages[${index}].replyToMessageId references unknown message "${message.replyToMessageId}"`,
         );
       } else if (target.threadId !== message.threadId) {
-        errors.push(
-          `snapshot.messages[${index}].replyToMessageId must reference the same thread`,
-        );
+        errors.push(`snapshot.messages[${index}].replyToMessageId must reference the same thread`);
       }
     }
     message.reactions?.forEach((reaction, reactionIndex) => {
@@ -216,8 +188,7 @@ function validateReferences(
       errors.push(`snapshot.follows[${index}] cannot follow itself`);
     }
     const key = `${relation.followerId}:${relation.followingId}`;
-    if (relations.has(key))
-      errors.push(`snapshot.follows[${index}] duplicates relation "${key}"`);
+    if (relations.has(key)) errors.push(`snapshot.follows[${index}] duplicates relation "${key}"`);
     relations.add(key);
   });
 
@@ -249,8 +220,7 @@ function toUser(input: XSnapshot["users"][number]): XUser {
 
 function toTweet(input: NonNullable<XSnapshot["tweets"]>[number]): XTweet {
   const selectedOptionId = input.poll?.selectedOptionId ?? null;
-  const pollVotes =
-    input.poll?.options.reduce((total, option) => total + option.votes, 0) ?? 0;
+  const pollVotes = input.poll?.options.reduce((total, option) => total + option.votes, 0) ?? 0;
   return {
     id: input.id,
     authorId: input.authorId,
@@ -266,11 +236,9 @@ function toTweet(input: NonNullable<XSnapshot["tweets"]>[number]): XTweet {
           aspect: input.media.aspect,
           alt: input.media.alt,
           posterUrl: input.media.posterUrl,
+          durationSeconds: input.media.durationSeconds,
           sensitive: input.media.sensitive ?? false,
-          playback:
-            input.media.type === "video"
-              ? { state: "idle", progress: 0 }
-              : null,
+          playback: input.media.type === "video" ? { state: "idle", progress: 0 } : null,
         }
       : undefined,
     linkPreview: input.linkPreview ? { ...input.linkPreview } : undefined,
@@ -312,9 +280,7 @@ function requireInitialRouteTarget(
   target: "tweetId" | "userId" | "threadId",
 ): string {
   if (!value) {
-    throw new Error(
-      `X_INITIAL_VIEW_TARGET_REQUIRED: ${screen} requires ${target}`,
-    );
+    throw new Error(`X_INITIAL_VIEW_TARGET_REQUIRED: ${screen} requires ${target}`);
   }
   return value;
 }
@@ -348,22 +314,20 @@ export const xBootstrap: PluginBootstrapContract<"app_x"> = {
     const viewResult = context.initialView
       ? xInitialViewSchema.safeParse(context.initialView.view)
       : undefined;
-    if (!snapshotResult.success || (viewResult && !viewResult.success))
-      return { errors: [] };
+    if (!snapshotResult.success || (viewResult && !viewResult.success)) return { errors: [] };
     return {
       errors: validateReferences(snapshotResult.data, viewResult?.data),
     };
   },
   hydrate(context): XState {
-    const snapshot = xSnapshotSchema.parse(
-      snapshotInputOrEmpty(context.snapshot?.snapshot),
-    );
+    const snapshot = xSnapshotSchema.parse(snapshotInputOrEmpty(context.snapshot?.snapshot));
     const initialView = context.initialView
       ? xInitialViewSchema.parse(context.initialView.view)
       : undefined;
     const state = createXInitialState();
     state.schemaVersion = X_STATE_SCHEMA_VERSION;
     state.locale = snapshot.locale ?? "en-US";
+    state.postCharacterLimit = snapshot.postCharacterLimit ?? 280;
     state.currentUserId = snapshot.currentUserId ?? null;
 
     for (const input of snapshot.users) {
@@ -374,27 +338,19 @@ export const xBootstrap: PluginBootstrapContract<"app_x"> = {
       const following = state.usersById[relation.followingId];
       follower.followingIds.push(following.id);
       following.followerIds.push(follower.id);
-      follower.following = Math.max(
-        follower.following,
-        follower.followingIds.length,
-      );
-      following.followers = Math.max(
-        following.followers,
-        following.followerIds.length,
-      );
+      follower.following = Math.max(follower.following, follower.followingIds.length);
+      following.followers = Math.max(following.followers, following.followerIds.length);
     }
 
     for (const input of snapshot.tweets ?? []) {
       state.tweetsById[input.id] = toTweet(input);
     }
     for (const tweet of Object.values(state.tweetsById)) {
-      if (tweet.replyToId)
-        state.tweetsById[tweet.replyToId].replyIds.push(tweet.id);
+      if (tweet.replyToId) state.tweetsById[tweet.replyToId].replyIds.push(tweet.id);
       if (!tweet.replyToId) state.timelineIds.push(tweet.id);
     }
     state.timelineIds.sort((left, right) => {
-      const difference =
-        state.tweetsById[right].createdAt - state.tweetsById[left].createdAt;
+      const difference = state.tweetsById[right].createdAt - state.tweetsById[left].createdAt;
       return difference === 0 ? left.localeCompare(right) : difference;
     });
 
@@ -408,8 +364,7 @@ export const xBootstrap: PluginBootstrapContract<"app_x"> = {
     }
     state.notificationIds.sort((left, right) => {
       const difference =
-        state.notificationsById[right].createdAt -
-        state.notificationsById[left].createdAt;
+        state.notificationsById[right].createdAt - state.notificationsById[left].createdAt;
       return difference === 0 ? left.localeCompare(right) : difference;
     });
 
@@ -435,23 +390,17 @@ export const xBootstrap: PluginBootstrapContract<"app_x"> = {
           emoji: reaction.emoji,
           userIds: [...reaction.userIds],
         })),
-        delivery:
-          input.delivery ??
-          (input.senderId === state.currentUserId ? "sent" : "read"),
+        delivery: input.delivery ?? (input.senderId === state.currentUserId ? "sent" : "read"),
       };
       state.dmMessagesById[input.id] = message;
       const thread = state.dmThreadsById[input.threadId];
       thread.messageIds.push(input.id);
-      thread.lastMessageAt = Math.max(
-        thread.lastMessageAt ?? 0,
-        input.createdAt,
-      );
+      thread.lastMessageAt = Math.max(thread.lastMessageAt ?? 0, input.createdAt);
     }
     for (const thread of Object.values(state.dmThreadsById)) {
       thread.messageIds.sort((left, right) => {
         const difference =
-          state.dmMessagesById[left].createdAt -
-          state.dmMessagesById[right].createdAt;
+          state.dmMessagesById[left].createdAt - state.dmMessagesById[right].createdAt;
         return difference === 0 ? left.localeCompare(right) : difference;
       });
     }
@@ -480,9 +429,8 @@ export const xBootstrap: PluginBootstrapContract<"app_x"> = {
         state.scroll.timeline = initialScroll;
         break;
       case "tweet":
-        state.scroll.tweetById[
-          requireInitialRouteTarget(state.route.tweetId, "tweet", "tweetId")
-        ] = initialScroll;
+        state.scroll.tweetById[requireInitialRouteTarget(state.route.tweetId, "tweet", "tweetId")] =
+          initialScroll;
         break;
       case "notifications":
         state.scroll.notifications = initialScroll;

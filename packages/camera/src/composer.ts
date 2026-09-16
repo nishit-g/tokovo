@@ -139,8 +139,16 @@ export function solveComposer(input: {
   const padding = Math.max(0, composer.paddingPx ?? 0);
   const paddedWidth = subjectBounds.width + padding * 2;
   const paddedHeight = subjectBounds.height + padding * 2;
-  const widthScale = (safeViewport.width * targetFill) / paddedWidth;
-  const heightScale = (safeViewport.height * targetFill) / paddedHeight;
+  const rotationDeg = input.rotationDeg ?? 0;
+  const rotationRadians = (rotationDeg * Math.PI) / 180;
+  const rotationCosine = Math.cos(rotationRadians);
+  const rotationSine = Math.sin(rotationRadians);
+  const projectedWidth =
+    Math.abs(rotationCosine) * paddedWidth + Math.abs(rotationSine) * paddedHeight;
+  const projectedHeight =
+    Math.abs(rotationSine) * paddedWidth + Math.abs(rotationCosine) * paddedHeight;
+  const widthScale = (safeViewport.width * targetFill) / projectedWidth;
+  const heightScale = (safeViewport.height * targetFill) / projectedHeight;
 
   const unclampedScale = (() => {
     switch (composer.fillMode) {
@@ -160,10 +168,6 @@ export function solveComposer(input: {
   const maximumScale = composer.maxScale ?? 100;
   let scale = clamp(unclampedScale, minimumScale, maximumScale);
 
-  const rotationDeg = input.rotationDeg ?? 0;
-  const rotationRadians = (rotationDeg * Math.PI) / 180;
-  const rotationCosine = Math.cos(rotationRadians);
-  const rotationSine = Math.sin(rotationRadians);
   const guard = input.framingGuardBounds;
   const guardPadding = Math.max(0, input.framingGuardPaddingPx ?? 0);
   if (guard) {
@@ -278,7 +282,7 @@ export function minimumJerk(progress: number): number {
 }
 
 function shortestRotationDelta(fromDeg: number, toDeg: number): number {
-  return ((toDeg - fromDeg + 540) % 360) - 180;
+  return (((((toDeg % 360) - (fromDeg % 360) + 180) % 360) + 360) % 360) - 180;
 }
 
 function interpolateLinear(from: number, to: number, progress: number): number {

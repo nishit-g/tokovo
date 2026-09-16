@@ -21,6 +21,7 @@ export const instagramNotificationAdapter: NotificationAppAdapter = {
     };
   },
   defaultAction: (intent) => ({
+    ...(intent.threadId ? { appEvent: { appId: "app_instagram", type: "NAVIGATE", payload: { screen: "thread", threadId: intent.threadId } } } : {}),
     navigation: {
       appId: "app_instagram",
       route: intent.metadata?.route as string | undefined,

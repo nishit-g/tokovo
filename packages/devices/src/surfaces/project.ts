@@ -62,17 +62,26 @@ function resolveOS(os: DeviceOSState | undefined): {
 }
 
 export function projectLockscreen(input: {
+  notificationUX?: "cinematic" | "native";
+  authenticated?: boolean;
   profile: DeviceProfile;
   os?: DeviceOSState;
   homeWallpaper?: string;
 }): LockscreenProjection {
   const resolved = resolveOS(input.os);
-  const { theme, layout } = resolveSystemSurfaceDesign(
+  const { theme, layout: baseLayout } = resolveSystemSurfaceDesign(
     input.profile,
     resolved.appearance,
     resolved.locale,
     resolved.preferences,
   );
+  const layout = input.notificationUX === "native" && theme.platform === "ios"
+    ? { ...baseLayout, lock: { ...baseLayout.lock,
+        dateTop: 80 * baseLayout.pointScale, dateSize: 17 * baseLayout.pointScale,
+        clockTop: 105 * baseLayout.pointScale, clockSize: 96 * baseLayout.pointScale,
+        controlIconSize: 25 * baseLayout.pointScale,
+      } }
+    : baseLayout;
   const strings = getSystemLocalizedStrings(resolved.clock, resolved.locale);
   const time = formatSystemTime(resolved.clock, resolved.locale, resolved.hourCycle);
   const [hours = "", minutes = ""] = time.split(":");
@@ -82,6 +91,8 @@ export function projectLockscreen(input: {
 
   return {
     kind: "lockscreen",
+    notificationUX: input.notificationUX,
+    authenticated: input.authenticated,
     theme,
     layout,
     locale: resolved.locale,

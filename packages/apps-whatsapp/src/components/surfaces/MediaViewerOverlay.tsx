@@ -52,7 +52,8 @@ export function MediaViewerOverlay({
   const { fps, width: renderWidth, height: renderHeight } = useVideoConfig();
   const frame = useCurrentFrame();
   const layout = useLayout<ChatLayoutState>();
-  const sourceRect = layout?.messageLayouts?.[message.id]?.rect;
+  const sourceRect = layout?.semantic?.regions[`media_${message.id}`]?.rect
+    ?? layout?.messageLayouts?.[message.id]?.rect;
   const appRect = layout?.semantic?.regions.app?.rect;
   const width = appRect?.width ?? renderWidth;
   const height = appRect?.height ?? renderHeight;
@@ -61,6 +62,11 @@ export function MediaViewerOverlay({
     1 -
     (1 - Math.max(0, Math.min(1, elapsed / (tokens.viewerSeconds * fps)))) ** 3;
   const reveal = closedAt === undefined ? phase : 1 - phase;
+  const captionHeight = message.caption || message.fileName || message.locationName ? 76 : 0;
+  const contentCenterY = (contentInsets.top + tokens.viewerHeaderHeight + height - contentInsets.bottom - captionHeight) / 2;
+  const mediaTransform = sourceRect
+    ? `translate(${(sourceRect.x + sourceRect.width / 2 - width / 2) * (1 - reveal)}px, ${(sourceRect.y + sourceRect.height / 2 - contentCenterY) * (1 - reveal)}px) scale(${sourceRect.width / width + (1 - sourceRect.width / width) * reveal})`
+    : undefined;
   const source = viewerImageSource(message);
   const videoSource =
     message.type === "video" ? resolveAsset(message.videoUrl) : undefined;
@@ -91,22 +97,18 @@ export function MediaViewerOverlay({
         display: "flex",
         flexDirection: "column",
         color: theme.colors.mediaViewerText,
-        backgroundColor: theme.colors.mediaViewerBackground,
+        backgroundColor: `color-mix(in srgb, ${theme.colors.mediaViewerBackground} ${reveal * 100}%, transparent)`,
         fontFamily: theme.typography.fontFamily,
         paddingTop: contentInsets.top,
         paddingBottom: contentInsets.bottom,
         boxSizing: "border-box",
-        opacity: reveal,
-        transformOrigin: "center",
-        transform: sourceRect
-          ? `translate(${(sourceRect.x + sourceRect.width / 2 - width / 2) * (1 - reveal)}px, ${(sourceRect.y + sourceRect.height / 2 - height / 2) * (1 - reveal)}px) scale(${sourceRect.width / width + (1 - sourceRect.width / width) * reveal})`
-          : undefined,
       }}
     >
       <div
         data-cinematic-subject="media_viewer_header"
         style={{
           minHeight: tokens.viewerHeaderHeight,
+          opacity: reveal,
           padding: `8px ${tokens.surfaceMargin}px`,
           boxSizing: "border-box",
           flexShrink: 0,
@@ -156,9 +158,15 @@ export function MediaViewerOverlay({
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          overflow: "hidden",
+          overflow: "visible",
         }}
       >
+        <div style={{
+          position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center",
+          opacity: reveal,
+          transformOrigin: "center",
+          transform: mediaTransform,
+        }}>
         {videoSource && isPlaying ? (
           <Sequence from={openedAt} layout="none">
             <Loop durationInFrames={loopDurationInFrames}>
@@ -184,6 +192,7 @@ export function MediaViewerOverlay({
         ) : (
           <MapPin size={76} aria-hidden="true" />
         )}
+        </div>
 
         {(message.type === "video" || message.type === "gif") && (
           <div
@@ -191,6 +200,7 @@ export function MediaViewerOverlay({
             aria-label={`${t(isPlaying ? "media.playing" : "media.paused")}, ${progress}%`}
             style={{
               position: "absolute",
+              opacity: reveal,
               width: 58,
               height: 58,
               borderRadius: 29,
@@ -214,6 +224,11 @@ export function MediaViewerOverlay({
           data-cinematic-subject="media_viewer_caption"
           style={{
             padding: "12px 16px 24px",
+            height: 76,
+            flexShrink: 0,
+            boxSizing: "border-box",
+            overflow: "hidden",
+            opacity: reveal,
             color: theme.colors.mediaViewerText,
             backgroundColor: theme.colors.mediaViewerControlsBackground,
             fontSize: 14,

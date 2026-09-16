@@ -120,7 +120,7 @@ const CameraMotionProfileSchema = z.discriminatedUnion("type", [
       type: z.literal("whip"),
       durationFrames: z.number().int().positive(),
       direction: z.union([
-        z.enum(["left", "right", "up", "down"]),
+        z.enum(["left", "right", "up", "down", "travel"]),
         z.tuple([z.number().finite(), z.number().finite()]),
       ]),
       intent: CameraMovementIntentSchema.optional(),
@@ -132,6 +132,25 @@ const CameraBlendSchema = z
   .object({
     durationFrames: z.number().int().positive(),
     curve: z.enum(["linear", "smoothstep", "minimum-jerk"]),
+  })
+  .strict();
+
+const CameraTrajectorySchema = z
+  .object({
+    interpolation: z.enum(["linear", "minimum-jerk"]),
+    keyframes: z
+      .array(
+        z
+          .object({
+            frame: z.number().int().nonnegative(),
+            offsetX: z.number().finite(),
+            offsetY: z.number().finite(),
+            scaleMultiplier: z.number().finite().positive(),
+            rotationOffsetDeg: z.number().finite(),
+          })
+          .strict(),
+      )
+      .min(1),
   })
   .strict();
 
@@ -231,25 +250,7 @@ export const CameraPlanSchema: z.ZodType<import("./camera-vnext.js").CameraPlanI
               .object({ mode: z.literal("direct") })
               .strict()
               .optional(),
-            bakedTrajectory: z
-              .object({
-                interpolation: z.enum(["linear", "minimum-jerk"]),
-                keyframes: z
-                  .array(
-                    z
-                      .object({
-                        frame: z.number().int().nonnegative(),
-                        offsetX: z.number().finite(),
-                        offsetY: z.number().finite(),
-                        scaleMultiplier: z.number().finite().positive(),
-                        rotationOffsetDeg: z.number().finite(),
-                      })
-                      .strict(),
-                  )
-                  .min(1),
-              })
-              .strict()
-              .optional(),
+            bakedTrajectory: CameraTrajectorySchema.optional(),
             rotationDeg: z.number().finite().optional(),
             opacity: z.number().finite().min(0).max(1).optional(),
             lensId: z.string().min(1).optional(),
@@ -271,6 +272,47 @@ export const CameraPlanSchema: z.ZodType<import("./camera-vnext.js").CameraPlanI
           priority: z.number().int(),
           declarationOrder: z.number().int().nonnegative(),
           blendIn: CameraBlendSchema.optional(),
+          direction: z
+            .object({
+              entrance: CameraMotionProfileSchema,
+              source: z.enum(["live", "freeze"]).optional(),
+              continuity: z.literal("velocity").optional(),
+              checkFraming: z.boolean().optional(),
+              framing: z.enum(["live", "hold", "follow-position"]).optional(),
+              framingSubject: CinematicSubjectRefSchema.optional(),
+              tracking: z
+                .object({
+                  halfLifeSeconds: z.number().finite().positive(),
+                  minimumReadingScale: z.number().finite().positive().optional(),
+                  minimumTextPx: z.number().finite().positive().optional(),
+                  avoidSubjects: z.array(CinematicSubjectRefSchema).optional(),
+                  panLimits: z
+                    .object({
+                      speedPxPerSecond: z.number().finite().positive(),
+                      accelerationPxPerSecondSquared: z.number().finite().positive(),
+                    })
+                    .strict()
+                    .optional(),
+                  readingRegion: z
+                    .object({
+                      x: z.number().finite().min(0),
+                      y: z.number().finite().min(0),
+                      width: z.number().finite().positive(),
+                      height: z.number().finite().positive(),
+                    })
+                    .strict()
+                    .refine(
+                      (rect) => rect.x + rect.width <= 1 && rect.y + rect.height <= 1,
+                      "Reading region must fit inside the normalized output viewport.",
+                    )
+                    .optional(),
+                })
+                .strict()
+                .optional(),
+              movement: CameraTrajectorySchema.optional(),
+            })
+            .strict()
+            .optional(),
           missingSubjectPolicy: CameraMissingSubjectPolicySchema,
           source: z.enum(["authored", "automatic"]),
         })
@@ -422,6 +464,18 @@ export const OSConfigSchema = z.object({
 });
 
 export const DeviceConfigSchema = z.object({
+  notificationUX: z.enum(["cinematic", "native"]).optional(),
+  notificationTokens: z
+    .object({
+      card: z.string().min(1).optional(),
+      text: z.string().min(1).optional(),
+      secondaryText: z.string().min(1).optional(),
+      accent: z.string().min(1).optional(),
+      border: z.string().min(1).optional(),
+      radius: z.number().min(0).max(48).optional(),
+      padding: z.number().min(4).max(32).optional(),
+    })
+    .optional(),
   id: z.string(),
   profile: z.string(),
   app: z.string(),
@@ -706,6 +760,7 @@ export const NotificationIntentSchema = z.object({
     title: z.string(),
     body: z.string(),
     subtitle: z.string().optional(),
+    avatar: z.object({ src: z.string().min(1), alt: z.string().optional() }).optional(),
     media: z
       .object({
         kind: z.enum(["image", "video"]),
@@ -756,8 +811,19 @@ export const NotificationInteractionSchema = z
     atFrame: z.number().int().nonnegative(),
     type: z.enum([
       "tap",
+      "authenticate",
+      "expand",
+      "expandGroup",
+      "collapseGroup",
+      "swipeLeft",
+      "swipeRight",
+      "setDisplay",
+      "scrollHistory",
+      "collapse",
+      "beginReply",
       "chooseAction",
       "reply",
+      "markRead",
       "dismiss",
       "clearAll",
       "openCenter",
@@ -766,10 +832,58 @@ export const NotificationInteractionSchema = z
     notificationId: z.string().min(1).optional(),
     actionId: z.string().min(1).optional(),
     replyText: z.string().optional(),
+    inputSessionId: z.string().min(1).optional(),
+    display: z.enum(["count", "stack", "list"]).optional(),
+    scrollPosition: z.number().min(0).max(1).optional(),
+    badgeCount: z.number().int().nonnegative().optional(),
+    readTarget: z
+      .object({
+        appId: z.string().min(1).optional(),
+        type: z.string().min(1),
+        payload: z.record(z.string(), z.unknown()).optional(),
+      })
+      .optional(),
     sequence: z.number().int().nonnegative().optional(),
   })
   .superRefine((interaction, ctx) => {
-    const targetsOne = ["tap", "chooseAction", "reply", "dismiss"].includes(interaction.type);
+    const targetsOne = [
+      "tap",
+      "chooseAction",
+      "reply",
+      "dismiss",
+      "markRead",
+      "expand",
+      "collapse",
+      "beginReply",
+    ].includes(interaction.type);
+    if (interaction.type === "beginReply" && !interaction.inputSessionId) {
+      ctx.addIssue({ code: "custom", message: "beginReply requires inputSessionId" });
+    }
+    if (
+      ["expandGroup", "collapseGroup", "swipeLeft", "swipeRight"].includes(interaction.type) &&
+      !interaction.notificationId
+    ) {
+      ctx.addIssue({ code: "custom", message: `${interaction.type} requires notificationId` });
+    }
+    if (interaction.type === "setDisplay" && !interaction.display)
+      ctx.addIssue({ code: "custom", message: "setDisplay requires display" });
+    if (interaction.type === "scrollHistory" && interaction.scrollPosition === undefined)
+      ctx.addIssue({ code: "custom", message: "scrollHistory requires scrollPosition" });
+    if (
+      interaction.type === "markRead" &&
+      (interaction.badgeCount === undefined || !interaction.readTarget)
+    ) {
+      ctx.addIssue({
+        code: "custom",
+        message: "markRead requires badgeCount and an app-owned readTarget",
+      });
+    }
+    if (
+      interaction.type !== "markRead" &&
+      (interaction.badgeCount !== undefined || interaction.readTarget !== undefined)
+    ) {
+      ctx.addIssue({ code: "custom", message: "Read fields require markRead" });
+    }
     if (targetsOne && !interaction.notificationId) {
       ctx.addIssue({
         code: "custom",

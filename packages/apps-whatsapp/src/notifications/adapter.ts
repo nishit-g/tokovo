@@ -15,6 +15,9 @@ export const whatsappNotificationAdapter: NotificationAppAdapter = {
     };
   },
   defaultAction: (intent) => ({
+    ...(intent.threadId ? { appEvent: {
+      appId: "app_whatsapp", type: "CONVERSATION_OPENED", payload: { conversationId: intent.threadId },
+    } } : {}),
     navigation: {
       appId: "app_whatsapp",
       route: "conversation",

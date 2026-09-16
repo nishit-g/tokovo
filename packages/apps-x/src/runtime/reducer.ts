@@ -1,3 +1,4 @@
+import { projectXMotion, xScrollOffset } from "./motion.js";
 import {
   requireAppStateForDevice,
   type PluginReducer,
@@ -34,20 +35,17 @@ import {
   type XUser,
 } from "./state.js";
 
-const relationSchema = z
-  .object({ followerId: xIdSchema, followingId: xIdSchema })
-  .strict();
+const relationSchema = z.object({ followerId: xIdSchema, followingId: xIdSchema }).strict();
 const userTargetSchema = z.object({ userId: xIdSchema }).strict();
 const tweetTargetSchema = z.object({ tweetId: xIdSchema }).strict();
-const tweetActorSchema = z
-  .object({ tweetId: xIdSchema, userId: xIdSchema })
-  .strict();
+const tweetActorSchema = z.object({ tweetId: xIdSchema, userId: xIdSchema }).strict();
 const routeSchema = z
   .object({
     screen: xScreenSchema,
     tweetId: xIdSchema.optional(),
     userId: xIdSchema.optional(),
     threadId: xIdSchema.optional(),
+    notificationId: xIdSchema.optional(),
   })
   .strict()
   .superRefine((route, context) => {
@@ -77,12 +75,8 @@ const routeSchema = z
     }
   });
 const draftSchema = z.object({ text: z.string().max(25_000) }).strict();
-const threadDraftSchema = z
-  .object({ threadId: xIdSchema, text: z.string().max(25_000) })
-  .strict();
-const threadActorSchema = z
-  .object({ threadId: xIdSchema, userId: xIdSchema })
-  .strict();
+const threadDraftSchema = z.object({ threadId: xIdSchema, text: z.string().max(25_000) }).strict();
+const threadActorSchema = z.object({ threadId: xIdSchema, userId: xIdSchema }).strict();
 const dmReactionSchema = z
   .object({
     messageId: xIdSchema,
@@ -92,23 +86,15 @@ const dmReactionSchema = z
   .strict();
 const scrollSchema = z
   .object({
-    surface: z.enum([
-      "timeline",
-      "tweet",
-      "notifications",
-      "messages",
-      "profile",
-      "thread",
-    ]),
+    surface: z.enum(["timeline", "tweet", "notifications", "messages", "profile", "thread"]),
     offset: z.number().finite().nonnegative(),
+    durationFrames: z.number().int().min(0).max(600).optional(),
     targetId: xIdSchema.optional(),
   })
   .strict()
   .superRefine((scroll, context) => {
     const needsTarget =
-      scroll.surface === "tweet" ||
-      scroll.surface === "profile" ||
-      scroll.surface === "thread";
+      scroll.surface === "tweet" || scroll.surface === "profile" || scroll.surface === "thread";
     if (needsTarget && !scroll.targetId) {
       context.addIssue({
         code: "custom",
@@ -127,29 +113,19 @@ const scrollSchema = z
 
 function requireScrollTarget(input: z.infer<typeof scrollSchema>): string {
   if (!input.targetId) {
-    throw new Error(
-      `X_SCROLL_TARGET_REQUIRED: ${input.surface} requires targetId`,
-    );
+    throw new Error(`X_SCROLL_TARGET_REQUIRED: ${input.surface} requires targetId`);
   }
   return input.targetId;
 }
 const timelineTabPayloadSchema = z.object({ tab: xTimelineTabSchema }).strict();
 const profileTabPayloadSchema = z.object({ tab: xProfileTabSchema }).strict();
-const notificationsTabPayloadSchema = z
-  .object({ tab: xNotificationsTabSchema })
-  .strict();
+const notificationsTabPayloadSchema = z.object({ tab: xNotificationsTabSchema }).strict();
 const emptyPayloadSchema = z.object({}).strict();
 
-function parsePayload<T>(
-  event: { type: string; payload: unknown },
-  schema: z.ZodType<T>,
-): T {
+function parsePayload<T>(event: { type: string; payload: unknown }, schema: z.ZodType<T>): T {
   const result = schema.safeParse(event.payload);
   if (!result.success) {
-    const detail = formatXSchemaIssues(
-      result.error,
-      `event.${event.type}.payload`,
-    ).join("; ");
+    const detail = formatXSchemaIssues(result.error, `event.${event.type}.payload`).join("; ");
     throw new Error(`X_EVENT_PAYLOAD_INVALID: ${detail}`);
   }
   return result.data;
@@ -167,28 +143,19 @@ function getState(draft: WorldState, deviceId: string): XState {
 
 function requireUser(state: XState, id: string, context: string): XUser {
   const user = state.usersById[id];
-  if (!user)
-    throw new Error(
-      `X_USER_MISSING: ${context} references unknown user "${id}"`,
-    );
+  if (!user) throw new Error(`X_USER_MISSING: ${context} references unknown user "${id}"`);
   return user;
 }
 
 function requireTweet(state: XState, id: string, context: string): XTweet {
   const tweet = state.tweetsById[id];
-  if (!tweet)
-    throw new Error(
-      `X_TWEET_MISSING: ${context} references unknown tweet "${id}"`,
-    );
+  if (!tweet) throw new Error(`X_TWEET_MISSING: ${context} references unknown tweet "${id}"`);
   return tweet;
 }
 
 function requireThread(state: XState, id: string, context: string): XDMThread {
   const thread = state.dmThreadsById[id];
-  if (!thread)
-    throw new Error(
-      `X_THREAD_MISSING: ${context} references unknown thread "${id}"`,
-    );
+  if (!thread) throw new Error(`X_THREAD_MISSING: ${context} references unknown thread "${id}"`);
   return thread;
 }
 
@@ -225,9 +192,12 @@ function setRoute(
   route: XRoute,
   atFrame: number,
   direction: "forward" | "back",
+  visible: boolean,
 ): void {
   validateRouteReferences(state, route);
   const previous = { ...state.route };
+  if (visible && route.screen === "thread" && route.threadId)
+    state.dmThreadsById[route.threadId].unreadCount = 0;
   if (routesEqual(previous, route)) return;
   if (direction === "forward") state.navigationStack.push(previous);
   state.route = route;
@@ -237,13 +207,6 @@ function setRoute(
     atFrame,
     direction,
   };
-  if (route.screen === "notifications") {
-    for (const id of state.notificationIds)
-      state.notificationsById[id].read = true;
-  }
-  if (route.screen === "thread" && route.threadId) {
-    state.dmThreadsById[route.threadId].unreadCount = 0;
-  }
   syncViewMode(state);
 }
 
@@ -253,8 +216,7 @@ function insertTimelineTweet(state: XState, tweetId: string): void {
     const existing = state.tweetsById[existingId];
     return (
       existing.createdAt < createdAt ||
-      (existing.createdAt === createdAt &&
-        existingId.localeCompare(tweetId) > 0)
+      (existing.createdAt === createdAt && existingId.localeCompare(tweetId) > 0)
     );
   });
   if (insertAt < 0) state.timelineIds.push(tweetId);
@@ -267,8 +229,7 @@ function insertNotification(state: XState, notificationId: string): void {
     const existing = state.notificationsById[existingId];
     return (
       existing.createdAt < createdAt ||
-      (existing.createdAt === createdAt &&
-        existingId.localeCompare(notificationId) > 0)
+      (existing.createdAt === createdAt && existingId.localeCompare(notificationId) > 0)
     );
   });
   if (insertAt < 0) state.notificationIds.push(notificationId);
@@ -298,17 +259,13 @@ function addDMMessage(
   state: XState,
   input: z.infer<typeof xMessageInputSchema>,
   direction: "incoming" | "outgoing",
+  visible: boolean,
+  atFrame: number,
 ): void {
   if (state.dmMessagesById[input.id]) {
-    throw new Error(
-      `X_MESSAGE_DUPLICATE: message "${input.id}" already exists`,
-    );
+    throw new Error(`X_MESSAGE_DUPLICATE: message "${input.id}" already exists`);
   }
-  const thread = requireThread(
-    state,
-    input.threadId,
-    `ADD_DM_MESSAGE_${direction}.threadId`,
-  );
+  const thread = requireThread(state, input.threadId, `ADD_DM_MESSAGE_${direction}.threadId`);
   requireUser(state, input.senderId, `ADD_DM_MESSAGE_${direction}.senderId`);
   if (!thread.participantIds.includes(input.senderId)) {
     throw new Error(
@@ -316,9 +273,7 @@ function addDMMessage(
     );
   }
   if (!state.currentUserId) {
-    throw new Error(
-      `X_CURRENT_USER_REQUIRED: ${direction} DM requires currentUserId`,
-    );
+    throw new Error(`X_CURRENT_USER_REQUIRED: ${direction} DM requires currentUserId`);
   }
   if (direction === "outgoing" && input.senderId !== state.currentUserId) {
     throw new Error(
@@ -330,11 +285,7 @@ function addDMMessage(
       `X_DM_INCOMING_SENDER_INVALID: current user "${state.currentUserId}" cannot be an incoming sender`,
     );
   }
-  if (
-    direction === "incoming" &&
-    input.delivery !== undefined &&
-    input.delivery !== "read"
-  ) {
+  if (direction === "incoming" && input.delivery !== undefined && input.delivery !== "read") {
     throw new Error(
       `X_DM_INCOMING_DELIVERY_INVALID: incoming message "${input.id}" must be read or omit delivery`,
     );
@@ -354,11 +305,7 @@ function addDMMessage(
   }
   for (const reaction of input.reactions ?? []) {
     for (const userId of reaction.userIds) {
-      requireUser(
-        state,
-        userId,
-        `ADD_DM_MESSAGE_${direction}.reactions.userIds`,
-      );
+      requireUser(state, userId, `ADD_DM_MESSAGE_${direction}.reactions.userIds`);
       if (!thread.participantIds.includes(userId)) {
         throw new Error(
           `X_THREAD_PARTICIPANT_REQUIRED: reaction user "${userId}" is not in thread "${input.threadId}"`,
@@ -369,6 +316,7 @@ function addDMMessage(
 
   const message: XDMMessage = {
     ...input,
+    arrivedAtFrame: atFrame,
     reactions: (input.reactions ?? []).map((reaction) => ({
       emoji: reaction.emoji,
       userIds: [...reaction.userIds],
@@ -380,18 +328,14 @@ function addDMMessage(
     const existing = state.dmMessagesById[id];
     return (
       existing.createdAt > message.createdAt ||
-      (existing.createdAt === message.createdAt &&
-        id.localeCompare(message.id) > 0)
+      (existing.createdAt === message.createdAt && id.localeCompare(message.id) > 0)
     );
   });
   if (insertAt < 0) thread.messageIds.push(message.id);
   else thread.messageIds.splice(insertAt, 0, message.id);
   thread.lastMessageAt = Math.max(thread.lastMessageAt ?? 0, message.createdAt);
-  thread.typingUserIds = thread.typingUserIds.filter(
-    (id) => id !== message.senderId,
-  );
-  const active =
-    state.route.screen === "thread" && state.route.threadId === thread.id;
+  thread.typingUserIds = thread.typingUserIds.filter((id) => id !== message.senderId);
+  const active = visible && state.route.screen === "thread" && state.route.threadId === thread.id;
   if (direction === "incoming" && !active) thread.unreadCount += 1;
   if (direction === "outgoing") state.threadDrafts[thread.id] = "";
   sortThreads(state);
@@ -409,8 +353,7 @@ function toUser(input: z.infer<typeof xUserInputSchema>): XUser {
 }
 
 function toTweet(input: z.infer<typeof xTweetInputSchema>): XTweet {
-  const pollVotes =
-    input.poll?.options.reduce((total, option) => total + option.votes, 0) ?? 0;
+  const pollVotes = input.poll?.options.reduce((total, option) => total + option.votes, 0) ?? 0;
   return {
     ...input,
     media: input.media
@@ -418,10 +361,7 @@ function toTweet(input: z.infer<typeof xTweetInputSchema>): XTweet {
           ...input.media,
           urls: [...input.media.urls],
           sensitive: input.media.sensitive ?? false,
-          playback:
-            input.media.type === "video"
-              ? { state: "idle", progress: 0 }
-              : null,
+          playback: input.media.type === "video" ? { state: "idle", progress: 0 } : null,
         }
       : undefined,
     poll: input.poll
@@ -451,6 +391,8 @@ export const xReducer: PluginReducer<"app_x"> = (
   event: RuntimeEvent & { kind: "APP"; appId: "app_x"; deviceId: string },
 ) => {
   const state = getState(draft, event.deviceId);
+  const device = draft.devices[event.deviceId];
+  const visible = device.foregroundAppId === "app_x" && !device.isLocked;
 
   switch (event.type) {
     case "ADD_USER": {
@@ -468,14 +410,9 @@ export const xReducer: PluginReducer<"app_x"> = (
     }
     case "FOLLOW_USER": {
       const { followerId, followingId } = parsePayload(event, relationSchema);
-      if (followerId === followingId)
-        throw new Error("X_FOLLOW_SELF: a user cannot follow itself");
+      if (followerId === followingId) throw new Error("X_FOLLOW_SELF: a user cannot follow itself");
       const follower = requireUser(state, followerId, "FOLLOW_USER.followerId");
-      const following = requireUser(
-        state,
-        followingId,
-        "FOLLOW_USER.followingId",
-      );
+      const following = requireUser(state, followingId, "FOLLOW_USER.followingId");
       if (!follower.followingIds.includes(followingId)) {
         follower.followingIds.push(followingId);
         following.followerIds.push(followerId);
@@ -487,23 +424,11 @@ export const xReducer: PluginReducer<"app_x"> = (
     }
     case "UNFOLLOW_USER": {
       const { followerId, followingId } = parsePayload(event, relationSchema);
-      const follower = requireUser(
-        state,
-        followerId,
-        "UNFOLLOW_USER.followerId",
-      );
-      const following = requireUser(
-        state,
-        followingId,
-        "UNFOLLOW_USER.followingId",
-      );
+      const follower = requireUser(state, followerId, "UNFOLLOW_USER.followerId");
+      const following = requireUser(state, followingId, "UNFOLLOW_USER.followingId");
       if (follower.followingIds.includes(followingId)) {
-        follower.followingIds = follower.followingIds.filter(
-          (id) => id !== followingId,
-        );
-        following.followerIds = following.followerIds.filter(
-          (id) => id !== followerId,
-        );
+        follower.followingIds = follower.followingIds.filter((id) => id !== followingId);
+        following.followerIds = following.followerIds.filter((id) => id !== followerId);
         follower.following -= 1;
         following.followers -= 1;
         recordInteraction(state, "unfollow", followingId, event.at);
@@ -513,29 +438,18 @@ export const xReducer: PluginReducer<"app_x"> = (
     case "ADD_TWEET": {
       const input = parsePayload(event, xTweetInputSchema);
       if (state.tweetsById[input.id])
-        throw new Error(
-          `X_TWEET_DUPLICATE: tweet "${input.id}" already exists`,
-        );
+        throw new Error(`X_TWEET_DUPLICATE: tweet "${input.id}" already exists`);
       requireUser(state, input.authorId, "ADD_TWEET.authorId");
-      if (input.replyToId)
-        requireTweet(state, input.replyToId, "ADD_TWEET.replyToId");
-      if (input.repostOfId)
-        requireTweet(state, input.repostOfId, "ADD_TWEET.repostOfId");
-      if (input.quoteTweetId)
-        requireTweet(state, input.quoteTweetId, "ADD_TWEET.quoteTweetId");
-      input.likedBy?.forEach((id) =>
-        requireUser(state, id, "ADD_TWEET.likedBy"),
-      );
-      input.bookmarkedBy?.forEach((id) =>
-        requireUser(state, id, "ADD_TWEET.bookmarkedBy"),
-      );
-      input.sharedBy?.forEach((id) =>
-        requireUser(state, id, "ADD_TWEET.sharedBy"),
-      );
-      const tweet = toTweet(input);
+      if (input.replyToId) requireTweet(state, input.replyToId, "ADD_TWEET.replyToId");
+      if (input.repostOfId) requireTweet(state, input.repostOfId, "ADD_TWEET.repostOfId");
+      if (input.quoteTweetId) requireTweet(state, input.quoteTweetId, "ADD_TWEET.quoteTweetId");
+      input.likedBy?.forEach((id) => requireUser(state, id, "ADD_TWEET.likedBy"));
+      input.bookmarkedBy?.forEach((id) => requireUser(state, id, "ADD_TWEET.bookmarkedBy"));
+      input.sharedBy?.forEach((id) => requireUser(state, id, "ADD_TWEET.sharedBy"));
+      const tweet = { ...toTweet(input), arrivedAtFrame: event.at };
+      state.lastArrivalFrame = event.at;
       state.tweetsById[tweet.id] = tweet;
-      if (tweet.replyToId)
-        state.tweetsById[tweet.replyToId].replyIds.push(tweet.id);
+      if (tweet.replyToId) state.tweetsById[tweet.replyToId].replyIds.push(tweet.id);
       else insertTimelineTweet(state, tweet.id);
       if (tweet.repostOfId) state.tweetsById[tweet.repostOfId].repostCount += 1;
       break;
@@ -601,22 +515,19 @@ export const xReducer: PluginReducer<"app_x"> = (
       break;
     }
     case "VOTE_POLL": {
-      const { tweetId, userId, optionId } = parsePayload(
-        event,
-        xPollVoteInputSchema,
-      );
+      const { tweetId, userId, optionId } = parsePayload(event, xPollVoteInputSchema);
       const tweet = requireTweet(state, tweetId, "VOTE_POLL.tweetId");
       requireUser(state, userId, "VOTE_POLL.userId");
       if (state.currentUserId !== userId) {
-        throw new Error(
-          `X_POLL_VOTER_NOT_CURRENT: user "${userId}" is not the current user`,
-        );
+        throw new Error(`X_POLL_VOTER_NOT_CURRENT: user "${userId}" is not the current user`);
       }
-      if (!tweet.poll)
-        throw new Error(`X_POLL_MISSING: tweet "${tweetId}" has no poll`);
-      const option = tweet.poll.options.find(
-        (candidate) => candidate.id === optionId,
-      );
+      if (!tweet.poll) throw new Error(`X_POLL_MISSING: tweet "${tweetId}" has no poll`);
+      if (
+        tweet.poll.endsAt !== undefined &&
+        draft.devices[event.deviceId].os.clock >= tweet.poll.endsAt
+      )
+        throw new Error(`X_POLL_ENDED: poll on tweet "${tweetId}" has ended`);
+      const option = tweet.poll.options.find((candidate) => candidate.id === optionId);
       if (!option)
         throw new Error(
           `X_POLL_OPTION_MISSING: poll on tweet "${tweetId}" has no option "${optionId}"`,
@@ -627,9 +538,7 @@ export const xReducer: PluginReducer<"app_x"> = (
         tweet.poll.totalVotes += 1;
         recordInteraction(state, "poll", tweetId, event.at);
       } else if (tweet.poll.selectedOptionId !== optionId) {
-        throw new Error(
-          `X_POLL_ALREADY_VOTED: poll on tweet "${tweetId}" already has a selection`,
-        );
+        throw new Error(`X_POLL_ALREADY_VOTED: poll on tweet "${tweetId}" already has a selection`);
       }
       break;
     }
@@ -640,26 +549,23 @@ export const xReducer: PluginReducer<"app_x"> = (
         progress,
       } = parsePayload(event, xMediaPlaybackInputSchema);
       const tweet = requireTweet(state, tweetId, "SET_MEDIA_PLAYBACK.tweetId");
-      if (
-        !tweet.media ||
-        tweet.media.type !== "video" ||
-        !tweet.media.playback
-      ) {
-        throw new Error(
-          `X_VIDEO_MISSING: tweet "${tweetId}" does not contain video media`,
-        );
+      if (!tweet.media || tweet.media.type !== "video" || !tweet.media.playback) {
+        throw new Error(`X_VIDEO_MISSING: tweet "${tweetId}" does not contain video media`);
       }
-      tweet.media.playback = { state: playbackState, progress };
+      tweet.media.playback = { state: playbackState, progress, atFrame: event.at };
       break;
     }
     case "SET_SCREEN": {
-      setRoute(state, parsePayload(event, routeSchema), event.at, "forward");
+      const { notificationId, ...route } = parsePayload(event, routeSchema);
+      setRoute(state, route, event.at, "forward", visible);
+      if (visible && notificationId && state.notificationsById[notificationId])
+        state.notificationsById[notificationId].read = true;
       break;
     }
     case "NAVIGATE_BACK": {
       parsePayload(event, emptyPayloadSchema);
       const previous = state.navigationStack.pop();
-      if (previous) setRoute(state, previous, event.at, "back");
+      if (previous) setRoute(state, previous, event.at, "back", visible);
       break;
     }
     case "SET_COMPOSE_DRAFT": {
@@ -684,16 +590,21 @@ export const xReducer: PluginReducer<"app_x"> = (
     }
     case "SET_SCROLL": {
       const input = parsePayload(event, scrollSchema);
+      const from = xScrollOffset(projectXMotion(state, event.at), input.surface, input.targetId);
+      state.scrollMotion = {
+        surface: input.surface,
+        targetId: input.targetId,
+        from,
+        to: input.offset,
+        atFrame: event.at,
+        durationFrames: input.durationFrames ?? 12,
+      };
       switch (input.surface) {
         case "timeline":
           state.scroll.timeline = input.offset;
           break;
         case "tweet":
-          requireTweet(
-            state,
-            requireScrollTarget(input),
-            "SET_SCROLL.targetId",
-          );
+          requireTweet(state, requireScrollTarget(input), "SET_SCROLL.targetId");
           state.scroll.tweetById[requireScrollTarget(input)] = input.offset;
           break;
         case "notifications":
@@ -707,13 +618,8 @@ export const xReducer: PluginReducer<"app_x"> = (
           state.scroll.profileById[requireScrollTarget(input)] = input.offset;
           break;
         case "thread":
-          requireThread(
-            state,
-            requireScrollTarget(input),
-            "SET_SCROLL.targetId",
-          );
-          state.scroll.threadFromBottomById[requireScrollTarget(input)] =
-            input.offset;
+          requireThread(state, requireScrollTarget(input), "SET_SCROLL.targetId");
+          state.scroll.threadFromBottomById[requireScrollTarget(input)] = input.offset;
           break;
       }
       break;
@@ -732,8 +638,7 @@ export const xReducer: PluginReducer<"app_x"> = (
           `X_DM_TYPING_CURRENT_USER_INVALID: local typing for "${userId}" must use an input session`,
         );
       }
-      if (!thread.typingUserIds.includes(userId))
-        thread.typingUserIds.push(userId);
+      if (!thread.typingUserIds.includes(userId)) thread.typingUserIds.push(userId);
       break;
     }
     case "STOP_DM_TYPING": {
@@ -762,29 +667,26 @@ export const xReducer: PluginReducer<"app_x"> = (
       break;
     }
     case "SET_NOTIFICATIONS_TAB": {
-      state.notificationsTab = parsePayload(
-        event,
-        notificationsTabPayloadSchema,
-      ).tab;
-      if (state.route.screen === "notifications") {
-        for (const id of state.notificationIds)
-          state.notificationsById[id].read = true;
-      }
+      state.notificationsTab = parsePayload(event, notificationsTabPayloadSchema).tab;
+      break;
+    }
+    case "MARK_NOTIFICATION_READ": {
+      const { id } = parsePayload(event, z.object({ id: z.string().min(1) }).strict());
+      const notification = state.notificationsById[id];
+      if (!notification) throw new Error(`X_NOTIFICATION_MISSING: "${id}"`);
+      notification.read = true;
       break;
     }
     case "ADD_NOTIFICATION": {
       const input = parsePayload(event, xNotificationInputSchema);
       if (state.notificationsById[input.id]) {
-        throw new Error(
-          `X_NOTIFICATION_DUPLICATE: notification "${input.id}" already exists`,
-        );
+        throw new Error(`X_NOTIFICATION_DUPLICATE: notification "${input.id}" already exists`);
       }
       requireUser(state, input.actorId, "ADD_NOTIFICATION.actorId");
-      if (input.tweetId)
-        requireTweet(state, input.tweetId, "ADD_NOTIFICATION.tweetId");
+      if (input.tweetId) requireTweet(state, input.tweetId, "ADD_NOTIFICATION.tweetId");
       const notification: XNotification = {
         ...input,
-        read: input.read ?? state.route.screen === "notifications",
+        read: input.read ?? false,
       };
       state.notificationsById[input.id] = notification;
       insertNotification(state, input.id);
@@ -793,18 +695,14 @@ export const xReducer: PluginReducer<"app_x"> = (
     case "ADD_DM_THREAD": {
       const input = parsePayload(event, xThreadInputSchema);
       if (state.dmThreadsById[input.id])
-        throw new Error(
-          `X_THREAD_DUPLICATE: thread "${input.id}" already exists`,
-        );
+        throw new Error(`X_THREAD_DUPLICATE: thread "${input.id}" already exists`);
       const participants = new Set(input.participantIds);
       if (participants.size !== input.participantIds.length) {
         throw new Error(
           `X_THREAD_PARTICIPANT_DUPLICATE: thread "${input.id}" repeats a participant`,
         );
       }
-      input.participantIds.forEach((id) =>
-        requireUser(state, id, "ADD_DM_THREAD.participantIds"),
-      );
+      input.participantIds.forEach((id) => requireUser(state, id, "ADD_DM_THREAD.participantIds"));
       const thread: XDMThread = {
         id: input.id,
         participantIds: [...input.participantIds],
@@ -822,38 +720,31 @@ export const xReducer: PluginReducer<"app_x"> = (
       break;
     }
     case "ADD_DM_MESSAGE_OUTGOING": {
-      addDMMessage(state, parsePayload(event, xMessageInputSchema), "outgoing");
+      state.lastArrivalFrame = event.at;
+      addDMMessage(state, parsePayload(event, xMessageInputSchema), "outgoing", visible, event.at);
       break;
     }
     case "ADD_DM_MESSAGE_INCOMING": {
-      addDMMessage(state, parsePayload(event, xMessageInputSchema), "incoming");
+      state.lastArrivalFrame = event.at;
+      addDMMessage(state, parsePayload(event, xMessageInputSchema), "incoming", visible, event.at);
       break;
     }
     case "ADD_DM_REACTION": {
-      const { messageId, userId, emoji } = parsePayload(
-        event,
-        dmReactionSchema,
-      );
+      const { messageId, userId, emoji } = parsePayload(event, dmReactionSchema);
       const message = state.dmMessagesById[messageId];
       if (!message) {
         throw new Error(
           `X_MESSAGE_MISSING: ADD_DM_REACTION references unknown message "${messageId}"`,
         );
       }
-      const thread = requireThread(
-        state,
-        message.threadId,
-        "ADD_DM_REACTION.threadId",
-      );
+      const thread = requireThread(state, message.threadId, "ADD_DM_REACTION.threadId");
       requireUser(state, userId, "ADD_DM_REACTION.userId");
       if (!thread.participantIds.includes(userId)) {
         throw new Error(
           `X_THREAD_PARTICIPANT_REQUIRED: reaction user "${userId}" is not in thread "${thread.id}"`,
         );
       }
-      const reaction = message.reactions.find(
-        (candidate) => candidate.emoji === emoji,
-      );
+      const reaction = message.reactions.find((candidate) => candidate.emoji === emoji);
       if (reaction) {
         if (!reaction.userIds.includes(userId)) reaction.userIds.push(userId);
       } else {
@@ -863,10 +754,7 @@ export const xReducer: PluginReducer<"app_x"> = (
       break;
     }
     case "REMOVE_DM_REACTION": {
-      const { messageId, userId, emoji } = parsePayload(
-        event,
-        dmReactionSchema,
-      );
+      const { messageId, userId, emoji } = parsePayload(event, dmReactionSchema);
       const message = state.dmMessagesById[messageId];
       if (!message) {
         throw new Error(
@@ -887,34 +775,23 @@ export const xReducer: PluginReducer<"app_x"> = (
       break;
     }
     case "SET_DM_DELIVERY": {
-      const { messageId, delivery } = parsePayload(
-        event,
-        xDMDeliveryInputSchema,
-      );
+      const { messageId, delivery } = parsePayload(event, xDMDeliveryInputSchema);
       const message = state.dmMessagesById[messageId];
       if (!message)
         throw new Error(
           `X_MESSAGE_MISSING: SET_DM_DELIVERY references unknown message "${messageId}"`,
         );
       if (message.senderId !== state.currentUserId) {
-        throw new Error(
-          `X_DM_DELIVERY_DIRECTION_INVALID: message "${messageId}" is not outgoing`,
-        );
+        throw new Error(`X_DM_DELIVERY_DIRECTION_INVALID: message "${messageId}" is not outgoing`);
       }
-      const transitions: Record<
-        XDMMessage["delivery"],
-        XDMMessage["delivery"][]
-      > = {
+      const transitions: Record<XDMMessage["delivery"], XDMMessage["delivery"][]> = {
         sending: ["sent", "failed"],
         failed: ["sending"],
         sent: ["delivered", "read"],
         delivered: ["read"],
         read: [],
       };
-      if (
-        delivery !== message.delivery &&
-        !transitions[message.delivery].includes(delivery)
-      ) {
+      if (delivery !== message.delivery && !transitions[message.delivery].includes(delivery)) {
         throw new Error(
           `X_DM_DELIVERY_TRANSITION_INVALID: message "${messageId}" cannot move from ${message.delivery} to ${delivery}`,
         );

@@ -91,6 +91,8 @@ export interface SystemLocalizedStrings {
 }
 
 export interface LockscreenProjection {
+  notificationUX?: "cinematic" | "native";
+  authenticated?: boolean;
   kind: "lockscreen";
   theme: SystemSurfaceTheme;
   layout: SystemSurfaceLayout;

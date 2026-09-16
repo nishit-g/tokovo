@@ -60,6 +60,9 @@ export interface BaseMessage {
   readAt?: number;
   /** Reactions (tapbacks) on this message */
   reactions?: WhatsAppReaction[];
+  /** Frame of the latest authored reaction change; absent for seeded reactions. */
+  reactionsChangedAt?: number;
+  reactionsStartedAt?: number;
   /** Reply-to reference if this message is a reply */
   replyTo?: ReplyToData;
   /** Whether the message was forwarded */

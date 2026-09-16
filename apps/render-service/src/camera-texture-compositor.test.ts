@@ -16,6 +16,7 @@ import {
   createPerspectiveExpressions,
   createTextureFilterGraph,
   encodeGrayscalePng,
+  measureOpticalFraming,
 } from "./camera-texture-compositor";
 
 function capture(
@@ -133,6 +134,41 @@ describe("camera texture capture", () => {
 });
 
 describe("camera perspective and optical maps", () => {
+  it("checks protected content after crop, optical displacement, smear and rounded clipping", () => {
+    const value = capture(0, [
+      {
+        kind: "fisheye-warp",
+        center: [0.5, 0.5],
+        strength: 0.2,
+        radius: 1,
+        cropCompensation: 1.05,
+      },
+    ]);
+    const output = value.outputs[0];
+    output.quality.framing = {
+      projectionSupported: false,
+      clippedSubjectKeys: [],
+      safeViewport: { x: 80, y: 100, width: 920, height: 1600 },
+      subjects: [{ key: "message", worldRect: { x: 300, y: 400, width: 300, height: 100 } }],
+    };
+    expect(measureOpticalFraming(output).framing).toMatchObject({
+      projectionSupported: true,
+      clippedSubjectKeys: [],
+    });
+    output.quality.framing.subjects = [
+      { key: "message", worldRect: { x: 90, y: 400, width: 300, height: 100 } },
+    ];
+    expect(measureOpticalFraming(output).framing?.clippedSubjectKeys).toEqual(["message"]);
+    output.projectionPasses = [
+      { kind: "directional-smear", direction: [0.1, 0], spreadPx: 100, samples: 6, decay: 0.5 },
+    ];
+    output.quality.framing.subjects = [
+      { key: "message", worldRect: { x: 150, y: 400, width: 300, height: 100 } },
+    ];
+    expect(measureOpticalFraming(output).framing?.clippedSubjectKeys).toEqual(["message"]);
+    const legacy = capture(0).outputs[0];
+    expect(measureOpticalFraming(legacy)).toBe(legacy.quality);
+  });
   const radial = {
     kind: "radial-warp" as const,
     model: "barrel" as const,

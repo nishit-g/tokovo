@@ -38,6 +38,8 @@ export interface NotificationAppAdapter {
 }
 
 export interface NotificationDeviceDescriptor {
+  notificationUX?: "cinematic" | "native";
+  notificationTokens?: import("@tokovo/ir").DeviceConfig["notificationTokens"];
   id: string;
   platform: NotificationPlatform;
   platformProfileId: PlatformDesignProfileId;
@@ -50,6 +52,7 @@ export interface NotificationDeviceDescriptor {
 }
 
 export type NotificationDeviceContextOperation =
+  | { at: number; sequence: number; deviceId: string; type: "authenticate" }
   | { at: number; sequence: number; deviceId: string; type: "lock" }
   | { at: number; sequence: number; deviceId: string; type: "unlock" }
   | { at: number; sequence: number; deviceId: string; type: "goHome" }
@@ -115,6 +118,8 @@ export interface PreparedNotificationRecord {
     lockScreenEligible: boolean;
     bannerStartFrame?: number;
     bannerEndFrame?: number;
+    bannerDismissedAtFrame?: number;
+    bannerInterruptedAtFrame?: number;
     soundAtFrame?: number;
   };
 }
@@ -131,7 +136,10 @@ export interface PreparedNotificationActionEffect {
   sequence: number;
   deviceId: string;
   notificationId: string;
-  interactionType: "tap" | "chooseAction" | "reply";
+  interactionType: "tap" | "chooseAction" | "reply" | "markRead";
+  badgeCount?: number;
+  authenticated?: boolean;
+  requestedAtFrame?: number;
   actionId?: string;
   replyText?: string;
   replyTextField?: string;
@@ -153,6 +161,7 @@ export interface PreparedNotificationProgram {
 }
 
 export interface NotificationDeviceContextState {
+  isAuthenticated: boolean;
   isLocked: boolean;
   dnd: boolean;
   foregroundAppId?: string;
@@ -170,6 +179,7 @@ export interface NotificationRecordRuntimeState {
   id: string;
   lifecycle: NotificationRecordLifecycle;
   deliveredAtFrame?: number;
+  readAtFrame?: number;
   actedAtFrame?: number;
   dismissedAtFrame?: number;
   actionId?: string;
@@ -181,6 +191,7 @@ export interface NotificationRuntimeState {
   orderedIds: readonly string[];
   centerOpen: boolean;
   centerOpenedAtFrame?: number;
+  centerClosedAtFrame?: number;
 }
 
 export interface NotificationThemeProjection {
@@ -211,6 +222,7 @@ export interface NotificationThemeProjection {
     cardPadding: number;
     iconSize: number;
     lockScreenTop: number;
+    lockScreenBottom: number;
     centerTop: number;
     centerHorizontalMargin: number;
     stackGap: number;
@@ -225,6 +237,7 @@ export interface NotificationThemeProjection {
     timestampSize: number;
   };
   motion: {
+    reduced: boolean;
     bannerEnterFramesAt30: number;
     bannerExitFramesAt30: number;
     cardEnterFramesAt30: number;
@@ -235,6 +248,7 @@ export interface NotificationThemeProjection {
 export type NotificationAnimationPhase = "entering" | "visible" | "exiting";
 
 export interface NotificationItemProjection {
+  swipeProgress?: number;
   id: string;
   appId: string;
   appName: string;
@@ -261,14 +275,20 @@ export interface NotificationItemProjection {
 }
 
 export interface NotificationGroupProjection {
+  expansionProgress?: number;
   key: string;
   appId: string;
   count: number;
   latestAtFrame: number;
   items: readonly NotificationItemProjection[];
+  progress?: number;
 }
 
 export interface NotificationDeviceProjection {
+  handoffProgress?: number;
+  notificationUX: "cinematic" | "native";
+  displayAs: "count" | "stack" | "list";
+  countLabel: string;
   deviceId: string;
   platform: NotificationPlatform;
   appearance: NotificationAppearance;
@@ -282,12 +302,22 @@ export interface NotificationDeviceProjection {
     reply: string;
     timeSensitive: string;
     critical: string;
+    options: string;
+    clear: string;
   };
   theme: NotificationThemeProjection;
   deviceContext: NotificationDeviceContextState;
   banner?: NotificationItemProjection;
+  expanded?: {
+    item: NotificationItemProjection;
+    inputSessionId?: string;
+    draft?: string;
+    keyboardInset?: number;
+    progress: number;
+  };
   lockScreenGroups: readonly NotificationGroupProjection[];
   center: {
+    scrollPosition: number;
     open: boolean;
     progress: number;
     groups: readonly NotificationGroupProjection[];

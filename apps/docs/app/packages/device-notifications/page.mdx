@@ -16,10 +16,184 @@ Deterministic notification compilation, replay, projection, audio, and presentat
 - `prepareNotificationProgram`
 - `evaluateNotificationProgram`
 - `projectNotifications`
-- `projectNotificationAudioCues`
+- `projectNotificationAudio`
 - `getNotificationTheme`
 - `NotificationSurface`
 
 Apps own notification content adapters and action targets. This package owns device
 policy and visual projection. There is no parallel notification store in core and no
 second notification renderer.
+
+## Choose a UX strategy without replacing existing episodes
+
+Set `notificationUX: "native"` in `.device()` options for the native interaction
+profile. Omit it, or choose `"cinematic"`, to retain the earlier cinematic profile.
+Both profiles share lifecycle, privacy, routing, audio, read state and visual tokens.
+
+The cinematic profile retains top-positioned Lock Screen groups, creation-order
+stacks, and expanded presentation while a locked tap awaits authentication. The
+native profile uses bottom-positioned iPhone groups, newest-first ordering, and
+keeps tap-to-open distinct from long-press expansion. `notification-interaction-proof`
+preserves the cinematic example; `notification-native-ux-proof` opts into native UX.
+
+Native iOS presentation also uses a Lock Screen-specific status bar (no duplicate
+small clock), larger control glyphs, sentence-case notification metadata, compact
+Count mode, and explicit expanded-group headings. Image notifications use a
+thumbnail when collapsed and rich media when expanded. Inline reply has a
+notification-owned composer above the keyboard. These are deterministic authored
+presentations, not live OS controls; the cinematic painter remains unchanged.
+
+Group and swipe reversals continue from their current authored position. Starting
+reply input does not restart expansion; native collapse retains its outgoing paint
+while releasing keyboard ownership. Authenticated native navigation crossfades
+to the destination while retaining the source notification; it does not repeat
+the authentication sequence.
+
+`scrollHistory(position)` accepts a finite value from 0 to 1. In native iOS Lock
+Screen history it moves through the painted content using its actual CSS height,
+without browser scroll state or guessed row heights. Open native history includes
+all retained groups; theme limits still bound the closed preview and cinematic
+strategy. Native Lock Screen history measures changed rows after fonts load,
+holds capture until the measured layout commits, then mounts only viewport rows
+plus overscan. Settled expanded groups are windowed per card. Initial measurement
+and in-flight group expansion still scale with the affected content; headless
+projection remains linear in history size. Other surface strategies are unchanged.
+
+To profile the actual export bundle in Chromium, from `apps/render-service` run:
+
+```bash
+mise exec -- node --import tsx scripts/profile-ui.mjs notification-native-stress 90 90 2000
+```
+
+The optional fourth argument injects synthetic history records only into the probe.
+It reports frame-to-ready timings, mounted row counts, and browser/headless font
+width differences. This is not a live Player FPS or cross-hardware guarantee.
+
+Use `notification-evening-plan` for a 20-second continuous reply-to-chat story and
+`notification-native-stress` for 140% text, long history, images and interrupted
+gestures. The earlier proof episodes remain available for comparison.
+
+Author native presentation interactions inside a notification track:
+
+```ts
+notifications.at("1.8s").authenticate(); // Reveal previews, stay on Lock Screen.
+notifications.at("3s").tap("review");  // Enter the destination.
+notifications.at("12.3s").displayAs("count");
+notifications.at("14s").openCenter();
+notifications.at("15s").scrollHistory(1); // Native iOS Lock Screen: oldest painted content.
+notifications.at("17s").scrollHistory(0); // Return to newest content.
+notifications.at("13.5s").displayAs("stack");
+notifications.at("14.5s").expandGroup("burst-1");
+notifications.at("16s").swipeLeft("burst-1");
+notifications.at("17.5s").dismiss("burst-1");
+```
+
+`expandGroup` and `collapseGroup` identify a group through one member notification.
+`swipeLeft` reveals the Options/Clear presentation; `swipeRight` closes it. Clearing
+is still an explicit `dismiss` event, never an implicit read acknowledgement.
+`displayAs("list")` unfolds group members. `openCenter`/`closeCenter` author the
+history reveal and exit. These are scripted render interactions, not browser touch
+handlers or an implementation of the iOS notification settings menu.
+
+## Authenticate a locked destination
+
+Inside a notification track, `tap(id)` on a locked device leaves the action pending.
+`authenticate(id)` authors successful authentication completion; only then are the
+device unlock and destination events emitted. Without completion, no destination
+opens. Dismissal or clearing the pending notification cancels the action. Preview
+privacy still applies. The cinematic expanded card or native source card survives
+briefly over the destination on handoff.
+
+```ts
+notifications.at("1.8s").tap("review");
+notifications.at("3s").authenticate("review");
+```
+
+This is an authored simulation of successful authentication, not a biometric or
+passcode implementation.
+Calling `authenticate()` without a notification ID authenticates preview access
+without leaving the Lock Screen. Locking again resets that authentication state.
+
+## Expand and reply with the shared keyboard
+
+`expand(id)` presents the complete card. `collapse(id)` closes it without reading or
+dismissing it. `beginReply(id, inputSessionId)` attaches an existing same-device input
+session to a replyable notification. Author that session with `.input()`; its start
+must be at or after `beginReply`. Use a unique field ID such as `notification-reply`.
+The notification owns the keyboard and draft, so the underlying app composer does
+not receive the draft or shrink its viewport. Unauthenticated locked previews cannot
+own reply input; authenticated Lock Screen quick replies can remain on that screen.
+Send with `reply(id, text)` at the end of the input session; the app's reply target
+receives that text. `reply()` remains an explicit send event, not automatic submission.
+The input session must end no later than that send event; its keyboard exit animation
+is allowed to finish during the outgoing card transition.
+
+```ts
+notifications.at("5.5s").expand("reply");
+notifications.at("6s").beginReply("reply", "review-reply");
+notifications.at("9s").reply("reply", "Looks good. Ship it.");
+```
+
+Group entry and removal change their occupied layout space over deterministic frames.
+The cinematic profile retains creation ordering; native groups use newest-first
+ordering. Reduced-motion preferences remove these transitions.
+
+## Theme notification surfaces without changing behavior
+
+Pass `notificationTokens` in `.device()` options. Native platform tokens remain the
+defaults; overrides affect the shared banner, card, expanded and reply surfaces.
+For example:
+
+```ts
+notificationTokens: {
+  card: "#fff7e9", text: "#343b32", secondaryText: "#66725c",
+  accent: "#52764c", border: "#dfdbc6", radius: 24, padding: 16,
+}
+```
+
+Radius is bounded to 0–48 logical points and padding to 4–32. These are visual tokens,
+not a separate illustrated renderer or bundled art assets. The checked-in
+`notification-interaction-proof` episode demonstrates this palette and the full flow.
+
+## Acknowledge read state without confusing it with dismissal
+
+`dismiss()` and `clearAll()` remove notification presentation; neither marks content
+read or changes an app badge. Use `markRead(notificationId, badgeCount, readTarget)`
+to author an acknowledgement. The badge count is the app's authoritative unread
+count, not a count of notification cards. The compiler emits the badge update and
+the app-owned read event at the same frame.
+
+Inside a WhatsApp notification track, after delivering `message-a` for a seeded
+`chat-a` conversation:
+
+```ts
+notifications.at("3s").dismiss("message-a");
+notifications.at("4s").markRead("message-a", 0, {
+  type: "CONVERSATION_OPENED",
+  payload: { conversationId: "chat-a" },
+});
+```
+
+Choose a read event supported by the app; the example event also opens the WhatsApp
+conversation. Read acknowledgement can follow dismissal or retention expiry.
+Counts must be nonnegative integers, and read events cannot target a different app.
+The device badge update covers dock, page, and folder icons.
+
+## Coordinate burst sounds
+
+Default noncritical alerts on the same device share a 350 ms coalescing window.
+Only the first ordinary cue in that window plays. Other devices, critical alerts,
+and explicit custom sound cues remain independent. This changes audio only:
+delivery, banner queues, notification history, and authored timing are unchanged.
+
+## Route Teams notifications to content
+
+Set `metadata.dmId` for a DM or `metadata.channelId` for a channel. Combining
+`channelId` with `threadId` opens a channel thread. These targets emit the app's
+normal navigation events; a bare thread ID does not guess a channel or DM.
+
+WhatsApp, iMessage, Instagram, LinkedIn, X and Snapchat conversation notifications
+also emit app-owned navigation events for an authored `threadId`. Destination data
+must already exist in the app snapshot or preceding app events. Use an explicit
+`defaultAction.appEvent` for other destination kinds; a navigation route string alone
+does not implement an app's routing semantics.

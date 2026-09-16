@@ -50,6 +50,29 @@ function runReducer(state: WorldState, event: RuntimeEvent): WorldState {
 }
 
 describe("WhatsApp reducer", () => {
+  it("records reaction timing for deterministic replay without changing seeded timestamps", () => {
+    const world = createTestWorldState();
+    const app = world.appInstances["phone:app_whatsapp"] as ReturnType<typeof createWhatsAppInitialState>;
+    app.conversations.dm_test.messages.push({ id: "ok", type: "text", from: "me", text: "Ok", at: 0 });
+    const next = runReducer(world, {
+      at: 45, kind: "APP", appId: "app_whatsapp", deviceId: "phone",
+      type: "REACTION_ADDED", payload: { conversationId: "dm_test", messageId: "ok", emoji: "❤️" },
+    });
+    const message = (next.appInstances["phone:app_whatsapp"] as typeof app).conversations.dm_test.messages[0];
+    expect(message.reactionsChangedAt).toBe(45);
+    expect(message.reactions).toEqual([{ emoji: "❤️", count: 1, fromMe: false }]);
+    expect(app.conversations.dm_test.messages[0].reactionsChangedAt).toBeUndefined();
+    const react = (state: WorldState, emoji: string, at: number) => runReducer(state, {
+      at, kind: "APP", appId: "app_whatsapp", deviceId: "phone", type: "REACTION_ADDED",
+      payload: { conversationId: "dm_test", messageId: "ok", emoji, fromMe: true },
+    });
+    const changed = react(react(react(next, "❤️", 50), "👍", 60), "👍", 70);
+    const finalMessage = (changed.appInstances["phone:app_whatsapp"] as typeof app).conversations.dm_test.messages[0];
+    expect(finalMessage.reactions).toEqual([
+      { emoji: "❤️", count: 1, fromMe: false }, { emoji: "👍", count: 1, fromMe: true },
+    ]);
+    expect(finalMessage.reactionsChangedAt).toBe(60);
+  });
   it("restores a conversation's reply and reading target after visiting another chat", () => {
     let world = createTestWorldState();
     const app = world.appInstances["phone:app_whatsapp"] as ReturnType<

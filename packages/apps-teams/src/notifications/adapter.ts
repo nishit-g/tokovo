@@ -28,11 +28,23 @@ export const teamsNotificationAdapter: NotificationAppAdapter = {
       subtitle: intent.content.subtitle ?? intent.content.title,
     };
   },
-  defaultAction: (intent) => ({
-    navigation: {
-      appId: "app_teams",
-      route: intent.metadata?.route as string | undefined,
-      params: { threadId: intent.threadId },
-    },
-  }),
+  defaultAction(intent) {
+    const dmId = typeof intent.metadata?.dmId === "string" ? intent.metadata.dmId.trim() : undefined;
+    const channelId = typeof intent.metadata?.channelId === "string" ? intent.metadata.channelId.trim() : undefined;
+    const appEvent = dmId
+      ? { appId: "app_teams", type: "TEAMS_OPEN_DM", payload: { dmId } }
+      : channelId && intent.threadId
+        ? { appId: "app_teams", type: "TEAMS_OPEN_THREAD", payload: { channelId, threadId: intent.threadId } }
+        : channelId
+          ? { appId: "app_teams", type: "TEAMS_OPEN_CHANNEL", payload: { channelId } }
+          : undefined;
+    return {
+      navigation: {
+        appId: "app_teams",
+        route: typeof intent.metadata?.route === "string" ? intent.metadata.route : undefined,
+        params: { threadId: intent.threadId, channelId, dmId },
+      },
+      ...(appEvent ? { appEvent } : {}),
+    };
+  },
 };

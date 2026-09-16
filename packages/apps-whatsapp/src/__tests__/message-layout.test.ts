@@ -5,6 +5,7 @@ import {
   LAYOUT_CONSTANTS,
   measureTextBlock,
   getThemedMessageLayout,
+  inlineMetadataWidth,
 } from "../config/layout-config.js";
 import { computeConversationLayout } from "../layout/cache.js";
 import { getTheme } from "../theme/index.js";
@@ -19,6 +20,15 @@ function message(
 }
 
 describe("WhatsApp deterministic message geometry", () => {
+  it("only reserves visible footer content and uses proportional text advances", () => {
+    const msg = { type: "text" as const, text: "Dinner at the usual place?", from: "ava" };
+    const plain = calculateBubbleWidth(msg, 393);
+    expect(plain).toBe(226);
+    expect(calculateBubbleWidth({ ...msg, timestamp: "18:20" }, 393)).toBeGreaterThan(plain);
+    const larger = { ...getThemedMessageLayout(getTheme("ios", false)), timestampFontSize: 16 };
+    expect(calculateBubbleWidth({ ...msg, timestamp: "١٨:٢٠" }, 393, larger)).toBeGreaterThan(calculateBubbleWidth({ ...msg, timestamp: "18:20" }, 393));
+    expect(measureTextBlock("mmmm", 393).contentWidth).toBeGreaterThan(measureTextBlock("iiii", 393).contentWidth * 3);
+  });
   it("shares grapheme-safe explicit lines for mixed scripts, long words and newlines", () => {
     for (const text of [
       "A family 👨‍👩‍👧‍👦 arrives",
@@ -73,12 +83,16 @@ describe("WhatsApp deterministic message geometry", () => {
       calculateMessageHeight({ type: "text", text: "One logical line" }, 393),
     ).toBe(
       LAYOUT_CONSTANTS.BUBBLE_PADDING_V * 2 +
-        LAYOUT_CONSTANTS.TIMESTAMP_HEIGHT +
         LAYOUT_CONSTANTS.LINE_HEIGHT,
     );
   });
 
   it("reserves enough width for real metadata instead of overlaying short text", () => {
+    expect(inlineMetadataWidth({ type: "text", text: "Ok", from: "me" }, 393)).toBeDefined();
+    for (const flags of [{ edited: true }, { starred: true }, { timestamp: "9:41 AM" }, { isGroupChat: true }]) {
+      expect(inlineMetadataWidth({ type: "text", text: "Ok", ...flags }, 393)).toBeUndefined();
+      expect(calculateMessageHeight({ type: "text", text: "Ok", ...flags }, 393)).toBe(52);
+    }
     expect(
       calculateBubbleWidth({ type: "text", text: "Ok", from: "me" }, 393),
     ).toBeGreaterThanOrEqual(92);

@@ -29,6 +29,7 @@ export const X_AUTHORING_EVENT_TYPES = [
   "SET_PROFILE_TAB",
   "SET_NOTIFICATIONS_TAB",
   "NOTIFICATION_ADD",
+  "MARK_NOTIFICATION_READ",
   "DM_THREAD_CREATE",
   "DM_SEND",
   "DM_RECEIVE",
@@ -37,8 +38,7 @@ export const X_AUTHORING_EVENT_TYPES = [
   "DM_SET_DELIVERY",
 ] as const;
 
-export type XEventType =
-  (typeof X_AUTHORING_EVENT_TYPES)[number];
+export type XEventType = (typeof X_AUTHORING_EVENT_TYPES)[number];
 
 export type XEventKind =
   | "ADD_USER"
@@ -65,6 +65,7 @@ export type XEventKind =
   | "SET_PROFILE_TAB"
   | "SET_NOTIFICATIONS_TAB"
   | "ADD_NOTIFICATION"
+  | "MARK_NOTIFICATION_READ"
   | "ADD_DM_THREAD"
   | "ADD_DM_MESSAGE_OUTGOING"
   | "ADD_DM_MESSAGE_INCOMING"
@@ -93,6 +94,7 @@ export interface MediaPayload {
   aspect: "square" | "wide" | "tall";
   alt?: string;
   posterUrl?: string;
+  durationSeconds?: number;
   sensitive?: boolean;
 }
 
@@ -246,6 +248,7 @@ export type XScrollSurface =
   | "thread";
 
 export interface XScrollPayload {
+  durationFrames?: number;
   surface: XScrollSurface;
   offset: number;
   targetId?: string;
@@ -263,13 +266,7 @@ export interface NotificationsTabPayload {
   tab: NotificationsTab;
 }
 
-export type NotificationType =
-  | "like"
-  | "repost"
-  | "reply"
-  | "follow"
-  | "mention"
-  | "verified";
+export type NotificationType = "like" | "repost" | "reply" | "follow" | "mention" | "verified";
 
 export interface NotificationAddPayload {
   id: string;
@@ -343,6 +340,7 @@ export type XEventPayloadMap = {
   SET_PROFILE_TAB: ProfileTabPayload;
   SET_NOTIFICATIONS_TAB: NotificationsTabPayload;
   NOTIFICATION_ADD: NotificationAddPayload;
+  MARK_NOTIFICATION_READ: { id: string; badgeCount?: number };
   DM_THREAD_CREATE: DMThreadCreatePayload;
   DM_SEND: DMSendPayload;
   DM_RECEIVE: DMReceivePayload;

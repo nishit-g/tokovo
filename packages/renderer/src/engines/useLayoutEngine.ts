@@ -260,7 +260,7 @@ export function computeLayoutEngine(
   }
 
   const appId = device.foregroundAppId;
-  const projectedInputSession = input.inputProgram
+  let projectedInputSession = input.inputProgram
     ? findInputSessionForProjection(input.inputProgram, deviceId, t, effectiveFps)
     : undefined;
   // INCREMENTAL CACHE CHECK
@@ -367,8 +367,18 @@ export function computeLayoutEngine(
       })
     : undefined;
   const variant: "ios" | "android" = profile.platform;
+  const notificationInputId = notificationProjection?.expanded?.inputSessionId;
+  const notificationOwnsInput = Boolean(notificationInputId);
+  if (notificationInputId) {
+    projectedInputSession = input.inputProgram?.sessions.find((session) => session.id === notificationInputId && session.deviceId === deviceId);
+  } else if (input.notificationProgram?.interactions.some((interaction) =>
+    interaction.type === "beginReply" && interaction.inputSessionId === projectedInputSession?.id)) {
+    projectedInputSession = undefined;
+  }
   const systemSurfaceProjection = device.isLocked
     ? projectLockscreen({
+        notificationUX: notificationProjection?.notificationUX,
+        authenticated: notificationProjection?.notificationUX === "native" && notificationProjection.deviceContext.isAuthenticated,
         profile,
         os: device.os,
         homeWallpaper: device.homeScreen?.wallpaper,
@@ -396,12 +406,16 @@ export function computeLayoutEngine(
           keyboardHeight: platformVisuals.geometry.keyboard.height * pointScale,
         })
       : undefined;
+  if (notificationProjection?.expanded && notificationOwnsInput && inputProjection) {
+    notificationProjection.expanded.draft = inputProjection.displayDraft;
+    notificationProjection.expanded.keyboardInset = inputProjection.surface.viewportInset;
+  }
   const systemGeometry = resolveDeviceSystemGeometry(profile, {
     appearance: osAppearance,
     locale: osLocale,
     preferences: visualPreferences,
     state: {
-      keyboard: inputProjection
+      keyboard: inputProjection && !notificationOwnsInput
         ? {
             visible: inputProjection.surface.visible,
             progress: inputProjection.surface.progress,
@@ -430,7 +444,7 @@ export function computeLayoutEngine(
     viewportWidth: appViewport.viewport.width,
     viewportHeight: appViewport.viewport.height,
     appViewport,
-    inputValues: inputProjection ? { [inputProjection.fieldId]: inputProjection.displayDraft } : undefined,
+    inputValues: inputProjection && !notificationOwnsInput ? { [inputProjection.fieldId]: inputProjection.displayDraft } : undefined,
     layoutCache: input.layoutCache,
   };
 

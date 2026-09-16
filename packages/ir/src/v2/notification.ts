@@ -12,6 +12,15 @@ export type NotificationInterruptionLevelIR =
   | "critical";
 
 export type NotificationPrivacyIR = "public" | "private" | "sensitive";
+export interface NotificationVisualTokensIR {
+  card?: string;
+  text?: string;
+  secondaryText?: string;
+  accent?: string;
+  border?: string;
+  radius?: number;
+  padding?: number;
+}
 export type NotificationPreviewPolicyIR = "always" | "whenUnlocked" | "never";
 export type NotificationDeliveryConditionIR =
   | "always"
@@ -103,8 +112,19 @@ export interface NotificationIntentIR {
 
 export type NotificationInteractionTypeIR =
   | "tap"
+  | "authenticate"
+  | "expand"
+  | "expandGroup"
+  | "collapseGroup"
+  | "swipeLeft"
+  | "swipeRight"
+  | "setDisplay"
+  | "scrollHistory"
+  | "collapse"
+  | "beginReply"
   | "chooseAction"
   | "reply"
+  | "markRead"
   | "dismiss"
   | "clearAll"
   | "openCenter"
@@ -118,6 +138,14 @@ export interface NotificationInteractionIR {
   notificationId?: string;
   actionId?: string;
   replyText?: string;
+  inputSessionId?: string;
+  display?: "count" | "stack" | "list";
+  /** Normalized history position: 0 is newest, 1 is oldest visible content. */
+  scrollPosition?: number;
+  /** Explicit authoritative app badge count after acknowledgement; never inferred from cards. */
+  badgeCount?: number;
+  /** App-owned read event, kept separate from dismissal and navigation. */
+  readTarget?: NotificationAppEventTargetIR;
   /** Stable ordering for multiple interactions authored on the same frame. */
   sequence?: number;
 }

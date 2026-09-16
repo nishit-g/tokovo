@@ -1,6 +1,7 @@
 import type { Platform } from "@tokovo/core";
 import type { XCopyKey, XDirection } from "../localization/index.js";
 import type { XLocale } from "../runtime/state.js";
+import type { XTextTokens } from "../layout/tokens.js";
 
 export const X_UI_VERSION = "2026.1" as const;
 
@@ -39,6 +40,7 @@ export interface XExperienceInput {
 }
 
 export interface XExperience {
+  text: XTextTokens;
   appId: "app_x";
   uiVersion: typeof X_UI_VERSION;
   platform: Platform;

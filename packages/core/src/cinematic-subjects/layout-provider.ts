@@ -28,6 +28,9 @@ export function createLayoutCinematicSubjectProvider(input: {
           subjectId: region.id,
         },
         rect: region.rect,
+        ...(typeof region.metadata?.textSizePx === "number"
+          ? { textSizePx: region.metadata.textSizePx }
+          : {}),
         coordinateSpace: "app-logical" as const,
         visible: region.rect.width > 0 && region.rect.height > 0,
         sourceVersion: 1,

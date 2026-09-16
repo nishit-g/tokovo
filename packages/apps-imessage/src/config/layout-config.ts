@@ -49,17 +49,22 @@ export function shouldShowTail(messages: IMessageMessage[], index: number): bool
   );
 }
 
-export function getReplyPreview(messages: IMessageMessage[], index: number): string | undefined {
+export function getReplyTarget(messages: IMessageMessage[], index: number, byId?: ReadonlyMap<string, number>): IMessageMessage | undefined {
   const reference = messages[index]?.replyTo;
   if (!reference) return undefined;
   const id = reference.messageId ?? reference.id;
-  const target = id
-    ? messages.slice(0, index).find((message) => message.id === id)
+  const targetIndex = id ? (byId?.get(id) ?? (byId ? -1 : messages.findIndex((message) => message.id === id))) : -1;
+  return id
+    ? targetIndex >= 0 && targetIndex < index ? messages[targetIndex] : undefined
     : reference.index === "last"
       ? messages[index - 1]
       : typeof reference.index === "number" && reference.index < index
         ? messages[reference.index]
         : undefined;
+}
+
+export function getReplyPreview(messages: IMessageMessage[], index: number, byId?: ReadonlyMap<string, number>): string | undefined {
+  const target = getReplyTarget(messages, index, byId);
   if (!target) return undefined;
   if (target.isUnsent) return "Message unavailable";
   const attachment = target.attachments?.[0];

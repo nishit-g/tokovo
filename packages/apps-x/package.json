@@ -2,6 +2,9 @@
   "name": "@tokovo/apps-x",
   "version": "2.0.0",
   "private": true,
+  "files": [
+    "dist"
+  ],
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -39,28 +42,6 @@
       "default": "./dist/ui/index.js"
     }
   },
-  "files": [
-    "dist"
-  ],
-  "dependencies": {
-    "@tokovo/core": "workspace:*",
-    "@tokovo/dsl": "workspace:*",
-    "@tokovo/device-notifications": "workspace:*",
-    "@tokovo/ir": "workspace:*",
-    "@tokovo/react": "workspace:*",
-    "lucide-react": "^0.263.1",
-    "react": "18.3.1",
-    "react-dom": "18.3.1",
-    "immer": "^10.0.0",
-    "remotion": "4.0.409",
-    "zod": "^4.2.1"
-  },
-  "devDependencies": {
-    "@types/node": "^20.0.0",
-    "@types/react": "18.3.1",
-    "typescript": "^5.0.0",
-    "vitest": "^1.0.0"
-  },
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch",
@@ -68,5 +49,26 @@
     "lint": "eslint src --ext .ts,.tsx",
     "test": "vitest run",
     "test:watch": "vitest"
+  },
+  "dependencies": {
+    "@tokovo/core": "workspace:*",
+    "@tokovo/device-notifications": "workspace:*",
+    "@tokovo/dsl": "workspace:*",
+    "@tokovo/ir": "workspace:*",
+    "@tokovo/react": "workspace:*",
+    "immer": "^10.0.0",
+    "lucide-react": "^0.263.1",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "remotion": "4.0.409",
+    "twitter-text": "3.1.0",
+    "zod": "^4.2.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/react": "18.3.1",
+    "@types/twitter-text": "3.1.10",
+    "typescript": "^5.0.0",
+    "vitest": "^1.0.0"
   }
 }

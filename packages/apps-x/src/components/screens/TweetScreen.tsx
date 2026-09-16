@@ -1,5 +1,6 @@
+import { xComposerHeight } from "../../layout/measure.js";
 import React from "react";
-import { useInputField } from "@tokovo/react";
+import { useInputField, DraftText, useFps, useTime } from "@tokovo/react";
 import { useXExperience } from "../../experience/context.js";
 import { xInputFields } from "../../input-fields.js";
 import { projectXConversation } from "../../layout/project.js";
@@ -17,13 +18,10 @@ import { AppHeader, BottomNav } from "../primitives/Chrome.js";
 import type { XScreenProps } from "./types.js";
 import { requireDeviceClock } from "./types.js";
 
-export const TweetScreen: React.FC<XScreenProps> = ({
-  world,
-  deviceId,
-  width,
-  height,
-}) => {
+export const TweetScreen: React.FC<XScreenProps> = ({ world, deviceId, width, height }) => {
   const experience = useXExperience();
+  const frame = useTime();
+  const fps = useFps();
   const state = requireXState(world, deviceId);
   const tweet = selectActiveTweet(world, deviceId);
   const conversation = selectTweetConversation(world, deviceId, tweet.id);
@@ -38,7 +36,12 @@ export const TweetScreen: React.FC<XScreenProps> = ({
     0,
     height - experience.metrics.headerHeight - experience.metrics.navHeight,
   );
+  const composerHeight = xComposerHeight(replyDraft, width, experience.text, "reply");
   const projection = projectXConversation({
+    tokens: experience.text,
+    frame,
+    reducedMotion: experience.reducedMotion,
+    composerHeight,
     state,
     conversation,
     width,
@@ -76,11 +79,12 @@ export const TweetScreen: React.FC<XScreenProps> = ({
                   top: item.y,
                   insetInline: 0,
                   height: item.slotHeight,
+                  opacity: item.opacity,
+                  overflow: "hidden",
                 }}
               >
                 <div style={{ position: "relative", height: item.postHeight }}>
-                  {conversationItem.role !== "focus" &&
-                  conversationItem.continuesThread ? (
+                  {conversationItem.role !== "focus" && conversationItem.continuesThread ? (
                     <span
                       aria-hidden
                       style={{
@@ -108,7 +112,7 @@ export const TweetScreen: React.FC<XScreenProps> = ({
                   <div
                     data-x-anchor="x.reply.composer"
                     style={{
-                      height: 56,
+                      height: composerHeight,
                       padding: "7px 16px",
                       display: "flex",
                       alignItems: "center",
@@ -117,9 +121,7 @@ export const TweetScreen: React.FC<XScreenProps> = ({
                       borderBottom: `1px solid ${experience.colors.border}`,
                     }}
                   >
-                    {currentUser ? (
-                      <Avatar user={currentUser} size={34} />
-                    ) : null}
+                    {currentUser ? <Avatar user={currentUser} size={34} /> : null}
                     <div
                       role="textbox"
                       aria-label={experience.t("replyPlaceholder")}
@@ -131,33 +133,33 @@ export const TweetScreen: React.FC<XScreenProps> = ({
                         color: replyDraft
                           ? experience.colors.text
                           : experience.colors.textSecondary,
-                        fontSize: 15,
+                        fontSize: experience.text.message,
                         whiteSpace: "pre-wrap",
                         unicodeBidi: "plaintext",
                         overflow: "hidden",
                       }}
                     >
-                      {replyDraft || experience.t("replyPlaceholder")}
-                      {replyDraft && input?.focused ? (
-                        <span
-                          aria-hidden
-                          style={{
-                            display: "inline-block",
-                            width: 1.5,
-                            height: 16,
-                            marginInlineStart: 1,
-                            verticalAlign: -2,
-                            background: experience.colors.accent,
-                          }}
-                        />
-                      ) : null}
+                      <DraftText
+                        text={replyDraft}
+                        selection={input?.selection}
+                        lastActivityFrame={input?.lastActivityFrame}
+                        focused={Boolean(input?.focused)}
+                        frame={frame}
+                        fps={fps}
+                        accent={experience.colors.accent}
+                        lineHeight={experience.text.messageLine}
+                        locale={input?.locale.tag ?? experience.locale}
+                        placeholder={experience.t("replyPlaceholder")}
+                      />
                     </div>
                     <div
                       style={{
+                        width: 64,
+                        minWidth: 64,
+                        boxSizing: "border-box",
+                        textAlign: "center",
                         color: replyDraft ? "#fff" : experience.colors.accent,
-                        background: replyDraft
-                          ? experience.colors.accent
-                          : "transparent",
+                        background: replyDraft ? experience.colors.accent : "transparent",
                         borderRadius: 18,
                         fontSize: 14,
                         fontWeight: 700,

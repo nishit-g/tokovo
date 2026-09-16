@@ -26,7 +26,7 @@ const MAP_HEIGHT = 512;
 // to one second bounds both expression-tree size and FFmpeg filter memory even
 // when every frame has a unique camera pose.
 const COMPOSITOR_CHUNK_FRAMES = 30;
-export const CAMERA_TEXTURE_COMPOSITOR_SIGNATURE = "camera-texture-compositor-v2";
+export const CAMERA_TEXTURE_COMPOSITOR_SIGNATURE = "camera-texture-compositor-v3";
 const PNG_SIGNATURE = Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]);
 
 type DistortionPass = Extract<
@@ -255,7 +255,7 @@ function projectForward(input: {
     const sourceX = x - centerX;
     const sourceY = y - centerY;
     const denominator = 1 + (cosX * sinY * sourceX) / perspective - (sinX * sourceY) / perspective;
-    if (!Number.isFinite(denominator) || Math.abs(denominator) < 1e-8) {
+    if (!Number.isFinite(denominator) || denominator < 1e-8) {
       throw new Error(
         "CAM_TEXTURE_PROJECTIVE_SINGULAR: Projective camera transform sent a stage corner to infinity.",
       );
@@ -265,6 +265,90 @@ function projectForward(input: {
   }
 
   return { x: x + input.viewport.x, y: y + input.viewport.y };
+}
+
+/** Conservative support bounds through the same optical model as the release painter.
+ * Displacement support is bounded, not inverse-solved: folds cannot produce a false safe result.
+ * This checks clipping, not perceptual legibility or pixel identity with preview optics.
+ */
+export function measureOpticalFraming(output: CaptureOutput): CaptureOutput["quality"] {
+  const framing = output.quality.framing;
+  if (!framing?.subjects || !framing.safeViewport) return output.quality;
+  const projective = output.projectionPasses.filter(
+    (pass): pass is ProjectivePass => pass.kind === "projective-warp",
+  );
+  if (projective.length > 1)
+    return { ...output.quality, framing: { ...framing, projectionSupported: false } };
+  let expansionX = 1,
+    expansionY = 1; // One pixel for displacement-map quantization.
+  for (const pass of output.projectionPasses) {
+    const dimension = Math.min(output.viewport.width, output.viewport.height);
+    if (pass.kind === "radial-warp" || pass.kind === "fisheye-warp") {
+      const support = Math.abs(pass.strength) * dimension * 0.1;
+      expansionX += support;
+      expansionY += support;
+    } else if (pass.kind === "anamorphic-edge-stretch") {
+      const support = Math.abs(pass.strength) * dimension * 0.08;
+      if (pass.axis === "horizontal") expansionX += support;
+      else expansionY += support;
+    } else if (pass.kind === "directional-smear") {
+      const length = Math.max(1e-6, Math.hypot(...pass.direction));
+      expansionX += Math.abs((pass.direction[0] * pass.spreadPx) / length);
+      expansionY += Math.abs((pass.direction[1] * pass.spreadPx) / length);
+    }
+  }
+  const safe = framing.safeViewport;
+  const clippedSubjectKeys = framing.subjects
+    .filter(({ worldRect: rect }) => {
+      const points = [
+        [rect.x, rect.y],
+        [rect.x + rect.width, rect.y],
+        [rect.x, rect.y + rect.height],
+        [rect.x + rect.width, rect.y + rect.height],
+      ];
+      return points.some(([x, y]) => {
+        const point = projectForward({
+          point: applyMatrix3(output.viewMatrix, { x, y }),
+          viewport: output.viewport,
+          cropCompensation: maxCropCompensation(output.projectionPasses),
+          projective: projective[0],
+        });
+        const radius = Math.min(
+          output.clipRadiusPx,
+          output.viewport.width / 2,
+          output.viewport.height / 2,
+        );
+        const outsideRoundedClip = [-1, 1].some((sx) =>
+          [-1, 1].some((sy) => {
+            const px = point.x + sx * expansionX,
+              py = point.y + sy * expansionY;
+            const cx = clamp(
+              px,
+              output.viewport.x + radius,
+              output.viewport.x + output.viewport.width - radius,
+            );
+            const cy = clamp(
+              py,
+              output.viewport.y + radius,
+              output.viewport.y + output.viewport.height - radius,
+            );
+            return Math.hypot(px - cx, py - cy) > radius + 1e-7;
+          }),
+        );
+        return (
+          outsideRoundedClip ||
+          point.x - expansionX < safe.x ||
+          point.y - expansionY < safe.y ||
+          point.x + expansionX > safe.x + safe.width ||
+          point.y + expansionY > safe.y + safe.height
+        );
+      });
+    })
+    .map(({ key }) => key);
+  return {
+    ...output.quality,
+    framing: { ...framing, clippedSubjectKeys, projectionSupported: true },
+  };
 }
 
 export function createPerspectiveCorners(

@@ -146,7 +146,20 @@ function sfxTap({ dur = 0.04, seed = 7, toneHz = 2400, noise = 0.35 } = {}) {
 }
 
 function sfxKeyboardClick() {
-  return sfxTap({ dur: 0.03, seed: 11, toneHz: 3200, noise: 0.22 });
+  const out = new Float32Array(secondsToSamples(0.045));
+  const rnd = makeNoise(11);
+  let body = 0;
+  for (let i = 0; i < out.length; i++) {
+    const t = i / SAMPLE_RATE;
+    body += 0.24 * (rnd() - body);
+    // Short filtered contact noise, with a quieter, lower-pitched key body.
+    // No sustained sine ping: fast runs should read as taps, not a ringtone.
+    out[i] = body * Math.exp(-t * 260) * 0.8 +
+      (sine(t, 880) * 0.16 + sine(t, 1460) * 0.08) * Math.exp(-t * 370);
+  }
+  addFadeInOut(out, 0.3, 8);
+  normalizePeak(out, 0.55);
+  return out;
 }
 
 function sfxLock() {

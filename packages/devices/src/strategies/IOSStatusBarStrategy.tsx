@@ -17,6 +17,7 @@ import {
 } from "./shared-icons.js";
 import { getIOSChromeMetrics } from "../ios/chrome-metrics.js";
 import { resolveDevicePlatformVisuals } from "../visual-system.js";
+import { formatSystemTime } from "../surfaces/localization.js";
 
 /**
  * Resolve theme prop to actual colors.
@@ -46,8 +47,12 @@ export const IOSStatusBarStrategy: React.FC<StatusBarStrategyProps> = ({
   os,
   theme,
   deviceProfile,
+  lockScreen = false,
+  notificationUX,
 }) => {
-  const displayTime = formatTime(os.clock);
+  const displayTime = notificationUX === "native"
+    ? formatSystemTime(os.clock, os.locale, os.hourCycle)
+    : formatTime(os.clock);
   const displayBattery = os.battery;
   const isCharging = os.charging;
   const network = os.network;
@@ -92,7 +97,7 @@ export const IOSStatusBarStrategy: React.FC<StatusBarStrategyProps> = ({
           fontVariantNumeric: "tabular-nums",
         }}
       >
-        {displayTime}
+        {lockScreen ? null : displayTime}
       </div>
 
       {/* Right side - Status icons */}

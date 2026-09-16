@@ -52,6 +52,7 @@ export interface LocalCinematicSubject {
   nodeId: string;
   visible: boolean;
   clippedLocalRect?: CameraRectIR;
+  textSizePx?: number;
   sourceVersion: number;
   provenance: {
     ownerId: string;
@@ -62,4 +63,5 @@ export interface LocalCinematicSubject {
 export interface StageProjectedCinematicSubject extends LocalCinematicSubject {
   worldRect: CameraRectIR;
   clippedWorldRect?: CameraRectIR;
+  worldTextSizePx?: number;
 }

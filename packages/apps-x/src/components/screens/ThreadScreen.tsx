@@ -1,5 +1,6 @@
+import { xComposerHeight } from "../../layout/measure.js";
 import React from "react";
-import { useInputField, useTime } from "@tokovo/react";
+import { useInputField, useTime, DraftText, ShapedText, useFps } from "@tokovo/react";
 import { useXExperience } from "../../experience/context.js";
 import { xInputFields } from "../../input-fields.js";
 import { formatXTimestamp } from "../../localization/index.js";
@@ -17,12 +18,7 @@ import { XIcon } from "../primitives/Icon.js";
 import type { XScreenProps } from "./types.js";
 import { requireDeviceClock } from "./types.js";
 
-export const ThreadScreen: React.FC<XScreenProps> = ({
-  world,
-  deviceId,
-  width,
-  height,
-}) => {
+export const ThreadScreen: React.FC<XScreenProps> = ({ world, deviceId, width, height }) => {
   const experience = useXExperience();
   const state = requireXState(world, deviceId);
   const thread = selectActiveThread(world, deviceId);
@@ -30,22 +26,15 @@ export const ThreadScreen: React.FC<XScreenProps> = ({
   const input = useInputField(xInputFields.threadComposer(thread.id));
   const draft = input?.value ?? selectThreadDraft(world, deviceId, thread.id);
   const frame = useTime();
-  const otherIds = thread.participantIds.filter(
-    (id) => id !== state.currentUserId,
-  );
+  const fps = useFps();
+  const otherIds = thread.participantIds.filter((id) => id !== state.currentUserId);
   const participants = otherIds.map((id) =>
     requireUser(state, id, `thread "${thread.id}" participantIds`),
   );
   const primary =
     participants[0] ??
-    requireUser(
-      state,
-      thread.participantIds[0],
-      `thread "${thread.id}" participantIds`,
-    );
-  const title =
-    thread.title ??
-    (participants.map((user) => user.name).join(", ") || primary.name);
+    requireUser(state, thread.participantIds[0], `thread "${thread.id}" participantIds`);
+  const title = thread.title ?? (participants.map((user) => user.name).join(", ") || primary.name);
   const typingUsers = thread.typingUserIds.map((id) =>
     requireUser(state, id, `thread "${thread.id}" typingUserIds`),
   );
@@ -59,17 +48,20 @@ export const ThreadScreen: React.FC<XScreenProps> = ({
             .map((user) => user.name)
             .join(", ")} ${experience.t("peopleTyping")}`;
   const nowMs = requireDeviceClock(world, deviceId);
-  const composerHeight = experience.metrics.composerHeight + 10;
-  const threadHeight = Math.max(
-    0,
-    height - experience.metrics.headerHeight - composerHeight,
-  );
+  const composerHeight = xComposerHeight(draft, width, experience.text);
+  const threadHeight = Math.max(0, height - experience.metrics.headerHeight - composerHeight);
   const projection = projectXThread({
+    tokens: experience.text,
+    frame,
+    reducedMotion: experience.reducedMotion,
     state,
     threadId: thread.id,
     messages,
     width,
-    viewportHeight: threadHeight,
+    viewportHeight: Math.max(
+      0,
+      threadHeight - 20 - (typingUsers.length ? experience.text.typingHeight : 0),
+    ),
   });
 
   return (
@@ -100,28 +92,23 @@ export const ThreadScreen: React.FC<XScreenProps> = ({
       >
         {projection.visibleItems.map((item) => {
           const { message } = item;
-          const sender = requireUser(
-            state,
-            message.senderId,
-            `message "${message.id}" senderId`,
-          );
+          const sender = requireUser(state, message.senderId, `message "${message.id}" senderId`);
           const self = message.senderId === state.currentUserId;
           const replyTarget = message.replyToMessageId
             ? state.dmMessagesById[message.replyToMessageId]
             : undefined;
           const deliveryLabel =
-            message.delivery === "failed"
-              ? experience.t("failed")
-              : experience.t(message.delivery);
+            message.delivery === "failed" ? experience.t("failed") : experience.t(message.delivery);
           return (
             <div
               key={message.id}
-              data-x-anchor={`x.dm.${thread.id}.message.${message.id}`}
               style={{
                 position: "absolute",
-                top: item.y - projection.viewportStart,
+                top: 12 + item.y - projection.viewportStart,
                 insetInline: 12,
                 height: item.height,
+                opacity: item.opacity,
+                overflow: "hidden",
                 display: "flex",
                 flexDirection: self ? "row-reverse" : "row",
                 alignItems: "flex-end",
@@ -134,6 +121,7 @@ export const ThreadScreen: React.FC<XScreenProps> = ({
                 <span style={{ width: 25 }} />
               )}
               <div
+                data-x-anchor={`x.dm.${thread.id}.message.${message.id}`}
                 style={{
                   width: item.bubbleWidth,
                   height: item.height,
@@ -149,9 +137,7 @@ export const ThreadScreen: React.FC<XScreenProps> = ({
                     height: item.bubbleHeight,
                     padding: "9px 13px",
                     boxSizing: "border-box",
-                    borderRadius: self
-                      ? "18px 18px 5px 18px"
-                      : "18px 18px 18px 5px",
+                    borderRadius: self ? "18px 18px 5px 18px" : "18px 18px 18px 5px",
                     background:
                       message.delivery === "failed" && self
                         ? experience.colors.danger
@@ -159,8 +145,8 @@ export const ThreadScreen: React.FC<XScreenProps> = ({
                           ? experience.colors.outgoingBubble
                           : experience.colors.incomingBubble,
                     color: self ? "#fff" : experience.colors.text,
-                    fontSize: 14.5 * experience.type.scale,
-                    lineHeight: "20px",
+                    fontSize: experience.text.message,
+                    lineHeight: `${experience.text.messageLine}px`,
                     whiteSpace: "pre-wrap",
                     unicodeBidi: "plaintext",
                     overflow: "hidden",
@@ -173,31 +159,29 @@ export const ThreadScreen: React.FC<XScreenProps> = ({
                   {item.startsRun && !self && participants.length > 1 ? (
                     <div
                       style={{
-                        marginBottom: 3,
+                        height: 18,
+                        lineHeight: "15px",
                         fontSize: 11,
                         fontWeight: 700,
                         color: experience.colors.accent,
                       }}
                     >
-                      {sender.name}{" "}
-                      <VerifiedBadge variant={sender.verified} size={11} />
+                      {sender.name} <VerifiedBadge variant={sender.verified} size={11} />
                     </div>
                   ) : null}
                   {replyTarget ? (
                     <div
                       style={{
                         marginBottom: 7,
+                        height: experience.text.smallLine + 12,
+                        boxSizing: "border-box",
                         padding: "5px 8px",
                         borderInlineStart: `3px solid ${self ? "rgba(255,255,255,.72)" : experience.colors.accent}`,
                         borderRadius: 5,
-                        background: self
-                          ? "rgba(255,255,255,.1)"
-                          : experience.colors.surfaceRaised,
-                        color: self
-                          ? "rgba(255,255,255,.86)"
-                          : experience.colors.textSecondary,
+                        background: self ? "rgba(255,255,255,.1)" : experience.colors.surfaceRaised,
+                        color: self ? "rgba(255,255,255,.86)" : experience.colors.textSecondary,
                         fontSize: 11,
-                        lineHeight: "14px",
+                        lineHeight: `${experience.text.smallLine + 2}px`,
                         whiteSpace: "nowrap",
                         overflow: "hidden",
                         textOverflow: "ellipsis",
@@ -206,23 +190,22 @@ export const ThreadScreen: React.FC<XScreenProps> = ({
                       {experience.t("replyingToMessage")}: {replyTarget.text}
                     </div>
                   ) : null}
-                  {message.text}
+                  {item.textLines.map((line, i) => (
+                    <div key={i} style={{ height: experience.text.messageLine, whiteSpace: "pre" }}>
+                      <ShapedText text={line} />
+                    </div>
+                  ))}
                   {item.endsRun ? (
                     <div
                       style={{
                         marginTop: 3,
                         textAlign: "end",
-                        color: self
-                          ? "rgba(255,255,255,.74)"
-                          : experience.colors.textSecondary,
-                        fontSize: 9.5,
+                        color: self ? "rgba(255,255,255,.74)" : experience.colors.textSecondary,
+                        fontSize: 9.5 * experience.type.scale,
+                        lineHeight: `${experience.text.smallLine - 3}px`,
                       }}
                     >
-                      {formatXTimestamp(
-                        message.createdAt,
-                        nowMs,
-                        experience.locale,
-                      )}
+                      {formatXTimestamp(message.createdAt, nowMs, experience.locale)}
                       {self ? ` · ${deliveryLabel}` : ""}
                     </div>
                   ) : null}
@@ -232,7 +215,8 @@ export const ThreadScreen: React.FC<XScreenProps> = ({
                     style={{
                       height: item.reactionsHeight,
                       marginTop: -3,
-                      marginInline: 8,
+                      width: item.bubbleWidth,
+                      flexWrap: "wrap",
                       display: "flex",
                       gap: 4,
                       position: "relative",
@@ -244,7 +228,7 @@ export const ThreadScreen: React.FC<XScreenProps> = ({
                         key={reaction.emoji}
                         aria-label={`${reaction.emoji} ${reaction.userIds.length}`}
                         style={{
-                          minWidth: 28,
+                          width: 40,
                           height: 21,
                           paddingInline: 6,
                           borderRadius: 11,
@@ -311,10 +295,10 @@ export const ThreadScreen: React.FC<XScreenProps> = ({
                     height: 5,
                     borderRadius: "50%",
                     background: experience.colors.textSecondary,
-                    opacity:
-                      0.48 +
-                      0.38 * ((Math.sin((frame + dot * 5) * 0.38) + 1) / 2),
-                    transform: `translateY(${Math.sin((frame + dot * 5) * 0.38) * -1.5}px)`,
+                    opacity: experience.reducedMotion
+                      ? 0.7
+                      : 0.48 + 0.38 * ((Math.sin((frame + dot * 5) * 0.38) + 1) / 2),
+                    transform: `translateY(${experience.reducedMotion ? 0 : Math.sin((frame + dot * 5) * 0.38) * -1.5}px)`,
                   }}
                 />
               ))}
@@ -324,7 +308,8 @@ export const ThreadScreen: React.FC<XScreenProps> = ({
       </div>
       <div
         style={{
-          minHeight: experience.metrics.composerHeight + 10,
+          height: composerHeight,
+          minHeight: composerHeight,
           padding: "5px 9px",
           display: "flex",
           alignItems: "center",
@@ -346,32 +331,26 @@ export const ThreadScreen: React.FC<XScreenProps> = ({
             border: `1px solid ${input?.focused ? experience.colors.accent : experience.colors.borderStrong}`,
             padding: "8px 13px",
             boxSizing: "border-box",
-            color: draft
-              ? experience.colors.text
-              : experience.colors.textSecondary,
-            fontSize: 14,
+            color: draft ? experience.colors.text : experience.colors.textSecondary,
+            fontSize: experience.text.message,
             lineHeight: "20px",
-            boxShadow: input?.focused
-              ? `0 0 0 1px ${experience.colors.accentSoft}`
-              : "none",
+            boxShadow: input?.focused ? `0 0 0 1px ${experience.colors.accentSoft}` : "none",
             whiteSpace: "pre-wrap",
             unicodeBidi: "plaintext",
           }}
         >
-          {draft || experience.t("message")}
-          {draft && input?.focused ? (
-            <span
-              aria-hidden
-              style={{
-                display: "inline-block",
-                width: 1.5,
-                height: 15,
-                marginInlineStart: 1,
-                verticalAlign: -2,
-                background: experience.colors.accent,
-              }}
-            />
-          ) : null}
+          <DraftText
+            text={draft}
+            selection={input?.selection}
+            lastActivityFrame={input?.lastActivityFrame}
+            focused={Boolean(input?.focused)}
+            frame={frame}
+            fps={fps}
+            accent={experience.colors.accent}
+            lineHeight={experience.text.messageLine}
+            locale={input?.locale.tag ?? experience.locale}
+            placeholder={experience.t("message")}
+          />
         </div>
         <span
           style={{
@@ -380,9 +359,7 @@ export const ThreadScreen: React.FC<XScreenProps> = ({
             borderRadius: "50%",
             display: "grid",
             placeItems: "center",
-            background: draft
-              ? experience.colors.accent
-              : experience.colors.surfaceRaised,
+            background: draft ? experience.colors.accent : experience.colors.surfaceRaised,
             color: draft ? "#fff" : experience.colors.textSecondary,
           }}
         >

@@ -24,7 +24,7 @@ export const ReplyQuote: React.FC<ReplyQuoteProps> = ({
     ? theme.colors.replySurfaceSent
     : theme.colors.replySurfaceReceived;
   const secondaryText = isMyMessage
-    ? `${theme.colors.sentBubbleText}B3`
+    ? `color-mix(in srgb, ${theme.colors.sentBubbleText} 70%, transparent)`
     : theme.colors.timestamp;
 
   return (
@@ -50,6 +50,7 @@ export const ReplyQuote: React.FC<ReplyQuoteProps> = ({
         style={{
           flex: 1,
           padding: "5px 6px",
+          minWidth: 0,
           display: "flex",
           alignItems: "center",
           gap: 6,
@@ -59,6 +60,10 @@ export const ReplyQuote: React.FC<ReplyQuoteProps> = ({
           <div
             style={{
               fontSize: 12,
+              lineHeight: "15px",
+              whiteSpace: "nowrap",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
               fontWeight: 600,
               color: barColor,
               fontFamily: theme.typography.fontFamily,
@@ -75,6 +80,7 @@ export const ReplyQuote: React.FC<ReplyQuoteProps> = ({
           <div
             style={{
               fontSize: 13,
+              lineHeight: "17px",
               color: secondaryText,
               fontFamily: theme.typography.fontFamily,
               whiteSpace: "nowrap",

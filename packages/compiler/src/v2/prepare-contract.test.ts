@@ -971,6 +971,7 @@ describe("compiler pipeline guarantees", () => {
       id: "app_chat",
       version: "1.0.0",
       displayName: "Chat",
+      createInitialState: () => ({ viewMode: "CHAT", messages: [] }),
       reducer: (state: unknown) => state,
       views: { AppRoot: () => null },
       notificationAdapter: {
@@ -1024,6 +1025,8 @@ describe("compiler pipeline guarantees", () => {
           replyText: "ज़रूर 👋🏽",
           sequence: 0,
         },
+        { deviceId: "phone", atFrame: 90, type: "markRead", notificationId: "message", badgeCount: 2,
+          readTarget: { type: "MESSAGE_READ", payload: { threadId: "dm" } } },
       ],
     });
 
@@ -1033,6 +1036,31 @@ describe("compiler pipeline guarantees", () => {
     });
 
     expect(prepared.notificationProgram.devices.phone.locale).toBe("hi-IN");
+    const authenticated = prepareTrackEpisode({ ...ir,
+      events: [],
+      devices: ir.devices.map((device) => ({ ...device, locked: true })),
+      notificationInteractions: [
+        { deviceId: "phone", atFrame: 60, type: "tap", notificationId: "message" },
+        { deviceId: "phone", atFrame: 75, type: "authenticate", notificationId: "message" },
+      ],
+    }, [plugin], { log: false, validate: true });
+    expect(authenticated.events.filter((event) => event.at === 60 && event.kind === "DEVICE")).toEqual([]);
+    expect(authenticated.events).toEqual(expect.arrayContaining([
+      expect.objectContaining({ at: 75, kind: "DEVICE", type: "UNLOCK" }),
+      expect.objectContaining({ at: 75, kind: "DEVICE", type: "OPEN_APP" }),
+    ]));
+    expect(prepared.events).toEqual(expect.arrayContaining([
+      expect.objectContaining({ at: 90, kind: "DEVICE", type: "SET_BADGE", payload: { appId: "app_chat", count: 2 } }),
+      expect.objectContaining({ at: 90, kind: "APP", type: "MESSAGE_READ", appId: "app_chat", payload: { threadId: "dm" } }),
+    ]));
+    expect(prepared.initialWorld.appInstances["phone:app_chat"]).toEqual({ viewMode: "CHAT", messages: [] });
+    expect(() => prepareTrackEpisode({
+      ...ir,
+      notificationIntents: ir.notificationIntents!.map((intent) => ({
+        ...intent, defaultAction: { navigation: { appId: "app_missing" } },
+      })),
+      notificationInteractions: [{ deviceId: "phone", atFrame: 60, type: "tap", notificationId: "message", sequence: 0 }],
+    }, [plugin], { log: false, validate: true })).toThrow("targets unavailable app app_missing");
     expect(prepared.events).toEqual(
       expect.arrayContaining([
         expect.objectContaining({

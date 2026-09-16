@@ -1,3 +1,4 @@
+import { useTime } from "@tokovo/react";
 import React from "react";
 import {
   findUser,
@@ -8,24 +9,15 @@ import {
 } from "../../runtime/selectors.js";
 import { useXExperience } from "../../experience/context.js";
 import { Avatar } from "../primitives/Avatar.js";
-import {
-  BottomNav,
-  EmptyState,
-  IconButton,
-  TabBar,
-} from "../primitives/Chrome.js";
+import { BottomNav, EmptyState, IconButton, TabBar } from "../primitives/Chrome.js";
 import { XIcon, XLogo } from "../primitives/Icon.js";
 import { PostCard } from "../posts/PostCard.js";
 import { projectXFeed } from "../../layout/project.js";
 import type { XScreenProps } from "./types.js";
 import { requireDeviceClock } from "./types.js";
 
-export const TimelineScreen: React.FC<XScreenProps> = ({
-  world,
-  deviceId,
-  width,
-  height,
-}) => {
+export const TimelineScreen: React.FC<XScreenProps> = ({ world, deviceId, width, height }) => {
+  const frame = useTime();
   const experience = useXExperience();
   const state = requireXState(world, deviceId);
   const tweets = selectTimelineTweets(world, deviceId);
@@ -35,12 +27,12 @@ export const TimelineScreen: React.FC<XScreenProps> = ({
   const messageBadge = selectUnreadThreadCount(world, deviceId);
   const feedHeight = Math.max(
     0,
-    height -
-      experience.metrics.headerHeight -
-      48 -
-      experience.metrics.navHeight,
+    height - experience.metrics.headerHeight - 48 - experience.metrics.navHeight,
   );
   const projection = projectXFeed({
+    tokens: experience.text,
+    frame,
+    reducedMotion: experience.reducedMotion,
     state,
     tweets,
     width,
@@ -73,11 +65,7 @@ export const TimelineScreen: React.FC<XScreenProps> = ({
         }}
       >
         <div style={{ display: "grid", placeItems: "center" }}>
-          {currentUser ? (
-            <Avatar user={currentUser} size={32} />
-          ) : (
-            <XIcon name="user" size={22} />
-          )}
+          {currentUser ? <Avatar user={currentUser} size={32} /> : <XIcon name="user" size={22} />}
         </div>
         <div style={{ display: "grid", placeItems: "center" }}>
           <XLogo size={24} />
@@ -118,14 +106,11 @@ export const TimelineScreen: React.FC<XScreenProps> = ({
                   top: item.y,
                   insetInline: 0,
                   height: item.height,
+                  opacity: item.opacity,
+                  overflow: "hidden",
                 }}
               >
-                <PostCard
-                  state={state}
-                  tweet={item.tweet}
-                  width={width}
-                  nowMs={nowMs}
-                />
+                <PostCard state={state} tweet={item.tweet} width={width} nowMs={nowMs} />
               </div>
             ))}
           </div>
@@ -159,11 +144,7 @@ export const TimelineScreen: React.FC<XScreenProps> = ({
           <XIcon name="plus" size={26} color="#fff" strokeWidth={2.2} />
         </div>
       </div>
-      <BottomNav
-        active="home"
-        notificationBadge={notificationBadge}
-        messageBadge={messageBadge}
-      />
+      <BottomNav active="home" notificationBadge={notificationBadge} messageBadge={messageBadge} />
     </div>
   );
 };

@@ -30,6 +30,9 @@ export interface StatusBarNotificationIcon {
  * Uses ResolvedStatusBarTheme for full color control.
  */
 export interface StatusBarStrategyProps {
+  /** Native Lock Screen owns the clock; retain only the status indicators. */
+  lockScreen?: boolean;
+  notificationUX?: "cinematic" | "native";
   /** Device OS state */
   os: DeviceOSState;
   /**

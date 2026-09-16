@@ -1,9 +1,11 @@
 import type {
   CameraBakedTrajectoryIR,
+  CameraRectIR,
   CameraFillModeIR,
   CameraMountIR,
   CameraMotionProfileIR,
   CameraTravelIR,
+  CameraShotDirectionIR,
   CinematicSubjectRefIR,
   JsonObject,
 } from "@tokovo/ir";
@@ -85,7 +87,7 @@ export type CameraSequenceMotion =
   | { kind: "settle"; duration: CinematicTime }
   | {
       kind: "whip";
-      direction: "left" | "right" | "up" | "down";
+      direction: "left" | "right" | "up" | "down" | "travel";
       duration: CinematicTime;
     }
   | {
@@ -135,6 +137,7 @@ export interface CameraSequenceShotStyle {
   blend?: CameraSequenceBlend | null;
   motion?: CameraSequenceMotion | null;
   trajectory?: CameraBakedTrajectoryIR | null;
+  direction?: CameraShotDirectionIR | null;
   rotationDeg?: number | null;
   opacity?: number | null;
   priority?: number;
@@ -166,6 +169,12 @@ export class CinematicSequenceShot {
 
   at(time: CinematicTime): this {
     this.#definition.at = time;
+    return this;
+  }
+
+  /** Reuse a plain-data directing recipe. Later calls override it; nested fields replace, not merge. */
+  style(style: CameraSequenceShotStyle): this {
+    Object.assign(this.#definition, structuredClone(style));
     return this;
   }
 
@@ -244,6 +253,112 @@ export class CinematicSequenceShot {
     return this;
   }
 
+  direct(direction: CameraShotDirectionIR): this {
+    this.#definition.direction = direction;
+    return this;
+  }
+
+  /** Shared magnification and a soft reading window; the target no longer controls shot fit. */
+  readWithin(
+    framingSubject: CinematicSubjectRefIR,
+    options: {
+      scale: number;
+      region: CameraRectIR;
+      halfLifeSeconds?: number;
+      minimumReadingScale?: number;
+      minimumTextPx?: number;
+      avoidSubjects?: readonly CinematicSubjectRefIR[];
+      panLimits?: { speedPxPerSecond: number; accelerationPxPerSecondSquared: number };
+    },
+  ): this {
+    if (!Number.isFinite(options.scale) || options.scale <= 0)
+      throw new CinematicAuthoringError(
+        "CAM_READING_SCALE_INVALID",
+        "Reading scale must be positive and finite.",
+      );
+    const frame = this.#definition.frame;
+    this.#definition.frame = {
+      ...(typeof frame === "string" ? { preset: frame } : frame),
+      min: options.scale,
+      max: options.scale,
+    };
+    this.#definition.direction = {
+      entrance: { type: "cut" },
+      ...this.#definition.direction,
+      framing: "follow-position",
+      framingSubject,
+      tracking: {
+        halfLifeSeconds: options.halfLifeSeconds ?? 0.18,
+        readingRegion: options.region,
+        ...(options.minimumReadingScale === undefined
+          ? {}
+          : { minimumReadingScale: options.minimumReadingScale }),
+        ...(options.minimumTextPx === undefined ? {} : { minimumTextPx: options.minimumTextPx }),
+        ...(options.avoidSubjects === undefined ? {} : { avoidSubjects: options.avoidSubjects }),
+        ...(options.panLimits === undefined ? {} : { panLimits: options.panLimits }),
+      },
+    };
+    return this;
+  }
+
+  /** Enter from the actual preceding camera pose, including interrupted moves. */
+  handoff(
+    durationFrames = 12,
+    options: { continuity?: "velocity"; framing?: "hold" | "follow-position" } = {},
+  ): this {
+    if (!Number.isInteger(durationFrames) || durationFrames <= 0)
+      throw new CinematicAuthoringError(
+        "CAM_HANDOFF_DURATION_INVALID",
+        "Camera handoff durationFrames must be a positive integer.",
+      );
+    this.#definition.direction = {
+      ...this.#definition.direction,
+      entrance: { type: "minimum-jerk", durationFrames },
+      source: "freeze",
+      ...(options.continuity
+        ? { continuity: options.continuity, framing: options.framing ?? ("hold" as const) }
+        : {}),
+      ...(options.framing ? { framing: options.framing } : {}),
+    };
+    return this;
+  }
+
+  /** Hold, push relative to the composed shot, then hold the final scale. Times are shot-local. */
+  pushIn(scale: number, startFrame: number, endFrame: number): this {
+    if (
+      !Number.isFinite(scale) ||
+      scale <= 1 ||
+      !Number.isInteger(startFrame) ||
+      !Number.isInteger(endFrame) ||
+      startFrame < 0 ||
+      endFrame <= startFrame
+    )
+      throw new CinematicAuthoringError(
+        "CAM_PUSH_TIMING_INVALID",
+        "Camera pushIn requires scale > 1 and integer frames 0 <= start < end.",
+      );
+    const keyframe = (frame: number, scaleMultiplier: number) => ({
+      frame,
+      scaleMultiplier,
+      offsetX: 0,
+      offsetY: 0,
+      rotationOffsetDeg: 0,
+    });
+    this.#definition.direction = {
+      entrance: { type: "cut" },
+      ...this.#definition.direction,
+      movement: {
+        interpolation: "minimum-jerk",
+        keyframes: [
+          keyframe(0, 1),
+          ...(startFrame ? [keyframe(startFrame, 1)] : []),
+          keyframe(endFrame, scale),
+        ],
+      },
+    };
+    return this;
+  }
+
   rotation(rotationDeg: number): this {
     this.#definition.rotationDeg = rotationDeg;
     return this;
@@ -289,7 +404,7 @@ export class CinematicSequenceShot {
     return this.motion({ kind: "settle", duration });
   }
 
-  whip(direction: "left" | "right" | "up" | "down", duration: CinematicTime): this {
+  whip(direction: "left" | "right" | "up" | "down" | "travel", duration: CinematicTime): this {
     return this.motion({ kind: "whip", direction, duration });
   }
 
@@ -726,6 +841,7 @@ function applyStyle(
   if (style.priority !== undefined) builder.priority(style.priority);
   if (style.source === "automatic") builder.automatic();
   applyMotion(builder, style.motion, frame.targetFill);
+  if (style.direction) builder.direct(style.direction);
 }
 
 function applyLook(plan: CinematicPlanBuilder, look: CameraLookDefinition | undefined): void {

@@ -81,3 +81,4 @@ export {
   assertPluginValid,
 } from "./utils/validation.js";
 export type { ValidationError, ValidationResult } from "./utils/validation.js";
+export { ShapedText } from "./ShapedText.js";

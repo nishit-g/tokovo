@@ -17,18 +17,14 @@ function entityRegion(region: SemanticRegion):
   const metadataMessageId = region.metadata?.messageId;
   if (
     region.tags.includes("message") &&
-    (region.tags.includes("message_me") ||
-      region.tags.includes("message_other"))
+    (region.tags.includes("message_me") || region.tags.includes("message_other"))
   ) {
     return { entityId: region.id, region: "bubble" };
   }
   if (typeof metadataMessageId !== "string" || metadataMessageId.length === 0) {
     return undefined;
   }
-  if (
-    region.id.startsWith("reply_") &&
-    region.tags.includes("message_fragment")
-  ) {
+  if (region.id.startsWith("reply_") && region.tags.includes("message_fragment")) {
     return { entityId: metadataMessageId, region: "reply" };
   }
   if (region.id.startsWith("media_") && region.tags.includes("media")) {
@@ -40,10 +36,7 @@ function entityRegion(region: SemanticRegion):
   return undefined;
 }
 
-function projectionForRegion(
-  region: SemanticRegion,
-  deviceId: string,
-): CinematicSubjectProjection {
+function projectionForRegion(region: SemanticRegion, deviceId: string): CinematicSubjectProjection {
   const entity = entityRegion(region);
   return {
     ref: entity
@@ -62,6 +55,9 @@ function projectionForRegion(
           subjectId: region.id,
         },
     rect: region.rect,
+    ...(typeof region.metadata?.textSizePx === "number"
+      ? { textSizePx: region.metadata.textSizePx }
+      : {}),
     coordinateSpace: "app-logical",
     visible: region.rect.width > 0 && region.rect.height > 0,
     sourceVersion: SUBJECT_VERSION,
@@ -83,6 +79,9 @@ function selectorProjection(input: {
       subjectId: input.subjectId,
     },
     rect: input.region.rect,
+    ...(typeof input.region.metadata?.textSizePx === "number"
+      ? { textSizePx: input.region.metadata.textSizePx }
+      : {}),
     coordinateSpace: "app-logical",
     visible: input.region.rect.width > 0 && input.region.rect.height > 0,
     sourceVersion: SUBJECT_VERSION,
@@ -114,29 +113,21 @@ export const WhatsAppCinematicSubjects: CinematicSubjectProvider = {
     const semantic = (layout as LayoutState | undefined)?.semantic;
     if (!semantic) return [];
     const regions = Object.values(semantic.regions);
-    const projected = regions.map((region) =>
-      projectionForRegion(region, deviceId),
-    );
+    const projected = regions.map((region) => projectionForRegion(region, deviceId));
     const lastMessageRegionId = semantic.groups.message?.at(-1);
     const lastMediaRegionId = semantic.groups.media?.at(-1);
     const selectors = [
       selectorProjection({
         subjectId: "last-message",
-        region: lastMessageRegionId
-          ? semantic.regions[lastMessageRegionId]
-          : undefined,
+        region: lastMessageRegionId ? semantic.regions[lastMessageRegionId] : undefined,
         deviceId,
       }),
       selectorProjection({
         subjectId: "last-media",
-        region: lastMediaRegionId
-          ? semantic.regions[lastMediaRegionId]
-          : undefined,
+        region: lastMediaRegionId ? semantic.regions[lastMediaRegionId] : undefined,
         deviceId,
       }),
-    ].filter(
-      (subject): subject is CinematicSubjectProjection => subject !== undefined,
-    );
+    ].filter((subject): subject is CinematicSubjectProjection => subject !== undefined);
     return [...projected, ...selectors];
   },
 };

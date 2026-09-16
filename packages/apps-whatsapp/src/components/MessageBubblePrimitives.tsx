@@ -1,11 +1,13 @@
 import { memo, type CSSProperties, type ReactNode } from "react";
+import { useCurrentFrame, useVideoConfig } from "remotion";
 
 import { getReactionAccessibilityLabel } from "../accessibility/index.js";
 import { useTheme, useWhatsAppLocale } from "../experience/ExperienceContext.js";
 import { formatWhatsAppNumber } from "../localization/index.js";
 import type { MessageRunPosition, ProjectedThreadMessage } from "../thread/projector.js";
 import type { DeliveryStage } from "../utils/status.js";
-import { getReactionWidth } from "../config/layout-config.js";
+import { getReactionWidth, metadataLineHeight } from "../config/layout-config.js";
+import { WHATSAPP_INTERACTION_TOKENS as tokens } from "../theme/index.js";
 
 export interface MessageChrome {
   edgeMedia: boolean;
@@ -74,7 +76,7 @@ function DeliveryGlyph({ stage, color }: { stage: DeliveryStage; color: string }
       aria-hidden="true"
     >
       <path
-        d="M1.4 6.2 4.7 9.3 11.8 2.2"
+        d="M1.5 6 4.5 9 11.5 2"
         fill="none"
         stroke={color}
         strokeWidth="1.35"
@@ -83,7 +85,7 @@ function DeliveryGlyph({ stage, color }: { stage: DeliveryStage; color: string }
       />
       {stage !== "sent" && (
         <path
-          d="M6.2 8.7 7.1 9.5 15.8 1.8"
+          d="M8.5 9 15.5 2"
           fill="none"
           stroke={color}
           strokeWidth="1.35"
@@ -208,12 +210,14 @@ export const ForwardedMetadata = memo(function ForwardedMetadata() {
 });
 
 export const MessageMetadata = memo(function MessageMetadata({
+  inline = false,
   message,
   isMe,
   deliveryStage,
   overlay,
   colorOverride,
 }: {
+  inline?: boolean;
   message: ProjectedThreadMessage;
   isMe: boolean;
   deliveryStage?: DeliveryStage;
@@ -223,6 +227,7 @@ export const MessageMetadata = memo(function MessageMetadata({
   const theme = useTheme();
   const { t } = useWhatsAppLocale();
   const color = overlay ? "#FFFFFF" : (colorOverride ?? theme.colors.timestamp);
+  const lineHeight = metadataLineHeight(theme.typography.timestampFontSize);
   const hasMetadata = Boolean(
     message.timestamp || message.edited || message.starred || deliveryStage,
   );
@@ -244,13 +249,13 @@ export const MessageMetadata = memo(function MessageMetadata({
       data-cinematic-subject="message-footer"
       aria-label={isMe && deliveryStage ? t(`a11y.delivery.${deliveryStage}`) : undefined}
       style={{
-        position: overlay ? "absolute" : "relative",
-        insetInlineEnd: overlay ? 6 : undefined,
-        bottom: overlay ? 6 : undefined,
+        position: overlay || inline ? "absolute" : "relative",
+        insetInlineEnd: overlay ? 6 : inline ? 0 : undefined,
+        bottom: overlay ? 6 : inline ? 0 : undefined,
         alignSelf: "flex-end",
         flexShrink: 0,
-        minHeight: 14,
-        height: overlay ? undefined : 14,
+        minHeight: lineHeight,
+        height: overlay ? undefined : lineHeight,
         display: "flex",
         alignItems: "center",
         justifyContent: "flex-end",
@@ -260,7 +265,7 @@ export const MessageMetadata = memo(function MessageMetadata({
         color,
         backgroundColor: overlay ? theme.colors.mediaScrim : undefined,
         fontSize: theme.typography.timestampFontSize,
-        lineHeight: "14px",
+        lineHeight: `${lineHeight}px`,
         fontFamily: theme.typography.fontFamily,
         letterSpacing: -0.08,
         whiteSpace: "nowrap",
@@ -283,7 +288,13 @@ export const ReactionCluster = memo(function ReactionCluster({
 }) {
   const theme = useTheme();
   const { locale } = useWhatsAppLocale();
+  const frame = useCurrentFrame();
+  const { fps } = useVideoConfig();
   if (!message.reactions?.length) return null;
+  const total = message.reactions.reduce((sum, reaction) => sum + reaction.count, 0);
+  const progress = message.reactionsChangedAt === undefined ? 1
+    : Math.max(0, Math.min(1, (frame - message.reactionsChangedAt) / (fps * tokens.reactionSeconds)));
+  const settle = 1 - (1 - progress) ** 3;
 
   return (
     <div
@@ -292,49 +303,47 @@ export const ReactionCluster = memo(function ReactionCluster({
       aria-label={getReactionAccessibilityLabel(message, locale)}
       style={{
         position: "absolute",
-        right: isMe ? 7 : undefined,
-        left: isMe ? undefined : 7,
+        right: isMe ? tokens.reactionInset : undefined,
+        left: isMe ? undefined : tokens.reactionInset,
         bottom: 0,
-        height: 26,
+        height: tokens.reactionHeight,
         width: getReactionWidth(message.reactions),
         boxSizing: "border-box",
         display: "flex",
         alignItems: "center",
-        gap: 3,
-        padding: "2px 7px",
+        gap: 0,
+        padding: "2px 6px",
         border: `1px solid ${theme.colors.reactionBorder}`,
-        borderRadius: 13,
+        borderRadius: tokens.reactionHeight / 2,
         color: theme.colors.receivedBubbleText,
         backgroundColor: theme.colors.reactionSurface,
         boxShadow: theme.colors.reactionShadow,
-        fontSize: 13,
+        fontSize: 15,
         lineHeight: "17px",
         fontFamily: theme.typography.fontFamily,
         zIndex: 2,
+        opacity: settle,
+        transform: `translateY(${(1 - settle) * 4}px) scale(${0.85 + settle * 0.15})`,
+        transformOrigin: isMe ? "right top" : "left top",
       }}
     >
       {message.reactions.slice(0, 3).map((reaction) => (
         <span
           key={reaction.emoji}
           style={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: 2,
-            paddingInline: reaction.fromMe ? 3 : undefined,
-            borderRadius: 8,
-            backgroundColor: reaction.fromMe ? `${theme.colors.accent}18` : undefined,
+            display: "inline-block",
+            width: 18,
+            flexShrink: 0,
+            textAlign: "center",
           }}
         >
           <span>{reaction.emoji}</span>
-          {reaction.count > 1 && (
-            <span style={{ color: theme.colors.timestamp, fontSize: 10 }}>
-              {formatWhatsAppNumber(locale, reaction.count)}
-            </span>
-          )}
         </span>
       ))}
-      {message.reactions.length > 3 && (
-        <span style={{ fontSize: 10 }}>+{message.reactions.length - 3}</span>
+      {total > 1 && (
+        <span style={{ marginInlineStart: 4, fontSize: 11, color: theme.colors.timestamp }}>
+          {formatWhatsAppNumber(locale, total)}
+        </span>
       )}
     </div>
   );

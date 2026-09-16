@@ -32,6 +32,7 @@ import { createPresignedAssetUrlMap } from "./storage";
 import {
   CameraTextureCaptureCollector,
   compositeCameraTexture,
+  measureOpticalFraming,
   renderPosterFromVideo,
 } from "./camera-texture-compositor";
 import {
@@ -81,11 +82,7 @@ export async function getServeUrl(
 
   const bundleDir = path.join(repoRoot, ".remotion", "bundles", sourceSignature);
   const indexPath = path.join(bundleDir, "index.html");
-  const publicAssetMarker = path.join(
-    bundleDir,
-    "public",
-    "asset-provenance.json",
-  );
+  const publicAssetMarker = path.join(bundleDir, "public", "asset-provenance.json");
   if (fs.existsSync(indexPath) && fs.existsSync(publicAssetMarker)) {
     await logger?.info("bundle.reuse", "Reusing cached Remotion bundle", {
       sourceSignature,
@@ -358,10 +355,7 @@ export async function renderEpisodeMedia(input: {
   );
   const renderData =
     Object.keys(presignedAssetUrlMap).length > 0
-      ? rewriteEpisodeRenderDataAssetUrls(
-          unresolvedRenderData,
-          presignedAssetUrlMap,
-        )
+      ? rewriteEpisodeRenderDataAssetUrls(unresolvedRenderData, presignedAssetUrlMap)
       : unresolvedRenderData;
   const inputProps = {
     episodeId: input.episodeId,
@@ -374,10 +368,7 @@ export async function renderEpisodeMedia(input: {
     ...(publicAssetBaseUrl ? { TOKOVO_PUBLIC_ASSET_BASE_URL: publicAssetBaseUrl } : {}),
   };
   const bundleStartedAt = Date.now();
-  const {
-    serveUrl,
-    sourceSignature: bundleSourceSignature,
-  } = await getServeUrl(input.logger);
+  const { serveUrl, sourceSignature: bundleSourceSignature } = await getServeUrl(input.logger);
   const bundleMs = Date.now() - bundleStartedAt;
 
   const selectStartedAt = Date.now();
@@ -636,7 +627,7 @@ export async function renderEpisodeMedia(input: {
             frame: capture.frame,
             outputId: output.outputId,
             viewport: output.viewport,
-            ...output.quality,
+            ...measureOpticalFraming(output),
           })),
         ),
       );

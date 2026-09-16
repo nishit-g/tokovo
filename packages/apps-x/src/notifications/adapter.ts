@@ -20,11 +20,30 @@ export const xNotificationAdapter: NotificationAppAdapter = {
       subtitle: intent.content.subtitle,
     };
   },
-  defaultAction: (intent) => ({
-    navigation: {
-      appId: "app_x",
-      route: intent.metadata?.route as string | undefined,
-      params: { threadId: intent.threadId },
-    },
-  }),
+  defaultAction: (intent) => {
+    const tweetId =
+      typeof intent.metadata?.tweetId === "string" ? intent.metadata.tweetId : undefined;
+    const actorId =
+      typeof intent.metadata?.actorId === "string" ? intent.metadata.actorId : undefined;
+    const social =
+      intent.category === "social" ||
+      ["like", "follow", "repost", "reply", "mention", "verified"].includes(
+        String(intent.metadata?.kind),
+      );
+    const payload = tweetId
+      ? { screen: "tweet", tweetId }
+      : intent.metadata?.kind === "follow" && actorId
+        ? { screen: "profile", userId: actorId }
+        : !social && intent.threadId
+          ? { screen: "thread", threadId: intent.threadId }
+          : { screen: "notifications" };
+    return {
+      navigation: { appId: "app_x" },
+      appEvent: {
+        appId: "app_x",
+        type: "SET_SCREEN",
+        payload: social ? { ...payload, notificationId: intent.id } : payload,
+      },
+    };
+  },
 };

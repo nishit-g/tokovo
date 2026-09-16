@@ -139,6 +139,7 @@ export default defineEpisode({
               media: {
                 type: "video",
                 urls: ["/media/launch-clip.mp4"],
+                durationSeconds: 2.669333,
                 posterUrl: "/media/launch-board.svg",
                 aspect: "wide",
                 alt: "A short product launch film",

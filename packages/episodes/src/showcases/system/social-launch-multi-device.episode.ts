@@ -147,6 +147,7 @@ export default defineEpisode({
               type: "video",
               aspect: "wide",
               urls: ["/media/launch-clip.mp4"],
+                durationSeconds: 2.669333,
             },
             hashtags: ["launchnight"],
             viewCount: 84_200,

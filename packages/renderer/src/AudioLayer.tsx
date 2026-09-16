@@ -56,12 +56,15 @@ const InputSoundInstance: React.FC<{
     : undefined;
   const soundPath =
     profile?.sounds?.["device.keyboard"] ?? "generated/core/keyboard-click.wav";
+  const procedural = ["generated/core/keyboard-click.wav", "os/ios/keyboard.wav", "os/android/keyboard.wav"].includes(soundPath);
+  const rate = cue.kind === "delete" ? 0.88 : cue.kind === "submit" ? 0.94
+    : 0.98 + (cue.at % 5) * 0.01;
 
   return (
     <Sequence
       from={cue.at}
       durationInFrames={
-        soundPath === "generated/core/keyboard-click.wav"
+        procedural
           ? Math.max(1, Math.ceil(fps * 0.12))
           : undefined
       }
@@ -70,6 +73,7 @@ const InputSoundInstance: React.FC<{
       <Html5Audio
         src={staticFile(`sounds/${soundPath.replace(/^\/+/, "")}`)}
         volume={volume * INPUT_CUE_VOLUME[cue.kind]}
+        playbackRate={procedural ? rate : 1}
         pauseWhenBuffering
       />
     </Sequence>

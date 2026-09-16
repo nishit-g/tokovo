@@ -155,7 +155,7 @@ const TokovoRendererInner: React.FC<TokovoRendererProps> = ({
     [device.dynamicIsland, device.os, device.screenRecording, fps, hasActiveCall, profile, t],
   );
   const hidesStatusBar = dynamicIslandProjection?.suppressesStatusBar === true;
-  const keyboardHeightForLayout = inputProjection?.surface.viewportInset ?? 0;
+  const keyboardHeightForLayout = notificationProjection?.expanded?.inputSessionId ? 0 : inputProjection?.surface.viewportInset ?? 0;
 
   const transition = device.transition;
 
@@ -226,6 +226,8 @@ const TokovoRendererInner: React.FC<TokovoRendererProps> = ({
           statusBar={
             StatusBarStrategy && !hidesStatusBar ? (
               <StatusBarStrategy
+                lockScreen={device.isLocked && notificationProjection?.notificationUX === "native"}
+                notificationUX={notificationProjection?.notificationUX}
                 os={device.os}
                 theme={statusBarTheme}
                 notificationIcons={notificationProjection?.statusBarIcons}
@@ -329,7 +331,18 @@ const TokovoRendererInner: React.FC<TokovoRendererProps> = ({
             }
 
             // Manual app transitions (open/goHome)
-            if (isAppTransitionActive && transitionProgress !== undefined) {
+            if (notificationProjection?.handoffProgress !== undefined) {
+              baseContent = <div style={{ position: "relative", width: "100%", height: "100%" }}>
+                <div style={{ position: "absolute", inset: 0, opacity: 1 - notificationProjection.handoffProgress }}>
+                  <SystemSurface projection={projectLockscreen({ profile, os: device.os, homeWallpaper: device.homeScreen?.wallpaper, notificationUX: "native", authenticated: true })} />
+                </div>
+                <div data-notification-handoff style={{ position: "absolute", inset: 0, opacity: notificationProjection.handoffProgress,
+                  transform: `scale(${0.985 + 0.015 * notificationProjection.handoffProgress})`, transformOrigin: "center" }}>
+                  {baseContent}
+                </div>
+              </div>;
+            }
+            if (isAppTransitionActive && transitionProgress !== undefined && notificationProjection?.handoffProgress === undefined) {
               baseContent = (
                 <AppTransition
                   platform={variant}
@@ -378,7 +391,7 @@ const TokovoRendererInner: React.FC<TokovoRendererProps> = ({
           {/* LAYER 2: SYSTEM OVERLAYS                                                  */}
           {/* ========================================================================= */}
 
-          {!isUnlockTransitionActive && notificationProjection ? (
+          {notificationProjection ? (
             <NotificationSurface
               projection={notificationProjection}
               pointScale={profile.pointScale}

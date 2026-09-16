@@ -1,6 +1,11 @@
 import React from "react";
 import { TOKOVO_MONO_UI_FONT_FAMILY } from "@tokovo/visual-system";
-import { applyMatrix3, evaluateCameraOutput, type EvaluatedCameraOutput } from "@tokovo/camera";
+import {
+  applyMatrix3,
+  evaluateCameraOutput,
+  prepareCameraTracking,
+  type EvaluatedCameraOutput,
+} from "@tokovo/camera";
 import { selectPreparedCameraProgram, type PreparedCinematicPrograms } from "@tokovo/compiler";
 import {
   TokovoConfig,
@@ -175,6 +180,7 @@ const CinematicDebugOverlay: React.FC<{
 
 export interface CinematicStageRendererProps {
   world: WorldState;
+  worldAtFrame?: (frame: number) => WorldState;
   t: number;
   fps?: number;
   debug?: boolean;
@@ -233,6 +239,7 @@ function createLayoutCacheStore(scopeKey: string): LayoutCacheStore {
  */
 export const CinematicStageRenderer: React.FC<CinematicStageRendererProps> = ({
   world,
+  worldAtFrame,
   t,
   fps = 30,
   debug = false,
@@ -253,6 +260,66 @@ export const CinematicStageRenderer: React.FC<CinematicStageRendererProps> = ({
   const layoutRuntime = runtimeRef.current ?? createLayoutEngineRuntime();
   runtimeRef.current = layoutRuntime;
   const cacheRef = React.useRef<Map<string, LayoutCacheStore>>(new Map());
+
+  const subjectFrameAt = React.useMemo(() => {
+    if (!worldAtFrame) return undefined;
+    const history = new Map<number, ReturnType<typeof projectCinematicFrame>>();
+    const boundaryFrames = new Set(
+      cinematics.cameraPrograms.flatMap((program) =>
+        program.plan.shots.flatMap((shot) => [shot.startFrame, shot.startFrame - 1]),
+      ),
+    );
+    const historyRuntime = createLayoutEngineRuntime();
+    return (requestedFrame: number) => {
+      const cached = history.get(requestedFrame);
+      if (cached) return cached;
+      const historicalWorld = worldAtFrame(requestedFrame);
+      const stage = evaluateStageFrame(cinematics.stageProgram, requestedFrame);
+      const layouts = stage.nodes
+        .filter((node) => node.source.kind === "device")
+        .map((node) => {
+          if (node.source.kind !== "device") throw new Error("CAM_STAGE_DEVICE_EXPECTED");
+          return computeLayoutEngine(
+            {
+              world: historicalWorld,
+              t: requestedFrame,
+              fps,
+              focusDeviceId: node.source.deviceId,
+              mode,
+              config,
+              inputProgram,
+              notificationProgram,
+            },
+            registries,
+            historyRuntime,
+          );
+        });
+      const projected = projectCinematicFrame({
+        frame: requestedFrame,
+        world: historicalWorld,
+        layouts,
+        stage,
+        registry: registries.plugins.cinematicSubjects,
+      });
+      // Retain boundary geometry, not every full layout sampled by tracking preparation.
+      if (boundaryFrames.has(requestedFrame)) history.set(requestedFrame, projected);
+      return projected;
+    };
+  }, [worldAtFrame, cinematics, fps, mode, config, inputProgram, notificationProgram, registries]);
+
+  const program = React.useMemo(
+    () =>
+      cameraProjectionBackend === "texture-stage-plate"
+        ? null
+        : selectPreparedCameraProgram(cinematics, cameraPlanId),
+    [cameraProjectionBackend, cinematics, cameraPlanId],
+  );
+  const tracking = React.useMemo(() => {
+    if (!program?.plan.shots.some((shot) => shot.direction?.tracking)) return undefined;
+    if (!subjectFrameAt)
+      throw new Error("CAM_SUBJECT_HISTORY_REQUIRED: Tracking requires historical geometry.");
+    return prepareCameraTracking(program, subjectFrameAt);
+  }, [program, subjectFrameAt]);
 
   const frame = React.useMemo(() => {
     const stage = evaluateStageFrame(cinematics.stageProgram, t);
@@ -295,10 +362,6 @@ export const CinematicStageRenderer: React.FC<CinematicStageRendererProps> = ({
       stage,
       registry: registries.plugins.cinematicSubjects,
     });
-    const program =
-      cameraProjectionBackend === "texture-stage-plate"
-        ? null
-        : selectPreparedCameraProgram(cinematics, cameraPlanId);
     const outputs =
       program?.plan.outputs.map((output) =>
         evaluateCameraOutput(
@@ -307,6 +370,8 @@ export const CinematicStageRenderer: React.FC<CinematicStageRendererProps> = ({
             outputId: output.id,
             frame: t,
             subjectFrame,
+            subjectFrameAt,
+            tracking,
             mode,
           },
           registries.camera,
@@ -327,6 +392,9 @@ export const CinematicStageRenderer: React.FC<CinematicStageRendererProps> = ({
     registries,
     t,
     world,
+    subjectFrameAt,
+    program,
+    tracking,
   ]);
 
   React.useEffect(() => {

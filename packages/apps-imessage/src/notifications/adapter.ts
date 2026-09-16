@@ -16,6 +16,9 @@ export const iMessageNotificationAdapter: NotificationAppAdapter = {
   },
   defaultAction(intent) {
     return {
+      ...(intent.threadId ? { appEvent: {
+        appId: "app_imessage", type: "IMESSAGE_CONVERSATION_OPEN", payload: { conversationId: intent.threadId },
+      } } : {}),
       navigation: {
         appId: "app_imessage",
         route: "conversation",

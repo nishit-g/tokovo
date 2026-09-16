@@ -32,6 +32,13 @@ interface MessageListProps {
  * WhatsApp-style doodle wallpaper as an inline SVG data URI.
  * Encodes the doodle pattern once and returns a CSS-compatible url() string.
  */
+export function wallpaperLayerSizing(tileSize = 180) {
+  return {
+    backgroundRepeat: "no-repeat, no-repeat, repeat",
+    backgroundSize: `100% 100%, 100% 100%, ${tileSize}px ${tileSize}px`,
+  };
+}
+
 function buildDoodleDataUri(color: string): string {
   const svg =
     `<svg xmlns="http://www.w3.org/2000/svg" width="180" height="180" viewBox="0 0 180 180">` +
@@ -139,8 +146,7 @@ export const MessageList: React.FC<MessageListProps> = ({
         overflow: "hidden",
         paddingBottom: threadRect ? 0 : bottomPadding,
         backgroundImage: `${overlayGlow}, ${doodleImage}`,
-        backgroundRepeat: "no-repeat, repeat",
-        backgroundSize: "100% 100%, 180px 180px",
+        ...wallpaperLayerSizing(theme.spacing.wallpaperTileSize),
       }}
     >
       <div
